@@ -133,14 +133,14 @@ summary{cursor:pointer;font-weight:600}
      ===================================================================== -->
 <script id="course-data">
 window.COURSE = {
-  version: "0.1 (قالب)",
+  version: "0.2 (هفته ۱ — بخش A)",
   updated: "2026-11-02",
   modules: [
     {id:"m0", title:"شروع و راهنما", lessons:[
       {id:"guide", title:"راهنمای استفاده از این فایل", ready:true}
     ]},
     {id:"p0", title:"فاز 0A/0B — کشف و آماده‌سازی Lab (هفته ۱)", lessons:[
-      {id:"w1", title:"هفته ۱: کشف زیرساخت (Read-Only)، سپس Lab ایزوله", ready:false}
+      {id:"w1", title:"هفته ۱ — بخش A: کشف زیرساخت (Phase 0A، فقط مشاهده)", ready:true}
     ]},
     {id:"p1", title:"فاز ۱ — Cisco CLI و IP (هفته ۲)", lessons:[
       {id:"w2", title:"هفته ۲: IPv4/IPv6، مدیریت IOS، SSH، پشتیبان‌گیری", ready:false}
@@ -195,9 +195,113 @@ window.COURSE = {
   ],
   /* اشتباه‌ها و سؤال‌ها: با هر درس جدید، موارد تازه در درس قرار می‌گیرند و اینجا ثبت می‌شوند */
   review: [
-    {lesson:"نمونه", type:"sample", q:"نمونه: چرا بعد از ‏<code>conf t</code>‏ پرامپت تغییر می‌کند؟", a:"چون وارد حالت Global Configuration شده‌ایم (پرامپت <code>(config)#</code>). این آیتم نمونه است و با اولین سؤال واقعی شما جایگزین می‌شود."}
+    {lesson:"W1-A", type:"question", q:"چرا Claude خودش به ESXi و PNetLab با SSH وصل نمی‌شود؟", a:"Claude در یک کانتینر ابری کار می‌کند و آدرس‌های <code>192.168.88.x</code> روی شبکه خصوصی شما هستند. شما خودتان اسکریپت‌های فقط‌خواندنی را اجرا و خروجی را می‌دهید. رمزها هم هرگز داخل چت نوشته نمی‌شوند."},
+    {lesson:"W1-A", type:"mistake", q:"اشتباه: کارت شبکه VM به Port Group حذف‌شده (PG-PNET-MGMT) اشاره می‌کرد", a:"نتیجه: لیست Port Group خالی، لینک پایین، نه وب و نه SSH. راه‌حل: Port Group را دوباره ساختیم یا از لیست، مقدار درست را انتخاب کردیم. درس: قبل از حذف Port Group، VMهای متصل به آن را بررسی کنید."},
+    {lesson:"W1-A", type:"mistake", q:"اشتباه: Save با لیست Port Group خالی", a:"Host Client کارت را بی‌صدا به یک Port Group دیگر (PG-FGT-TRUNK) منتقل می‌کند. هشدار قرمز را جدی بگیرید و Save نکنید تا مقدار درست انتخاب شود."},
+    {lesson:"W1-A", type:"mistake", q:"اشتباه: ایده‌ی «eth0 = Adapter 1»", a:"ترتیب نام <code>ethX</code> در لینوکس همیشه با ترتیب Adapterهای ESXi یکی نیست. مرجع درست <b>MAC</b> است و فرمان <code>bridge link</code> / <code>brctl show</code>."},
+    {lesson:"W1-A", type:"mistake", q:"اشتباه: چسباندن چند فرمان پشت‌سرهم بدون Enter", a:"فرمان‌ها به‌هم چسبیدند (مثل <code>listsec</code>) و خطای Unknown command آمد. اسکریپت را با <code>ssh … 'sh -s' &lt; script.sh</code> اجرا کنید یا هر فرمان را جدا بزنید."},
+    {lesson:"W1-A", type:"mistake", q:"اشتباه: نوشتن <ID> به‌جای عدد", a:"در مستند، <code>&lt;ID&gt;</code> یعنی جایگذاری مقدار واقعی. اینجا Vmid برابر <code>1</code> بود: <code>vim-cmd vmsvc/get.config 1</code>."},
+    {lesson:"W1-A", type:"question", q:"آیا قبل از شروع، همه VLANها را روی سوییچ مجازی ESXi بسازیم؟", a:"نه. <code>PG-FGT-TRUNK</code> با VLAN 4095 همه VLANها را عبور می‌دهد و VLANهای دوره را سوییچ‌ها و FortiGate داخل PNetLab می‌سازند. فقط در صورت نیاز، Port Group برای VM مستقل می‌سازیم."}
   ],
   lessons: {
+
+    w1: {
+      sub: "بخش A از هفته ۱: فقط مشاهده؛ هیچ تغییری روی زیرساخت انجام نمی‌شود. بخش B (Phase 0B) فقط پس از تأیید صریح شما شروع می‌شود.",
+      html: `
+<div class="meta"><span class="tag">Phase 0A</span><span class="tag">روز ۱ و ۲</span><span class="tag">۱۲ ساعت مفید</span><span class="tag">قالب روز D</span></div>
+
+<div class="box warn"><b class="t">قانون این درس</b>در این درس فقط می‌خوانیم و تحلیل می‌کنیم. هیچ Node ساخته یا روشن نمی‌شود و هیچ تنظیمی (به‌جز آنچه قبلاً در CHG-0001 ثبت شد) تغییر نمی‌کند.</div>
+
+<h2>اهداف یادگیری</h2>
+<ul>
+<li>تفاوت <span class="en">Discovery</span> (کشف فقط‌خواندنی) و <span class="en">Change</span> را توضیح دهید.</li>
+<li>مسیر یک Packet را از Node داخل PNetLab تا شبکه واقعی و تا سوییچ ایزوله روی کاغذ رسم کنید.</li>
+<li>خروجی <code>esxcli</code>، <code>ip</code> و <code>bridge</code> را بخوانید و درباره آن‌ها نتیجه بگیرید.</li>
+<li>یک خرابی واقعی (PNetLab بدون لینک) را با روش لایه‌ای عیب‌یابی کنید.</li>
+</ul>
+
+<h2>۱. چرا اول فقط مشاهده؟</h2>
+<p>قبل از هر تغییر، باید بدانیم «الان چه چیزی هست» (<span class="en">As-Is</span>). بدون این، اگر چیزی خراب شود نمی‌دانیم به کدام وضعیت برگردیم. هر تغییر هم سه چیز لازم دارد: <span class="en">Backup</span>، <span class="en">Rollback Plan</span> و تأیید. این همان رویه‌ای است که در شبکه‌های سازمانی واقعی رعایت می‌شود.</p>
+
+<h2>۲. نقشه As-Is شما (بعد از CHG-0001)</h2>
+<pre><code>[PC شما] --WireGuard--&gt; [MikroTik 192.168.88.1]
+                              |
+                         (LAN 192.168.88.0/24)
+                              |
+        +---------------------+----------------------+
+        |   ESXi 8.0U2  192.168.88.3  (vmk0)         |
+        |   vSwitch0 --- vmnic0 (Uplink)             |
+        |      |-- Management Network (vmk0)         |
+        |      |-- VM Network  &lt;--- PNETLAB Adapter A|
+        |                                            |
+        |   vSwitch-FGT  (بدون Uplink = ایزوله)       |
+        |      |-- PG-FGT-TRUNK (VLAN 4095) &lt;--- PNETLAB Adapter B
+        +--------------------------------------------+
+PNetLab VM: eth1 -&gt; pnet0 (192.168.88.199)   eth0 -&gt; pnet1 (لوله ایزوله)</code></pre>
+<p>نکته: <span class="en">MikroTik/WireGuard</span> فقط مسیر مدیریتی شماست؛ با WAN شبیه‌سازی‌شده یا VPN دوره ارتباطی ندارد.</p>
+
+<h2>۳. خواندن خروجی‌ها (خط‌به‌خط)</h2>
+<table>
+<tr><th>دستور</th><th>چه می‌پرسد؟</th><th>نتیجه در محیط شما</th></tr>
+<tr><td><code>esxcli network vswitch standard list</code></td><td>سوییچ‌های مجازی و Uplinkشان</td><td><code>vSwitch0</code> دارای <code>vmnic0</code>؛ <code>vSwitch-FGT</code> با Uplinks خالی = ایزوله</td></tr>
+<tr><td><code>esxcli network vswitch standard portgroup list</code></td><td>Port Groupها، VLAN و تعداد Clientها</td><td><code>PG-FGT-TRUNK</code> با VLAN 4095</td></tr>
+<tr><td><code>esxcli network ip interface list</code></td><td>Interfaceهای مدیریتی ESXi</td><td><code>vmk0</code> روی Management Network</td></tr>
+<tr><td><code>ip -br addr</code></td><td>IP و وضعیت Interfaceها در PNetLab</td><td><code>pnet0</code> = 192.168.88.199/24</td></tr>
+<tr><td><code>bridge link</code> / <code>brctl show</code></td><td>کدام کارت به کدام Bridge وصل است</td><td><code>eth1 → pnet0</code> و <code>eth0 → pnet1</code></td></tr>
+<tr><td><code>lscpu</code>، <code>/dev/kvm</code></td><td>Nested Virtualization فعال است؟</td><td>VT-x و <code>kvm_intel</code> فعال ⇒ QEMU Node اجرا می‌شود</td></tr>
+</table>
+
+<h2>۴. مفهوم و مسیر Packet</h2>
+<p><b>Port Group</b> (گروه پورت) در ESXi مجموعه تنظیمات یک شبکه مجازی است؛ <b>VLAN 4095</b> یعنی «همه VLANها بدون حذف برچسب (Tag)» عبور کنند. چون سوییچ‌ها و FortiGate داخل PNetLab VLANها را می‌سازند، ESXi فقط یک لوله ایزوله می‌دهد.</p>
+<p>مسیر ترافیک مدیریتی: PC شما → WireGuard → MikroTik → LAN → <code>vmnic0</code> → <code>vSwitch0</code> → Port Group <code>VM Network</code> → کارت VM → <code>pnet0</code> → سرویس وب/SSH PNetLab. ترافیک Lab فقط روی <code>pnet1</code> و <code>vSwitch-FGT</code> می‌ماند و به شبکه واقعی نمی‌رسد (چون Uplink ندارد).</p>
+<p>سه گزینه Security روی <code>PG-FGT-TRUNK</code> (<span class="en">Promiscuous، MAC address changes، Forged transmits</span>) چون PNetLab چند MAC مجازی پشت یک کارت دارد، باید «Accept» باشند.</p>
+
+<h2>۵. Lab هدایت‌شده (آنچه انجام دادید)</h2>
+<ol>
+<li>اسکریپت‌های فقط‌خواندنی را از طریق SSH روی ESXi و PNetLab اجرا کردید.</li>
+<li>خروجی‌ها را خواندید و منابع (CPU/RAM/Disk) را ثبت کردید.</li>
+<li>مشکل لینک را پیدا کردید و با <code>CHG-0001</code> رفع کردید.</li>
+</ol>
+
+<h2>۶. Lab مستقل</h2>
+<p>در <span class="en">draw.io</span> نقشه بالا را خودتان از صفر بکشید (بدون نگاه به متن). سپس جدول Inventory را پر کنید: CPU، RAM، Datastoreها، vSwitchها، Port Groupها، IPها. خروجی: <code>01-discovery/as-is.drawio</code> و <code>inventory.md</code>.</p>
+
+<h2>۷. عیب‌یابی واقعی: «PNetLab روشن است ولی وب و SSH ندارم»</h2>
+<table>
+<tr><th>بخش</th><th>شرح</th></tr>
+<tr><td>Symptom</td><td>کنسول: IP درست، ولی از PC نه وب و نه SSH در دسترس</td></tr>
+<tr><td>روش لایه‌ای</td><td>L1 لینک ← L2 Bridge/MAC ← L3 IP/Gateway ← L4 پورت‌ها</td></tr>
+<tr><td>شواهد</td><td><code>ip -br addr</code>: <code>pnet0</code> در حالت DOWN و <code>linkdown</code> در Route؛ ping به Gateway: Destination Host Unreachable؛ SSH در حال Listen ولی 80/443 نه</td></tr>
+<tr><td>علت</td><td>کارت شبکه به Port Group حذف‌شده وصل بود (هشدار ESXi: «attached to a network portgroup … that doesn't exist») و کارت دیگر در Bridge دیگری بود</td></tr>
+<tr><td>رفع</td><td>اتصال Adapter مدیریتی به <code>VM Network</code> و Adapter ایزوله به <code>PG-FGT-TRUNK</code>؛ تطبیق با MAC</td></tr>
+<tr><td>Verification</td><td><code>pnet0</code> در حالت UP، ping Gateway موفق، پورت‌های 22/80/443 باز، ورود وب و SSH</td></tr>
+<tr><td>Rollback</td><td>جدا کردن Adapter ایزوله و حذف <code>vSwitch-FGT</code> (در CHG-0001 ثبت شده)</td></tr>
+</table>
+<div class="box ok"><b class="t">درس</b>همیشه لایه‌به‌لایه از پایین بالا بروید و «چیزی که فرض می‌کنید» را با شواهد (<span class="en">MAC، bridge، state</span>) بسنجید.</div>
+
+<h2>۸. سؤال‌های مرور (بدون نگاه)</h2>
+<details><summary>چرا Uplinks خالی در vSwitch-FGT مهم است؟</summary><p>چون هیچ مسیر فیزیکی به شبکه واقعی وجود ندارد؛ ایزولاسیون واقعی است.</p></details>
+<details><summary>VLAN 4095 چه می‌کند؟</summary><p>همه VLANها را با Tag به VM می‌رساند (حالت Trunk در ESXi).</p></details>
+<details><summary>چرا نباید فرض کنیم eth0 همان Adapter 1 است؟</summary><p>ترتیب نام‌گذاری لینوکس ممکن است با ترتیب ESXi فرق کند؛ MAC مرجع است.</p></details>
+<details><summary>سه چیزی که هر تغییر لازم دارد؟</summary><p>Backup، Rollback Plan، تأیید صریح.</p></details>
+
+<h2>۹. تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ نقشه As-Is را بدون راهنما بکشم.</li>
+<li>☐ فرق Discovery و Change را توضیح دهم.</li>
+<li>☐ خروجی <code>bridge link</code> را تفسیر کنم.</li>
+<li>☐ روش عیب‌یابی لایه‌ای را روی خرابی بالا بازگو کنم.</li>
+<li>☐ Inventory را در Git ذخیره کنم (بدون رمز).</li>
+</ul>
+
+<h2>۱۰. یادآوری اشتباهات و سؤال‌های شما</h2>
+<div class="box review"><b class="t">یادآوری ۱</b>Port Group حذف‌شده یعنی کارت VM بدون شبکه؛ قبل از حذف بررسی کنید چه VMهایی به آن وصل‌اند.</div>
+<div class="box review"><b class="t">یادآوری ۲</b>Save با لیست خالی، کارت را بی‌صدا به Port Group دیگری می‌برد.</div>
+<div class="box review"><b class="t">یادآوری ۳</b>نام <code>ethX</code> ≠ شماره Adapter؛ از MAC استفاده کنید.</div>
+<div class="box review"><b class="t">یادآوری ۴</b>فرمان‌ها را جدا بزنید؛ چسباندن چند خط بدون Enter باعث خطا می‌شود. جایگذاری <code>&lt;ID&gt;</code> یعنی عدد واقعی.</div>
+<p>فهرست کامل در صفحه «مرور دوره‌ای».</p>
+`
+    },
     guide: {
       sub: "نسخه قالب — این درس آموزشی فنی نیست؛ فقط معرفی ابزار مطالعه است.",
       html: `
