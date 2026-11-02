@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>دوره مهندسی شبکه و امنیت سازمانی</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Cairo:wght@400;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=JetBrains+Mono:wght@400;600&family=Noto+Naskh+Arabic:wght@400;600;700&family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font-ui:'Vazirmatn',Tahoma,sans-serif;
+  --font-code:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --fs:17px;
+}
+/* ---------- Themes ---------- */
+[data-theme="dark"]{--bg:#0f141c;--panel:#161d28;--panel2:#1c2533;--text:#e6ebf2;--muted:#9aa7b8;--line:#2a3547;--accent:#5eb0ff;--accent2:#7ee0b4;--code-bg:#0b1018;--code-text:#d7e3f4;--warn:#ffcc66;--danger:#ff7a7a;--ok:#7ee0b4}
+[data-theme="light"]{--bg:#f6f8fb;--panel:#ffffff;--panel2:#eef2f8;--text:#1b2430;--muted:#5b687a;--line:#d9e0ea;--accent:#1d6fd8;--accent2:#0f9d6b;--code-bg:#f0f3f8;--code-text:#17212e;--warn:#9a6a00;--danger:#c0392b;--ok:#0f9d6b}
+[data-theme="soft"]{--bg:#efe9dd;--panel:#f7f2e8;--panel2:#e7dfcf;--text:#3a3329;--muted:#7a6f5e;--line:#d6ccb7;--accent:#8a5a2b;--accent2:#4f7a5a;--code-bg:#e9e1d0;--code-text:#2f2a21;--warn:#8a5a00;--danger:#a8402f;--ok:#4f7a5a}
+
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:var(--fs);line-height:1.95;transition:background .25s,color .25s}
+
+/* ---------- Top bar ---------- */
+.topbar{position:fixed;inset:0 0 auto 0;height:58px;z-index:30;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 16px}
+.brand{font-weight:700;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34vw}
+.controls{margin-inline-start:auto;display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
+.controls label{font-size:.78rem;color:var(--muted)}
+select,.themebtn,.menubtn,.navbtn{font:inherit;font-size:.85rem;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:5px 10px;cursor:pointer}
+select{max-width:150px}
+.themes{display:flex;gap:6px}
+.themebtn{width:34px;height:34px;padding:0;display:grid;place-items:center;font-size:1rem}
+.themebtn[aria-pressed="true"]{outline:2px solid var(--accent)}
+.menubtn{display:none}
+
+/* ---------- Layout: first grid column = RIGHT side in RTL ---------- */
+.layout{display:grid;grid-template-columns:330px minmax(0,1fr);padding-top:58px;min-height:100vh}
+.sidebar{position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto;overflow-x:hidden;background:var(--panel);border-inline-end:1px solid var(--line);padding:14px 12px 40px}
+.sidebar::-webkit-scrollbar{width:8px}.sidebar::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+.progress{font-size:.8rem;color:var(--muted);margin:2px 6px 12px}
+.bar{height:6px;border-radius:6px;background:var(--panel2);margin-top:6px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--accent2);width:0}
+.mod{margin:6px 0}
+.mod>button{width:100%;text-align:start;font:inherit;font-weight:700;font-size:.86rem;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;display:flex;justify-content:space-between;gap:8px}
+.mod>button span:last-child{color:var(--muted);font-weight:400;font-size:.75rem;white-space:nowrap}
+.mod ul{list-style:none;margin:6px 0 4px;padding:0 10px 0 0}
+.mod li a{display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:.84rem;line-height:1.7;overflow-wrap:anywhere}
+.mod li a:hover{background:var(--panel2);color:var(--text)}
+.mod li a.active{background:var(--accent);color:#fff}
+.mod li a.locked{opacity:.55;cursor:default}
+.mod li a .dot{flex:none;margin-top:6px;width:8px;height:8px;border-radius:50%;background:var(--line)}
+.mod li a.done .dot{background:var(--ok)}
+.mod[hidden-list] ul{display:none}
+
+/* ---------- Content ---------- */
+.content{padding:30px clamp(16px,4vw,48px) 90px}
+article{max-width:860px;margin-inline:auto;overflow-wrap:anywhere;word-break:normal}
+article h1{font-size:1.75rem;line-height:1.5;margin:.2em 0 .3em}
+article h2{font-size:1.3rem;margin:1.8em 0 .5em;padding-bottom:.25em;border-bottom:1px solid var(--line);color:var(--accent)}
+article h3{font-size:1.1rem;margin:1.4em 0 .4em}
+article p{margin:.7em 0}
+article ul,article ol{padding-inline-start:1.6em}
+article a{color:var(--accent)}
+.meta{color:var(--muted);font-size:.85rem;display:flex;gap:14px;flex-wrap:wrap}
+.tag{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:1px 10px}
+/* Latin runs inside Persian text */
+.en{direction:ltr;unicode-bidi:isolate;font-family:'IBM Plex Sans Arabic',var(--font-ui);font-size:.95em}
+code{direction:ltr;unicode-bidi:isolate;font-family:var(--font-code);font-size:.88em;background:var(--code-bg);color:var(--code-text);padding:1px 7px;border-radius:6px;border:1px solid var(--line);overflow-wrap:anywhere}
+pre{direction:ltr;text-align:left;margin:1em 0;background:var(--code-bg);color:var(--code-text);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-family:var(--font-code);font-size:.85rem;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;overflow-x:hidden}
+pre code{background:none;border:0;padding:0;font-size:inherit}
+/* tables without horizontal scroll */
+table{width:100%;border-collapse:collapse;table-layout:fixed;margin:1em 0;font-size:.9rem;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{padding:8px 10px;border:1px solid var(--line);text-align:start;vertical-align:top;overflow-wrap:anywhere;word-break:break-word}
+th{background:var(--panel2)}
+/* callouts */
+.box{border:1px solid var(--line);border-inline-start:5px solid var(--accent);background:var(--panel);border-radius:12px;padding:10px 16px;margin:1.1em 0}
+.box b.t{display:block;margin-bottom:2px}
+.box.warn{border-inline-start-color:var(--warn)}.box.danger{border-inline-start-color:var(--danger)}.box.ok{border-inline-start-color:var(--ok)}
+.box.review{border-inline-start-color:var(--accent2);background:var(--panel2)}
+details{border:1px solid var(--line);border-radius:10px;background:var(--panel);margin:.6em 0;padding:6px 14px}
+summary{cursor:pointer;font-weight:600}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:40px}
+.donebtn{margin-top:26px;display:inline-block}
+.review-item{border:1px dashed var(--line);border-radius:10px;padding:8px 14px;margin:.6em 0;background:var(--panel)}
+.review-item small{color:var(--muted)}
+
+/* ---------- Mobile ---------- */
+@media (max-width:900px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .menubtn{display:inline-block}
+  .sidebar{position:fixed;top:58px;right:0;width:min(86vw,340px);transform:translateX(100%);transition:transform .25s;z-index:25;box-shadow:0 0 30px rgba(0,0,0,.4)}
+  body.menu-open .sidebar{transform:translateX(0)}
+  .brand{max-width:30vw}.controls label{display:none}
+  select{max-width:110px}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <button class="menubtn" id="menubtn" aria-label="منوی دوره">☰</button>
+  <div class="brand">دوره شبکه و امنیت سازمانی</div>
+  <div class="controls">
+    <label for="fontsel">فونت</label>
+    <select id="fontsel" aria-label="انتخاب فونت">
+      <option value="'Vazirmatn',Tahoma,sans-serif">Vazirmatn (وزیرمتن)</option>
+      <option value="'IBM Plex Sans Arabic',Tahoma,sans-serif">IBM Plex Sans Arabic</option>
+      <option value="'Noto Naskh Arabic',serif">Noto Naskh (نسخ)</option>
+      <option value="'Cairo',Tahoma,sans-serif">Cairo</option>
+      <option value="'Almarai',Tahoma,sans-serif">Almarai</option>
+      <option value="Tahoma,Arial,sans-serif">Tahoma (سیستم)</option>
+    </select>
+    <label for="sizesel">اندازه</label>
+    <select id="sizesel" aria-label="اندازه متن">
+      <option value="15">کوچک</option><option value="17" selected>متوسط</option><option value="19">بزرگ</option><option value="21">خیلی بزرگ</option>
+    </select>
+    <div class="themes" role="group" aria-label="تم">
+      <button class="themebtn" data-theme="dark" title="تاریک" aria-pressed="true">🌙</button>
+      <button class="themebtn" data-theme="light" title="روشن" aria-pressed="false">☀️</button>
+      <button class="themebtn" data-theme="soft" title="ملایم" aria-pressed="false">🌾</button>
+    </div>
+  </div>
+</header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="فهرست دوره"></aside>
+  <main class="content"><article id="lesson"></article></main>
+</div>
+
+<!-- =====================================================================
+     COURSE DATA — فقط این بخش با هر درس به‌روزرسانی می‌شود.
+     هر درس: {id,title,week,html}. در متن فارسی، عبارت انگلیسی را می‌توان با
+     <span class="en">...</span> نشان داد؛ در غیر این‌صورت اسکریپت به‌طور خودکار آن را جدا می‌کند.
+     برای کد از <pre><code>…</code></pre> و برای عبارت کوتاه از <code>…</code> استفاده کنید.
+     ===================================================================== -->
+<script id="course-data">
+window.COURSE = {
+  version: "0.1 (قالب)",
+  updated: "2026-11-02",
+  modules: [
+    {id:"m0", title:"شروع و راهنما", lessons:[
+      {id:"guide", title:"راهنمای استفاده از این فایل", ready:true}
+    ]},
+    {id:"p0", title:"فاز 0A/0B — کشف و آماده‌سازی Lab (هفته ۱)", lessons:[
+      {id:"w1", title:"هفته ۱: کشف زیرساخت (Read-Only)، سپس Lab ایزوله", ready:false}
+    ]},
+    {id:"p1", title:"فاز ۱ — Cisco CLI و IP (هفته ۲)", lessons:[
+      {id:"w2", title:"هفته ۲: IPv4/IPv6، مدیریت IOS، SSH، پشتیبان‌گیری", ready:false}
+    ]},
+    {id:"p2", title:"فاز ۲ — Switching (هفته ۳–۴)", lessons:[
+      {id:"w3", title:"هفته ۳: VLAN، Trunk، Inter-VLAN", ready:false},
+      {id:"w4", title:"هفته ۴: STP، EtherChannel، امنیت L2", ready:false}
+    ]},
+    {id:"p3", title:"فاز ۳ — Routing (هفته ۵–۶)", lessons:[
+      {id:"w5", title:"هفته ۵: Static و OSPFv2", ready:false},
+      {id:"w6", title:"هفته ۶: OSPF چندناحیه‌ای، HSRP، IPv6", ready:false}
+    ]},
+    {id:"p4", title:"فاز ۴ — سرویس‌های IP و Hardening (هفته ۷–۸)", lessons:[
+      {id:"w7", title:"هفته ۷: DHCP، NAT، ACL، NTP، Syslog، SNMP", ready:false},
+      {id:"w8", title:"هفته ۸: اتوماسیون، Hardening، چک‌پوینت", ready:false}
+    ]},
+    {id:"p5", title:"فاز ۵ — FortiGate: هسته و Policy (هفته ۹–۱۰)", lessons:[
+      {id:"w9", title:"هفته ۹: معماری، Interface، Zone، Routing", ready:false},
+      {id:"w10", title:"هفته ۱۰: Policy، NAT، VIP", ready:false}
+    ]},
+    {id:"p6", title:"فاز ۶ — UTM و Authentication (هفته ۱۱–۱۲)", lessons:[
+      {id:"w11", title:"هفته ۱۱: Security Profiles، SSL Inspection، DMZ", ready:false},
+      {id:"w12", title:"هفته ۱۲: AD، LDAP، RADIUS، FSSO", ready:false}
+    ]},
+    {id:"p7", title:"فاز ۷ — VPN و Branch (هفته ۱۳–۱۴)", lessons:[
+      {id:"w13", title:"هفته ۱۳: IPsec Site-to-Site", ready:false},
+      {id:"w14", title:"هفته ۱۴: Remote Access VPN", ready:false}
+    ]},
+    {id:"p8", title:"فاز ۸ — SD-WAN، HA، مدیریت متمرکز (هفته ۱۵–۱۶)", lessons:[
+      {id:"w15", title:"هفته ۱۵: SD-WAN و Routing پویا", ready:false},
+      {id:"w16", title:"هفته ۱۶: HA، DoS، Hardening", ready:false}
+    ]},
+    {id:"p9", title:"فاز ۹ — Monitoring (هفته ۱۷)", lessons:[
+      {id:"w17", title:"هفته ۱۷: Monitoring، Logging، Alerting", ready:false}
+    ]},
+    {id:"p10", title:"فاز ۱۰ — Packet، عیب‌یابی، Blue Team (هفته ۱۸–۱۹)", lessons:[
+      {id:"w18", title:"هفته ۱۸: Packet Analysis و عیب‌یابی ۱", ready:false},
+      {id:"w19", title:"هفته ۱۹: Blue Team و عیب‌یابی ۲", ready:false}
+    ]},
+    {id:"p11", title:"فاز ۱۱ — Capstone (هفته ۲۰–۲۲)", lessons:[
+      {id:"w20", title:"هفته ۲۰: طراحی و ساخت Campus/WAN", ready:false},
+      {id:"w21", title:"هفته ۲۱: Security، AD، VPN", ready:false},
+      {id:"w22", title:"هفته ۲۲: Monitoring، HA، Fault Injection", ready:false}
+    ]},
+    {id:"p12", title:"فاز ۱۲ — بافر و آزمون نهایی (هفته ۲۳–۲۴)", lessons:[
+      {id:"w23", title:"هفته ۲۳: جبران و آزمون آزمایشی", ready:false},
+      {id:"w24", title:"هفته ۲۴: آزمون نهایی و تحویل", ready:false}
+    ]},
+    {id:"rv", title:"مرور دوره‌ای", lessons:[
+      {id:"review", title:"اشتباهات و سؤال‌های من (مرور)", ready:true}
+    ]}
+  ],
+  /* اشتباه‌ها و سؤال‌ها: با هر درس جدید، موارد تازه در درس قرار می‌گیرند و اینجا ثبت می‌شوند */
+  review: [
+    {lesson:"نمونه", type:"sample", q:"نمونه: چرا بعد از ‏<code>conf t</code>‏ پرامپت تغییر می‌کند؟", a:"چون وارد حالت Global Configuration شده‌ایم (پرامپت <code>(config)#</code>). این آیتم نمونه است و با اولین سؤال واقعی شما جایگزین می‌شود."}
+  ],
+  lessons: {
+    guide: {
+      sub: "نسخه قالب — این درس آموزشی فنی نیست؛ فقط معرفی ابزار مطالعه است.",
+      html: `
+<div class="meta"><span class="tag">راهنما</span><span class="tag">۱۰ دقیقه</span></div>
+<p>این فایل <b>یک دوره کامل</b> است که با هر درس به‌روز می‌شود. منوی کل دوره سمت راست است و با اسکرول عمودی حرکت می‌کنید. متن درس‌ها اسکرول افقی ندارد.</p>
+
+<h2>۱. فونت، اندازه و تم</h2>
+<ul>
+<li>بالای صفحه می‌توانید فونت و اندازه متن را عوض کنید.</li>
+<li>سه تم دارید: تاریک 🌙، روشن ☀️ و ملایم 🌾. انتخاب شما در مرورگر ذخیره می‌شود.</li>
+<li>برای فونت‌های Google نیاز به اینترنت است؛ بدون اینترنت فونت سیستم (Tahoma) نمایش داده می‌شود.</li>
+</ul>
+
+<h2>۲. قرارداد نوشتن فارسی و انگلیسی</h2>
+<p>برای اینکه متن راست‌به‌چپ به‌هم نریزد، هر عبارت انگلیسی (مثل VLAN یا <span class="en">Spanning Tree Protocol</span>) در یک قطعه چپ‌به‌راست جدا نمایش داده می‌شود. دستورات همیشه در بلوک کد و چپ‌به‌راست هستند:</p>
+<pre><code>Switch&gt; enable
+Switch# configure terminal
+Switch(config)# hostname HQ-ACC-SW1
+HQ-ACC-SW1(config)# end</code></pre>
+<p>هر اصطلاح انگلیسی در اولین استفاده با معادل فارسی و کاربرد فنی توضیح داده می‌شود؛ مثلاً <span class="en">Trunk</span> یعنی «لینکی که چند VLAN را با برچسب جابه‌جا می‌کند».</p>
+
+<h2>۳. ساختار هر درس</h2>
+<table>
+<tr><th>بخش</th><th>کارکرد</th></tr>
+<tr><td>هدف‌های یادگیری</td><td>چه چیزی را بعد از درس می‌توانید انجام دهید</td></tr>
+<tr><td>مفهوم و Packet Flow</td><td>چرا و چگونه کار می‌کند</td></tr>
+<tr><td>Lab هدایت‌شده/مستقل</td><td>قدم‌به‌قدم و سپس بدون راهنما</td></tr>
+<tr><td>خرابی و عیب‌یابی</td><td>یک خطای عمدی و تحلیل ریشه‌ای</td></tr>
+<tr><td>سؤال‌های مرور</td><td>بازیابی فعال از حافظه</td></tr>
+<tr><td>مرور اشتباهات شما</td><td>سؤال‌ها و خطاهای قبلی شما، دوباره</td></tr>
+</table>
+
+<div class="box"><b class="t">قانون ایمنی دوره</b>تا زمانی که گزارش Phase 0A را بررسی و برای Phase 0B تأیید صریح نداده‌اید، هیچ درسی بر پایه Lab اجرا نمی‌شود و هیچ تغییری در ESXi/PNetLab/MikroTik انجام نمی‌شود.</div>
+
+<h2>۴. مرور اشتباهات و سؤال‌ها</h2>
+<p>هر سؤال یا اشتباهی که شما داشته باشید، در درس بعدی داخل کادر «یادآوری» برمی‌گردد و در صفحه «مرور دوره‌ای» ثبت می‌شود. خودتان ببینید:</p>
+<div class="box review"><b class="t">یادآوری (نمونه)</b>پرامپت <code>Switch(config)#</code> یعنی حالت پیکربندی سراسری؛ با <code>end</code> یا <code>Ctrl+Z</code> به حالت Privileged برمی‌گردیم.</div>
+
+<h2>۵. سؤال مرور</h2>
+<details><summary>سؤال ۱: فرق Privileged EXEC و Global Configuration چیست؟</summary><p>در Privileged EXEC فقط مشاهده و مدیریت فایل/وضعیت داریم (پرامپت <code>#</code>)؛ در Global Configuration تنظیمات دستگاه تغییر می‌کند (پرامپت <code>(config)#</code>).</p></details>
+<details><summary>سؤال ۲: چرا دستورات داخل بلوک چپ‌به‌راست می‌آیند؟</summary><p>چون ترتیب نویسه‌ها در دستورات مهم است و در متن راست‌به‌چپ ممکن است جابه‌جا نمایش داده شوند.</p></details>
+`
+    }
+  }
+};
+</script>
+
+<script>
+(function(){
+  const D=window.COURSE;
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+  const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+
+  /* ---------- Settings ---------- */
+  function applyFont(v){document.documentElement.style.setProperty('--font-ui',v);store.set('c_font',v)}
+  function applySize(v){document.documentElement.style.setProperty('--fs',v+'px');store.set('c_size',v)}
+  function applyTheme(t){document.documentElement.setAttribute('data-theme',t);$$('.themebtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.theme===t));store.set('c_theme',t)}
+  const fs=$('#fontsel'),ss=$('#sizesel');
+  const sf=store.get('c_font',fs.value); if([...fs.options].some(o=>o.value===sf)){fs.value=sf} applyFont(fs.value);
+  ss.value=store.get('c_size','17'); applySize(ss.value);
+  applyTheme(store.get('c_theme','dark'));
+  fs.onchange=()=>applyFont(fs.value); ss.onchange=()=>applySize(ss.value);
+  $$('.themebtn').forEach(b=>b.onclick=()=>applyTheme(b.dataset.theme));
+  $('#menubtn').onclick=()=>document.body.classList.toggle('menu-open');
+
+  /* ---------- Progress ---------- */
+  const done=new Set(JSON.parse(store.get('c_done','[]')));
+  const saveDone=()=>store.set('c_done',JSON.stringify([...done]));
+  const all=D.modules.flatMap(m=>m.lessons);
+  const ready=all.filter(l=>l.ready);
+
+  /* ---------- Sidebar ---------- */
+  function buildMenu(cur){
+    const sb=$('#sidebar'); const pct=ready.length?Math.round(100*ready.filter(l=>done.has(l.id)).length/ready.length):0;
+    let h=`<div class="progress">پیشرفت: <b>${pct}٪</b> از درس‌های آماده<div class="bar"><i style="width:${pct}%"></i></div>
+           <div style="margin-top:4px">نسخه فایل: <span class="en">${D.version}</span> · ${D.updated}</div></div>`;
+    D.modules.forEach(m=>{
+      const open=m.lessons.some(l=>l.id===cur)||m.lessons.some(l=>l.ready);
+      h+=`<div class="mod" data-m="${m.id}"${open?'':' hidden-list'}><button type="button"><span>${m.title}</span><span>${m.lessons.length}</span></button><ul>`;
+      m.lessons.forEach(l=>{
+        h+=`<li><a href="#/${l.id}" class="${l.id===cur?'active':''} ${l.ready?'':'locked'} ${done.has(l.id)?'done':''}" data-id="${l.id}"><span class="dot"></span><span>${l.title}${l.ready?'':' — به‌زودی'}</span></a></li>`;
+      });
+      h+='</ul></div>';
+    });
+    sb.innerHTML=h;
+    $$('.mod>button').forEach(b=>b.onclick=()=>b.parentElement.toggleAttribute('hidden-list'));
+    $$('.mod li a.locked').forEach(a=>a.onclick=e=>e.preventDefault());
+    $$('.mod li a').forEach(a=>a.addEventListener('click',()=>document.body.classList.remove('menu-open')));
+    const act=sb.querySelector('a.active'); if(act) act.scrollIntoView({block:'nearest'});
+  }
+
+  /* ---------- Persian/English separation (auto) ---------- */
+  const LATIN=/[A-Za-z0-9][A-Za-z0-9_\-\.\/:@#%+=&*]*(?:\s+[A-Za-z0-9][A-Za-z0-9_\-\.\/:@#%+=&*]*)*/g;
+  function wrapLatin(root){
+    const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(n){
+      const p=n.parentElement; if(!p||p.closest('pre,code,.en,script,style,summary-nolatin')) return NodeFilter.FILTER_REJECT;
+      return /[A-Za-z]/.test(n.nodeValue)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}});
+    const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+    nodes.forEach(n=>{
+      const t=n.nodeValue; if(!/[؀-ۿ]/.test(t)&&t.trim().split(/\s+/).length>8) return; // long pure-English text: leave
+      const frag=document.createDocumentFragment(); let last=0,m; LATIN.lastIndex=0;
+      while((m=LATIN.exec(t))){
+        const s=m[0]; if(!/[A-Za-z]/.test(s)) continue;
+        if(m.index>last) frag.appendChild(document.createTextNode(t.slice(last,m.index)));
+        const sp=document.createElement('span'); sp.className='en'; sp.textContent=s; frag.appendChild(sp); last=m.index+s.length;
+      }
+      if(last===0) return;
+      if(last<t.length) frag.appendChild(document.createTextNode(t.slice(last)));
+      n.parentNode.replaceChild(frag,n);
+    });
+  }
+
+  /* ---------- Render ---------- */
+  function reviewBlock(){
+    const items=D.review.filter(r=>r.type!=='sample');
+    const list=(items.length?items:D.review).map(r=>`<div class="review-item"><small>${r.type==='sample'?'نمونه':(r.type==='mistake'?'اشتباه':'سؤال')} · ${r.lesson}</small><p><b>${r.q}</b></p><p>${r.a}</p></div>`).join('');
+    return `<h1>اشتباهات و سؤال‌های من (مرور دوره‌ای)</h1><p>هر سؤال یا اشتباه شما در درس بعدی داخل «یادآوری» می‌آید و اینجا جمع می‌شود. قبل از هر آزمون Gate این صفحه را مرور کنید.</p>${list}`;
+  }
+  function render(){
+    const id=(location.hash.replace(/^#\//,'')||ready[0].id);
+    const meta=all.find(l=>l.id===id)||ready[0];
+    const art=$('#lesson'); let html;
+    if(meta.id==='review') html=reviewBlock();
+    else{
+      const L=D.lessons[meta.id];
+      html=`<h1>${meta.title}</h1>${L&&L.sub?`<p class="meta">${L.sub}</p>`:''}${L?L.html:'<p>این درس هنوز آماده نشده است.</p>'}`;
+      if(meta.ready) html+=`<button class="navbtn donebtn" id="donebtn">${done.has(meta.id)?'✔ مطالعه شد (لغو)':'علامت‌گذاری به‌عنوان مطالعه‌شده'}</button>`;
+    }
+    const idx=ready.findIndex(l=>l.id===meta.id);
+    const prev=ready[idx-1],next=ready[idx+1];
+    html+=`<div class="nav"><span>${prev?`<a class="navbtn" href="#/${prev.id}">→ ${prev.title}</a>`:''}</span><span>${next?`<a class="navbtn" href="#/${next.id}">${next.title} ←</a>`:''}</span></div>`;
+    art.innerHTML=html; wrapLatin(art);
+    const db=$('#donebtn'); if(db) db.onclick=()=>{done.has(meta.id)?done.delete(meta.id):done.add(meta.id);saveDone();render()};
+    buildMenu(meta.id); document.title=meta.title+' | دوره شبکه و امنیت'; window.scrollTo(0,0); $('.content').scrollTop=0;
+  }
+  window.addEventListener('hashchange',render); render();
+})();
+</script>
+</body>
+</html>
