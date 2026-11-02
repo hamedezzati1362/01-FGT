@@ -19,6 +19,9 @@
 | CHG-0001 | `vSwitch-FGT` (بدون Uplink) + `PG-FGT-TRUNK` (VLAN 4095)؛ اتصال ۲ کارت PNetLab | موفق |
 | CHG-0002 | VM `NAS-BKP1` (Ubuntu Server 22.04، 2 vCPU، 4 GB، 40 GB Thin، `VM Network` + `PG-FGT-TRUNK`)؛ تلاش با `.vmx` دستی ناموفق؛ ساخت با Wizard | نصب در حال انجام (IP `192.168.88.198`، یوزر `admin1`) |
 
+## Runbookها
+- `phase0a/Golden_W2025_Runbook.md` — ساخت Golden ویندوز سرور 2025 و Clone از آن.
+
 ## درس‌های ثبت‌شده برای مرور
 Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خالی؛ `ethX ≠ Adapter N` (MAC)؛ چسباندن چند خط در ترمینال؛ `<ID>` یعنی مقدار واقعی؛ `.vmx` دستی بدون Slotهای PCI کار نمی‌کند.
 
