@@ -8,6 +8,8 @@
 - Phase 0A (Read-Only) انجام شد: `phase0a/Phase0A_Report.md`. **Phase 0B هنوز با تأیید صریح کاربر شروع نشده.**
 - FortiGate: Evaluation؛ کاربر خودش بکاپ/Restore و مدیریت تاریخ پایان را انجام می‌دهد؛ Claude فقط راهنمای بکاپ/بازگردانی و هشدار تاریخ (`phase0a/fortigate_eval_tracker.md`).
 - ریسک پذیرفته‌شده (کاربر، 2026-11-02): Lab تستی است؛ اینترنت از MikroTik؛ NAS دوکارته مجاز است.
+- **جایگذاری (تصمیم کاربر، 2026-11-02): Windows/Linux (DC، Client، Web، MON، NAS) روی ESXi به‌صورت VM مستقل؛ فقط Nodeهای شبکه (Cisco، FortiGate، ISP-Sim) داخل PNetLab.** دلیل: کارایی بالاتر و حذف لایه Nested. اتصال به Lab از طریق `PG-FGT-TRUNK` یا Port Group تک‌VLAN در صورت نیاز.
+- Golden Image: روی ESXi (VM آماده خاموش، پوشه `_GOLD` در `ds01-ssd`)؛ نسخه Export روی هارد 1 TB. ترتیب: Ubuntu 22.04 → Windows Server 2025 (≈W4) → Windows 10/11 (≈W12). Windows 11 روی ESXi مستقل بدون Key Provider vTPM ندارد → پیشنهاد Windows 10.
 - فرمت دیسک خارجی 1 TB: ext4 (برای NAS VM) یا NTFS (اگر مستقیم به ویندوز).
 - قالب درس: `course/Enterprise_Network_Course_Lessons.html` (منوی راست، فونت/اندازه، ۳ تم، مرور اشتباهات).
 
