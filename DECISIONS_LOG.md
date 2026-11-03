@@ -17,7 +17,9 @@
 | ID | شرح | وضعیت |
 |---|---|---|
 | CHG-0001 | `vSwitch-FGT` (بدون Uplink) + `PG-FGT-TRUNK` (VLAN 4095)؛ اتصال ۲ کارت PNetLab | موفق |
-| CHG-0002 | VM `NAS-BKP1` (Ubuntu Server 22.04، 2 vCPU، 4 GB، 40 GB Thin، `VM Network` + `PG-FGT-TRUNK`)؛ تلاش با `.vmx` دستی ناموفق؛ ساخت با Wizard | نصب در حال انجام (IP `192.168.88.198`، یوزر `admin1`) |
+| CHG-0002 | VM `NAS-BKP1` (Ubuntu Server 22.04، 2 vCPU، 4 GB، 40 GB Thin، `VM Network` + `PG-FGT-TRUNK`)؛ تلاش با `.vmx` دستی ناموفق؛ ساخت با Wizard | **موفق**: Ubuntu 22.04.5، IP `192.168.88.198`، یوزر `admin1`، کارت دوم بدون IP |
+| CHG-0003 | Golden Ubuntu `GOLD-UBU2204` (کپی دیسک NAS، DHCP، پاک‌سازی machine-id؛ Unregister و دیسک `chmod 444` در `ds01-ssd`) | موفق |
+| CHG-0004 | هارد A-DATA HD720 (931.5 GB، NTFS برچسب `COURSE-BACKUP`، GPT) → USB Passthrough (USB 3) به `NAS-BKP1`؛ مانت `/srv/backup` با UUID در `fstab` (`nofail`)؛ اشتراک Samba `\\192.168.88.198\backup` (یوزر `admin1`) | موفق؛ تست نوشتن/حذف از ویندوز OK |
 
 ## Runbookها
 - `phase0a/Golden_W2025_Runbook.md` — ساخت Golden ویندوز سرور 2025 و Clone از آن.
@@ -26,4 +28,5 @@
 Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خالی؛ `ethX ≠ Adapter N` (MAC)؛ چسباندن چند خط در ترمینال؛ `<ID>` یعنی مقدار واقعی؛ `.vmx` دستی بدون Slotهای PCI کار نمی‌کند.
 
 ## موارد باز
+- Auto-start `NAS-BKP1`؛ پوشه‌های بکاپ (`configs`، `pnetlab-labs`، `vm-exports`، `iso-images`، `captures-logs`)؛ کپی ISOها و Export Golden؛ SFTP برای بکاپ دستگاه‌ها.
 تأیید Phase 0B؛ فرمت و اتصال هارد 1 TB (USB Passthrough به `NAS-BKP1`)؛ Samba/SFTP؛ Tier نهایی؛ Image Validation؛ IP واقعی Subnet/ماسک تأییدشده (`192.168.88.0/24`).
