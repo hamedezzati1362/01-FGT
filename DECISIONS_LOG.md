@@ -33,6 +33,9 @@ Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خ�
 - هارد خارجی A-DATA (USB 3) در Passthrough ناپایدار بود (I/O error، Hardware Error)؛ `usb.mangleUsb3Speed` اضافه شد؛ هارد از VM جدا؛ بررسی فیزیکی توسط کاربر (غروب).
 - SSH host key ESXi تغییر کرد؛ با `ssh-keyscan` از NAS تأیید شد (ECDSA `vj79w7…`)؛ کلید قدیمی در Nexa حذف شد.
 
+- **2026-11-05:** Sysprep روی `GOLD-W2025-CORE` و `GOLD-W2025-GUI` کامل شد (VM خودکار خاموش شد؛ ارتباط ریموت در حین Sysprep قطع می‌شود و طبیعی است). هر دو Unregister و دیسک‌ها `chmod 444`. نسخه‌های `*-PRE` روی `ds01-ssd` (Thin). Golden‌های آماده: `GOLD-UBU2204`، `GOLD-W2025-GUI` (90 GB)، `GOLD-W2025-CORE` (40 GB). VM `GOLD-Win11` (Vmid 10) توسط کاربر ساخته شده؛ هنوز Golden نشده.
+- درس: «Sysprep چند دقیقه طول می‌کشد؛ قطع ریموت یعنی در حال اجرا است؛ ریست نکنید».
+
 ## موارد باز
 - Auto-start `NAS-BKP1`؛ پوشه‌های بکاپ (`configs`، `pnetlab-labs`، `vm-exports`، `iso-images`، `captures-logs`)؛ کپی ISOها و Export Golden؛ SFTP برای بکاپ دستگاه‌ها.
 تأیید Phase 0B؛ فرمت و اتصال هارد 1 TB (USB Passthrough به `NAS-BKP1`)؛ Samba/SFTP؛ Tier نهایی؛ Image Validation؛ IP واقعی Subnet/ماسک تأییدشده (`192.168.88.0/24`).
