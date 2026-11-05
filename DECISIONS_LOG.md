@@ -27,6 +27,12 @@
 ## درس‌های ثبت‌شده برای مرور
 Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خالی؛ `ethX ≠ Adapter N` (MAC)؛ چسباندن چند خط در ترمینال؛ `<ID>` یعنی مقدار واقعی؛ `.vmx` دستی بدون Slotهای PCI کار نمی‌کند.
 
+## Golden Windows (2026-11-05)
+- `GOLD-W2025-GUI` (Vmid 8) و `GOLD-W2025-CORE` (Vmid 9) روی `ds02-ssd`: نصب، VMware Tools، Windows Update، RDP فعال + `SetupComplete.cmd` (شبکه امنیتی RDP پس از Sysprep).
+- قبل از Sysprep: کپی `*-PRE` (Thin) روی `ds01-ssd` برای آپدیت‌های بعدی؛ بعد از Sysprep: VM خاموش، Unregister، دیسک‌ها `chmod 444` (فقط‌خواندنی).
+- هارد خارجی A-DATA (USB 3) در Passthrough ناپایدار بود (I/O error، Hardware Error)؛ `usb.mangleUsb3Speed` اضافه شد؛ هارد از VM جدا؛ بررسی فیزیکی توسط کاربر (غروب).
+- SSH host key ESXi تغییر کرد؛ با `ssh-keyscan` از NAS تأیید شد (ECDSA `vj79w7…`)؛ کلید قدیمی در Nexa حذف شد.
+
 ## موارد باز
 - Auto-start `NAS-BKP1`؛ پوشه‌های بکاپ (`configs`، `pnetlab-labs`، `vm-exports`، `iso-images`، `captures-logs`)؛ کپی ISOها و Export Golden؛ SFTP برای بکاپ دستگاه‌ها.
 تأیید Phase 0B؛ فرمت و اتصال هارد 1 TB (USB Passthrough به `NAS-BKP1`)؛ Samba/SFTP؛ Tier نهایی؛ Image Validation؛ IP واقعی Subnet/ماسک تأییدشده (`192.168.88.0/24`).
