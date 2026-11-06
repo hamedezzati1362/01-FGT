@@ -36,6 +36,9 @@ Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خ�
 - **2026-11-05:** Sysprep روی `GOLD-W2025-CORE` و `GOLD-W2025-GUI` کامل شد (VM خودکار خاموش شد؛ ارتباط ریموت در حین Sysprep قطع می‌شود و طبیعی است). هر دو Unregister و دیسک‌ها `chmod 444`. نسخه‌های `*-PRE` روی `ds01-ssd` (Thin). Golden‌های آماده: `GOLD-UBU2204`، `GOLD-W2025-GUI` (90 GB)، `GOLD-W2025-CORE` (40 GB). VM `GOLD-Win11` (Vmid 10) توسط کاربر ساخته شده؛ هنوز Golden نشده.
 - درس: «Sysprep چند دقیقه طول می‌کشد؛ قطع ریموت یعنی در حال اجرا است؛ ریست نکنید».
 
+- **2026-11-06 — هارد A-DATA HD720:** در ESXi/NAS (Passthrough) `Hardware Error`، Timeout 180s، `0B` ؛ در ویندوز Event 7 (bad block)، 153، 51؛ Spin up کند؛ `clean all`/تعمیر موفق نبود. **نتیجه: دیسک خراب، کنار گذاشته شد.** `NAS-BKP1` خاموش؛ جایگزین: دیسک مجازی روی SSD یا هارد جدید (در انتظار تصمیم).
+- `GOLD-Win11` (Vmid 10): نصب، آپدیت و VMware Tools انجام شد؛ مراحل Golden (RDP، SetupComplete، PRE، Sysprep، Unregister، chmod 444) در حال انجام.
+
 ## موارد باز
 - Auto-start `NAS-BKP1`؛ پوشه‌های بکاپ (`configs`، `pnetlab-labs`، `vm-exports`، `iso-images`، `captures-logs`)؛ کپی ISOها و Export Golden؛ SFTP برای بکاپ دستگاه‌ها.
 تأیید Phase 0B؛ فرمت و اتصال هارد 1 TB (USB Passthrough به `NAS-BKP1`)؛ Samba/SFTP؛ Tier نهایی؛ Image Validation؛ IP واقعی Subnet/ماسک تأییدشده (`192.168.88.0/24`).
