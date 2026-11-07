@@ -26,8 +26,8 @@
 | ID | شرح | وضعیت |
 |---|---|---|
 | CHG-0005 | Snapshot Baseline VM `PNETLAB` (`baseline-pre-0B`، بدون Memory، VM خاموش) | **موفق** |
-| CHG-0006 | افزایش منابع VM PNETLAB (16 vCPU، 48 GB) | برنامه |
-| CHG-0007 | گسترش LVM داخل PNetLab (≈100 GB تخصیص‌نشده) | برنامه |
+| CHG-0006 | افزایش منابع VM PNETLAB (16 vCPU، 48 GB RAM؛ `nproc=16`، `free=47G`، `/dev/kvm` OK) | **موفق** |
+| CHG-0007 | گسترش LVM داخل PNetLab (`parted Fix` GPT، `growpart`، `pvresize`، `lvextend -r`؛ `/` از 97G به 196G) | **موفق** |
 | CHG-0008 | تغییر رمزهای پیش‌فرض PNetLab (root و Web) + NTP | برنامه |
 
 ## Runbookها
