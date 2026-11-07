@@ -72,6 +72,18 @@ pre code{background:none;border:0;padding:0;font-size:inherit}
 table{width:100%;border-collapse:collapse;table-layout:fixed;margin:1em 0;font-size:.9rem;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 th,td{padding:8px 10px;border:1px solid var(--line);text-align:start;vertical-align:top;overflow-wrap:anywhere;word-break:break-word}
 th{background:var(--panel2)}
+td,th{unicode-bidi:plaintext}
+.fig{margin:1em 0;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.fig svg{width:100%;height:auto;display:block;direction:ltr}
+.fig text{fill:var(--text);font-size:13px;font-family:var(--font-ui)}
+.fig .cap{font-size:12px;fill:var(--muted)}
+.fig .bx{fill:var(--panel2);stroke:var(--line)}
+.fig .net{fill:var(--accent)}.fig .hst{fill:var(--accent2)}.fig .wrn{fill:var(--warn)}
+.fig .on{fill:#0b1018;font-weight:700}
+.fig .ln{stroke:var(--muted);stroke-width:1.6;fill:none}
+.fig .rq{stroke:var(--accent);stroke-width:2.2;fill:none}.fig .rp{stroke:var(--accent2);stroke-width:2.2;fill:none}
+figcaption{font-size:.85rem;color:var(--muted);margin-top:6px;text-align:center}
+
 /* callouts */
 .box{border:1px solid var(--line);border-inline-start:5px solid var(--accent);background:var(--panel);border-radius:12px;padding:10px 16px;margin:1.1em 0}
 .box b.t{display:block;margin-bottom:2px}
@@ -133,7 +145,7 @@ summary{cursor:pointer;font-weight:600}
      ===================================================================== -->
 <script id="course-data">
 window.COURSE = {
-  version: "0.5 (هفته ۱ و درس ۲-۱)",
+  version: "0.6 (هفته ۱ و ۲ کامل)",
   updated: "2026-11-07",
   modules: [
     {id:"m0", title:"شروع و راهنما", lessons:[
@@ -146,11 +158,11 @@ window.COURSE = {
     {id:"p1", title:"فاز ۱ — Cisco CLI و IP (هفته ۲)", lessons:[
       {id:"w2", title:"هفته ۲ — نقشه درس‌ها", ready:true},
       {id:"w2-1", title:"درس ۲-۱: آدرس IPv4 از صفر تا Subnetting", ready:true},
-      {id:"w2-2", title:"درس ۲-۲: VLSM و طراحی IP Plan", ready:false},
-      {id:"w2-3", title:"درس ۲-۳: IPv6 از پایه", ready:false},
-      {id:"w2-4", title:"درس ۲-۴: CLI سیسکو، مدیریت و بکاپ Config", ready:false},
-      {id:"w2-5", title:"درس ۲-۵: مدیریت امن با SSH", ready:false},
-      {id:"w2-6", title:"درس ۲-۶: Wireshark، ARP/ICMP و Gate G1", ready:false}
+      {id:"w2-2", title:"درس ۲-۲: VLSM و طراحی IP Plan", ready:true},
+      {id:"w2-3", title:"درس ۲-۳: IPv6 از پایه", ready:true},
+      {id:"w2-4", title:"درس ۲-۴: CLI سیسکو، مدیریت و بکاپ Config", ready:true},
+      {id:"w2-5", title:"درس ۲-۵: مدیریت امن با SSH", ready:true},
+      {id:"w2-6", title:"درس ۲-۶: Wireshark، ARP/ICMP و Gate G1", ready:true}
     ]},
     {id:"p2", title:"فاز ۲ — Switching (هفته ۳–۴)", lessons:[
       {id:"w3", title:"هفته ۳: VLAN، Trunk، Inter-VLAN", ready:false},
@@ -202,6 +214,8 @@ window.COURSE = {
   ],
   /* اشتباه‌ها و سؤال‌ها: با هر درس جدید، موارد تازه در درس قرار می‌گیرند و اینجا ثبت می‌شوند */
   review: [
+    {lesson:"W2", type:"mistake", q:"اشتباه Claude: درس خیلی کوتاه و بدون مقدمه", a:"هر درس باید با «چه چیزی و چرا» شروع شود، بعد توضیح ساده، مثال ساده/متوسط/سخت، تمرین و Lab. این قانون در CLAUDE.md ثبت شد.", },
+    {lesson:"W2", type:"question", q:"نظم جدول‌ها و فهرست‌ها", a:"هر مورد از یک فهرست (مثلاً انواع IP خصوصی) در یک سطر جدا می‌آید و متن فارسی/انگلیسی در جدول درست نمایش داده می‌شود.", },
     {lesson:"W1-B", type:"mistake", q:"اشتباه: دستور پیکربندی در حالت اشتباه (EXEC به‌جای Config)", a:"در <code>Router&gt;</code>/<code>Router#</code> دستورهایی مثل <code>interface gi0/0.10</code> یا <code>ip ssh version 2</code> خطا می‌دهند. اول <code>enable</code> و بعد <code>configure terminal</code>؛ <code>configure terminal</code> را وسط حالت Config دوباره نزنید."},
     {lesson:"W1-B", type:"mistake", q:"اشتباه: نوشتن کلمه ناشناخته در EXEC (مثل end یا Xconf)", a:"IOS هر کلمه ناشناخته را «نام میزبان» فرض می‌کند و DNS Lookup می‌زند (<code>Translating…</code>) و کنسول چند ثانیه گیر می‌کند. با <code>no ip domain-lookup</code> خاموش می‌شود. <code>end</code> فقط در Config معنی دارد."},
     {lesson:"W1-B", type:"mistake", q:"اشتباه: فرمان EXEC در Config (monitor capture)", a:"<code>monitor capture …</code> فرمان <b>Privileged EXEC</b> است؛ در Config خطا می‌دهد. خطای «Invalid input» همیشه به معنای ناسازگاری Image نیست؛ اول مود را بررسی کنید."},
@@ -249,6 +263,25 @@ window.COURSE = {
 <li><b>در مصاحبه و آزمون:</b> Subnetting اولین سؤال هر مصاحبه‌ی شبکه و آزمون CCNA است.</li>
 </ul>
 <div class="box"><b class="t">مسیر درس</b>اول مفهوم با زبان ساده، بعد مثال ساده، متوسط و سخت، بعد تمرین روی کاغذ، و در پایان Lab روی دستگاه واقعی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>IP</td><td>Internet Protocol</td><td>پروتکل اینترنت؛ آدرس‌دهی دستگاه‌ها</td></tr>
+<tr><td>IPv4</td><td>Internet Protocol version 4</td><td>نسخه ۴ آدرس‌دهی (۳۲ بیتی)</td></tr>
+<tr><td>Octet</td><td>Octet (8 bits)</td><td>هر گروه ۸ بیتی آدرس</td></tr>
+<tr><td>Subnet</td><td>Sub-network</td><td>زیرشبکه؛ بخشی از یک شبکه بزرگ</td></tr>
+<tr><td>Mask</td><td>Subnet Mask</td><td>ماسک زیرشبکه؛ مرز شبکه و میزبان</td></tr>
+<tr><td>Prefix</td><td>Prefix Length</td><td>طول پیشوند؛ تعداد بیت‌های شبکه، مثل /24</td></tr>
+<tr><td>Host</td><td>Host</td><td>میزبان؛ هر دستگاه دارای آدرس</td></tr>
+<tr><td>Broadcast</td><td>Broadcast Address</td><td>آدرس پخش همگانی؛ آخرین آدرس Subnet</td></tr>
+<tr><td>Gateway</td><td>Default Gateway</td><td>دروازه پیش‌فرض؛ مسیر خروج از شبکه</td></tr>
+<tr><td>ARP</td><td>Address Resolution Protocol</td><td>پروتکل تبدیل IP به MAC</td></tr>
+<tr><td>DHCP</td><td>Dynamic Host Configuration Protocol</td><td>پروتکل تخصیص خودکار آدرس</td></tr>
+<tr><td>APIPA</td><td>Automatic Private IP Addressing</td><td>آدرس خودساخته 169.254.x.x وقتی DHCP جواب نمی‌دهد</td></tr>
+<tr><td>AND</td><td>Bitwise AND</td><td>عملگر منطقی بیتی برای یافتن آدرس شبکه</td></tr>
+</table>
+
+
 
 <h2>اهداف یادگیری</h2>
 <ul>
@@ -278,6 +311,8 @@ window.COURSE = {
 <p><b>برعکس (دودویی به ده‌دهی):</b> ارزش خانه‌های 1 را جمع کن: <code>11000000</code> = 128+64 = 192.</p>
 
 <h2>۳. Subnet Mask و Prefix</h2>
+<figure class="fig"><svg viewBox="0 0 720 150" role="img" aria-label="split of 192.168.10.5/24"><rect x="20" y="30" width="160" height="50" rx="8" class="net"/><text x="100" y="62" text-anchor="middle" class="on" style="font-size:22px">192</text><text x="100" y="22" text-anchor="middle" class="cap">Octet 1 (8 bit)</text><rect x="190" y="30" width="160" height="50" rx="8" class="net"/><text x="270" y="62" text-anchor="middle" class="on" style="font-size:22px">168</text><text x="270" y="22" text-anchor="middle" class="cap">Octet 2 (8 bit)</text><rect x="360" y="30" width="160" height="50" rx="8" class="net"/><text x="440" y="62" text-anchor="middle" class="on" style="font-size:22px">10</text><text x="440" y="22" text-anchor="middle" class="cap">Octet 3 (8 bit)</text><rect x="530" y="30" width="160" height="50" rx="8" class="hst"/><text x="610" y="62" text-anchor="middle" class="on" style="font-size:22px">5</text><text x="610" y="22" text-anchor="middle" class="cap">Octet 4 (8 bit)</text><path d="M20 95 H508" class="ln"/><text x="264" y="115" text-anchor="middle">Network (24 bit) = /24</text><path d="M530 95 H690" class="ln"/><text x="610" y="115" text-anchor="middle">Host (8 bit)</text></svg><figcaption>شکل ۱: آدرس 192.168.10.5/24؛ ۳ Octet اول «شبکه» و آخری «میزبان» است.</figcaption></figure>
+
 <p><b>Mask</b> هم یک عدد ۳۲ بیتی است: از چپ چند بیت 1 (قسمت شبکه) و بقیه 0 (قسمت میزبان). مثلاً Mask با ۲۴ بیت 1 برابر <code>255.255.255.0</code> است. نوشتن «تعداد بیت‌های 1» به شکل <code>/24</code> را <span class="en">Prefix Length</span> می‌گویند. پس <code>192.168.10.5/24</code> یعنی: ۲۴ بیت اول = شبکه، ۸ بیت آخر = میزبان.</p>
 <table>
 <tr><th>Prefix</th><th>Mask</th><th>تعداد آدرس</th><th>Host قابل‌استفاده</th><th>اندازه بلوک (Octet آخر)</th></tr>
@@ -325,11 +360,14 @@ A می‌خواهد به B بفرستد:
 <h2>۶. آدرس‌های خاص (باید بشناسید)</h2>
 <table>
 <tr><th>بازه</th><th>نام</th><th>کاربرد</th></tr>
-<tr><td>10.0.0.0/8 ، 172.16.0.0/12 ، 192.168.0.0/16</td><td>آدرس خصوصی (RFC 1918)</td><td>داخل سازمان؛ در اینترنت Route نمی‌شود</td></tr>
+<tr><td>10.0.0.0/8</td><td>آدرس خصوصی (RFC 1918) - کلاس A</td><td>داخل سازمان؛ در اینترنت Route نمی‌شود</td></tr>
+<tr><td>172.16.0.0/12</td><td>آدرس خصوصی (RFC 1918) - کلاس B</td><td>داخل سازمان؛ در اینترنت Route نمی‌شود</td></tr>
+<tr><td>192.168.0.0/16</td><td>آدرس خصوصی (RFC 1918) - کلاس C</td><td>داخل سازمان؛ در اینترنت Route نمی‌شود</td></tr>
 <tr><td>127.0.0.0/8</td><td>Loopback</td><td>تست خود دستگاه (<code>127.0.0.1</code>)</td></tr>
 <tr><td>169.254.0.0/16</td><td>APIPA (Link-Local)</td><td>وقتی Client از DHCP آدرس نگرفت خودش می‌سازد؛ نشانه خرابی DHCP</td></tr>
 <tr><td>224.0.0.0/4</td><td>Multicast</td><td>مثلاً OSPF و HSRP</td></tr>
-<tr><td>203.0.113.0/24 ، 198.51.100.0/24</td><td>مستندات (TEST-NET)</td><td>در Lab ما «اینترنت شبیه‌سازی‌شده» است</td></tr>
+<tr><td>203.0.113.0/24</td><td>مستندات (TEST-NET-3)</td><td>در Lab ما «اینترنت شبیه‌سازی‌شده» است</td></tr>
+<tr><td>198.51.100.0/24</td><td>مستندات (TEST-NET-2)</td><td>مثال در مستندات</td></tr>
 </table>
 <div class="box"><b class="t">ارتباط با دوره</b>اگر Client شما <code>169.254.x.x</code> دارد، یعنی DHCP جواب نداده؛ در عیب‌یابی TS10 می‌بینید.</div>
 
@@ -391,6 +429,17 @@ R1# ping 10.10.10.130</code></pre>
 <details><summary>Client با 169.254.x.x یعنی چه؟</summary><p>DHCP جواب نداده؛ Client خودش آدرس Link-Local ساخته.</p></details>
 <details><summary>دو Host در یک Subnet با چه روشی هم‌شبکه بودنشان را تشخیص می‌دهند؟</summary><p>آدرس مقصد را با Mask خود AND می‌کنند و با شبکه خودشان مقایسه می‌کنند.</p></details>
 
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>The subnet mask determines which part of the address identifies the network.</td><td>ماسک زیرشبکه مشخص می‌کند کدام بخش آدرس، شبکه را تعیین می‌کند.</td></tr>
+<tr><td>The host cannot reach devices outside its subnet without a default gateway.</td><td>بدون Default Gateway، Host به دستگاه‌های خارج از Subnet نمی‌رسد.</td></tr>
+<tr><td>A /26 prefix provides 62 usable host addresses.</td><td>یک Prefix با طول /26 تعداد ۶۲ آدرس قابل‌استفاده برای Host می‌دهد.</td></tr>
+<tr><td>The client self-assigned a 169.254.x.x address because DHCP failed.</td><td>Client چون DHCP شکست خورد، خودش آدرس 169.254.x.x گرفت.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): How many usable hosts are in a /27 subnet?</summary><p>30 (2^5 - 2).</p></details>
+
 <h2>۱۲. تکلیف و چک‌لیست تسلط</h2>
 <ul>
 <li>☐ ۸ تمرین بخش ۷ را بدون نگاه حل کنم.</li>
@@ -404,6 +453,843 @@ R1# ping 10.10.10.130</code></pre>
 <div class="box review"><b class="t">یادآوری ۱</b>اول <code>enable</code> و بعد <code>configure terminal</code>؛ و فقط یک‌بار.</div>
 <div class="box review"><b class="t">یادآوری ۲</b>دستورهای EXEC (مثل <code>monitor capture</code>) در Config خطا می‌دهند؛ خطای «Invalid input» همیشه ناسازگاری Image نیست.</div>
 <div class="box review"><b class="t">یادآوری ۳</b>«فرمان پذیرفته شد» ≠ «Feature کار می‌کند»؛ با ترافیک واقعی بسنجید.</div>
+`
+    },
+    'w2-2': {
+      sub: "VLSM گام‌به‌گام از ساده تا سخت و ساخت IP Plan.",
+      html: `
+<div class="meta"><span class="tag">هفته ۲ - روز ۲</span><span class="tag">پیش‌نیاز: درس ۲-۱</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> چطور یک بلوک آدرس را به Subnetهای هم‌اندازه‌ی نامناسب نبُریم، بلکه برای هر بخش سازمان دقیقاً به اندازه نیازش آدرس بدهیم. این کار را <span class="en">VLSM</span> (مخفف <span class="en">Variable Length Subnet Mask</span>، یعنی «ماسک زیرشبکه با طول متغیر») می‌گویند. بعد، نتیجه را در یک «برنامه‌ی آدرس‌دهی» (<span class="en">IP Plan</span>، مخفف <span class="en">IP Addressing Plan</span>) می‌نویسیم.</p>
+<p><b>چرا لازم است:</b> تصور کنید یک ساختمان اداری دارید و می‌خواهید طبقه‌ها را تقسیم کنید. اگر همه‌ی اتاق‌ها را به‌اندازه‌ی بزرگ‌ترین اتاق (سالن اجتماعات) بسازید، فضای زیادی هدر می‌رود. در شبکه هم همین است: لینک بین دو روتر فقط به ۲ آدرس نیاز دارد، ولی اگر یک /24 با ۲۵۴ آدرس به آن بدهید، ۲۵۲ آدرس هدر رفته است.</p>
+<ul>
+<li><b>در کار روزانه:</b> وقتی شعبه‌ی جدید باز می‌شود، باید بدون به‌هم‌ریختن شبکه‌ی فعلی، آدرس تازه بدهید.</li>
+<li><b>در امنیت:</b> هر Subnet یک «مرز» برای فایروال است. Subnetهای درست‌اندازه یعنی قانون‌های دقیق‌تر.</li>
+<li><b>در دوره‌ی ما:</b> پروژه‌ی نهایی (Capstone) یک مرکز و سه شعبه دارد؛ IP Plan آن را همین هفته می‌سازیم.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>مشکل (هدررفت) ← ایده‌ی VLSM ← مثال ساده ← مثال متوسط ← مثال سخت (سازمان واقعی) ← تمرین ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>VLSM</td><td>Variable Length Subnet Mask</td><td>ماسک زیرشبکه با طول متغیر؛ هر بخش به اندازه نیازش آدرس می‌گیرد</td></tr>
+<tr><td>IP Plan</td><td>IP Addressing Plan</td><td>برنامه و سند آدرس‌دهی سازمان</td></tr>
+<tr><td>VLAN</td><td>Virtual Local Area Network</td><td>شبکه محلی مجازی؛ جداسازی منطقی روی یک سوییچ</td></tr>
+<tr><td>DMZ</td><td>Demilitarized Zone</td><td>منطقه حائل برای سرورهای در دسترس از بیرون</td></tr>
+<tr><td>Gateway</td><td>Default Gateway</td><td>دروازه پیش‌فرض</td></tr>
+<tr><td>DHCP</td><td>Dynamic Host Configuration Protocol</td><td>تخصیص خودکار آدرس</td></tr>
+<tr><td>CIDR</td><td>Classless Inter-Domain Routing</td><td>نمایش آدرس با Prefix بدون کلاس، مثل /26</td></tr>
+</table>
+
+
+
+<h2>۱. مشکل: تقسیم هم‌اندازه و هدررفت آدرس</h2>
+<p>فرض کنید بلوک <code>192.168.10.0/24</code> (۲۵۶ آدرس) دارید و چهار بخش می‌خواهید: فروش (۱۰۰ کامپیوتر)، فنی (۵۰)، مدیریت (۱۲)، و یک لینک بین دو روتر (۲).</p>
+<p>اگر ساده‌لوحانه همه را /26 (۶۲ Host) بسازید، فروش جا نمی‌شود (۱۰۰ &gt; ۶۲). اگر همه را /25 (۱۲۶ Host) بسازید، فقط ۲ Subnet می‌گیرید و چهار بخش جا نمی‌شود. یعنی با اندازه‌ی ثابت، نه هدر نمی‌دهیم و نه جا می‌شویم. راه‌حل: <b>اندازه‌ی متغیر</b>.</p>
+
+<h2>۲. ایده‌ی VLSM به زبان ساده</h2>
+<p><span class="en">VLSM</span> یعنی «Subnet Mask با طول متغیر» (<span class="en">Variable Length Subnet Mask</span>). مثل برش پیتزا برای مهمان‌ها: به کسی که گرسنه‌تر است برش بزرگ‌تر می‌دهید و به بقیه کوچک‌تر. فقط یک قانون هست: برش‌ها نباید روی هم بیفتند.</p>
+<div class="box"><b class="t">سه قانون طلایی VLSM</b>
+۱) <b>همیشه از بزرگ‌ترین نیاز شروع کن.</b>
+۲) هر Subnet باید روی مرز مضرب اندازه‌ی خودش شروع شود (مثلاً یک /26 باید روی ۰، ۶۴، ۱۲۸ یا ۱۹۲ شروع شود).
+۳) هیچ دو Subnet نباید هم‌پوشانی داشته باشند.</div>
+<p><b>مراحل کار برای هر بخش:</b> (۱) نیاز را بشمار و ۲ آدرس رزرو (شبکه و Broadcast) اضافه کن. (۲) کوچک‌ترین توان ۲ که کافی باشد را پیدا کن. (۳) Prefix را از آن بساز. (۴) از اولین آدرس آزاد شروع به تخصیص کن. (۵) آدرس بعدی آزاد را یادداشت کن.</p>
+
+<h2>۳. مثال ساده (دو بخش)</h2>
+<p>بلوک <code>10.0.0.0/24</code>. دو بخش: A با ۱۰۰ Host و B با ۲۰ Host.</p>
+<ul>
+<li>A: ۱۰۰+۲ = ۱۰۲ ⇒ ۲⁷ = ۱۲۸ ⇒ <b>/25</b> ⇒ شبکه <code>10.0.0.0/25</code>، Hostها <code>.1</code> تا <code>.126</code>، Broadcast <code>.127</code>.</li>
+<li>آدرس آزاد بعدی: <code>10.0.0.128</code>.</li>
+<li>B: ۲۰+۲ = ۲۲ ⇒ ۲⁵ = ۳۲ ⇒ <b>/27</b> ⇒ شبکه <code>10.0.0.128/27</code>، Hostها <code>.129</code> تا <code>.158</code>، Broadcast <code>.159</code>.</li>
+<li>باقی‌مانده <code>10.0.0.160</code> تا <code>.255</code> برای آینده خالی می‌ماند. این «رشد آینده» است و هدررفت نیست.</li>
+</ul>
+
+<h2>۴. مثال متوسط (چهار بخش)</h2>
+<figure class="fig"><svg viewBox="0 0 720 130" role="img" aria-label="VLSM address bar"><rect x="20.0" y="30" width="340.0" height="46" class="net" stroke="#0b1018"/><text x="190.0" y="58" text-anchor="middle" class="on">Sales /25</text><rect x="360.0" y="30" width="170.0" height="46" class="hst" stroke="#0b1018"/><text x="445.0" y="58" text-anchor="middle" class="on">Tech /26</text><rect x="530.0" y="30" width="42.5" height="46" class="net" stroke="#0b1018"/><text x="551.2" y="58" text-anchor="middle" class="on">Mgmt /28</text><rect x="572.5" y="30" width="10.6" height="46" class="hst" stroke="#0b1018"/><rect x="583.1" y="30" width="116.9" height="46" class="bx" stroke="#0b1018"/><text x="641.6" y="58" text-anchor="middle" class="">Free</text><text x="20.0" y="98" text-anchor="middle" class="cap">.0</text><text x="360.0" y="98" text-anchor="middle" class="cap">.128</text><text x="530.0" y="98" text-anchor="middle" class="cap">.192</text><text x="572.5" y="98" text-anchor="middle" class="cap">.208</text><text x="583.1" y="98" text-anchor="middle" class="cap">.212</text><text x="700.0" y="98" text-anchor="middle" class="cap">.255</text><text x="360" y="122" text-anchor="middle" class="cap">192.168.10.0 → 255 : هر Subnet درست بعد از Broadcast قبلی شروع می‌شود</text></svg><figcaption>شکل ۲: نوار آدرس VLSM؛ بخش بزرگ‌تر اول و بدون هم‌پوشانی.</figcaption></figure>
+
+<p>بلوک <code>192.168.10.0/24</code>؛ همان چهار بخش بخش ۱: فروش ۱۰۰، فنی ۵۰، مدیریت ۱۲، لینک روتر ۲.</p>
+<table>
+<tr><th>بخش</th><th>نیاز+۲</th><th>اندازه</th><th>Prefix</th><th>شبکه</th><th>Hostها</th><th>Broadcast</th></tr>
+<tr><td>فروش</td><td>102</td><td>128</td><td>/25</td><td>192.168.10.0</td><td>.1 – .126</td><td>.127</td></tr>
+<tr><td>فنی</td><td>52</td><td>64</td><td>/26</td><td>192.168.10.128</td><td>.129 – .190</td><td>.191</td></tr>
+<tr><td>مدیریت</td><td>14</td><td>16</td><td>/28</td><td>192.168.10.192</td><td>.193 – .206</td><td>.207</td></tr>
+<tr><td>لینک روتر</td><td>4</td><td>4</td><td>/30</td><td>192.168.10.208</td><td>.209 – .210</td><td>.211</td></tr>
+</table>
+<p>دقت کنید هر شروع، دقیقاً بعد از Broadcast قبلی است (۱۲۷ ← ۱۲۸، ۱۹۱ ← ۱۹۲، ۲۰۷ ← ۲۰۸). آدرس‌های <code>.212</code> تا <code>.255</code> هنوز آزادند (۴۴ آدرس).</p>
+<p><b>نکته:</b> اگر ترتیب را برعکس بگیرید (اول لینک /30 را در <code>.0</code> بگذارید)، بعداً /25 روی مرز ۱۲۸ می‌افتد و دیگر فروش در یک تکه جا نمی‌شود. برای همین «بزرگ‌ترین اول».</p>
+
+<h2>۵. مثال سخت (سازمان واقعی: مرکز و سه شعبه)</h2>
+<p>سازمانی با بلوک <code>10.20.0.0/22</code> (۱۰۲۴ آدرس: <code>10.20.0.0</code> تا <code>10.20.3.255</code>). نیازها:</p>
+<table>
+<tr><th>بخش</th><th>Host</th></tr>
+<tr><td>مرکز: کاربران</td><td>300</td></tr>
+<tr><td>مرکز: سرورها</td><td>60</td></tr>
+<tr><td>مرکز: مدیریت تجهیزات</td><td>25</td></tr>
+<tr><td>شعبه ۱: کاربران</td><td>100</td></tr>
+<tr><td>شعبه ۲: کاربران</td><td>50</td></tr>
+<tr><td>شعبه ۳: کاربران</td><td>20</td></tr>
+<tr><td>سه لینک روتر (هرکدام)</td><td>2</td></tr>
+</table>
+<p><b>گام ۱ - مرتب‌سازی از بزرگ به کوچک و محاسبه‌ی اندازه:</b> مرکز-کاربران ۳۰۲ ⇒ ۵۱۲ (/23)؛ شعبه ۱: ۱۰۲ ⇒ ۱۲۸ (/25)؛ مرکز-سرور ۶۲ ⇒ ۶۴ (/26)؛ شعبه ۲: ۵۲ ⇒ ۶۴ (/26)؛ مرکز-مدیریت ۲۷ ⇒ ۳۲ (/27)؛ شعبه ۳: ۲۲ ⇒ ۳۲ (/27)؛ هر لینک ۴ (/30).</p>
+<p><b>گام ۲ - مجموع نیاز:</b> ۵۱۲+۱۲۸+۶۴+۶۴+۳۲+۳۲+(۳×۴=۱۲) = ۸۴۴ آدرس ≤ ۱۰۲۴. پس بلوک کافی است.</p>
+<p><b>گام ۳ - تخصیص پشت‌سرهم:</b></p>
+<table>
+<tr><th>بخش</th><th>Prefix</th><th>شبکه</th><th>Broadcast</th></tr>
+<tr><td>مرکز-کاربران</td><td>/23</td><td>10.20.0.0</td><td>10.20.1.255</td></tr>
+<tr><td>شعبه ۱</td><td>/25</td><td>10.20.2.0</td><td>10.20.2.127</td></tr>
+<tr><td>مرکز-سرورها</td><td>/26</td><td>10.20.2.128</td><td>10.20.2.191</td></tr>
+<tr><td>شعبه ۲</td><td>/26</td><td>10.20.2.192</td><td>10.20.2.255</td></tr>
+<tr><td>مرکز-مدیریت</td><td>/27</td><td>10.20.3.0</td><td>10.20.3.31</td></tr>
+<tr><td>شعبه ۳</td><td>/27</td><td>10.20.3.32</td><td>10.20.3.63</td></tr>
+<tr><td>لینک ۱</td><td>/30</td><td>10.20.3.64</td><td>10.20.3.67</td></tr>
+<tr><td>لینک ۲</td><td>/30</td><td>10.20.3.68</td><td>10.20.3.71</td></tr>
+<tr><td>لینک ۳</td><td>/30</td><td>10.20.3.72</td><td>10.20.3.75</td></tr>
+</table>
+<p><b>گام ۴ - بررسی:</b> آخرین آدرس استفاده‌شده <code>10.20.3.75</code> است؛ از <code>10.20.3.76</code> تا <code>10.20.3.255</code> آزاد می‌ماند (۱۸۰ آدرس برای رشد). هم‌پوشانی ندارد چون هر شروع = Broadcast قبلی + ۱.</p>
+
+<h2>۶. IP Plan: سند زنده‌ی شبکه</h2>
+<p>جدول بالا هنوز «محاسبه» است. IP Plan سندی است که تیم نگه می‌دارد و این ستون‌ها را دارد: نام بخش، VLAN، شبکه/Prefix، Gateway، بازه‌ی DHCP، آدرس‌های ثابت، مالک، توضیح. قاعده‌ی تجربی: <b>Gateway را همیشه اولین Host (.1) بگذارید</b> و سرورها/تجهیزات را از انتهای بازه یا بازه‌ی ثابت جدا کنید، تا همه بدانند «.1 یعنی Gateway».</p>
+<p>نمونه برای Lab دوره (در Capstone استفاده می‌شود؛ همین هفته در <code>02-design/ip-plan.md</code> ثبتش کنید):</p>
+<table>
+<tr><th>VLAN</th><th>نام</th><th>شبکه</th><th>Gateway</th></tr>
+<tr><td>10</td><td>مدیریت</td><td>10.10.10.0/24</td><td>10.10.10.1</td></tr>
+<tr><td>20</td><td>کاربران</td><td>10.10.20.0/24</td><td>10.10.20.1</td></tr>
+<tr><td>30</td><td>سرورها</td><td>10.10.30.0/24</td><td>10.10.30.1</td></tr>
+</table>
+
+<h2>۷. تمرین‌های درجه‌بندی‌شده</h2>
+<details><summary>۱. (ساده) از 192.168.1.0/24 دو Subnet بساز: ۱۲۰ Host و ۱۰ Host.</summary><p>۱۲۲ ⇒ /25 ⇒ 192.168.1.0/25 (.1–.126). ۱۲ ⇒ ۱۶ ⇒ /28 ⇒ 192.168.1.128/28 (.129–.142).</p></details>
+<details><summary>۲. (ساده) یک لینک بین دو روتر از 10.1.1.0/24 بگیر.</summary><p>/30: 10.1.1.0/30، Hostها .1 و .2، Broadcast .3.</p></details>
+<details><summary>۳. (متوسط) از 172.16.0.0/24: ۶۰، ۳۰، ۱۰ Host.</summary><p>۶۲⇒/26: 172.16.0.0 (.1–.62)؛ ۳۲⇒/27: 172.16.0.64 (.65–.94)؛ ۱۲⇒/28: 172.16.0.96 (.97–.110).</p></details>
+<details><summary>۴. (متوسط) چرا نباید اول Subnet کوچک را بگذاریم؟</summary><p>چون Subnetهای بزرگ باید روی مرز مضرب اندازه‌ی خودشان شروع شوند؛ با گذاشتن کوچک‌ها اول، «سوراخ‌های» ناقابل ایجاد می‌شود که بزرگ‌ها جا نمی‌شوند.</p></details>
+<details><summary>۵. (سخت) 10.5.0.0/23: ۲۰۰، ۷۰، ۳۰، ۲ لینک (دو تا).</summary><p>۲۰۲⇒۲۵۶(/24): 10.5.0.0؛ ۷۲⇒۱۲۸(/25): 10.5.1.0 (.1–.126 در 10.5.1.x)؛ ۳۲⇒(/27): 10.5.1.128؛ دو لینک /30: 10.5.1.160 و 10.5.1.164. آزاد: از 10.5.1.168.</p></details>
+<details><summary>۶. (سخت) آیا 192.168.1.64/26 و 192.168.1.100/27 هم‌پوشانی دارند؟</summary><p>بله. /26 شامل .64 تا .127 است و .100/27 (بازه‌ی .96–.127) داخل آن است. این یک خطای طراحی است.</p></details>
+
+<h2>۸. Lab هدایت‌شده: اجرای IP Plan روی روتر</h2>
+<p>برای دیدن اینکه روتر Subnetها را «می‌شناسد»، روی <code>R1</code> چند Loopback به‌عنوان Subnet مجازی می‌سازیم.</p>
+<h3>گام ۱: ساخت سه Subnet از مثال متوسط</h3>
+<pre><code>R1# configure terminal
+R1(config)# interface loopback 1
+R1(config-if)# ip address 192.168.10.1 255.255.255.128
+R1(config-if)# interface loopback 2
+R1(config-if)# ip address 192.168.10.129 255.255.255.192
+R1(config-if)# interface loopback 3
+R1(config-if)# ip address 192.168.10.193 255.255.255.240
+R1(config-if)# end</code></pre>
+<h3>گام ۲: بررسی</h3>
+<pre><code>R1# show ip interface brief
+R1# show ip route connected</code></pre>
+<p>باید سه Route از نوع <code>C</code> ببینید: <code>192.168.10.0/25</code>، <code>192.168.10.128/26</code>، <code>192.168.10.192/28</code>. دقت کنید روتر خودش «آدرس شبکه» را از Mask محاسبه کرده است؛ همان‌طور که شما محاسبه کردید.</p>
+<h3>گام ۳: ایجاد عمدی هم‌پوشانی</h3>
+<pre><code>R1(config)# interface loopback 4
+R1(config-if)# ip address 192.168.10.100 255.255.255.192</code></pre>
+<p>پیش‌بینی: IOS معمولاً خطای <code>% 192.168.10.64 overlaps with Loopback1</code> می‌دهد و دستور را نمی‌پذیرد (نتیجه‌ی واقعی را ثبت کنید). همین است که از هم‌پوشانی در یک روتر جلوگیری می‌کند.</p>
+<h3>گام ۴: پاک‌سازی</h3>
+<pre><code>R1(config)# no interface loopback 1
+R1(config)# no interface loopback 2
+R1(config)# no interface loopback 3
+R1(config)# no interface loopback 4
+R1(config)# end</code></pre>
+
+<h2>۹. Lab مستقل</h2>
+<p>برای Capstone یک بلوک <code>10.50.0.0/22</code> انتخاب کنید و برای مرکز (کاربران ۱۵۰، سرورها ۴۰، مدیریت ۲۰، DMZ ۱۰) و سه شعبه (هرکدام ۳۰ کاربر) به‌علاوه ۳ لینک، IP Plan کامل بسازید. خروجی: <code>02-design/ip-plan.md</code> با ستون‌های گفته‌شده. بدون رمز.</p>
+
+<h2>۱۰. عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>بعد از اضافه‌کردن Subnet جدید، بخشی از شبکه ناگهان قطع شد</td></tr>
+<tr><th>سرنخ</th><td>دو Subnet هم‌پوشان؛ روتر برای یک آدرس دو مسیر دارد</td></tr>
+<tr><th>روش</th><td><code>show ip route</code>، مقایسه‌ی Prefixها، رسم نوار آدرس روی کاغذ</td></tr>
+<tr><th>رفع</th><td>تغییر یکی از Subnetها به بازه‌ی آزاد و به‌روزرسانی IP Plan</td></tr>
+<tr><th>پیشگیری</th><td>هر آدرس جدید را اول در IP Plan ثبت کن، بعد روی دستگاه بزن</td></tr>
+</table>
+
+<h2>۱۱. سؤال‌های مرور</h2>
+<details><summary>VLSM چیست و چرا به آن نیاز داریم؟</summary><p>تقسیم بلوک به Subnetهایی با اندازه‌های مختلف، تا هدررفت آدرس نداشته باشیم.</p></details>
+<details><summary>چرا از بزرگ‌ترین نیاز شروع می‌کنیم؟</summary><p>برای اینکه هر Subnet روی مرز درست بیفتد و سوراخ ایجاد نشود.</p></details>
+<details><summary>بهترین Prefix برای لینک بین دو روتر چیست؟</summary><p>/30 (دو Host). (در IPv6 یا لینک‌های ویژه /31 هم استفاده می‌شود.)</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>VLSM lets us allocate address space according to actual need.</td><td>VLSM اجازه می‌دهد فضای آدرس را مطابق نیاز واقعی تخصیص دهیم.</td></tr>
+<tr><td>Always start with the largest subnet to avoid fragmentation.</td><td>همیشه از بزرگ‌ترین Subnet شروع کنید تا فضا تکه‌تکه نشود.</td></tr>
+<tr><td>The two subnets overlap, so the router rejected the second address.</td><td>دو Subnet هم‌پوشانی دارند، پس روتر آدرس دوم را رد کرد.</td></tr>
+<tr><td>Document every allocation in the IP plan before configuring the device.</td><td>قبل از تنظیم دستگاه، هر تخصیص را در IP Plan مستند کنید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why do we sort requirements from largest to smallest in VLSM?</summary><p>So each block aligns on its boundary and no gaps or overlaps appear.</p></details>
+
+<h2>۱۲. تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ ۶ تمرین بخش ۷ را حل کنم.</li>
+<li>☐ Lab هدایت‌شده را اجرا و خروجی <code>show ip route connected</code> را ذخیره کنم.</li>
+<li>☐ IP Plan Capstone را بنویسم و بدون هم‌پوشانی بودنش را وارسی کنم.</li>
+<li>☐ بتوانم بدون نگاه VLSM را برای ۴ بخش انجام دهم.</li>
+</ul>
+<h2>۱۳. یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>«+۲» (شبکه و Broadcast) را در هر محاسبه فراموش نکنید؛ و قبل از اجرا، پیش‌بینی کنید و بعد نتیجه‌ی واقعی را مقایسه کنید.</div>
+
+`
+    },
+    'w2-3': {
+      sub: "IPv6 از پایه: ساختار، کوتاه‌نویسی، انواع آدرس، NDP و Lab.",
+      html: `
+<div class="meta"><span class="tag">هفته ۲ - روز ۳</span><span class="tag">پیش‌نیاز: درس ۲-۱ و ۲-۲</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> نسل جدید آدرس‌دهی اینترنت یعنی <span class="en">IPv6</span>: شکل آدرس، قوانین کوتاه‌نویسی، انواع آدرس، و اینکه دستگاه‌ها چطور بدون DHCP هم آدرس می‌گیرند.</p>
+<p><b>چرا لازم است:</b> آدرس‌های IPv4 حدود ۴.۳ میلیارد تا هستند و از سال‌ها پیش تمام شده‌اند. برای همین مدتی است که شبکه‌ها با ترفندهایی مثل NAT سرپا مانده‌اند. IPv6 با ۱۲۸ بیت آن‌قدر آدرس دارد که می‌شود به هر ذره‌ی شن روی زمین چند آدرس داد.</p>
+<ul>
+<li><b>در کار روزانه:</b> بسیاری از ISPها، سرویس‌های ابری و Windows Server 2022 به‌طور پیش‌فرض IPv6 فعال دارند. اگر آن را نشناسید، یک پورت باز IPv6 در فایروال را نمی‌بینید و این یک حفره‌ی امنیتی می‌شود.</li>
+<li><b>در امنیت:</b> مهاجم می‌تواند از مسیر IPv6 که فراموش کرده‌اید ببندید وارد شود. Blue Team باید هر دو پروتکل را ببیند.</li>
+<li><b>در FortiGate:</b> Policyهای IPv6 جداگانه‌اند؛ در هفته‌های بعد از آن‌ها استفاده می‌کنیم.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>چرا IPv6 ← ساختار و کوتاه‌نویسی ← انواع آدرس ← کشف همسایه و SLAAC ← مثال ساده/متوسط/سخت ← تمرین ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>IPv6</td><td>Internet Protocol version 6</td><td>نسخه ۶ آدرس‌دهی (۱۲۸ بیتی)</td></tr>
+<tr><td>Hex</td><td>Hexadecimal</td><td>شانزده‌شانزدهی؛ ارقام 0-9 و a-f</td></tr>
+<tr><td>GUA</td><td>Global Unicast Address</td><td>آدرس عمومی قابل مسیریابی در اینترنت</td></tr>
+<tr><td>ULA</td><td>Unique Local Address</td><td>آدرس محلی یکتا؛ معادل آدرس خصوصی IPv4</td></tr>
+<tr><td>Link-Local</td><td>Link-Local Address</td><td>آدرس محدود به یک لینک (fe80::)</td></tr>
+<tr><td>EUI-64</td><td>Extended Unique Identifier 64-bit</td><td>ساخت Interface ID ۶۴ بیتی از MAC</td></tr>
+<tr><td>SLAAC</td><td>Stateless Address Auto-Configuration</td><td>آدرس‌دهی خودکار بدون سرور DHCP</td></tr>
+<tr><td>NDP</td><td>Neighbor Discovery Protocol</td><td>پروتکل کشف همسایه؛ جایگزین ARP</td></tr>
+<tr><td>RA</td><td>Router Advertisement</td><td>اعلان روتر؛ اعلام Prefix</td></tr>
+<tr><td>RS</td><td>Router Solicitation</td><td>درخواست Host از روتر</td></tr>
+<tr><td>NS</td><td>Neighbor Solicitation</td><td>درخواست MAC همسایه</td></tr>
+<tr><td>NA</td><td>Neighbor Advertisement</td><td>پاسخ MAC همسایه</td></tr>
+<tr><td>ICMPv6</td><td>Internet Control Message Protocol for IPv6</td><td>پیام‌های کنترلی IPv6؛ زیربنای NDP</td></tr>
+<tr><td>MAC</td><td>Media Access Control address</td><td>آدرس فیزیکی کارت شبکه</td></tr>
+</table>
+
+
+
+<h2>۱. ساختار آدرس IPv6</h2>
+<figure class="fig"><svg viewBox="0 0 720 150" role="img" aria-label="IPv6 anatomy"><rect x="20" y="30" width="330" height="50" class="net" stroke="#0b1018"/><text x="185" y="60" text-anchor="middle" class="on">Routing Prefix (48 bit)</text><rect x="350" y="30" width="80" height="50" class="wrn" stroke="#0b1018"/><text x="390" y="60" text-anchor="middle" class="on">Subnet ID (16)</text><rect x="430" y="30" width="270" height="50" class="hst" stroke="#0b1018"/><text x="565" y="60" text-anchor="middle" class="on">Interface ID (64 bit)</text><text x="190" y="105" text-anchor="middle">2001:0db8:abcd</text><text x="390" y="105" text-anchor="middle">0010</text><text x="565" y="105" text-anchor="middle">0000:0000:0000:0001</text><path d="M20 120 H430" class="ln"/><text x="225" y="140" text-anchor="middle" class="cap">Network = /64</text><path d="M430 120 H700" class="ln"/><text x="565" y="140" text-anchor="middle" class="cap">Host</text></svg><figcaption>شکل ۳: ساختار آدرس IPv6؛ ۶۴ بیت اول شبکه (Prefix + Subnet) و ۶۴ بیت آخر دستگاه.</figcaption></figure>
+
+<p>آدرس IPv6 یک عدد ۱۲۸ بیتی است. آن را به ۸ گروه ۱۶ بیتی تقسیم می‌کنیم و هر گروه را با ۴ رقم شانزده‌شانزدهی (<span class="en">Hex</span>: ارقام ۰ تا ۹ و a تا f) می‌نویسیم، با دونقطه بین گروه‌ها:</p>
+<pre><code>2001:0db8:0010:0010:0000:0000:0000:0001</code></pre>
+<p>هر رقم Hex معادل ۴ بیت است (مثلاً <code>f</code> = 1111 و <code>a</code> = 1010). پس ۴ رقم = ۱۶ بیت و ۸ گروه = ۱۲۸ بیت.</p>
+<p>مثل IPv4، آدرس دو بخش دارد: <b>Prefix</b> (شبکه) و <b>Interface ID</b> (دستگاه). در بیشتر شبکه‌ها Prefix برابر <code>/64</code> است: ۶۴ بیت اول شبکه و ۶۴ بیت آخر دستگاه. در IPv6 به‌جای «Subnet Mask» همیشه Prefix می‌نویسیم.</p>
+
+<h2>۲. دو قانون کوتاه‌نویسی</h2>
+<p><b>قانون ۱: صفرهای ابتدای هر گروه را حذف کن.</b> مثال: <code>0db8</code> ← <code>db8</code> و <code>0010</code> ← <code>10</code> و <code>0000</code> ← <code>0</code>.</p>
+<p><b>قانون ۲: یک (فقط یک) رشته‌ی متوالی از گروه‌های تماماً صفر را با <code>::</code> جایگزین کن.</b></p>
+<pre><code>کامل:    2001:0db8:0010:0010:0000:0000:0000:0001
+قانون ۱:  2001:db8:10:10:0:0:0:1
+قانون ۲:  2001:db8:10:10::1</code></pre>
+<div class="box"><b class="t">چرا فقط یک بار ::؟</b>اگر دو بار بنویسید، معلوم نیست هرکدام چند گروه صفر را نشان می‌دهند. پس <code>2001::5::1</code> غلط است. اگر دو رشته‌ی صفر داشتید، <code>::</code> را روی <b>بلندترین</b> رشته بگذارید.</div>
+
+<h2>۳. مثال‌های کوتاه‌نویسی (ساده تا سخت)</h2>
+<details open><summary>ساده</summary><p><code>fe80:0000:0000:0000:0000:0000:0000:0001</code> ⇒ <code>fe80::1</code></p></details>
+<details open><summary>متوسط</summary><p><code>2001:0db8:0000:0000:0001:0000:0000:0005</code>: دو رشته‌ی صفر هم‌طول داریم؛ قاعده می‌گوید اولی را بگیر: <code>2001:db8::1:0:0:5</code>.</p></details>
+<details open><summary>سخت (برعکس)</summary><p>باز کن: <code>2001:db8:a::1:2</code>. گروه‌های موجود: 2001، db8، a، 1، 2 (پنج گروه). هشت-پنج = سه گروه صفر پشت <code>::</code>: <code>2001:0db8:000a:0000:0000:0000:0001:0002</code>.</p></details>
+
+<h2>۴. انواع آدرس IPv6</h2>
+<table>
+<tr><th>نوع</th><th>Prefix</th><th>کاربرد</th><th>معادل در IPv4</th></tr>
+<tr><td><span class="en">Global Unicast</span></td><td>2000::/3</td><td>آدرس قابل Route در اینترنت</td><td>آدرس عمومی</td></tr>
+<tr><td><span class="en">Unique Local (ULA)</span></td><td>fc00::/7 (عملاً fd00::/8)</td><td>داخل سازمان</td><td>RFC 1918</td></tr>
+<tr><td><span class="en">Link-Local</span></td><td>fe80::/10</td><td>فقط روی یک لینک؛ هر Interface حتماً دارد</td><td>APIPA (ولی همیشه فعال و ضروری)</td></tr>
+<tr><td><span class="en">Multicast</span></td><td>ff00::/8</td><td>ارسال به گروهی از دستگاه‌ها</td><td>224.0.0.0/4</td></tr>
+<tr><td>Loopback</td><td>::1/128</td><td>خود دستگاه</td><td>127.0.0.1</td></tr>
+<tr><td>مستندات</td><td>2001:db8::/32</td><td>در آموزش و Lab</td><td>TEST-NET</td></tr>
+</table>
+<p><b>نکته‌ی مهم:</b> IPv6 <b>Broadcast ندارد</b>. کارهایی که Broadcast می‌کرد (مثل ARP) با Multicast انجام می‌شود. آدرس‌های ff02::1 (همه‌ی گره‌ها) و ff02::2 (همه‌ی روترها) را بشناسید.</p>
+
+<h2>۵. دستگاه‌ها چطور آدرس می‌گیرند؟</h2>
+<h3>۵-۱. Link-Local خودکار</h3>
+<p>همین که Interface بالا بیاید، دستگاه خودش یک آدرس <code>fe80::</code> می‌سازد. نیازی به DHCP و تنظیم دستی ندارد. تمام ارتباط‌های همسایگی (و Next-Hop روتینگ) با همین آدرس انجام می‌شود.</p>
+<h3>۵-۲. EUI-64: ساخت Interface ID از MAC</h3>
+<p>MAC آدرس ۴۸ بیتی است؛ ۶۴ بیت لازم داریم. روش: وسط MAC عدد <code>fffe</code> را بگذار و بیت هفتم بایت اول را وارونه کن. مثال: MAC = <code>aabb.cc00.0100</code>:</p>
+<pre><code>MAC:            aa bb cc 00 01 00
+گام ۱ (وسط fffe): aa bb cc ff fe 00 01 00
+گام ۲ (وارونه‌کردن بیت U/L): بایت اول aa XOR 02 = a8
+Interface ID:   a8bb:ccff:fe00:0100</code></pre>
+<p>پس آدرس Link-Local می‌شود <code>fe80::a8bb:ccff:fe00:100</code>. (فقط ایده را بدانید: MAC در آدرس «نشت» می‌کند و برای حریم خصوصی، سیستم‌عامل‌های جدید به‌جای EUI-64 مقدار تصادفی می‌سازند.)</p>
+<h3>۵-۳. SLAAC و کشف همسایه (NDP)</h3>
+<p>روتر هر چند ثانیه (یا به درخواست) پیام <span class="en">Router Advertisement (RA)</span> می‌فرستد که می‌گوید «Prefix این لینک 2001:db8:10:10::/64 است». Host خودش Interface ID می‌سازد و آدرس می‌شود. به این روش <span class="en">SLAAC</span> می‌گویند: بدون DHCP.</p>
+<table>
+<tr><th>پیام NDP</th><th>معادل</th><th>کار</th></tr>
+<tr><td>Router Solicitation (RS)</td><td>—</td><td>Host: «روتر هست؟»</td></tr>
+<tr><td>Router Advertisement (RA)</td><td>DHCP قسمتی</td><td>روتر: Prefix و Gateway را اعلام می‌کند</td></tr>
+<tr><td>Neighbor Solicitation (NS)</td><td>ARP Request</td><td>«MAC فلان IPv6 چیست؟» (با Multicast)</td></tr>
+<tr><td>Neighbor Advertisement (NA)</td><td>ARP Reply</td><td>پاسخ با MAC</td></tr>
+</table>
+<p>NDP از <span class="en">ICMPv6</span> استفاده می‌کند؛ بنابراین <b>نباید ICMPv6 را در فایروال کاملاً ببندید</b> وگرنه IPv6 کار نمی‌کند (اشتباه رایج).</p>
+
+<h2>۶. مثال کاربردی: Prefix و Subnet در IPv6</h2>
+<p>سازمان بلوک <code>2001:db8:abcd::/48</code> دارد. با ۱۶ بیت باقیمانده تا /64 می‌توانیم ۶۵۵۳۶ Subnet /64 بسازیم. محاسبه‌ی Host ندارد! هر VLAN را یک /64 می‌دهیم: <code>2001:db8:abcd:<b>10</b>::/64</code> برای VLAN10، <code>2001:db8:abcd:<b>20</b>::/64</code> برای VLAN20 و غیره. گروه چهارم را همان شماره‌ی VLAN بگذارید تا خوانا باشد.</p>
+<p>مقایسه: در IPv4 باید هر بار محاسبه‌ی VLSM کنیم. در IPv6 همه /64 هستند و زندگی ساده است.</p>
+
+<h2>۷. تمرین‌ها</h2>
+<details><summary>۱. (ساده) کوتاه کن: 2001:0db8:0000:0000:0000:0000:0000:0001</summary><p><code>2001:db8::1</code></p></details>
+<details><summary>۲. (ساده) این چه نوع آدرسی است: fe80::1 ؟ fd12:3456::5 ؟ ff02::1 ؟ 2001:db8::5 ؟</summary><p>Link-Local؛ ULA؛ Multicast (همه‌ی گره‌ها)؛ مستندات/Global.</p></details>
+<details><summary>۳. (متوسط) باز کن: 2001:db8:0:1::5</summary><p><code>2001:0db8:0000:0001:0000:0000:0000:0005</code></p></details>
+<details><summary>۴. (متوسط) آیا 2001:db8::1 و 2001:db8:0:0:1::1 در یک /64 هستند؟</summary><p>اولی: 2001:0db8:0000:0000:0000:0000:0000:0001 ⇒ ۶۴ بیت اول 2001:db8:0:0. دومی: 2001:0db8:0000:0000:0001:... ⇒ ۶۴ بیت اول 2001:db8:0:0 همان است. بله، در یک /64.</p></details>
+<details><summary>۵. (سخت) چرا نمی‌توان 2001::1::2 نوشت؟</summary><p>دو بار :: ابهام می‌سازد؛ نمی‌دانیم هر کدام چند گروه صفر هستند.</p></details>
+<details><summary>۶. (سخت) از 2001:db8:abcd::/48 برای ۴ VLAN (۱۰، ۲۰، ۳۰، ۹۹) Prefix بساز.</summary><p>2001:db8:abcd:10::/64، 2001:db8:abcd:20::/64، 2001:db8:abcd:30::/64، 2001:db8:abcd:99::/64.</p></details>
+
+<h2>۸. Lab هدایت‌شده: IPv6 بین R1 و SW1</h2>
+<p>شرط: در Lab <code>L00</code> هنوز VLAN10 روی R1 (<code>Gi0/0.10</code>) و SW1 (<code>Vlan10</code>) سالم است.</p>
+<h3>گام ۱: فعال‌کردن IPv6 روی روتر</h3>
+<pre><code>R1# configure terminal
+R1(config)# ipv6 unicast-routing
+R1(config)# interface gi0/0.10
+R1(config-subif)# ipv6 address 2001:db8:10:10::1/64
+R1(config-subif)# end
+R1# show ipv6 interface brief</code></pre>
+<p>باید دو آدرس ببینید: Link-Local (<code>FE80::...</code>) و آدرسی که دادید. فرمان <code>ipv6 unicast-routing</code> روتر را از «Host» به «روتر IPv6» تبدیل می‌کند و RA می‌فرستد.</p>
+<h3>گام ۲: سمت سوییچ</h3>
+<pre><code>SW1# configure terminal
+SW1(config)# interface vlan 10
+SW1(config-if)# ipv6 address 2001:db8:10:10::2/64
+SW1(config-if)# end
+SW1# show ipv6 interface brief</code></pre>
+<p>در سوییچ‌های L2 ممکن است IPv6 فقط در CLI دیده شود. اگر دستور رد شد یا ping نشد، دقیقاً همان را ثبت کنید؛ این همان درس «پذیرفته‌شدن ≠ کارکردن» است.</p>
+<h3>گام ۳: Ping و NDP</h3>
+<pre><code>R1# ping 2001:db8:10:10::2
+R1# show ipv6 neighbors
+R1# ping FE80::&lt;LL-SW1&gt;%GigabitEthernet0/0.10</code></pre>
+<p>در Ping با Link-Local باید Interface خروجی را مشخص کنید (چون fe80:: روی هر Interface تکراری است). جدول <code>show ipv6 neighbors</code> معادل <code>show ip arp</code> است.</p>
+<h3>گام ۴: دیدن RA</h3>
+<pre><code>R1# show ipv6 interface gi0/0.10</code></pre>
+<p>در خروجی دنبال خط «ND advertised reachable time» و «Hosts use stateless autoconfig» بگردید؛ یعنی روتر Prefix را برای SLAAC اعلام می‌کند.</p>
+
+<h2>۹. Lab مستقل</h2>
+<p>برای VLANهای ۱۰ و ۲۰ و ۳۰ Capstone یک Prefix مثل <code>2001:db8:abcd::/48</code> انتخاب و در <code>02-design/ipv6-plan.md</code> بنویسید. روی R1 هر زیرواسط را یک /64 بدهید و <code>show ipv6 route connected</code> را ثبت کنید.</p>
+
+<h2>۱۰. عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>Ping IPv6 جواب نمی‌دهد ولی IPv4 کار می‌کند</td></tr>
+<tr><th>سرنخ‌ها</th><td>۱) <code>ipv6 unicast-routing</code> فعال است؟<br>۲) Prefix دو طرف یکی است؟<br>۳) ACL یا فایروال ICMPv6 را بسته؟<br>۴) فقط Link-Local کار می‌کند؟</td></tr>
+<tr><th>رفع</th><td>تصحیح Prefix یا اجازه‌ی ICMPv6</td></tr>
+</table>
+
+<h2>۱۱. سؤال‌های مرور</h2>
+<details><summary>چرا IPv6 Broadcast ندارد؟</summary><p>با Multicast جایگزین شده تا فقط دستگاه‌های مربوطه پردازش کنند.</p></details>
+<details><summary>NS/NA معادل چه چیزی در IPv4 است؟</summary><p>ARP Request/Reply.</p></details>
+<details><summary>چرا ICMPv6 را نباید بست؟</summary><p>NDP و SLAAC به آن وابسته‌اند.</p></details>
+<details><summary>/64 برای یک VLAN یعنی چه؟</summary><p>۶۴ بیت شبکه و ۶۴ بیت دستگاه؛ استاندارد SLAAC.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>IPv6 has no broadcast; it uses multicast instead.</td><td>IPv6 Broadcast ندارد؛ به‌جای آن از Multicast استفاده می‌کند.</td></tr>
+<tr><td>Every IPv6 interface automatically gets a link-local address.</td><td>هر Interface در IPv6 به‌طور خودکار یک Link-Local می‌گیرد.</td></tr>
+<tr><td>Hosts build their own address from the router advertisement using SLAAC.</td><td>Hostها با SLAAC از روی Router Advertisement آدرس خود را می‌سازند.</td></tr>
+<tr><td>Do not block ICMPv6, or neighbor discovery will break.</td><td>ICMPv6 را نبندید، وگرنه Neighbor Discovery از کار می‌افتد.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Which IPv6 messages replace ARP?</summary><p>Neighbor Solicitation and Neighbor Advertisement (NDP).</p></details>
+
+<h2>۱۲. تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ ۶ تمرین را حل کنم.</li>
+<li>☐ Lab IPv6 را انجام و نتیجه‌ی واقعی (موفق/ناموفق) را ثبت کنم.</li>
+<li>☐ IPv6 Plan را بنویسم.</li>
+<li>☐ قوانین کوتاه‌نویسی را بدون نگاه بگویم.</li>
+</ul>
+<h2>۱۳. یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>خروجی قبل از اجرا را پیش‌بینی کنید؛ و «Invalid input» همیشه به معنای ناسازگاری Image نیست.</div>
+
+`
+    },
+    'w2-4': {
+      sub: "حالت‌های CLI، بکاپ، Rollback و شبکه‌ی ایمنی.",
+      html: `
+<div class="meta"><span class="tag">هفته ۲ - روز ۴</span><span class="tag">پیش‌نیاز: هفته ۱</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> کار حرفه‌ای با خط فرمان سیسکو (<span class="en">CLI</span>): حالت‌ها، کمک‌گیری، تفاوت پیکربندی در حال اجرا و ذخیره‌شده، و مهم‌تر از همه <b>پشتیبان‌گیری و بازگشت (Rollback)</b>.</p>
+<p><b>چرا لازم است:</b> در دنیای واقعی بزرگ‌ترین ترس هر مدیر شبکه این است: «یک دستور زدم و ارتباط همه قطع شد، حالا چه کنم؟». کسی که بکاپ و Rollback بلد است، با آرامش کار می‌کند؛ کسی که بلد نیست، ساعت‌ها در قطعی می‌ماند.</p>
+<ul>
+<li><b>در کار روزانه:</b> قبل از هر تغییر، نسخه‌ی فعلی را ذخیره می‌کنید و بعد از تغییر اگر خراب شد، در چند ثانیه برمی‌گردید.</li>
+<li><b>در امنیت:</b> پیکربندی بکاپ‌شده سند حسابرسی است؛ می‌توانید ثابت کنید «چه چیزی، کی تغییر کرد».</li>
+<li><b>در دوره:</b> Capstone مرحله‌ی «CHG (درخواست تغییر)» دارد که بدون Rollback پذیرفته نمی‌شود.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>حالت‌های CLI ← کمک‌گیری و میان‌بُرها ← Running و Startup ← بکاپ و Rollback ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>CLI</td><td>Command Line Interface</td><td>محیط خط فرمان</td></tr>
+<tr><td>EXEC</td><td>Executive mode</td><td>حالت اجرایی دستورها</td></tr>
+<tr><td>NVRAM</td><td>Non-Volatile RAM</td><td>حافظه‌ای که با خاموشی پاک نمی‌شود؛ محل startup-config</td></tr>
+<tr><td>RAM</td><td>Random Access Memory</td><td>حافظه موقت؛ محل running-config</td></tr>
+<tr><td>TFTP</td><td>Trivial File Transfer Protocol</td><td>انتقال فایل ساده و بدون رمزگذاری</td></tr>
+<tr><td>SCP</td><td>Secure Copy Protocol</td><td>انتقال فایل امن روی SSH</td></tr>
+<tr><td>DNS</td><td>Domain Name System</td><td>سیستم نام دامنه</td></tr>
+<tr><td>CHG</td><td>Change Request</td><td>درخواست تغییر رسمی</td></tr>
+<tr><td>Rollback</td><td>Rollback</td><td>بازگشت به وضعیت سالم قبلی</td></tr>
+<tr><td>MOTD</td><td>Message Of The Day</td><td>پیام نمایشی هنگام ورود</td></tr>
+</table>
+
+
+
+<h2>۱. حالت‌های CLI (چهار اتاق یک ساختمان)</h2>
+<p>CLI سیسکو مثل ساختمانی با چند اتاق است که هرکدام اجازه‌ی کار متفاوتی دارد:</p>
+<table>
+<tr><th>حالت</th><th>Prompt</th><th>چه کاری می‌شود کرد</th><th>ورود/خروج</th></tr>
+<tr><td>User EXEC</td><td><code>R1&gt;</code></td><td>مشاهده‌ی محدود، ping</td><td>ورود: <code>enable</code></td></tr>
+<tr><td>Privileged EXEC</td><td><code>R1#</code></td><td>همه‌ی show، کپی فایل، reload</td><td>خروج: <code>disable</code></td></tr>
+<tr><td>Global Config</td><td><code>R1(config)#</code></td><td>تغییر تنظیمات کل دستگاه</td><td>ورود: <code>configure terminal</code> ؛ خروج: <code>end</code> یا <code>exit</code></td></tr>
+<tr><td>Interface/Line Config</td><td><code>R1(config-if)#</code></td><td>تنظیم یک Interface یا Line</td><td>ورود: <code>interface ...</code></td></tr>
+</table>
+<div class="box"><b class="t">قاعده‌ی طلایی</b>دستورهای <code>show</code>، <code>ping</code>، <code>copy</code>، <code>monitor capture</code> و <code>reload</code> در EXEC هستند. دستورهای تنظیمی در Config. اگر در Config دستور show بزنید، با <code>do</code> جلو آن می‌توانید اجرا کنید: <code>do show ip route</code>.</div>
+
+<h2>۲. کمک‌گیری و میان‌بُرها (سرعت یک مهندس)</h2>
+<ul>
+<li><code>?</code> بعد از هر کلمه: گزینه‌های ممکن. مثال: <code>show ip ?</code></li>
+<li><code>Tab</code>: کامل‌کردن. <code>sh run</code> هم کافی است (مخفف یکتا).</li>
+<li><code>show running-config | section interface</code>: فیلتر خروجی. <code>| include</code> و <code>| begin</code> هم داریم.</li>
+<li>فلش بالا: دستور قبلی. <code>Ctrl+A</code> ابتدای خط و <code>Ctrl+E</code> انتهای خط. <code>Ctrl+Shift+6</code> قطع دستور گیرکرده.</li>
+</ul>
+<p>مثال: به‌جای خواندن ۲۰۰ خط config فقط این را بزنید:</p>
+<pre><code>R1# show running-config | section interface Gi0/0
+R1# show ip interface brief | include up</code></pre>
+
+<h2>۳. تنظیمات پایه‌ی یک دستگاه حرفه‌ای</h2>
+<pre><code>R1(config)# hostname R1
+R1(config)# no ip domain-lookup
+R1(config)# service timestamps log datetime msec
+R1(config)# line console 0
+R1(config-line)# logging synchronous
+R1(config-line)# exec-timeout 10 0
+R1(config-line)# exit
+R1(config)# banner motd # مجاز نیست: دسترسی غیرمجاز پیگرد دارد #
+R1(config)# enable secret &lt;PASSWORD&gt;
+R1(config)# end</code></pre>
+<p>خط‌به‌خط:</p>
+<ul>
+<li><code>no ip domain-lookup</code>: جلوی «Translating…» را می‌گیرد (اشتباهی که قبلاً دیدید).</li>
+<li><code>logging synchronous</code>: پیام‌های Log وسط تایپ شما نمی‌پرند.</li>
+<li><code>exec-timeout 10 0</code>: بعد از ۱۰ دقیقه بی‌کاری Session بسته می‌شود (امنیت).</li>
+<li><code>enable secret</code>: رمز ورود به Privileged با Hash قوی. <b>هرگز</b> <code>enable password</code> (متن ساده) نه. رمز واقعی را در Git نگذارید؛ اینجا فقط جانگهدار است.</li>
+</ul>
+
+<h2>۴. Running-config و Startup-config</h2>
+<p>دو نسخه از تنظیمات در دستگاه هست:</p>
+<ul>
+<li><b>running-config</b>: در RAM، همین الان فعال است؛ با خاموش‌شدن می‌پرد.</li>
+<li><b>startup-config</b>: در NVRAM، در بوت بعدی بارگذاری می‌شود.</li>
+</ul>
+<p>تشبیه: running مثل «متنی که در Word تایپ کرده‌اید و ذخیره نکرده‌اید»؛ startup همان فایل ذخیره‌شده است.</p>
+<pre><code>R1# show running-config
+R1# show startup-config
+R1# copy running-config startup-config      (یا: write memory)
+R1# show archive                              (در صورت پشتیبانی)</code></pre>
+<p>اشتباه رایج: بعد از تغییر ذخیره نمی‌کنید و بعد از Reload همه‌چیز می‌پرد. جلوگیری: عادت کنید هر تغییر موفق ← <code>copy run start</code>.</p>
+
+<h2>۵. بکاپ و Rollback (قلب درس)</h2>
+<h3>۵-۱. بکاپ محلی روی Flash</h3>
+<pre><code>R1# copy running-config flash:R1-before-change.cfg
+R1# dir flash:</code></pre>
+<h3>۵-۲. بکاپ روی سرور (TFTP/SCP)</h3>
+<pre><code>R1# copy running-config tftp://10.10.10.50/R1-2026-11-07.cfg</code></pre>
+<p>برای سرور بکاپ از یک VM لینوکسی استفاده می‌کنیم (در درس‌های بعد، با SCP امن). نام فایل = نام دستگاه + تاریخ. فایل‌های بکاپ <b>رمزِ هش‌شده</b> دارند ولی باز هم در جای امن (خارج از Git) نگه‌دارید.</p>
+<h3>۵-۳. Rollback با Configure Replace</h3>
+<p>اگر Image شما قابلیت Archive دارد، می‌توانید کل تنظیمات را با یک فایل بکاپ جایگزین کنید (فقط تفاوت‌ها اعمال می‌شود):</p>
+<pre><code>R1# configure replace flash:R1-before-change.cfg list
+R1# configure replace flash:R1-before-change.cfg force</code></pre>
+<p>گزینه‌ی <code>list</code> فقط تفاوت‌ها را نشان می‌دهد (Dry-run). اگر دستور در Image شما نبود، روش جایگزین: <code>copy flash:R1-before-change.cfg startup-config</code> و سپس <code>reload</code>.</p>
+<h3>۵-۴. «Reload in»: شبکه‌ی ایمنی</h3>
+<pre><code>R1# reload in 10
+... تغییر خطرناک ...
+R1# reload cancel        (اگر موفق بود)</code></pre>
+<p>مثل ماشین‌هایی که ده دقیقه بعد خودشان خاموش می‌شوند. اگر تغییر ارتباط شما را قطع کرد، دستگاه بعد از ۱۰ دقیقه به startup-config قبلی بر می‌گردد. این تکنیک نجات‌بخش است؛ مخصوصاً در تغییرات راه دور.</p>
+
+<h2>۶. مثال‌ها (ساده تا سخت)</h2>
+<details open><summary>ساده</summary><p>اسم دستگاه را عوض کنید و ذخیره کنید: <code>hostname R1-HQ</code> ← <code>end</code> ← <code>copy run start</code> ← <code>show startup-config | include hostname</code>.</p></details>
+<details open><summary>متوسط</summary><p>قبل از تغییر IP یک Interface، بکاپ به Flash بگیرید؛ آدرس را تغییر دهید؛ ping کنید؛ اگر قطع شد با <code>configure replace</code> برگردید.</p></details>
+<details open><summary>سخت</summary><p>تغییر راه دور: با <code>reload in 5</code> شبکه‌ی ایمنی بگذارید؛ Mask یک Subinterface را تغییر دهید؛ اگر ارتباط قطع شد، ۵ دقیقه صبر می‌کنید و دستگاه با startup قبلی بالا می‌آید؛ اگر موفق بود <code>reload cancel</code> و <code>copy run start</code>.</p></details>
+
+<h2>۷. تمرین‌ها</h2>
+<details><summary>۱. Prompt زیر در کدام حالت است؟ R1(config-if)#</summary><p>Interface Config (زیرمجموعه‌ی Global Config).</p></details>
+<details><summary>۲. تفاوت running و startup چیست؟</summary><p>running در RAM و فعال؛ startup در NVRAM و برای بوت بعدی.</p></details>
+<details><summary>۳. چطور در Config دستور show ip route را اجرا کنیم؟</summary><p><code>do show ip route</code></p></details>
+<details><summary>۴. چرا enable secret بهتر از enable password است؟</summary><p>secret با Hash قوی ذخیره می‌شود؛ password متن ساده یا Type 7 (ضعیف و قابل برگشت) است.</p></details>
+<details><summary>۵. فایده‌ی reload in چیست؟</summary><p>اگر تغییر باعث قطع شد، دستگاه خودش به تنظیمات ذخیره‌شده‌ی قبلی بر می‌گردد.</p></details>
+
+<h2>۸. Lab هدایت‌شده: تغییر، خراب‌کردن و Rollback</h2>
+<h3>گام ۱: تنظیمات پایه (بخش ۳) را روی R1 و SW1 بزنید و ذخیره کنید</h3>
+<h3>گام ۲: بکاپ</h3>
+<pre><code>R1# copy running-config flash:R1-good.cfg
+R1# copy running-config startup-config
+R1# dir flash:</code></pre>
+<h3>گام ۳: خراب‌کردن عمدی</h3>
+<pre><code>R1(config)# interface gi0/0.10
+R1(config-subif)# ip address 10.10.99.1 255.255.255.0
+R1(config-subif)# end
+R1# ping 10.10.10.2</code></pre>
+<p>پیش‌بینی: ping شکست می‌خورد چون Subnet عوض شد.</p>
+<h3>گام ۴: Rollback</h3>
+<pre><code>R1# configure replace flash:R1-good.cfg force
+R1# ping 10.10.10.2</code></pre>
+<p>اگر <code>configure replace</code> در Image شما پشتیبانی نشد (ثبت کنید)، با <code>copy flash:R1-good.cfg running-config</code> ادغام کنید و Interface را دستی اصلاح نمایید.</p>
+<h3>گام ۵: تمرین reload in</h3>
+<pre><code>R1# reload in 5
+(یک تغییر بی‌خطر انجام دهید)
+R1# reload cancel</code></pre>
+
+<h2>۹. Lab مستقل</h2>
+<p>یک Runbook یک‌صفحه‌ای <code>03-ops/change-and-rollback.md</code> بنویسید: چک‌لیست قبل/حین/بعد تغییر، دستورهای بکاپ، Rollback، و Verification. بدون رمز.</p>
+
+<h2>۱۰. عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>بعد از Reload تنظیمات پرید</td></tr>
+<tr><th>علت</th><td>ذخیره نشده بود (فقط running)</td></tr>
+<tr><th>رفع</th><td>بازسازی از بکاپ؛ از این به بعد <code>copy run start</code></td></tr>
+<tr><th>Symptom 2</th><td>Rollback خطا می‌دهد</td></tr>
+<tr><th>علت</th><td>فایل بکاپ ناقص یا Archive پشتیبانی نمی‌شود</td></tr>
+<tr><th>رفع</th><td>روش جایگزین: <code>copy file startup-config</code> + reload</td></tr>
+</table>
+
+<h2>۱۱. سؤال‌های مرور</h2>
+<details><summary>سه حالت اصلی CLI؟</summary><p>User EXEC، Privileged EXEC، Config (و زیرحالت‌ها).</p></details>
+<details><summary>چرا بکاپ قبل از تغییر؟</summary><p>برای بازگشت سریع در صورت خرابی.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Save the running configuration to NVRAM, or the changes will be lost after a reload.</td><td>running-config را در NVRAM ذخیره کنید، وگرنه بعد از Reload تغییرها از بین می‌رود.</td></tr>
+<tr><td>Take a backup before every change so you can roll back quickly.</td><td>قبل از هر تغییر بکاپ بگیرید تا سریع Rollback کنید.</td></tr>
+<tr><td>Use reload in 10 as a safety net during remote changes.</td><td>در تغییرهای راه دور از reload in 10 به‌عنوان شبکه‌ی ایمنی استفاده کنید.</td></tr>
+<tr><td>The enable secret is stored as a hash, unlike a plain-text enable password.</td><td>enable secret به‌صورت Hash ذخیره می‌شود، برخلاف enable password متن ساده.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What is the difference between running-config and startup-config?</summary><p>Running-config is active in RAM; startup-config is saved in NVRAM and loaded at boot.</p></details>
+
+<h2>۱۲. تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ تنظیمات پایه را روی همه‌ی دستگاه‌ها بزنم.</li>
+<li>☐ بکاپ و Rollback را عملی انجام دهم و نتیجه را ثبت کنم.</li>
+<li>☐ Runbook تغییر را بنویسم.</li>
+</ul>
+<h2>۱۳. یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>دستور EXEC را در Config نزنید؛ کلمه‌ی ناشناخته نزنید (DNS Lookup)؛ بعد از هر تغییر موفق ذخیره کنید.</div>
+
+`
+    },
+    'w2-5': {
+      sub: "SSH امن، بستن Telnet، ACL مدیریت.",
+      html: `
+<div class="meta"><span class="tag">هفته ۲ - روز ۵</span><span class="tag">پیش‌نیاز: درس ۲-۴</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> مدیریت امن دستگاه‌ها از راه دور با <span class="en">SSH</span>، جایگزین قدیمی و ناامن <span class="en">Telnet</span>. یاد می‌گیریم SSH چطور کار می‌کند، چطور روی روتر و سوییچ فعالش کنیم و چطور دسترسی را فقط به سیستم‌های مجاز محدود کنیم.</p>
+<p><b>چرا لازم است:</b> Telnet همه‌چیز (از جمله رمز) را به‌صورت متن ساده می‌فرستد. هر کسی در مسیر با Wireshark می‌تواند رمز ادمین را بخواند. SSH همین ارتباط را رمزگذاری می‌کند. در هر ممیزی امنیتی، فعال‌بودن Telnet یک «یافته‌ی جدی» است.</p>
+<ul>
+<li><b>در کار روزانه:</b> ۹۹٪ مدیریت از راه دور با SSH انجام می‌شود.</li>
+<li><b>در امنیت:</b> رمزگذاری، احراز هویت با کاربر و محدودیت مبدأ، سه لایه‌ی اولیه‌ی ایمنی مدیریت هستند.</li>
+<li><b>در FortiGate:</b> همین مفاهیم برای مدیریت فایروال (فقط HTTPS و SSH از Subnet مدیریت) به‌کار می‌رود.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>چرا Telnet ناامن است ← SSH چطور کار می‌کند ← پیکربندی گام‌به‌گام ← محدودکردن دسترسی ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>SSH</td><td>Secure Shell</td><td>پوسته امن؛ مدیریت رمزگذاری‌شده از راه دور</td></tr>
+<tr><td>Telnet</td><td>Teletype Network</td><td>مدیریت از راه دور بدون رمزگذاری</td></tr>
+<tr><td>RSA</td><td>Rivest-Shamir-Adleman</td><td>الگوریتم کلید عمومی</td></tr>
+<tr><td>VTY</td><td>Virtual Teletype</td><td>خطوط مجازی ورود از راه دور</td></tr>
+<tr><td>ACL</td><td>Access Control List</td><td>فهرست کنترل دسترسی</td></tr>
+<tr><td>FQDN</td><td>Fully Qualified Domain Name</td><td>نام کامل دامنه، مثل r1.lab.local</td></tr>
+<tr><td>MITM</td><td>Man-In-The-Middle</td><td>حمله مرد میانی</td></tr>
+<tr><td>Wildcard Mask</td><td>Wildcard Mask</td><td>معکوس Mask؛ بیت 0 یعنی باید یکسان باشد</td></tr>
+<tr><td>Fingerprint</td><td>Host Key Fingerprint</td><td>اثرانگشت کلید سرور برای تأیید هویت</td></tr>
+</table>
+
+
+
+<h2>۱. Telnet در برابر SSH</h2>
+<table>
+<tr><th>ویژگی</th><th>Telnet</th><th>SSH</th></tr>
+<tr><td>رمزگذاری</td><td>ندارد (متن ساده)</td><td>دارد</td></tr>
+<tr><td>پورت</td><td>TCP 23</td><td>TCP 22</td></tr>
+<tr><td>احراز هویت دستگاه</td><td>ندارد</td><td>دارد (Host Key)</td></tr>
+<tr><td>استفاده‌ی امروزی</td><td>ممنوع</td><td>استاندارد</td></tr>
+</table>
+<p>مثال ملموس: Telnet مثل فریاد زدن رمز کارت بانکی وسط بازار است؛ SSH مثل گفتن آن در یک اتاق قفل‌شده.</p>
+
+<h2>۲. SSH چطور کار می‌کند؟ (ساده)</h2>
+<figure class="fig"><svg viewBox="0 0 720 260" role="img" aria-label="SSH handshake"><rect x="80" y="14" width="120" height="36" rx="8" class="bx"/><text x="140" y="37" text-anchor="middle">Client</text><path d="M140 50 V250" class="ln" stroke-dasharray="4 4"/><rect x="560" y="14" width="120" height="36" rx="8" class="bx"/><text x="620" y="37" text-anchor="middle">Server (SW1)</text><path d="M620 50 V250" class="ln" stroke-dasharray="4 4"/><path d="M140 80 H620" class="rq"/><path d="M612 75 l8 5 l-8 5" class="rq"/><text x="380" y="72" text-anchor="middle">1  TCP 22 connect</text><path d="M620 120 H140" class="rp"/><path d="M148 115 l-8 5 l8 5" class="rp"/><text x="380" y="112" text-anchor="middle">2  Host Key + Fingerprint</text><path d="M140 160 H620" class="rq"/><path d="M612 155 l8 5 l-8 5" class="rq"/><text x="380" y="152" text-anchor="middle">3  Key exchange → session key</text><path d="M140 200 H620" class="rq"/><path d="M612 195 l8 5 l-8 5" class="rq"/><text x="380" y="192" text-anchor="middle">4  Login (user + password/key)</text><path d="M620 240 H140" class="rp"/><path d="M148 235 l-8 5 l8 5" class="rp"/><text x="380" y="232" text-anchor="middle">5  Encrypted session</text></svg><figcaption>شکل ۵: مراحل برقراری SSH؛ مرحله ۲ همان جایی است که «Host key changed» نشان می‌دهد.</figcaption></figure>
+
+<ol>
+<li><b>اتصال:</b> Client به پورت ۲۲ سرور وصل می‌شود.</li>
+<li><b>هویت سرور:</b> سرور <span class="en">Host Key</span> خود را نشان می‌دهد. Client اولین بار از شما می‌پرسد «اعتماد دارید؟» و اثرانگشت (Fingerprint) را ذخیره می‌کند. دفعه‌های بعد اگر عوض شد، هشدار می‌دهد (احتمال حمله‌ی Man-in-the-Middle).</li>
+<li><b>کلید جلسه:</b> دو طرف با یک الگوریتم تبادل کلید (مثل Diffie-Hellman) یک کلید مشترک می‌سازند که هیچ‌کس در مسیر نمی‌داند.</li>
+<li><b>احراز هویت کاربر:</b> رمز یا کلید عمومی.</li>
+<li><b>ارتباط رمزشده</b> شروع می‌شود.</li>
+</ol>
+<div class="box"><b class="t">یادآوری از هفته ۱</b>هشدار «Host key changed» در برنامه‌ی SSH را قبلاً دیدید. آن‌جا هویت را با <code>ssh-keyscan</code> از یک مسیر مستقل تأیید کردیم. این دقیقاً همین مکانیزم است.</div>
+
+<h2>۳. پیکربندی SSH روی روتر/سوییچ (گام‌به‌گام)</h2>
+<pre><code>R1(config)# hostname R1
+R1(config)# ip domain-name lab.local
+R1(config)# crypto key generate rsa modulus 2048
+R1(config)# ip ssh version 2
+R1(config)# username admin privilege 15 secret &lt;PASSWORD&gt;
+R1(config)# line vty 0 4
+R1(config-line)# login local
+R1(config-line)# transport input ssh
+R1(config-line)# exec-timeout 10 0
+R1(config-line)# end</code></pre>
+<p>چرا هرکدام؟</p>
+<ul>
+<li><code>hostname</code> و <code>ip domain-name</code>: بدون این دو، کلید RSA ساخته نمی‌شود (خطای رایج: «Please define a hostname other than Router»).</li>
+<li><code>crypto key generate rsa modulus 2048</code>: ساخت جفت‌کلید. ۱۰۲۴ ضعیف است؛ حداقل ۲۰۴۸.</li>
+<li><code>ip ssh version 2</code>: نسخه‌ی ۱ آسیب‌پذیر است.</li>
+<li><code>username ... secret</code>: کاربر محلی با Hash. رمز واقعی را در Git نگذارید.</li>
+<li><code>login local</code>: ورود با نام‌کاربری و رمز (نه فقط رمز Line).</li>
+<li><code>transport input ssh</code>: Telnet را می‌بندد.</li>
+</ul>
+<p>بررسی:</p>
+<pre><code>R1# show ip ssh
+R1# show ssh
+R1# show crypto key mypubkey rsa</code></pre>
+<p>در <code>show ip ssh</code> باید «SSH Enabled - version 2.0» ببینید.</p>
+
+<h2>۴. محدودکردن دسترسی (امنیت لایه‌ای)</h2>
+<p>فقط Subnet مدیریت (VLAN10) اجازه‌ی SSH داشته باشد:</p>
+<pre><code>R1(config)# ip access-list standard MGMT-ONLY
+R1(config-std-nacl)# permit 10.10.10.0 0.0.0.255
+R1(config-std-nacl)# deny any log
+R1(config-std-nacl)# exit
+R1(config)# line vty 0 4
+R1(config-line)# access-class MGMT-ONLY in
+R1(config-line)# end</code></pre>
+<p><code>0.0.0.255</code> یک <span class="en">Wildcard Mask</span> است: معکوسِ Mask (برای /24 همان 255.255.255.0 ← 0.0.0.255). بیت ۰ یعنی «باید مطابقت داشته باشد» و ۱ یعنی «مهم نیست». <code>access-class</code> فقط ترافیک ورودی به VTY را فیلتر می‌کند (نه ترافیک عبوری).</p>
+<p>تنظیمات تکمیلی مفید: <code>ip ssh time-out 60</code> و <code>ip ssh authentication-retries 3</code>.</p>
+<div class="box"><b class="t">هشدار: قفل‌شدن از دستگاه</b>قبل از <code>access-class</code>، مطمئن شوید آدرس خودتان در ACL مجاز است؛ وگرنه خودتان بیرون می‌مانید. از <code>reload in 5</code> (درس قبل) به‌عنوان شبکه‌ی ایمنی استفاده کنید.</div>
+
+<h2>۵. مثال‌ها</h2>
+<details open><summary>ساده</summary><p>از R1 به SW1 وصل شوید: <code>ssh -l admin 10.10.10.2</code>؛ اگر پرسید «Are you sure», بله.</p></details>
+<details open><summary>متوسط</summary><p>Telnet را غیرفعال کنید (<code>transport input ssh</code>) و ثابت کنید با <code>telnet 10.10.10.2</code> از R1 رد می‌شود (Connection refused).</p></details>
+<details open><summary>سخت</summary><p>ACL را طوری بنویسید که فقط ۲ آدرس مشخص (۱۰.۱۰.۱۰.۵۰ و ۱۰.۱۰.۱۰.۶۰) اجازه داشته باشند؛ و تست کنید از آدرس دیگر رد می‌شود. نکته: مبدأ تست را از Loopback روتر با <code>ssh -l admin -source-interface loopback0 ...</code> عوض کنید.</p></details>
+
+<h2>۶. تمرین‌ها</h2>
+<details><summary>۱. چرا Telnet ناامن است؟</summary><p>رمز و دستورها را بدون رمزگذاری می‌فرستد.</p></details>
+<details><summary>۲. چرا ip domain-name لازم است؟</summary><p>برای ساخت کلید RSA، نام کامل (FQDN) لازم است.</p></details>
+<details><summary>۳. Wildcard Mask برای 10.10.10.0/24؟</summary><p><code>0.0.0.255</code></p></details>
+<details><summary>۴. Wildcard Mask برای یک میزبان 10.10.10.50؟</summary><p><code>0.0.0.0</code> یا ساده‌تر <code>host 10.10.10.50</code>.</p></details>
+<details><summary>۵. Wildcard Mask برای 10.10.8.0/22؟</summary><p><code>0.0.3.255</code></p></details>
+
+<h2>۷. Lab هدایت‌شده</h2>
+<h3>گام ۱: SSH روی SW1</h3>
+<pre><code>SW1(config)# ip domain-name lab.local
+SW1(config)# crypto key generate rsa modulus 2048
+SW1(config)# ip ssh version 2
+SW1(config)# username admin privilege 15 secret &lt;PASSWORD&gt;
+SW1(config)# line vty 0 4
+SW1(config-line)# login local
+SW1(config-line)# transport input ssh
+SW1(config-line)# end
+SW1# show ip ssh</code></pre>
+<h3>گام ۲: اتصال از R1</h3>
+<pre><code>R1# ssh -l admin 10.10.10.2</code></pre>
+<p>اگر خطای «no matching key exchange method» دیدید، Image قدیمی است؛ موقتاً در Lab با <code>ssh -o KexAlgorithms=...</code> (روی کلاینت) یا فعال‌کردن الگوریتم روی سرور حل می‌شود. در Lab مهم است بدانید چرا. در تولید، Image را به‌روز کنید.</p>
+<h3>گام ۳: بستن Telnet و تست</h3>
+<pre><code>R1# telnet 10.10.10.2</code></pre>
+<p>باید رد شود (refused).</p>
+<h3>گام ۴: ACL مدیریت (با شبکه‌ی ایمنی)</h3>
+<pre><code>SW1# reload in 5
+SW1(config)# ip access-list standard MGMT-ONLY
+SW1(config-std-nacl)# permit 10.10.10.0 0.0.0.255
+SW1(config-std-nacl)# deny any log
+SW1(config)# line vty 0 4
+SW1(config-line)# access-class MGMT-ONLY in
+(SSH را دوباره امتحان کنید؛ اگر OK بود:)
+SW1# reload cancel</code></pre>
+
+<h2>۸. Lab مستقل</h2>
+<p>برای هر ۳ دستگاه Lab یک «استاندارد مدیریت امن» بنویسید (<code>03-ops/secure-mgmt-standard.md</code>): SSH v2، RSA 2048، Telnet بسته، ACL مدیریت، Timeout. و روی هر دستگاه با یک چک‌لیست بسنجید.</p>
+
+<h2>۹. عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>SSH وصل نمی‌شود</td></tr>
+<tr><th>چک‌لیست</th><td>۱) <code>show ip ssh</code> فعال است؟<br>۲) <code>transport input ssh</code> تنظیم است؟<br>۳) نام‌کاربری وجود دارد؟<br>۴) ACL مبدأ را بسته؟<br>۵) مسیر و Gateway درست است؟<br>۶) ping جواب می‌دهد؟<br>۷) الگوریتم‌ها سازگارند؟</td></tr>
+<tr><th>Symptom 2</th><td>کلید ساخته نمی‌شود</td></tr>
+<tr><th>رفع</th><td>hostname و domain-name را بزنید.</td></tr>
+</table>
+
+<h2>۱۰. سؤال‌های مرور</h2>
+<details><summary>Host Key برای چیست؟</summary><p>اثبات هویت سرور و جلوگیری از حمله‌ی Man-in-the-Middle.</p></details>
+<details><summary>access-class روی VTY چه فیلتر می‌کند؟</summary><p>فقط ارتباط‌های مدیریتی ورودی به دستگاه را.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Telnet sends credentials in clear text; SSH encrypts the whole session.</td><td>Telnet اعتبارنامه‌ها را متن ساده می‌فرستد؛ SSH کل Session را رمزگذاری می‌کند.</td></tr>
+<tr><td>Generate a 2048-bit RSA key pair before enabling SSH version 2.</td><td>قبل از فعال‌کردن SSH نسخه ۲، یک جفت‌کلید RSA ۲۰۴۸ بیتی بسازید.</td></tr>
+<tr><td>Restrict VTY access to the management subnet with an access class.</td><td>دسترسی VTY را با access-class به Subnet مدیریت محدود کنید.</td></tr>
+<tr><td>The host key changed, so the client warned about a possible man-in-the-middle attack.</td><td>Host Key تغییر کرد، پس Client درباره‌ی احتمال حمله‌ی مرد میانی هشدار داد.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why is Telnet considered insecure?</summary><p>It transmits usernames and passwords unencrypted, so anyone on the path can read them.</p></details>
+
+<h2>۱۱. تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ SSH روی هر ۳ دستگاه فعال و تست شده.</li>
+<li>☐ Telnet بسته شده و ثابت شده.</li>
+<li>☐ ACL مدیریت با شبکه‌ی ایمنی تست شده.</li>
+<li>☐ هیچ رمزی در Git نیست.</li>
+</ul>
+<h2>۱۲. یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>قبل از تغییر راه دور، بکاپ و <code>reload in</code> بگذارید؛ خروجی را پیش‌بینی کنید؛ رمز در ریپو نریزید.</div>
+
+`
+    },
+    'w2-6': {
+      sub: "Wireshark، ARP و ICMP و آزمون G1.",
+      html: `
+<div class="meta"><span class="tag">هفته ۲ - روز ۶</span><span class="tag">پیش‌نیاز: درس‌های ۲-۱ تا ۲-۵</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> دیدن بسته‌ها روی سیم با <span class="en">Wireshark</span> و فهمیدن ARP و ICMP. در پایان، آزمون عملی هفته (<span class="en">Gate G1</span>) را می‌دهیم.</p>
+<p><b>چرا لازم است:</b> تا اینجا فقط «نتیجه» را دیدیم (ping موفق/ناموفق). Wireshark به شما «چشم» می‌دهد تا ببینید واقعاً چه اتفاقی افتاد. مثل پزشکی که به‌جای حدس‌زدن، عکس رادیولوژی می‌گیرد.</p>
+<ul>
+<li><b>در کار روزانه:</b> وقتی «شبکه کند است» یا «اتصال قطع می‌شود»، فقط Capture می‌تواند ثابت کند مشکل از کجاست.</li>
+<li><b>در امنیت:</b> تشخیص ARP Spoofing، اسکن پورت و ترافیک مشکوک.</li>
+<li><b>در دوره:</b> از هفته‌های بعد، همه‌ی عیب‌یابی‌ها با Capture اثبات می‌شود.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>مفهوم فریم و بسته ← ARP ← ICMP ← گرفتن Capture ← فیلترها ← مثال ساده/متوسط/سخت ← Lab ← Gate G1.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>ARP</td><td>Address Resolution Protocol</td><td>تبدیل IP به MAC</td></tr>
+<tr><td>ICMP</td><td>Internet Control Message Protocol</td><td>پیام‌های کنترلی/تشخیصی مثل ping</td></tr>
+<tr><td>TTL</td><td>Time To Live</td><td>عمر بسته؛ با هر روتر یک واحد کم می‌شود</td></tr>
+<tr><td>MAC</td><td>Media Access Control address</td><td>آدرس فیزیکی کارت شبکه</td></tr>
+<tr><td>BPF</td><td>Berkeley Packet Filter</td><td>سینتکس فیلتر هنگام Capture</td></tr>
+<tr><td>pcap</td><td>Packet Capture</td><td>فایل ضبط بسته‌ها</td></tr>
+<tr><td>MITM</td><td>Man-In-The-Middle</td><td>حمله مرد میانی</td></tr>
+<tr><td>Spoofing</td><td>Spoofing</td><td>جعل هویت (آدرس) در شبکه</td></tr>
+<tr><td>G1</td><td>Gate 1</td><td>نقطه کنترل کیفیت پایان هفته ۲</td></tr>
+</table>
+
+
+
+<h2>۱. فریم، بسته و لایه‌ها (ساده)</h2>
+<p>مثل نامه‌ای که داخل پاکت و آن داخل یک بسته‌ی پستی است. داده را لایه‌به‌لایه می‌پیچند:</p>
+<pre><code>[ Ethernet: MAC مقصد | MAC مبدأ ]   لایه ۲ (فریم)
+   [ IP: IP مبدأ | IP مقصد ]        لایه ۳ (بسته)
+      [ ICMP یا TCP/UDP ]           لایه ۴ و بالاتر
+         [ داده ]</code></pre>
+<p>سوییچ با <b>MAC</b> تصمیم می‌گیرد (فریم)، روتر با <b>IP</b> (بسته). این تفاوت را همیشه به یاد داشته باشید.</p>
+
+<h2>۲. ARP: «این IP مال کیست؟»</h2>
+<figure class="fig"><svg viewBox="0 0 720 230" role="img" aria-label="ARP flow"><rect x="60" y="20" width="120" height="44" rx="8" class="bx"/><text x="120" y="40" text-anchor="middle">Host A</text><text x="120" y="56" text-anchor="middle" class="cap">10.10.10.1</text><path d="M120 64 V215" class="ln" stroke-dasharray="4 4"/><rect x="330" y="20" width="120" height="44" rx="8" class="bx"/><text x="390" y="40" text-anchor="middle">Switch</text><text x="390" y="56" text-anchor="middle" class="cap"></text><path d="M390 64 V215" class="ln" stroke-dasharray="4 4"/><rect x="600" y="20" width="120" height="44" rx="8" class="bx"/><text x="660" y="40" text-anchor="middle">Host B</text><text x="660" y="56" text-anchor="middle" class="cap">10.10.10.2</text><path d="M660 64 V215" class="ln" stroke-dasharray="4 4"/><path d="M120 100 H660" class="rq"/><path d="M652 94 l8 6 l-8 6" class="rq"/><text x="390" y="92" text-anchor="middle">① ARP Request (Broadcast ff:ff:ff:ff:ff:ff): who has 10.10.10.2 ?</text><path d="M660 160 H120" class="rp"/><path d="M128 154 l-8 6 l8 6" class="rp"/><text x="390" y="152" text-anchor="middle">② ARP Reply (Unicast): 10.10.10.2 is at MAC-B</text><text x="390" y="200" text-anchor="middle">③ ICMP Echo Request / Reply  (ping)</text></svg><figcaption>شکل ۴: ping اول چرا کندتر است؟ چون اول ARP انجام می‌شود.</figcaption></figure>
+
+<p>Host فقط IP مقصد را می‌داند ولی فریم به MAC نیاز دارد. ARP این نگاشت را پیدا می‌کند:</p>
+<ol>
+<li><b>ARP Request</b> (Broadcast به <code>ff:ff:ff:ff:ff:ff</code>): «چه کسی 10.10.10.2 را دارد؟ به 10.10.10.1 بگو.»</li>
+<li>همه‌ی دستگاه‌های VLAN دریافت می‌کنند؛ فقط صاحب IP جواب می‌دهد.</li>
+<li><b>ARP Reply</b> (Unicast): «10.10.10.2 در MAC فلان است.»</li>
+<li>جواب در <span class="en">ARP Cache</span> ذخیره می‌شود (چند دقیقه).</li>
+</ol>
+<p>به همین دلیل اولین ping همیشه کندتر است یا گاهی یک بسته از دست می‌رود (<code>.!!!!</code>): اول باید ARP انجام شود.</p>
+<p>مشاهده روی روتر: <code>show ip arp</code></p>
+
+<h2>۳. ICMP: ابزار تشخیص</h2>
+<table>
+<tr><th>Type</th><th>معنی</th><th>کجا می‌بینیم</th></tr>
+<tr><td>8</td><td>Echo Request</td><td>ping رفت</td></tr>
+<tr><td>0</td><td>Echo Reply</td><td>ping برگشت</td></tr>
+<tr><td>3</td><td>Destination Unreachable</td><td>مسیر/پورت وجود ندارد (<code>U</code> در ping سیسکو)</td></tr>
+<tr><td>11</td><td>Time Exceeded</td><td>TTL تمام شد (traceroute)</td></tr>
+</table>
+<p><b>TTL:</b> هر روتر آن را ۱ کم می‌کند؛ اگر صفر شد بسته دور ریخته می‌شود تا در حلقه نماند. Windows معمولاً ۱۲۸ و لینوکس ۶۴ می‌فرستد؛ از روی TTL دریافتی می‌توان حدس زد بسته چند روتر رد شده.</p>
+
+<h2>۴. گرفتن Capture در PNetLab</h2>
+<ul>
+<li>روی لینک بین دو دستگاه کلیک راست کنید (یا روی Interface) و <b>Capture</b> را بزنید؛ Wireshark روی سیستم شما باز می‌شود (PNetLab از مسیر وب و پروتکل مخصوص این کار را می‌کند).</li>
+<li>جایگزین روی خود IOS (در حالت EXEC، نه Config):</li>
+</ul>
+<pre><code>R1# monitor capture CAP1 interface gi0/0 both
+R1# monitor capture CAP1 match any
+R1# monitor capture CAP1 start
+... ping ...
+R1# monitor capture CAP1 stop
+R1# show monitor capture CAP1 buffer brief</code></pre>
+<p>اگر دستور روی Image شما فقط «پذیرفته می‌شود ولی بسته‌ای نمی‌گیرد» (در Probe هفته ۱ دیدیم)، از Capture لینک PNetLab استفاده کنید. باز هم: پذیرفته‌شدن ≠ کارکردن.</p>
+
+<h2>۵. فیلترهای Wireshark (مهم‌ترین مهارت)</h2>
+<table>
+<tr><th>فیلتر</th><th>معنی</th></tr>
+<tr><td><code>arp</code></td><td>فقط ARP</td></tr>
+<tr><td><code>icmp</code></td><td>فقط ping</td></tr>
+<tr><td><code>ip.addr == 10.10.10.2</code></td><td>هر بسته‌ی مربوط به این IP</td></tr>
+<tr><td><code>eth.addr == aa:bb:cc:00:01:00</code></td><td>بر اساس MAC</td></tr>
+<tr><td><code>icmp.type == 8</code></td><td>فقط Echo Request</td></tr>
+<tr><td><code>arp or icmp</code></td><td>ترکیب با or/and</td></tr>
+<tr><td><code>!arp</code></td><td>همه به‌جز ARP</td></tr>
+</table>
+<div class="box"><b class="t">دو نوع فیلتر</b><b>Capture Filter</b> (قبل از شروع، سبک‌تر، سینتکس BPF مثل <code>host 10.10.10.2</code>) و <b>Display Filter</b> (بعد از گرفتن، قدرتمندتر؛ جدول بالا).</div>
+
+<h2>۶. مثال‌ها</h2>
+<details open><summary>ساده: ping اول</summary><p>Capture را شروع کنید، <code>clear arp</code> بزنید، <code>ping 10.10.10.2</code>. با فیلتر <code>arp or icmp</code> ببینید: اول ARP Request (Broadcast) و ARP Reply، بعد ۵ جفت Echo Request/Reply.</p></details>
+<details open><summary>متوسط: ping بیرون از Subnet</summary><p>از R1 به آدرسی در Subnet دیگر بزنید و ببینید MAC مقصد فریم، MAC Gateway است، نه MAC مقصد نهایی (ولی IP مقصد همان مقصد نهایی است). این مهم‌ترین نکته‌ی روتینگ است.</p></details>
+<details open><summary>سخت: عیب‌یابی با Capture</summary><p>Mask یک طرف را عمداً اشتباه کنید (درس ۲-۱) و Capture بگیرید: خواهید دید ARP Requestهای بدون جواب یا Echo Requestهای بدون Reply. یعنی مشکل در لایه ۲/۳ همان‌جاست و نه در برنامه.</p></details>
+
+<h2>۷. تمرین‌ها</h2>
+<details><summary>۱. ARP Request به چه MAC مقصدی فرستاده می‌شود؟</summary><p>Broadcast: ff:ff:ff:ff:ff:ff</p></details>
+<details><summary>۲. چرا اولین ping گاهی یک بسته از دست می‌دهد؟</summary><p>چون ARP هنوز حل نشده؛ بسته‌ی اول صبر می‌کند یا تایم‌اوت می‌شود.</p></details>
+<details><summary>۳. در ping به مقصد بیرون از Subnet، MAC مقصد چیست؟</summary><p>MAC Default Gateway.</p></details>
+<details><summary>۴. فیلتر برای دیدن فقط ping از 10.10.10.1؟</summary><p><code>icmp and ip.src == 10.10.10.1</code></p></details>
+<details><summary>۵. TTL=127 در جواب یعنی چه؟</summary><p>احتمالاً مبدأ Windows (۱۲۸) بوده و از یک روتر عبور کرده.</p></details>
+
+<h2>۸. Lab هدایت‌شده</h2>
+<ol>
+<li>در PNetLab روی لینک R1-SW1 Capture شروع کنید.</li>
+<li>روی R1: <code>clear arp</code> سپس <code>ping 10.10.10.2</code>.</li>
+<li>فیلتر <code>arp or icmp</code>: فریم‌ها را مشخص کنید و MAC/IPها را در جدولی یادداشت کنید.</li>
+<li>زمان بین ARP Request و Reply را بخوانید.</li>
+<li>Capture را به نام <code>pcap/ping-first.pcapng</code> ذخیره کنید (فایل را در Git نگذارید؛ ممکن است اطلاعات داشته باشد، فقط جدول خلاصه را بنویسید).</li>
+</ol>
+
+<h2>۹. Lab مستقل</h2>
+<p>یک سناریو: Gateway اشتباه روی یک Host (مثلاً <code>10.10.10.254</code> به‌جای <code>.1</code>). Capture بگیرید و در گزارش یک‌صفحه‌ای (<code>03-ops/ts14-gateway-wrong.md</code>) بنویسید: علامت چیست، چه بسته‌ای دیدید، چطور رفع کردید.</p>
+
+<h2>۱۰. Gate G1: آزمون عملی پایان هفته ۲</h2>
+<p>موارد زیر را بدون نگاه به درس انجام دهید و برای هر مورد یک «مدرک» (خروجی دستور) داشته باشید:</p>
+<table>
+<tr><th>#</th><th>وظیفه</th><th>مدرک</th></tr>
+<tr><td>۱</td><td>Subnet کردن: ۴ مثال تصادفی (شبکه/Broadcast/Hostها)</td><td>جدول جواب‌ها</td></tr>
+<tr><td>۲</td><td>VLSM برای ۴ بخش و ثبت در IP Plan</td><td><code>02-design/ip-plan.md</code></td></tr>
+<tr><td>۳</td><td>IPv6: Prefix به VLANها، ping و جدول همسایه</td><td><code>show ipv6 neighbors</code></td></tr>
+<tr><td>۴</td><td>تنظیمات پایه + بکاپ + Rollback موفق</td><td>خروجی <code>dir flash:</code> و ping بعد از Rollback</td></tr>
+<tr><td>۵</td><td>SSH v2، Telnet بسته، ACL مدیریت</td><td><code>show ip ssh</code> و تست رد Telnet</td></tr>
+<tr><td>۶</td><td>Capture ARP+ICMP و توضیح هر فریم</td><td>جدول MAC/IP</td></tr>
+<tr><td>۷</td><td>رفع یک خرابی (Mask یا Gateway) با Capture</td><td>گزارش یک‌صفحه‌ای</td></tr>
+</table>
+<p><b>معیار قبولی:</b> حداقل ۶ از ۷ مورد با مدرک. هر مورد ناقص، بازبینی می‌شود و در «مرور اشتباهات» ثبت می‌گردد. وقتی تمام شد بگویید «G1 انجام شد» تا بررسی کنیم و هفته ۳ را شروع کنیم.</p>
+
+<h2>۱۱. سؤال‌های مرور</h2>
+<details><summary>تفاوت تصمیم سوییچ و روتر؟</summary><p>سوییچ با MAC (لایه ۲)، روتر با IP (لایه ۳).</p></details>
+<details><summary>ARP چرا Broadcast است؟</summary><p>چون MAC مقصد را نمی‌دانیم؛ همه را می‌پرسیم.</p></details>
+<details><summary>Echo Request و Reply چه Typeهایی هستند؟</summary><p>۸ و ۰.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>The first ping is slower because the host must resolve the MAC address with ARP.</td><td>اولین ping کندتر است چون Host باید MAC را با ARP پیدا کند.</td></tr>
+<tr><td>Apply a display filter to isolate ICMP echo requests.</td><td>یک Display Filter بزنید تا فقط Echo Requestهای ICMP را جدا کنید.</td></tr>
+<tr><td>The destination MAC is the gateway's, while the destination IP stays the final host.</td><td>MAC مقصد، مال Gateway است در حالی که IP مقصد همان Host نهایی می‌ماند.</td></tr>
+<tr><td>A packet is dropped when its TTL reaches zero.</td><td>وقتی TTL به صفر برسد بسته دور ریخته می‌شود.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Which Ethernet destination address does an ARP request use?</summary><p>The broadcast address ff:ff:ff:ff:ff:ff.</p></details>
+
+<h2>۱۲. تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ Capture ping را انجام و توضیح دهم.</li>
+<li>☐ ۵ فیلتر Wireshark را بدون نگاه بنویسم.</li>
+<li>☐ Gate G1 را کامل کنم.</li>
+</ul>
+<h2>۱۳. یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>دستور <code>monitor capture</code> در EXEC است؛ پذیرفته‌شدن دستور ≠ کار کردن آن؛ و فایل Capture را در Git نگذارید.</div>
+
 `
     },
 
@@ -689,7 +1575,7 @@ HQ-ACC-SW1(config)# end</code></pre>
   const LATIN=/[A-Za-z0-9][A-Za-z0-9_\-\.\/:@#%+=&*]*(?:\s+[A-Za-z0-9][A-Za-z0-9_\-\.\/:@#%+=&*]*)*/g;
   function wrapLatin(root){
     const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(n){
-      const p=n.parentElement; if(!p||p.closest('pre,code,.en,script,style,summary-nolatin')) return NodeFilter.FILTER_REJECT;
+      const p=n.parentElement; if(!p||p.closest('pre,code,.en,script,style,svg,summary-nolatin')) return NodeFilter.FILTER_REJECT;
       return /[A-Za-z]/.test(n.nodeValue)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}});
     const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
     nodes.forEach(n=>{
