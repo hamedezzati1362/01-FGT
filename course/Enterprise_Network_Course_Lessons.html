@@ -80,6 +80,7 @@ td,th{unicode-bidi:plaintext}
 .fig svg{width:100%;height:auto;display:block;direction:ltr}
 .fig text{fill:var(--text);font-size:13px;font-family:var(--font-ui)}
 .fig .cap{font-size:12px;fill:var(--muted)}
+.fig text.on+text.cap{fill:#0b1018}
 .fig .bx{fill:var(--panel2);stroke:var(--line)}
 .fig .net{fill:var(--accent)}.fig .hst{fill:var(--accent2)}.fig .wrn{fill:var(--warn)}
 .fig .on{fill:#0b1018;font-weight:700}
@@ -468,13 +469,25 @@ Result: A sends to its Default Gateway (a router is required)</code></pre>
 
 <h2><span class="hn">۵.</span> Packet Flow: آیا دو Host هم‌شبکه‌اند؟</h2>
 <p>وقتی Host می‌خواهد بسته بفرستد، با Mask خودش تصمیم می‌گیرد: آدرس مقصد را با Mask <span class="en">AND</span> می‌کند؛ اگر شبکه برابر شبکه خودش بود، مقصد «همین لینک» است و با <span class="en">ARP</span> مستقیم می‌فرستد؛ وگرنه بسته را به <span class="en">Default Gateway</span> می‌دهد.</p>
-<pre><code>Host A: 10.10.20.77/26    (شبکه 10.10.20.64 ... .127)
-Host B: 10.10.20.130/26   (شبکه 10.10.20.128 ... .191)
+<pre><code>Host A: 10.10.20.77/26    network 10.10.20.64   (range 64 .. 127)
+Host B: 10.10.20.130/26   network 10.10.20.128  (range 128 .. 191)
 
-A می‌خواهد به B بفرستد:
-  B در شبکه A هست؟  130 &gt; 127  -&gt; خیر
-  پس A بسته را به Gateway می‌دهد (روتر).</code></pre>
+A wants to send to B:
+  Is B in A's network?   130 is greater than 127  ->  NO
+  So A sends the packet to its Default Gateway (the router).</code></pre>
 <p>نکته جالب: دو آدرس <code>10.10.20.77</code> و <code>10.10.20.130</code> ظاهراً شبیه‌اند ولی در دو Subnet متفاوت‌اند، و بدون Router با هم حرف نمی‌زنند.</p>
+
+<h2>اگر Default Gateway تنظیم نشده باشد چه می‌شود؟</h2>
+<p>تصمیم Host همیشه با IP و Mask خودش شروع می‌شود. سپس بسته به نتیجه، یکی از دو مسیر زیر را می‌رود. نکته‌ی مهم این است که <b>ARP در هر دو مسیر انجام می‌شود</b>، ولی برای MAC متفاوت.</p>
+<figure class="fig"><svg viewBox="0 0 720 330" role="img" aria-label="send decision flow"><rect x="250" y="10" width="220" height="44" rx="8" class="bx"/><text x="360" y="37" text-anchor="middle">Host wants to send a packet</text><path d="M360 54 V80" class="ln"/><rect x="230" y="80" width="260" height="52" rx="8" class="wrn"/><text x="360" y="103" text-anchor="middle" class="on">Destination in my subnet?</text><text x="360" y="119" text-anchor="middle" class="cap">IP AND Mask = same network ?</text><path d="M230 106 H120 V150" class="rp"/><text x="150" y="98" class="cap">YES</text><path d="M490 106 H600 V150" class="rq"/><text x="540" y="98" class="cap">NO</text><rect x="20" y="150" width="200" height="56" rx="8" class="hst"/><text x="120" y="175" text-anchor="middle" class="on">ARP for destination MAC</text><text x="120" y="191" text-anchor="middle" class="cap">then send directly</text><rect x="500" y="150" width="200" height="52" rx="8" class="wrn"/><text x="600" y="181" text-anchor="middle" class="on">Default Gateway set?</text><path d="M600 202 V232" class="ln"/><path d="M500 176 H430 V250" class="rq"/><text x="460" y="168" class="cap">YES</text><text x="612" y="222" class="cap">NO</text><rect x="330" y="250" width="200" height="56" rx="8" class="net"/><text x="430" y="275" text-anchor="middle" class="on">ARP for gateway MAC</text><text x="430" y="291" text-anchor="middle" class="cap">send to gateway (router)</text><rect x="560" y="232" width="150" height="56" rx="8" class="bx"/><text x="635" y="257" text-anchor="middle">No route</text><text x="635" y="273" text-anchor="middle" class="cap">send fails</text></svg><figcaption>شکل: درخت تصمیم Host هنگام ارسال بسته؛ در هر دو حالت مسیر درست با ARP کامل می‌شود.</figcaption></figure>
+<table>
+<tr><th>حالت</th><th>ARP برای چه MAC؟</th><th>فریم به کجا می‌رود؟</th></tr>
+<tr><td>مقصد در Subnet خودم است</td><td>MAC مقصد نهایی</td><td>مستقیم به مقصد</td></tr>
+<tr><td>مقصد در Subnet دیگر است</td><td>MAC Default Gateway</td><td>به روتر، و روتر ادامه می‌دهد</td></tr>
+<tr><td>مقصد در Subnet دیگر است و Gateway نیست</td><td>—</td><td>ارتباط برقرار نمی‌شود (جایی برای ارسال نیست)</td></tr>
+</table>
+<p>پس دو کامپیوتر در دو Subnet متفاوت، بدون Default Gateway (و بدون Route دستی دیگر)، نمی‌توانند با هم ارتباط بگیرند. ARP فقط برای دستگاه‌های «روی همین لینک» جواب می‌دهد؛ هیچ دستگاهی در Subnet دیگر به ARP Request شما پاسخ نمی‌دهد.</p>
+<div class="box"><b class="t">قاعده‌ی خلاصه</b>اگر مقصد همسایه است، با ARP خودش را پیدا می‌کنیم. اگر همسایه نیست، بسته را برای دروازه می‌فرستیم و دروازه تصمیم می‌گیرد.</div>
 
 <h2><span class="hn">۶.</span> آدرس‌های خاص (باید بشناسید)</h2>
 <table>
@@ -638,6 +651,41 @@ R1# ping 10.10.10.130</code></pre>
 <h2><span class="hn">۱.</span> مشکل: تقسیم هم‌اندازه و هدررفت آدرس</h2>
 <p>فرض کنید بلوک <code>192.168.10.0/24</code> (۲۵۶ آدرس) دارید و چهار بخش می‌خواهید: فروش (۱۰۰ کامپیوتر)، فنی (۵۰)، مدیریت (۱۲)، و یک لینک بین دو روتر (۲).</p>
 <p>اگر ساده‌لوحانه همه را /26 (۶۲ Host) بسازید، فروش جا نمی‌شود (۱۰۰ &gt; ۶۲). اگر همه را /25 (۱۲۶ Host) بسازید، فقط ۲ Subnet می‌گیرید و چهار بخش جا نمی‌شود. یعنی با اندازه‌ی ثابت، نه هدر نمی‌دهیم و نه جا می‌شویم. راه‌حل: <b>اندازه‌ی متغیر</b>.</p>
+
+<h2>سؤال مهم: در شبکه داخلی برای IP پولی نمی‌دهیم، پس چرا اینقدر مراقب هدررفت هستیم؟</h2>
+<p>حرف درستی است: آدرس‌های خصوصی (مثل 10.0.0.0/8 یا 192.168.0.0/16) هزینه ندارند و هیچ‌کس برای آن‌ها فاکتور نمی‌فرستد. اما «پول» تنها دلیل VLSM نیست. دلیل‌های اصلی این‌هاست:</p>
+<table>
+<tr><th>دلیل</th><th>توضیح</th></tr>
+<tr><td>۱. بلوک شما محدود است</td><td>معمولاً از یک بلوک مشخص (مثلاً یک /24 یا /22) استفاده می‌کنید. اگر هر لینک دو روتر یک /24 کامل بگیرد، بلوک زود تمام می‌شود.</td></tr>
+<tr><td>۲. رشد آینده</td><td>شعبه‌ی جدید و VLAN جدید می‌آید. اگر فضا را هدر داده باشید، مجبور می‌شوید همه‌چیز را عوض کنید.</td></tr>
+<tr><td>۳. مدیریت و مستندسازی</td><td>Subnetهای درست‌اندازه و منظم، IP Plan را خوانا و عیب‌یابی را سریع می‌کند.</td></tr>
+<tr><td>۴. خلاصه‌سازی مسیرها</td><td>وقتی آدرس‌ها پشت‌سرهم و منظم باشند، می‌شود چند Route را در یک Route خلاصه کرد (جدول Route کوچک‌تر).</td></tr>
+<tr><td>۵. جلوگیری از هم‌پوشانی</td><td>در ادغام شرکت‌ها یا اتصال VPN بین دو سایت، بازه‌ها نباید هم‌پوشانی داشته باشند؛ مصرف بی‌حساب بازه این خطر را بالا می‌برد.</td></tr>
+<tr><td>۶. امنیت و Broadcast</td><td>Subnet خیلی بزرگ یعنی Broadcast Domain بزرگ و Policy فایروال درشت و نامحدود.</td></tr>
+</table>
+<div class="box"><b class="t">یک نکته‌ی صادقانه</b>اگر بلوک خیلی بزرگی مثل 10.0.0.0/8 دارید، کمبود آدرس معمولاً مشکل اصلی نیست. آن‌جا دلیل‌های ۳ تا ۶ (نظم، خلاصه‌سازی، هم‌پوشانی و امنیت) مهم‌ترند. VLSM در بلوک‌های کوچک‌تر و در لینک‌های بین روترها اهمیت بیشتری دارد.</div>
+<h3>VLSM کجا چقدر مهم است؟</h3>
+<table>
+<tr><th>محیط</th><th>اهمیت VLSM</th></tr>
+<tr><td>شبکه‌ی خانگی کوچک</td><td>کم</td></tr>
+<tr><td>شبکه‌ی شرکت کوچک</td><td>متوسط</td></tr>
+<tr><td>سازمان بزرگ</td><td>بسیار زیاد</td></tr>
+<tr><td>ISP و شبکه‌های گسترده</td><td>بسیار زیاد (IPv4 عمومی محدود و گران است)</td></tr>
+<tr><td>لینک بین روترها</td><td>بسیار مهم (فقط ۲ آدرس لازم است)</td></tr>
+</table>
+<h3>مثال: ۳۰۰ کامپیوتر؛ یک /23 یا سه /24؟</h3>
+<pre><code>Option 1: one /23
+  Mask          = 255.255.254.0
+  Total         = 2 ^ 9 = 512
+  Usable        = 512 - 2 = 510
+  Spare         = 510 - 300 = 210
+  Broadcast domains = 1  (all 300 PCs together)
+
+Option 2: three /24
+  Usable each   = 254   (total 762)
+  Broadcast domains = 3  (separated)
+  Needs a router or L3 switch between them</code></pre>
+<p>از نظر ظرفیت، هر دو گزینه کافی است. انتخاب نهایی به طراحی بستگی دارد: اگر واحدهای سازمان باید از هم جدا باشند (امنیت، کاهش Broadcast، Policy جدا)، سه Subnet بهتر است؛ ولی برای ارتباط بینشان به دستگاه لایه ۳ نیاز دارید (روتر یا سوییچ لایه ۳). اگر همه یک گروه یکسان‌اند و نیازی به جداسازی نیست، یک /23 ساده‌تر است.</p>
 
 <h2><span class="hn">۲.</span> ایده‌ی VLSM به زبان ساده</h2>
 <p><span class="en">VLSM</span> یعنی «Subnet Mask با طول متغیر» (<span class="en">Variable Length Subnet Mask</span>). مثل برش پیتزا برای مهمان‌ها: به کسی که گرسنه‌تر است برش بزرگ‌تر می‌دهید و به بقیه کوچک‌تر. فقط یک قانون هست: برش‌ها نباید روی هم بیفتند.</p>
@@ -875,9 +923,9 @@ R1(config)# end</code></pre>
 <h2><span class="hn">۲.</span> دو قانون کوتاه‌نویسی</h2>
 <p><b>قانون ۱: صفرهای ابتدای هر گروه را حذف کن.</b> مثال: <code>0db8</code> ← <code>db8</code> و <code>0010</code> ← <code>10</code> و <code>0000</code> ← <code>0</code>.</p>
 <p><b>قانون ۲: یک (فقط یک) رشته‌ی متوالی از گروه‌های تماماً صفر را با <code>::</code> جایگزین کن.</b></p>
-<pre><code>کامل:    2001:0db8:0010:0010:0000:0000:0000:0001
-قانون ۱:  2001:db8:10:10:0:0:0:1
-قانون ۲:  2001:db8:10:10::1</code></pre>
+<pre><code>Full   : 2001:0db8:0010:0010:0000:0000:0000:0001
+Rule 1 : 2001:db8:10:10:0:0:0:1
+Rule 2 : 2001:db8:10:10::1</code></pre>
 <div class="box"><b class="t">چرا فقط یک بار ::؟</b>اگر دو بار بنویسید، معلوم نیست هرکدام چند گروه صفر را نشان می‌دهند. پس <code>2001::5::1</code> غلط است. اگر دو رشته‌ی صفر داشتید، <code>::</code> را روی <b>بلندترین</b> رشته بگذارید.</div>
 
 <h2><span class="hn">۳.</span> مثال‌های کوتاه‌نویسی (ساده تا سخت)</h2>
@@ -914,8 +962,8 @@ Full   : 2001:0db8:000a:0000:0000:0000:0001:0002</code></pre>
 <h3>۵-۲. EUI-64: ساخت Interface ID از MAC</h3>
 <p>MAC آدرس ۴۸ بیتی است؛ ۶۴ بیت لازم داریم. روش: وسط MAC عدد <code>fffe</code> را بگذار و بیت هفتم بایت اول را وارونه کن. مثال: MAC = <code>aabb.cc00.0100</code>:</p>
 <pre><code>MAC:            aa bb cc 00 01 00
-گام ۱ (وسط fffe): aa bb cc ff fe 00 01 00
-گام ۲ (وارونه‌کردن بیت U/L): بایت اول aa XOR 02 = a8
+Step 1 (insert fffe) : aa bb cc ff fe 00 01 00
+Step 2 (flip U/L bit) : first byte aa XOR 02 = a8
 Interface ID:   a8bb:ccff:fe00:0100</code></pre>
 <p>پس آدرس Link-Local می‌شود <code>fe80::a8bb:ccff:fe00:100</code>. (فقط ایده را بدانید: MAC در آدرس «نشت» می‌کند و برای حریم خصوصی، سیستم‌عامل‌های جدید به‌جای EUI-64 مقدار تصادفی می‌سازند.)</p>
 <h3>۵-۳. SLAAC و کشف همسایه (NDP)</h3>
@@ -1071,7 +1119,7 @@ R1(config)# line console 0
 R1(config-line)# logging synchronous
 R1(config-line)# exec-timeout 10 0
 R1(config-line)# exit
-R1(config)# banner motd # مجاز نیست: دسترسی غیرمجاز پیگرد دارد #
+R1(config)# banner motd # Authorized access only #
 R1(config)# enable secret &lt;PASSWORD&gt;
 R1(config)# end</code></pre>
 <p>خط‌به‌خط:</p>
@@ -1091,8 +1139,8 @@ R1(config)# end</code></pre>
 <p>تشبیه: running مثل «متنی که در Word تایپ کرده‌اید و ذخیره نکرده‌اید»؛ startup همان فایل ذخیره‌شده است.</p>
 <pre><code>R1# show running-config
 R1# show startup-config
-R1# copy running-config startup-config      (یا: write memory)
-R1# show archive                              (در صورت پشتیبانی)</code></pre>
+R1# copy running-config startup-config      (or: write memory)
+R1# show archive                              (if supported)</code></pre>
 <p>اشتباه رایج: بعد از تغییر ذخیره نمی‌کنید و بعد از Reload همه‌چیز می‌پرد. جلوگیری: عادت کنید هر تغییر موفق ← <code>copy run start</code>.</p>
 
 <h2><span class="hn">۵.</span> بکاپ و Rollback (قلب درس)</h2>
@@ -1109,8 +1157,8 @@ R1# configure replace flash:R1-before-change.cfg force</code></pre>
 <p>گزینه‌ی <code>list</code> فقط تفاوت‌ها را نشان می‌دهد (Dry-run). اگر دستور در Image شما نبود، روش جایگزین: <code>copy flash:R1-before-change.cfg startup-config</code> و سپس <code>reload</code>.</p>
 <h3>۵-۴. «Reload in»: شبکه‌ی ایمنی</h3>
 <pre><code>R1# reload in 10
-... تغییر خطرناک ...
-R1# reload cancel        (اگر موفق بود)</code></pre>
+... risky change ...
+R1# reload cancel        (if it worked)</code></pre>
 <p>مثل ماشین‌هایی که ده دقیقه بعد خودشان خاموش می‌شوند. اگر تغییر ارتباط شما را قطع کرد، دستگاه بعد از ۱۰ دقیقه به startup-config قبلی بر می‌گردد. این تکنیک نجات‌بخش است؛ مخصوصاً در تغییرات راه دور.</p>
 
 <h2><span class="hn">۶.</span> مثال‌ها (ساده تا سخت)</h2>
@@ -1143,7 +1191,7 @@ R1# ping 10.10.10.2</code></pre>
 <p>اگر <code>configure replace</code> در Image شما پشتیبانی نشد (ثبت کنید)، با <code>copy flash:R1-good.cfg running-config</code> ادغام کنید و Interface را دستی اصلاح نمایید.</p>
 <h3>گام ۵: تمرین reload in</h3>
 <pre><code>R1# reload in 5
-(یک تغییر بی‌خطر انجام دهید)
+(make a harmless change)
 R1# reload cancel</code></pre>
 
 <h2><span class="hn">۹.</span> Lab مستقل</h2>
@@ -1315,7 +1363,7 @@ SW1(config-std-nacl)# permit 10.10.10.0 0.0.0.255
 SW1(config-std-nacl)# deny any log
 SW1(config)# line vty 0 4
 SW1(config-line)# access-class MGMT-ONLY in
-(SSH را دوباره امتحان کنید؛ اگر OK بود:)
+(test SSH again; if OK:)
 SW1# reload cancel</code></pre>
 
 <h2><span class="hn">۸.</span> Lab مستقل</h2>
@@ -1388,10 +1436,10 @@ SW1# reload cancel</code></pre>
 
 <h2><span class="hn">۱.</span> فریم، بسته و لایه‌ها (ساده)</h2>
 <p>مثل نامه‌ای که داخل پاکت و آن داخل یک بسته‌ی پستی است. داده را لایه‌به‌لایه می‌پیچند:</p>
-<pre><code>[ Ethernet: MAC مقصد | MAC مبدأ ]   لایه ۲ (فریم)
-   [ IP: IP مبدأ | IP مقصد ]        لایه ۳ (بسته)
-      [ ICMP یا TCP/UDP ]           لایه ۴ و بالاتر
-         [ داده ]</code></pre>
+<pre><code>[ Ethernet: dst MAC | src MAC ]   Layer 2 (frame)
+   [ IP: src IP | dst IP ]          Layer 3 (packet)
+      [ ICMP or TCP/UDP ]           Layer 4 and above
+         [ data ]</code></pre>
 <p>سوییچ با <b>MAC</b> تصمیم می‌گیرد (فریم)، روتر با <b>IP</b> (بسته). این تفاوت را همیشه به یاد داشته باشید.</p>
 
 <h2><span class="hn">۲.</span> ARP: «این IP مال کیست؟»</h2>
