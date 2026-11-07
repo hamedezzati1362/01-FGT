@@ -214,6 +214,7 @@ window.COURSE = {
   ],
   /* اشتباه‌ها و سؤال‌ها: با هر درس جدید، موارد تازه در درس قرار می‌گیرند و اینجا ثبت می‌شوند */
   review: [
+    {lesson:"W2", type:"mistake", q:"اشتباه Claude: فرمول و مراحل عددی داخل جمله‌ی فارسی", a:"ترکیب فارسی، عدد و انگلیسی در متن راست‌به‌چپ ترتیب را به‌هم می‌ریزد. از این به بعد فرمول و محاسبه در بلوک مستقل چپ‌به‌راست و مراحل در فهرست شماره‌دار می‌آید.", },
     {lesson:"W2", type:"mistake", q:"اشتباه Claude: درس خیلی کوتاه و بدون مقدمه", a:"هر درس باید با «چه چیزی و چرا» شروع شود، بعد توضیح ساده، مثال ساده/متوسط/سخت، تمرین و Lab. این قانون در CLAUDE.md ثبت شد.", },
     {lesson:"W2", type:"question", q:"نظم جدول‌ها و فهرست‌ها", a:"هر مورد از یک فهرست (مثلاً انواع IP خصوصی) در یک سطر جدا می‌آید و متن فارسی/انگلیسی در جدول درست نمایش داده می‌شود.", },
     {lesson:"W1-B", type:"mistake", q:"اشتباه: دستور پیکربندی در حالت اشتباه (EXEC به‌جای Config)", a:"در <code>Router&gt;</code>/<code>Router#</code> دستورهایی مثل <code>interface gi0/0.10</code> یا <code>ip ssh version 2</code> خطا می‌دهند. اول <code>enable</code> و بعد <code>configure terminal</code>؛ <code>configure terminal</code> را وسط حالت Config دوباره نزنید."},
@@ -307,8 +308,30 @@ window.COURSE = {
 <tr><td>مثال: 10</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td></tr>
 <tr><td>مثال: 5</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td></tr>
 </table>
-<p><b>روش تبدیل ده‌دهی به دودویی:</b> از چپ، اگر عدد ≥ ارزش خانه بود، 1 بگذار و ارزش را کم کن؛ وگرنه 0. برای 168: 168−128=40 (خانه 128 → 1)، 40 &lt; 64 (0)، 40−32=8 (خانه 32 → 1)، 8 &lt; 16 (0)، 8−8=0 (خانه 8 → 1)، بقیه 0 ⇒ <code>10101000</code>.</p>
-<p><b>برعکس (دودویی به ده‌دهی):</b> ارزش خانه‌های 1 را جمع کن: <code>11000000</code> = 128+64 = 192.</p>
+<h3>تبدیل ده‌دهی به دودویی (گام‌به‌گام)</h3>
+<p>از چپ‌ترین خانه شروع کن و برای هر خانه یک سؤال بپرس: «آیا عدد باقی‌مانده از ارزش این خانه بزرگ‌تر یا مساوی است؟»</p>
+<ol>
+<li>اگر بله: بیت این خانه 1 است و ارزش خانه را از عدد کم کن.</li>
+<li>اگر نه: بیت این خانه 0 است و عدد تغییر نمی‌کند.</li>
+<li>تا خانه آخر (ارزش 1) ادامه بده.</li>
+</ol>
+<p>مثال: تبدیل عدد 168 (هر سطر یک خانه است):</p>
+<pre><code>Place value | Question        | Bit | Remainder
+128         | 168 >= 128 ?    |  1  | 168-128 = 40
+ 64         |  40 >=  64 ?    |  0  | 40
+ 32         |  40 >=  32 ?    |  1  | 40-32 = 8
+ 16         |   8 >=  16 ?    |  0  | 8
+  8         |   8 >=   8 ?    |  1  | 8-8 = 0
+  4         |   0 >=   4 ?    |  0  | 0
+  2         |   0 >=   2 ?    |  0  | 0
+  1         |   0 >=   1 ?    |  0  | 0
+
+Result: 168 = 10101000</code></pre>
+<h3>تبدیل دودویی به ده‌دهی</h3>
+<p>ارزش خانه‌هایی که بیتشان 1 است را با هم جمع کن:</p>
+<pre><code>11000000
+= 128 + 64
+= 192</code></pre>
 
 <h2>۳. Subnet Mask و Prefix</h2>
 <figure class="fig"><svg viewBox="0 0 720 150" role="img" aria-label="split of 192.168.10.5/24"><rect x="20" y="30" width="160" height="50" rx="8" class="net"/><text x="100" y="62" text-anchor="middle" class="on" style="font-size:22px">192</text><text x="100" y="22" text-anchor="middle" class="cap">Octet 1 (8 bit)</text><rect x="190" y="30" width="160" height="50" rx="8" class="net"/><text x="270" y="62" text-anchor="middle" class="on" style="font-size:22px">168</text><text x="270" y="22" text-anchor="middle" class="cap">Octet 2 (8 bit)</text><rect x="360" y="30" width="160" height="50" rx="8" class="net"/><text x="440" y="62" text-anchor="middle" class="on" style="font-size:22px">10</text><text x="440" y="22" text-anchor="middle" class="cap">Octet 3 (8 bit)</text><rect x="530" y="30" width="160" height="50" rx="8" class="hst"/><text x="610" y="62" text-anchor="middle" class="on" style="font-size:22px">5</text><text x="610" y="22" text-anchor="middle" class="cap">Octet 4 (8 bit)</text><path d="M20 95 H508" class="ln"/><text x="264" y="115" text-anchor="middle">Network (24 bit) = /24</text><path d="M530 95 H690" class="ln"/><text x="610" y="115" text-anchor="middle">Host (8 bit)</text></svg><figcaption>شکل ۱: آدرس 192.168.10.5/24؛ ۳ Octet اول «شبکه» و آخری «میزبان» است.</figcaption></figure>
@@ -324,28 +347,71 @@ window.COURSE = {
 <tr><td>/29</td><td>255.255.255.248</td><td>8</td><td>6</td><td>8</td></tr>
 <tr><td>/30</td><td>255.255.255.252</td><td>4</td><td>2</td><td>4</td></tr>
 </table>
-<p><b>فرمول:</b> تعداد آدرس هر Subnet = 2 به توان (32 − Prefix). دو آدرس رزرو است: اولی «آدرس شبکه» و آخری «Broadcast». پس Host قابل‌استفاده = آن عدد منهای ۲. مثال: /26 → 2⁶ = 64 آدرس → 62 Host.</p>
+<p><b>فرمول تعداد آدرس:</b> هر Subnet به‌اندازه‌ی «۲ به توان تعداد بیت‌های میزبان» آدرس دارد. دو آدرس از آن‌ها رزرو است (اولی آدرس شبکه، آخری Broadcast) و به Host داده نمی‌شود.</p>
+<pre><code>Total addresses = 2 ^ (32 - Prefix)
+Usable hosts    = 2 ^ (32 - Prefix) - 2
+
+Example (/26):
+  Host bits = 32 - 26 = 6
+  Total     = 2 ^ 6   = 64
+  Usable    = 64 - 2  = 62</code></pre>
 
 <h2>۴. محاسبه Subnet: روش گام‌به‌گام</h2>
 <p>برای هر آدرس/Prefix چهار پاسخ می‌خواهیم: <b>شبکه</b>، <b>Broadcast</b>، <b>Hostهای قابل‌استفاده (اولی تا آخری)</b>، <b>تعداد Host</b>.</p>
-<div class="box"><b class="t">روش «اندازه بلوک»</b>
-۱) Octet «جالب» را پیدا کن: همان که Mask آن 0 یا 255 نیست.
-۲) اندازه بلوک = 256 − مقدار Mask آن Octet.
-۳) شماره Octet آدرس را به نزدیک‌ترین مضرب بلوک (به پایین) گرد کن ⇒ شبکه.
-۴) Broadcast = (شبکه بعدی) − 1.
-۵) Hostها: شبکه+1 تا Broadcast−1.</div>
+<div class="box"><b class="t">روش «اندازه بلوک» (Block Size)</b>
+<ol>
+<li>Octet «جالب» را پیدا کن: همان Octetی که Mask آن نه 0 است و نه 255.</li>
+<li>اندازه بلوک را با فرمول زیر حساب کن.</li>
+<li>عدد Octet آدرس را به نزدیک‌ترین مضرب بلوک (به سمت پایین) گرد کن؛ این می‌شود آدرس شبکه.</li>
+<li>Broadcast یک عدد کمتر از شبکه بعدی است.</li>
+<li>Hostها: از «شبکه + 1» تا «Broadcast - 1».</li>
+</ol></div>
+<pre><code>Block size = 256 - (mask value of the interesting octet)
+Network    = largest multiple of Block size that is &lt;= octet value
+Broadcast  = (next network) - 1
+First host = Network + 1
+Last host  = Broadcast - 1</code></pre>
 
-<h3>مثال ۱ (ساده): <code>192.168.1.10/24</code></h3>
-<p>Mask = 255.255.255.0؛ هیچ Octet «جالب»ی نیست؛ ۳ Octet اول = شبکه. شبکه <code>192.168.1.0</code>، Broadcast <code>192.168.1.255</code>، Hostها <code>.1</code> تا <code>.254</code> (254 Host).</p>
+<h3>مثال ۱ (ساده): 192.168.1.10/24</h3>
+<pre><code>Mask       = 255.255.255.0   (no interesting octet)
+Network    = 192.168.1.0
+Broadcast  = 192.168.1.255
+Hosts      = 192.168.1.1 - 192.168.1.254
+Host count = 2^8 - 2 = 254</code></pre>
+<p>چون Mask در سه Octet اول 255 است، سه Octet اول بدون تغییر می‌ماند.</p>
 
-<h3>مثال ۲ (متوسط): <code>10.10.20.77/26</code></h3>
-<p>/26 ⇒ Mask = 255.255.255.192. Octet جالب: چهارم (192). اندازه بلوک = 256−192 = <b>64</b>. بلوک‌های ممکن: 0، 64، 128، 192. عدد 77 بین 64 و 127 است ⇒ <b>شبکه 10.10.20.64</b>. شبکه بعدی 128 است ⇒ <b>Broadcast 10.10.20.127</b>. Hostها <code>.65</code> تا <code>.126</code> (62 Host).</p>
+<h3>مثال ۲ (متوسط): 10.10.20.77/26</h3>
+<pre><code>Mask         = 255.255.255.192
+Interesting  = 4th octet (192)
+Block size   = 256 - 192 = 64
+Blocks       = 0, 64, 128, 192
+77 is between 64 and 127
+Network      = 10.10.20.64
+Next network = 10.10.20.128
+Broadcast    = 10.10.20.127
+Hosts        = 10.10.20.65 - 10.10.20.126
+Host count   = 2^6 - 2 = 62</code></pre>
 
-<h3>مثال ۳ (سخت): <code>172.16.45.200/20</code></h3>
-<p>/20 ⇒ ۸+۸+۴ بیت ⇒ Mask = 255.255.<b>240</b>.0. Octet جالب: سوم. بلوک = 256−240 = <b>16</b>. بلوک‌ها: 0، 16، 32، 48… عدد 45 بین 32 و 47 است ⇒ شبکه <code>172.16.32.0</code>. شبکه بعدی <code>172.16.48.0</code> ⇒ Broadcast <code>172.16.47.255</code>. Hostها <code>172.16.32.1</code> تا <code>172.16.47.254</code>. تعداد: 2¹² − 2 = <b>4094</b>.</p>
+<h3>مثال ۳ (سخت): 172.16.45.200/20</h3>
+<pre><code>/20 = 8 + 8 + 4 bits
+Mask         = 255.255.240.0
+Interesting  = 3rd octet (240)
+Block size   = 256 - 240 = 16
+Blocks       = 0, 16, 32, 48 ...
+45 is between 32 and 47
+Network      = 172.16.32.0
+Next network = 172.16.48.0
+Broadcast    = 172.16.47.255
+Hosts        = 172.16.32.1 - 172.16.47.254
+Host count   = 2^12 - 2 = 4094</code></pre>
 
-<h3>مثال ۴ (معکوس): «به 50 Host نیاز دارم، Prefix چند؟»</h3>
-<p>کوچک‌ترین توان 2 که ≥ 50+2 باشد: 2⁶ = 64. پس به ۶ بیت میزبان نیاز است ⇒ Prefix = 32−6 = <b>/26</b> (62 Host). همیشه «+2» را فراموش نکنید.</p>
+<h3>مثال ۴ (معکوس): به ۵۰ Host نیاز دارم؛ Prefix چند؟</h3>
+<pre><code>Need          = 50 hosts + 2 reserved = 52
+Smallest 2^n >= 52  ->  n = 6  (2^6 = 64)
+Host bits     = 6
+Prefix        = 32 - 6 = /26
+Usable hosts  = 64 - 2 = 62   (enough for 50)</code></pre>
+<p>همیشه «+2» را فراموش نکن؛ بدون آن جواب اشتباه می‌شود.</p>
 
 <h2>۵. Packet Flow: آیا دو Host هم‌شبکه‌اند؟</h2>
 <p>وقتی Host می‌خواهد بسته بفرستد، با Mask خودش تصمیم می‌گیرد: آدرس مقصد را با Mask <span class="en">AND</span> می‌کند؛ اگر شبکه برابر شبکه خودش بود، مقصد «همین لینک» است و با <span class="en">ARP</span> مستقیم می‌فرستد؛ وگرنه بسته را به <span class="en">Default Gateway</span> می‌دهد.</p>
@@ -372,15 +438,43 @@ A می‌خواهد به B بفرستد:
 <div class="box"><b class="t">ارتباط با دوره</b>اگر Client شما <code>169.254.x.x</code> دارد، یعنی DHCP جواب نداده؛ در عیب‌یابی TS10 می‌بینید.</div>
 
 <h2>۷. تمرین‌های درجه‌بندی‌شده (قبل از Lab حل کنید)</h2>
-<p>هرکدام را روی کاغذ حل کنید، بعد جواب را ببینید.</p>
-<details><summary>۱. <code>192.168.5.130/24</code> (ساده)</summary><p>شبکه <code>192.168.5.0</code>، Broadcast <code>192.168.5.255</code>، 254 Host.</p></details>
-<details><summary>۲. <code>10.0.0.9/30</code></summary><p>بلوک 4؛ 9 بین 8 و 11 ⇒ شبکه <code>10.0.0.8</code>، Broadcast <code>10.0.0.11</code>، Hostها <code>.9</code> و <code>.10</code> (لینک دو روتر).</p></details>
-<details><summary>۳. <code>192.168.1.100/27</code></summary><p>بلوک 32؛ 100 بین 96 و 127 ⇒ شبکه <code>192.168.1.96</code>، Broadcast <code>.127</code>، Hostها <code>.97</code> تا <code>.126</code> (30 Host).</p></details>
-<details><summary>۴. <code>192.168.0.200/25</code></summary><p>بلوک 128؛ 200 در بلوک 128 ⇒ شبکه <code>192.168.0.128</code>، Broadcast <code>192.168.0.255</code>، 126 Host.</p></details>
-<details><summary>۵. به 8 Host نیاز دارم؛ Prefix؟</summary><p>8+2 = 10 ⇒ 2⁴ = 16 ⇒ <b>/28</b> (14 Host). /29 فقط 6 Host دارد و کافی نیست.</p></details>
-<details><summary>۶. <code>172.31.14.9/22</code> (سخت)</summary><p>Mask = 255.255.252.0؛ بلوک Octet سوم = 4؛ 14 بین 12 و 15 ⇒ شبکه <code>172.31.12.0</code>، Broadcast <code>172.31.15.255</code>، 1022 Host.</p></details>
-<details><summary>۷. <code>10.1.200.15/19</code> (سخت)</summary><p>Mask = 255.255.224.0؛ بلوک Octet سوم = 32؛ 200 در بلوک 192 ⇒ شبکه <code>10.1.192.0</code>، Broadcast <code>10.1.223.255</code>، 8190 Host.</p></details>
-<details><summary>۸. آیا <code>10.10.20.77/26</code> و <code>10.10.20.130/26</code> هم‌شبکه‌اند؟</summary><p>خیر: اولی در 64..127، دومی در 128..191؛ ترافیک بینشان از Router می‌گذرد.</p></details>
+<p>هرکدام را روی کاغذ حل کنید، بعد جواب را باز کنید.</p>
+<details><summary>۱ (ساده): 192.168.5.130/24</summary><pre><code>Network   = 192.168.5.0
+Broadcast = 192.168.5.255
+Hosts     = 254</code></pre></details>
+<details><summary>۲: 10.0.0.9/30</summary><pre><code>Block size = 256 - 252 = 4
+9 is between 8 and 11
+Network   = 10.0.0.8
+Broadcast = 10.0.0.11
+Hosts     = 10.0.0.9 - 10.0.0.10   (router-to-router link)</code></pre></details>
+<details><summary>۳: 192.168.1.100/27</summary><pre><code>Block size = 256 - 224 = 32
+100 is between 96 and 127
+Network   = 192.168.1.96
+Broadcast = 192.168.1.127
+Hosts     = 192.168.1.97 - 192.168.1.126  (30 hosts)</code></pre></details>
+<details><summary>۴: 192.168.0.200/25</summary><pre><code>Block size = 256 - 128 = 128
+200 is in block 128..255
+Network   = 192.168.0.128
+Broadcast = 192.168.0.255
+Hosts     = 126</code></pre></details>
+<details><summary>۵: به ۸ Host نیاز دارم؛ Prefix؟</summary><pre><code>Need   = 8 + 2 = 10
+2^4 = 16 >= 10   (2^3 = 8 is not enough)
+Prefix = 32 - 4 = /28   (14 usable hosts)</code></pre></details>
+<details><summary>۶ (سخت): 172.31.14.9/22</summary><pre><code>Mask       = 255.255.252.0
+Block size = 256 - 252 = 4   (3rd octet)
+14 is between 12 and 15
+Network    = 172.31.12.0
+Broadcast  = 172.31.15.255
+Host count = 2^10 - 2 = 1022</code></pre></details>
+<details><summary>۷ (سخت): 10.1.200.15/19</summary><pre><code>Mask       = 255.255.224.0
+Block size = 256 - 224 = 32   (3rd octet)
+200 is in block 192..223
+Network    = 10.1.192.0
+Broadcast  = 10.1.223.255
+Host count = 2^13 - 2 = 8190</code></pre></details>
+<details><summary>۸: آیا 10.10.20.77/26 و 10.10.20.130/26 هم‌شبکه‌اند؟</summary><pre><code>10.10.20.77  -> network 10.10.20.64   (64..127)
+10.10.20.130 -> network 10.10.20.128  (128..191)
+Different networks -> traffic must pass through a router</code></pre></details>
 
 <h2>۸. Lab هدایت‌شده: «Mask چطور تعیین می‌کند چه کسی همسایه است»</h2>
 <p>در Lab <code>L00-ImageValidation</code> می‌دانید <code>R1</code> روی <code>Gi0/0.10</code> آدرس <code>10.10.10.1/24</code> و <code>SW1</code> روی <code>Vlan10</code> آدرس <code>10.10.10.2/24</code> دارد و <code>ping</code> کار می‌کند. حالا عمداً Mask را خراب می‌کنیم تا اثرش را ببینید.</p>
@@ -401,7 +495,12 @@ R1(config-subif)# ip address 10.10.10.1 255.255.255.128
 R1(config-subif)# end
 R1# show ip route connected
 R1# ping 10.10.10.130</code></pre>
-<p><b>پیش‌بینی (قبل از اجرا فکر کنید):</b> /25 یعنی شبکه روتر <code>10.10.10.0</code> تا <code>.127</code>. آدرس <code>.130</code> بیرون این بازه است؛ پس روتر آن را «همین لینک» نمی‌داند و Route‌ای برایش ندارد ⇒ <b>ping شکست می‌خورد</b> (نتیجه واقعی را بنویسید؛ اگر چیز دیگری دیدید، همان را ثبت کنید). سمت سوییچ هم Mask /24 دارد و فکر می‌کند روتر همسایه است؛ پس ترافیک به‌صورت «نیمه‌کاره» رفت‌وبرگشت ندارد.</p>
+<p><b>پیش‌بینی (قبل از اجرا فکر کنید):</b> با Mask جدید، محدوده‌ی «همین لینک» برای روتر کوچک‌تر شده است:</p>
+<pre><code>R1 new mask = /25
+R1 network  = 10.10.10.0 - 10.10.10.127
+SW1 address = 10.10.10.130   -> outside this range
+Result      : R1 has no connected route to .130 -> ping fails</code></pre>
+<p>نتیجه‌ی واقعی را بنویسید؛ اگر چیز دیگری دیدید همان را ثبت کنید. سمت سوییچ Mask قبلی (/24) را دارد و فکر می‌کند روتر همسایه است؛ پس ارتباط «نیمه‌کاره» می‌شود.</p>
 <h3>گام ۴: رفع</h3>
 <pre><code>R1(config)# interface gi0/0.10
 R1(config-subif)# ip address 10.10.10.1 255.255.255.0
@@ -496,13 +595,21 @@ R1# ping 10.10.10.130</code></pre>
 <p><b>مراحل کار برای هر بخش:</b> (۱) نیاز را بشمار و ۲ آدرس رزرو (شبکه و Broadcast) اضافه کن. (۲) کوچک‌ترین توان ۲ که کافی باشد را پیدا کن. (۳) Prefix را از آن بساز. (۴) از اولین آدرس آزاد شروع به تخصیص کن. (۵) آدرس بعدی آزاد را یادداشت کن.</p>
 
 <h2>۳. مثال ساده (دو بخش)</h2>
-<p>بلوک <code>10.0.0.0/24</code>. دو بخش: A با ۱۰۰ Host و B با ۲۰ Host.</p>
-<ul>
-<li>A: ۱۰۰+۲ = ۱۰۲ ⇒ ۲⁷ = ۱۲۸ ⇒ <b>/25</b> ⇒ شبکه <code>10.0.0.0/25</code>، Hostها <code>.1</code> تا <code>.126</code>، Broadcast <code>.127</code>.</li>
-<li>آدرس آزاد بعدی: <code>10.0.0.128</code>.</li>
-<li>B: ۲۰+۲ = ۲۲ ⇒ ۲⁵ = ۳۲ ⇒ <b>/27</b> ⇒ شبکه <code>10.0.0.128/27</code>، Hostها <code>.129</code> تا <code>.158</code>، Broadcast <code>.159</code>.</li>
-<li>باقی‌مانده <code>10.0.0.160</code> تا <code>.255</code> برای آینده خالی می‌ماند. این «رشد آینده» است و هدررفت نیست.</li>
-</ul>
+<p>بلوک <code>10.0.0.0/24</code> را داریم. بخش A به ۱۰۰ Host و بخش B به ۲۰ Host نیاز دارد. اول بزرگ‌ترین (A):</p>
+<pre><code>A: need = 100 + 2 = 102
+   2^7 = 128 >= 102  ->  Prefix = /25
+   Network   = 10.0.0.0/25
+   Hosts     = 10.0.0.1 - 10.0.0.126
+   Broadcast = 10.0.0.127
+   Next free = 10.0.0.128</code></pre>
+<p>بعد B از اولین آدرس آزاد شروع می‌شود:</p>
+<pre><code>B: need = 20 + 2 = 22
+   2^5 = 32 >= 22   ->  Prefix = /27
+   Network   = 10.0.0.128/27
+   Hosts     = 10.0.0.129 - 10.0.0.158
+   Broadcast = 10.0.0.159
+   Next free = 10.0.0.160  (up to 10.0.0.255 stays free for growth)</code></pre>
+<p>باقی‌مانده بلوک (۱۶۰ تا ۲۵۵) برای رشد آینده خالی می‌ماند و هدررفت نیست.</p>
 
 <h2>۴. مثال متوسط (چهار بخش)</h2>
 <figure class="fig"><svg viewBox="0 0 720 130" role="img" aria-label="VLSM address bar"><rect x="20.0" y="30" width="340.0" height="46" class="net" stroke="#0b1018"/><text x="190.0" y="58" text-anchor="middle" class="on">Sales /25</text><rect x="360.0" y="30" width="170.0" height="46" class="hst" stroke="#0b1018"/><text x="445.0" y="58" text-anchor="middle" class="on">Tech /26</text><rect x="530.0" y="30" width="42.5" height="46" class="net" stroke="#0b1018"/><text x="551.2" y="58" text-anchor="middle" class="on">Mgmt /28</text><rect x="572.5" y="30" width="10.6" height="46" class="hst" stroke="#0b1018"/><rect x="583.1" y="30" width="116.9" height="46" class="bx" stroke="#0b1018"/><text x="641.6" y="58" text-anchor="middle" class="">Free</text><text x="20.0" y="98" text-anchor="middle" class="cap">.0</text><text x="360.0" y="98" text-anchor="middle" class="cap">.128</text><text x="530.0" y="98" text-anchor="middle" class="cap">.192</text><text x="572.5" y="98" text-anchor="middle" class="cap">.208</text><text x="583.1" y="98" text-anchor="middle" class="cap">.212</text><text x="700.0" y="98" text-anchor="middle" class="cap">.255</text><text x="360" y="122" text-anchor="middle" class="cap">192.168.10.0 → 255 : هر Subnet درست بعد از Broadcast قبلی شروع می‌شود</text></svg><figcaption>شکل ۲: نوار آدرس VLSM؛ بخش بزرگ‌تر اول و بدون هم‌پوشانی.</figcaption></figure>
@@ -530,8 +637,19 @@ R1# ping 10.10.10.130</code></pre>
 <tr><td>شعبه ۳: کاربران</td><td>20</td></tr>
 <tr><td>سه لینک روتر (هرکدام)</td><td>2</td></tr>
 </table>
-<p><b>گام ۱ - مرتب‌سازی از بزرگ به کوچک و محاسبه‌ی اندازه:</b> مرکز-کاربران ۳۰۲ ⇒ ۵۱۲ (/23)؛ شعبه ۱: ۱۰۲ ⇒ ۱۲۸ (/25)؛ مرکز-سرور ۶۲ ⇒ ۶۴ (/26)؛ شعبه ۲: ۵۲ ⇒ ۶۴ (/26)؛ مرکز-مدیریت ۲۷ ⇒ ۳۲ (/27)؛ شعبه ۳: ۲۲ ⇒ ۳۲ (/27)؛ هر لینک ۴ (/30).</p>
-<p><b>گام ۲ - مجموع نیاز:</b> ۵۱۲+۱۲۸+۶۴+۶۴+۳۲+۳۲+(۳×۴=۱۲) = ۸۴۴ آدرس ≤ ۱۰۲۴. پس بلوک کافی است.</p>
+<p><b>گام ۱ - اندازه هر بخش</b> (هر بخش یک سطر؛ مرتب از بزرگ به کوچک):</p>
+<pre><code>Center users    : 300 + 2 = 302 -> 512 -> /23
+Branch 1        : 100 + 2 = 102 -> 128 -> /25
+Center servers  :  60 + 2 =  62 ->  64 -> /26
+Branch 2        :  50 + 2 =  52 ->  64 -> /26
+Center mgmt     :  25 + 2 =  27 ->  32 -> /27
+Branch 3        :  20 + 2 =  22 ->  32 -> /27
+3 links         :   2 + 2 =   4 ->   4 -> /30 (each)</code></pre>
+<p><b>گام ۲ - آیا بلوک کافی است؟</b></p>
+<pre><code>Total needed = 512 + 128 + 64 + 64 + 32 + 32 + (3 x 4)
+             = 844
+Available    = 1024  (a /22)
+844 <= 1024  ->  OK</code></pre>
 <p><b>گام ۳ - تخصیص پشت‌سرهم:</b></p>
 <table>
 <tr><th>بخش</th><th>Prefix</th><th>شبکه</th><th>Broadcast</th></tr>
@@ -545,7 +663,10 @@ R1# ping 10.10.10.130</code></pre>
 <tr><td>لینک ۲</td><td>/30</td><td>10.20.3.68</td><td>10.20.3.71</td></tr>
 <tr><td>لینک ۳</td><td>/30</td><td>10.20.3.72</td><td>10.20.3.75</td></tr>
 </table>
-<p><b>گام ۴ - بررسی:</b> آخرین آدرس استفاده‌شده <code>10.20.3.75</code> است؛ از <code>10.20.3.76</code> تا <code>10.20.3.255</code> آزاد می‌ماند (۱۸۰ آدرس برای رشد). هم‌پوشانی ندارد چون هر شروع = Broadcast قبلی + ۱.</p>
+<p><b>گام ۴ - بررسی:</b> هر شروع باید دقیقاً یک عدد بعد از Broadcast قبلی باشد.</p>
+<pre><code>Last used address = 10.20.3.75
+Free space        = 10.20.3.76 - 10.20.3.255  (180 addresses, for growth)
+Overlap check     : every start = previous broadcast + 1  ->  no overlap</code></pre>
 
 <h2>۶. IP Plan: سند زنده‌ی شبکه</h2>
 <p>جدول بالا هنوز «محاسبه» است. IP Plan سندی است که تیم نگه می‌دارد و این ستون‌ها را دارد: نام بخش، VLAN، شبکه/Prefix، Gateway، بازه‌ی DHCP، آدرس‌های ثابت، مالک، توضیح. قاعده‌ی تجربی: <b>Gateway را همیشه اولین Host (.1) بگذارید</b> و سرورها/تجهیزات را از انتهای بازه یا بازه‌ی ثابت جدا کنید، تا همه بدانند «.1 یعنی Gateway».</p>
@@ -558,12 +679,33 @@ R1# ping 10.10.10.130</code></pre>
 </table>
 
 <h2>۷. تمرین‌های درجه‌بندی‌شده</h2>
-<details><summary>۱. (ساده) از 192.168.1.0/24 دو Subnet بساز: ۱۲۰ Host و ۱۰ Host.</summary><p>۱۲۲ ⇒ /25 ⇒ 192.168.1.0/25 (.1–.126). ۱۲ ⇒ ۱۶ ⇒ /28 ⇒ 192.168.1.128/28 (.129–.142).</p></details>
-<details><summary>۲. (ساده) یک لینک بین دو روتر از 10.1.1.0/24 بگیر.</summary><p>/30: 10.1.1.0/30، Hostها .1 و .2، Broadcast .3.</p></details>
-<details><summary>۳. (متوسط) از 172.16.0.0/24: ۶۰، ۳۰، ۱۰ Host.</summary><p>۶۲⇒/26: 172.16.0.0 (.1–.62)؛ ۳۲⇒/27: 172.16.0.64 (.65–.94)؛ ۱۲⇒/28: 172.16.0.96 (.97–.110).</p></details>
-<details><summary>۴. (متوسط) چرا نباید اول Subnet کوچک را بگذاریم؟</summary><p>چون Subnetهای بزرگ باید روی مرز مضرب اندازه‌ی خودشان شروع شوند؛ با گذاشتن کوچک‌ها اول، «سوراخ‌های» ناقابل ایجاد می‌شود که بزرگ‌ها جا نمی‌شوند.</p></details>
-<details><summary>۵. (سخت) 10.5.0.0/23: ۲۰۰، ۷۰، ۳۰، ۲ لینک (دو تا).</summary><p>۲۰۲⇒۲۵۶(/24): 10.5.0.0؛ ۷۲⇒۱۲۸(/25): 10.5.1.0 (.1–.126 در 10.5.1.x)؛ ۳۲⇒(/27): 10.5.1.128؛ دو لینک /30: 10.5.1.160 و 10.5.1.164. آزاد: از 10.5.1.168.</p></details>
-<details><summary>۶. (سخت) آیا 192.168.1.64/26 و 192.168.1.100/27 هم‌پوشانی دارند؟</summary><p>بله. /26 شامل .64 تا .127 است و .100/27 (بازه‌ی .96–.127) داخل آن است. این یک خطای طراحی است.</p></details>
+<details><summary>۱ (ساده): از 192.168.1.0/24 دو Subnet بساز: ۱۲۰ Host و ۱۰ Host</summary><pre><code>120 + 2 = 122 -> 128 -> /25
+  192.168.1.0/25     hosts .1 - .126
+10 + 2 = 12 -> 16 -> /28
+  192.168.1.128/28   hosts .129 - .142</code></pre></details>
+<details><summary>۲ (ساده): لینک بین دو روتر از 10.1.1.0/24</summary><pre><code>Prefix    = /30
+Network   = 10.1.1.0/30
+Hosts     = 10.1.1.1 - 10.1.1.2
+Broadcast = 10.1.1.3</code></pre></details>
+<details><summary>۳ (متوسط): از 172.16.0.0/24: ۶۰، ۳۰، ۱۰ Host</summary><pre><code>60 + 2 = 62 -> 64 -> /26
+  172.16.0.0/26    hosts .1 - .62
+30 + 2 = 32 -> /27
+  172.16.0.64/27   hosts .65 - .94
+10 + 2 = 12 -> 16 -> /28
+  172.16.0.96/28   hosts .97 - .110</code></pre></details>
+<details><summary>۴ (متوسط): چرا نباید اول Subnet کوچک را بگذاریم؟</summary><p>Subnet بزرگ باید روی مرز مضرب اندازه‌ی خودش شروع شود. اگر کوچک‌ها اول بیایند، «سوراخ‌هایی» می‌ماند که بزرگ‌ترها در آن جا نمی‌شوند.</p></details>
+<details><summary>۵ (سخت): از 10.5.0.0/23: ۲۰۰ Host، ۷۰ Host، ۳۰ Host، دو لینک</summary><pre><code>200 + 2 = 202 -> 256 -> /24
+  10.5.0.0/24
+70 + 2 = 72 -> 128 -> /25
+  10.5.1.0/25      hosts .1 - .126
+30 + 2 = 32 -> /27
+  10.5.1.128/27
+Link 1 -> 10.5.1.160/30
+Link 2 -> 10.5.1.164/30
+Next free = 10.5.1.168</code></pre></details>
+<details><summary>۶ (سخت): آیا 192.168.1.64/26 و 192.168.1.100/27 هم‌پوشانی دارند؟</summary><pre><code>192.168.1.64/26   covers .64  - .127
+192.168.1.100/27  covers .96  - .127   (network .96)
+The second range is inside the first -> OVERLAP (design error)</code></pre></details>
 
 <h2>۸. Lab هدایت‌شده: اجرای IP Plan روی روتر</h2>
 <p>برای دیدن اینکه روتر Subnetها را «می‌شناسد»، روی <code>R1</code> چند Loopback به‌عنوان Subnet مجازی می‌سازیم.</p>
@@ -671,7 +813,10 @@ R1(config)# end</code></pre>
 
 <p>آدرس IPv6 یک عدد ۱۲۸ بیتی است. آن را به ۸ گروه ۱۶ بیتی تقسیم می‌کنیم و هر گروه را با ۴ رقم شانزده‌شانزدهی (<span class="en">Hex</span>: ارقام ۰ تا ۹ و a تا f) می‌نویسیم، با دونقطه بین گروه‌ها:</p>
 <pre><code>2001:0db8:0010:0010:0000:0000:0000:0001</code></pre>
-<p>هر رقم Hex معادل ۴ بیت است (مثلاً <code>f</code> = 1111 و <code>a</code> = 1010). پس ۴ رقم = ۱۶ بیت و ۸ گروه = ۱۲۸ بیت.</p>
+<p>هر رقم Hex معادل ۴ بیت است. پس حساب کل بیت‌ها این‌طور می‌شود:</p>
+<pre><code>1 hex digit = 4 bits      (f = 1111 , a = 1010)
+1 group     = 4 digits = 16 bits
+8 groups    = 8 x 16   = 128 bits</code></pre>
 <p>مثل IPv4، آدرس دو بخش دارد: <b>Prefix</b> (شبکه) و <b>Interface ID</b> (دستگاه). در بیشتر شبکه‌ها Prefix برابر <code>/64</code> است: ۶۴ بیت اول شبکه و ۶۴ بیت آخر دستگاه. در IPv6 به‌جای «Subnet Mask» همیشه Prefix می‌نویسیم.</p>
 
 <h2>۲. دو قانون کوتاه‌نویسی</h2>
@@ -683,9 +828,20 @@ R1(config)# end</code></pre>
 <div class="box"><b class="t">چرا فقط یک بار ::؟</b>اگر دو بار بنویسید، معلوم نیست هرکدام چند گروه صفر را نشان می‌دهند. پس <code>2001::5::1</code> غلط است. اگر دو رشته‌ی صفر داشتید، <code>::</code> را روی <b>بلندترین</b> رشته بگذارید.</div>
 
 <h2>۳. مثال‌های کوتاه‌نویسی (ساده تا سخت)</h2>
-<details open><summary>ساده</summary><p><code>fe80:0000:0000:0000:0000:0000:0000:0001</code> ⇒ <code>fe80::1</code></p></details>
-<details open><summary>متوسط</summary><p><code>2001:0db8:0000:0000:0001:0000:0000:0005</code>: دو رشته‌ی صفر هم‌طول داریم؛ قاعده می‌گوید اولی را بگیر: <code>2001:db8::1:0:0:5</code>.</p></details>
-<details open><summary>سخت (برعکس)</summary><p>باز کن: <code>2001:db8:a::1:2</code>. گروه‌های موجود: 2001، db8، a، 1، 2 (پنج گروه). هشت-پنج = سه گروه صفر پشت <code>::</code>: <code>2001:0db8:000a:0000:0000:0000:0001:0002</code>.</p></details>
+<h3>مثال ساده</h3>
+<pre><code>Full  : fe80:0000:0000:0000:0000:0000:0000:0001
+Step 1: fe80:0:0:0:0:0:0:1
+Step 2: fe80::1</code></pre>
+<h3>مثال متوسط (دو رشته صفر)</h3>
+<pre><code>Full  : 2001:0db8:0000:0000:0001:0000:0000:0005
+Step 1: 2001:db8:0:0:1:0:0:5
+Step 2: two zero-runs of equal length -> shorten the FIRST one
+Result: 2001:db8::1:0:0:5</code></pre>
+<h3>مثال سخت (برعکس: باز کردن)</h3>
+<pre><code>Short  : 2001:db8:a::1:2
+Groups written = 5  (2001, db8, a, 1, 2)
+Missing groups = 8 - 5 = 3   (the :: is 3 zero groups)
+Full   : 2001:0db8:000a:0000:0000:0000:0001:0002</code></pre>
 
 <h2>۴. انواع آدرس IPv6</h2>
 <table>
@@ -728,7 +884,11 @@ Interface ID:   a8bb:ccff:fe00:0100</code></pre>
 <details><summary>۱. (ساده) کوتاه کن: 2001:0db8:0000:0000:0000:0000:0000:0001</summary><p><code>2001:db8::1</code></p></details>
 <details><summary>۲. (ساده) این چه نوع آدرسی است: fe80::1 ؟ fd12:3456::5 ؟ ff02::1 ؟ 2001:db8::5 ؟</summary><p>Link-Local؛ ULA؛ Multicast (همه‌ی گره‌ها)؛ مستندات/Global.</p></details>
 <details><summary>۳. (متوسط) باز کن: 2001:db8:0:1::5</summary><p><code>2001:0db8:0000:0001:0000:0000:0000:0005</code></p></details>
-<details><summary>۴. (متوسط) آیا 2001:db8::1 و 2001:db8:0:0:1::1 در یک /64 هستند؟</summary><p>اولی: 2001:0db8:0000:0000:0000:0000:0000:0001 ⇒ ۶۴ بیت اول 2001:db8:0:0. دومی: 2001:0db8:0000:0000:0001:... ⇒ ۶۴ بیت اول 2001:db8:0:0 همان است. بله، در یک /64.</p></details>
+<details><summary>۴. (متوسط) آیا 2001:db8::1 و 2001:db8:0:0:1::1 در یک /64 هستند؟</summary><pre><code>A = 2001:0db8:0000:0000:0000:0000:0000:0001
+B = 2001:0db8:0000:0000:0001:0000:0000:0001
+First 64 bits of A = 2001:0db8:0000:0000
+First 64 bits of B = 2001:0db8:0000:0000
+Equal -> same /64</code></pre></details>
 <details><summary>۵. (سخت) چرا نمی‌توان 2001::1::2 نوشت؟</summary><p>دو بار :: ابهام می‌سازد؛ نمی‌دانیم هر کدام چند گروه صفر هستند.</p></details>
 <details><summary>۶. (سخت) از 2001:db8:abcd::/48 برای ۴ VLAN (۱۰، ۲۰، ۳۰، ۹۹) Prefix بساز.</summary><p>2001:db8:abcd:10::/64، 2001:db8:abcd:20::/64، 2001:db8:abcd:30::/64، 2001:db8:abcd:99::/64.</p></details>
 
@@ -1059,7 +1219,10 @@ R1(config-std-nacl)# exit
 R1(config)# line vty 0 4
 R1(config-line)# access-class MGMT-ONLY in
 R1(config-line)# end</code></pre>
-<p><code>0.0.0.255</code> یک <span class="en">Wildcard Mask</span> است: معکوسِ Mask (برای /24 همان 255.255.255.0 ← 0.0.0.255). بیت ۰ یعنی «باید مطابقت داشته باشد» و ۱ یعنی «مهم نیست». <code>access-class</code> فقط ترافیک ورودی به VTY را فیلتر می‌کند (نه ترافیک عبوری).</p>
+<p><code>0.0.0.255</code> یک <span class="en">Wildcard Mask</span> است؛ یعنی معکوسِ Subnet Mask. بیت 0 یعنی «باید مطابقت داشته باشد» و بیت 1 یعنی «مهم نیست».</p>
+<pre><code>Subnet mask   : 255.255.255.0
+Wildcard mask : 0.0.0.255     (= 255.255.255.255 - 255.255.255.0)</code></pre>
+<p><code>access-class</code> فقط ترافیک ورودی به VTY (دسترسی مدیریتی) را فیلتر می‌کند، نه ترافیک عبوری.</p>
 <p>تنظیمات تکمیلی مفید: <code>ip ssh time-out 60</code> و <code>ip ssh authentication-retries 3</code>.</p>
 <div class="box"><b class="t">هشدار: قفل‌شدن از دستگاه</b>قبل از <code>access-class</code>، مطمئن شوید آدرس خودتان در ACL مجاز است؛ وگرنه خودتان بیرون می‌مانید. از <code>reload in 5</code> (درس قبل) به‌عنوان شبکه‌ی ایمنی استفاده کنید.</div>
 
