@@ -133,7 +133,7 @@ summary{cursor:pointer;font-weight:600}
      ===================================================================== -->
 <script id="course-data">
 window.COURSE = {
-  version: "0.3 (هفته ۱ — بخش A و B)",
+  version: "0.4 (هفته ۱ و ۲)",
   updated: "2026-11-07",
   modules: [
     {id:"m0", title:"شروع و راهنما", lessons:[
@@ -144,7 +144,7 @@ window.COURSE = {
       {id:"w1b", title:"هفته ۱ — بخش B: Lab ایزوله (Phase 0B)", ready:true}
     ]},
     {id:"p1", title:"فاز ۱ — Cisco CLI و IP (هفته ۲)", lessons:[
-      {id:"w2", title:"هفته ۲: IPv4/IPv6، مدیریت IOS، SSH، پشتیبان‌گیری", ready:false}
+      {id:"w2", title:"هفته ۲: IPv4/IPv6، مدیریت IOS، SSH، پشتیبان‌گیری", ready:true}
     ]},
     {id:"p2", title:"فاز ۲ — Switching (هفته ۳–۴)", lessons:[
       {id:"w3", title:"هفته ۳: VLAN، Trunk، Inter-VLAN", ready:false},
@@ -209,6 +209,129 @@ window.COURSE = {
     {lesson:"W1-A", type:"question", q:"آیا قبل از شروع، همه VLANها را روی سوییچ مجازی ESXi بسازیم؟", a:"نه. <code>PG-FGT-TRUNK</code> با VLAN 4095 همه VLANها را عبور می‌دهد و VLANهای دوره را سوییچ‌ها و FortiGate داخل PNetLab می‌سازند. فقط در صورت نیاز، Port Group برای VM مستقل می‌سازیم."}
   ],
   lessons: {
+
+    w2: {
+      sub: "هفته ۲: آدرس‌دهی IPv4/IPv6، مدیریت و امن‌سازی IOS، پشتیبان‌گیری، مقدمه Wireshark. Lab روی L00-ImageValidation (SW1 و R1) انجام می‌شود.",
+      html: `
+<div class="meta"><span class="tag">Cisco Basics</span><span class="tag">۶ روز × ۶ ساعت</span><span class="tag">Gate G1 پایان هفته</span></div>
+
+<h2>اهداف یادگیری</h2>
+<ul>
+<li>یک آدرس را به Subnet و Broadcast و Hostهای قابل‌استفاده تبدیل کنید و یک <span class="en">VLSM</span> بسازید.</li>
+<li>آدرس <span class="en">IPv6</span> (Global Unicast و Link-Local) بدهید و با <code>show ipv6 interface brief</code> بررسی کنید.</li>
+<li>Config را ذخیره، پشتیبان‌گیری و بازیابی کنید.</li>
+<li>مدیریت امن با <span class="en">SSH</span> (کاربر محلی، محدودیت Source، Timeout) راه بیندازید.</li>
+<li>ترافیک <span class="en">ARP</span> و <span class="en">ICMP</span> را در Wireshark ببینید و توضیح دهید.</li>
+</ul>
+
+<h2>۱. IPv4: مرور عملی (Subnet و VLSM)</h2>
+<p>یک Subnet را از روی Mask می‌فهمیم. برای <code>10.10.20.0/24</code>: شبکه <code>10.10.20.0</code>، Broadcast <code>10.10.20.255</code>، Hostها <code>.1</code> تا <code>.254</code> (254 Host). برای <code>/26</code> هر بلوک 64 آدرس است (62 Host).</p>
+<table>
+<tr><th>نیاز</th><th>Prefix</th><th>اندازه بلوک</th><th>Host قابل‌استفاده</th></tr>
+<tr><td>≈ 200 Host</td><td>/24</td><td>256</td><td>254</td></tr>
+<tr><td>≈ 50 Host</td><td>/26</td><td>64</td><td>62</td></tr>
+<tr><td>≈ 25 Host</td><td>/27</td><td>32</td><td>30</td></tr>
+<tr><td>لینک دو روتر</td><td>/30</td><td>4</td><td>2</td></tr>
+</table>
+<div class="box"><b class="t">قاعده VLSM</b>اول بزرگ‌ترین Subnet را از ابتدای فضای آدرس جا بدهید، بعد کوچک‌ترها را؛ بلوک‌ها نباید هم‌پوشانی کنند.</div>
+
+<h2>۲. IPv6</h2>
+<p>در <span class="en">IPv6</span> هر Interface یک آدرس <b>Link-Local</b> (<code>fe80::/10</code>) دارد که فقط داخل همان لینک کار می‌کند و یک آدرس <b>Global Unicast</b> برای مسیریابی. به‌جای ARP از <span class="en">Neighbor Discovery (NDP)</span> استفاده می‌شود. برای مثال از پیشوند مستندات <code>2001:db8::/32</code> استفاده می‌کنیم.</p>
+<pre><code>R1(config)# ipv6 unicast-routing
+R1(config)# interface gi0/0.10
+R1(config-subif)# ipv6 address 2001:db8:10:10::1/64
+R1(config-subif)# end
+R1# show ipv6 interface brief</code></pre>
+
+<h2>۳. ذخیره، پشتیبان‌گیری و بازیابی Config</h2>
+<p><code>running-config</code> در RAM است و با ریبوت می‌رود؛ <code>startup-config</code> در حافظه دائمی است. بعد از هر تغییر که می‌خواهید بماند:</p>
+<pre><code>R1# copy running-config startup-config
+R1# copy running-config flash:backup1.cfg
+R1# show flash:
+R1# configure replace flash:backup1.cfg</code></pre>
+<p>بکاپ روی خود دستگاه کافی نیست؛ در دوره بعداً با <code>scp</code>/<code>tftp</code> به سرور و Git می‌فرستیم و رمز را داخل Git نمی‌گذاریم.</p>
+
+<h2>۴. مدیریت امن با SSH (خط‌به‌خط)</h2>
+<pre><code>R1(config)# hostname R1
+R1(config)# ip domain-name lab.local
+R1(config)# crypto key generate rsa modulus 2048
+R1(config)# ip ssh version 2
+R1(config)# username admin1 secret &lt;رمز-قوی&gt;
+R1(config)# enable secret &lt;رمز-قوی&gt;
+R1(config)# ip access-list standard MGMT-SSH
+R1(config-std-nacl)# permit 10.10.10.2
+R1(config-std-nacl)# deny any log
+R1(config)# line vty 0 4
+R1(config-line)# login local
+R1(config-line)# transport input ssh
+R1(config-line)# access-class MGMT-SSH in
+R1(config-line)# exec-timeout 10 0</code></pre>
+<table>
+<tr><th>دستور</th><th>چرا</th></tr>
+<tr><td><code>ip domain-name</code> + <code>crypto key generate rsa</code></td><td>کلید SSH به نام دامنه نیاز دارد</td></tr>
+<tr><td><code>ip ssh version 2</code></td><td>نسخه 1 ضعیف است</td></tr>
+<tr><td><code>username … secret</code>، <code>login local</code></td><td>ورود با کاربر محلی (نه رمز مشترک)</td></tr>
+<tr><td><code>transport input ssh</code></td><td>Telnet (بدون رمزگذاری) غیرفعال</td></tr>
+<tr><td><code>access-class</code></td><td>فقط Jump/سوئیچ مدیریتی اجازه ورود دارد</td></tr>
+<tr><td><code>exec-timeout</code></td><td>نشست رها‌شده خودکار بسته شود</td></tr>
+</table>
+<div class="box warn"><b class="t">رمزها در چت و Git نیایند</b>در جایگذاری‌ها <code>&lt;رمز-قوی&gt;</code> یعنی مقدار واقعی را خودتان بگذارید و جایی ننویسید.</div>
+
+<h2>۵. ابزارهای اولیه عیب‌یابی</h2>
+<pre><code>R1# ping 10.10.10.2
+R1# traceroute 10.10.10.2
+R1# show ip interface brief
+R1# show interfaces gi0/0
+R1# show logging</code></pre>
+<p><code>debug</code> سنگین است و فقط کوتاه و با <code>undebug all</code> بعد از کار استفاده شود.</p>
+
+<h2>۶. Wireshark: ARP و ICMP</h2>
+<p>در PNetLab روی لینک بین دو Node راست‌کلیک کنید و Capture را شروع کنید (روش دقیق باز شدن Wireshark در نسخه شما در Lab آزمایش می‌شود؛ <code>Unverified</code>). فیلتر نمایش:</p>
+<pre><code>arp
+icmp</code></pre>
+<p>یک <code>ping</code> بین R1 و SW1 بزنید. باید یک <span class="en">ARP Request</span> (چه کسی این IP را دارد؟) و <span class="en">ARP Reply</span> و بعد <span class="en">ICMP Echo Request/Reply</span> ببینید. اولین Packet ping معمولاً به‌خاطر ARP کند است؛ همان که اول ping شما ۸۰٪ شد.</p>
+
+<h2>۷. Lab هدایت‌شده</h2>
+<ol>
+<li>روی R1 SSH امن را (بخش ۴) تنظیم کنید.</li>
+<li>از SW1 وصل شوید: <code>ssh -l admin1 10.10.10.1</code> و ورود را بسنجید.</li>
+<li>IPv6 روی R1 بدهید و <code>show ipv6 interface brief</code> را ببینید.</li>
+<li>Config را در <code>flash:backup1.cfg</code> ذخیره کنید.</li>
+</ol>
+
+<h2>۸. Lab مستقل</h2>
+<p>برای VLAN 10 و 20 و 30 با نیازهای 120 و 45 و 20 Host، یک جدول VLSM از <code>10.10.0.0/16</code> بسازید (Subnet، Gateway، Broadcast). روی R1 سه Sub-interface بسازید، SSH و بکاپ بزنید و Config را در Git (بدون رمز) ذخیره کنید.</p>
+
+<h2>۹. خرابی و عیب‌یابی (TS13/TS14)</h2>
+<table>
+<tr><th>بخش</th><th>شرح</th></tr>
+<tr><td>تزریق خطا</td><td>مربی Mask یک Host را از /24 به /25 تغییر می‌دهد (یا Gateway را اشتباه می‌گذارد)</td></tr>
+<tr><td>Symptom</td><td>فقط بعضی Hostها در دسترس‌اند</td></tr>
+<tr><td>روش</td><td>Scope ← <code>ipconfig /all</code> ← مقایسه Mask و Gateway ← Capture ARP</td></tr>
+<tr><td>Verification</td><td>ping همه Hostها؛ ARP برای Host درست</td></tr>
+</table>
+
+<h2>۱۰. سؤال‌های مرور (بدون نگاه)</h2>
+<details><summary>برای 50 Host کدام Prefix؟</summary><p>/26 (62 Host).</p></details>
+<details><summary>فرق running و startup config؟</summary><p>running در RAM است و با ریبوت می‌رود؛ startup دائمی است.</p></details>
+<details><summary>چرا <code>transport input ssh</code>؟</summary><p>تا Telnet (بدون رمزگذاری) غیرفعال شود.</p></details>
+<details><summary>Link-Local در IPv6 چیست؟</summary><p>آدرس <code>fe80::/10</code> که فقط داخل همان لینک معتبر است.</p></details>
+
+<h2>۱۱. چک‌لیست تسلط (Gate G1)</h2>
+<ul>
+<li>☐ یک VLSM بدون هم‌پوشانی بسازم.</li>
+<li>☐ SSH امن با کاربر محلی و Access-Class را راه بیندازم.</li>
+<li>☐ Config را بکاپ و Restore کنم.</li>
+<li>☐ ARP و ICMP را در Capture توضیح دهم.</li>
+<li>☐ حالت CLI را از پرامپت تشخیص بدهم.</li>
+</ul>
+
+<h2>۱۲. یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری ۱</b>اول <code>enable</code> و بعد <code>configure terminal</code>؛ فقط یک‌بار.</div>
+<div class="box review"><b class="t">یادآوری ۲</b>کلمه ناشناخته در EXEC = DNS Lookup؛ <code>no ip domain-lookup</code>.</div>
+<div class="box review"><b class="t">یادآوری ۳</b>«فرمان پذیرفته شد» ≠ «Feature کار می‌کند»؛ با ترافیک واقعی بسنجید.</div>
+`
+    },
 
     w1b: {
       sub: "بخش B از هفته ۱: ساخت و آزمایش Lab ایزوله (Phase 0B). همه تغییرات با Change Record ثبت شده‌اند.",
