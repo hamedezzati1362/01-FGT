@@ -30,7 +30,8 @@
 | CHG-0007 | گسترش LVM داخل PNetLab (`parted Fix` GPT، `growpart`، `pvresize`، `lvextend -r`؛ `/` از 97G به 196G) | **موفق** |
 | CHG-0008 | تغییر رمزهای پیش‌فرض PNetLab (root و Web) + NTP | برنامه |
 
-- باز: ساعت ESXi هنوز 2001 است → NTP برای ESXi (CHG جدا بعد از 0B).
+
+| CHG-0009 | ساعت ESXi (2001 → 2026-11-07): تنظیم دستی ساعت، NTP=`192.168.88.1` (MikroTik)، `ntpd` فعال، `auto-backup.sh` | **موفق** (Sync نهایی در انتظار تأیید) |
 
 ## Runbookها
 - `phase0a/Golden_W2025_Runbook.md` — ساخت Golden ویندوز سرور 2025 و Clone از آن.
