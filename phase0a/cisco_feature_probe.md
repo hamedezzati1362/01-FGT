@@ -7,7 +7,7 @@
 | Node | Image | نسخه |
 |---|---|---|
 | SW1 | `viosl2-adventerprisek9-m.ssa.high_iron_20200929` | IOS vios_l2 **15.2(20200924:215240)** Experimental؛ حافظه 935153K/111616K (≈1 GB) |
-| R1 | `vios-adventerprisek9-m.spa.159-3.m9` | (نسخه دقیق هنوز ثبت نشده؛ `show version` روی R1) |
+| R1 | `vios-adventerprisek9-m.spa.159-3.m9` | IOSv **15.9(3)M9** RELEASE (fc1)؛ حافظه 984305K/62464K (≈1 GB) |
 
 ## نتایج SW1 (IOSvL2)
 | Feature | روش | وضعیت |
@@ -39,4 +39,23 @@
 - `configure terminal` را وسط حالت Config دوباره زدید → `% Invalid input` (فقط یک بار لازم است).
 - بعد از Probe فقط `no ip dhcp snooping` و `no monitor session 1` برگردانده شد؛ `ip arp inspection vlan 10` هنوز مانده (Lab آزمایشی؛ مهم نیست).
 
-## نتایج R1 (IOSv): هنوز Untested
+## نتایج R1 (IOSv)
+| Feature | شاهد | وضعیت |
+|---|---|---|
+| Router-on-a-Stick (Sub-interface + 802.1Q) با SW1 | `interface gi0/0.10`، `encapsulation dot1Q 10`، `ip address 10.10.10.1/24`؛ `ping 10.10.10.2` (SVI سوئیچ): ابتدا 80٪ (ARP)، بار دوم **100٪** (RTT 5–10 ms) | **Tested-OK** (Trunk + 802.1Q + SVI + RoAS؛ تست داده واقعی) |
+| IP SLA (icmp-echo) | `show ip sla statistics`: RTT 7 ms، return code OK، 2 موفقیت | **Tested-OK** |
+| HSRP | `standby 1 ip 10.10.10.254` → `%HSRP-5-STATECHANGE … Standby -> Active`؛ `show standby brief`: Active local | **Tested-OK** (موتور State؛ Failover: Untested، نیاز به روتر دوم) |
+| SSH/RSA | `crypto key generate rsa modulus 2048` → `%SSH-5-ENABLED: SSH 1.99 has been enabled` | **Tested-OK** (`ip ssh version 2`: دوباره، در حالت Config) |
+| OSPFv2 | `router ospf 1` + `network … area 0` پذیرفته شد؛ `show ip ospf neighbor` خالی (همسایه‌ای نیست) | **CLI-Accepted** (Adjacency: Untested) |
+| IPv6 | `ipv6 unicast-routing` | **CLI-Accepted** |
+| DHCP Server | `ip dhcp pool TEST` + `network` | **CLI-Accepted** (Lease: Untested) |
+| ACL | `permit tcp any any eq 22` | **CLI-Accepted** |
+| NAT | `ip nat outside` / `ip nat inside` (NVI0 up) | **CLI-Accepted** (Translation: Untested) |
+| Embedded Packet Capture | `monitor capture buffer BUF size 256` **در حالت Config** → `% Invalid input` | **Untested** (دستور EPC در **Privileged EXEC** است؛ دوباره در `R1#` امتحان شود) |
+
+## یادداشت‌های یادگیری (دور R1)
+- `interface gi0/0.10` در `R1#` (EXEC) خطا داد؛ باید در حالت Config باشید (`configure terminal`).
+- `ip ssh version 2` در EXEC زده شد → خطا؛ فرمان Config است.
+- در EXEC هر کلمه ناشناخته (`end`، `Xconf`) به‌عنوان نام میزبان **DNS Lookup** می‌شود («Translating…») و کنسول گیر می‌کند؛ با `no ip domain-lookup` (در Config) خاموش می‌شود. `end` فقط در Config معنی دارد.
+- `crypto key generate rsa` دو بار زده شد (دومی کلید را جایگزین کرد).
+- `monitor capture` یک فرمان **EXEC** است نه Config.
