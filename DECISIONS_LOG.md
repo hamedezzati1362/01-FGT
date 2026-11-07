@@ -5,7 +5,7 @@
 ## تصمیم‌های کلیدی
 - دوره: ۲۴ هفته × ۶ روز × ۶ ساعت = ۸۶۴ ساعت مفید؛ Cisco CCNA-level + FortiGate 7.0.3 + Windows/Linux + Monitoring + Capstone (HQ + ۳ شعبه). سند: `Enterprise_Network_Security_Course_Master_Blueprint_v2.1.md`.
 - معماری اصلی Capstone: FortiGate = Gateway همه VLANها؛ Cisco Core L3 فقط Lab A مستقل.
-- Phase 0A (Read-Only) انجام شد: `phase0a/Phase0A_Report.md`. **Phase 0B هنوز با تأیید صریح کاربر شروع نشده.**
+- Phase 0A (Read-Only) انجام شد: `phase0a/Phase0A_Report.md`. **Phase 0B با تأیید صریح کاربر (2026-11-07: «Phase 0B تأیید است») شروع شد؛ فهرست مجاز: Snapshot Baseline، تغییر رمزهای پیش‌فرض PNetLab، NTP، افزایش منابع VM (16 vCPU، 48 GB) و گسترش LVM، Lab آزمایشی IOSv/IOSvL2، تست Capture/Backup/Isolation. FortiGate تا W9 Boot نمی‌شود.**
 - FortiGate: Evaluation؛ کاربر خودش بکاپ/Restore و مدیریت تاریخ پایان را انجام می‌دهد؛ Claude فقط راهنمای بکاپ/بازگردانی و هشدار تاریخ (`phase0a/fortigate_eval_tracker.md`).
 - ریسک پذیرفته‌شده (کاربر، 2026-11-02): Lab تستی است؛ اینترنت از MikroTik؛ NAS دوکارته مجاز است.
 - **جایگذاری (تصمیم کاربر، 2026-11-02): Windows/Linux (DC، Client، Web، MON، NAS) روی ESXi به‌صورت VM مستقل؛ فقط Nodeهای شبکه (Cisco، FortiGate، ISP-Sim) داخل PNetLab.** دلیل: کارایی بالاتر و حذف لایه Nested. اتصال به Lab از طریق `PG-FGT-TRUNK` یا Port Group تک‌VLAN در صورت نیاز.
@@ -20,6 +20,14 @@
 | CHG-0002 | VM `NAS-BKP1` (Ubuntu Server 22.04، 2 vCPU، 4 GB، 40 GB Thin، `VM Network` + `PG-FGT-TRUNK`)؛ تلاش با `.vmx` دستی ناموفق؛ ساخت با Wizard | **موفق**: Ubuntu 22.04.5، IP `192.168.88.198`، یوزر `admin1`، کارت دوم بدون IP |
 | CHG-0003 | Golden Ubuntu `GOLD-UBU2204` (کپی دیسک NAS، DHCP، پاک‌سازی machine-id؛ Unregister و دیسک `chmod 444` در `ds01-ssd`) | موفق |
 | CHG-0004 | هارد A-DATA HD720 (931.5 GB، NTFS برچسب `COURSE-BACKUP`، GPT) → USB Passthrough (USB 3) به `NAS-BKP1`؛ مانت `/srv/backup` با UUID در `fstab` (`nofail`)؛ اشتراک Samba `\\192.168.88.198\backup` (یوزر `admin1`) | موفق؛ تست نوشتن/حذف از ویندوز OK |
+
+## Phase 0B — Change Records
+| ID | شرح | وضعیت |
+|---|---|---|
+| CHG-0005 | Snapshot Baseline VM `PNETLAB` (بدون Memory) | در حال انجام |
+| CHG-0006 | افزایش منابع VM PNETLAB (16 vCPU، 48 GB) | برنامه |
+| CHG-0007 | گسترش LVM داخل PNetLab (≈100 GB تخصیص‌نشده) | برنامه |
+| CHG-0008 | تغییر رمزهای پیش‌فرض PNetLab (root و Web) + NTP | برنامه |
 
 ## Runbookها
 - `phase0a/Golden_W2025_Runbook.md` — ساخت Golden ویندوز سرور 2025 و Clone از آن.
