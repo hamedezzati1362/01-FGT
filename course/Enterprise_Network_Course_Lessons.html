@@ -32,7 +32,9 @@ select{max-width:150px}
 .themes{display:flex;gap:6px}
 .themebtn{width:34px;height:34px;padding:0;display:grid;place-items:center;font-size:1rem}
 .themebtn[aria-pressed="true"]{outline:2px solid var(--accent)}
-.menubtn{display:none}
+.menubtn{display:inline-block}
+body.menu-hidden .layout{grid-template-columns:minmax(0,1fr)}
+body.menu-hidden .sidebar{display:none}
 
 /* ---------- Layout: first grid column = RIGHT side in RTL ---------- */
 .layout{display:grid;grid-template-columns:330px minmax(0,1fr);padding-top:58px;min-height:100vh}
@@ -2696,7 +2698,16 @@ HQ-ACC-SW1(config)# end</code></pre>
   applyTheme(store.get('c_theme','dark'));
   fs.onchange=()=>applyFont(fs.value); ss.onchange=()=>applySize(ss.value);
   $$('.themebtn').forEach(b=>b.onclick=()=>applyTheme(b.dataset.theme));
-  $('#menubtn').onclick=()=>document.body.classList.toggle('menu-open');
+  (function(){
+    const mq=window.matchMedia('(max-width:900px)');
+    try{ if(localStorage.getItem('menuHidden')==='1') document.body.classList.add('menu-hidden'); }catch(e){}
+    $('#menubtn').title='نمایش/مخفی‌کردن منوی دروس';
+    $('#menubtn').onclick=()=>{
+      if(mq.matches){ document.body.classList.toggle('menu-open'); return; }
+      const h=document.body.classList.toggle('menu-hidden');
+      try{ localStorage.setItem('menuHidden',h?'1':'0'); }catch(e){}
+    };
+  })();
 
   /* ---------- Progress ---------- */
   const done=new Set(JSON.parse(store.get('c_done','[]')));
