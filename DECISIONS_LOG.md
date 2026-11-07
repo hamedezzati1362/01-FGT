@@ -35,6 +35,8 @@
 
 - `phase0a/pnetlab_inventory.md`: Inventory Imageها/Templateها و پیش‌فرض منابع PNetLab (IOSv/IOSvL2/Fortinet).
 
+- `phase0a/cisco_feature_probe.md`: نتایج Feature-Probe Cisco. SW1: VLAN/Trunk/PVST `Tested-OK`؛ DHCP-Snooping/DAI/SPAN `CLI-Accepted` (عملکرد باید جداگانه تست شود).
+
 ## Runbookها
 - `phase0a/Golden_W2025_Runbook.md` — ساخت Golden ویندوز سرور 2025 و Clone از آن.
 
