@@ -73,6 +73,7 @@ table{width:100%;border-collapse:collapse;table-layout:fixed;margin:1em 0;font-s
 th,td{padding:8px 10px;border:1px solid var(--line);text-align:start;vertical-align:top;overflow-wrap:anywhere;word-break:break-word}
 th{background:var(--panel2)}
 td,th{unicode-bidi:plaintext}
+.hn{unicode-bidi:isolate;direction:rtl;margin-inline-end:.35em}
 .fig{margin:1em 0;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
 .fig svg{width:100%;height:auto;display:block;direction:ltr}
 .fig text{fill:var(--text);font-size:13px;font-family:var(--font-ui)}
@@ -145,7 +146,7 @@ summary{cursor:pointer;font-weight:600}
      ===================================================================== -->
 <script id="course-data">
 window.COURSE = {
-  version: "0.6 (هفته ۱ و ۲ کامل)",
+  version: "0.7 (هفته ۱ تا ۳)",
   updated: "2026-11-07",
   modules: [
     {id:"m0", title:"شروع و راهنما", lessons:[
@@ -165,7 +166,13 @@ window.COURSE = {
       {id:"w2-6", title:"درس ۲-۶: Wireshark، ARP/ICMP و Gate G1", ready:true}
     ]},
     {id:"p2", title:"فاز ۲ — Switching (هفته ۳–۴)", lessons:[
-      {id:"w3", title:"هفته ۳: VLAN، Trunk، Inter-VLAN", ready:false},
+      {id:"w3", title:"هفته ۳ — نقشه درس‌ها", ready:true},
+      {id:"w3-1", title:"درس ۳-۱: سوییچ و جدول MAC", ready:true},
+      {id:"w3-2", title:"درس ۳-۲: VLAN و Access Port", ready:true},
+      {id:"w3-3", title:"درس ۳-۳: Trunk و 802.1Q", ready:true},
+      {id:"w3-4", title:"درس ۳-۴: Router-on-a-Stick", ready:true},
+      {id:"w3-5", title:"درس ۳-۵: SVI و سوییچ لایه ۳", ready:true},
+      {id:"w3-6", title:"درس ۳-۶: عیب‌یابی و آزمون هفته", ready:true},
       {id:"w4", title:"هفته ۴: STP، EtherChannel، امنیت L2", ready:false}
     ]},
     {id:"p3", title:"فاز ۳ — Routing (هفته ۵–۶)", lessons:[
@@ -293,12 +300,12 @@ window.COURSE = {
 <li>مشکل Mask اشتباه را روی یک دستگاه واقعی در PNetLab ببینید و رفع کنید.</li>
 </ul>
 
-<h2>۱. آدرس IP چیست؟ یک مثال روزمره</h2>
+<h2><span class="hn">۱.</span> آدرس IP چیست؟ یک مثال روزمره</h2>
 <p>آدرس پستی «تهران، خیابان ولیعصر، پلاک ۱۲» دو بخش دارد: <b>خیابان</b> (محله‌ای که پست باید برود) و <b>پلاک</b> (کدام خانه در آن خیابان). آدرس IP هم همین‌طور است: بخشی از آن می‌گوید «کدام شبکه» (خیابان) و بخشی می‌گوید «کدام دستگاه در آن شبکه» (پلاک).</p>
 <p>مثال: در <code>192.168.10.5</code> اگر شبکه <code>192.168.10.0</code> باشد، <code>.5</code> شماره دستگاه در آن شبکه است. <b>Subnet Mask</b> (که کمی بعد می‌خوانیم) دقیقاً می‌گوید مرز بین «خیابان» و «پلاک» کجاست.</p>
 <div class="box"><b class="t">چرا مهم است؟</b>سوییچ و روتر با همین مرز تصمیم می‌گیرند بسته را مستقیم به همسایه بدهند یا به Gateway. اگر مرز را اشتباه بدانید، شبکه «نیمه‌کاره» کار می‌کند؛ همان خرابی‌هایی که در عیب‌یابی (TS13 و TS14) می‌بینید.</div>
 
-<h2>۲. چرا باینری؟</h2>
+<h2><span class="hn">۲.</span> چرا باینری؟</h2>
 <p>کامپیوتر فقط 0 و 1 می‌فهمد. آدرس IPv4 یک عدد <b>۳۲ بیتی</b> است. برای خوانایی، ۳۲ بیت را به ۴ گروه ۸ بیتی (هر گروه یک <span class="en">Octet</span>) تقسیم می‌کنیم و هر گروه را به‌صورت ده‌دهی (۰ تا ۲۵۵) می‌نویسیم، با نقطه بین آن‌ها.</p>
 <p>هر Octet هشت خانه دارد با ارزش‌های زیر؛ جمع همه برابر 255 است:</p>
 <table>
@@ -333,7 +340,7 @@ Result: 168 = 10101000</code></pre>
 = 128 + 64
 = 192</code></pre>
 
-<h2>۳. Subnet Mask و Prefix</h2>
+<h2><span class="hn">۳.</span> Subnet Mask و Prefix</h2>
 <figure class="fig"><svg viewBox="0 0 720 150" role="img" aria-label="split of 192.168.10.5/24"><rect x="20" y="30" width="160" height="50" rx="8" class="net"/><text x="100" y="62" text-anchor="middle" class="on" style="font-size:22px">192</text><text x="100" y="22" text-anchor="middle" class="cap">Octet 1 (8 bit)</text><rect x="190" y="30" width="160" height="50" rx="8" class="net"/><text x="270" y="62" text-anchor="middle" class="on" style="font-size:22px">168</text><text x="270" y="22" text-anchor="middle" class="cap">Octet 2 (8 bit)</text><rect x="360" y="30" width="160" height="50" rx="8" class="net"/><text x="440" y="62" text-anchor="middle" class="on" style="font-size:22px">10</text><text x="440" y="22" text-anchor="middle" class="cap">Octet 3 (8 bit)</text><rect x="530" y="30" width="160" height="50" rx="8" class="hst"/><text x="610" y="62" text-anchor="middle" class="on" style="font-size:22px">5</text><text x="610" y="22" text-anchor="middle" class="cap">Octet 4 (8 bit)</text><path d="M20 95 H508" class="ln"/><text x="264" y="115" text-anchor="middle">Network (24 bit) = /24</text><path d="M530 95 H690" class="ln"/><text x="610" y="115" text-anchor="middle">Host (8 bit)</text></svg><figcaption>شکل ۱: آدرس 192.168.10.5/24؛ ۳ Octet اول «شبکه» و آخری «میزبان» است.</figcaption></figure>
 
 <p><b>Mask</b> هم یک عدد ۳۲ بیتی است: از چپ چند بیت 1 (قسمت شبکه) و بقیه 0 (قسمت میزبان). مثلاً Mask با ۲۴ بیت 1 برابر <code>255.255.255.0</code> است. نوشتن «تعداد بیت‌های 1» به شکل <code>/24</code> را <span class="en">Prefix Length</span> می‌گویند. پس <code>192.168.10.5/24</code> یعنی: ۲۴ بیت اول = شبکه، ۸ بیت آخر = میزبان.</p>
@@ -356,7 +363,7 @@ Example (/26):
   Total     = 2 ^ 6   = 64
   Usable    = 64 - 2  = 62</code></pre>
 
-<h2>۴. محاسبه Subnet: روش گام‌به‌گام</h2>
+<h2><span class="hn">۴.</span> محاسبه Subnet: روش گام‌به‌گام</h2>
 <p>برای هر آدرس/Prefix چهار پاسخ می‌خواهیم: <b>شبکه</b>، <b>Broadcast</b>، <b>Hostهای قابل‌استفاده (اولی تا آخری)</b>، <b>تعداد Host</b>.</p>
 <div class="box"><b class="t">روش «اندازه بلوک» (Block Size)</b>
 <ol>
@@ -413,7 +420,7 @@ Prefix        = 32 - 6 = /26
 Usable hosts  = 64 - 2 = 62   (enough for 50)</code></pre>
 <p>همیشه «+2» را فراموش نکن؛ بدون آن جواب اشتباه می‌شود.</p>
 
-<h2>۵. Packet Flow: آیا دو Host هم‌شبکه‌اند؟</h2>
+<h2><span class="hn">۵.</span> Packet Flow: آیا دو Host هم‌شبکه‌اند؟</h2>
 <p>وقتی Host می‌خواهد بسته بفرستد، با Mask خودش تصمیم می‌گیرد: آدرس مقصد را با Mask <span class="en">AND</span> می‌کند؛ اگر شبکه برابر شبکه خودش بود، مقصد «همین لینک» است و با <span class="en">ARP</span> مستقیم می‌فرستد؛ وگرنه بسته را به <span class="en">Default Gateway</span> می‌دهد.</p>
 <pre><code>Host A: 10.10.20.77/26    (شبکه 10.10.20.64 ... .127)
 Host B: 10.10.20.130/26   (شبکه 10.10.20.128 ... .191)
@@ -423,7 +430,7 @@ A می‌خواهد به B بفرستد:
   پس A بسته را به Gateway می‌دهد (روتر).</code></pre>
 <p>نکته جالب: دو آدرس <code>10.10.20.77</code> و <code>10.10.20.130</code> ظاهراً شبیه‌اند ولی در دو Subnet متفاوت‌اند، و بدون Router با هم حرف نمی‌زنند.</p>
 
-<h2>۶. آدرس‌های خاص (باید بشناسید)</h2>
+<h2><span class="hn">۶.</span> آدرس‌های خاص (باید بشناسید)</h2>
 <table>
 <tr><th>بازه</th><th>نام</th><th>کاربرد</th></tr>
 <tr><td>10.0.0.0/8</td><td>آدرس خصوصی (RFC 1918) - کلاس A</td><td>داخل سازمان؛ در اینترنت Route نمی‌شود</td></tr>
@@ -437,7 +444,7 @@ A می‌خواهد به B بفرستد:
 </table>
 <div class="box"><b class="t">ارتباط با دوره</b>اگر Client شما <code>169.254.x.x</code> دارد، یعنی DHCP جواب نداده؛ در عیب‌یابی TS10 می‌بینید.</div>
 
-<h2>۷. تمرین‌های درجه‌بندی‌شده (قبل از Lab حل کنید)</h2>
+<h2><span class="hn">۷.</span> تمرین‌های درجه‌بندی‌شده (قبل از Lab حل کنید)</h2>
 <p>هرکدام را روی کاغذ حل کنید، بعد جواب را باز کنید.</p>
 <details><summary>۱ (ساده): 192.168.5.130/24</summary><pre><code>Network   = 192.168.5.0
 Broadcast = 192.168.5.255
@@ -476,7 +483,7 @@ Host count = 2^13 - 2 = 8190</code></pre></details>
 10.10.20.130 -> network 10.10.20.128  (128..191)
 Different networks -> traffic must pass through a router</code></pre></details>
 
-<h2>۸. Lab هدایت‌شده: «Mask چطور تعیین می‌کند چه کسی همسایه است»</h2>
+<h2><span class="hn">۸.</span> Lab هدایت‌شده: «Mask چطور تعیین می‌کند چه کسی همسایه است»</h2>
 <p>در Lab <code>L00-ImageValidation</code> می‌دانید <code>R1</code> روی <code>Gi0/0.10</code> آدرس <code>10.10.10.1/24</code> و <code>SW1</code> روی <code>Vlan10</code> آدرس <code>10.10.10.2/24</code> دارد و <code>ping</code> کار می‌کند. حالا عمداً Mask را خراب می‌کنیم تا اثرش را ببینید.</p>
 <h3>گام ۱: وضعیت سالم</h3>
 <pre><code>R1# show ip interface brief
@@ -508,10 +515,10 @@ R1(config-subif)# end
 R1# ping 10.10.10.130</code></pre>
 <p>بعد از رفع، ping موفق می‌شود. سپس آدرس سوییچ را به <code>10.10.10.2</code> برگردانید.</p>
 
-<h2>۹. Lab مستقل</h2>
+<h2><span class="hn">۹.</span> Lab مستقل</h2>
 <p>سه Subnet بسازید: ۴۰ Host، ۱۰ Host و یک لینک دو روتر. از <code>192.168.50.0/24</code> با روش اندازه بلوک شروع کنید و برای هرکدام Prefix، شبکه، Broadcast، اولین و آخرین Host را بنویسید. جدول را در فایل <code>02-design/ip-plan-drill.md</code> ذخیره کنید.</p>
 
-<h2>۱۰. عیب‌یابی (TS13: Mask اشتباه، TS14: Gateway اشتباه)</h2>
+<h2><span class="hn">۱۰.</span> عیب‌یابی (TS13: Mask اشتباه، TS14: Gateway اشتباه)</h2>
 <table>
 <tr><th>بخش</th><th>شرح</th></tr>
 <tr><td>Symptom</td><td>یک Host فقط به بعضی Hostهای همان VLAN می‌رسد</td></tr>
@@ -521,7 +528,7 @@ R1# ping 10.10.10.130</code></pre>
 <tr><td>رفع و Verification</td><td>تصحیح Mask/Gateway؛ ping همه Hostها</td></tr>
 </table>
 
-<h2>۱۱. سؤال‌های مرور (Active Recall، بدون نگاه)</h2>
+<h2><span class="hn">۱۱.</span> سؤال‌های مرور (Active Recall، بدون نگاه)</h2>
 <details><summary>آدرس شبکه و Broadcast با چه فرمولی پیدا می‌شود؟</summary><p>شبکه: آدرس AND Mask (یا گرد به پایین به مضرب بلوک). Broadcast: شبکه بعدی منهای ۱.</p></details>
 <details><summary>چرا Host قابل‌استفاده = آدرس‌ها منهای ۲ است؟</summary><p>یکی آدرس شبکه و یکی Broadcast است و به Host داده نمی‌شود.</p></details>
 <details><summary>/26 چند Host دارد و بلوکش چند است؟</summary><p>62 Host؛ بلوک 64.</p></details>
@@ -539,7 +546,7 @@ R1# ping 10.10.10.130</code></pre>
 </table>
 <details><summary>Quick quiz (answer in English): How many usable hosts are in a /27 subnet?</summary><p>30 (2^5 - 2).</p></details>
 
-<h2>۱۲. تکلیف و چک‌لیست تسلط</h2>
+<h2><span class="hn">۱۲.</span> تکلیف و چک‌لیست تسلط</h2>
 <ul>
 <li>☐ ۸ تمرین بخش ۷ را بدون نگاه حل کنم.</li>
 <li>☐ ده عدد دلخواه را به باینری و برعکس تبدیل کنم.</li>
@@ -548,7 +555,7 @@ R1# ping 10.10.10.130</code></pre>
 <li>☐ توضیح بدهم چرا ۲ آدرس رزرو است.</li>
 </ul>
 
-<h2>۱۳. یادآوری اشتباهات شما</h2>
+<h2><span class="hn">۱۳.</span> یادآوری اشتباهات شما</h2>
 <div class="box review"><b class="t">یادآوری ۱</b>اول <code>enable</code> و بعد <code>configure terminal</code>؛ و فقط یک‌بار.</div>
 <div class="box review"><b class="t">یادآوری ۲</b>دستورهای EXEC (مثل <code>monitor capture</code>) در Config خطا می‌دهند؛ خطای «Invalid input» همیشه ناسازگاری Image نیست.</div>
 <div class="box review"><b class="t">یادآوری ۳</b>«فرمان پذیرفته شد» ≠ «Feature کار می‌کند»؛ با ترافیک واقعی بسنجید.</div>
@@ -582,11 +589,11 @@ R1# ping 10.10.10.130</code></pre>
 
 
 
-<h2>۱. مشکل: تقسیم هم‌اندازه و هدررفت آدرس</h2>
+<h2><span class="hn">۱.</span> مشکل: تقسیم هم‌اندازه و هدررفت آدرس</h2>
 <p>فرض کنید بلوک <code>192.168.10.0/24</code> (۲۵۶ آدرس) دارید و چهار بخش می‌خواهید: فروش (۱۰۰ کامپیوتر)، فنی (۵۰)، مدیریت (۱۲)، و یک لینک بین دو روتر (۲).</p>
 <p>اگر ساده‌لوحانه همه را /26 (۶۲ Host) بسازید، فروش جا نمی‌شود (۱۰۰ &gt; ۶۲). اگر همه را /25 (۱۲۶ Host) بسازید، فقط ۲ Subnet می‌گیرید و چهار بخش جا نمی‌شود. یعنی با اندازه‌ی ثابت، نه هدر نمی‌دهیم و نه جا می‌شویم. راه‌حل: <b>اندازه‌ی متغیر</b>.</p>
 
-<h2>۲. ایده‌ی VLSM به زبان ساده</h2>
+<h2><span class="hn">۲.</span> ایده‌ی VLSM به زبان ساده</h2>
 <p><span class="en">VLSM</span> یعنی «Subnet Mask با طول متغیر» (<span class="en">Variable Length Subnet Mask</span>). مثل برش پیتزا برای مهمان‌ها: به کسی که گرسنه‌تر است برش بزرگ‌تر می‌دهید و به بقیه کوچک‌تر. فقط یک قانون هست: برش‌ها نباید روی هم بیفتند.</p>
 <div class="box"><b class="t">سه قانون طلایی VLSM</b>
 ۱) <b>همیشه از بزرگ‌ترین نیاز شروع کن.</b>
@@ -594,7 +601,7 @@ R1# ping 10.10.10.130</code></pre>
 ۳) هیچ دو Subnet نباید هم‌پوشانی داشته باشند.</div>
 <p><b>مراحل کار برای هر بخش:</b> (۱) نیاز را بشمار و ۲ آدرس رزرو (شبکه و Broadcast) اضافه کن. (۲) کوچک‌ترین توان ۲ که کافی باشد را پیدا کن. (۳) Prefix را از آن بساز. (۴) از اولین آدرس آزاد شروع به تخصیص کن. (۵) آدرس بعدی آزاد را یادداشت کن.</p>
 
-<h2>۳. مثال ساده (دو بخش)</h2>
+<h2><span class="hn">۳.</span> مثال ساده (دو بخش)</h2>
 <p>بلوک <code>10.0.0.0/24</code> را داریم. بخش A به ۱۰۰ Host و بخش B به ۲۰ Host نیاز دارد. اول بزرگ‌ترین (A):</p>
 <pre><code>A: need = 100 + 2 = 102
    2^7 = 128 >= 102  ->  Prefix = /25
@@ -611,7 +618,7 @@ R1# ping 10.10.10.130</code></pre>
    Next free = 10.0.0.160  (up to 10.0.0.255 stays free for growth)</code></pre>
 <p>باقی‌مانده بلوک (۱۶۰ تا ۲۵۵) برای رشد آینده خالی می‌ماند و هدررفت نیست.</p>
 
-<h2>۴. مثال متوسط (چهار بخش)</h2>
+<h2><span class="hn">۴.</span> مثال متوسط (چهار بخش)</h2>
 <figure class="fig"><svg viewBox="0 0 720 130" role="img" aria-label="VLSM address bar"><rect x="20.0" y="30" width="340.0" height="46" class="net" stroke="#0b1018"/><text x="190.0" y="58" text-anchor="middle" class="on">Sales /25</text><rect x="360.0" y="30" width="170.0" height="46" class="hst" stroke="#0b1018"/><text x="445.0" y="58" text-anchor="middle" class="on">Tech /26</text><rect x="530.0" y="30" width="42.5" height="46" class="net" stroke="#0b1018"/><text x="551.2" y="58" text-anchor="middle" class="on">Mgmt /28</text><rect x="572.5" y="30" width="10.6" height="46" class="hst" stroke="#0b1018"/><rect x="583.1" y="30" width="116.9" height="46" class="bx" stroke="#0b1018"/><text x="641.6" y="58" text-anchor="middle" class="">Free</text><text x="20.0" y="98" text-anchor="middle" class="cap">.0</text><text x="360.0" y="98" text-anchor="middle" class="cap">.128</text><text x="530.0" y="98" text-anchor="middle" class="cap">.192</text><text x="572.5" y="98" text-anchor="middle" class="cap">.208</text><text x="583.1" y="98" text-anchor="middle" class="cap">.212</text><text x="700.0" y="98" text-anchor="middle" class="cap">.255</text><text x="360" y="122" text-anchor="middle" class="cap">192.168.10.0 → 255 : هر Subnet درست بعد از Broadcast قبلی شروع می‌شود</text></svg><figcaption>شکل ۲: نوار آدرس VLSM؛ بخش بزرگ‌تر اول و بدون هم‌پوشانی.</figcaption></figure>
 
 <p>بلوک <code>192.168.10.0/24</code>؛ همان چهار بخش بخش ۱: فروش ۱۰۰، فنی ۵۰، مدیریت ۱۲، لینک روتر ۲.</p>
@@ -625,7 +632,7 @@ R1# ping 10.10.10.130</code></pre>
 <p>دقت کنید هر شروع، دقیقاً بعد از Broadcast قبلی است (۱۲۷ ← ۱۲۸، ۱۹۱ ← ۱۹۲، ۲۰۷ ← ۲۰۸). آدرس‌های <code>.212</code> تا <code>.255</code> هنوز آزادند (۴۴ آدرس).</p>
 <p><b>نکته:</b> اگر ترتیب را برعکس بگیرید (اول لینک /30 را در <code>.0</code> بگذارید)، بعداً /25 روی مرز ۱۲۸ می‌افتد و دیگر فروش در یک تکه جا نمی‌شود. برای همین «بزرگ‌ترین اول».</p>
 
-<h2>۵. مثال سخت (سازمان واقعی: مرکز و سه شعبه)</h2>
+<h2><span class="hn">۵.</span> مثال سخت (سازمان واقعی: مرکز و سه شعبه)</h2>
 <p>سازمانی با بلوک <code>10.20.0.0/22</code> (۱۰۲۴ آدرس: <code>10.20.0.0</code> تا <code>10.20.3.255</code>). نیازها:</p>
 <table>
 <tr><th>بخش</th><th>Host</th></tr>
@@ -668,7 +675,7 @@ Available    = 1024  (a /22)
 Free space        = 10.20.3.76 - 10.20.3.255  (180 addresses, for growth)
 Overlap check     : every start = previous broadcast + 1  ->  no overlap</code></pre>
 
-<h2>۶. IP Plan: سند زنده‌ی شبکه</h2>
+<h2><span class="hn">۶.</span> IP Plan: سند زنده‌ی شبکه</h2>
 <p>جدول بالا هنوز «محاسبه» است. IP Plan سندی است که تیم نگه می‌دارد و این ستون‌ها را دارد: نام بخش، VLAN، شبکه/Prefix، Gateway، بازه‌ی DHCP، آدرس‌های ثابت، مالک، توضیح. قاعده‌ی تجربی: <b>Gateway را همیشه اولین Host (.1) بگذارید</b> و سرورها/تجهیزات را از انتهای بازه یا بازه‌ی ثابت جدا کنید، تا همه بدانند «.1 یعنی Gateway».</p>
 <p>نمونه برای Lab دوره (در Capstone استفاده می‌شود؛ همین هفته در <code>02-design/ip-plan.md</code> ثبتش کنید):</p>
 <table>
@@ -678,7 +685,7 @@ Overlap check     : every start = previous broadcast + 1  ->  no overlap</code><
 <tr><td>30</td><td>سرورها</td><td>10.10.30.0/24</td><td>10.10.30.1</td></tr>
 </table>
 
-<h2>۷. تمرین‌های درجه‌بندی‌شده</h2>
+<h2><span class="hn">۷.</span> تمرین‌های درجه‌بندی‌شده</h2>
 <details><summary>۱ (ساده): از 192.168.1.0/24 دو Subnet بساز: ۱۲۰ Host و ۱۰ Host</summary><pre><code>120 + 2 = 122 -> 128 -> /25
   192.168.1.0/25     hosts .1 - .126
 10 + 2 = 12 -> 16 -> /28
@@ -707,7 +714,7 @@ Next free = 10.5.1.168</code></pre></details>
 192.168.1.100/27  covers .96  - .127   (network .96)
 The second range is inside the first -> OVERLAP (design error)</code></pre></details>
 
-<h2>۸. Lab هدایت‌شده: اجرای IP Plan روی روتر</h2>
+<h2><span class="hn">۸.</span> Lab هدایت‌شده: اجرای IP Plan روی روتر</h2>
 <p>برای دیدن اینکه روتر Subnetها را «می‌شناسد»، روی <code>R1</code> چند Loopback به‌عنوان Subnet مجازی می‌سازیم.</p>
 <h3>گام ۱: ساخت سه Subnet از مثال متوسط</h3>
 <pre><code>R1# configure terminal
@@ -733,10 +740,10 @@ R1(config)# no interface loopback 3
 R1(config)# no interface loopback 4
 R1(config)# end</code></pre>
 
-<h2>۹. Lab مستقل</h2>
+<h2><span class="hn">۹.</span> Lab مستقل</h2>
 <p>برای Capstone یک بلوک <code>10.50.0.0/22</code> انتخاب کنید و برای مرکز (کاربران ۱۵۰، سرورها ۴۰، مدیریت ۲۰، DMZ ۱۰) و سه شعبه (هرکدام ۳۰ کاربر) به‌علاوه ۳ لینک، IP Plan کامل بسازید. خروجی: <code>02-design/ip-plan.md</code> با ستون‌های گفته‌شده. بدون رمز.</p>
 
-<h2>۱۰. عیب‌یابی</h2>
+<h2><span class="hn">۱۰.</span> عیب‌یابی</h2>
 <table>
 <tr><th>Symptom</th><td>بعد از اضافه‌کردن Subnet جدید، بخشی از شبکه ناگهان قطع شد</td></tr>
 <tr><th>سرنخ</th><td>دو Subnet هم‌پوشان؛ روتر برای یک آدرس دو مسیر دارد</td></tr>
@@ -745,7 +752,7 @@ R1(config)# end</code></pre>
 <tr><th>پیشگیری</th><td>هر آدرس جدید را اول در IP Plan ثبت کن، بعد روی دستگاه بزن</td></tr>
 </table>
 
-<h2>۱۱. سؤال‌های مرور</h2>
+<h2><span class="hn">۱۱.</span> سؤال‌های مرور</h2>
 <details><summary>VLSM چیست و چرا به آن نیاز داریم؟</summary><p>تقسیم بلوک به Subnetهایی با اندازه‌های مختلف، تا هدررفت آدرس نداشته باشیم.</p></details>
 <details><summary>چرا از بزرگ‌ترین نیاز شروع می‌کنیم؟</summary><p>برای اینکه هر Subnet روی مرز درست بیفتد و سوراخ ایجاد نشود.</p></details>
 <details><summary>بهترین Prefix برای لینک بین دو روتر چیست؟</summary><p>/30 (دو Host). (در IPv6 یا لینک‌های ویژه /31 هم استفاده می‌شود.)</p></details>
@@ -761,14 +768,14 @@ R1(config)# end</code></pre>
 </table>
 <details><summary>Quick quiz (answer in English): Why do we sort requirements from largest to smallest in VLSM?</summary><p>So each block aligns on its boundary and no gaps or overlaps appear.</p></details>
 
-<h2>۱۲. تکلیف و چک‌لیست تسلط</h2>
+<h2><span class="hn">۱۲.</span> تکلیف و چک‌لیست تسلط</h2>
 <ul>
 <li>☐ ۶ تمرین بخش ۷ را حل کنم.</li>
 <li>☐ Lab هدایت‌شده را اجرا و خروجی <code>show ip route connected</code> را ذخیره کنم.</li>
 <li>☐ IP Plan Capstone را بنویسم و بدون هم‌پوشانی بودنش را وارسی کنم.</li>
 <li>☐ بتوانم بدون نگاه VLSM را برای ۴ بخش انجام دهم.</li>
 </ul>
-<h2>۱۳. یادآوری اشتباهات شما</h2>
+<h2><span class="hn">۱۳.</span> یادآوری اشتباهات شما</h2>
 <div class="box review"><b class="t">یادآوری</b>«+۲» (شبکه و Broadcast) را در هر محاسبه فراموش نکنید؛ و قبل از اجرا، پیش‌بینی کنید و بعد نتیجه‌ی واقعی را مقایسه کنید.</div>
 
 `
@@ -808,7 +815,7 @@ R1(config)# end</code></pre>
 
 
 
-<h2>۱. ساختار آدرس IPv6</h2>
+<h2><span class="hn">۱.</span> ساختار آدرس IPv6</h2>
 <figure class="fig"><svg viewBox="0 0 720 150" role="img" aria-label="IPv6 anatomy"><rect x="20" y="30" width="330" height="50" class="net" stroke="#0b1018"/><text x="185" y="60" text-anchor="middle" class="on">Routing Prefix (48 bit)</text><rect x="350" y="30" width="80" height="50" class="wrn" stroke="#0b1018"/><text x="390" y="60" text-anchor="middle" class="on">Subnet ID (16)</text><rect x="430" y="30" width="270" height="50" class="hst" stroke="#0b1018"/><text x="565" y="60" text-anchor="middle" class="on">Interface ID (64 bit)</text><text x="190" y="105" text-anchor="middle">2001:0db8:abcd</text><text x="390" y="105" text-anchor="middle">0010</text><text x="565" y="105" text-anchor="middle">0000:0000:0000:0001</text><path d="M20 120 H430" class="ln"/><text x="225" y="140" text-anchor="middle" class="cap">Network = /64</text><path d="M430 120 H700" class="ln"/><text x="565" y="140" text-anchor="middle" class="cap">Host</text></svg><figcaption>شکل ۳: ساختار آدرس IPv6؛ ۶۴ بیت اول شبکه (Prefix + Subnet) و ۶۴ بیت آخر دستگاه.</figcaption></figure>
 
 <p>آدرس IPv6 یک عدد ۱۲۸ بیتی است. آن را به ۸ گروه ۱۶ بیتی تقسیم می‌کنیم و هر گروه را با ۴ رقم شانزده‌شانزدهی (<span class="en">Hex</span>: ارقام ۰ تا ۹ و a تا f) می‌نویسیم، با دونقطه بین گروه‌ها:</p>
@@ -819,7 +826,7 @@ R1(config)# end</code></pre>
 8 groups    = 8 x 16   = 128 bits</code></pre>
 <p>مثل IPv4، آدرس دو بخش دارد: <b>Prefix</b> (شبکه) و <b>Interface ID</b> (دستگاه). در بیشتر شبکه‌ها Prefix برابر <code>/64</code> است: ۶۴ بیت اول شبکه و ۶۴ بیت آخر دستگاه. در IPv6 به‌جای «Subnet Mask» همیشه Prefix می‌نویسیم.</p>
 
-<h2>۲. دو قانون کوتاه‌نویسی</h2>
+<h2><span class="hn">۲.</span> دو قانون کوتاه‌نویسی</h2>
 <p><b>قانون ۱: صفرهای ابتدای هر گروه را حذف کن.</b> مثال: <code>0db8</code> ← <code>db8</code> و <code>0010</code> ← <code>10</code> و <code>0000</code> ← <code>0</code>.</p>
 <p><b>قانون ۲: یک (فقط یک) رشته‌ی متوالی از گروه‌های تماماً صفر را با <code>::</code> جایگزین کن.</b></p>
 <pre><code>کامل:    2001:0db8:0010:0010:0000:0000:0000:0001
@@ -827,7 +834,7 @@ R1(config)# end</code></pre>
 قانون ۲:  2001:db8:10:10::1</code></pre>
 <div class="box"><b class="t">چرا فقط یک بار ::؟</b>اگر دو بار بنویسید، معلوم نیست هرکدام چند گروه صفر را نشان می‌دهند. پس <code>2001::5::1</code> غلط است. اگر دو رشته‌ی صفر داشتید، <code>::</code> را روی <b>بلندترین</b> رشته بگذارید.</div>
 
-<h2>۳. مثال‌های کوتاه‌نویسی (ساده تا سخت)</h2>
+<h2><span class="hn">۳.</span> مثال‌های کوتاه‌نویسی (ساده تا سخت)</h2>
 <h3>مثال ساده</h3>
 <pre><code>Full  : fe80:0000:0000:0000:0000:0000:0000:0001
 Step 1: fe80:0:0:0:0:0:0:1
@@ -843,7 +850,7 @@ Groups written = 5  (2001, db8, a, 1, 2)
 Missing groups = 8 - 5 = 3   (the :: is 3 zero groups)
 Full   : 2001:0db8:000a:0000:0000:0000:0001:0002</code></pre>
 
-<h2>۴. انواع آدرس IPv6</h2>
+<h2><span class="hn">۴.</span> انواع آدرس IPv6</h2>
 <table>
 <tr><th>نوع</th><th>Prefix</th><th>کاربرد</th><th>معادل در IPv4</th></tr>
 <tr><td><span class="en">Global Unicast</span></td><td>2000::/3</td><td>آدرس قابل Route در اینترنت</td><td>آدرس عمومی</td></tr>
@@ -855,7 +862,7 @@ Full   : 2001:0db8:000a:0000:0000:0000:0001:0002</code></pre>
 </table>
 <p><b>نکته‌ی مهم:</b> IPv6 <b>Broadcast ندارد</b>. کارهایی که Broadcast می‌کرد (مثل ARP) با Multicast انجام می‌شود. آدرس‌های ff02::1 (همه‌ی گره‌ها) و ff02::2 (همه‌ی روترها) را بشناسید.</p>
 
-<h2>۵. دستگاه‌ها چطور آدرس می‌گیرند؟</h2>
+<h2><span class="hn">۵.</span> دستگاه‌ها چطور آدرس می‌گیرند؟</h2>
 <h3>۵-۱. Link-Local خودکار</h3>
 <p>همین که Interface بالا بیاید، دستگاه خودش یک آدرس <code>fe80::</code> می‌سازد. نیازی به DHCP و تنظیم دستی ندارد. تمام ارتباط‌های همسایگی (و Next-Hop روتینگ) با همین آدرس انجام می‌شود.</p>
 <h3>۵-۲. EUI-64: ساخت Interface ID از MAC</h3>
@@ -876,11 +883,11 @@ Interface ID:   a8bb:ccff:fe00:0100</code></pre>
 </table>
 <p>NDP از <span class="en">ICMPv6</span> استفاده می‌کند؛ بنابراین <b>نباید ICMPv6 را در فایروال کاملاً ببندید</b> وگرنه IPv6 کار نمی‌کند (اشتباه رایج).</p>
 
-<h2>۶. مثال کاربردی: Prefix و Subnet در IPv6</h2>
+<h2><span class="hn">۶.</span> مثال کاربردی: Prefix و Subnet در IPv6</h2>
 <p>سازمان بلوک <code>2001:db8:abcd::/48</code> دارد. با ۱۶ بیت باقیمانده تا /64 می‌توانیم ۶۵۵۳۶ Subnet /64 بسازیم. محاسبه‌ی Host ندارد! هر VLAN را یک /64 می‌دهیم: <code>2001:db8:abcd:<b>10</b>::/64</code> برای VLAN10، <code>2001:db8:abcd:<b>20</b>::/64</code> برای VLAN20 و غیره. گروه چهارم را همان شماره‌ی VLAN بگذارید تا خوانا باشد.</p>
 <p>مقایسه: در IPv4 باید هر بار محاسبه‌ی VLSM کنیم. در IPv6 همه /64 هستند و زندگی ساده است.</p>
 
-<h2>۷. تمرین‌ها</h2>
+<h2><span class="hn">۷.</span> تمرین‌ها</h2>
 <details><summary>۱. (ساده) کوتاه کن: 2001:0db8:0000:0000:0000:0000:0000:0001</summary><p><code>2001:db8::1</code></p></details>
 <details><summary>۲. (ساده) این چه نوع آدرسی است: fe80::1 ؟ fd12:3456::5 ؟ ff02::1 ؟ 2001:db8::5 ؟</summary><p>Link-Local؛ ULA؛ Multicast (همه‌ی گره‌ها)؛ مستندات/Global.</p></details>
 <details><summary>۳. (متوسط) باز کن: 2001:db8:0:1::5</summary><p><code>2001:0db8:0000:0001:0000:0000:0000:0005</code></p></details>
@@ -892,7 +899,7 @@ Equal -> same /64</code></pre></details>
 <details><summary>۵. (سخت) چرا نمی‌توان 2001::1::2 نوشت؟</summary><p>دو بار :: ابهام می‌سازد؛ نمی‌دانیم هر کدام چند گروه صفر هستند.</p></details>
 <details><summary>۶. (سخت) از 2001:db8:abcd::/48 برای ۴ VLAN (۱۰، ۲۰، ۳۰، ۹۹) Prefix بساز.</summary><p>2001:db8:abcd:10::/64، 2001:db8:abcd:20::/64، 2001:db8:abcd:30::/64، 2001:db8:abcd:99::/64.</p></details>
 
-<h2>۸. Lab هدایت‌شده: IPv6 بین R1 و SW1</h2>
+<h2><span class="hn">۸.</span> Lab هدایت‌شده: IPv6 بین R1 و SW1</h2>
 <p>شرط: در Lab <code>L00</code> هنوز VLAN10 روی R1 (<code>Gi0/0.10</code>) و SW1 (<code>Vlan10</code>) سالم است.</p>
 <h3>گام ۱: فعال‌کردن IPv6 روی روتر</h3>
 <pre><code>R1# configure terminal
@@ -918,17 +925,17 @@ R1# ping FE80::&lt;LL-SW1&gt;%GigabitEthernet0/0.10</code></pre>
 <pre><code>R1# show ipv6 interface gi0/0.10</code></pre>
 <p>در خروجی دنبال خط «ND advertised reachable time» و «Hosts use stateless autoconfig» بگردید؛ یعنی روتر Prefix را برای SLAAC اعلام می‌کند.</p>
 
-<h2>۹. Lab مستقل</h2>
+<h2><span class="hn">۹.</span> Lab مستقل</h2>
 <p>برای VLANهای ۱۰ و ۲۰ و ۳۰ Capstone یک Prefix مثل <code>2001:db8:abcd::/48</code> انتخاب و در <code>02-design/ipv6-plan.md</code> بنویسید. روی R1 هر زیرواسط را یک /64 بدهید و <code>show ipv6 route connected</code> را ثبت کنید.</p>
 
-<h2>۱۰. عیب‌یابی</h2>
+<h2><span class="hn">۱۰.</span> عیب‌یابی</h2>
 <table>
 <tr><th>Symptom</th><td>Ping IPv6 جواب نمی‌دهد ولی IPv4 کار می‌کند</td></tr>
 <tr><th>سرنخ‌ها</th><td>۱) <code>ipv6 unicast-routing</code> فعال است؟<br>۲) Prefix دو طرف یکی است؟<br>۳) ACL یا فایروال ICMPv6 را بسته؟<br>۴) فقط Link-Local کار می‌کند؟</td></tr>
 <tr><th>رفع</th><td>تصحیح Prefix یا اجازه‌ی ICMPv6</td></tr>
 </table>
 
-<h2>۱۱. سؤال‌های مرور</h2>
+<h2><span class="hn">۱۱.</span> سؤال‌های مرور</h2>
 <details><summary>چرا IPv6 Broadcast ندارد؟</summary><p>با Multicast جایگزین شده تا فقط دستگاه‌های مربوطه پردازش کنند.</p></details>
 <details><summary>NS/NA معادل چه چیزی در IPv4 است؟</summary><p>ARP Request/Reply.</p></details>
 <details><summary>چرا ICMPv6 را نباید بست؟</summary><p>NDP و SLAAC به آن وابسته‌اند.</p></details>
@@ -945,14 +952,14 @@ R1# ping FE80::&lt;LL-SW1&gt;%GigabitEthernet0/0.10</code></pre>
 </table>
 <details><summary>Quick quiz (answer in English): Which IPv6 messages replace ARP?</summary><p>Neighbor Solicitation and Neighbor Advertisement (NDP).</p></details>
 
-<h2>۱۲. تکلیف و چک‌لیست تسلط</h2>
+<h2><span class="hn">۱۲.</span> تکلیف و چک‌لیست تسلط</h2>
 <ul>
 <li>☐ ۶ تمرین را حل کنم.</li>
 <li>☐ Lab IPv6 را انجام و نتیجه‌ی واقعی (موفق/ناموفق) را ثبت کنم.</li>
 <li>☐ IPv6 Plan را بنویسم.</li>
 <li>☐ قوانین کوتاه‌نویسی را بدون نگاه بگویم.</li>
 </ul>
-<h2>۱۳. یادآوری اشتباهات شما</h2>
+<h2><span class="hn">۱۳.</span> یادآوری اشتباهات شما</h2>
 <div class="box review"><b class="t">یادآوری</b>خروجی قبل از اجرا را پیش‌بینی کنید؛ و «Invalid input» همیشه به معنای ناسازگاری Image نیست.</div>
 
 `
@@ -988,7 +995,7 @@ R1# ping FE80::&lt;LL-SW1&gt;%GigabitEthernet0/0.10</code></pre>
 
 
 
-<h2>۱. حالت‌های CLI (چهار اتاق یک ساختمان)</h2>
+<h2><span class="hn">۱.</span> حالت‌های CLI (چهار اتاق یک ساختمان)</h2>
 <p>CLI سیسکو مثل ساختمانی با چند اتاق است که هرکدام اجازه‌ی کار متفاوتی دارد:</p>
 <table>
 <tr><th>حالت</th><th>Prompt</th><th>چه کاری می‌شود کرد</th><th>ورود/خروج</th></tr>
@@ -999,7 +1006,7 @@ R1# ping FE80::&lt;LL-SW1&gt;%GigabitEthernet0/0.10</code></pre>
 </table>
 <div class="box"><b class="t">قاعده‌ی طلایی</b>دستورهای <code>show</code>، <code>ping</code>، <code>copy</code>، <code>monitor capture</code> و <code>reload</code> در EXEC هستند. دستورهای تنظیمی در Config. اگر در Config دستور show بزنید، با <code>do</code> جلو آن می‌توانید اجرا کنید: <code>do show ip route</code>.</div>
 
-<h2>۲. کمک‌گیری و میان‌بُرها (سرعت یک مهندس)</h2>
+<h2><span class="hn">۲.</span> کمک‌گیری و میان‌بُرها (سرعت یک مهندس)</h2>
 <ul>
 <li><code>?</code> بعد از هر کلمه: گزینه‌های ممکن. مثال: <code>show ip ?</code></li>
 <li><code>Tab</code>: کامل‌کردن. <code>sh run</code> هم کافی است (مخفف یکتا).</li>
@@ -1010,7 +1017,7 @@ R1# ping FE80::&lt;LL-SW1&gt;%GigabitEthernet0/0.10</code></pre>
 <pre><code>R1# show running-config | section interface Gi0/0
 R1# show ip interface brief | include up</code></pre>
 
-<h2>۳. تنظیمات پایه‌ی یک دستگاه حرفه‌ای</h2>
+<h2><span class="hn">۳.</span> تنظیمات پایه‌ی یک دستگاه حرفه‌ای</h2>
 <pre><code>R1(config)# hostname R1
 R1(config)# no ip domain-lookup
 R1(config)# service timestamps log datetime msec
@@ -1029,7 +1036,7 @@ R1(config)# end</code></pre>
 <li><code>enable secret</code>: رمز ورود به Privileged با Hash قوی. <b>هرگز</b> <code>enable password</code> (متن ساده) نه. رمز واقعی را در Git نگذارید؛ اینجا فقط جانگهدار است.</li>
 </ul>
 
-<h2>۴. Running-config و Startup-config</h2>
+<h2><span class="hn">۴.</span> Running-config و Startup-config</h2>
 <p>دو نسخه از تنظیمات در دستگاه هست:</p>
 <ul>
 <li><b>running-config</b>: در RAM، همین الان فعال است؛ با خاموش‌شدن می‌پرد.</li>
@@ -1042,7 +1049,7 @@ R1# copy running-config startup-config      (یا: write memory)
 R1# show archive                              (در صورت پشتیبانی)</code></pre>
 <p>اشتباه رایج: بعد از تغییر ذخیره نمی‌کنید و بعد از Reload همه‌چیز می‌پرد. جلوگیری: عادت کنید هر تغییر موفق ← <code>copy run start</code>.</p>
 
-<h2>۵. بکاپ و Rollback (قلب درس)</h2>
+<h2><span class="hn">۵.</span> بکاپ و Rollback (قلب درس)</h2>
 <h3>۵-۱. بکاپ محلی روی Flash</h3>
 <pre><code>R1# copy running-config flash:R1-before-change.cfg
 R1# dir flash:</code></pre>
@@ -1060,19 +1067,19 @@ R1# configure replace flash:R1-before-change.cfg force</code></pre>
 R1# reload cancel        (اگر موفق بود)</code></pre>
 <p>مثل ماشین‌هایی که ده دقیقه بعد خودشان خاموش می‌شوند. اگر تغییر ارتباط شما را قطع کرد، دستگاه بعد از ۱۰ دقیقه به startup-config قبلی بر می‌گردد. این تکنیک نجات‌بخش است؛ مخصوصاً در تغییرات راه دور.</p>
 
-<h2>۶. مثال‌ها (ساده تا سخت)</h2>
+<h2><span class="hn">۶.</span> مثال‌ها (ساده تا سخت)</h2>
 <details open><summary>ساده</summary><p>اسم دستگاه را عوض کنید و ذخیره کنید: <code>hostname R1-HQ</code> ← <code>end</code> ← <code>copy run start</code> ← <code>show startup-config | include hostname</code>.</p></details>
 <details open><summary>متوسط</summary><p>قبل از تغییر IP یک Interface، بکاپ به Flash بگیرید؛ آدرس را تغییر دهید؛ ping کنید؛ اگر قطع شد با <code>configure replace</code> برگردید.</p></details>
 <details open><summary>سخت</summary><p>تغییر راه دور: با <code>reload in 5</code> شبکه‌ی ایمنی بگذارید؛ Mask یک Subinterface را تغییر دهید؛ اگر ارتباط قطع شد، ۵ دقیقه صبر می‌کنید و دستگاه با startup قبلی بالا می‌آید؛ اگر موفق بود <code>reload cancel</code> و <code>copy run start</code>.</p></details>
 
-<h2>۷. تمرین‌ها</h2>
+<h2><span class="hn">۷.</span> تمرین‌ها</h2>
 <details><summary>۱. Prompt زیر در کدام حالت است؟ R1(config-if)#</summary><p>Interface Config (زیرمجموعه‌ی Global Config).</p></details>
 <details><summary>۲. تفاوت running و startup چیست؟</summary><p>running در RAM و فعال؛ startup در NVRAM و برای بوت بعدی.</p></details>
 <details><summary>۳. چطور در Config دستور show ip route را اجرا کنیم؟</summary><p><code>do show ip route</code></p></details>
 <details><summary>۴. چرا enable secret بهتر از enable password است؟</summary><p>secret با Hash قوی ذخیره می‌شود؛ password متن ساده یا Type 7 (ضعیف و قابل برگشت) است.</p></details>
 <details><summary>۵. فایده‌ی reload in چیست؟</summary><p>اگر تغییر باعث قطع شد، دستگاه خودش به تنظیمات ذخیره‌شده‌ی قبلی بر می‌گردد.</p></details>
 
-<h2>۸. Lab هدایت‌شده: تغییر، خراب‌کردن و Rollback</h2>
+<h2><span class="hn">۸.</span> Lab هدایت‌شده: تغییر، خراب‌کردن و Rollback</h2>
 <h3>گام ۱: تنظیمات پایه (بخش ۳) را روی R1 و SW1 بزنید و ذخیره کنید</h3>
 <h3>گام ۲: بکاپ</h3>
 <pre><code>R1# copy running-config flash:R1-good.cfg
@@ -1093,10 +1100,10 @@ R1# ping 10.10.10.2</code></pre>
 (یک تغییر بی‌خطر انجام دهید)
 R1# reload cancel</code></pre>
 
-<h2>۹. Lab مستقل</h2>
+<h2><span class="hn">۹.</span> Lab مستقل</h2>
 <p>یک Runbook یک‌صفحه‌ای <code>03-ops/change-and-rollback.md</code> بنویسید: چک‌لیست قبل/حین/بعد تغییر، دستورهای بکاپ، Rollback، و Verification. بدون رمز.</p>
 
-<h2>۱۰. عیب‌یابی</h2>
+<h2><span class="hn">۱۰.</span> عیب‌یابی</h2>
 <table>
 <tr><th>Symptom</th><td>بعد از Reload تنظیمات پرید</td></tr>
 <tr><th>علت</th><td>ذخیره نشده بود (فقط running)</td></tr>
@@ -1106,7 +1113,7 @@ R1# reload cancel</code></pre>
 <tr><th>رفع</th><td>روش جایگزین: <code>copy file startup-config</code> + reload</td></tr>
 </table>
 
-<h2>۱۱. سؤال‌های مرور</h2>
+<h2><span class="hn">۱۱.</span> سؤال‌های مرور</h2>
 <details><summary>سه حالت اصلی CLI؟</summary><p>User EXEC، Privileged EXEC، Config (و زیرحالت‌ها).</p></details>
 <details><summary>چرا بکاپ قبل از تغییر؟</summary><p>برای بازگشت سریع در صورت خرابی.</p></details>
 
@@ -1121,13 +1128,13 @@ R1# reload cancel</code></pre>
 </table>
 <details><summary>Quick quiz (answer in English): What is the difference between running-config and startup-config?</summary><p>Running-config is active in RAM; startup-config is saved in NVRAM and loaded at boot.</p></details>
 
-<h2>۱۲. تکلیف و چک‌لیست تسلط</h2>
+<h2><span class="hn">۱۲.</span> تکلیف و چک‌لیست تسلط</h2>
 <ul>
 <li>☐ تنظیمات پایه را روی همه‌ی دستگاه‌ها بزنم.</li>
 <li>☐ بکاپ و Rollback را عملی انجام دهم و نتیجه را ثبت کنم.</li>
 <li>☐ Runbook تغییر را بنویسم.</li>
 </ul>
-<h2>۱۳. یادآوری اشتباهات شما</h2>
+<h2><span class="hn">۱۳.</span> یادآوری اشتباهات شما</h2>
 <div class="box review"><b class="t">یادآوری</b>دستور EXEC را در Config نزنید؛ کلمه‌ی ناشناخته نزنید (DNS Lookup)؛ بعد از هر تغییر موفق ذخیره کنید.</div>
 
 `
@@ -1162,7 +1169,7 @@ R1# reload cancel</code></pre>
 
 
 
-<h2>۱. Telnet در برابر SSH</h2>
+<h2><span class="hn">۱.</span> Telnet در برابر SSH</h2>
 <table>
 <tr><th>ویژگی</th><th>Telnet</th><th>SSH</th></tr>
 <tr><td>رمزگذاری</td><td>ندارد (متن ساده)</td><td>دارد</td></tr>
@@ -1172,7 +1179,7 @@ R1# reload cancel</code></pre>
 </table>
 <p>مثال ملموس: Telnet مثل فریاد زدن رمز کارت بانکی وسط بازار است؛ SSH مثل گفتن آن در یک اتاق قفل‌شده.</p>
 
-<h2>۲. SSH چطور کار می‌کند؟ (ساده)</h2>
+<h2><span class="hn">۲.</span> SSH چطور کار می‌کند؟ (ساده)</h2>
 <figure class="fig"><svg viewBox="0 0 720 260" role="img" aria-label="SSH handshake"><rect x="80" y="14" width="120" height="36" rx="8" class="bx"/><text x="140" y="37" text-anchor="middle">Client</text><path d="M140 50 V250" class="ln" stroke-dasharray="4 4"/><rect x="560" y="14" width="120" height="36" rx="8" class="bx"/><text x="620" y="37" text-anchor="middle">Server (SW1)</text><path d="M620 50 V250" class="ln" stroke-dasharray="4 4"/><path d="M140 80 H620" class="rq"/><path d="M612 75 l8 5 l-8 5" class="rq"/><text x="380" y="72" text-anchor="middle">1  TCP 22 connect</text><path d="M620 120 H140" class="rp"/><path d="M148 115 l-8 5 l8 5" class="rp"/><text x="380" y="112" text-anchor="middle">2  Host Key + Fingerprint</text><path d="M140 160 H620" class="rq"/><path d="M612 155 l8 5 l-8 5" class="rq"/><text x="380" y="152" text-anchor="middle">3  Key exchange → session key</text><path d="M140 200 H620" class="rq"/><path d="M612 195 l8 5 l-8 5" class="rq"/><text x="380" y="192" text-anchor="middle">4  Login (user + password/key)</text><path d="M620 240 H140" class="rp"/><path d="M148 235 l-8 5 l8 5" class="rp"/><text x="380" y="232" text-anchor="middle">5  Encrypted session</text></svg><figcaption>شکل ۵: مراحل برقراری SSH؛ مرحله ۲ همان جایی است که «Host key changed» نشان می‌دهد.</figcaption></figure>
 
 <ol>
@@ -1184,7 +1191,7 @@ R1# reload cancel</code></pre>
 </ol>
 <div class="box"><b class="t">یادآوری از هفته ۱</b>هشدار «Host key changed» در برنامه‌ی SSH را قبلاً دیدید. آن‌جا هویت را با <code>ssh-keyscan</code> از یک مسیر مستقل تأیید کردیم. این دقیقاً همین مکانیزم است.</div>
 
-<h2>۳. پیکربندی SSH روی روتر/سوییچ (گام‌به‌گام)</h2>
+<h2><span class="hn">۳.</span> پیکربندی SSH روی روتر/سوییچ (گام‌به‌گام)</h2>
 <pre><code>R1(config)# hostname R1
 R1(config)# ip domain-name lab.local
 R1(config)# crypto key generate rsa modulus 2048
@@ -1210,7 +1217,7 @@ R1# show ssh
 R1# show crypto key mypubkey rsa</code></pre>
 <p>در <code>show ip ssh</code> باید «SSH Enabled - version 2.0» ببینید.</p>
 
-<h2>۴. محدودکردن دسترسی (امنیت لایه‌ای)</h2>
+<h2><span class="hn">۴.</span> محدودکردن دسترسی (امنیت لایه‌ای)</h2>
 <p>فقط Subnet مدیریت (VLAN10) اجازه‌ی SSH داشته باشد:</p>
 <pre><code>R1(config)# ip access-list standard MGMT-ONLY
 R1(config-std-nacl)# permit 10.10.10.0 0.0.0.255
@@ -1226,19 +1233,19 @@ Wildcard mask : 0.0.0.255     (= 255.255.255.255 - 255.255.255.0)</code></pre>
 <p>تنظیمات تکمیلی مفید: <code>ip ssh time-out 60</code> و <code>ip ssh authentication-retries 3</code>.</p>
 <div class="box"><b class="t">هشدار: قفل‌شدن از دستگاه</b>قبل از <code>access-class</code>، مطمئن شوید آدرس خودتان در ACL مجاز است؛ وگرنه خودتان بیرون می‌مانید. از <code>reload in 5</code> (درس قبل) به‌عنوان شبکه‌ی ایمنی استفاده کنید.</div>
 
-<h2>۵. مثال‌ها</h2>
+<h2><span class="hn">۵.</span> مثال‌ها</h2>
 <details open><summary>ساده</summary><p>از R1 به SW1 وصل شوید: <code>ssh -l admin 10.10.10.2</code>؛ اگر پرسید «Are you sure», بله.</p></details>
 <details open><summary>متوسط</summary><p>Telnet را غیرفعال کنید (<code>transport input ssh</code>) و ثابت کنید با <code>telnet 10.10.10.2</code> از R1 رد می‌شود (Connection refused).</p></details>
 <details open><summary>سخت</summary><p>ACL را طوری بنویسید که فقط ۲ آدرس مشخص (۱۰.۱۰.۱۰.۵۰ و ۱۰.۱۰.۱۰.۶۰) اجازه داشته باشند؛ و تست کنید از آدرس دیگر رد می‌شود. نکته: مبدأ تست را از Loopback روتر با <code>ssh -l admin -source-interface loopback0 ...</code> عوض کنید.</p></details>
 
-<h2>۶. تمرین‌ها</h2>
+<h2><span class="hn">۶.</span> تمرین‌ها</h2>
 <details><summary>۱. چرا Telnet ناامن است؟</summary><p>رمز و دستورها را بدون رمزگذاری می‌فرستد.</p></details>
 <details><summary>۲. چرا ip domain-name لازم است؟</summary><p>برای ساخت کلید RSA، نام کامل (FQDN) لازم است.</p></details>
 <details><summary>۳. Wildcard Mask برای 10.10.10.0/24؟</summary><p><code>0.0.0.255</code></p></details>
 <details><summary>۴. Wildcard Mask برای یک میزبان 10.10.10.50؟</summary><p><code>0.0.0.0</code> یا ساده‌تر <code>host 10.10.10.50</code>.</p></details>
 <details><summary>۵. Wildcard Mask برای 10.10.8.0/22؟</summary><p><code>0.0.3.255</code></p></details>
 
-<h2>۷. Lab هدایت‌شده</h2>
+<h2><span class="hn">۷.</span> Lab هدایت‌شده</h2>
 <h3>گام ۱: SSH روی SW1</h3>
 <pre><code>SW1(config)# ip domain-name lab.local
 SW1(config)# crypto key generate rsa modulus 2048
@@ -1265,10 +1272,10 @@ SW1(config-line)# access-class MGMT-ONLY in
 (SSH را دوباره امتحان کنید؛ اگر OK بود:)
 SW1# reload cancel</code></pre>
 
-<h2>۸. Lab مستقل</h2>
+<h2><span class="hn">۸.</span> Lab مستقل</h2>
 <p>برای هر ۳ دستگاه Lab یک «استاندارد مدیریت امن» بنویسید (<code>03-ops/secure-mgmt-standard.md</code>): SSH v2، RSA 2048، Telnet بسته، ACL مدیریت، Timeout. و روی هر دستگاه با یک چک‌لیست بسنجید.</p>
 
-<h2>۹. عیب‌یابی</h2>
+<h2><span class="hn">۹.</span> عیب‌یابی</h2>
 <table>
 <tr><th>Symptom</th><td>SSH وصل نمی‌شود</td></tr>
 <tr><th>چک‌لیست</th><td>۱) <code>show ip ssh</code> فعال است؟<br>۲) <code>transport input ssh</code> تنظیم است؟<br>۳) نام‌کاربری وجود دارد؟<br>۴) ACL مبدأ را بسته؟<br>۵) مسیر و Gateway درست است؟<br>۶) ping جواب می‌دهد؟<br>۷) الگوریتم‌ها سازگارند؟</td></tr>
@@ -1276,7 +1283,7 @@ SW1# reload cancel</code></pre>
 <tr><th>رفع</th><td>hostname و domain-name را بزنید.</td></tr>
 </table>
 
-<h2>۱۰. سؤال‌های مرور</h2>
+<h2><span class="hn">۱۰.</span> سؤال‌های مرور</h2>
 <details><summary>Host Key برای چیست؟</summary><p>اثبات هویت سرور و جلوگیری از حمله‌ی Man-in-the-Middle.</p></details>
 <details><summary>access-class روی VTY چه فیلتر می‌کند؟</summary><p>فقط ارتباط‌های مدیریتی ورودی به دستگاه را.</p></details>
 
@@ -1291,14 +1298,14 @@ SW1# reload cancel</code></pre>
 </table>
 <details><summary>Quick quiz (answer in English): Why is Telnet considered insecure?</summary><p>It transmits usernames and passwords unencrypted, so anyone on the path can read them.</p></details>
 
-<h2>۱۱. تکلیف و چک‌لیست تسلط</h2>
+<h2><span class="hn">۱۱.</span> تکلیف و چک‌لیست تسلط</h2>
 <ul>
 <li>☐ SSH روی هر ۳ دستگاه فعال و تست شده.</li>
 <li>☐ Telnet بسته شده و ثابت شده.</li>
 <li>☐ ACL مدیریت با شبکه‌ی ایمنی تست شده.</li>
 <li>☐ هیچ رمزی در Git نیست.</li>
 </ul>
-<h2>۱۲. یادآوری اشتباهات شما</h2>
+<h2><span class="hn">۱۲.</span> یادآوری اشتباهات شما</h2>
 <div class="box review"><b class="t">یادآوری</b>قبل از تغییر راه دور، بکاپ و <code>reload in</code> بگذارید؛ خروجی را پیش‌بینی کنید؛ رمز در ریپو نریزید.</div>
 
 `
@@ -1333,7 +1340,7 @@ SW1# reload cancel</code></pre>
 
 
 
-<h2>۱. فریم، بسته و لایه‌ها (ساده)</h2>
+<h2><span class="hn">۱.</span> فریم، بسته و لایه‌ها (ساده)</h2>
 <p>مثل نامه‌ای که داخل پاکت و آن داخل یک بسته‌ی پستی است. داده را لایه‌به‌لایه می‌پیچند:</p>
 <pre><code>[ Ethernet: MAC مقصد | MAC مبدأ ]   لایه ۲ (فریم)
    [ IP: IP مبدأ | IP مقصد ]        لایه ۳ (بسته)
@@ -1341,7 +1348,7 @@ SW1# reload cancel</code></pre>
          [ داده ]</code></pre>
 <p>سوییچ با <b>MAC</b> تصمیم می‌گیرد (فریم)، روتر با <b>IP</b> (بسته). این تفاوت را همیشه به یاد داشته باشید.</p>
 
-<h2>۲. ARP: «این IP مال کیست؟»</h2>
+<h2><span class="hn">۲.</span> ARP: «این IP مال کیست؟»</h2>
 <figure class="fig"><svg viewBox="0 0 720 230" role="img" aria-label="ARP flow"><rect x="60" y="20" width="120" height="44" rx="8" class="bx"/><text x="120" y="40" text-anchor="middle">Host A</text><text x="120" y="56" text-anchor="middle" class="cap">10.10.10.1</text><path d="M120 64 V215" class="ln" stroke-dasharray="4 4"/><rect x="330" y="20" width="120" height="44" rx="8" class="bx"/><text x="390" y="40" text-anchor="middle">Switch</text><text x="390" y="56" text-anchor="middle" class="cap"></text><path d="M390 64 V215" class="ln" stroke-dasharray="4 4"/><rect x="600" y="20" width="120" height="44" rx="8" class="bx"/><text x="660" y="40" text-anchor="middle">Host B</text><text x="660" y="56" text-anchor="middle" class="cap">10.10.10.2</text><path d="M660 64 V215" class="ln" stroke-dasharray="4 4"/><path d="M120 100 H660" class="rq"/><path d="M652 94 l8 6 l-8 6" class="rq"/><text x="390" y="92" text-anchor="middle">① ARP Request (Broadcast ff:ff:ff:ff:ff:ff): who has 10.10.10.2 ?</text><path d="M660 160 H120" class="rp"/><path d="M128 154 l-8 6 l8 6" class="rp"/><text x="390" y="152" text-anchor="middle">② ARP Reply (Unicast): 10.10.10.2 is at MAC-B</text><text x="390" y="200" text-anchor="middle">③ ICMP Echo Request / Reply  (ping)</text></svg><figcaption>شکل ۴: ping اول چرا کندتر است؟ چون اول ARP انجام می‌شود.</figcaption></figure>
 
 <p>Host فقط IP مقصد را می‌داند ولی فریم به MAC نیاز دارد. ARP این نگاشت را پیدا می‌کند:</p>
@@ -1354,7 +1361,7 @@ SW1# reload cancel</code></pre>
 <p>به همین دلیل اولین ping همیشه کندتر است یا گاهی یک بسته از دست می‌رود (<code>.!!!!</code>): اول باید ARP انجام شود.</p>
 <p>مشاهده روی روتر: <code>show ip arp</code></p>
 
-<h2>۳. ICMP: ابزار تشخیص</h2>
+<h2><span class="hn">۳.</span> ICMP: ابزار تشخیص</h2>
 <table>
 <tr><th>Type</th><th>معنی</th><th>کجا می‌بینیم</th></tr>
 <tr><td>8</td><td>Echo Request</td><td>ping رفت</td></tr>
@@ -1364,7 +1371,7 @@ SW1# reload cancel</code></pre>
 </table>
 <p><b>TTL:</b> هر روتر آن را ۱ کم می‌کند؛ اگر صفر شد بسته دور ریخته می‌شود تا در حلقه نماند. Windows معمولاً ۱۲۸ و لینوکس ۶۴ می‌فرستد؛ از روی TTL دریافتی می‌توان حدس زد بسته چند روتر رد شده.</p>
 
-<h2>۴. گرفتن Capture در PNetLab</h2>
+<h2><span class="hn">۴.</span> گرفتن Capture در PNetLab</h2>
 <ul>
 <li>روی لینک بین دو دستگاه کلیک راست کنید (یا روی Interface) و <b>Capture</b> را بزنید؛ Wireshark روی سیستم شما باز می‌شود (PNetLab از مسیر وب و پروتکل مخصوص این کار را می‌کند).</li>
 <li>جایگزین روی خود IOS (در حالت EXEC، نه Config):</li>
@@ -1377,7 +1384,7 @@ R1# monitor capture CAP1 stop
 R1# show monitor capture CAP1 buffer brief</code></pre>
 <p>اگر دستور روی Image شما فقط «پذیرفته می‌شود ولی بسته‌ای نمی‌گیرد» (در Probe هفته ۱ دیدیم)، از Capture لینک PNetLab استفاده کنید. باز هم: پذیرفته‌شدن ≠ کارکردن.</p>
 
-<h2>۵. فیلترهای Wireshark (مهم‌ترین مهارت)</h2>
+<h2><span class="hn">۵.</span> فیلترهای Wireshark (مهم‌ترین مهارت)</h2>
 <table>
 <tr><th>فیلتر</th><th>معنی</th></tr>
 <tr><td><code>arp</code></td><td>فقط ARP</td></tr>
@@ -1390,19 +1397,19 @@ R1# show monitor capture CAP1 buffer brief</code></pre>
 </table>
 <div class="box"><b class="t">دو نوع فیلتر</b><b>Capture Filter</b> (قبل از شروع، سبک‌تر، سینتکس BPF مثل <code>host 10.10.10.2</code>) و <b>Display Filter</b> (بعد از گرفتن، قدرتمندتر؛ جدول بالا).</div>
 
-<h2>۶. مثال‌ها</h2>
+<h2><span class="hn">۶.</span> مثال‌ها</h2>
 <details open><summary>ساده: ping اول</summary><p>Capture را شروع کنید، <code>clear arp</code> بزنید، <code>ping 10.10.10.2</code>. با فیلتر <code>arp or icmp</code> ببینید: اول ARP Request (Broadcast) و ARP Reply، بعد ۵ جفت Echo Request/Reply.</p></details>
 <details open><summary>متوسط: ping بیرون از Subnet</summary><p>از R1 به آدرسی در Subnet دیگر بزنید و ببینید MAC مقصد فریم، MAC Gateway است، نه MAC مقصد نهایی (ولی IP مقصد همان مقصد نهایی است). این مهم‌ترین نکته‌ی روتینگ است.</p></details>
 <details open><summary>سخت: عیب‌یابی با Capture</summary><p>Mask یک طرف را عمداً اشتباه کنید (درس ۲-۱) و Capture بگیرید: خواهید دید ARP Requestهای بدون جواب یا Echo Requestهای بدون Reply. یعنی مشکل در لایه ۲/۳ همان‌جاست و نه در برنامه.</p></details>
 
-<h2>۷. تمرین‌ها</h2>
+<h2><span class="hn">۷.</span> تمرین‌ها</h2>
 <details><summary>۱. ARP Request به چه MAC مقصدی فرستاده می‌شود؟</summary><p>Broadcast: ff:ff:ff:ff:ff:ff</p></details>
 <details><summary>۲. چرا اولین ping گاهی یک بسته از دست می‌دهد؟</summary><p>چون ARP هنوز حل نشده؛ بسته‌ی اول صبر می‌کند یا تایم‌اوت می‌شود.</p></details>
 <details><summary>۳. در ping به مقصد بیرون از Subnet، MAC مقصد چیست؟</summary><p>MAC Default Gateway.</p></details>
 <details><summary>۴. فیلتر برای دیدن فقط ping از 10.10.10.1؟</summary><p><code>icmp and ip.src == 10.10.10.1</code></p></details>
 <details><summary>۵. TTL=127 در جواب یعنی چه؟</summary><p>احتمالاً مبدأ Windows (۱۲۸) بوده و از یک روتر عبور کرده.</p></details>
 
-<h2>۸. Lab هدایت‌شده</h2>
+<h2><span class="hn">۸.</span> Lab هدایت‌شده</h2>
 <ol>
 <li>در PNetLab روی لینک R1-SW1 Capture شروع کنید.</li>
 <li>روی R1: <code>clear arp</code> سپس <code>ping 10.10.10.2</code>.</li>
@@ -1411,10 +1418,10 @@ R1# show monitor capture CAP1 buffer brief</code></pre>
 <li>Capture را به نام <code>pcap/ping-first.pcapng</code> ذخیره کنید (فایل را در Git نگذارید؛ ممکن است اطلاعات داشته باشد، فقط جدول خلاصه را بنویسید).</li>
 </ol>
 
-<h2>۹. Lab مستقل</h2>
+<h2><span class="hn">۹.</span> Lab مستقل</h2>
 <p>یک سناریو: Gateway اشتباه روی یک Host (مثلاً <code>10.10.10.254</code> به‌جای <code>.1</code>). Capture بگیرید و در گزارش یک‌صفحه‌ای (<code>03-ops/ts14-gateway-wrong.md</code>) بنویسید: علامت چیست، چه بسته‌ای دیدید، چطور رفع کردید.</p>
 
-<h2>۱۰. Gate G1: آزمون عملی پایان هفته ۲</h2>
+<h2><span class="hn">۱۰.</span> Gate G1: آزمون عملی پایان هفته ۲</h2>
 <p>موارد زیر را بدون نگاه به درس انجام دهید و برای هر مورد یک «مدرک» (خروجی دستور) داشته باشید:</p>
 <table>
 <tr><th>#</th><th>وظیفه</th><th>مدرک</th></tr>
@@ -1428,7 +1435,7 @@ R1# show monitor capture CAP1 buffer brief</code></pre>
 </table>
 <p><b>معیار قبولی:</b> حداقل ۶ از ۷ مورد با مدرک. هر مورد ناقص، بازبینی می‌شود و در «مرور اشتباهات» ثبت می‌گردد. وقتی تمام شد بگویید «G1 انجام شد» تا بررسی کنیم و هفته ۳ را شروع کنیم.</p>
 
-<h2>۱۱. سؤال‌های مرور</h2>
+<h2><span class="hn">۱۱.</span> سؤال‌های مرور</h2>
 <details><summary>تفاوت تصمیم سوییچ و روتر؟</summary><p>سوییچ با MAC (لایه ۲)، روتر با IP (لایه ۳).</p></details>
 <details><summary>ARP چرا Broadcast است؟</summary><p>چون MAC مقصد را نمی‌دانیم؛ همه را می‌پرسیم.</p></details>
 <details><summary>Echo Request و Reply چه Typeهایی هستند؟</summary><p>۸ و ۰.</p></details>
@@ -1444,14 +1451,953 @@ R1# show monitor capture CAP1 buffer brief</code></pre>
 </table>
 <details><summary>Quick quiz (answer in English): Which Ethernet destination address does an ARP request use?</summary><p>The broadcast address ff:ff:ff:ff:ff:ff.</p></details>
 
-<h2>۱۲. تکلیف و چک‌لیست تسلط</h2>
+<h2><span class="hn">۱۲.</span> تکلیف و چک‌لیست تسلط</h2>
 <ul>
 <li>☐ Capture ping را انجام و توضیح دهم.</li>
 <li>☐ ۵ فیلتر Wireshark را بدون نگاه بنویسم.</li>
 <li>☐ Gate G1 را کامل کنم.</li>
 </ul>
-<h2>۱۳. یادآوری اشتباهات شما</h2>
+<h2><span class="hn">۱۳.</span> یادآوری اشتباهات شما</h2>
 <div class="box review"><b class="t">یادآوری</b>دستور <code>monitor capture</code> در EXEC است؛ پذیرفته‌شدن دستور ≠ کار کردن آن؛ و فایل Capture را در Git نگذارید.</div>
+
+`
+    },
+
+    w3: {
+      sub: "نقشه هفته ۳: سوییچینگ؛ از MAC Table تا Inter-VLAN.",
+      html: `
+<div class="meta"><span class="tag">هفته ۳</span><span class="tag">۶ درس</span><span class="tag">آزمون کوچک پایان هفته</span></div>
+<p>هفته ۲ را با Gate G1 تمام کردید. از این هفته وارد فاز «Switching» می‌شویم؛ جایی که یاد می‌گیرید یک سوییچ چطور فکر می‌کند و چطور چند شبکه‌ی جدا را روی یک زیرساخت اداره کنید.</p>
+<table>
+<tr><th>درس</th><th>موضوع</th><th>خروجی که باید بتوانید</th></tr>
+<tr><td>۳-۱</td><td>سوییچ و جدول MAC</td><td>مسیر یک فریم را بدون نگاه توضیح دهید</td></tr>
+<tr><td>۳-۲</td><td>VLAN و Access Port</td><td>VLAN Matrix بسازید و پورت‌ها را تنظیم کنید</td></tr>
+<tr><td>۳-۳</td><td>Trunk و 802.1Q</td><td>Trunk امن با Native و Allowed بسازید</td></tr>
+<tr><td>۳-۴</td><td>Router-on-a-Stick</td><td>ارتباط بین VLANها با روتر</td></tr>
+<tr><td>۳-۵</td><td>SVI و سوییچ لایه ۳</td><td>Gateway روی سوییچ و شرط Up</td></tr>
+<tr><td>۳-۶</td><td>عیب‌یابی و آزمون</td><td>TS01 تا TS05 را با RCA حل کنید</td></tr>
+</table>
+<div class="box"><b class="t">قوانین این دوره (یادآوری)</b>هر درس: چرا ← توضیح ساده ← مثال ساده/متوسط/سخت ← تمرین ← Lab. فرمول‌ها در بلوک مستقل؛ هر درس جدول اصطلاحات و English Corner دارد.</div>
+<div class="box"><b class="t">نیازمندی Lab</b>برای این هفته کنار R1 و SW1 به یک سوییچ دوم (SW2، vIOSL2) و سه تا چهار گره VPCS نیاز دارید. همه در PNetLab ساخته می‌شوند و تغییری در ESXi یا MikroTik لازم نیست.</div>
+`
+    },
+    'w3-1': {
+      sub: "MAC Table، Learning/Flooding/Forwarding/Aging.",
+      html: `
+<div class="meta"><span class="tag">هفته ۳ - روز ۱</span><span class="tag">پیش‌نیاز: هفته ۲</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> سوییچ چطور تصمیم می‌گیرد فریم را از کدام پورت بفرستد؛ یعنی جدول <span class="en">MAC Address Table</span> (که به آن <span class="en">CAM Table</span> هم می‌گویند)، و چهار رفتار اصلی سوییچ: یاد‌گرفتن، پخش‌کردن، ارسال هدفمند و پاک‌کردن.</p>
+<p><b>چرا لازم است:</b> تمام ایده‌ی VLAN، Trunk و STP که در دو هفته‌ی آینده می‌خوانید، روی همین جدول بنا شده است. کسی که نداند سوییچ چطور فکر می‌کند، مشکلاتی مثل «ترافیک روی پورت‌های بی‌ربط دیده می‌شود» یا «MAC بین دو پورت پرش می‌کند» را نمی‌فهمد.</p>
+<ul>
+<li><b>در کار روزانه:</b> پیدا کردن اینکه یک کامپیوتر به کدام پورت وصل است (<code>show mac address-table</code>) روزانه‌ترین کار یک ادمین شبکه است.</li>
+<li><b>در امنیت:</b> حمله‌های <span class="en">MAC Flooding</span> و <span class="en">MAC Spoofing</span> همین جدول را هدف می‌گیرند؛ فهمیدنش پایه‌ی Port Security (هفته ۴) است.</li>
+<li><b>در عیب‌یابی:</b> «Unknown Unicast Flooding» یکی از دلایل کندی شبکه است و فقط با فهم CAM قابل تشخیص است.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>سوییچ در برابر هاب ← چهار رفتار سوییچ ← مثال ساده/متوسط/سخت ← دستورها ← تمرین ← Lab ← عیب‌یابی ← English Corner.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>MAC</td><td>Media Access Control address</td><td>آدرس ۴۸ بیتی فیزیکی کارت شبکه</td></tr>
+<tr><td>CAM</td><td>Content Addressable Memory</td><td>حافظه‌ی سریع جدول MAC سوییچ</td></tr>
+<tr><td>Frame</td><td>Ethernet Frame</td><td>بسته‌ی لایه ۲</td></tr>
+<tr><td>Unicast</td><td>Unicast</td><td>ارسال به یک مقصد مشخص</td></tr>
+<tr><td>Broadcast</td><td>Broadcast</td><td>ارسال به همه (ff:ff:ff:ff:ff:ff)</td></tr>
+<tr><td>Flooding</td><td>Flooding</td><td>ارسال فریم از همه‌ی پورت‌ها به‌جز پورت ورودی</td></tr>
+<tr><td>Aging</td><td>MAC Aging Time</td><td>زمان فراموشی ردیف بی‌استفاده (پیش‌فرض ۳۰۰ ثانیه)</td></tr>
+<tr><td>OUI</td><td>Organizationally Unique Identifier</td><td>۳ بایت اول MAC؛ شناسه‌ی سازنده</td></tr>
+<tr><td>VPCS</td><td>Virtual PC Simulator</td><td>کامپیوتر ساده‌ی PNetLab برای تست</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> هاب در برابر سوییچ (یک مثال روزمره)</h2>
+<p>فرض کنید در یک سالن، یک نفر می‌خواهد با شخصی در آن صحبت کند. <b>هاب (Hub)</b> مثل داد زدن وسط سالن است: همه می‌شنوند، حتی کسانی که ربطی ندارند. <b>سوییچ (Switch)</b> مثل منشی‌ای است که اول یاد می‌گیرد هر شخص کجا نشسته و بعد پیام را فقط به همان میز می‌برد.</p>
+<p>هاب‌ها امروز منسوخ‌اند. سوییچ این کار را با یک جدول انجام می‌دهد: «هر MAC پشت کدام پورت است؟»</p>
+
+<h2><span class="hn">۲.</span> چهار رفتار سوییچ</h2>
+<figure class="fig"><svg viewBox="0 0 720 250" role="img" aria-label="switch MAC learning"><rect x="290" y="20" width="140" height="60" rx="8" class="bx"/><text x="360" y="50" text-anchor="middle">Switch</text><text x="360" y="66" text-anchor="middle" class="cap">MAC table</text><rect x="30" y="170" width="140" height="56" rx="8" class="bx"/><text x="100" y="198" text-anchor="middle">PC-A</text><text x="100" y="214" text-anchor="middle" class="cap">MAC-A</text><path d="M100 170 L320 80" class="ln"/><text x="125" y="132" text-anchor="middle" class="cap">Gi0/1</text><rect x="290" y="170" width="140" height="56" rx="8" class="bx"/><text x="360" y="198" text-anchor="middle">PC-B</text><text x="360" y="214" text-anchor="middle" class="cap">MAC-B</text><path d="M360 170 L360 80" class="ln"/><text x="360" y="132" text-anchor="middle" class="cap">Gi0/2</text><rect x="550" y="170" width="140" height="56" rx="8" class="bx"/><text x="620" y="198" text-anchor="middle">PC-C</text><text x="620" y="214" text-anchor="middle" class="cap">MAC-C</text><path d="M620 170 L400 80" class="ln"/><text x="595" y="132" text-anchor="middle" class="cap">Gi0/3</text><path d="M100 170 L330 80" class="rq"/><text x="150" y="118" class="cap">frame A to B</text></svg><figcaption>شکل ۱: سوییچ و سه کامپیوتر؛ هر کامپیوتر به یک پورت وصل است.</figcaption></figure>
+<ol>
+<li><b>Learning (یادگیری):</b> هر فریمی که وارد می‌شود، سوییچ به MAC مبدأ آن نگاه می‌کند و در جدول می‌نویسد «این MAC پشت این پورت است».</li>
+<li><b>Flooding (پخش):</b> اگر MAC مقصد در جدول نبود (یا Broadcast بود)، فریم از همه‌ی پورت‌ها به‌جز پورت ورودی فرستاده می‌شود.</li>
+<li><b>Forwarding (ارسال هدفمند):</b> اگر MAC مقصد در جدول بود، فریم فقط از همان پورت می‌رود.</li>
+<li><b>Aging (فراموشی):</b> ردیفی که ۳۰۰ ثانیه فریم جدیدی از آن نیامد، پاک می‌شود تا جدول پر و کهنه نشود.</li>
+</ol>
+<div class="box"><b class="t">یک قاعده‌ی مهم</b>سوییچ فقط MAC <b>مبدأ</b> را یاد می‌گیرد، هرگز MAC مقصد را. و Broadcast هیچ‌وقت مبدأ نیست؛ پس هرگز در جدول نمی‌آید.</div>
+
+<h2><span class="hn">۳.</span> مثال ساده: اولین ارتباط A با B</h2>
+<p>جدول سوییچ در ابتدا خالی است. A (پورت Gi0/1) به B (پورت Gi0/2) فریم می‌فرستد:</p>
+<pre><code>Step 1: frame arrives on Gi0/1, src = MAC-A, dst = MAC-B
+Step 2: learn  -> table: MAC-A = Gi0/1
+Step 3: MAC-B is unknown -> FLOOD to Gi0/2 and Gi0/3
+Step 4: B answers: src = MAC-B, dst = MAC-A  (arrives on Gi0/2)
+Step 5: learn  -> table: MAC-B = Gi0/2
+Step 6: MAC-A is known -> FORWARD only to Gi0/1</code></pre>
+<p>نتیجه: PC-C فقط فریم اول را می‌بیند. از پیام دوم به بعد، ارتباط A و B خصوصی می‌شود.</p>
+
+<h2><span class="hn">۴.</span> مثال متوسط: ARP و Broadcast</h2>
+<p>در عمل، قبل از ping باید ARP انجام شود (درس ۲-۶). ARP Request یک Broadcast است:</p>
+<pre><code>ARP Request : dst = ff:ff:ff:ff:ff:ff  -> always flooded to all ports
+ARP Reply   : dst = MAC-A (unicast)     -> forwarded only to Gi0/1
+Then ping   : unicast both directions   -> no flooding anymore</code></pre>
+<p>یعنی هر ارتباط تازه با یک موج Flooding شروع می‌شود و بعد آرام می‌گیرد.</p>
+
+<h2><span class="hn">۵.</span> مثال سخت: چند MAC پشت یک پورت و پرش MAC</h2>
+<p>سناریو ۱: پورت Gi0/3 به یک سوییچ دیگر وصل است. پشت آن ۲۰ کامپیوتر هست. نتیجه:</p>
+<pre><code>show mac address-table dynamic
+  VLAN  Mac Address       Type     Ports
+  1     aaaa.0000.0001    DYNAMIC  Gi0/3
+  1     aaaa.0000.0002    DYNAMIC  Gi0/3
+  ... 20 MACs on the same port (normal on an uplink)</code></pre>
+<p>سناریو ۲ (خطرناک): اگر یک MAC یک ثانیه از پورت Gi0/1 و ثانیه‌ی بعد از Gi0/2 بیاید، سوییچ پیام <code>%SW_MATM-4-MACFLAP_NOTIF</code> می‌دهد. این تقریباً همیشه نشانه‌ی <b>Loop</b> (حلقه) در شبکه است. در هفته ۴ (STP) می‌فهمید چرا و چطور جلویش را بگیریم.</p>
+
+<h2><span class="hn">۶.</span> دستورهای کلیدی (خط‌به‌خط)</h2>
+<pre><code>SW1# show mac address-table
+SW1# show mac address-table dynamic
+SW1# show mac address-table address aaaa.0000.0001
+SW1# show mac address-table interface gi0/1
+SW1# show mac address-table aging-time
+SW1# clear mac address-table dynamic</code></pre>
+<ul>
+<li><code>dynamic</code>: فقط ردیف‌هایی که سوییچ خودش یاد گرفته (در برابر <code>static</code> که دستی نوشته می‌شود).</li>
+<li><code>address</code> و <code>interface</code>: جستجو برای یک MAC یا یک پورت، مثل «پیدا کردن کامپیوتر گم‌شده».</li>
+<li><code>clear ... dynamic</code>: جدول را پاک می‌کند (در Lab برای دیدن دوباره‌ی یادگیری). در شبکه‌ی واقعی با احتیاط، چون Flooding موقت ایجاد می‌کند.</li>
+</ul>
+
+<h2><span class="hn">۷.</span> تمرین‌ها</h2>
+<details><summary>۱ (ساده): سوییچ کدام MAC را یاد می‌گیرد: مبدأ یا مقصد؟</summary><pre><code>Source MAC only.
+Destination MAC is only looked up, never learned.</code></pre></details>
+<details><summary>۲ (ساده): فریم با مقصد ff:ff:ff:ff:ff:ff چطور پخش می‌شود؟</summary><pre><code>Flooded out of all ports except the ingress port.</code></pre></details>
+<details><summary>۳ (متوسط): جدول خالی است. A (Gi0/1) به B (Gi0/2) و بعد B به A می‌فرستد. چند Flood رخ می‌دهد؟</summary><pre><code>1 flood  (A -> B: B unknown)
+0 floods (B -> A: A already learned)</code></pre></details>
+<details><summary>۴ (متوسط): چرا ردیف یک MAC بعد از ۵ دقیقه ناپدید می‌شود؟</summary><pre><code>Aging time = 300 s. No frames from that MAC refresh the entry.</code></pre></details>
+<details><summary>۵ (سخت): MACFLAP روی MAC-X بین Gi0/1 و Gi0/2؛ محتمل‌ترین علت؟</summary><pre><code>A layer-2 loop (or a duplicated MAC).
+First action: find the loop and cut it, not clear the table.</code></pre></details>
+
+<h2><span class="hn">۸.</span> Lab هدایت‌شده: دیدن یادگیری و Flooding</h2>
+<p>توپولوژی: سوییچ <code>SW1</code> با سه کامپیوتر ساده‌ی <span class="en">VPCS</span> در PNetLab. اگر ندارید، از منوی Add Object سه گره‌ی VPCS (<code>PC1</code> تا <code>PC3</code>) بسازید و به پورت‌های <code>Gi0/1</code> تا <code>Gi0/3</code> وصل کنید. همه در VLAN 1 (پیش‌فرض) هستند.</p>
+<h3>گام ۱: آدرس‌دهی VPCS</h3>
+<pre><code>PC1&gt; ip 10.10.1.11/24
+PC2&gt; ip 10.10.1.12/24
+PC3&gt; ip 10.10.1.13/24</code></pre>
+<h3>گام ۲: جدول خالی</h3>
+<pre><code>SW1# clear mac address-table dynamic
+SW1# show mac address-table dynamic</code></pre>
+<h3>گام ۳: ایجاد ترافیک و دیدن یادگیری</h3>
+<pre><code>PC1&gt; ping 10.10.1.12
+SW1# show mac address-table dynamic</code></pre>
+<p>باید MAC دو VPCS را روی پورت‌های درست ببینید. MAC هر VPCS را با <code>show ip</code> روی خودش می‌بینید.</p>
+<h3>گام ۴: دیدن Flooding با Capture</h3>
+<ol>
+<li>روی لینک PC3 به SW1 کلیک راست و Capture را شروع کنید.</li>
+<li>روی SW1: <code>clear mac address-table dynamic</code>.</li>
+<li>روی PC1: <code>ping 10.10.1.12</code>.</li>
+<li>در Wireshark فیلتر <code>arp or icmp</code>: ARP Request را می‌بینید (چون Broadcast است) ولی Echo Request بین PC1 و PC2 را <b>نباید</b> ببینید.</li>
+</ol>
+<p>پیش‌بینی کنید و بعد با واقعیت مقایسه کنید. اگر Echo را روی PC3 دیدید، یعنی سوییچ هنوز MAC را یاد نگرفته بود.</p>
+<h3>گام ۵: Aging</h3>
+<pre><code>SW1# show mac address-table aging-time
+SW1(config)# mac address-table aging-time 60</code></pre>
+<p>یک دقیقه ترافیک نفرستید و دوباره <code>show mac address-table dynamic</code> را بزنید. بعد زمان را به 300 برگردانید.</p>
+
+<h2><span class="hn">۹.</span> Lab مستقل</h2>
+<p>MAC یک VPCS را از روی جدول به پورتش ربط دهید، بدون نگاه به توپولوژی. بعد کابل PC2 را به پورت دیگر منتقل کنید و ثبت کنید چه مدت طول می‌کشد جدول درست شود. گزارش را در <code>03-ops/l2-cam-notes.md</code> بنویسید.</p>
+
+<h2><span class="hn">۱۰.</span> عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>ترافیک یک ارتباط روی پورت‌های بی‌ربط دیده می‌شود</td></tr>
+<tr><th>علت محتمل</th><td>MAC مقصد در جدول نیست (Unknown Unicast Flooding) یا Aging خیلی کوتاه است</td></tr>
+<tr><th>روش</th><td>show mac address-table address ، Capture روی پورت سوم</td></tr>
+<tr><th>Symptom 2</th><td>پیام MACFLAP</td></tr>
+<tr><th>علت</th><td>Loop یا MAC تکراری</td></tr>
+<tr><th>رفع</th><td>پیدا کردن و قطع Loop (هفته ۴: STP)</td></tr>
+</table>
+
+<h2><span class="hn">۱۱.</span> سؤال‌های مرور</h2>
+<details><summary>سوییچ چه چیزی را یاد می‌گیرد و از کجا؟</summary><p>MAC مبدأ فریم و پورتی که فریم از آن وارد شد.</p></details>
+<details><summary>چرا Broadcast هیچ‌وقت در جدول MAC دیده نمی‌شود؟</summary><p>چون Broadcast فقط مقصد است، نه مبدأ.</p></details>
+<details><summary>Flooding یعنی چه؟</summary><p>ارسال فریم از همه‌ی پورت‌ها به‌جز پورت ورودی.</p></details>
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>The switch learns the source MAC address of every incoming frame.</td><td>سوییچ MAC مبدأ هر فریم ورودی را یاد می‌گیرد.</td></tr>
+<tr><td>Unknown unicast frames are flooded out all ports except the ingress port.</td><td>فریم‌های Unicast ناشناخته از همه‌ی پورت‌ها به‌جز پورت ورودی پخش می‌شوند.</td></tr>
+<tr><td>A MAC flap usually indicates a layer-2 loop.</td><td>MAC Flap معمولاً نشانه‌ی Loop در لایه ۲ است.</td></tr>
+<tr><td>Entries age out after 300 seconds of inactivity.</td><td>ردیف‌ها بعد از ۳۰۰ ثانیه بی‌فعالیتی حذف می‌شوند.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What does a switch do when the destination MAC is not in its table?</summary><p>It floods the frame out of all ports except the one it arrived on.</p></details>
+
+<h2><span class="hn">۱۲.</span> تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ ۵ تمرین را بدون نگاه حل کنم.</li>
+<li>☐ Lab را انجام دهم و Flooding را با Capture ببینم.</li>
+<li>☐ چهار رفتار سوییچ را بدون نگاه توضیح دهم.</li>
+</ul>
+<h2><span class="hn">۱۳.</span> یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی را قبل از اجرا بنویسید؛ دستور EXEC را در Config نزنید؛ فرمول و محاسبه را در بلوک مستقل بنویسید.</div>
+
+`
+    },
+    'w3-2': {
+      sub: "VLAN، Access Port و VLAN Matrix.",
+      html: `
+<div class="meta"><span class="tag">هفته ۳ - روز ۲</span><span class="tag">پیش‌نیاز: درس ۳-۱</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> چطور یک سوییچ فیزیکی را به چند «شبکه‌ی مجازی جدا» یعنی <span class="en">VLAN</span> تقسیم کنیم، پورت‌ها را به VLANها اختصاص دهیم (Access Port) و جدولی منظم به نام <span class="en">VLAN Matrix</span> بسازیم.</p>
+<p><b>چرا لازم است:</b> بدون VLAN، همه‌ی دستگاه‌های سازمان در یک Broadcast Domain هستند: ترافیک حسابداری، دوربین‌ها و مهمان‌ها با هم قاطی می‌شود و یک کامپیوتر آلوده می‌تواند همه را ببیند. VLAN جداسازی را بدون خرید سوییچ جدا ممکن می‌کند.</p>
+<ul>
+<li><b>در کار روزانه:</b> هر بار که کارمند جدید یا پرینتر جدید وصل می‌شود، باید پورتش را به VLAN درست ببرید.</li>
+<li><b>در امنیت:</b> VLAN اولین لایه‌ی «Segmentation» است؛ در FortiGate بین VLANها Policy می‌نویسید.</li>
+<li><b>در Capstone:</b> VLAN10 مدیریت، VLAN20 کاربران و VLAN30 سرورها همین هفته ساخته می‌شوند.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>Broadcast Domain ← VLAN چیست ← Access Port ← VLAN Matrix ← مثال ساده/متوسط/سخت ← دستورها ← تمرین ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>VLAN</td><td>Virtual Local Area Network</td><td>شبکه محلی مجازی؛ جداسازی منطقی در لایه ۲</td></tr>
+<tr><td>Broadcast Domain</td><td>Broadcast Domain</td><td>محدوده‌ای که Broadcast در آن می‌رسد</td></tr>
+<tr><td>Access Port</td><td>Access Port</td><td>پورتی که فقط به یک VLAN تعلق دارد و Tag نمی‌زند</td></tr>
+<tr><td>Native</td><td>Native VLAN</td><td>VLAN بدون Tag روی Trunk (درس بعد)</td></tr>
+<tr><td>VLAN ID</td><td>VLAN Identifier</td><td>شماره‌ی VLAN (۱ تا ۴۰۹۴)</td></tr>
+<tr><td>SVI</td><td>Switch Virtual Interface</td><td>Interface مجازی L3 برای یک VLAN</td></tr>
+<tr><td>DHCP</td><td>Dynamic Host Configuration Protocol</td><td>تخصیص خودکار آدرس</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> مشکل: یک Broadcast Domain بزرگ</h2>
+<p>یک ساختمان اداری را در نظر بگیرید که همه‌ی طبقه‌ها یک راه‌پله‌ی مشترک و بدون در دارند. هر صدایی که در یک طبقه بلند شود، همه‌ی ساختمان می‌شنوند. Broadcast در شبکه همین است: هر بار که یک دستگاه ARP یا DHCP می‌فرستد، همه‌ی دستگاه‌های سوییچ آن را دریافت می‌کنند.</p>
+<p>هرچه دستگاه‌ها بیشتر شوند، Broadcast بیشتر و شبکه کندتر می‌شود؛ و از نظر امنیت، همه همسایه‌ی هم هستند.</p>
+
+<h2><span class="hn">۲.</span> VLAN: در گذاشتن بین طبقه‌ها</h2>
+<p>VLAN سوییچ را به چند «سوییچ مجازی» تقسیم می‌کند. هر پورت عضو یک VLAN است و فریم‌ها فقط بین پورت‌های همان VLAN رد می‌شوند. دستگاه‌های VLAN متفاوت نه Broadcast یکدیگر را می‌بینند و نه بدون روتر با هم صحبت می‌کنند.</p>
+<figure class="fig"><svg viewBox="0 0 720 260" role="img" aria-label="vlan on one switch"><rect x="130" y="20" width="460" height="90" rx="10" class="bx"/><text x="360" y="42" text-anchor="middle">One physical switch (SW1)</text><rect x="150" y="55" width="100" height="42" rx="6" class="net"/><text x="200" y="81" text-anchor="middle" class="on">Gi0/1</text><rect x="290" y="55" width="100" height="42" rx="6" class="net"/><text x="340" y="81" text-anchor="middle" class="on">Gi0/2</text><rect x="430" y="55" width="100" height="42" rx="6" class="hst"/><text x="480" y="81" text-anchor="middle" class="on">Gi0/3</text><rect x="540" y="55" width="40" height="42" rx="6" class="hst"/><text x="560" y="81" text-anchor="middle" class="on">Gi0/4</text><text x="200" y="130" text-anchor="middle" class="cap">VLAN 20</text><text x="340" y="130" text-anchor="middle" class="cap">VLAN 20</text><text x="480" y="130" text-anchor="middle" class="cap">VLAN 30</text><text x="560" y="130" text-anchor="middle" class="cap">VLAN 30</text><rect x="150" y="170" width="80" height="44" rx="8" class="net"/><text x="190" y="198" text-anchor="middle" class="on">PC1</text><path d="M190 170 V100" class="ln"/><rect x="290" y="170" width="80" height="44" rx="8" class="net"/><text x="330" y="198" text-anchor="middle" class="on">PC2</text><path d="M330 170 V100" class="ln"/><rect x="430" y="170" width="80" height="44" rx="8" class="hst"/><text x="470" y="198" text-anchor="middle" class="on">Srv1</text><path d="M470 170 V100" class="ln"/><rect x="530" y="170" width="80" height="44" rx="8" class="hst"/><text x="570" y="198" text-anchor="middle" class="on">Srv2</text><path d="M570 170 V100" class="ln"/><text x="360" y="245" text-anchor="middle" class="cap">PC1 and PC2 talk freely. PC1 and Srv1 cannot, without a router.</text></svg><figcaption>شکل ۱: یک سوییچ فیزیکی، دو VLAN مجزا.</figcaption></figure>
+
+<h3>قوانین VLAN</h3>
+<ul>
+<li>VLAN با شماره شناخته می‌شود: ۱ تا ۴۰۹۴ (جزئیات در درس بعد).</li>
+<li>VLAN 1 پیش‌فرض است و بهتر است برای کاربران استفاده نشود.</li>
+<li>هر VLAN معمولاً یک Subnet IP جدا دارد: VLAN20 همان 10.10.20.0/24 در IP Plan ماست.</li>
+<li>Access Port فقط عضو یک VLAN است و دستگاه انتهایی (PC، پرینتر) به آن وصل می‌شود.</li>
+</ul>
+
+<h2><span class="hn">۳.</span> VLAN Matrix: سند طراحی</h2>
+<p>قبل از تایپ هر دستور، یک جدول بسازید. ستون‌ها: شماره، نام، Subnet، Gateway، پورت‌ها. این جدول مرجع شماست:</p>
+<table>
+<tr><th>VLAN</th><th>Name</th><th>Subnet</th><th>Gateway</th><th>Access Ports</th></tr>
+<tr><td>10</td><td>MGMT</td><td>10.10.10.0/24</td><td>10.10.10.1</td><td>(مدیریت تجهیزات)</td></tr>
+<tr><td>20</td><td>USERS</td><td>10.10.20.0/24</td><td>10.10.20.1</td><td>Gi0/1, Gi0/2</td></tr>
+<tr><td>30</td><td>SERVERS</td><td>10.10.30.0/24</td><td>10.10.30.1</td><td>Gi0/3</td></tr>
+</table>
+
+<h2><span class="hn">۴.</span> دستورها (خط‌به‌خط)</h2>
+<pre><code>SW1(config)# vlan 20
+SW1(config-vlan)# name USERS
+SW1(config-vlan)# exit
+SW1(config)# interface gi0/1
+SW1(config-if)# switchport mode access
+SW1(config-if)# switchport access vlan 20
+SW1(config-if)# exit</code></pre>
+<ul>
+<li><code>vlan 20</code> + <code>name</code>: VLAN را می‌سازد و نام می‌دهد (نام فقط برای خوانایی است).</li>
+<li><code>switchport mode access</code>: پورت را صریحاً Access می‌کند (نه خودکار).</li>
+<li><code>switchport access vlan 20</code>: پورت را عضو VLAN 20 می‌کند. اگر VLAN وجود نداشته باشد، IOS آن را خودکار می‌سازد (خطای رایج: VLAN بدون نام).</li>
+<li>برای چند پورت: <code>interface range gi0/1 - 2</code>.</li>
+</ul>
+<pre><code>SW1# show vlan brief
+SW1# show interfaces gi0/1 switchport
+SW1# show running-config interface gi0/1</code></pre>
+
+<h2><span class="hn">۵.</span> مثال ساده: دو کامپیوتر در یک VLAN</h2>
+<pre><code>PC1&gt; ip 10.10.20.11/24 10.10.20.1
+PC2&gt; ip 10.10.20.12/24 10.10.20.1
+PC1&gt; ping 10.10.20.12     -> success (same VLAN 20)</code></pre>
+
+<h2><span class="hn">۶.</span> مثال متوسط: دو VLAN، بدون روتر</h2>
+<pre><code>Srv1 (VLAN 30): 10.10.30.11/24
+PC1  (VLAN 20): ping 10.10.30.11   -> FAILS</code></pre>
+<p>دلیل: دو Broadcast Domain جدا هستند و بدون Gateway (روتر یا SVI) بسته نمی‌تواند رد شود. در درس‌های ۳-۴ و ۳-۵ این مشکل را حل می‌کنیم.</p>
+
+<h2><span class="hn">۷.</span> مثال سخت: پورت در VLAN اشتباه (TS03)</h2>
+<p>کاربری شکایت دارد «اینترنت ندارم». IP او 10.10.20.50/24 است ولی ping به Gateway جواب نمی‌دهد. روش عیب‌یابی:</p>
+<ol>
+<li>پورت او را پیدا کن: <code>show mac address-table address &lt;MAC&gt;</code>.</li>
+<li>VLAN آن پورت را ببین: <code>show vlan brief</code>.</li>
+<li>مقایسه کن: Subnet کامپیوتر با VLAN پورت یکی است؟</li>
+<li>اگر نه، پورت را به VLAN درست ببر و دوباره تست کن.</li>
+</ol>
+<pre><code>Symptom   : IP 10.10.20.x but port is in VLAN 30
+Evidence  : show vlan brief -> Gi0/5 in VLAN 30
+Fix       : switchport access vlan 20
+Verify    : ping gateway success</code></pre>
+
+<h2><span class="hn">۸.</span> تمرین‌ها</h2>
+<details><summary>۱ (ساده): چرا VLAN باعث کاهش Broadcast می‌شود؟</summary><pre><code>Each VLAN is a separate broadcast domain.
+Broadcasts stay inside their VLAN.</code></pre></details>
+<details><summary>۲ (ساده): دو کامپیوتر در VLAN های 20 و 30 بدون روتر ping می‌کنند؛ نتیجه؟</summary><pre><code>Fails: different broadcast domains, no gateway.</code></pre></details>
+<details><summary>۳ (متوسط): دستورهای لازم برای ساختن VLAN 40 با نام GUEST و قراردادن Gi0/6 در آن</summary><pre><code>vlan 40
+ name GUEST
+interface gi0/6
+ switchport mode access
+ switchport access vlan 40</code></pre></details>
+<details><summary>۴ (متوسط): خروجی show vlan brief چه چیزی نشان می‌دهد؟</summary><pre><code>VLAN ID, Name, Status and the access ports of each VLAN.</code></pre></details>
+<details><summary>۵ (سخت): کاربر در VLAN 20 است ولی به Gateway نمی‌رسد؛ سه علت محتمل</summary><pre><code>1) Port is in the wrong VLAN
+2) VLAN does not exist or is shut down
+3) Wrong IP/mask/gateway on the PC</code></pre></details>
+
+<h2><span class="hn">۹.</span> Lab هدایت‌شده</h2>
+<h3>گام ۱: ساخت VLANها (طبق VLAN Matrix)</h3>
+<pre><code>SW1(config)# vlan 20
+SW1(config-vlan)# name USERS
+SW1(config-vlan)# vlan 30
+SW1(config-vlan)# name SERVERS
+SW1(config-vlan)# exit</code></pre>
+<h3>گام ۲: اختصاص پورت‌ها</h3>
+<pre><code>SW1(config)# interface range gi0/1 - 2
+SW1(config-if-range)# switchport mode access
+SW1(config-if-range)# switchport access vlan 20
+SW1(config-if-range)# exit
+SW1(config)# interface gi0/3
+SW1(config-if)# switchport mode access
+SW1(config-if)# switchport access vlan 30
+SW1(config-if)# end
+SW1# show vlan brief</code></pre>
+<h3>گام ۳: تست</h3>
+<pre><code>PC1&gt; ip 10.10.20.11/24 10.10.20.1
+PC2&gt; ip 10.10.20.12/24 10.10.20.1
+PC3&gt; ip 10.10.30.11/24 10.10.30.1
+PC1&gt; ping 10.10.20.12     (expect: success)
+PC1&gt; ping 10.10.30.11     (expect: fail)</code></pre>
+<h3>گام ۴: خراب‌کردن عمدی و رفع</h3>
+<pre><code>SW1(config)# interface gi0/2
+SW1(config-if)# switchport access vlan 30
+(PC1 ping PC2 now fails)
+SW1(config-if)# switchport access vlan 20
+(ping works again)</code></pre>
+<h3>گام ۵: ذخیره</h3>
+<pre><code>SW1# copy running-config startup-config</code></pre>
+
+<h2><span class="hn">۱۰.</span> Lab مستقل</h2>
+<p>VLAN Matrix مفصل Capstone (مرکز) را با ۵ VLAN بنویسید و فایل <code>02-design/vlan-matrix.md</code> را بسازید: شماره، نام، Subnet، Gateway، پورت‌ها، توضیح.</p>
+
+<h2><span class="hn">۱۱.</span> عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>PC به Gateway نمی‌رسد</td></tr>
+<tr><th>چک‌لیست</th><td>۱) پورت در VLAN درست است؟<br>۲) VLAN وجود دارد؟<br>۳) پورت UP است؟ (TS01)<br>۴) IP/Mask/Gateway درست است؟</td></tr>
+<tr><th>ابزار</th><td>show vlan brief ، show interfaces status</td></tr>
+</table>
+
+<h2><span class="hn">۱۲.</span> سؤال‌های مرور</h2>
+<details><summary>VLAN چه فایده‌ای دارد؟</summary><p>جداسازی Broadcast Domain و امنیت بیشتر.</p></details>
+<details><summary>Access Port چیست؟</summary><p>پورتی که فقط عضو یک VLAN است و دستگاه انتهایی به آن وصل می‌شود.</p></details>
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>A VLAN is a logical broadcast domain on a switch.</td><td>VLAN یک Broadcast Domain منطقی روی سوییچ است.</td></tr>
+<tr><td>Assign the port to VLAN 20 as an access port.</td><td>پورت را به‌عنوان Access Port به VLAN 20 اختصاص بدهید.</td></tr>
+<tr><td>Hosts in different VLANs need a router to communicate.</td><td>Hostها در VLANهای متفاوت برای ارتباط به روتر نیاز دارند.</td></tr>
+<tr><td>Verify the VLAN membership with show vlan brief.</td><td>عضویت VLAN را با show vlan brief بررسی کنید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why do hosts in different VLANs need a router?</summary><p>Because each VLAN is a separate broadcast domain (separate subnet), so traffic must be routed between them.</p></details>
+
+<h2><span class="hn">۱۳.</span> تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ VLAN Matrix را کامل بنویسم.</li>
+<li>☐ Lab را اجرا کنم و ping موفق و ناموفق را ثبت کنم.</li>
+<li>☐ TS03 را عمداً بسازم و رفع کنم.</li>
+</ul>
+<h2><span class="hn">۱۴.</span> یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>«پذیرفته شدن دستور ≠ کار کردن»؛ همیشه با ping و show تأیید کنید. بعد از هر تغییر موفق ذخیره کنید.</div>
+
+`
+    },
+    'w3-3': {
+      sub: "Trunk، Tag 802.1Q، Native و Allowed.",
+      html: `
+<div class="meta"><span class="tag">هفته ۳ - روز ۳</span><span class="tag">پیش‌نیاز: درس ۳-۲</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> چطور چند VLAN را روی «یک کابل» بین دو سوییچ (یا سوییچ و روتر) عبور بدهیم. این کار با <span class="en">Trunk</span> و استاندارد <span class="en">802.1Q</span> انجام می‌شود که به هر فریم یک برچسب (Tag) اضافه می‌کند.</p>
+<p><b>چرا لازم است:</b> بدون Trunk باید برای هر VLAN یک کابل جدا بین سوییچ‌ها بکشید. Trunk همه را در یک کابل جا می‌دهد؛ ولی یک اشتباه کوچک در آن (مثلاً پاک‌کردن لیست VLANهای مجاز) می‌تواند کل شعبه را قطع کند.</p>
+<ul>
+<li><b>در کار روزانه:</b> تقریباً هر لینک بین سوییچ‌ها و بین سوییچ و فایروال Trunk است.</li>
+<li><b>در امنیت:</b> Trunk نادرست راه حمله‌ی VLAN Hopping است؛ باید Native و Allowed را سفت کنید.</li>
+<li><b>در FortiGate:</b> پورت فایروال که به سوییچ وصل می‌شود، همین Trunk را می‌بیند (VLAN Interface).</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>مشکل: یک کابل برای هر VLAN ← Tag 802.1Q ← Native VLAN ← Allowed List ← مثال ساده/متوسط/سخت ← دستورها ← تمرین ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>Trunk</td><td>Trunk Port</td><td>پورتی که چند VLAN را با Tag عبور می‌دهد</td></tr>
+<tr><td>802.1Q</td><td>IEEE 802.1Q</td><td>استاندارد Tag کردن VLAN در فریم اترنت</td></tr>
+<tr><td>Tag</td><td>VLAN Tag</td><td>۴ بایت اضافه به فریم؛ شامل VLAN ID</td></tr>
+<tr><td>TPID</td><td>Tag Protocol Identifier</td><td>مقدار 0x8100؛ نشان‌دهنده‌ی وجود Tag</td></tr>
+<tr><td>VID</td><td>VLAN Identifier</td><td>۱۲ بیت شماره VLAN</td></tr>
+<tr><td>PCP</td><td>Priority Code Point</td><td>۳ بیت اولویت (QoS)</td></tr>
+<tr><td>DTP</td><td>Dynamic Trunking Protocol</td><td>پروتکل سیسکو برای مذاکره خودکار Trunk</td></tr>
+<tr><td>Native VLAN</td><td>Native VLAN</td><td>VLANی که روی Trunk بدون Tag می‌رود</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> مشکل: یک کابل برای هر VLAN؟</h2>
+<p>فرض کنید دو سوییچ در دو طبقه دارید و ۵ VLAN. بدون Trunk باید ۵ کابل بکشید. تصور کنید یک اتوبوس بین دو شهر. به‌جای ۵ ماشین جدا برای ۵ شرکت، یک اتوبوس مسافران همه‌ی شرکت‌ها را می‌برد؛ فقط باید روی هر مسافر یک برچسب بزنید تا در مقصد معلوم باشد مال کدام شرکت است.</p>
+
+<h2><span class="hn">۲.</span> Tag 802.1Q چیست؟</h2>
+<p>سوییچ هنگام ورود فریم به Trunk، یک برچسب ۴ بایتی بین MAC مبدأ و نوع فریم می‌گذارد. سوییچ آن‌طرف، برچسب را می‌خواند و فریم را فقط در همان VLAN پخش می‌کند.</p>
+<figure class="fig"><svg viewBox="0 0 720 190" role="img" aria-label="802.1Q frame"><rect x="10" y="30" width="100" height="46" class="bx" stroke="#0b1018"/><text x="60" y="58" text-anchor="middle">Dst MAC</text><rect x="110" y="30" width="100" height="46" class="bx" stroke="#0b1018"/><text x="160" y="58" text-anchor="middle">Src MAC</text><rect x="210" y="30" width="250" height="46" class="net" stroke="#0b1018"/><text x="335" y="58" text-anchor="middle" class="on">802.1Q Tag (4 bytes)</text><rect x="460" y="30" width="80" height="46" class="bx" stroke="#0b1018"/><text x="500" y="58" text-anchor="middle">Type</text><rect x="540" y="30" width="110" height="46" class="bx" stroke="#0b1018"/><text x="595" y="58" text-anchor="middle">Payload</text><rect x="650" y="30" width="60" height="46" class="bx" stroke="#0b1018"/><text x="680" y="58" text-anchor="middle">FCS</text><rect x="210" y="100" width="80" height="52" class="bx"/><text x="250" y="122" text-anchor="middle">TPID</text><text x="250" y="140" text-anchor="middle" class="cap">0x8100</text><rect x="290" y="100" width="50" height="52" class="bx"/><text x="315" y="122" text-anchor="middle">PCP</text><text x="315" y="140" text-anchor="middle" class="cap">3 bit</text><rect x="340" y="100" width="45" height="52" class="bx"/><text x="362" y="122" text-anchor="middle">DEI</text><text x="362" y="140" text-anchor="middle" class="cap">1 bit</text><rect x="385" y="100" width="75" height="52" class="bx"/><text x="422" y="122" text-anchor="middle">VID</text><text x="422" y="140" text-anchor="middle" class="cap">12 bit</text><path d="M210 76 L210 100 M460 76 L460 100" class="ln"/></svg><figcaption>شکل ۱: فریم اترنت با Tag ۴ بایتی 802.1Q؛ ۱۲ بیت آن شماره‌ی VLAN است.</figcaption></figure>
+<p>چون VID دوازده بیت است، تعداد VLANها محدود می‌شود:</p>
+<pre><code>VID bits         = 12
+Total values     = 2 ^ 12 = 4096   (0 .. 4095)
+Reserved         = 0 and 4095
+Usable VLAN IDs  = 4096 - 2 = 4094   (1 .. 4094)</code></pre>
+
+<h2><span class="hn">۳.</span> Native VLAN: ترافیک بدون برچسب</h2>
+<p>یک VLAN روی Trunk بدون Tag می‌رود؛ به آن <b>Native VLAN</b> می‌گویند (پیش‌فرض VLAN 1). اگر دو سر Trunk Native متفاوت داشته باشند، ترافیک VLANها قاطی می‌شود و CDP پیام <code>Native VLAN mismatch</code> می‌دهد. همین امر راهی برای VLAN Hopping است.</p>
+<div class="box"><b class="t">توصیه‌ی امنیتی</b>Native را روی یک VLAN بدون استفاده (مثلاً 999) بگذارید و دو سر لینک یکی باشد.</div>
+
+<h2><span class="hn">۴.</span> Allowed VLAN List: چه VLANهایی اجازه‌ی عبور دارند</h2>
+<p>پیش‌فرض Trunk همه‌ی VLANها (1 تا 4094) را عبور می‌دهد. بهتر است فقط VLANهای لازم مجاز باشند. اینجا یک اشتباه بسیار رایج هست:</p>
+<pre><code>switchport trunk allowed vlan 20,30        (REPLACES the whole list!)
+switchport trunk allowed vlan add 40        (ADDS 40 to the existing list)
+switchport trunk allowed vlan remove 30     (REMOVES 30 only)</code></pre>
+<div class="box"><b class="t">هشدار (TS05: Human Error)</b>اگر برای افزودن VLAN جدید فقط بنویسید <code>allowed vlan 40</code> (بدون کلمه‌ی add)، کل لیست قبلی پاک می‌شود و فقط VLAN 40 می‌ماند. باقی VLANها بلافاصله قطع می‌شوند. همیشه از <code>add</code> استفاده کنید و قبلش <code>show interfaces trunk</code> را ببینید.</div>
+
+<h2><span class="hn">۵.</span> دستورها (خط‌به‌خط)</h2>
+<pre><code>SW1(config)# interface gi0/0
+SW1(config-if)# switchport trunk encapsulation dot1q
+SW1(config-if)# switchport mode trunk
+SW1(config-if)# switchport trunk native vlan 999
+SW1(config-if)# switchport trunk allowed vlan 10,20,30
+SW1(config-if)# switchport nonegotiate
+SW1(config-if)# end</code></pre>
+<ul>
+<li><code>trunk encapsulation dot1q</code>: روی بعضی سوییچ‌ها لازم است (اگر خطا داد، سوییچ فقط dot1q را پشتیبانی می‌کند و نیازی نیست).</li>
+<li><code>mode trunk</code>: پورت را صریحاً Trunk می‌کند.</li>
+<li><code>native vlan 999</code>: VLAN بدون Tag.</li>
+<li><code>allowed vlan</code>: فهرست مجاز (اینجا برای اولین بار از فرم کامل استفاده شده).</li>
+<li><code>nonegotiate</code>: DTP را خاموش می‌کند تا مذاکره‌ی ناخواسته رخ ندهد.</li>
+</ul>
+<pre><code>SW1# show interfaces trunk
+SW1# show interfaces gi0/0 switchport</code></pre>
+<p>خروجی <code>show interfaces trunk</code> چهار بخش دارد: Mode و Status، Vlans allowed، Vlans allowed and active، و Vlans in spanning tree forwarding state. اگر VLANی در بخش اول هست ولی در دوم نیست، یعنی هنوز روی سوییچ ساخته نشده.</p>
+
+<h2><span class="hn">۶.</span> مثال ساده: Trunk بین SW1 و SW2</h2>
+<pre><code>SW1(config)# interface gi0/1
+SW1(config-if)# switchport trunk encapsulation dot1q
+SW1(config-if)# switchport mode trunk
+(same on SW2)
+SW1# show interfaces trunk       -> Gi0/1 trunking, allowed 1-4094</code></pre>
+
+<h2><span class="hn">۷.</span> مثال متوسط: دو سوییچ، دو VLAN</h2>
+<pre><code>SW1: PC1 (VLAN 20) on Gi0/2        SW2: PC4 (VLAN 20) on Gi0/2
+Trunk Gi0/1 between SW1 and SW2 carries VLAN 20 and 30
+PC1 ping PC4 (same VLAN 20) -> success through the trunk</code></pre>
+<p>شرط: هر دو سوییچ باید VLAN 20 را داشته باشند و در لیست مجاز Trunk باشد.</p>
+
+<h2><span class="hn">۸.</span> مثال سخت: عیب‌یابی TS04 و TS05</h2>
+<pre><code>TS04 symptom : VLAN 30 hosts lost connectivity across the trunk
+Evidence     : show interfaces trunk -> VLAN 30 missing from "allowed"
+Fix          : switchport trunk allowed vlan add 30
+
+TS05 cause   : someone typed "allowed vlan 40" (without add)
+Result       : only VLAN 40 remains, 10/20/30 down
+Prevention   : always use "add", always review show interfaces trunk
+               before and after, keep a backup (lesson 2-4)</code></pre>
+
+<h2><span class="hn">۹.</span> تمرین‌ها</h2>
+<details><summary>۱ (ساده): چند بیت از Tag مخصوص VLAN ID است و چند VLAN قابل‌استفاده داریم؟</summary><pre><code>12 bits -> 4096 values -> minus 2 reserved -> 4094 usable IDs (1..4094)</code></pre></details>
+<details><summary>۲ (ساده): تفاوت allowed vlan 40 با allowed vlan add 40؟</summary><pre><code>Without add: replaces the list.
+With add: appends VLAN 40 to the existing list.</code></pre></details>
+<details><summary>۳ (متوسط): Native Mismatch چه عارضه‌ای دارد؟</summary><pre><code>CDP warning and traffic of the native VLAN leaks into another VLAN (VLAN hopping risk).</code></pre></details>
+<details><summary>۴ (متوسط): چرا nonegotiate را می‌زنیم؟</summary><pre><code>It disables DTP negotiation so the port cannot become a trunk unexpectedly.</code></pre></details>
+<details><summary>۵ (سخت): روی Trunk هستید و VLAN 30 در show interfaces trunk در ستون allowed نیست؛ ۳ دستور رفع</summary><pre><code>show interfaces trunk
+switchport trunk allowed vlan add 30
+show interfaces trunk   (verify)</code></pre></details>
+
+<h2><span class="hn">۱۰.</span> Lab هدایت‌شده</h2>
+<p>توپولوژی: <code>SW1</code> و <code>SW2</code> (گره دوم vIOSL2) با کابل بین <code>Gi0/1</code> هر دو. PC1 روی SW1 و PC4 روی SW2 هر دو در VLAN 20.</p>
+<h3>گام ۱: بکاپ</h3>
+<pre><code>SW1# copy running-config flash:SW1-before-trunk.cfg
+SW2# copy running-config flash:SW2-before-trunk.cfg</code></pre>
+<h3>گام ۲: VLANها روی هر دو سوییچ</h3>
+<pre><code>SW2(config)# vlan 20
+SW2(config-vlan)# name USERS
+SW2(config-vlan)# vlan 30
+SW2(config-vlan)# name SERVERS</code></pre>
+<h3>گام ۳: Trunk روی هر دو سر</h3>
+<pre><code>SWx(config)# interface gi0/1
+SWx(config-if)# switchport trunk encapsulation dot1q
+SWx(config-if)# switchport mode trunk
+SWx(config-if)# switchport trunk native vlan 999
+SWx(config-if)# switchport trunk allowed vlan 20,30
+SWx(config-if)# switchport nonegotiate
+SWx# show interfaces trunk</code></pre>
+<h3>گام ۴: تست</h3>
+<pre><code>PC1&gt; ip 10.10.20.11/24 10.10.20.1
+PC4&gt; ip 10.10.20.14/24 10.10.20.1
+PC1&gt; ping 10.10.20.14      (expect: success)</code></pre>
+<h3>گام ۵: Capture و دیدن Tag</h3>
+<p>روی لینک بین SW1 و SW2 Capture بگیرید. فریم‌ها را باز کنید: در Wireshark باید «802.1Q Virtual LAN، ID: 20» ببینید. روی لینک PC1 همان فریم <b>بدون</b> Tag است (چون Access Port است).</p>
+<h3>گام ۶: ایجاد عمدی TS05 و رفع</h3>
+<pre><code>SW1(config-if)# switchport trunk allowed vlan 30     (WRONG, replaces list)
+PC1 ping PC4 -> fails
+SW1(config-if)# switchport trunk allowed vlan add 20
+PC1 ping PC4 -> works</code></pre>
+
+<h2><span class="hn">۱۱.</span> Lab مستقل</h2>
+<p>یک Runbook کوتاه <code>03-ops/trunk-change.md</code> بنویسید: «قبل از هر تغییر Trunk چه چیزی بررسی/بکاپ شود و چطور برگردیم». از <code>reload in</code> هم استفاده کنید.</p>
+
+<h2><span class="hn">۱۲.</span> عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>یک VLAN از Trunk رد نمی‌شود</td></tr>
+<tr><th>چک‌لیست</th><td>۱) VLAN در Allowed هست؟<br>۲) VLAN روی هر دو سوییچ ساخته شده؟<br>۳) Native دو سر یکی است؟<br>۴) Trunk در حالت trunking است؟</td></tr>
+<tr><th>ابزار</th><td>show interfaces trunk ، show vlan brief ، show cdp neighbors</td></tr>
+</table>
+
+<h2><span class="hn">۱۳.</span> سؤال‌های مرور</h2>
+<details><summary>Trunk چه کاری می‌کند؟</summary><p>چند VLAN را با Tag روی یک لینک عبور می‌دهد.</p></details>
+<details><summary>Native VLAN چیست؟</summary><p>VLANی که روی Trunk بدون Tag می‌رود.</p></details>
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>The trunk carries traffic for multiple VLANs using 802.1Q tagging.</td><td>Trunk ترافیک چند VLAN را با Tag 802.1Q عبور می‌دهد.</td></tr>
+<tr><td>A native VLAN mismatch can lead to VLAN hopping.</td><td>عدم تطابق Native VLAN می‌تواند به VLAN Hopping منجر شود.</td></tr>
+<tr><td>Use the add keyword to avoid overwriting the allowed VLAN list.</td><td>از کلمه‌ی add استفاده کنید تا لیست VLANهای مجاز بازنویسی نشود.</td></tr>
+<tr><td>Disable DTP with switchport nonegotiate.</td><td>DTP را با switchport nonegotiate خاموش کنید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why is "switchport trunk allowed vlan 40" dangerous on a live trunk?</summary><p>It replaces the entire allowed list, so all other VLANs lose connectivity.</p></details>
+
+<h2><span class="hn">۱۴.</span> تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ Trunk را راه بیندازم و Tag را در Capture ببینم.</li>
+<li>☐ TS04 و TS05 را بسازم و رفع کنم.</li>
+<li>☐ جدول allowed/native هر لینک را در IP Plan ثبت کنم.</li>
+</ul>
+<h2><span class="hn">۱۵.</span> یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>قبل از تغییر Trunk بکاپ بگیرید؛ بعد از تغییر show را ببینید؛ فرمول‌ها و مراحل را در بلوک مستقل بنویسید.</div>
+
+`
+    },
+    'w3-4': {
+      sub: "Inter-VLAN با Sub-interface.",
+      html: `
+<div class="meta"><span class="tag">هفته ۳ - روز ۴</span><span class="tag">پیش‌نیاز: درس ۳-۳</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> چطور VLANهای مختلف را به هم وصل کنیم. روش اول: یک روتر با یک کابل Trunk و چند Sub-interface؛ معروف به <span class="en">Router-on-a-Stick</span> (RoAS).</p>
+<p><b>چرا لازم است:</b> همان‌طور که دیدید دو VLAN بدون روتر با هم صحبت نمی‌کنند. این درس کلید فهم «Inter-VLAN Routing» است و همین مفهوم در FortiGate با VLAN Interface تکرار می‌شود. کسی که RoAS را بفهمد، Gateway در FortiGate را هم می‌فهمد.</p>
+<ul>
+<li><b>در کار روزانه:</b> شعبه‌های کوچک بدون سوییچ لایه ۳ از همین روش استفاده می‌کنند.</li>
+<li><b>در امنیت:</b> وقتی ترافیک بین VLANها از روتر یا فایروال می‌گذرد، می‌شود ACL یا Policy گذاشت.</li>
+<li><b>در Capstone:</b> فایروال FortiGate همین نقش را برای همه‌ی VLANها دارد.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>مشکل: ارتباط بین VLANها ← ایده‌ی Sub-interface ← مسیر بسته (Packet Flow) ← دستورها ← مثال ساده/متوسط/سخت ← تمرین ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>RoAS</td><td>Router on a Stick</td><td>روتر با یک لینک Trunk و چند Sub-interface</td></tr>
+<tr><td>Sub-interface</td><td>Sub-interface</td><td>Interface منطقی روی یک Interface فیزیکی</td></tr>
+<tr><td>Inter-VLAN</td><td>Inter-VLAN Routing</td><td>مسیریابی بین VLANها</td></tr>
+<tr><td>Gateway</td><td>Default Gateway</td><td>دروازه‌ی پیش‌فرض هر VLAN</td></tr>
+<tr><td>encapsulation dot1Q</td><td>IEEE 802.1Q encapsulation</td><td>دستور اتصال Sub-interface به یک VLAN</td></tr>
+<tr><td>L3</td><td>Layer 3</td><td>لایه شبکه (IP)</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> مشکل</h2>
+<p>PC1 در VLAN 20 و Srv1 در VLAN 30. هر کدام Subnet خودش را دارد؛ دو شبکه‌ی جدا که بدون «پل» به هم نمی‌رسند. این پل یک <b>روتر</b> است: وقتی PC1 بخواهد به Srv1 بفرستد، بسته را به Gateway خودش می‌دهد و روتر آن را به VLAN 30 می‌فرستد.</p>
+<p>ساده‌ترین راه: برای هر VLAN یک پورت فیزیکی روتر. ولی روتر پورت زیادی ندارد. راه‌حل هوشمندانه: یک پورت و یک Trunk؛ و روی روتر برای هر VLAN یک «Interface مجازی» می‌سازیم.</p>
+
+<h2><span class="hn">۲.</span> ایده‌ی Router-on-a-Stick</h2>
+<figure class="fig"><svg viewBox="0 0 720 280" role="img" aria-label="router on a stick"><rect x="290" y="20" width="140" height="60" rx="8" class="bx"/><text x="360" y="50" text-anchor="middle">R1</text><text x="360" y="66" text-anchor="middle" class="cap">Gi0/0.20  Gi0/0.30</text><rect x="290" y="120" width="140" height="50" rx="8" class="bx"/><text x="360" y="150" text-anchor="middle">SW1</text><path d="M360 80 V120" class="rq"/><text x="372" y="104" class="cap">802.1Q trunk (one cable)</text><rect x="100" y="220" width="140" height="50" rx="8" class="net"/><text x="170" y="245" text-anchor="middle" class="on">PC1 VLAN 20</text><text x="170" y="261" text-anchor="middle" class="cap">10.10.20.11</text><rect x="480" y="220" width="140" height="50" rx="8" class="hst"/><text x="550" y="245" text-anchor="middle" class="on">Srv1 VLAN 30</text><text x="550" y="261" text-anchor="middle" class="cap">10.10.30.11</text><path d="M170 220 L320 170" class="ln"/><path d="M550 220 L400 170" class="ln"/></svg><figcaption>شکل ۱: یک کابل Trunk بین روتر و سوییچ؛ روتر برای هر VLAN یک Sub-interface دارد.</figcaption></figure>
+
+<p>Sub-interface مثل چند میز در یک ساختمان است: یک در (کابل فیزیکی) دارد ولی هر میز برای یک شرکت (VLAN) کار می‌کند. هر Sub-interface یک آدرس IP دارد که همان Gateway آن VLAN است.</p>
+
+<h2><span class="hn">۳.</span> مسیر بسته (Packet Flow)</h2>
+<p>PC1 (10.10.20.11، VLAN 20) به Srv1 (10.10.30.11، VLAN 30) ping می‌زند:</p>
+<ol>
+<li>PC1 می‌بیند Srv1 در Subnet دیگری است و بسته را به Gateway (10.10.20.1) می‌دهد؛ پس MAC مقصد فریم، MAC روتر است.</li>
+<li>سوییچ فریم را با Tag VLAN 20 روی Trunk به روتر می‌فرستد.</li>
+<li>روتر روی Gi0/0.20 دریافت می‌کند، جدول Route را می‌بیند (Connected: 10.10.30.0/24 روی Gi0/0.30).</li>
+<li>روتر فریم جدید با MAC مقصد Srv1 می‌سازد و با Tag VLAN 30 از همان کابل برمی‌گرداند.</li>
+<li>سوییچ Tag را برمی‌دارد و فریم را فقط به پورت Srv1 می‌دهد.</li>
+</ol>
+<pre><code>IP src/dst stay the same : 10.10.20.11 -> 10.10.30.11
+MAC dst changes          : router MAC (hop 1) -> Srv1 MAC (hop 2)
+VLAN tag changes         : 20 (in) -> 30 (out)
+TTL                      : decreased by 1 at the router</code></pre>
+<div class="box"><b class="t">نکته‌ی مهم</b>IP مبدأ و مقصد تغییر نمی‌کنند، ولی MAC و Tag در هر Hop عوض می‌شوند. این همان نکته‌ی «Routing» است که در Capture (درس ۲-۶) دیدید.</div>
+
+<h2><span class="hn">۴.</span> دستورها (خط‌به‌خط)</h2>
+<pre><code>SW1(config)# interface gi0/0
+SW1(config-if)# switchport trunk encapsulation dot1q
+SW1(config-if)# switchport mode trunk
+SW1(config-if)# switchport trunk allowed vlan 10,20,30
+
+R1(config)# interface gi0/0
+R1(config-if)# no shutdown
+R1(config-if)# no ip address
+R1(config-if)# interface gi0/0.20
+R1(config-subif)# encapsulation dot1Q 20
+R1(config-subif)# ip address 10.10.20.1 255.255.255.0
+R1(config-subif)# interface gi0/0.30
+R1(config-subif)# encapsulation dot1Q 30
+R1(config-subif)# ip address 10.10.30.1 255.255.255.0
+R1(config-subif)# end</code></pre>
+<ul>
+<li>Interface فیزیکی بدون IP و روشن (<code>no shutdown</code>) می‌ماند؛ فقط Sub-interfaceها آدرس دارند.</li>
+<li><code>encapsulation dot1Q 20</code>: این Sub-interface فقط فریم‌های Tag 20 را می‌گیرد/می‌فرستد. شماره‌ی Sub-interface (.20) فقط یک نام است؛ ولی عرف این است که با VLAN یکی باشد.</li>
+<li>اگر Native VLAN داشتید، <code>encapsulation dot1Q 10 native</code>.</li>
+</ul>
+<pre><code>R1# show ip interface brief
+R1# show ip route connected
+R1# show interfaces gi0/0.20
+R1# ping 10.10.30.11</code></pre>
+
+<h2><span class="hn">۵.</span> مثال ساده: ping به Gateway</h2>
+<pre><code>PC1&gt; ping 10.10.20.1     -> success (R1 Gi0/0.20)</code></pre>
+
+<h2><span class="hn">۶.</span> مثال متوسط: ping بین دو VLAN</h2>
+<pre><code>PC1&gt; ping 10.10.30.11    -> success through R1
+PC1&gt; trace 10.10.30.11   -> hop 1 = 10.10.20.1 (router), hop 2 = 10.10.30.11</code></pre>
+
+<h2><span class="hn">۷.</span> مثال سخت: عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>PC1 به Gateway می‌رسد ولی به VLAN 30 نه</td></tr>
+<tr><th>چک‌لیست</th><td>۱) Sub-interface .30 بالا است؟<br>۲) <code>encapsulation dot1Q 30</code> درست است؟<br>۳) VLAN 30 در Allowed ترانک است؟<br>۴) Srv1 Gateway 10.10.30.1 دارد؟<br>۵) <code>show ip route connected</code> هر دو Subnet را دارد؟</td></tr>
+<tr><th>علت متداول</th><td>Encapsulation اشتباه (مثلاً 3 به‌جای 30) یا فراموشی VLAN در Trunk (TS04)</td></tr>
+</table>
+
+<h2><span class="hn">۸.</span> تمرین‌ها</h2>
+<details><summary>۱ (ساده): چرا فقط یک کابل فیزیکی کافی است؟</summary><pre><code>The trunk carries all VLANs tagged; the router splits them into logical sub-interfaces.</code></pre></details>
+<details><summary>۲ (ساده): کدام آدرس IP روی Gi0/0.20 می‌نشیند؟</summary><pre><code>The default gateway of VLAN 20, e.g. 10.10.20.1/24 (first host of the subnet).</code></pre></details>
+<details><summary>۳ (متوسط): در مسیر PC1 به Srv1 کدام فیلدها عوض می‌شوند و کدام نه؟</summary><pre><code>Unchanged: source IP, destination IP
+Changed: destination MAC, source MAC, VLAN tag, TTL (-1)</code></pre></details>
+<details><summary>۴ (متوسط): اگر encapsulation dot1Q 3 به‌جای 30 بزنیم چه می‌شود؟</summary><pre><code>R1 expects tag 3, but the switch sends tag 30 -> frames ignored -> VLAN 30 hosts cannot reach the gateway.</code></pre></details>
+<details><summary>۵ (سخت): نقطه‌ضعف RoAS چیست؟</summary><pre><code>All inter-VLAN traffic crosses the single link both ways (bandwidth bottleneck) and the router is a single point of failure.</code></pre></details>
+
+<h2><span class="hn">۹.</span> Lab هدایت‌شده</h2>
+<p>توپولوژی درس ۳-۲ را ادامه می‌دهیم: <code>R1</code> به <code>SW1</code> (Gi0/0 ↔ Gi0/0). VLAN 20 و 30 روی SW1 دارید.</p>
+<h3>گام ۱: بکاپ و Trunk</h3>
+<pre><code>SW1# copy running-config flash:SW1-before-roas.cfg
+SW1(config)# interface gi0/0
+SW1(config-if)# switchport trunk encapsulation dot1q
+SW1(config-if)# switchport mode trunk
+SW1(config-if)# switchport trunk allowed vlan 10,20,30</code></pre>
+<h3>گام ۲: Sub-interface روی R1</h3>
+<p>دستورهای بخش ۴ را بزنید (VLAN 10 همان Sub-interface قبلی L00 است و دست نمی‌خورد).</p>
+<h3>گام ۳: تست</h3>
+<pre><code>PC1&gt; ip 10.10.20.11/24 10.10.20.1
+PC3&gt; ip 10.10.30.11/24 10.10.30.1
+PC1&gt; ping 10.10.30.11    (expect: success)
+R1# show ip route connected</code></pre>
+<h3>گام ۴: Capture روی لینک R1-SW1</h3>
+<ol>
+<li>PC1 ping به PC3 بزند.</li>
+<li>در Wireshark فریم‌ها را ببینید: Echo Request با VLAN 20 و MAC مقصد R1، و بعد همان بسته با VLAN 30 و MAC مقصد PC3.</li>
+<li>جدول تغییرات (IP/MAC/Tag/TTL) را بنویسید.</li>
+</ol>
+<h3>گام ۵: خراب‌کردن عمدی</h3>
+<pre><code>R1(config)# interface gi0/0.30
+R1(config-subif)# encapsulation dot1Q 3
+PC1 ping PC3 -> fails
+R1(config-subif)# encapsulation dot1Q 30
+PC1 ping PC3 -> works</code></pre>
+
+<h2><span class="hn">۱۰.</span> Lab مستقل</h2>
+<p>یک VLAN جدید (مثلاً 40 GUEST) اضافه کنید: VLAN روی SW1، لیست Trunk (با <code>add</code>!)، Sub-interface روی R1، تست. مراحل را در <code>03-ops/add-vlan-runbook.md</code> بنویسید.</p>
+
+<h2><span class="hn">۱۱.</span> سؤال‌های مرور</h2>
+<details><summary>Sub-interface چیست؟</summary><p>Interface منطقی روی یک Interface فیزیکی که به یک VLAN وصل است.</p></details>
+<details><summary>چرا Interface فیزیکی IP ندارد؟</summary><p>چون فقط Trunk را حمل می‌کند؛ آدرس‌ها روی Sub-interfaceها هستند.</p></details>
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>The router uses sub-interfaces to route between VLANs over a single trunk link.</td><td>روتر با Sub-interfaceها از طریق یک لینک Trunk بین VLANها مسیریابی می‌کند.</td></tr>
+<tr><td>Each sub-interface is the default gateway for its VLAN.</td><td>هر Sub-interface Gateway پیش‌فرض VLAN خودش است.</td></tr>
+<tr><td>The VLAN tag changes at the router, but the IP addresses stay the same.</td><td>Tag در روتر عوض می‌شود ولی آدرس‌های IP ثابت می‌مانند.</td></tr>
+<tr><td>A wrong encapsulation ID breaks routing for that VLAN.</td><td>شناسه‌ی Encapsulation اشتباه، مسیریابی آن VLAN را خراب می‌کند.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What is the main drawback of router-on-a-stick?</summary><p>All inter-VLAN traffic shares one link, creating a bandwidth bottleneck and a single point of failure.</p></details>
+
+<h2><span class="hn">۱۲.</span> تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ RoAS را راه بیندازم و ping بین VLANها را بگیرم.</li>
+<li>☐ جدول تغییرات IP/MAC/Tag را از Capture بنویسم.</li>
+<li>☐ یک VLAN جدید را با Runbook اضافه کنم.</li>
+</ul>
+<h2><span class="hn">۱۳.</span> یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر Trunk؛ خروجی واقعی را ثبت کنید.</div>
+
+`
+    },
+    'w3-5': {
+      sub: "SVI، شرط Up و مقایسه با RoAS.",
+      html: `
+<div class="meta"><span class="tag">هفته ۳ - روز ۵</span><span class="tag">پیش‌نیاز: درس ۳-۴</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> روش دوم Inter-VLAN: سوییچ لایه ۳ با Interfaceهای مجازی به نام <span class="en">SVI</span>. شرط بالا آمدن SVI، تفاوت با RoAS، و اینکه در Capstone ما چرا SVI فقط برای مدیریت استفاده می‌شود.</p>
+<p><b>چرا لازم است:</b> در شبکه‌های واقعی سازمانی، مسیریابی بین VLANها اغلب روی خود سوییچ انجام می‌شود، چون سریع‌تر است و به یک کابل واحد وابسته نیست. همچنین «SVI Down/Down» (TS09) از شایع‌ترین دلایل «Gateway جواب نمی‌دهد» است.</p>
+<ul>
+<li><b>در کار روزانه:</b> هر سوییچ هسته (Core) در سازمان‌ها SVI دارد.</li>
+<li><b>در امنیت:</b> Gateway روی سوییچ یعنی ACL می‌تواند روی SVI اعمال شود.</li>
+<li><b>در Capstone:</b> Gateway همه‌ی VLANها فایروال است؛ SVI فقط برای مدیریت (VLAN10). «Lab A» (Gateway روی سوییچ هسته) جدا و جایگزین است.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>SVI چیست ← شرط Up بودن ← مقایسه با RoAS ← دستورها ← مثال ساده/متوسط/سخت ← تمرین ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>SVI</td><td>Switch Virtual Interface</td><td>Interface مجازی L3 برای یک VLAN روی سوییچ</td></tr>
+<tr><td>L3 Switch</td><td>Layer 3 Switch</td><td>سوییچی که مسیریابی IP هم انجام می‌دهد</td></tr>
+<tr><td>ip routing</td><td>ip routing</td><td>دستور فعال‌کردن مسیریابی روی سوییچ</td></tr>
+<tr><td>Up/Up</td><td>Line protocol up / Interface up</td><td>وضعیت سالم Interface</td></tr>
+<tr><td>Core</td><td>Core Layer</td><td>هسته‌ی شبکه</td></tr>
+<tr><td>ACL</td><td>Access Control List</td><td>فهرست کنترل دسترسی</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> SVI چیست؟</h2>
+<p>در RoAS روتر بیرون از سوییچ بود. در SVI، خود سوییچ یک «پای مجازی» داخل هر VLAN دارد؛ مثل اینکه یک نفر مستقیم داخل هر اتاق نشسته باشد. هر SVI یک آدرس IP دارد که Gateway آن VLAN است، و سوییچ با <code>ip routing</code> بین SVIها مسیریابی می‌کند.</p>
+<figure class="fig"><svg viewBox="0 0 720 230" role="img" aria-label="svi"><rect x="190" y="20" width="340" height="110" rx="12" class="bx"/><text x="360" y="42" text-anchor="middle">Layer-3 Switch (SW1, ip routing)</text><rect x="215" y="60" width="140" height="50" rx="8" class="net"/><text x="285" y="85" text-anchor="middle" class="on">SVI Vlan20</text><text x="285" y="101" text-anchor="middle" class="cap">10.10.20.1</text><rect x="365" y="60" width="140" height="50" rx="8" class="hst"/><text x="435" y="85" text-anchor="middle" class="on">SVI Vlan30</text><text x="435" y="101" text-anchor="middle" class="cap">10.10.30.1</text><rect x="130" y="170" width="140" height="50" rx="8" class="net"/><text x="200" y="195" text-anchor="middle" class="on">PC1 VLAN 20</text><text x="200" y="211" text-anchor="middle" class="cap">10.10.20.11</text><rect x="450" y="170" width="140" height="50" rx="8" class="hst"/><text x="520" y="195" text-anchor="middle" class="on">Srv1 VLAN 30</text><text x="520" y="211" text-anchor="middle" class="cap">10.10.30.11</text><path d="M200 170 L285 110" class="ln"/><path d="M520 170 L435 110" class="ln"/></svg><figcaption>شکل ۱: Gateway داخل خود سوییچ؛ ترافیک بین VLANها هیچ‌وقت سوییچ را ترک نمی‌کند.</figcaption></figure>
+
+<h2><span class="hn">۲.</span> شرط Up شدن SVI (مهم‌ترین نکته)</h2>
+<p>SVI فقط وقتی <code>up/up</code> می‌شود که همه‌ی شرط‌های زیر برقرار باشند:</p>
+<ol>
+<li>VLAN روی سوییچ ساخته شده باشد (<code>show vlan brief</code>).</li>
+<li>حداقل یک پورت در آن VLAN فعال باشد (Access Port بالا، یا Trunk که VLAN را عبور می‌دهد).</li>
+<li>SVI با <code>no shutdown</code> روشن شده باشد.</li>
+</ol>
+<div class="box"><b class="t">TS09: SVI Down/Down</b>اگر VLAN 30 هیچ پورت فعالی ندارد، <code>Vlan30</code> در حالت down/down می‌ماند و Gateway آن VLAN کار نمی‌کند، حتی اگر آدرس درست باشد. اول پورت را بالا بیاورید.</div>
+
+<h2><span class="hn">۳.</span> مقایسه‌ی RoAS و SVI</h2>
+<table>
+<tr><th>معیار</th><th>Router-on-a-Stick</th><th>SVI (L3 Switch)</th></tr>
+<tr><td>محل Gateway</td><td>روتر بیرونی</td><td>خود سوییچ</td></tr>
+<tr><td>تعداد کابل</td><td>یک Trunk</td><td>بدون کابل اضافه</td></tr>
+<tr><td>سرعت</td><td>محدود به لینک و CPU روتر</td><td>سخت‌افزاری، سریع</td></tr>
+<tr><td>گلوگاه</td><td>دارد (یک لینک)</td><td>ندارد</td></tr>
+<tr><td>مناسب برای</td><td>شعبه‌ی کوچک</td><td>هسته‌ی سازمان</td></tr>
+</table>
+
+<h2><span class="hn">۴.</span> دستورها (خط‌به‌خط)</h2>
+<pre><code>SW1(config)# ip routing
+SW1(config)# interface vlan 20
+SW1(config-if)# ip address 10.10.20.1 255.255.255.0
+SW1(config-if)# no shutdown
+SW1(config-if)# interface vlan 30
+SW1(config-if)# ip address 10.10.30.1 255.255.255.0
+SW1(config-if)# no shutdown
+SW1(config-if)# end
+SW1# show ip interface brief
+SW1# show ip route connected</code></pre>
+<ul>
+<li><code>ip routing</code>: سوییچ را از «فقط لایه ۲» به «مسیریاب» تبدیل می‌کند. بدون آن SVI آدرس دارد ولی بین VLANها Route نمی‌کند.</li>
+<li><code>interface vlan 20</code>: SVI همان VLAN را می‌سازد (VLAN باید از قبل موجود باشد).</li>
+<li><code>no shutdown</code>: SVI به‌طور پیش‌فرض خاموش است در بعضی نسخه‌ها؛ حتماً بزنید.</li>
+</ul>
+
+<h2><span class="hn">۵.</span> مثال ساده: ping به SVI</h2>
+<pre><code>PC1&gt; ping 10.10.20.1    -> success (SVI Vlan20)</code></pre>
+<h2><span class="hn">۶.</span> مثال متوسط: ping بین VLAN</h2>
+<pre><code>PC1&gt; ping 10.10.30.11   -> success (routed inside SW1)
+SW1# show ip route connected  -> 10.10.20.0/24 via Vlan20, 10.10.30.0/24 via Vlan30</code></pre>
+<h2><span class="hn">۷.</span> مثال سخت: TS09 و دو Gateway همزمان</h2>
+<pre><code>Symptom   : Vlan30 shows down/down
+Check     : show vlan brief          -> VLAN 30 has no active port
+            show ip interface brief  -> Vlan30 down/down
+Fix       : bring up Gi0/3 (the server port) or allow VLAN 30 on the trunk
+Verify    : Vlan30 up/up, ping works
+
+Conflict  : R1 Gi0/0.30 AND SW1 Vlan30 both = 10.10.30.1
+Result    : duplicate IP, intermittent failures
+Rule      : exactly one gateway per VLAN (shut down the other)</code></pre>
+
+<h2><span class="hn">۸.</span> تمرین‌ها</h2>
+<details><summary>۱ (ساده): ip routing برای چیست؟</summary><pre><code>It enables layer-3 routing on the switch so it can route between SVIs.</code></pre></details>
+<details><summary>۲ (ساده): سه شرط Up شدن SVI</summary><pre><code>1) VLAN exists
+2) at least one active port in the VLAN
+3) SVI is not shut down</code></pre></details>
+<details><summary>۳ (متوسط): VLAN 40 ساخته‌ایم و SVI دارد ولی down/down است؛ علت؟</summary><pre><code>No active (up) port in VLAN 40 and it is not allowed on a trunk to an up port.</code></pre></details>
+<details><summary>۴ (متوسط): چرا دو Gateway برای یک VLAN مشکل می‌سازد؟</summary><pre><code>Duplicate IP/MAC confusion: hosts get inconsistent replies; traffic flaps.</code></pre></details>
+<details><summary>۵ (سخت): کدام روش برای ۱۰ گیگ ترافیک بین VLANها بهتر است و چرا؟</summary><pre><code>SVI on a layer-3 switch: hardware routing, no single-link bottleneck.</code></pre></details>
+
+<h2><span class="hn">۹.</span> Lab هدایت‌شده (Lab A: Gateway روی سوییچ)</h2>
+<h3>گام ۱: خاموش‌کردن Gateway روتر برای VLAN 20 و 30</h3>
+<pre><code>R1(config)# interface gi0/0.20
+R1(config-subif)# shutdown
+R1(config-subif)# interface gi0/0.30
+R1(config-subif)# shutdown</code></pre>
+<h3>گام ۲: SVIها روی SW1</h3>
+<p>دستورهای بخش ۴ را اجرا کنید و <code>show ip interface brief</code> را بگیرید؛ دو SVI باید up/up باشند.</p>
+<h3>گام ۳: تست</h3>
+<pre><code>PC1&gt; ping 10.10.20.1
+PC1&gt; ping 10.10.30.11    (routed inside SW1)</code></pre>
+<h3>گام ۴: دیدن TS09</h3>
+<pre><code>SW1(config)# interface gi0/3
+SW1(config-if)# shutdown
+SW1# show ip interface brief      -> Vlan30 down/down
+SW1(config)# interface gi0/3
+SW1(config-if)# no shutdown       -> Vlan30 up/up</code></pre>
+<h3>گام ۵: برگشت به Capstone</h3>
+<p>برای Capstone اصلی (Gateway = فایروال) SVIهای 20 و 30 را <code>shutdown</code> کنید یا حذف کنید و فقط SVI مدیریت (VLAN10) بماند. تنظیمات را با <code>copy run start</code> ذخیره کنید.</p>
+
+<h2><span class="hn">۱۰.</span> Lab مستقل</h2>
+<p>جدول مقایسه‌ی RoAS و SVI را از نتایج Lab خودتان (سرعت ping، Capture، تعداد Hop در trace) بسازید و در <code>03-ops/roas-vs-svi.md</code> ذخیره کنید.</p>
+
+<h2><span class="hn">۱۱.</span> عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>Gateway جواب نمی‌دهد</td></tr>
+<tr><th>چک‌لیست</th><td>۱) <code>ip routing</code> فعال است؟<br>۲) SVI up/up است؟<br>۳) VLAN پورت فعال دارد؟<br>۴) Gateway تکراری روی روتر نیست؟<br>۵) PC آدرس و Gateway درست دارد؟</td></tr>
+</table>
+
+<h2><span class="hn">۱۲.</span> سؤال‌های مرور</h2>
+<details><summary>SVI چیست؟</summary><p>Interface مجازی لایه ۳ برای یک VLAN روی سوییچ.</p></details>
+<details><summary>چرا SVI down/down می‌شود؟</summary><p>چون VLAN پورت فعالی ندارد یا ساخته نشده یا SVI خاموش است.</p></details>
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>An SVI is the layer-3 gateway for a VLAN on a multilayer switch.</td><td>SVI گیت‌وی لایه ۳ یک VLAN روی سوییچ چندلایه است.</td></tr>
+<tr><td>The SVI stays down until at least one port in the VLAN is active.</td><td>SVI تا وقتی دست‌کم یک پورت فعال در VLAN نباشد down می‌ماند.</td></tr>
+<tr><td>Enable ip routing to route between VLANs on the switch.</td><td>برای مسیریابی بین VLANها روی سوییچ، ip routing را فعال کنید.</td></tr>
+<tr><td>Never configure two gateways for the same VLAN.</td><td>هرگز دو Gateway برای یک VLAN تنظیم نکنید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): When does an SVI come up?</summary><p>When the VLAN exists, at least one port in the VLAN is up, and the SVI is not shut down.</p></details>
+
+<h2><span class="hn">۱۳.</span> تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ SVI را بالا بیاورم و ping بین VLANها بگیرم.</li>
+<li>☐ TS09 را بسازم و رفع کنم.</li>
+<li>☐ پیکربندی را به حالت Capstone اصلی برگردانم.</li>
+</ul>
+<h2><span class="hn">۱۴.</span> یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>دو Gateway هم‌زمان ممنوع؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن.</div>
+
+`
+    },
+    'w3-6': {
+      sub: "روش عیب‌یابی، TS01 تا TS05 و آزمون.",
+      html: `
+<div class="meta"><span class="tag">هفته ۳ - روز ۶</span><span class="tag">پیش‌نیاز: درس‌های ۳-۱ تا ۳-۵</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> روش سیستماتیک عیب‌یابی شبکه (از لایه ۱ به بالا)، پنج سناریوی خرابی TS01 تا TS05، و آزمون عملی کوچک پایان هفته‌ی ۳.</p>
+<p><b>چرا لازم است:</b> ادمین خوب کسی نیست که همه‌چیز را حفظ است، کسی است که با روش، خرابی را سریع پیدا می‌کند. اگر «حدس» بزنید، ساعت‌ها هدر می‌دهید؛ اگر «لایه‌به‌لایه» بروید، اغلب در چند دقیقه علت را پیدا می‌کنید.</p>
+<ul>
+<li><b>در کار روزانه:</b> ۸۰٪ تماس‌های پشتیبانی شبکه از لایه ۱ و ۲ است: کابل، پورت، VLAN.</li>
+<li><b>در امنیت:</b> روش سیستماتیک جلوی «تغییر عجولانه» را می‌گیرد که خودش سبب خرابی جدید می‌شود.</li>
+<li><b>در مصاحبه:</b> «چطور عیب‌یابی می‌کنید؟» سؤال ثابت هر مصاحبه است.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>روش لایه‌به‌لایه ← پنج سناریوی TS ← مثال ساده/متوسط/سخت ← تمرین ← Lab عیب‌یابی ← آزمون کوچک.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>TS</td><td>Troubleshooting Scenario</td><td>سناریوی عیب‌یابی شماره‌دار دوره</td></tr>
+<tr><td>RCA</td><td>Root Cause Analysis</td><td>تحلیل علت ریشه‌ای</td></tr>
+<tr><td>Duplex</td><td>Duplex mode</td><td>Half یا Full؛ حالت ارسال/دریافت همزمان</td></tr>
+<tr><td>Err-disable</td><td>Error-disabled</td><td>پورتی که سوییچ آن را به‌خاطر خطا خاموش کرده</td></tr>
+<tr><td>CDP</td><td>Cisco Discovery Protocol</td><td>کشف همسایه‌های سیسکو</td></tr>
+<tr><td>L1/L2/L3</td><td>Layer 1/2/3</td><td>فیزیکی / پیوند داده / شبکه</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> روش سیستماتیک: از پایین به بالا</h2>
+<p>مثل بررسی خرابی یک ماشین: اول ببین بنزین دارد (لایه ۱)، بعد استارت می‌خورد (لایه ۲)، بعد جاده را بلد است (لایه ۳). از پایین شروع کنید چون اگر کابل قطع باشد، بقیه‌ی چیزها بی‌معنی است.</p>
+<figure class="fig"><svg viewBox="0 0 720 250" role="img" aria-label="troubleshooting ladder"><rect x="30" y="20" width="160" height="44" rx="8" class="net"/><text x="110" y="47" text-anchor="middle" class="on">L1 Physical</text><text x="210" y="37" class="cap">link up? cable, port shutdown</text><text x="210" y="54">show interfaces status</text><rect x="30" y="75" width="160" height="44" rx="8" class="net"/><text x="110" y="102" text-anchor="middle" class="on">L2 Data-link</text><text x="210" y="92" class="cap">VLAN, trunk, MAC</text><text x="210" y="109">show vlan brief / trunk / mac</text><rect x="30" y="130" width="160" height="44" rx="8" class="hst"/><text x="110" y="157" text-anchor="middle" class="on">L3 Network</text><text x="210" y="147" class="cap">IP, mask, gateway, route</text><text x="210" y="164">show ip int brief / route</text><rect x="30" y="185" width="160" height="44" rx="8" class="wrn"/><text x="110" y="212" text-anchor="middle" class="on">L4+ Service</text><text x="210" y="202" class="cap">port, firewall, app</text><text x="210" y="219">telnet/ssh test, logs</text></svg><figcaption>شکل ۱: نردبان عیب‌یابی؛ از لایه ۱ شروع کنید و فقط وقتی لایه پایین سالم بود بالاتر بروید.</figcaption></figure>
+
+<h3>چارچوب پنج‌مرحله‌ای</h3>
+<ol>
+<li><b>Symptom:</b> دقیقاً چه چیزی خراب است و برای چه کسی؟ (علامت، نه حدس)</li>
+<li><b>Scope:</b> چند نفر؟ یک VLAN؟ همه؟</li>
+<li><b>Hypothesis:</b> از پایین‌ترین لایه، یک فرضیه بساز.</li>
+<li><b>Test:</b> با یک دستور show آن را بسنج.</li>
+<li><b>Fix and Verify:</b> رفع، تأیید، ثبت در گزارش (RCA).</li>
+</ol>
+
+<h2><span class="hn">۲.</span> پنج سناریوی این هفته</h2>
+<h3>TS01: Interface Shutdown (ساده)</h3>
+<pre><code>Symptom  : PC on Gi0/1 has no link
+Evidence : show interfaces status -> Gi0/1 disabled / administratively down
+Fix      : interface gi0/1 / no shutdown
+Verify   : link up, ping works</code></pre>
+<h3>TS02: Duplex/Speed Mismatch (مفهومی)</h3>
+<pre><code>Symptom  : link is up but very slow, many CRC/late collisions
+Cause    : one side half-duplex, the other full-duplex
+Check    : show interfaces gi0/1 -> duplex, speed, errors
+Fix      : set both sides to auto (or both manually identical)</code></pre>
+<p>در شبیه‌ساز، تنظیم Duplex ممکن است اثر واقعی نداشته باشد؛ این سناریو را مفهومی بدانید و در تجهیز واقعی تمرین کنید.</p>
+<h3>TS03: VLAN اشتباه روی Access Port</h3>
+<pre><code>Symptom  : PC cannot reach its gateway
+Evidence : show vlan brief -> port is in the wrong VLAN
+Fix      : switchport access vlan 20</code></pre>
+<h3>TS04: Allowed VLAN حذف‌شده روی Trunk</h3>
+<pre><code>Symptom  : one VLAN lost across the trunk
+Evidence : show interfaces trunk -> VLAN missing in "allowed"
+Fix      : switchport trunk allowed vlan add 30</code></pre>
+<h3>TS05: Human Error — جایگزینی Allowed List</h3>
+<pre><code>Cause    : "allowed vlan 40" typed without "add"
+Impact   : all VLANs except 40 are down on the trunk
+Fix      : restore from backup or re-add: allowed vlan 10,20,30,40
+Lesson   : always "add"; backup + review show before and after</code></pre>
+
+<h2><span class="hn">۳.</span> مثال ساده/متوسط/سخت</h2>
+<h3>ساده</h3>
+<p>کاربر می‌گوید «شبکه قطع است». اول <code>show interfaces status</code>: اگر پورت <code>disabled</code> است، TS01.</p>
+<h3>متوسط</h3>
+<p>کاربر به سرور نمی‌رسد ولی به Gateway می‌رسد. لایه ۱ و ۲ سالم است؛ پس <code>show ip route</code> و Gateway سرور را ببینید (لایه ۳).</p>
+<h3>سخت</h3>
+<p>«فقط VLAN 30 از شعبه قطع است، بقیه خوب». نردبان: لینک Trunk up است (L1)، VLAN 30 در allowed نیست (L2) ⇒ TS04. در RCA: چه کسی/کی/چرا تغییر داد؟ چطور جلوگیری شود؟</p>
+
+<h2><span class="hn">۴.</span> تمرین‌ها</h2>
+<details><summary>۱ (ساده): اولین لایه‌ای که چک می‌کنیم چیست؟</summary><pre><code>Layer 1 (physical): cable, link, shutdown.</code></pre></details>
+<details><summary>۲ (ساده): پنج مرحله‌ی چارچوب عیب‌یابی را بنویس</summary><pre><code>Symptom, Scope, Hypothesis, Test, Fix and Verify.</code></pre></details>
+<details><summary>۳ (متوسط): «ping به Gateway OK ولی به اینترنت نه»؛ کدام لایه؟</summary><pre><code>Layer 3 or above: routing/default route/NAT/firewall (L1 and L2 are fine).</code></pre></details>
+<details><summary>۴ (سخت): یک Trunk بعد از «allowed vlan 40» همه را قطع کرد؛ سه اقدام بعدی</summary><pre><code>1) restore from backup
+2) allowed vlan add 10,20,30
+3) verify with show interfaces trunk and ping, then write the RCA</code></pre></details>
+
+<h2><span class="hn">۵.</span> Lab هدایت‌شده: همه‌ی TSها را بسازید و رفع کنید</h2>
+<p>برای هر سناریو: (۱) بکاپ، (۲) خراب‌کردن عمدی، (۳) نوشتن Symptom و Evidence، (۴) رفع، (۵) Verify.</p>
+<ol>
+<li>TS01: <code>shutdown</code> روی پورت PC1 و رفع.</li>
+<li>TS03: بردن پورت PC2 به VLAN اشتباه و رفع.</li>
+<li>TS04: <code>allowed vlan remove 30</code> روی Trunk و رفع با <code>add 30</code>.</li>
+<li>TS05: <code>allowed vlan 40</code> (بدون add)، سپس برگرداندن از بکاپ.</li>
+<li>TS09: <code>shutdown</code> پورت سرور و دیدن SVI down/down.</li>
+</ol>
+
+<h2><span class="hn">۶.</span> آزمون کوچک پایان هفته‌ی ۳ (بدون نگاه به درس)</h2>
+<table>
+<tr><th>#</th><th>وظیفه</th><th>مدرک</th></tr>
+<tr><td>۱</td><td>MAC یک PC را به پورتش ربط بده</td><td>show mac address-table</td></tr>
+<tr><td>۲</td><td>VLAN Matrix با ۳ VLAN و تنظیم پورت‌ها</td><td>show vlan brief</td></tr>
+<tr><td>۳</td><td>Trunk با Native 999 و Allowed</td><td>show interfaces trunk</td></tr>
+<tr><td>۴</td><td>Inter-VLAN با RoAS یا SVI</td><td>ping بین VLANها + Capture</td></tr>
+<tr><td>۵</td><td>۳ سناریو از TS01 تا TS05 با RCA</td><td>گزارش یک‌صفحه‌ای</td></tr>
+</table>
+<p>معیار قبولی: حداقل ۴ از ۵ مورد با مدرک. وقتی تمام شد بگویید «هفته ۳ انجام شد».</p>
+<p>(آزمون رسمی Gate G2 در پایان هفته ۴ بعد از STP و EtherChannel است.)</p>
+
+<h2><span class="hn">۷.</span> سؤال‌های مرور</h2>
+<details><summary>چرا از لایه ۱ شروع می‌کنیم؟</summary><p>چون لایه‌های بالاتر به آن وابسته‌اند.</p></details>
+<details><summary>تفاوت TS04 و TS05؟</summary><p>TS04 حذف یک VLAN از لیست است؛ TS05 جایگزینی کل لیست به‌خاطر اشتباه انسانی (فراموشی add).</p></details>
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Always start troubleshooting at layer 1 and work your way up.</td><td>عیب‌یابی را همیشه از لایه ۱ شروع کنید و بالا بروید.</td></tr>
+<tr><td>The interface is administratively down.</td><td>Interface به‌صورت مدیریتی خاموش است.</td></tr>
+<tr><td>Document the root cause and the fix in the RCA.</td><td>علت ریشه‌ای و راه‌حل را در RCA مستند کنید.</td></tr>
+<tr><td>A typo in the allowed VLAN list can take down the whole trunk.</td><td>یک اشتباه تایپی در لیست VLANهای مجاز می‌تواند کل Trunk را از کار بیندازد.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What are the five steps of the troubleshooting framework?</summary><p>Symptom, Scope, Hypothesis, Test, Fix and Verify.</p></details>
+
+<h2><span class="hn">۸.</span> تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ پنج TS را ساخته و رفع کنم و گزارش RCA بنویسم.</li>
+<li>☐ آزمون کوچک را کامل کنم.</li>
+<li>☐ پیکربندی پایانی را ذخیره و بکاپ بگیرم.</li>
+</ul>
+<h2><span class="hn">۹.</span> یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>حدس نزنید؛ لایه‌به‌لایه بروید. بکاپ قبل از تغییر. هر نتیجه‌ی واقعی را ثبت کنید.</div>
 
 `
     },
@@ -1470,10 +2416,10 @@ R1# show monitor capture CAP1 buffer brief</code></pre>
 <li>برای یک Image تازه، «Image Validation» انجام دهید و وضعیت هر Feature را با شاهد ثبت کنید.</li>
 </ul>
 
-<h2>۱. چرا قبل از هر تغییر Snapshot؟</h2>
+<h2><span class="hn">۱.</span> چرا قبل از هر تغییر Snapshot؟</h2>
 <p><b>Snapshot</b> نقطه بازگشت سریع روی همان دیسک است (خوب برای «تغییر امروز را برگردان»)، ولی بکاپ نیست: اگر دیسک خراب شود Snapshot هم می‌رود. با ادامه کار، فایل تغییرات بزرگ می‌شود، پس بعد از اطمینان از پایداری حذفش می‌کنیم. <b>Backup</b> کپی مستقل روی جای دیگر است. هر تغییر سه چیز می‌خواهد: Backup، Rollback Plan، تأیید.</p>
 
-<h2>۲. حسابداری منابع: ESXi در برابر داخل PNetLab</h2>
+<h2><span class="hn">۲.</span> حسابداری منابع: ESXi در برابر داخل PNetLab</h2>
 <table>
 <tr><th>دید</th><th>چه چیزی را می‌شمارد</th><th>در محیط شما</th></tr>
 <tr><td>ESXi (تخصیص)</td><td>آنچه ESXi به VMهای مستقل می‌دهد</td><td>VM PNETLAB: 16 vCPU، 48 GB، دیسک 200 GB</td></tr>
@@ -1481,7 +2427,7 @@ R1# show monitor capture CAP1 buffer brief</code></pre>
 </table>
 <p>قانون: RAM Nodeهای داخل PNetLab <b>دوباره</b> به RAM ESXi اضافه نمی‌شود، چون قبلاً در 48 GB حساب شده است.</p>
 
-<h2>۳. گسترش دیسک (LVM) و زمان (NTP)</h2>
+<h2><span class="hn">۳.</span> گسترش دیسک (LVM) و زمان (NTP)</h2>
 <p>دیسک مجازی 200 GB بود ولی پارتیشن سیستم فقط 99 GB را می‌دید. مراحل: Fix جدول GPT، گسترش پارتیشن، گسترش <span class="en">Physical Volume</span> و <span class="en">Logical Volume</span>. نتیجه: فضای ریشه از 97 به 196 GB رسید.</p>
 <pre><code>growpart /dev/sda 3
 pvresize /dev/sda3
@@ -1489,7 +2435,7 @@ lvextend -r -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
 df -h /</code></pre>
 <p>زمان هم مهم است: لاگ‌ها، گواهی‌ها و Kerberos به ساعت وابسته‌اند. PNetLab و ESXi هر دو با <span class="en">NTP</span> به MikroTik همگام شدند.</p>
 
-<h2>۴. سه حالت CLI در Cisco IOS</h2>
+<h2><span class="hn">۴.</span> سه حالت CLI در Cisco IOS</h2>
 <table>
 <tr><th>پرامپت</th><th>حالت</th><th>چه می‌شود کرد</th></tr>
 <tr><td><code>Router&gt;</code></td><td>User EXEC</td><td>دستورهای مشاهده محدود</td></tr>
@@ -1503,7 +2449,7 @@ Router(config-if)# end
 Router#</code></pre>
 <div class="box warn"><b class="t">دو دام رایج</b>در EXEC هر کلمه ناشناخته DNS Lookup می‌شود و کنسول گیر می‌کند (<code>no ip domain-lookup</code> در Config آن را خاموش می‌کند). و <code>end</code> فقط در Config معنی دارد.</div>
 
-<h2>۵. Lab هدایت‌شده: Image Validation</h2>
+<h2><span class="hn">۵.</span> Lab هدایت‌شده: Image Validation</h2>
 <ol>
 <li>Lab <code>L00-ImageValidation</code> با <code>SW1</code> (<span class="en">vIOS L2</span>) و <code>R1</code> (<span class="en">vIOS</span>)، یک لینک بین Gi0/0 دو دستگاه.</li>
 <li>VLAN، Trunk 802.1Q، <span class="en">Rapid-PVST</span>، Port-Security، SVI را روی SW1 و Router-on-a-Stick را روی R1 زدید و <code>ping 10.10.10.2</code> را آزمودید.</li>
@@ -1511,10 +2457,10 @@ Router#</code></pre>
 </ol>
 <div class="box ok"><b class="t">درس</b>«فرمان پذیرفته شد» یعنی فقط در منو هست؛ کارکرد را باید با ترافیک واقعی دید. در این دوره هر Feature در همان درسی که به آن می‌رسیم آزمایش می‌شود.</div>
 
-<h2>۶. Lab مستقل</h2>
+<h2><span class="hn">۶.</span> Lab مستقل</h2>
 <p>یک Lab جدید بسازید با دو سوئیچ و یک روتر: VLAN 10 و 20، Trunk بین دو سوئیچ، RoAS روی روتر. با <code>ping</code> و <code>show interfaces trunk</code> درستی را ثابت کنید و Config هر دستگاه را در Git ذخیره کنید.</p>
 
-<h2>۷. عیب‌یابی: «فرمان خطا می‌دهد، آیا Image ناسازگار است؟»</h2>
+<h2><span class="hn">۷.</span> عیب‌یابی: «فرمان خطا می‌دهد، آیا Image ناسازگار است؟»</h2>
 <table>
 <tr><th>بخش</th><th>شرح</th></tr>
 <tr><td>Symptom</td><td><code>% Invalid input detected at '^' marker</code> برای <code>monitor capture</code></td></tr>
@@ -1523,13 +2469,13 @@ Router#</code></pre>
 <tr><td>رفع و Verification</td><td>اجرای فرمان در <code>R1#</code>؛ پذیرفته شد</td></tr>
 </table>
 
-<h2>۸. سؤال‌های مرور (بدون نگاه)</h2>
+<h2><span class="hn">۸.</span> سؤال‌های مرور (بدون نگاه)</h2>
 <details><summary>فرق Snapshot و Backup؟</summary><p>Snapshot نقطه بازگشت روی همان دیسک است و بکاپ نیست؛ Backup کپی مستقل خارج از آن است.</p></details>
 <details><summary>چرا RAM Nodeهای داخل PNetLab به RAM ESXi اضافه نمی‌شود؟</summary><p>چون از همان RAM تخصیص‌داده‌شده به VM PNetLab مصرف می‌شود.</p></details>
 <details><summary>پرامپت <code>Router(config)#</code> یعنی چه؟</summary><p>Global Configuration؛ تغییر تنظیمات.</p></details>
 <details><summary>چرا ساعت (NTP) برای شبکه و امنیت مهم است؟</summary><p>لاگ‌ها، گواهی‌ها و احراز هویت (Kerberos) به زمان وابسته‌اند.</p></details>
 
-<h2>۹. چک‌لیست تسلط</h2>
+<h2><span class="hn">۹.</span> چک‌لیست تسلط</h2>
 <ul>
 <li>☐ فرق Snapshot و Backup را بگویم.</li>
 <li>☐ دو سطح حسابداری منابع را بازگو کنم.</li>
@@ -1538,7 +2484,7 @@ Router#</code></pre>
 <li>☐ Config دستگاه‌ها را در Git بگذارم (بدون رمز).</li>
 </ul>
 
-<h2>۱۰. یادآوری اشتباهات شما</h2>
+<h2><span class="hn">۱۰.</span> یادآوری اشتباهات شما</h2>
 <div class="box review"><b class="t">یادآوری ۱</b>فرمان پیکربندی در EXEC خطا می‌دهد؛ اول <code>enable</code> سپس <code>configure terminal</code>، و فقط یک‌بار.</div>
 <div class="box review"><b class="t">یادآوری ۲</b>کلمه ناشناخته در EXEC = DNS Lookup؛ <code>no ip domain-lookup</code>.</div>
 <div class="box review"><b class="t">یادآوری ۳</b><code>monitor capture</code> فرمان EXEC است.</div>
@@ -1561,10 +2507,10 @@ Router#</code></pre>
 <li>یک خرابی واقعی (PNetLab بدون لینک) را با روش لایه‌ای عیب‌یابی کنید.</li>
 </ul>
 
-<h2>۱. چرا اول فقط مشاهده؟</h2>
+<h2><span class="hn">۱.</span> چرا اول فقط مشاهده؟</h2>
 <p>قبل از هر تغییر، باید بدانیم «الان چه چیزی هست» (<span class="en">As-Is</span>). بدون این، اگر چیزی خراب شود نمی‌دانیم به کدام وضعیت برگردیم. هر تغییر هم سه چیز لازم دارد: <span class="en">Backup</span>، <span class="en">Rollback Plan</span> و تأیید. این همان رویه‌ای است که در شبکه‌های سازمانی واقعی رعایت می‌شود.</p>
 
-<h2>۲. نقشه As-Is شما (بعد از CHG-0001)</h2>
+<h2><span class="hn">۲.</span> نقشه As-Is شما (بعد از CHG-0001)</h2>
 <pre><code>[PC شما] --WireGuard--&gt; [MikroTik 192.168.88.1]
                               |
                          (LAN 192.168.88.0/24)
@@ -1581,7 +2527,7 @@ Router#</code></pre>
 PNetLab VM: eth1 -&gt; pnet0 (192.168.88.199)   eth0 -&gt; pnet1 (لوله ایزوله)</code></pre>
 <p>نکته: <span class="en">MikroTik/WireGuard</span> فقط مسیر مدیریتی شماست؛ با WAN شبیه‌سازی‌شده یا VPN دوره ارتباطی ندارد.</p>
 
-<h2>۳. خواندن خروجی‌ها (خط‌به‌خط)</h2>
+<h2><span class="hn">۳.</span> خواندن خروجی‌ها (خط‌به‌خط)</h2>
 <table>
 <tr><th>دستور</th><th>چه می‌پرسد؟</th><th>نتیجه در محیط شما</th></tr>
 <tr><td><code>esxcli network vswitch standard list</code></td><td>سوییچ‌های مجازی و Uplinkشان</td><td><code>vSwitch0</code> دارای <code>vmnic0</code>؛ <code>vSwitch-FGT</code> با Uplinks خالی = ایزوله</td></tr>
@@ -1592,22 +2538,22 @@ PNetLab VM: eth1 -&gt; pnet0 (192.168.88.199)   eth0 -&gt; pnet1 (لوله ای�
 <tr><td><code>lscpu</code>، <code>/dev/kvm</code></td><td>Nested Virtualization فعال است؟</td><td>VT-x و <code>kvm_intel</code> فعال ⇒ QEMU Node اجرا می‌شود</td></tr>
 </table>
 
-<h2>۴. مفهوم و مسیر Packet</h2>
+<h2><span class="hn">۴.</span> مفهوم و مسیر Packet</h2>
 <p><b>Port Group</b> (گروه پورت) در ESXi مجموعه تنظیمات یک شبکه مجازی است؛ <b>VLAN 4095</b> یعنی «همه VLANها بدون حذف برچسب (Tag)» عبور کنند. چون سوییچ‌ها و FortiGate داخل PNetLab VLANها را می‌سازند، ESXi فقط یک لوله ایزوله می‌دهد.</p>
 <p>مسیر ترافیک مدیریتی: PC شما → WireGuard → MikroTik → LAN → <code>vmnic0</code> → <code>vSwitch0</code> → Port Group <code>VM Network</code> → کارت VM → <code>pnet0</code> → سرویس وب/SSH PNetLab. ترافیک Lab فقط روی <code>pnet1</code> و <code>vSwitch-FGT</code> می‌ماند و به شبکه واقعی نمی‌رسد (چون Uplink ندارد).</p>
 <p>سه گزینه Security روی <code>PG-FGT-TRUNK</code> (<span class="en">Promiscuous، MAC address changes، Forged transmits</span>) چون PNetLab چند MAC مجازی پشت یک کارت دارد، باید «Accept» باشند.</p>
 
-<h2>۵. Lab هدایت‌شده (آنچه انجام دادید)</h2>
+<h2><span class="hn">۵.</span> Lab هدایت‌شده (آنچه انجام دادید)</h2>
 <ol>
 <li>اسکریپت‌های فقط‌خواندنی را از طریق SSH روی ESXi و PNetLab اجرا کردید.</li>
 <li>خروجی‌ها را خواندید و منابع (CPU/RAM/Disk) را ثبت کردید.</li>
 <li>مشکل لینک را پیدا کردید و با <code>CHG-0001</code> رفع کردید.</li>
 </ol>
 
-<h2>۶. Lab مستقل</h2>
+<h2><span class="hn">۶.</span> Lab مستقل</h2>
 <p>در <span class="en">draw.io</span> نقشه بالا را خودتان از صفر بکشید (بدون نگاه به متن). سپس جدول Inventory را پر کنید: CPU، RAM، Datastoreها، vSwitchها، Port Groupها، IPها. خروجی: <code>01-discovery/as-is.drawio</code> و <code>inventory.md</code>.</p>
 
-<h2>۷. عیب‌یابی واقعی: «PNetLab روشن است ولی وب و SSH ندارم»</h2>
+<h2><span class="hn">۷.</span> عیب‌یابی واقعی: «PNetLab روشن است ولی وب و SSH ندارم»</h2>
 <table>
 <tr><th>بخش</th><th>شرح</th></tr>
 <tr><td>Symptom</td><td>کنسول: IP درست، ولی از PC نه وب و نه SSH در دسترس</td></tr>
@@ -1620,13 +2566,13 @@ PNetLab VM: eth1 -&gt; pnet0 (192.168.88.199)   eth0 -&gt; pnet1 (لوله ای�
 </table>
 <div class="box ok"><b class="t">درس</b>همیشه لایه‌به‌لایه از پایین بالا بروید و «چیزی که فرض می‌کنید» را با شواهد (<span class="en">MAC، bridge، state</span>) بسنجید.</div>
 
-<h2>۸. سؤال‌های مرور (بدون نگاه)</h2>
+<h2><span class="hn">۸.</span> سؤال‌های مرور (بدون نگاه)</h2>
 <details><summary>چرا Uplinks خالی در vSwitch-FGT مهم است؟</summary><p>چون هیچ مسیر فیزیکی به شبکه واقعی وجود ندارد؛ ایزولاسیون واقعی است.</p></details>
 <details><summary>VLAN 4095 چه می‌کند؟</summary><p>همه VLANها را با Tag به VM می‌رساند (حالت Trunk در ESXi).</p></details>
 <details><summary>چرا نباید فرض کنیم eth0 همان Adapter 1 است؟</summary><p>ترتیب نام‌گذاری لینوکس ممکن است با ترتیب ESXi فرق کند؛ MAC مرجع است.</p></details>
 <details><summary>سه چیزی که هر تغییر لازم دارد؟</summary><p>Backup، Rollback Plan، تأیید صریح.</p></details>
 
-<h2>۹. تکلیف و چک‌لیست تسلط</h2>
+<h2><span class="hn">۹.</span> تکلیف و چک‌لیست تسلط</h2>
 <ul>
 <li>☐ نقشه As-Is را بدون راهنما بکشم.</li>
 <li>☐ فرق Discovery و Change را توضیح دهم.</li>
@@ -1635,7 +2581,7 @@ PNetLab VM: eth1 -&gt; pnet0 (192.168.88.199)   eth0 -&gt; pnet1 (لوله ای�
 <li>☐ Inventory را در Git ذخیره کنم (بدون رمز).</li>
 </ul>
 
-<h2>۱۰. یادآوری اشتباهات و سؤال‌های شما</h2>
+<h2><span class="hn">۱۰.</span> یادآوری اشتباهات و سؤال‌های شما</h2>
 <div class="box review"><b class="t">یادآوری ۱</b>Port Group حذف‌شده یعنی کارت VM بدون شبکه؛ قبل از حذف بررسی کنید چه VMهایی به آن وصل‌اند.</div>
 <div class="box review"><b class="t">یادآوری ۲</b>Save با لیست خالی، کارت را بی‌صدا به Port Group دیگری می‌برد.</div>
 <div class="box review"><b class="t">یادآوری ۳</b>نام <code>ethX</code> ≠ شماره Adapter؛ از MAC استفاده کنید.</div>
@@ -1649,14 +2595,14 @@ PNetLab VM: eth1 -&gt; pnet0 (192.168.88.199)   eth0 -&gt; pnet1 (لوله ای�
 <div class="meta"><span class="tag">راهنما</span><span class="tag">۱۰ دقیقه</span></div>
 <p>این فایل <b>یک دوره کامل</b> است که با هر درس به‌روز می‌شود. منوی کل دوره سمت راست است و با اسکرول عمودی حرکت می‌کنید. متن درس‌ها اسکرول افقی ندارد.</p>
 
-<h2>۱. فونت، اندازه و تم</h2>
+<h2><span class="hn">۱.</span> فونت، اندازه و تم</h2>
 <ul>
 <li>بالای صفحه می‌توانید فونت و اندازه متن را عوض کنید.</li>
 <li>سه تم دارید: تاریک 🌙، روشن ☀️ و ملایم 🌾. انتخاب شما در مرورگر ذخیره می‌شود.</li>
 <li>برای فونت‌های Google نیاز به اینترنت است؛ بدون اینترنت فونت سیستم (Tahoma) نمایش داده می‌شود.</li>
 </ul>
 
-<h2>۲. قرارداد نوشتن فارسی و انگلیسی</h2>
+<h2><span class="hn">۲.</span> قرارداد نوشتن فارسی و انگلیسی</h2>
 <p>برای اینکه متن راست‌به‌چپ به‌هم نریزد، هر عبارت انگلیسی (مثل VLAN یا <span class="en">Spanning Tree Protocol</span>) در یک قطعه چپ‌به‌راست جدا نمایش داده می‌شود. دستورات همیشه در بلوک کد و چپ‌به‌راست هستند:</p>
 <pre><code>Switch&gt; enable
 Switch# configure terminal
@@ -1664,7 +2610,7 @@ Switch(config)# hostname HQ-ACC-SW1
 HQ-ACC-SW1(config)# end</code></pre>
 <p>هر اصطلاح انگلیسی در اولین استفاده با معادل فارسی و کاربرد فنی توضیح داده می‌شود؛ مثلاً <span class="en">Trunk</span> یعنی «لینکی که چند VLAN را با برچسب جابه‌جا می‌کند».</p>
 
-<h2>۳. ساختار هر درس</h2>
+<h2><span class="hn">۳.</span> ساختار هر درس</h2>
 <table>
 <tr><th>بخش</th><th>کارکرد</th></tr>
 <tr><td>هدف‌های یادگیری</td><td>چه چیزی را بعد از درس می‌توانید انجام دهید</td></tr>
@@ -1677,11 +2623,11 @@ HQ-ACC-SW1(config)# end</code></pre>
 
 <div class="box"><b class="t">قانون ایمنی دوره</b>تا زمانی که گزارش Phase 0A را بررسی و برای Phase 0B تأیید صریح نداده‌اید، هیچ درسی بر پایه Lab اجرا نمی‌شود و هیچ تغییری در ESXi/PNetLab/MikroTik انجام نمی‌شود.</div>
 
-<h2>۴. مرور اشتباهات و سؤال‌ها</h2>
+<h2><span class="hn">۴.</span> مرور اشتباهات و سؤال‌ها</h2>
 <p>هر سؤال یا اشتباهی که شما داشته باشید، در درس بعدی داخل کادر «یادآوری» برمی‌گردد و در صفحه «مرور دوره‌ای» ثبت می‌شود. خودتان ببینید:</p>
 <div class="box review"><b class="t">یادآوری (نمونه)</b>پرامپت <code>Switch(config)#</code> یعنی حالت پیکربندی سراسری؛ با <code>end</code> یا <code>Ctrl+Z</code> به حالت Privileged برمی‌گردیم.</div>
 
-<h2>۵. سؤال مرور</h2>
+<h2><span class="hn">۵.</span> سؤال مرور</h2>
 <details><summary>سؤال ۱: فرق Privileged EXEC و Global Configuration چیست؟</summary><p>در Privileged EXEC فقط مشاهده و مدیریت فایل/وضعیت داریم (پرامپت <code>#</code>)؛ در Global Configuration تنظیمات دستگاه تغییر می‌کند (پرامپت <code>(config)#</code>).</p></details>
 <details><summary>سؤال ۲: چرا دستورات داخل بلوک چپ‌به‌راست می‌آیند؟</summary><p>چون ترتیب نویسه‌ها در دستورات مهم است و در متن راست‌به‌چپ ممکن است جابه‌جا نمایش داده شوند.</p></details>
 `
