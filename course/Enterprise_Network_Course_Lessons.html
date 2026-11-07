@@ -133,14 +133,15 @@ summary{cursor:pointer;font-weight:600}
      ===================================================================== -->
 <script id="course-data">
 window.COURSE = {
-  version: "0.2 (هفته ۱ — بخش A)",
-  updated: "2026-11-02",
+  version: "0.3 (هفته ۱ — بخش A و B)",
+  updated: "2026-11-07",
   modules: [
     {id:"m0", title:"شروع و راهنما", lessons:[
       {id:"guide", title:"راهنمای استفاده از این فایل", ready:true}
     ]},
     {id:"p0", title:"فاز 0A/0B — کشف و آماده‌سازی Lab (هفته ۱)", lessons:[
-      {id:"w1", title:"هفته ۱ — بخش A: کشف زیرساخت (Phase 0A، فقط مشاهده)", ready:true}
+      {id:"w1", title:"هفته ۱ — بخش A: کشف زیرساخت (Phase 0A، فقط مشاهده)", ready:true},
+      {id:"w1b", title:"هفته ۱ — بخش B: Lab ایزوله (Phase 0B)", ready:true}
     ]},
     {id:"p1", title:"فاز ۱ — Cisco CLI و IP (هفته ۲)", lessons:[
       {id:"w2", title:"هفته ۲: IPv4/IPv6، مدیریت IOS، SSH، پشتیبان‌گیری", ready:false}
@@ -195,6 +196,10 @@ window.COURSE = {
   ],
   /* اشتباه‌ها و سؤال‌ها: با هر درس جدید، موارد تازه در درس قرار می‌گیرند و اینجا ثبت می‌شوند */
   review: [
+    {lesson:"W1-B", type:"mistake", q:"اشتباه: دستور پیکربندی در حالت اشتباه (EXEC به‌جای Config)", a:"در <code>Router&gt;</code>/<code>Router#</code> دستورهایی مثل <code>interface gi0/0.10</code> یا <code>ip ssh version 2</code> خطا می‌دهند. اول <code>enable</code> و بعد <code>configure terminal</code>؛ <code>configure terminal</code> را وسط حالت Config دوباره نزنید."},
+    {lesson:"W1-B", type:"mistake", q:"اشتباه: نوشتن کلمه ناشناخته در EXEC (مثل end یا Xconf)", a:"IOS هر کلمه ناشناخته را «نام میزبان» فرض می‌کند و DNS Lookup می‌زند (<code>Translating…</code>) و کنسول چند ثانیه گیر می‌کند. با <code>no ip domain-lookup</code> خاموش می‌شود. <code>end</code> فقط در Config معنی دارد."},
+    {lesson:"W1-B", type:"mistake", q:"اشتباه: فرمان EXEC در Config (monitor capture)", a:"<code>monitor capture …</code> فرمان <b>Privileged EXEC</b> است؛ در Config خطا می‌دهد. خطای «Invalid input» همیشه به معنای ناسازگاری Image نیست؛ اول مود را بررسی کنید."},
+    {lesson:"W1-B", type:"question", q:"چرا «فرمان پذیرفته شد» به معنای کارکرد Feature نیست؟", a:"IOSvL2 یک شبیه‌ساز است؛ بعضی Featureها (مثل DHCP Snooping، DAI، SPAN) فقط در منوی CLI دیده می‌شوند. باید عملکرد را با ترافیک واقعی تست کرد. تصمیم دوره: همان‌جا که درس به آن می‌رسد تست می‌کنیم و در صورت نیاز جایگزین می‌دهیم."},
     {lesson:"W1-A", type:"question", q:"چرا Claude خودش به ESXi و PNetLab با SSH وصل نمی‌شود؟", a:"Claude در یک کانتینر ابری کار می‌کند و آدرس‌های <code>192.168.88.x</code> روی شبکه خصوصی شما هستند. شما خودتان اسکریپت‌های فقط‌خواندنی را اجرا و خروجی را می‌دهید. رمزها هم هرگز داخل چت نوشته نمی‌شوند."},
     {lesson:"W1-A", type:"mistake", q:"اشتباه: کارت شبکه VM به Port Group حذف‌شده (PG-PNET-MGMT) اشاره می‌کرد", a:"نتیجه: لیست Port Group خالی، لینک پایین، نه وب و نه SSH. راه‌حل: Port Group را دوباره ساختیم یا از لیست، مقدار درست را انتخاب کردیم. درس: قبل از حذف Port Group، VMهای متصل به آن را بررسی کنید."},
     {lesson:"W1-A", type:"mistake", q:"اشتباه: Save با لیست Port Group خالی", a:"Host Client کارت را بی‌صدا به یک Port Group دیگر (PG-FGT-TRUNK) منتقل می‌کند. هشدار قرمز را جدی بگیرید و Save نکنید تا مقدار درست انتخاب شود."},
@@ -204,6 +209,95 @@ window.COURSE = {
     {lesson:"W1-A", type:"question", q:"آیا قبل از شروع، همه VLANها را روی سوییچ مجازی ESXi بسازیم؟", a:"نه. <code>PG-FGT-TRUNK</code> با VLAN 4095 همه VLANها را عبور می‌دهد و VLANهای دوره را سوییچ‌ها و FortiGate داخل PNetLab می‌سازند. فقط در صورت نیاز، Port Group برای VM مستقل می‌سازیم."}
   ],
   lessons: {
+
+    w1b: {
+      sub: "بخش B از هفته ۱: ساخت و آزمایش Lab ایزوله (Phase 0B). همه تغییرات با Change Record ثبت شده‌اند.",
+      html: `
+<div class="meta"><span class="tag">Phase 0B</span><span class="tag">روز ۳ تا ۵</span><span class="tag">۱۸ ساعت مفید</span></div>
+
+<h2>اهداف یادگیری</h2>
+<ul>
+<li>فرق <span class="en">Snapshot</span> و <span class="en">Backup</span> و نقش هرکدام در Rollback را توضیح دهید.</li>
+<li>حسابداری منابع را در دو سطح (ESXi و داخل PNetLab) بدون شمارش مضاعف انجام دهید.</li>
+<li>سه حالت CLI در Cisco IOS را (User EXEC، Privileged EXEC، Global Config) تشخیص دهید و خطای «مود اشتباه» را رفع کنید.</li>
+<li>برای یک Image تازه، «Image Validation» انجام دهید و وضعیت هر Feature را با شاهد ثبت کنید.</li>
+</ul>
+
+<h2>۱. چرا قبل از هر تغییر Snapshot؟</h2>
+<p><b>Snapshot</b> نقطه بازگشت سریع روی همان دیسک است (خوب برای «تغییر امروز را برگردان»)، ولی بکاپ نیست: اگر دیسک خراب شود Snapshot هم می‌رود. با ادامه کار، فایل تغییرات بزرگ می‌شود، پس بعد از اطمینان از پایداری حذفش می‌کنیم. <b>Backup</b> کپی مستقل روی جای دیگر است. هر تغییر سه چیز می‌خواهد: Backup، Rollback Plan، تأیید.</p>
+
+<h2>۲. حسابداری منابع: ESXi در برابر داخل PNetLab</h2>
+<table>
+<tr><th>دید</th><th>چه چیزی را می‌شمارد</th><th>در محیط شما</th></tr>
+<tr><td>ESXi (تخصیص)</td><td>آنچه ESXi به VMهای مستقل می‌دهد</td><td>VM PNETLAB: 16 vCPU، 48 GB، دیسک 200 GB</td></tr>
+<tr><td>داخل PNetLab (بار)</td><td>سهم Nodeهای QEMU از همان 48 GB</td><td>IOSv/IOSvL2 هرکدام پیش‌فرض 1 GB</td></tr>
+</table>
+<p>قانون: RAM Nodeهای داخل PNetLab <b>دوباره</b> به RAM ESXi اضافه نمی‌شود، چون قبلاً در 48 GB حساب شده است.</p>
+
+<h2>۳. گسترش دیسک (LVM) و زمان (NTP)</h2>
+<p>دیسک مجازی 200 GB بود ولی پارتیشن سیستم فقط 99 GB را می‌دید. مراحل: Fix جدول GPT، گسترش پارتیشن، گسترش <span class="en">Physical Volume</span> و <span class="en">Logical Volume</span>. نتیجه: فضای ریشه از 97 به 196 GB رسید.</p>
+<pre><code>growpart /dev/sda 3
+pvresize /dev/sda3
+lvextend -r -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+df -h /</code></pre>
+<p>زمان هم مهم است: لاگ‌ها، گواهی‌ها و Kerberos به ساعت وابسته‌اند. PNetLab و ESXi هر دو با <span class="en">NTP</span> به MikroTik همگام شدند.</p>
+
+<h2>۴. سه حالت CLI در Cisco IOS</h2>
+<table>
+<tr><th>پرامپت</th><th>حالت</th><th>چه می‌شود کرد</th></tr>
+<tr><td><code>Router&gt;</code></td><td>User EXEC</td><td>دستورهای مشاهده محدود</td></tr>
+<tr><td><code>Router#</code></td><td>Privileged EXEC</td><td>همه <code>show</code>، ذخیره، <code>monitor capture</code></td></tr>
+<tr><td><code>Router(config)#</code></td><td>Global Configuration</td><td>تغییر تنظیمات</td></tr>
+</table>
+<pre><code>Router&gt; enable
+Router# configure terminal
+Router(config)# interface gi0/0
+Router(config-if)# end
+Router#</code></pre>
+<div class="box warn"><b class="t">دو دام رایج</b>در EXEC هر کلمه ناشناخته DNS Lookup می‌شود و کنسول گیر می‌کند (<code>no ip domain-lookup</code> در Config آن را خاموش می‌کند). و <code>end</code> فقط در Config معنی دارد.</div>
+
+<h2>۵. Lab هدایت‌شده: Image Validation</h2>
+<ol>
+<li>Lab <code>L00-ImageValidation</code> با <code>SW1</code> (<span class="en">vIOS L2</span>) و <code>R1</code> (<span class="en">vIOS</span>)، یک لینک بین Gi0/0 دو دستگاه.</li>
+<li>VLAN، Trunk 802.1Q، <span class="en">Rapid-PVST</span>، Port-Security، SVI را روی SW1 و Router-on-a-Stick را روی R1 زدید و <code>ping 10.10.10.2</code> را آزمودید.</li>
+<li>نتیجه هر Feature را با سه برچسب ثبت کردید: Tested-OK، CLI-Accepted، Untested.</li>
+</ol>
+<div class="box ok"><b class="t">درس</b>«فرمان پذیرفته شد» یعنی فقط در منو هست؛ کارکرد را باید با ترافیک واقعی دید. در این دوره هر Feature در همان درسی که به آن می‌رسیم آزمایش می‌شود.</div>
+
+<h2>۶. Lab مستقل</h2>
+<p>یک Lab جدید بسازید با دو سوئیچ و یک روتر: VLAN 10 و 20، Trunk بین دو سوئیچ، RoAS روی روتر. با <code>ping</code> و <code>show interfaces trunk</code> درستی را ثابت کنید و Config هر دستگاه را در Git ذخیره کنید.</p>
+
+<h2>۷. عیب‌یابی: «فرمان خطا می‌دهد، آیا Image ناسازگار است؟»</h2>
+<table>
+<tr><th>بخش</th><th>شرح</th></tr>
+<tr><td>Symptom</td><td><code>% Invalid input detected at '^' marker</code> برای <code>monitor capture</code></td></tr>
+<tr><td>سرنخ</td><td>همان فرمان در EXEC پذیرفته شد</td></tr>
+<tr><td>علت</td><td>مود اشتباه (EXEC در برابر Config)</td></tr>
+<tr><td>رفع و Verification</td><td>اجرای فرمان در <code>R1#</code>؛ پذیرفته شد</td></tr>
+</table>
+
+<h2>۸. سؤال‌های مرور (بدون نگاه)</h2>
+<details><summary>فرق Snapshot و Backup؟</summary><p>Snapshot نقطه بازگشت روی همان دیسک است و بکاپ نیست؛ Backup کپی مستقل خارج از آن است.</p></details>
+<details><summary>چرا RAM Nodeهای داخل PNetLab به RAM ESXi اضافه نمی‌شود؟</summary><p>چون از همان RAM تخصیص‌داده‌شده به VM PNetLab مصرف می‌شود.</p></details>
+<details><summary>پرامپت <code>Router(config)#</code> یعنی چه؟</summary><p>Global Configuration؛ تغییر تنظیمات.</p></details>
+<details><summary>چرا ساعت (NTP) برای شبکه و امنیت مهم است؟</summary><p>لاگ‌ها، گواهی‌ها و احراز هویت (Kerberos) به زمان وابسته‌اند.</p></details>
+
+<h2>۹. چک‌لیست تسلط</h2>
+<ul>
+<li>☐ فرق Snapshot و Backup را بگویم.</li>
+<li>☐ دو سطح حسابداری منابع را بازگو کنم.</li>
+<li>☐ سه حالت CLI را از پرامپت تشخیص بدهم.</li>
+<li>☐ برای یک Feature برچسب Tested-OK یا CLI-Accepted را با شاهد بدهم.</li>
+<li>☐ Config دستگاه‌ها را در Git بگذارم (بدون رمز).</li>
+</ul>
+
+<h2>۱۰. یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری ۱</b>فرمان پیکربندی در EXEC خطا می‌دهد؛ اول <code>enable</code> سپس <code>configure terminal</code>، و فقط یک‌بار.</div>
+<div class="box review"><b class="t">یادآوری ۲</b>کلمه ناشناخته در EXEC = DNS Lookup؛ <code>no ip domain-lookup</code>.</div>
+<div class="box review"><b class="t">یادآوری ۳</b><code>monitor capture</code> فرمان EXEC است.</div>
+<div class="box review"><b class="t">یادآوری ۴</b>چند فرمان را یک‌جا و بدون Enter نچسبانید؛ <code>&lt;ID&gt;</code> یعنی عدد واقعی.</div>
+`
+    },
 
     w1: {
       sub: "بخش A از هفته ۱: فقط مشاهده؛ هیچ تغییری روی زیرساخت انجام نمی‌شود. بخش B (Phase 0B) فقط پس از تأیید صریح شما شروع می‌شود.",

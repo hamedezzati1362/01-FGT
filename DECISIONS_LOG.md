@@ -37,6 +37,8 @@
 
 - `phase0a/cisco_feature_probe.md`: نتایج Feature-Probe Cisco. SW1: VLAN/Trunk/PVST `Tested-OK`؛ DHCP-Snooping/DAI/SPAN `CLI-Accepted` (عملکرد باید جداگانه تست شود).
 
+- **2026-11-07:** تصمیم کاربر: تست‌های بیشتر Featureهای Cisco (DHCP Snooping، DAI، SPAN، LACP Bundle، OSPF، NAT، HSRP Failover، EPC) به‌جای Lab جدا، **همان‌جا که درس می‌رسد** انجام می‌شود؛ در صورت شکست، جایگزین همان‌جا تصمیم‌گیری می‌شود. درس `w1b` به HTML اضافه شد (نسخه 0.3).
+
 ## Runbookها
 - `phase0a/Golden_W2025_Runbook.md` — ساخت Golden ویندوز سرور 2025 و Clone از آن.
 
