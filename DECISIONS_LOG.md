@@ -33,6 +33,8 @@
 
 | CHG-0009 | ساعت ESXi (2001 → 2026-11-07): تنظیم دستی ساعت، NTP=`192.168.88.1` (MikroTik)، `ntpd` فعال، `auto-backup.sh` | **موفق** (Sync نهایی در انتظار تأیید) |
 
+- `phase0a/pnetlab_inventory.md`: Inventory Imageها/Templateها و پیش‌فرض منابع PNetLab (IOSv/IOSvL2/Fortinet).
+
 ## Runbookها
 - `phase0a/Golden_W2025_Runbook.md` — ساخت Golden ویندوز سرور 2025 و Clone از آن.
 
