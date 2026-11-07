@@ -424,6 +424,60 @@ Prefix        = 32 - 6 = /26
 Usable hosts  = 64 - 2 = 62   (enough for 50)</code></pre>
 <p>همیشه «+2» را فراموش نکن؛ بدون آن جواب اشتباه می‌شود.</p>
 
+<h2>تعداد کل IPهای یک Subnet را با «اندازه بلوک» حساب کنیم</h2>
+<p>فقط یک سؤال داریم: <b>یک Subnet روی‌هم چند آدرس دارد؟</b> فعلاً کاری با آدرس شبکه، Broadcast یا Hostها نداریم. هر Octet ۲۵۶ حالت دارد (از 0 تا 255). پس برای شمردن کل آدرس‌ها دو چیز لازم است: اندازه بلوک، و اینکه «Octet جالب» کجاست.</p>
+<pre><code>Total IPs = Block size x 256 ^ n
+
+Block size = 256 - (mask value of the interesting octet)
+n          = number of octets AFTER the interesting octet</code></pre>
+<p>Octet جالب همان Octetی است که Mask آن نه 0 است و نه 255. هر Octet بعد از آن، کاملاً در بخش میزبان است و ضریب ۲۵۶ می‌آورد.</p>
+<h3>مثال اول: تغییر در Octet چهارم</h3>
+<pre><code>192.168.1.0/26
+Mask       = 255.255.255.192
+Block size = 256 - 192 = 64
+n          = 0   (no octet after the 4th)
+Total      = 64 x 256^0 = 64</code></pre>
+<h3>مثال دوم: تغییر در Octet سوم</h3>
+<pre><code>192.168.0.0/22
+Mask       = 255.255.252.0
+Block size = 256 - 252 = 4
+n          = 1   (the 4th octet)
+Total      = 4 x 256 = 1024</code></pre>
+<h3>مثال سوم: تغییر در Octet دوم</h3>
+<pre><code>10.0.0.0/14
+Mask       = 255.252.0.0
+Block size = 256 - 252 = 4
+n          = 2   (the 3rd and 4th octets)
+Total      = 4 x 256 x 256 = 262144</code></pre>
+<h3>مثال چهارم: تغییر در Octet اول</h3>
+<pre><code>0.0.0.0/6
+Mask       = 252.0.0.0
+Block size = 256 - 252 = 4
+n          = 3   (the 2nd, 3rd and 4th octets)
+Total      = 4 x 256 x 256 x 256 = 67108864</code></pre>
+<h3>جدول خلاصه</h3>
+<table>
+<tr><th>محل تغییر</th><th>اندازه بلوک (نمونه)</th><th>محاسبه</th><th>تعداد کل IP</th></tr>
+<tr><td>Octet چهارم</td><td>64</td><td>64</td><td>64</td></tr>
+<tr><td>Octet سوم</td><td>4</td><td>4 × 256</td><td>1,024</td></tr>
+<tr><td>Octet دوم</td><td>4</td><td>4 × 256 × 256</td><td>262,144</td></tr>
+<tr><td>Octet اول</td><td>4</td><td>4 × 256 × 256 × 256</td><td>67,108,864</td></tr>
+</table>
+<div class="box"><b class="t">دو نکته‌ی مهم</b>۱) این عدد «کل آدرس‌ها» است؛ برای Host قابل‌استفاده باید ۲ تا کم کنید (شبکه و Broadcast). ۲) اگر Mask دقیقاً روی مرز Octet بود (مثل /24 یا /16 یا /8)، Octet جالب نداریم؛ ساده‌ترین کار این است که اولین Octet صفر را «بلوک ۲۵۶» بگیرید: برای /24 می‌شود ۲۵۶ و برای /16 می‌شود ۲۵۶ × ۲۵۶ = ۶۵۵۳۶.</div>
+<h3>خودآزمایی (آسان تا سخت)</h3>
+<details><summary>سؤال ۱: Mask = 255.255.255.224؛ تعداد کل آدرس؟</summary><pre><code>Block size = 256 - 224 = 32
+n = 0
+Total = 32</code></pre></details>
+<details><summary>سؤال ۲: Mask = 255.255.248.0؛ تعداد کل آدرس؟</summary><pre><code>Block size = 256 - 248 = 8
+n = 1
+Total = 8 x 256 = 2048</code></pre></details>
+<details><summary>سؤال ۳: Mask = 255.240.0.0؛ تعداد کل آدرس؟</summary><pre><code>Block size = 256 - 240 = 16
+n = 2
+Total = 16 x 256 x 256 = 1048576</code></pre></details>
+<details><summary>سؤال ۴ (بررسی با روش توان ۲): آیا جواب سؤال ۳ با 2 به توان بیت‌های میزبان می‌خواند؟</summary><pre><code>Mask 255.240.0.0 = /12
+Host bits = 32 - 12 = 20
+Total = 2 ^ 20 = 1048576   (same answer)</code></pre></details>
+
 <h2>کامپیوترها چطور می‌فهمند با هم در یک شبکه‌اند؟</h2>
 <p>کامپیوتر هیچ «نقشه‌ای» از شبکه ندارد؛ فقط IP و Mask خودش و IP مقصد را می‌داند. با یک عملیات ساده‌ی بیتی به نام <span class="en">AND</span> تصمیم می‌گیرد:</p>
 <ol>
