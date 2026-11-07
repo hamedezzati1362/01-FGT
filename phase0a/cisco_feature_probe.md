@@ -45,13 +45,13 @@
 | Router-on-a-Stick (Sub-interface + 802.1Q) با SW1 | `interface gi0/0.10`، `encapsulation dot1Q 10`، `ip address 10.10.10.1/24`؛ `ping 10.10.10.2` (SVI سوئیچ): ابتدا 80٪ (ARP)، بار دوم **100٪** (RTT 5–10 ms) | **Tested-OK** (Trunk + 802.1Q + SVI + RoAS؛ تست داده واقعی) |
 | IP SLA (icmp-echo) | `show ip sla statistics`: RTT 7 ms، return code OK، 2 موفقیت | **Tested-OK** |
 | HSRP | `standby 1 ip 10.10.10.254` → `%HSRP-5-STATECHANGE … Standby -> Active`؛ `show standby brief`: Active local | **Tested-OK** (موتور State؛ Failover: Untested، نیاز به روتر دوم) |
-| SSH/RSA | `crypto key generate rsa modulus 2048` → `%SSH-5-ENABLED: SSH 1.99 has been enabled` | **Tested-OK** (`ip ssh version 2`: دوباره، در حالت Config) |
+| SSH/RSA | `crypto key generate rsa modulus 2048` → `%SSH-5-ENABLED: SSH 1.99 has been enabled`؛ `ip ssh version 2` در Config پذیرفته شد | **Tested-OK** (پیکربندی؛ ورود SSH واقعی: Untested) |
 | OSPFv2 | `router ospf 1` + `network … area 0` پذیرفته شد؛ `show ip ospf neighbor` خالی (همسایه‌ای نیست) | **CLI-Accepted** (Adjacency: Untested) |
 | IPv6 | `ipv6 unicast-routing` | **CLI-Accepted** |
 | DHCP Server | `ip dhcp pool TEST` + `network` | **CLI-Accepted** (Lease: Untested) |
 | ACL | `permit tcp any any eq 22` | **CLI-Accepted** |
 | NAT | `ip nat outside` / `ip nat inside` (NVI0 up) | **CLI-Accepted** (Translation: Untested) |
-| Embedded Packet Capture | `monitor capture buffer BUF size 256` **در حالت Config** → `% Invalid input` | **Untested** (دستور EPC در **Privileged EXEC** است؛ دوباره در `R1#` امتحان شود) |
+| Embedded Packet Capture | `monitor capture buffer BUF size 256` در **EXEC**: پذیرفته شد (در Config خطا بود؛ مود اشتباه) | **CLI-Accepted** (Capture Point و جمع‌آوری واقعی: Untested) |
 
 ## یادداشت‌های یادگیری (دور R1)
 - `interface gi0/0.10` در `R1#` (EXEC) خطا داد؛ باید در حالت Config باشید (`configure terminal`).
