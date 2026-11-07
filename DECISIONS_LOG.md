@@ -8,6 +8,7 @@
 - Phase 0A (Read-Only) انجام شد: `phase0a/Phase0A_Report.md`. **Phase 0B با تأیید صریح کاربر (2026-11-07: «Phase 0B تأیید است») شروع شد؛ فهرست مجاز: Snapshot Baseline، تغییر رمزهای پیش‌فرض PNetLab، NTP، افزایش منابع VM (16 vCPU، 48 GB) و گسترش LVM، Lab آزمایشی IOSv/IOSvL2، تست Capture/Backup/Isolation. FortiGate تا W9 Boot نمی‌شود.**
 - FortiGate: Evaluation؛ کاربر خودش بکاپ/Restore و مدیریت تاریخ پایان را انجام می‌دهد؛ Claude فقط راهنمای بکاپ/بازگردانی و هشدار تاریخ (`phase0a/fortigate_eval_tracker.md`).
 - ریسک پذیرفته‌شده (کاربر، 2026-11-02): Lab تستی است؛ اینترنت از MikroTik؛ NAS دوکارته مجاز است.
+- ریسک پذیرفته‌شده (کاربر، 2026-11-07): `sshClient` (SSH خروجی ESXi) همیشه باز؛ با خط `esxcli … sshClient --enabled=true` در `/etc/rc.local.d/local.sh` (+ `auto-backup.sh`). Secure Boot غیرفعال است (`Disabled`) پس `local.sh` اجرا می‌شود. بعد از اولین ریبوت واقعی بررسی شود.
 - **جایگذاری (تصمیم کاربر، 2026-11-02): Windows/Linux (DC، Client، Web، MON، NAS) روی ESXi به‌صورت VM مستقل؛ فقط Nodeهای شبکه (Cisco، FortiGate، ISP-Sim) داخل PNetLab.** دلیل: کارایی بالاتر و حذف لایه Nested. اتصال به Lab از طریق `PG-FGT-TRUNK` یا Port Group تک‌VLAN در صورت نیاز.
 - Golden Image: روی ESXi (VM آماده خاموش، پوشه `_GOLD` در `ds01-ssd`)؛ نسخه Export روی هارد 1 TB. ترتیب: Ubuntu 22.04 → Windows Server 2025 (≈W4) → Windows 10/11 (≈W12). Windows 11 روی ESXi مستقل بدون Key Provider vTPM ندارد → پیشنهاد Windows 10.
 - فرمت دیسک خارجی 1 TB: ext4 (برای NAS VM) یا NTFS (اگر مستقیم به ویندوز).
@@ -24,7 +25,7 @@
 ## Phase 0B — Change Records
 | ID | شرح | وضعیت |
 |---|---|---|
-| CHG-0005 | Snapshot Baseline VM `PNETLAB` (بدون Memory) | در حال انجام |
+| CHG-0005 | Snapshot Baseline VM `PNETLAB` (`baseline-pre-0B`، بدون Memory، VM خاموش) | **موفق** |
 | CHG-0006 | افزایش منابع VM PNETLAB (16 vCPU، 48 GB) | برنامه |
 | CHG-0007 | گسترش LVM داخل PNetLab (≈100 GB تخصیص‌نشده) | برنامه |
 | CHG-0008 | تغییر رمزهای پیش‌فرض PNetLab (root و Web) + NTP | برنامه |
