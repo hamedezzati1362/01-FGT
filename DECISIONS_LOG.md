@@ -39,6 +39,8 @@ Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خ�
 - **2026-11-06 — هارد A-DATA HD720:** در ESXi/NAS (Passthrough) `Hardware Error`، Timeout 180s، `0B` ؛ در ویندوز Event 7 (bad block)، 153، 51؛ Spin up کند؛ `clean all`/تعمیر موفق نبود. **نتیجه: دیسک خراب، کنار گذاشته شد.** `NAS-BKP1` خاموش؛ جایگزین: دیسک مجازی روی SSD یا هارد جدید (در انتظار تصمیم).
 - `GOLD-Win11` (Vmid 10): نصب، آپدیت و VMware Tools انجام شد؛ مراحل Golden (RDP، SetupComplete، PRE، Sysprep، Unregister، chmod 444) در حال انجام.
 
+- **2026-11-07 — Golden Windows 11 کامل شد:** `GOLD-Win11` (Vmid 10، `ds02-ssd`) Sysprep شد، Unregister و دیسک‌ها `chmod 444`؛ کپی `GOLD-Win11-PRE` روی `ds01-ssd` (Thin، مصرف واقعی ≈26.4 GB، `Disk chain is consistent`). **همه Golden‌ها آماده:** Ubuntu 22.04، Server 2025 GUI، Server 2025 Core، Windows 11. نکته Clone Win11: ساخت حساب محلی در OOBE (`Shift+F10` → `start ms-cxh:localonly`، `Unverified`).
+
 ## موارد باز
 - Auto-start `NAS-BKP1`؛ پوشه‌های بکاپ (`configs`، `pnetlab-labs`، `vm-exports`، `iso-images`، `captures-logs`)؛ کپی ISOها و Export Golden؛ SFTP برای بکاپ دستگاه‌ها.
 تأیید Phase 0B؛ فرمت و اتصال هارد 1 TB (USB Passthrough به `NAS-BKP1`)؛ Samba/SFTP؛ Tier نهایی؛ Image Validation؛ IP واقعی Subnet/ماسک تأییدشده (`192.168.88.0/24`).
