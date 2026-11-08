@@ -149,7 +149,7 @@ summary{cursor:pointer;font-weight:600}
      ===================================================================== -->
 <script id="course-data">
 window.COURSE = {
-  version: "0.9 (هفته ۱ تا ۵)",
+  version: "1.0 (هفته ۱ تا ۶)",
   updated: "2026-11-07",
   modules: [
     {id:"m0", title:"شروع و راهنما", lessons:[
@@ -192,7 +192,13 @@ window.COURSE = {
       {id:"w5-4", title:"درس ۵-۴: مفهوم OSPF", ready:true},
       {id:"w5-5", title:"درس ۵-۵: پیاده‌سازی OSPF", ready:true},
       {id:"w5-6", title:"درس ۵-۶: عیب‌یابی مسیریابی و آزمون هفته", ready:true},
-      {id:"w6", title:"هفته ۶: OSPF چندناحیه‌ای، HSRP، IPv6", ready:false}
+      {id:"w6", title:"هفته ۶ — نقشه درس‌ها", ready:true},
+      {id:"w6-1", title:"درس ۶-۱: DR/BDR، Network Type و Cost", ready:true},
+      {id:"w6-2", title:"درس ۶-۲: OSPF چندناحیه‌ای", ready:true},
+      {id:"w6-3", title:"درس ۶-۳: OSPFv3 و IPv6", ready:true},
+      {id:"w6-4", title:"درس ۶-۴: HSRP و FHRP", ready:true},
+      {id:"w6-5", title:"درس ۶-۵: پیاده‌سازی Lab A", ready:true},
+      {id:"w6-6", title:"درس ۶-۶: عیب‌یابی و آزمون Gate G3", ready:true}
     ]},
     {id:"p4", title:"فاز ۴ — سرویس‌های IP و Hardening (هفته ۷–۸)", lessons:[
       {id:"w7", title:"هفته ۷: DHCP، NAT، ACL، NTP، Syslog، SNMP", ready:false},
@@ -919,7 +925,7 @@ Branch 3        :  20 + 2 =  22 ->  32 -> /27
 <pre><code>Total needed = 512 + 128 + 64 + 64 + 32 + 32 + (3 x 4)
              = 844
 Available    = 1024  (a /22)
-844 <= 1024  ->  OK</code></pre>
+844 &lt;= 1024  ->  OK</code></pre>
 <p><b>گام ۳ - تخصیص پشت‌سرهم:</b></p>
 <table>
 <tr><th>بخش</th><th>Prefix</th><th>شبکه</th><th>Broadcast</th></tr>
@@ -4068,7 +4074,7 @@ R1# ping 192.168.3.1</code></pre>
 <h2>عیب‌یابی</h2>
 <table>
 <tr><th>Symptom</th><td>ping به شبکه‌ی دور شکست می‌خورد</td></tr>
-<tr><th>روش</th><td>show ip route <مقصد>؛ اگر «Network not in table» بود، مسیر وجود ندارد</td></tr>
+<tr><th>روش</th><td>show ip route &lt;destination&gt;؛ اگر «Network not in table» بود، مسیر وجود ندارد</td></tr>
 <tr><th>چک‌لیست</th><td>۱) Route هست؟<br>۲) Next-hop قابل‌دسترس است؟<br>۳) مسیر برگشت هم دارد؟</td></tr>
 <tr><th>نکته</th><td>برگشت (Return Path) را همیشه چک کنید؛ مسیر یک‌طرفه کار نمی‌کند</td></tr>
 </table>
@@ -4128,7 +4134,7 @@ R1# ping 192.168.3.1</code></pre>
 <h2><span class="hn">۱.</span> Static Route چیست؟</h2>
 <p>یعنی خودتان به روتر می‌گویید: «برای رسیدن به شبکه X، بسته را به روتر Y بده». مثل اینکه به راننده‌ی تاکسی بگویید «برای رفتن به فرودگاه از این خیابان برو»؛ خودش تصمیم نمی‌گیرد، شما گفته‌اید.</p>
 <p>فرمت:</p>
-<pre><code>ip route <destination network> <mask> <next-hop | exit-interface> [AD]
+<pre><code>ip route &lt;destination network> &lt;mask> &lt;next-hop | exit-interface> [AD]
 
 Example:
 R1(config)# ip route 192.168.3.0 255.255.255.0 10.0.12.2</code></pre>
@@ -4210,7 +4216,7 @@ R3(config)# ip route 192.168.1.0 255.255.255.0 10.0.23.1</code></pre>
 <table>
 <tr><th>Symptom</th><td>ping به شبکه‌ی دور شکست</td></tr>
 <tr><th>چک‌لیست</th><td>۱) Route رفت؟<br>۲) Next-hop Connected است؟<br>۳) Route برگشت؟<br>۴) Mask درست؟<br>۵) ACL یا فایروال؟</td></tr>
-<tr><th>ابزار</th><td>show ip route <مقصد> ، traceroute ، Capture</td></tr>
+<tr><th>ابزار</th><td>show ip route &lt;destination&gt; ، traceroute ، Capture</td></tr>
 <tr><th>رفع</th><td>افزودن مسیر گم‌شده</td></tr>
 </table>
 
@@ -4302,7 +4308,7 @@ R1# show track 1
 R1# show ip route 0.0.0.0</code></pre>
 <h2><span class="hn">۵.</span> مثال‌ها</h2>
 <h3>ساده</h3>
-<pre><code>Single ISP: ip route 0.0.0.0 0.0.0.0 <ISP gateway></code></pre>
+<pre><code>Single ISP: ip route 0.0.0.0 0.0.0.0 &lt;ISP gateway></code></pre>
 <h3>متوسط: Floating</h3>
 <pre><code>Primary link fails (interface down)
 -> AD 1 route removed
@@ -4468,13 +4474,13 @@ Default reference bandwidth = 100 Mbps
 100 Mbps  -> 10000 / 100   = 100</code></pre>
 <h2><span class="hn">۷.</span> مثال‌ها</h2>
 <h3>ساده: دو روتر</h3>
-<pre><code>R1 Gi0/1 10.0.12.1/30  <->  R2 Gi0/0 10.0.12.2/30, area 0
+<pre><code>R1 Gi0/1 10.0.12.1/30  &lt;->  R2 Gi0/0 10.0.12.2/30, area 0
 Hello exchanged -> neighbors -> state FULL
 Each learns the other LANs automatically</code></pre>
 <h3>متوسط: کدام مسیر؟</h3>
 <pre><code>Path A: R1 -> R2 -> R3     cost 10 + 10 = 20
 Path B: R1 -> R3 direct     cost 30
-SPF picks Path A (20 < 30)</code></pre>
+SPF picks Path A (20 &lt; 30)</code></pre>
 <h3>سخت: چرا Adjacency نمی‌شود؟</h3>
 <pre><code>R1: ip ospf hello-interval 5   (dead 20)
 R2: default (hello 10, dead 40)
@@ -4784,7 +4790,7 @@ Fix     : same MTU (or ip ospf mtu-ignore as a temporary workaround)</code></pre
 </table>
 <p>معیار: حداقل ۴ از ۵ مورد. وقتی تمام شد بگویید «هفته ۵ انجام شد».</p>
 <h2>تمرین‌ها</h2>
-<details><summary>۱ (ساده): اولین ابزار عیب‌یابی مسیریابی؟</summary><pre><code>show ip route <destination> and ping/traceroute.</code></pre>
+<details><summary>۱ (ساده): اولین ابزار عیب‌یابی مسیریابی؟</summary><pre><code>show ip route &lt;destination> and ping/traceroute.</code></pre>
 </details>
 <details><summary>۲ (ساده): پنج دلیل Adjacency نشدن؟</summary><pre><code>Hello/Dead, Area, Subnet/Mask, Authentication, MTU.</code></pre>
 </details>
@@ -4838,6 +4844,948 @@ Rx# debug ip ospf adj   (use briefly; then: undebug all)</code></pre>
 <li>☐ پنج عیب OSPF را بسازم و رفع کنم.</li>
 <li>☐ آزمون کوچک را کامل کنم.</li>
 <li>☐ RCA را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+
+    w6: {
+      sub: "نقشه هفته ۶: Routing II و FHRP.",
+      html: `
+<div class="meta"><span class="tag">هفته ۶</span><span class="tag">۶ درس</span><span class="tag">Gate G3 پایان هفته</span></div>
+<p>هفته ۵ مبانی را ساخت. این هفته OSPF را حرفه‌ای می‌کنیم (DR، Area، IPv6)، Gateway پشتیبان با HSRP می‌سازیم و در پایان Lab A را کامل می‌کنیم.</p>
+<table>
+<tr><th>درس</th><th>موضوع</th><th>خروجی که باید بتوانید</th></tr>
+<tr><td>6-1</td><td>DR/BDR، Network Type و Cost</td><td>رفتار OSPF روی Segment مشترک را توضیح دهید</td></tr>
+<tr><td>6-2</td><td>OSPF چندناحیه‌ای</td><td>دو Area با ABR و خلاصه‌سازی بسازید</td></tr>
+<tr><td>6-3</td><td>OSPFv3 و IPv6</td><td>مسیریابی IPv6 را بالا بیاورید</td></tr>
+<tr><td>6-4</td><td>HSRP و FHRP</td><td>Gateway پشتیبان با Failover بسازید</td></tr>
+<tr><td>6-5</td><td>پیاده‌سازی Lab A</td><td>Core + HSRP + OSPF تا Edge</td></tr>
+<tr><td>6-6</td><td>عیب‌یابی و Gate G3</td><td>پنج TS و آزمون رسمی</td></tr>
+</table>
+<div class="box"><b class="t">نیازمندی Lab</b>سه روتر مثل هفته ۵ و برای Lab A چهار سوییچ vIOSL2 (Core-1، Core-2، ACC-SW1 و در صورت نیاز یکی دیگر) و یک روتر Edge. اگر RAM یا CPU کم بود، تعداد گره را کم کنید و بگویید تا طراحی را ساده کنیم.</div>
+`
+    },
+    'w6-1': {
+      sub: "DR/BDR و Network Type و Cost.",
+      html: `
+<div class="meta"><span class="tag">هفته ۶ - روز ۱</span><span class="tag">پیش‌نیاز: هفته ۵</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> رفتار OSPF روی لینک‌های اشتراکی (اترنت): انتخاب <span class="en">DR</span> و <span class="en">BDR</span>، انواع شبکه (<span class="en">Network Type</span>)، تنظیم Cost و سرعت شناسایی قطع (Timer، BFD به‌صورت مفهومی).</p>
+<p><b>چرا لازم است:</b> روی یک سوییچ با ۱۰ روتر، اگر همه با همه همسایه شوند ۴۵ همسایگی داریم. DR این را به ۱۰ ساده می‌کند. ولی اگر ندانید DR چیست، نمی‌توانید بفهمید چرا «همسایه‌ها در 2-Way مانده‌اند» که کاملاً عادی است.</p>
+<ul>
+<li><b>در کار روزانه:</b> وقتی در show ip ospf neighbor حالت 2WAY/DROTHER می‌بینید، باید بدانید خطا نیست.</li>
+<li><b>در امنیت:</b> Priority مناسب جلوی DR شدن روتر ناخواسته را می‌گیرد.</li>
+<li><b>در Capstone:</b> لینک‌های نقطه‌به‌نقطه را point-to-point می‌کنیم تا DR لازم نشود.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>مشکل ← DR/BDR ← انتخاب ← Network Type ← Cost و Timer ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>DR</td><td>Designated Router</td><td>روتر هماهنگ‌کننده‌ی یک Segment</td></tr>
+<tr><td>BDR</td><td>Backup Designated Router</td><td>DR پشتیبان</td></tr>
+<tr><td>DROther</td><td>DROther</td><td>روتر غیر DR/BDR</td></tr>
+<tr><td>Priority</td><td>OSPF Priority</td><td>اولویت انتخاب DR (پیش‌فرض ۱)</td></tr>
+<tr><td>Network Type</td><td>OSPF Network Type</td><td>نوع لینک: broadcast یا point-to-point</td></tr>
+<tr><td>224.0.0.5</td><td>AllSPFRouters</td><td>Multicast همه‌ی روترهای OSPF</td></tr>
+<tr><td>224.0.0.6</td><td>AllDRouters</td><td>Multicast ویژه‌ی DR/BDR</td></tr>
+<tr><td>BFD</td><td>Bidirectional Forwarding Detection</td><td>شناسایی سریع قطع لینک</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> مشکل: همه با همه</h2>
+<p>فرض کنید ۵ روتر روی یک سوییچ هستند. اگر هر روتر با هر روتر دیگر «همسایه‌ی کامل» (Full) شود، تعداد Adjacency می‌شود:</p>
+<pre><code>n routers, full mesh adjacencies = n x (n - 1) / 2
+n = 5  -> 5 x 4 / 2   = 10
+n = 10 -> 10 x 9 / 2  = 45</code></pre>
+<p>و هر تغییر، همه را درگیر می‌کند. راه‌حل: یک «سخنگو» انتخاب کنیم.</p>
+<h2><span class="hn">۲.</span> DR و BDR</h2>
+<p>روی هر شبکه‌ی Broadcast (مثل اترنت) OSPF یک <b>DR</b> و یک <b>BDR</b> انتخاب می‌کند. هر روتر فقط با DR و BDR به حالت Full می‌رسد؛ با بقیه‌ی روترها (DROther) فقط تا 2-Way می‌ماند و این کاملاً طبیعی است.</p>
+<figure class="fig"><svg viewBox="0 0 720 260" role="img" aria-label="topology"><path d="M115 58 L360 198" class="ln"/><path d="M375 58 L360 198" class="ln"/><path d="M605 58 L360 198" class="ln"/><rect x="40" y="30" width="150" height="56" rx="8" class="bx"/><text x="115" y="56" text-anchor="middle">R1</text><text x="115" y="72" text-anchor="middle" class="cap">DROther</text><rect x="300" y="30" width="150" height="56" rx="8" class="hst"/><text x="375" y="56" text-anchor="middle" class="on">R2</text><text x="375" y="72" text-anchor="middle" class="cap">DR</text><rect x="530" y="30" width="150" height="56" rx="8" class="wrn"/><text x="605" y="56" text-anchor="middle" class="on">R3</text><text x="605" y="72" text-anchor="middle" class="cap">BDR</text><rect x="285" y="170" width="150" height="56" rx="8" class="bx"/><text x="360" y="196" text-anchor="middle">Switch</text><text x="360" y="212" text-anchor="middle" class="cap">shared segment</text></svg><figcaption>شکل ۱: روی Segment مشترک، R2 DR و R3 BDR است؛ R1 فقط با این دو Full می‌شود.</figcaption></figure>
+<table>
+<tr><th>رابطه</th><th>حالت</th></tr>
+<tr><td>DROther ↔ DROther</td><td>2-Way (عادی)</td></tr>
+<tr><td>DROther ↔ DR</td><td>Full</td></tr>
+<tr><td>DROther ↔ BDR</td><td>Full</td></tr>
+<tr><td>DR ↔ BDR</td><td>Full</td></tr>
+</table>
+<h3>انتخاب DR</h3>
+<ol>
+<li>بالاترین Priority (پیش‌فرض ۱؛ ۰ یعنی هرگز DR نشو).</li>
+<li>اگر برابر بود، بالاترین Router ID.</li>
+</ol>
+<div class="box"><b class="t">نکته‌ی مهم</b>انتخاب DR «غیرقابل‌پس‌گرفتن» است (Non-preemptive): اگر روتری با Priority بالاتر بعد از انتخاب وارد شود، DR فعلی کنار نمی‌رود، تا زمانی که OSPF Process دوباره راه بیفتد.</div>
+<pre><code>R2(config)# interface gi0/0
+R2(config-if)# ip ospf priority 100
+R1(config)# interface gi0/0
+R1(config-if)# ip ospf priority 0      ! never become DR
+R1# clear ip ospf process               ! re-run the election (careful)</code></pre>
+<h2><span class="hn">۳.</span> Network Type</h2>
+<p>روی لینک نقطه‌به‌نقطه (فقط دو روتر)، DR بی‌معنی است. با تغییر نوع به point-to-point، DR انتخاب نمی‌شود و همگرایی هم سریع‌تر است:</p>
+<table>
+<tr><th>نوع</th><th>DR؟</th><th>Hello/Dead</th><th>کاربرد</th></tr>
+<tr><td>broadcast (اترنت)</td><td>بله</td><td>10/40</td><td>پیش‌فرض اترنت</td></tr>
+<tr><td>point-to-point</td><td>خیر</td><td>10/40</td><td>لینک دو روتر (توصیه)</td></tr>
+<tr><td>non-broadcast</td><td>بله</td><td>30/120</td><td>Frame Relay قدیمی</td></tr>
+</table>
+<pre><code>R1(config)# interface gi0/1
+R1(config-if)# ip ospf network point-to-point
+R2(config)# interface gi0/0
+R2(config-if)# ip ospf network point-to-point   ! both ends the same</code></pre>
+<p>اگر یک سر broadcast و سر دیگر point-to-point باشد، همسایگی بالا می‌آید ولی Routeها نامعتبر می‌شود (مشکل رایج). همیشه دو سر را هم‌نوع کنید.</p>
+<h2><span class="hn">۴.</span> تنظیم Cost برای هدایت ترافیک</h2>
+<pre><code>R1(config)# interface gi0/1
+R1(config-if)# ip ospf cost 50
+Cost = Reference / bandwidth, or any manual value 1..65535
+SPF picks the path with the lowest TOTAL cost</code></pre>
+<p>مثال: دو مسیر به یک مقصد داریم؛ لینک ۱ گیگی (Cost 10) و لینک پشتیبان ۱۰۰ مگی (Cost 100). روتر مسیر ۱ گیگ را انتخاب می‌کند. اگر بخواهید پشتیبان نباشد، با Cost دستی مسیر را عوض کنید.</p>
+<h2><span class="hn">۵.</span> سرعت شناسایی قطع</h2>
+<p>با تایمر پیش‌فرض (Dead = 40 ثانیه)، قطع یک همسایه تا ۴۰ ثانیه دیر شناخته می‌شود. دو راه: کاهش Hello/Dead (تا ۱ ثانیه با <code>fast-hello</code>) یا BFD که در میلی‌ثانیه تشخیص می‌دهد. BFD فقط مفهومی و Unverified در Lab ماست.</p>
+<pre><code>R1(config-if)# ip ospf hello-interval 1
+R1(config-if)# ip ospf dead-interval 4
+(both ends must match; too aggressive timers cause flapping)</code></pre>
+<h2><span class="hn">۶.</span> مثال‌ها</h2>
+<h3>ساده</h3>
+<pre><code>show ip ospf neighbor
+3.3.3.3  1  FULL/BDR   ...
+2.2.2.2  1  FULL/DR    ...</code></pre>
+<h3>متوسط: چرا 2WAY/DROTHER؟</h3>
+<pre><code>R1 neighbor R4: state 2WAY/DROTHER
+Both are DROthers -> normal, not an error</code></pre>
+<h3>سخت: DR اشتباه</h3>
+<pre><code>Old switch router became DR (highest router ID)
+Fix: set priority 100 on the core router, priority 0 on edge routers,
+     then clear ip ospf process (maintenance window)</code></pre>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): چند Adjacency برای ۶ روتر در Full Mesh؟</summary><pre><code>6 x 5 / 2 = 15</code></pre>
+</details>
+<details><summary>۲ (ساده): DROther با DROther چه حالتی؟</summary><pre><code>2-Way (normal)</code></pre>
+</details>
+<details><summary>۳ (متوسط): انتخاب DR بر چه اساسی؟</summary><pre><code>Highest priority, then highest router ID.</code></pre>
+</details>
+<details><summary>۴ (متوسط): چه زمانی point-to-point؟</summary><pre><code>On links with exactly two routers; avoids DR election and speeds convergence.</code></pre>
+</details>
+<details><summary>۵ (سخت): چرا بعد از تغییر Priority، DR عوض نشد؟</summary><pre><code>DR election is non-preemptive; the OSPF process must be cleared.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>سه روتر روی یک سوییچ (SW1) در یک Segment مشترک: R1، R2، R3 با Gi0/0 به SW1 وصل‌اند، شبکه‌ی 10.10.100.0/24 (آدرس‌ها .1 .2 .3).</p>
+<h3>گام ۱: OSPF روی Segment مشترک</h3>
+<pre><code>Rx(config)# router ospf 1
+Rx(config-router)# network 10.10.100.0 0.0.0.255 area 0
+Rx# show ip ospf neighbor</code></pre>
+<p>DR و BDR را بخوانید (Router ID بالاتر DR می‌شود). نتیجه را یادداشت کنید.</p>
+<h3>گام ۲: تغییر Priority</h3>
+<pre><code>R1(config)# interface gi0/0
+R1(config-if)# ip ospf priority 100
+R1# clear ip ospf process</code></pre>
+<p>دوباره show ip ospf neighbor: آیا R1 DR شد؟</p>
+<h3>گام ۳: point-to-point روی لینک دو روتر</h3>
+<p>یک لینک مستقیم R1-R2 با <code>ip ospf network point-to-point</code> در هر دو سر؛ مشاهده کنید حالت FULL/- بدون DR است.</p>
+
+<h2>Lab مستقل</h2>
+<p>جدول «DR/BDR/DROther هر Segment» و Priorityها را در <code>03-ops/ospf-dr-plan.md</code> بنویسید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>همسایه‌ها 2WAY مانده‌اند</td></tr>
+<tr><th>تحلیل</th><td>اگر هر دو DROther هستند، طبیعی است</td></tr>
+<tr><th>چک‌لیست</th><td>۱) DR/BDR موجود است؟<br>۲) Priority دو طرف؟<br>۳) نوع شبکه دو سر هم‌خوان است؟</td></tr>
+<tr><th>رفع</th><td>تنظیم Priority یا point-to-point</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>DR چرا لازم است؟</summary><p>تعداد Adjacency را در Segment مشترک کم می‌کند.</p></details>
+<details><summary>Network Type چه تأثیری دارد؟</summary><p>انتخاب DR، تایمرها و رفتار همسایگی را تعیین می‌کند.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>The DR reduces the number of adjacencies on a multi-access segment.</td><td>DR تعداد Adjacency را در Segment چندمسیره کم می‌کند.</td></tr>
+<tr><td>DROther routers stay in 2-Way with each other.</td><td>روترهای DROther با هم در 2-Way می‌مانند.</td></tr>
+<tr><td>Set the network type to point-to-point on two-router links.</td><td>روی لینک دو روتر، نوع شبکه را point-to-point بگذارید.</td></tr>
+<tr><td>DR election is non-preemptive.</td><td>انتخاب DR غیرقابل‌پس‌گیری (Non-preemptive) است.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why is 2-Way between two DROthers normal?</summary><p>Only DR and BDR form full adjacencies with everyone; DROthers exchange LSAs via the DR.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ DR/BDR را در Lab ببینم و تغییر دهم.</li>
+<li>☐ point-to-point را تست کنم.</li>
+<li>☐ جدول Priority را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w6-2': {
+      sub: "Area، ABR، ASBR، LSA، خلاصه‌سازی و Stub.",
+      html: `
+<div class="meta"><span class="tag">هفته ۶ - روز ۲</span><span class="tag">پیش‌نیاز: درس ۶-۱</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> چرا OSPF را به چند ناحیه (<span class="en">Area</span>) تقسیم می‌کنیم، نقش <span class="en">ABR</span> و <span class="en">ASBR</span>، انواع LSA به‌صورت خلاصه، خلاصه‌سازی بین ناحیه‌ها و انواع <span class="en">Stub Area</span>.</p>
+<p><b>چرا لازم است:</b> در شبکه‌ی بزرگ، یک Area واحد یعنی هر تغییر کوچک در یک شعبه همه‌ی روترها را وادار به اجرای SPF می‌کند و جداول بزرگ می‌شوند. Areaها این تغییرات را محلی نگه می‌دارند و پایداری و مقیاس را بالا می‌برند.</p>
+<ul>
+<li><b>در کار روزانه:</b> سازمان‌های چندشعبه‌ای از Area برای هر شعبه یا هر منطقه استفاده می‌کنند.</li>
+<li><b>در امنیت:</b> Area مرز دسترسی نیز هست؛ می‌توان Routeهای ناخواسته را جلوی ورود به Area گرفت.</li>
+<li><b>در Capstone:</b> Lab A می‌تواند ۲ Area (مرکز و شعبه) داشته باشد.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>چرا Area ← قانون Area 0 ← ABR/ASBR ← LSAها ← خلاصه‌سازی ← Stub ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>Area</td><td>OSPF Area</td><td>ناحیه‌ی OSPF</td></tr>
+<tr><td>Backbone</td><td>Backbone Area 0</td><td>ناحیه‌ی مرکزی که همه‌ی Areaها باید به آن وصل باشند</td></tr>
+<tr><td>ABR</td><td>Area Border Router</td><td>روتر مرزی بین دو Area</td></tr>
+<tr><td>ASBR</td><td>Autonomous System Boundary Router</td><td>روتر مرز با دنیای خارج OSPF</td></tr>
+<tr><td>LSA</td><td>Link-State Advertisement</td><td>اعلان وضعیت لینک</td></tr>
+<tr><td>Stub</td><td>Stub Area</td><td>ناحیه‌ای که Routeهای خارجی را نمی‌گیرد</td></tr>
+<tr><td>Summary</td><td>Inter-area summary</td><td>خلاصه‌سازی در ABR</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> چرا Area؟</h2>
+<p>یک شهر بزرگ را به محله تقسیم می‌کنند؛ هر محله نقشه‌ی دقیق خودش را دارد و برای بقیه‌ی شهر فقط «خلاصه» می‌داند. OSPF هم همین‌طور: داخل هر Area نقشه‌ی کامل، و بین Areaها فقط خلاصه.</p>
+<ul>
+<li>تغییر لینک در یک Area فقط همان Area را به SPF می‌اندازد.</li>
+<li>جدول LSDB کوچک‌تر می‌شود.</li>
+<li>امکان خلاصه‌سازی مسیرها.</li>
+</ul>
+<h2><span class="hn">۲.</span> قانون مهم: همه‌ی Areaها به Area 0 وصل</h2>
+<p>ترافیک بین دو Area معمولی باید از Area 0 (Backbone) بگذرد. Area 0 مثل بزرگراه مرکزی است و همه‌ی محله‌ها به آن راه دارند.</p>
+<figure class="fig"><svg viewBox="0 0 720 260" role="img" aria-label="topology"><path d="M110 188 L290 115" class="rq"/><path d="M290 115 L360 35" class="rp"/><path d="M360 35 L470 115" class="rp"/><path d="M470 115 L610 188" class="rq"/><rect x="30" y="160" width="160" height="56" rx="8" class="net"/><text x="110" y="186" text-anchor="middle" class="on">Area 1</text><text x="110" y="202" text-anchor="middle" class="cap">R1 LAN</text><rect x="230" y="90" width="120" height="50" rx="8" class="wrn"/><text x="290" y="120" text-anchor="middle" class="on">ABR</text><rect x="310" y="10" width="100" height="50" rx="8" class="hst"/><text x="360" y="33" text-anchor="middle" class="on">Area 0</text><text x="360" y="49" text-anchor="middle" class="cap">backbone</text><rect x="410" y="90" width="120" height="50" rx="8" class="wrn"/><text x="470" y="120" text-anchor="middle" class="on">ABR</text><rect x="530" y="160" width="160" height="56" rx="8" class="net"/><text x="610" y="186" text-anchor="middle" class="on">Area 2</text><text x="610" y="202" text-anchor="middle" class="cap">R3 LAN</text></svg><figcaption>شکل ۱: Area 1 و Area 2 از طریق ABRها به Area 0 وصل‌اند.</figcaption></figure>
+<h2><span class="hn">۳.</span> ABR و ASBR</h2>
+<table>
+<tr><th>نقش</th><th>تعریف</th><th>کار</th></tr>
+<tr><td>Internal Router</td><td>همه‌ی Interfaceها در یک Area</td><td>فقط LSDB همان Area</td></tr>
+<tr><td>ABR</td><td>Interfaceها در دو Area یا بیشتر (یکی Area 0)</td><td>خلاصه و جابه‌جایی مسیر بین Areaها</td></tr>
+<tr><td>ASBR</td><td>Route را از پروتکل/منبع دیگر وارد OSPF می‌کند (Static، BGP...)</td><td>تزریق Route خارجی</td></tr>
+</table>
+<pre><code>R2(config)# router ospf 1
+R2(config-router)# network 10.0.12.0 0.0.0.3 area 1
+R2(config-router)# network 10.0.23.0 0.0.0.3 area 0
+-> R2 has interfaces in area 1 and area 0 = ABR</code></pre>
+<h2><span class="hn">۴.</span> LSAها (به‌صورت خلاصه)</h2>
+<table>
+<tr><th>نوع</th><th>نام</th><th>کجا پخش می‌شود</th><th>محتوا</th></tr>
+<tr><td>1</td><td>Router LSA</td><td>داخل Area</td><td>لینک‌های یک روتر</td></tr>
+<tr><td>2</td><td>Network LSA</td><td>داخل Area</td><td>Segment و روترهایش (توسط DR)</td></tr>
+<tr><td>3</td><td>Summary LSA</td><td>بین Areaها (ABR)</td><td>Routeهای یک Area برای Area دیگر</td></tr>
+<tr><td>4</td><td>ASBR Summary</td><td>بین Areaها</td><td>مسیر رسیدن به ASBR</td></tr>
+<tr><td>5</td><td>External LSA</td><td>کل Domain</td><td>Route خارجی (از ASBR)</td></tr>
+</table>
+<p>در جدول مسیریابی: <code>O</code> یعنی Intra-area، <code>O IA</code> یعنی Inter-area (از LSA نوع ۳)، <code>O E1/E2</code> یعنی Route خارجی.</p>
+<h2><span class="hn">۵.</span> خلاصه‌سازی در ABR</h2>
+<p>ABR می‌تواند چند شبکه‌ی ریز یک Area را به یک خلاصه تبدیل کند:</p>
+<pre><code>Area 1 networks: 10.1.0.0/24, 10.1.1.0/24, 10.1.2.0/24, 10.1.3.0/24
+Summary: 10.1.0.0/22</code></pre>
+<pre><code>R2(config)# router ospf 1
+R2(config-router)# area 1 range 10.1.0.0 255.255.252.0</code></pre>
+<p>اثر: بقیه‌ی Areaها فقط یک Route (10.1.0.0/22) می‌بینند؛ تغییر یک شبکه‌ی ریز دیگر در سراسر شبکه پخش نمی‌شود.</p>
+<h2><span class="hn">۶.</span> Stub Area</h2>
+<p>شعبه‌ای که فقط یک راه خروج دارد، نیازی ندارد همه‌ی Routeهای خارجی را بداند؛ کافی است یک Default Route از ABR بگیرد:</p>
+<table>
+<tr><th>نوع</th><th>Routeهای خارجی (LSA 5)</th><th>Default از ABR</th></tr>
+<tr><td>Stub</td><td>بلوک</td><td>بله</td></tr>
+<tr><td>Totally Stubby</td><td>بلوک (و Inter-area هم)</td><td>بله</td></tr>
+<tr><td>NSSA</td><td>Routeهای خارجی محلی با LSA 7</td><td>اختیاری</td></tr>
+</table>
+<pre><code>! on all routers of the area:
+R3(config-router)# area 2 stub
+! totally stubby (only on the ABR add "no-summary"):
+R2(config-router)# area 2 stub no-summary</code></pre>
+<div class="box"><b class="t">قانون</b>همه‌ی روترهای یک Area باید نوع Stub یکسان داشته باشند (flag در Hello)، وگرنه همسایه نمی‌شوند.</div>
+<h2><span class="hn">۷.</span> مثال‌ها</h2>
+<h3>ساده: دو Area</h3>
+<pre><code>R1 (area 1) -- R2 (ABR) -- R3 (area 0)
+R3 shows: O IA 192.168.1.0/24 via R2</code></pre>
+<h3>متوسط: چرا نمی‌شود Area 1 را مستقیم به Area 2 وصل کرد؟</h3>
+<p>همه‌ی Areaها باید به Area 0 وصل باشند؛ بین Areaهای غیر صفر Routeها مستقیماً رد نمی‌شود (باید از ABR و Area 0 بگذرد). اگر Area 2 فقط به Area 1 وصل باشد، مسیرها به Area 2 نمی‌رسد؛ برای رفع، Virtual Link (مفهومی) یا طراحی مجدد.</p>
+<h3>سخت: طراحی</h3>
+<p>سازمان با مرکز و ۳ شعبه: Area 0 = مرکز، هر شعبه یک Area (۱ تا ۳)، ABR روی روتر مرز شعبه. خلاصه‌ی هر شعبه یک /22.</p>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): ABR چیست؟</summary><pre><code>A router with interfaces in two or more areas, one of which is area 0.</code></pre>
+</details>
+<details><summary>۲ (ساده): O IA یعنی؟</summary><pre><code>An inter-area route (from a type 3 LSA).</code></pre>
+</details>
+<details><summary>۳ (متوسط): خلاصه‌ی 10.1.4.0/24 تا 10.1.7.0/24؟</summary><pre><code>Third octet 4..7 -> block 4 -> 10.1.4.0/22</code></pre>
+</details>
+<details><summary>۴ (متوسط): چرا Stub باید روی همه‌ی روترهای Area باشد؟</summary><pre><code>The stub flag is carried in Hellos; a mismatch prevents adjacency.</code></pre>
+</details>
+<details><summary>۵ (سخت): مزیت Totally Stubby؟</summary><pre><code>Routers in the area keep only intra-area routes plus one default route, minimizing tables.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>سه روتر خطی R1—R2—R3 مثل هفته ۵. حالا R1 را در Area 1 و R3 را در Area 0 می‌گذاریم و R2 ABR می‌شود.</p>
+<h3>گام ۱: Areaها</h3>
+<pre><code>R1(config)# router ospf 1
+R1(config-router)# network 10.0.12.0 0.0.0.3 area 1
+R1(config-router)# network 192.168.1.0 0.0.0.255 area 1
+
+R2(config)# router ospf 1
+R2(config-router)# network 10.0.12.0 0.0.0.3 area 1
+R2(config-router)# network 10.0.23.0 0.0.0.3 area 0
+
+R3(config)# router ospf 1
+R3(config-router)# network 10.0.23.0 0.0.0.3 area 0
+R3(config-router)# network 192.168.3.0 0.0.0.255 area 0</code></pre>
+<h3>گام ۲: مشاهده</h3>
+<pre><code>R3# show ip route ospf        (O IA for area 1 networks)
+R2# show ip ospf database
+R2# show ip ospf</code></pre>
+<h3>گام ۳: خلاصه‌سازی</h3>
+<pre><code>R2(config)# router ospf 1
+R2(config-router)# area 1 range 192.168.0.0 255.255.252.0
+R3# show ip route ospf</code></pre>
+<h3>گام ۴: Stub</h3>
+<p>Area 1 را stub کنید (روی R1 و R2) و ببینید Default از ABR می‌آید.</p>
+
+<h2>Lab مستقل</h2>
+<p>یک «OSPF Area Design» برای Capstone (مرکز + ۳ شعبه) بنویسید: Areaها، ABRها، خلاصه‌ها در <code>02-design/ospf-areas.md</code>.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>Route به یک Area دیگر نمی‌رسد</td></tr>
+<tr><th>چک‌لیست</th><td>۱) Area 0 متصل است؟<br>۲) ABR درست است؟<br>۳) Stub یکسان است؟<br>۴) خلاصه‌سازی نادرست؟</td></tr>
+<tr><th>ابزار</th><td>show ip ospf ، show ip ospf database</td></tr>
+<tr><th>رفع</th><td>اصلاح Area/Stub یا خلاصه‌سازی</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>چرا به Area 0 همه وصل‌اند؟</summary><p>ترافیک بین Areaها از Backbone عبور می‌کند.</p></details>
+<details><summary>ASBR چه می‌کند؟</summary><p>Route خارجی را وارد OSPF می‌کند.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Segmenting the network into areas limits the scope of SPF recalculation.</td><td>تقسیم شبکه به Area دامنه‌ی محاسبه‌ی SPF را محدود می‌کند.</td></tr>
+<tr><td>Every area must connect to the backbone area.</td><td>هر Area باید به Backbone وصل باشد.</td></tr>
+<tr><td>The ABR summarizes routes between areas.</td><td>ABR بین Areaها خلاصه‌سازی می‌کند.</td></tr>
+<tr><td>A stub area receives a default route instead of external routes.</td><td>Stub Area به‌جای Routeهای خارجی Default می‌گیرد.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What does an ABR do?</summary><p>It connects areas to the backbone and exchanges (summarized) routes between them.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ دو Area بسازم و O IA ببینم.</li>
+<li>☐ خلاصه‌سازی را تست کنم.</li>
+<li>☐ طراحی Area Capstone را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w6-3': {
+      sub: "OSPFv3 برای IPv6 و Dual-Stack.",
+      html: `
+<div class="meta"><span class="tag">هفته ۶ - روز ۳</span><span class="tag">پیش‌نیاز: درس‌های ۲-۳ و ۶-۲</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> مسیریابی IPv6 با <span class="en">OSPFv3</span>: تفاوت با OSPFv2، فعال‌سازی روی Interface، Router ID، و استفاده از آدرس Link-Local برای Next-hop.</p>
+<p><b>چرا لازم است:</b> شبکه‌های امروز Dual-Stack هستند. اگر IPv6 را فقط «روشن» کنید ولی مسیریابی‌اش را ندانید، ارتباط بین VLANها و شعبه‌ها در IPv6 کار نمی‌کند و ترافیک از مسیر غیرکنترل‌شده می‌رود.</p>
+<ul>
+<li><b>در کار روزانه:</b> سازمان‌های جدید IPv6 را همراه IPv4 اجرا می‌کنند.</li>
+<li><b>در امنیت:</b> فراموش‌کردن IPv6 یک سطح حمله‌ی بدون پایش ایجاد می‌کند.</li>
+<li><b>در Capstone:</b> Dual-Stack در بخشی از Lab و Policy فایروال بررسی می‌شود.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>تفاوت v2 و v3 ← فعال‌سازی ← Router ID ← Link-Local Next-hop ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>OSPFv3</td><td>OSPF version 3</td><td>OSPF برای IPv6 (و Address Family)</td></tr>
+<tr><td>Link-Local</td><td>Link-Local address</td><td>آدرس fe80:: روی هر Interface</td></tr>
+<tr><td>Dual-Stack</td><td>Dual-Stack</td><td>اجرای هم‌زمان IPv4 و IPv6</td></tr>
+<tr><td>Address Family</td><td>Address Family</td><td>OSPFv3 با پشتیبانی IPv4 و IPv6</td></tr>
+<tr><td>ipv6 unicast-routing</td><td>ipv6 unicast-routing</td><td>فعال‌سازی مسیریابی IPv6 روی روتر</td></tr>
+<tr><td>Next-hop</td><td>Next-hop</td><td>روتر بعدی؛ در IPv6 معمولاً Link-Local</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> OSPFv3 چه فرقی دارد؟</h2>
+<p>ایده‌ی OSPF همان است (Area، LSDB، SPF). تفاوت‌ها:</p>
+<table>
+<tr><th>موضوع</th><th>OSPFv2 (IPv4)</th><th>OSPFv3 (IPv6)</th></tr>
+<tr><td>آدرس</td><td>IPv4</td><td>IPv6 (و با Address Family هر دو)</td></tr>
+<tr><td>فعال‌سازی</td><td>دستور network</td><td>روی خود Interface (ipv6 ospf)</td></tr>
+<tr><td>Router ID</td><td>از IPv4 Loopback</td><td>همچنان ۳۲ بیتی و باید دستی تنظیم شود</td></tr>
+<tr><td>Next-hop</td><td>IP همسایه</td><td>Link-Local همسایه (fe80::)</td></tr>
+<tr><td>Authentication</td><td>بخشی از پروتکل</td><td>با IPsec (یا Authentication Trailer)</td></tr>
+<tr><td>Multicast</td><td>224.0.0.5/6</td><td>ff02::5 / ff02::6</td></tr>
+</table>
+<div class="box"><b class="t">نکته‌ی مهم</b>OSPFv3 حتی در شبکه‌ی «فقط IPv6» به یک Router ID ۳۲ بیتی (شکل IPv4) نیاز دارد. اگر روتر هیچ آدرس IPv4 نداشته باشد، باید دستی بدهید وگرنه فرایند بالا نمی‌آید.</div>
+<h2><span class="hn">۲.</span> دستورها (خط‌به‌خط)</h2>
+<p>ابتدا مسیریابی IPv6 را روشن کنید (درس ۲-۳). بعد روی روتر:</p>
+<pre><code>R1(config)# ipv6 unicast-routing
+R1(config)# ipv6 router ospf 1
+R1(config-rtr)# router-id 1.1.1.1
+R1(config-rtr)# exit
+R1(config)# interface gi0/1
+R1(config-if)# ipv6 address 2001:db8:12::1/64
+R1(config-if)# ipv6 ospf 1 area 0
+R1(config)# interface loopback 10
+R1(config-if)# ipv6 address 2001:db8:1::1/64
+R1(config-if)# ipv6 ospf 1 area 0</code></pre>
+<ul>
+<li><code>ipv6 router ospf 1</code>: Process (مثل v2، فقط محلی).</li>
+<li><code>ipv6 ospf 1 area 0</code>: روی هر Interface (جایگزین network).</li>
+<li>آدرس Link-Local خودکار ساخته می‌شود و OSPFv3 با آن همسایه می‌شود.</li>
+</ul>
+<pre><code>R1# show ipv6 ospf neighbor
+R1# show ipv6 route ospf
+R1# show ipv6 ospf interface brief</code></pre>
+<h2><span class="hn">۳.</span> Next-hop با Link-Local</h2>
+<p>در جدول IPv6 Route، Next-hop آدرس Link-Local همسایه است (مثلاً FE80::2). چون Link-Local فقط روی همان لینک معنی دارد، Interface خروجی هم نوشته می‌شود:</p>
+<pre><code>O   2001:db8:3::/64 [110/20]
+     via FE80::2, GigabitEthernet0/1</code></pre>
+<p>در Staticهای IPv6 هم اگر Next-hop را Link-Local بنویسید، باید Interface هم بدهید: <code>ipv6 route ... FE80::2 gi0/1</code>.</p>
+<h2><span class="hn">۴.</span> مثال‌ها</h2>
+<h3>ساده</h3>
+<pre><code>Two routers, one /64 link, both: ipv6 ospf 1 area 0
+show ipv6 ospf neighbor -> FULL</code></pre>
+<h3>متوسط: ping IPv6 سراسری</h3>
+<pre><code>R1# ping 2001:db8:3::1 source loopback10</code></pre>
+<h3>سخت: چرا همسایه بالا نمی‌آید؟</h3>
+<pre><code>Cause 1: ipv6 unicast-routing not enabled
+Cause 2: no router-id and no IPv4 address -> process cannot start
+Cause 3: different area or mismatched hello/dead
+Cause 4: ACL blocking ff02::5 / OSPFv3 (protocol 89)</code></pre>
+<div class="box"><b class="t">صادقانه درباره‌ی Lab</b>روی روتر vIOS، IPv6 و OSPFv3 تحت IOS واقعی اجرا می‌شود و باید کار کند. اگر روی SW (vIOSL2) IPv6 کامل نبود، همان محدودیت قبلی شبیه‌ساز است؛ نتیجه را ثبت کنید.</div>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): OSPFv3 چطور فعال می‌شود؟</summary><pre><code>ipv6 unicast-routing, ipv6 router ospf N, and "ipv6 ospf N area A" on each interface.</code></pre>
+</details>
+<details><summary>۲ (ساده): Next-hop در IPv6 چه آدرسی است؟</summary><pre><code>The neighbor link-local address (fe80::).</code></pre>
+</details>
+<details><summary>۳ (متوسط): چرا Router ID لازم است؟</summary><pre><code>OSPFv3 uses a 32-bit router ID; without any IPv4 address it must be set manually.</code></pre>
+</details>
+<details><summary>۴ (سخت): چرا Static IPv6 با Next-hop Link-Local به Interface هم نیاز دارد؟</summary><pre><code>Link-local addresses are only unique per link, so the exit interface is required.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<h3>گام ۱: روی مثلث R1-R2-R3 (هفته ۵)</h3>
+<pre><code>Rx(config)# ipv6 unicast-routing
+Rx(config)# ipv6 router ospf 1
+Rx(config-rtr)# router-id x.x.x.x</code></pre>
+<h3>گام ۲: آدرس‌دهی و فعال‌سازی</h3>
+<p>برای لینک‌ها از 2001:db8:12::/64 و 2001:db8:23::/64 و برای LAN از 2001:db8:1::/64 و 2001:db8:3::/64 استفاده کنید؛ روی هر Interface <code>ipv6 ospf 1 area 0</code>.</p>
+<h3>گام ۳: بررسی</h3>
+<pre><code>Rx# show ipv6 ospf neighbor
+R1# show ipv6 route ospf
+R1# ping 2001:db8:3::1 source loopback10</code></pre>
+
+<h2>Lab مستقل</h2>
+<p>یک «Dual-Stack Plan» (IPv4 و IPv6 هر VLAN و هر لینک) در <code>02-design/dual-stack-plan.md</code> بنویسید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>همسایگی OSPFv3 بالا نمی‌آید یا ping IPv6 شکست می‌خورد</td></tr>
+<tr><th>چک‌لیست</th><td>۱) ipv6 unicast-routing؟<br>۲) Router ID؟<br>۳) ipv6 ospf روی Interface؟<br>۴) Link-Local OK است؟<br>۵) ACL؟</td></tr>
+<tr><th>ابزار</th><td>show ipv6 ospf neighbor ، show ipv6 interface brief</td></tr>
+<tr><th>رفع</th><td>اصلاح مورد ناقص</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>تفاوت اصلی فعال‌سازی v2 و v3؟</summary><p>v3 روی Interface فعال می‌شود، نه با network.</p></details>
+<details><summary>چرا Router ID دستی؟</summary><p>چون ممکن است روتر IPv4 نداشته باشد.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Enable IPv6 routing before configuring OSPFv3.</td><td>پیش از OSPFv3 مسیریابی IPv6 را فعال کنید.</td></tr>
+<tr><td>OSPFv3 uses link-local addresses to form neighbors.</td><td>OSPFv3 با آدرس Link-Local همسایه می‌شود.</td></tr>
+<tr><td>Run dual-stack to support both IPv4 and IPv6.</td><td>Dual-Stack را اجرا کنید تا هر دو پروتکل پشتیبانی شود.</td></tr>
+<tr><td>Configure the router ID manually.</td><td>Router ID را دستی تنظیم کنید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why does OSPFv3 still need an IPv4-style router ID?</summary><p>Router IDs are 32-bit values in both versions, independent of the address family.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ OSPFv3 را بالا بیاورم.</li>
+<li>☐ Next-hop Link-Local را در Route ببینم.</li>
+<li>☐ Dual-Stack Plan را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w6-4': {
+      sub: "HSRP: VIP، Priority، Preempt و Track.",
+      html: `
+<div class="meta"><span class="tag">هفته ۶ - روز ۴</span><span class="tag">پیش‌نیاز: درس ۳-۵</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> چطور برای Default Gateway هر VLAN «پشتیبان» بگذاریم: پروتکل <span class="en">HSRP</span> (و مقایسه با <span class="en">VRRP</span> و <span class="en">GLBP</span>)، آدرس مجازی، <span class="en">Priority</span>، <span class="en">Preempt</span> و <span class="en">Tracking</span>.</p>
+<p><b>چرا لازم است:</b> Gateway نقطه‌ی شکست واحد (SPOF) است: اگر آن سوییچ یا روتر خاموش شود، تمام کاربران VLAN از شبکه بیرون می‌مانند حتی اگر روتر دوم سالم باشد، چون روی کلاینت‌ها فقط یک Gateway تنظیم شده است. FHRP این مشکل را حل می‌کند.</p>
+<ul>
+<li><b>در کار روزانه:</b> تقریباً همه‌ی Coreهای سازمانی HSRP یا VRRP دارند.</li>
+<li><b>در امنیت:</b> Authentication HSRP جلوی تصاحب نقش Active توسط دستگاه جعلی را می‌گیرد.</li>
+<li><b>در Capstone:</b> Lab A-HA از HSRP برای Gateway دوگانه استفاده می‌کند.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>مشکل Gateway واحد ← ایده‌ی آدرس مجازی ← انتخاب Active ← Preempt و Track ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>FHRP</td><td>First Hop Redundancy Protocol</td><td>خانواده‌ی پروتکل‌های پشتیبان Gateway</td></tr>
+<tr><td>HSRP</td><td>Hot Standby Router Protocol</td><td>پروتکل سیسکو برای Gateway پشتیبان</td></tr>
+<tr><td>VRRP</td><td>Virtual Router Redundancy Protocol</td><td>نسخه‌ی استاندارد</td></tr>
+<tr><td>GLBP</td><td>Gateway Load Balancing Protocol</td><td>نسخه‌ی سیسکو با تقسیم بار</td></tr>
+<tr><td>Virtual IP</td><td>Virtual IP (VIP)</td><td>آدرس مشترک که کلاینت به‌عنوان Gateway می‌گیرد</td></tr>
+<tr><td>Active</td><td>Active router</td><td>روتری که ترافیک را عبور می‌دهد</td></tr>
+<tr><td>Standby</td><td>Standby router</td><td>روتر آماده‌باش</td></tr>
+<tr><td>Preempt</td><td>Preempt</td><td>پس‌گرفتن نقش Active توسط روتر قوی‌تر</td></tr>
+<tr><td>SPOF</td><td>Single Point Of Failure</td><td>نقطه‌ی شکست واحد</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> مشکل: یک Gateway یعنی یک نقطه‌ی شکست</h2>
+<p>کلاینت‌ها فقط یک Default Gateway دارند. اگر دو Core بگذارید ولی کلاینت‌ها به Core-1 اشاره کنند، با خاموشی Core-1 همه قطع می‌شوند، حتی با وجود Core-2.</p>
+<p>مثال روزمره: یک شرکت که فقط یک شماره‌ی تلفن دارد و اگر منشی نباشد کسی جواب نمی‌دهد. راه‌حل: یک «شماره‌ی مشترک» که هر کدام از دو منشی حاضر باشند پاسخ می‌دهند.</p>
+<h2><span class="hn">۲.</span> ایده‌ی HSRP</h2>
+<p>دو (یا چند) روتر یک «روتر مجازی» می‌سازند با یک آدرس IP مجازی (VIP) و یک MAC مجازی. کلاینت‌ها VIP را به‌عنوان Gateway می‌گیرند. فقط یکی از روترها «Active» است و جواب ARP و ترافیک را می‌دهد. دیگری «Standby» است و Hello می‌شنود؛ اگر Active ساکت شد، فوراً Active می‌شود.</p>
+<figure class="fig"><svg viewBox="0 0 720 250" role="img" aria-label="topology"><path d="M115 48 L365 48" class="rp"/><path d="M115 48 L365 188" class="ln"/><path d="M365 48 L605 118" class="ln"/><path d="M365 188 L605 118" class="ln"/><path d="M365 48 L365 188" class="rq"/><text x="365" y="112" text-anchor="middle" class="cap">hello</text><rect x="40" y="20" width="150" height="56" rx="8" class="net"/><text x="115" y="46" text-anchor="middle" class="on">PC</text><text x="115" y="62" text-anchor="middle" class="cap">GW = 10.10.20.254</text><rect x="290" y="20" width="150" height="56" rx="8" class="hst"/><text x="365" y="46" text-anchor="middle" class="on">Core-1</text><text x="365" y="62" text-anchor="middle" class="cap">Active, prio 110</text><rect x="290" y="160" width="150" height="56" rx="8" class="wrn"/><text x="365" y="186" text-anchor="middle" class="on">Core-2</text><text x="365" y="202" text-anchor="middle" class="cap">Standby, prio 100</text><rect x="520" y="90" width="170" height="56" rx="8" class="bx"/><text x="605" y="116" text-anchor="middle">Virtual IP</text><text x="605" y="132" text-anchor="middle" class="cap">10.10.20.254</text></svg><figcaption>شکل ۱: کلاینت VIP را Gateway می‌داند؛ Core-1 Active است و Core-2 در آماده‌باش.</figcaption></figure>
+<table>
+<tr><th>موضوع</th><th>HSRP v1</th><th>HSRP v2</th></tr>
+<tr><td>Multicast</td><td>224.0.0.2</td><td>224.0.0.102</td></tr>
+<tr><td>Virtual MAC</td><td>0000.0c07.acXX</td><td>0000.0c9f.fXXX</td></tr>
+<tr><td>تعداد Group</td><td>0 تا 255</td><td>0 تا 4095</td></tr>
+<tr><td>IPv6</td><td>ندارد</td><td>دارد</td></tr>
+</table>
+<p>XX یا XXX شماره‌ی Group به‌صورت Hex است. Hello پیش‌فرض ۳ ثانیه و Hold ۱۰ ثانیه است.</p>
+<pre><code>Default hello = 3 s, hold = 10 s -> failover up to ~10 s
+Tuned (hello 1, hold 3) -> failover ~3 s</code></pre>
+<h2><span class="hn">۳.</span> انتخاب Active</h2>
+<ol>
+<li>بالاترین Priority (پیش‌فرض ۱۰۰).</li>
+<li>اگر برابر بود، بالاترین IP روی Interface.</li>
+</ol>
+<div class="box"><b class="t">نکته‌ی مهم</b>پیش‌فرض Preempt خاموش است. اگر Core-1 (Priority بالاتر) خراب شود و بعد برگردد، نقش Active را پس نمی‌گیرد مگر اینکه <code>preempt</code> بزنید. معمولاً در طراحی می‌خواهیم Core اصلی دوباره Active شود، پس Preempt را روشن می‌کنیم.</div>
+<h2><span class="hn">۴.</span> دستورها (خط‌به‌خط)</h2>
+<pre><code>Core-1(config)# interface vlan 20
+Core-1(config-if)# ip address 10.10.20.2 255.255.255.0
+Core-1(config-if)# standby version 2
+Core-1(config-if)# standby 20 ip 10.10.20.254
+Core-1(config-if)# standby 20 priority 110
+Core-1(config-if)# standby 20 preempt
+Core-1(config-if)# standby 20 authentication md5 key-string &lt;KEY>
+
+Core-2(config)# interface vlan 20
+Core-2(config-if)# ip address 10.10.20.3 255.255.255.0
+Core-2(config-if)# standby version 2
+Core-2(config-if)# standby 20 ip 10.10.20.254
+Core-2(config-if)# standby 20 priority 100
+Core-2(config-if)# standby 20 preempt</code></pre>
+<ul>
+<li>هر Core آدرس واقعی خودش (.2 و .3) و یک VIP مشترک (.254) دارد.</li>
+<li>شماره‌ی Group (اینجا 20) هم‌شماره‌ی VLAN انتخاب می‌شود تا خوانا باشد.</li>
+<li>کلاینت‌ها Gateway را <b>.254</b> می‌گیرند، نه .2 یا .3.</li>
+<li>کلید Authentication را در ریپو نگذارید؛ اینجا فقط جانگهدار است.</li>
+</ul>
+<pre><code>Core-1# show standby brief
+Core-1# show standby vlan 20
+Core-1# show standby</code></pre>
+<pre><code>Interface   Grp  Pri P State   Active    Standby    Virtual IP
+Vl20         20  110 P Active  local     10.10.20.3 10.10.20.254</code></pre>
+<h2><span class="hn">۵.</span> Tracking: وقتی لینک بالادست خراب شد</h2>
+<p>اگر Core-1 Active است ولی لینک اصلی‌اش به بیرون خراب شود، همچنان Active می‌ماند و ترافیک را «سیاه‌چاله» می‌کند. با Track، Priority را در صورت خرابی لینک کم می‌کنیم تا Core-2 بگیرد:</p>
+<pre><code>Core-1(config)# track 10 interface gi0/3 line-protocol
+Core-1(config)# interface vlan 20
+Core-1(config-if)# standby 20 track 10 decrement 20
+Effect: priority 110 - 20 = 90 &lt; 100 -> Core-2 becomes Active (needs preempt on Core-2)</code></pre>
+<h2><span class="hn">۶.</span> VRRP و GLBP</h2>
+<table>
+<tr><th>پروتکل</th><th>تعریف</th><th>ویژگی</th></tr>
+<tr><td>HSRP</td><td>سیسکو</td><td>یک Active؛ رایج در Cisco</td></tr>
+<tr><td>VRRP</td><td>استاندارد RFC 5798</td><td>چند سازنده؛ مشابه HSRP (Master/Backup)</td></tr>
+<tr><td>GLBP</td><td>سیسکو</td><td>چند Forwarder؛ تقسیم بار بین Gatewayها</td></tr>
+</table>
+<p>FortiGate از VRRP و FGCP (HA اختصاصی) پشتیبانی می‌کند. مفهوم همین است.</p>
+<h2><span class="hn">۷.</span> مثال‌ها</h2>
+<h3>ساده</h3>
+<pre><code>Two cores, VIP .254, Core-1 priority 110 -> Active
+PC gateway = .254 , ping works</code></pre>
+<h3>متوسط: Failover</h3>
+<pre><code>Core-1 shut down -> Core-2 becomes Active after hold time
+PC keeps pinging with only a few lost packets</code></pre>
+<h3>سخت: Failover بدون Track</h3>
+<pre><code>Core-1 uplink fails but Core-1 stays Active (its VLAN interface is up)
+Traffic is black-holed
+Fix: track the uplink and decrement priority, or use routing protocol awareness</code></pre>
+<div class="box"><b class="t">صادقانه درباره‌ی Lab</b>طبق Probe، «HSRP state» روی vIOSL2 تست شد و کار می‌کند. Failover واقعی (Virtual MAC) را با Capture بررسی کنید و اگر شبیه‌ساز رفتار متفاوتی داشت ثبت کنید.</div>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): VIP چیست؟</summary><pre><code>A shared virtual IP address used as the clients' default gateway.</code></pre>
+</details>
+<details><summary>۲ (ساده): Active چطور انتخاب می‌شود؟</summary><pre><code>Highest priority, then highest IP address.</code></pre>
+</details>
+<details><summary>۳ (متوسط): چرا Preempt؟</summary><pre><code>So the higher-priority router regains the Active role after it recovers.</code></pre>
+</details>
+<details><summary>۴ (متوسط): Failover پیش‌فرض چند ثانیه؟</summary><pre><code>About 10 s (hold time) with hello 3 / hold 10.</code></pre>
+</details>
+<details><summary>۵ (سخت): نقش Track چیست؟</summary><pre><code>Lower the priority when an uplink fails so the standby takes over; otherwise traffic black-holes.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>دو سوییچ L3: <code>Core-1</code> و <code>Core-2</code> (vIOSL2 با <code>ip routing</code>)، یک سوییچ دسترسی <code>Acc-1</code> که به هر دو Trunk است، و PC1 در VLAN 20.</p>
+<h3>گام ۱: SVI روی هر دو Core</h3>
+<pre><code>Core-x(config)# ip routing
+Core-x(config)# vlan 20
+Core-1(config)# interface vlan 20
+Core-1(config-if)# ip address 10.10.20.2 255.255.255.0
+Core-1(config-if)# no shutdown
+Core-2(config)# interface vlan 20
+Core-2(config-if)# ip address 10.10.20.3 255.255.255.0
+Core-2(config-if)# no shutdown</code></pre>
+<h3>گام ۲: HSRP</h3>
+<pre><code>Core-1(config-if)# standby version 2
+Core-1(config-if)# standby 20 ip 10.10.20.254
+Core-1(config-if)# standby 20 priority 110
+Core-1(config-if)# standby 20 preempt
+Core-2(config-if)# standby version 2
+Core-2(config-if)# standby 20 ip 10.10.20.254
+Core-2(config-if)# standby 20 preempt
+Core-x# show standby brief</code></pre>
+<h3>گام ۳: تست</h3>
+<pre><code>PC1> ip 10.10.20.11/24 10.10.20.254
+PC1> ping 10.10.20.254 -t</code></pre>
+<h3>گام ۴: Failover</h3>
+<pre><code>Core-1(config)# interface vlan 20
+Core-1(config-if)# shutdown
+Core-2# show standby brief
+Core-1(config-if)# no shutdown   (preempt: Core-1 returns)</code></pre>
+<p>تعداد پکت گم‌شده و زمان Failover را ثبت کنید.</p>
+
+<h2>Lab مستقل</h2>
+<p>یک «HSRP Plan» (Groupها، VIPها، Priorityها، Track) برای ۳ VLAN در <code>02-design/hsrp-plan.md</code> بنویسید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>Failover نمی‌شود یا هر دو Active هستند</td></tr>
+<tr><th>چک‌لیست</th><td>۱) VIP و Group دو سر یکی؟<br>۲) Version یکسان؟<br>۳) Authentication مشابه؟<br>۴) ارتباط L2 بین Coreها OK؟<br>۵) Preempt/Priority</td></tr>
+<tr><th>ابزار</th><td>show standby brief ، show standby</td></tr>
+<tr><th>نکته</th><td>«دو Active» یعنی Hello به هم نمی‌رسد (قطع L2)</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>HSRP چه مشکلی را حل می‌کند؟</summary><p>وجود Gateway واحد به‌عنوان SPOF.</p></details>
+<details><summary>تفاوت HSRP و VRRP؟</summary><p>HSRP اختصاصی سیسکو؛ VRRP استاندارد.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>HSRP provides a virtual gateway address shared by two routers.</td><td>HSRP یک آدرس Gateway مجازی بین دو روتر ارائه می‌کند.</td></tr>
+<tr><td>The router with the highest priority becomes active.</td><td>روتر با بالاترین Priority Active می‌شود.</td></tr>
+<tr><td>Enable preempt so the primary router regains the active role.</td><td>Preempt را روشن کنید تا روتر اصلی نقش Active را پس بگیرد.</td></tr>
+<tr><td>Track the uplink to trigger failover when it goes down.</td><td>برای فعال‌شدن Failover هنگام قطع Uplink آن را Track کنید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What happens to clients if the active HSRP router fails?</summary><p>The standby router becomes active and answers for the same virtual IP and MAC, so clients keep their gateway.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ HSRP را بسازم و Failover را ثبت کنم.</li>
+<li>☐ Track را توضیح دهم.</li>
+<li>☐ HSRP Plan را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w6-5': {
+      sub: "Lab A: Core با SVI/HSRP و OSPF.",
+      html: `
+<div class="meta"><span class="tag">هفته ۶ - روز ۵</span><span class="tag">پیش‌نیاز: درس‌های ۶-۱ تا ۶-۴</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> پیاده‌سازی کامل <span class="en">Lab A</span>: Gateway روی Core با SVI و HSRP، OSPF به سمت Edge (که بعداً FortiGate می‌شود)، و تأیید مسیر رفت و برگشت.</p>
+<p><b>چرا لازم است:</b> این Lab تمام مباحث هفته ۳ تا ۶ را در یک طراحی واقعی کنار هم می‌گذارد: VLAN، Trunk، STP، EtherChannel، SVI، HSRP و OSPF. اگر این Lab را درست بسازید، یعنی شبکه‌ی Campus سیسکو را فهمیده‌اید. (یادآوری: Capstone اصلی ما الگوی B است؛ Lab A جدا و مکمل است.)</p>
+<ul>
+<li><b>در کار روزانه:</b> این همان چیدمان معمول Campus سازمانی است.</li>
+<li><b>در امنیت:</b> Return Path و Gateway مشخص، پایه‌ی هر Policy است.</li>
+<li><b>در FortiGate:</b> در W9/W10 همین Lab با FGT به‌جای EDGE-R1 کامل می‌شود.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>طراحی ← جدول آدرس ← پیاده‌سازی مرحله‌ای ← Verification Matrix ← تست Failover ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>Lab A</td><td>Lab A (Cisco L3 Core Gateway)</td><td>Gateway روی Core سیسکو</td></tr>
+<tr><td>Perimeter</td><td>Perimeter firewall</td><td>فایروال لبه‌ی شبکه</td></tr>
+<tr><td>Transit</td><td>Transit link</td><td>لینک نقطه‌به‌نقطه به فایروال</td></tr>
+<tr><td>Return Path</td><td>Return Path</td><td>مسیر برگشت</td></tr>
+<tr><td>As-Built</td><td>As-Built documentation</td><td>مستند وضعیت نهایی</td></tr>
+<tr><td>ECMP</td><td>Equal-Cost Multi-Path</td><td>تقسیم بار بین مسیرهای هم‌هزینه</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> طراحی</h2>
+<figure class="fig"><svg viewBox="0 0 720 260" role="img" aria-label="topology"><path d="M80 194 L260 194" class="ln"/><path d="M260 194 L445 86" class="rp"/><text x="352" y="134" text-anchor="middle" class="cap">trunk</text><path d="M260 194 L445 206" class="rp"/><text x="352" y="194" text-anchor="middle" class="cap">trunk</text><path d="M445 86 L445 206" class="rq"/><text x="445" y="140" text-anchor="middle" class="cap">Po1</text><path d="M445 86 L640 136" class="rq"/><text x="542" y="105" text-anchor="middle" class="cap">/30 OSPF</text><path d="M445 206 L640 136" class="rq"/><text x="542" y="165" text-anchor="middle" class="cap">/30 OSPF</text><rect x="20" y="170" width="120" height="48" rx="8" class="net"/><text x="80" y="192" text-anchor="middle" class="on">PC VLANs</text><text x="80" y="208" text-anchor="middle" class="cap">10/20/50</text><rect x="200" y="170" width="120" height="48" rx="8" class="bx"/><text x="260" y="192" text-anchor="middle">ACC-SW1</text><text x="260" y="208" text-anchor="middle" class="cap">L2</text><rect x="380" y="60" width="130" height="52" rx="8" class="hst"/><text x="445" y="84" text-anchor="middle" class="on">CORE-SW1</text><text x="445" y="100" text-anchor="middle" class="cap">SVI+HSRP</text><rect x="380" y="180" width="130" height="52" rx="8" class="hst"/><text x="445" y="204" text-anchor="middle" class="on">CORE-SW2</text><text x="445" y="220" text-anchor="middle" class="cap">SVI+HSRP</text><rect x="580" y="110" width="120" height="52" rx="8" class="wrn"/><text x="640" y="134" text-anchor="middle" class="on">EDGE-R1</text><text x="640" y="150" text-anchor="middle" class="cap">FGT stand-in</text></svg><figcaption>شکل ۱: Lab A؛ VLANها روی Core (SVI + HSRP) و OSPF با Edge.</figcaption></figure>
+<pre><code>VLAN 10 MGMT   10.10.10.0/24   VIP .254   Core-1 .2  Core-2 .3
+VLAN 20 USERS  10.10.20.0/24   VIP .254   Core-1 .2  Core-2 .3
+VLAN 50 GUEST  10.10.50.0/24   VIP .254   Core-1 .2  Core-2 .3
+
+Core-1 &lt;-> EDGE-R1 : 10.0.1.0/30   (.1 .2)
+Core-2 &lt;-> EDGE-R1 : 10.0.2.0/30   (.1 .2)
+Core-1 &lt;-> Core-2  : EtherChannel Po1 (trunk)
+OSPF area 0 on Cores and Edge
+EDGE-R1 loopback 0 = 8.8.8.8/32 (stand-in for "internet")</code></pre>
+<div class="box"><b class="t">قاعده</b>هر VLAN دقیقاً یک Gateway دارد: VIP روی Core. هرگز دو Gateway همزمان (مثل SVI و Sub-interface روی R1).</div>
+<h2><span class="hn">۲.</span> گام‌های پیاده‌سازی</h2>
+<h3>گام ۱: VLAN و Trunk</h3>
+<pre><code>! on Core-1, Core-2, ACC-SW1
+vlan 10
+ name MGMT
+vlan 20
+ name USERS
+vlan 50
+ name GUEST
+! trunks: ACC &lt;-> Core-1, ACC &lt;-> Core-2, Core-1 &lt;-> Core-2
+interface gi0/x
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,50
+ switchport trunk native vlan 999</code></pre>
+<h3>گام ۲: STP</h3>
+<pre><code>Core-1(config)# spanning-tree mode rapid-pvst
+Core-1(config)# spanning-tree vlan 10,20,50 root primary
+Core-2(config)# spanning-tree vlan 10,20,50 root secondary
+ACC-SW1(config)# interface range gi0/1 - 3
+ACC-SW1(config-if-range)# spanning-tree portfast
+ACC-SW1(config-if-range)# spanning-tree bpduguard enable</code></pre>
+<h3>گام ۳: SVI و HSRP</h3>
+<pre><code>Core-1(config)# ip routing
+Core-1(config)# interface vlan 20
+Core-1(config-if)# ip address 10.10.20.2 255.255.255.0
+Core-1(config-if)# standby version 2
+Core-1(config-if)# standby 20 ip 10.10.20.254
+Core-1(config-if)# standby 20 priority 110
+Core-1(config-if)# standby 20 preempt
+! repeat for VLAN 10 and 50; Core-2 uses .3 and default priority</code></pre>
+<h3>گام ۴: لینک‌های Routed به Edge</h3>
+<pre><code>Core-1(config)# interface gi0/3
+Core-1(config-if)# no switchport
+Core-1(config-if)# ip address 10.0.1.1 255.255.255.252
+Core-2(config)# interface gi0/3
+Core-2(config-if)# no switchport
+Core-2(config-if)# ip address 10.0.2.1 255.255.255.252
+EDGE-R1(config)# interface gi0/0
+EDGE-R1(config-if)# ip address 10.0.1.2 255.255.255.252
+EDGE-R1(config)# interface gi0/1
+EDGE-R1(config-if)# ip address 10.0.2.2 255.255.255.252
+EDGE-R1(config)# interface loopback 0
+EDGE-R1(config-if)# ip address 8.8.8.8 255.255.255.255</code></pre>
+<h3>گام ۵: OSPF</h3>
+<pre><code>Core-1(config)# router ospf 1
+Core-1(config-router)# router-id 11.11.11.11
+Core-1(config-router)# network 10.0.1.0 0.0.0.3 area 0
+Core-1(config-router)# network 10.10.10.0 0.0.0.255 area 0
+Core-1(config-router)# network 10.10.20.0 0.0.0.255 area 0
+Core-1(config-router)# network 10.10.50.0 0.0.0.255 area 0
+Core-1(config-router)# passive-interface default
+Core-1(config-router)# no passive-interface gi0/3
+! Core-2 same with its own link and router-id 12.12.12.12
+EDGE-R1(config)# router ospf 1
+EDGE-R1(config-router)# router-id 1.1.1.1
+EDGE-R1(config-router)# network 10.0.1.0 0.0.0.3 area 0
+EDGE-R1(config-router)# network 10.0.2.0 0.0.0.3 area 0
+EDGE-R1(config-router)# network 8.8.8.8 0.0.0.0 area 0
+EDGE-R1(config-router)# default-information originate always</code></pre>
+<p>OSPF Default از Edge می‌آید و Coreها خودشان Default را یاد می‌گیرند. EDGE-R1 باید مسیر برگشت به سه VLAN را از OSPF یاد بگیرد (Return Path).</p>
+<h2><span class="hn">۳.</span> Verification Matrix</h2>
+<table>
+<tr><th>تست</th><th>دستور</th><th>انتظار</th></tr>
+<tr><td>VLAN/Trunk</td><td>show interfaces trunk</td><td>VLAN 10,20,50 allowed</td></tr>
+<tr><td>Root</td><td>show spanning-tree root</td><td>Core-1 root</td></tr>
+<tr><td>HSRP</td><td>show standby brief</td><td>Core-1 Active هر سه VLAN</td></tr>
+<tr><td>OSPF</td><td>show ip ospf neighbor</td><td>FULL با Edge و (اگر طراحی کردید) بین Coreها</td></tr>
+<tr><td>Route</td><td>show ip route ospf</td><td>Default و Routeهای VLAN روی Edge</td></tr>
+<tr><td>End-to-end</td><td>PC ping 8.8.8.8</td><td>موفق</td></tr>
+<tr><td>Return Path</td><td>EDGE-R1# ping 10.10.20.11 source 8.8.8.8</td><td>موفق</td></tr>
+</table>
+<h2><span class="hn">۴.</span> آزمون Failover</h2>
+<p>۳ آزمایش، هرکدام را ثبت کنید:</p>
+<ol>
+<li>Core-1 را خاموش کنید: HSRP به Core-2 می‌رود؛ ping پایدار می‌ماند.</li>
+<li>لینک Core-1 به Edge را قطع کنید: OSPF مسیر را از Core-2 می‌گیرد.</li>
+<li>لینک ACC به Core-1 را قطع کنید: Rapid-PVST به مسیر جایگزین می‌رود.</li>
+</ol>
+<pre><code>Measure: lost packets and seconds to recover for each test.
+Typical: HSRP ~10 s (tunable), OSPF dead 40 s (tunable), RSTP ~1-2 s</code></pre>
+<div class="box"><b class="t">Asymmetric Routing</b>چون دو Core و دو لینک به Edge داریم، ممکن است رفت از Core-1 و برگشت از Core-2 باشد. در Lab ساده بی‌اثر است، ولی وقتی FortiGate Stateful بیاید (W9/W10) باید مسیرها را متقارن کنید؛ ریسکی که در طراحی نوشته‌ایم.</div>
+<div class="box"><b class="t">صادقانه درباره‌ی Lab</b>چند قابلیت (EtherChannel و برخی امنیت‌های L2) روی vIOSL2 ممکن است فقط پذیرفته شوند. اگر Po1 بالا نیامد، یک لینک عادی Trunk بگذارید و محدودیت را ثبت کنید. SVI، HSRP و OSPF روی این Imageها طبق Probe و درس‌های قبل قابل‌اجراست.</div>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): Gateway هر VLAN در Lab A کدام آدرس است؟</summary><pre><code>The HSRP virtual IP (10.10.x.254).</code></pre>
+</details>
+<details><summary>۲ (ساده): چرا لینک Core به Edge Routed است؟</summary><pre><code>To avoid layer-2 loops and use routing (OSPF) with ECMP between the two cores.</code></pre>
+</details>
+<details><summary>۳ (متوسط): Return Path برای 8.8.8.8 به VLAN 20 چطور ساخته می‌شود؟</summary><pre><code>OSPF advertises the VLAN subnets from the cores to EDGE-R1.</code></pre>
+</details>
+<details><summary>۴ (سخت): چه خطری در Dual Core + Dual Link برای فایروال Stateful هست؟</summary><pre><code>Asymmetric routing: forward and return paths differ, and the stateful firewall drops the unmatched return.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>همه‌ی گام‌های بخش ۲ را اجرا کنید، بعد ماتریس Verification و سه آزمون Failover. از هر مرحله بکاپ بگیرید:</p>
+<pre><code>Rx# copy running-config flash:Rx-labA-final.cfg</code></pre>
+<p>خروجی‌ها (بدون رمز) را در <code>03-ops/labA-as-built.md</code> ذخیره کنید.</p>
+
+<h2>Lab مستقل</h2>
+<p>نمودار Packet Flow برای «PC به 8.8.8.8» و «8.8.8.8 به PC» را روی کاغذ بکشید و با Capture صحت را تأیید کنید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>PC به 8.8.8.8 نمی‌رسد</td></tr>
+<tr><th>روش</th><td>از PC شروع کنید: Gateway ← Core Active ← OSPF ← Edge ← برگشت</td></tr>
+<tr><th>چک‌لیست</th><td>۱) VIP؟<br>۲) Default روی Core؟<br>۳) Edge مسیر برگشت دارد؟<br>۴) HSRP Active درست؟<br>۵) Trunk/Allowed</td></tr>
+<tr><th>ابزار</th><td>show standby brief ، show ip route ، traceroute</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>چرا Lab A و Capstone جدا هستند؟</summary><p>Lab A Gateway روی Cisco است؛ Capstone Gateway روی FortiGate تا Policy و Log در یک نقطه باشد.</p></details>
+<details><summary>Return Path چیست؟</summary><p>مسیر برگشت پاسخ؛ بدون آن ارتباط دوطرفه نمی‌شود.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>The core switches act as the default gateway for all VLANs.</td><td>سوییچ‌های Core Gateway پیش‌فرض همه‌ی VLANها هستند.</td></tr>
+<tr><td>OSPF advertises the VLAN subnets to the edge router.</td><td>OSPF زیرشبکه‌های VLAN را به روتر Edge اعلام می‌کند.</td></tr>
+<tr><td>Verify the return path from the edge router.</td><td>مسیر برگشت را از روتر Edge تأیید کنید.</td></tr>
+<tr><td>Asymmetric routing can break stateful firewalls.</td><td>مسیریابی نامتقارن می‌تواند فایروال‌های Stateful را مختل کند.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why must there be exactly one gateway per VLAN?</summary><p>Two gateways cause duplicate IPs/MACs and inconsistent forwarding.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ Lab A را کامل بسازم.</li>
+<li>☐ ماتریس Verification را پر کنم.</li>
+<li>☐ سه Failover را ثبت کنم و As-Built را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w6-6': {
+      sub: "پنج TS و آزمون G3.",
+      html: `
+<div class="meta"><span class="tag">هفته ۶ - روز ۶</span><span class="tag">پیش‌نیاز: درس‌های ۶-۱ تا ۶-۵</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> عیب‌یابی سناریوهای Routing و FHRP (TS15 تا TS18 و TS09) با روش Hop به Hop، و آزمون عملی Gate G3.</p>
+<p><b>چرا لازم است:</b> بعد از ساخت Lab A، مهارت اصلی «پیدا کردن خرابی» است. G3 تضمین می‌کند Routing و HSRP را عملی و با مدرک اثبات می‌کنید.</p>
+<ul>
+<li><b>در کار روزانه:</b> سناریوی «بعضی VLANها قطع‌اند» همین الگو را دارد.</li>
+<li><b>در امنیت:</b> RCA مکتوب مستندات حسابرسی است.</li>
+<li><b>در مصاحبه:</b> سناریو و گزارش RCA سؤال تکراری هستند.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>روش Hop به Hop ← پنج خرابی ← Lab عیب‌یابی ← Gate G3.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>TS</td><td>Troubleshooting Scenario</td><td>سناریوی عیب‌یابی</td></tr>
+<tr><td>RCA</td><td>Root Cause Analysis</td><td>تحلیل علت ریشه‌ای</td></tr>
+<tr><td>Black hole</td><td>Black hole</td><td>سیاه‌چاله؛ ترافیک بی‌پاسخ</td></tr>
+<tr><td>Flap</td><td>Flapping</td><td>قطع و وصل مکرر</td></tr>
+<tr><td>G3</td><td>Gate 3</td><td>آزمون عملی پایان هفته ۶</td></tr>
+<tr><td>As-Built</td><td>As-Built</td><td>مستند وضعیت نهایی</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> روش Hop به Hop</h2>
+<ol>
+<li>مبدأ و مقصد دقیق را مشخص کنید.</li>
+<li>از مبدأ به Gateway: HSRP و VLAN.</li>
+<li>Gateway تا Edge: OSPF و Route.</li>
+<li>Edge تا مقصد.</li>
+<li>مسیر برگشت را جدا بررسی کنید.</li>
+</ol>
+<p>در هر Hop یک سؤال: «این روتر Route دارد؟ بسته را به کجا می‌دهد؟ برگشت چطور؟»</p>
+<h2><span class="hn">۲.</span> پنج سناریو</h2>
+<h3>TS15: Route برگشت نبود</h3>
+<pre><code>Symptom : PC reaches the Edge hop but not 8.8.8.8 replies
+Evidence: EDGE-R1 has no route to 10.10.20.0/24 (not advertised)
+Fix     : add network statement or static route on Edge
+Verify  : ping from Edge to the VLAN IP works</code></pre>
+<h3>TS16: OSPF Adjacency (Hello/MTU/Area)</h3>
+<pre><code>Symptom : no neighbor between Core and Edge
+Evidence: show ip ospf interface -> hello/area mismatch
+Fix     : align the parameters</code></pre>
+<h3>TS17: دو Gateway (HSRP) یا Preempt خاموش</h3>
+<pre><code>Symptom : after recovery, old core does not become Active again
+Cause   : preempt not enabled
+Fix     : standby &lt;grp> preempt</code></pre>
+<h3>TS18: Track فراموش‌شده (Black hole)</h3>
+<pre><code>Symptom : Core-1 is Active but its uplink is down -> traffic lost
+Fix     : track the uplink and decrement priority</code></pre>
+<h3>TS09: SVI Down/Down</h3>
+<pre><code>Symptom : Vlan interface down/down -> gateway unreachable
+Cause   : VLAN has no active port
+Fix     : bring a port up in the VLAN / allow it on a trunk</code></pre>
+<h2><span class="hn">۳.</span> آزمون Gate G3 (پایان هفته ۶)</h2>
+<p>با مدرک و بدون نگاه به درس:</p>
+<table>
+<tr><th>#</th><th>وظیفه</th><th>مدرک</th></tr>
+<tr><td>۱</td><td>OSPF سه روتر (تک Area) + DR/BDR توضیح</td><td>show ip ospf neighbor</td></tr>
+<tr><td>۲</td><td>دو Area با ABR و خلاصه‌سازی</td><td>show ip route (O IA)</td></tr>
+<tr><td>۳</td><td>OSPFv3 دو روتر (Dual-Stack)</td><td>show ipv6 ospf neighbor</td></tr>
+<tr><td>۴</td><td>HSRP + Preempt + Track و Failover</td><td>show standby brief + اندازه‌گیری</td></tr>
+<tr><td>۵</td><td>Lab A کامل (ping تا 8.8.8.8 و برگشت)</td><td>As-Built</td></tr>
+<tr><td>۶</td><td>سه TS با RCA از TS15 تا TS18/TS09</td><td>گزارش</td></tr>
+<tr><td>۷</td><td>Packet Flow رفت و برگشت Lab A</td><td>نمودار + Capture</td></tr>
+</table>
+<p><b>معیار قبولی:</b> حداقل ۶ از ۷ مورد با مدرک. وقتی تمام شد بگویید «G3 انجام شد».</p>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): اولین قدم عیب‌یابی؟</summary><pre><code>Define the exact source and destination, then check hop by hop.</code></pre>
+</details>
+<details><summary>۲ (ساده): Black hole یعنی چه؟</summary><pre><code>Traffic is accepted by a device but silently dropped/has no valid path.</code></pre>
+</details>
+<details><summary>۳ (متوسط): HSRP Active است ولی Uplink قطع؛ راه‌حل؟</summary><pre><code>Track the uplink and decrement priority.</code></pre>
+</details>
+<details><summary>۴ (سخت): چرا مسیر نامتقارن با فایروال Stateful مشکل می‌سازد؟</summary><pre><code>The firewall sees only one direction of a flow, no state entry exists, and drops the other direction.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>در Lab A پنج خرابی را به ترتیب بسازید و رفع کنید؛ برای هر مورد Symptom، Evidence، Fix، Verify و RCA بنویسید.</p>
+<ol>
+<li>Route برگشت را از Edge حذف کنید.</li>
+<li>Hello interval یک سمت OSPF را تغییر دهید.</li>
+<li>Preempt را از Core-1 حذف کنید و Failover/Failback را ببینید.</li>
+<li>لینک Uplink را قطع کنید بدون Track.</li>
+<li>همه‌ی پورت‌های یک VLAN را shutdown کنید و SVI را ببینید.</li>
+</ol>
+
+<h2>Lab مستقل</h2>
+<p>گزارش RCA پنج‌گانه را در <code>03-ops/rca-w6.md</code> بنویسید و Gate G3 را کامل کنید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>بعد از تغییر، بخشی از شبکه قطع شد</td></tr>
+<tr><th>روش</th><td>Hop به Hop + مقایسه با As-Built</td></tr>
+<tr><th>ابزار</th><td>show standby brief ، show ip ospf neighbor ، show ip route</td></tr>
+<tr><th>پیشگیری</th><td>بکاپ، تغییر مرحله‌ای و reload in</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>چرا Hop به Hop؟</summary><p>تا نقطه‌ی دقیق خرابی بدون حدس پیدا شود.</p></details>
+<details><summary>چرا As-Built لازم است؟</summary><p>مرجع مقایسه برای عیب‌یابی و Rollback.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Troubleshoot hop by hop, starting from the source.</td><td>عیب‌یابی را Hop به Hop و از مبدأ شروع کنید.</td></tr>
+<tr><td>The standby router did not take over because preempt was disabled.</td><td>Standby چون Preempt خاموش بود نقش را نگرفت.</td></tr>
+<tr><td>Document each failure as an RCA.</td><td>هر خرابی را به‌صورت RCA مستند کنید.</td></tr>
+<tr><td>Gate three covers routing and gateway redundancy.</td><td>Gate سوم Routing و پشتیبان Gateway را پوشش می‌دهد.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What is the first thing to define when troubleshooting a connectivity issue?</summary><p>The exact source and destination of the failing traffic.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ پنج TS را با RCA ثبت کنم.</li>
+<li>☐ Gate G3 را کامل کنم.</li>
+<li>☐ As-Built را به‌روز کنم.</li>
 </ul>
 <h2>یادآوری اشتباهات شما</h2>
 <div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
