@@ -149,7 +149,7 @@ summary{cursor:pointer;font-weight:600}
      ===================================================================== -->
 <script id="course-data">
 window.COURSE = {
-  version: "0.7 (هفته ۱ تا ۳)",
+  version: "0.8 (هفته ۱ تا ۴)",
   updated: "2026-11-07",
   modules: [
     {id:"m0", title:"شروع و راهنما", lessons:[
@@ -176,7 +176,13 @@ window.COURSE = {
       {id:"w3-4", title:"درس ۳-۴: Router-on-a-Stick", ready:true},
       {id:"w3-5", title:"درس ۳-۵: SVI و سوییچ لایه ۳", ready:true},
       {id:"w3-6", title:"درس ۳-۶: عیب‌یابی و آزمون هفته", ready:true},
-      {id:"w4", title:"هفته ۴: STP، EtherChannel، امنیت L2", ready:false}
+      {id:"w4", title:"هفته ۴ — نقشه درس‌ها", ready:true},
+      {id:"w4-1", title:"درس ۴-۱: حلقه در لایه ۲ و STP", ready:true},
+      {id:"w4-2", title:"درس ۴-۲: Rapid-PVST، Root، PortFast و BPDU Guard", ready:true},
+      {id:"w4-3", title:"درس ۴-۳: EtherChannel و LACP", ready:true},
+      {id:"w4-4", title:"درس ۴-۴: Port Security", ready:true},
+      {id:"w4-5", title:"درس ۴-۵: DHCP، Snooping و DAI", ready:true},
+      {id:"w4-6", title:"درس ۴-۶: طراحی سه‌لایه و آزمون Gate G2", ready:true}
     ]},
     {id:"p3", title:"فاز ۳ — Routing (هفته ۵–۶)", lessons:[
       {id:"w5", title:"هفته ۵: Static و OSPFv2", ready:false},
@@ -2838,6 +2844,1032 @@ PNetLab VM: eth1 -&gt; pnet0 (192.168.88.199)   eth0 -&gt; pnet1 (لوله ای�
 <div class="box review"><b class="t">یادآوری ۳</b>نام <code>ethX</code> ≠ شماره Adapter؛ از MAC استفاده کنید.</div>
 <div class="box review"><b class="t">یادآوری ۴</b>فرمان‌ها را جدا بزنید؛ چسباندن چند خط بدون Enter باعث خطا می‌شود. جایگذاری <code>&lt;ID&gt;</code> یعنی عدد واقعی.</div>
 <p>فهرست کامل در صفحه «مرور دوره‌ای».</p>
+`
+    },
+
+    w4: {
+      sub: "نقشه هفته ۴: Switching II.",
+      html: `
+<div class="meta"><span class="tag">هفته ۴</span><span class="tag">۶ درس</span><span class="tag">Gate G2 پایان هفته</span></div>
+<p>هفته ۳ را با آزمون کوچک تمام کردید. این هفته سوییچینگ را کامل می‌کنیم: جلوگیری از Loop، تجمیع لینک، و امنیت لایه ۲. در پایان، آزمون رسمی Gate G2 را می‌دهید.</p>
+<table>
+<tr><th>درس</th><th>موضوع</th><th>خروجی که باید بتوانید</th></tr>
+<tr><td>4-1</td><td>حلقه در لایه ۲ و STP</td><td>Root و نقش پورت‌ها را برای یک مثلث پیدا کنید</td></tr>
+<tr><td>4-2</td><td>Rapid-PVST، Root، PortFast، BPDU Guard</td><td>Root را عمداً تعیین و پورت‌ها را محافظت کنید</td></tr>
+<tr><td>4-3</td><td>EtherChannel و LACP</td><td>دو لینک را یکی کنید و Mismatch را رفع کنید</td></tr>
+<tr><td>4-4</td><td>Port Security</td><td>MACهای مجاز را محدود و تخلف را مدیریت کنید</td></tr>
+<tr><td>4-5</td><td>DHCP، Snooping و DAI</td><td>سرور جعلی و جعل ARP را مهار کنید</td></tr>
+<tr><td>4-6</td><td>طراحی سه‌لایه و Gate G2</td><td>HLD شعبه و آزمون عملی</td></tr>
+</table>
+<div class="box"><b class="t">نیازمندی Lab</b>مثلث سه سوییچی SW1-SW2-SW3 با VLANهای هفته ۳. چند قابلیت (Port Security، Snooping، DAI) در vIOSL2 فقط «پذیرفته» می‌شوند؛ نتیجه‌ی واقعی را ثبت کنید.</div>
+`
+    },
+    'w4-1': {
+      sub: "Loop، BPDU، Root Bridge، نقش و حالت پورت‌ها.",
+      html: `
+<div class="meta"><span class="tag">هفته ۴ - روز ۱</span><span class="tag">پیش‌نیاز: هفته ۳</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> چرا یک «حلقه» (<span class="en">Loop</span>) در لایه ۲ شبکه را در چند ثانیه از کار می‌اندازد، و پروتکل <span class="en">STP</span> چطور با «بستن» بعضی پورت‌ها جلوی آن را می‌گیرد.</p>
+<p><b>چرا لازم است:</b> در لایه ۲ بسته‌ها TTL ندارند. اگر دو سوییچ با دو کابل به هم وصل شوند، یک Broadcast تا ابد بین آن‌ها می‌چرخد و هر دور بیشتر می‌شود (طوفان Broadcast). بدون STP، یک کابل اضافه که اشتباهاً وصل شود کل شعبه را قطع می‌کند.</p>
+<ul>
+<li><b>در کار روزانه:</b> هر شبکه‌ی سازمانی لینک‌های اضافه (Redundant) دارد و باید بدون Loop باشد.</li>
+<li><b>در امنیت:</b> مهاجم می‌تواند با BPDU جعلی خود را Root کند و ترافیک را از خودش عبور دهد.</li>
+<li><b>در عیب‌یابی:</b> پیام MACFLAP و CPU ۱۰۰٪ سوییچ نشانه‌ی کلاسیک Loop است.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>مشکل Loop ← ایده‌ی STP ← BPDU و Root Bridge ← نقش و حالت پورت‌ها ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>STP</td><td>Spanning Tree Protocol</td><td>پروتکل درخت پوشا؛ جلوگیری از Loop در لایه ۲</td></tr>
+<tr><td>BPDU</td><td>Bridge Protocol Data Unit</td><td>پیام کنترلی که سوییچ‌ها برای STP رد و بدل می‌کنند</td></tr>
+<tr><td>Root Bridge</td><td>Root Bridge</td><td>سوییچ مرجع (ریشه‌ی درخت)</td></tr>
+<tr><td>Bridge ID</td><td>Bridge Identifier</td><td>اولویت + MAC؛ کوچک‌تر برنده است</td></tr>
+<tr><td>Root Port</td><td>Root Port</td><td>پورتی که بهترین مسیر به Root را دارد</td></tr>
+<tr><td>Designated Port</td><td>Designated Port</td><td>پورت فعال روی هر Segment که به Root نزدیک‌تر است</td></tr>
+<tr><td>Blocking</td><td>Blocking state</td><td>پورت بسته برای جلوگیری از Loop</td></tr>
+<tr><td>Path Cost</td><td>Path Cost</td><td>هزینه‌ی مسیر بر اساس سرعت لینک</td></tr>
+<tr><td>Storm</td><td>Broadcast Storm</td><td>طوفان Broadcast ناشی از Loop</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> مشکل: لینک اضافه یعنی Loop</h2>
+<p>برای اینکه با خراب‌شدن یک کابل شبکه قطع نشود، بین سوییچ‌ها لینک اضافه (Redundancy) می‌کشیم. اما در اترنت، فریم Broadcast از همه‌ی پورت‌ها به‌جز ورودی پخش می‌شود. اگر مسیر حلقه‌ای وجود داشته باشد، فریم بارها و بارها می‌چرخد.</p>
+<p>مثال روزمره: یک چهارراه با خیابان‌های دایره‌ای که ماشین‌ها هیچ‌وقت خارج نمی‌شوند و هر دقیقه ماشین‌های بیشتری وارد می‌شود؛ خیلی زود کل شهر قفل می‌شود.</p>
+<figure class="fig"><svg viewBox="0 0 720 260" role="img" aria-label="topology"><path d="M115 60 L605 60" class="rq"/><text x="360" y="54" text-anchor="middle" class="cap">link 1</text><path d="M605 60 L360 200" class="rq"/><text x="482" y="124" text-anchor="middle" class="cap">link 2</text><path d="M115 60 L360 200" class="rq"/><text x="237" y="124" text-anchor="middle" class="cap">link 3</text><rect x="40" y="30" width="150" height="60" rx="8" class="bx"/><text x="115" y="58" text-anchor="middle">SW-A</text><text x="115" y="74" text-anchor="middle" class="cap">priority 32768</text><rect x="530" y="30" width="150" height="60" rx="8" class="bx"/><text x="605" y="58" text-anchor="middle">SW-B</text><text x="605" y="74" text-anchor="middle" class="cap">priority 32768</text><rect x="285" y="170" width="150" height="60" rx="8" class="bx"/><text x="360" y="198" text-anchor="middle">SW-C</text><text x="360" y="214" text-anchor="middle" class="cap">priority 32768</text></svg><figcaption>شکل ۱: سه سوییچ با سه لینک؛ مثلثی که اگر STP نباشد Loop می‌سازد.</figcaption></figure>
+<figure class="fig"><svg viewBox="0 0 720 260" role="img" aria-label="sequence"><rect x="25" y="10" width="130" height="34" rx="8" class="bx"/><text x="90" y="32" text-anchor="middle">Host A</text><path d="M90 44 V254" class="ln" stroke-dasharray="4 4"/><rect x="205" y="10" width="130" height="34" rx="8" class="bx"/><text x="270" y="32" text-anchor="middle">SW-A</text><path d="M270 44 V254" class="ln" stroke-dasharray="4 4"/><rect x="385" y="10" width="130" height="34" rx="8" class="bx"/><text x="450" y="32" text-anchor="middle">SW-B</text><path d="M450 44 V254" class="ln" stroke-dasharray="4 4"/><rect x="565" y="10" width="130" height="34" rx="8" class="bx"/><text x="630" y="32" text-anchor="middle">SW-C</text><path d="M630 44 V254" class="ln" stroke-dasharray="4 4"/><path d="M90 75 H270" class="rq"/><path d="M262 70 l8 5 l-8 5" class="rq"/><text x="180" y="67" text-anchor="middle" class="cap">broadcast frame</text><path d="M270 113 H450" class="rq"/><path d="M442 108 l8 5 l-8 5" class="rq"/><text x="360" y="105" text-anchor="middle" class="cap">flood</text><path d="M450 151 H630" class="rq"/><path d="M622 146 l8 5 l-8 5" class="rq"/><text x="540" y="143" text-anchor="middle" class="cap">flood</text><path d="M630 189 H270" class="rq"/><path d="M278 184 l-8 5 l8 5" class="rq"/><text x="450" y="181" text-anchor="middle" class="cap">flood again</text><path d="M270 227 H450" class="rq"/><path d="M442 222 l8 5 l-8 5" class="rq"/><text x="360" y="219" text-anchor="middle" class="cap">... forever (loop)</text></svg><figcaption>شکل ۲: یک Broadcast بین سوییچ‌ها می‌چرخد و هیچ‌وقت تمام نمی‌شود.</figcaption></figure>
+<h3>سه عارضه‌ی Loop</h3>
+<ol>
+<li><b>Broadcast Storm:</b> ترافیک تکراری پهنای باند را کامل مصرف می‌کند.</li>
+<li><b>MAC Table Instability:</b> یک MAC مدام بین دو پورت پرش می‌کند (MACFLAP).</li>
+<li><b>CPU بالا:</b> سوییچ مجبور است همین فریم‌ها را پردازش کند و دیگر جواب نمی‌دهد.</li>
+</ol>
+<h2><span class="hn">۲.</span> ایده‌ی STP: یک درخت، بدون حلقه</h2>
+<p>STP از روی گراف شبکه یک «درخت» می‌سازد: یک ریشه (Root) انتخاب می‌کند و برای هر سوییچ فقط یک مسیر فعال به ریشه نگه می‌دارد. لینک‌های اضافه به‌صورت Blocking در حالت آماده‌باش می‌مانند و اگر لینک اصلی خراب شد، فعال می‌شوند.</p>
+<h3>مراحل کار STP (سه تصمیم)</h3>
+<ol>
+<li><b>انتخاب Root Bridge:</b> سوییچی با کوچک‌ترین Bridge ID برنده است.</li>
+<li><b>انتخاب Root Port:</b> هر سوییچ غیر Root، پورتی را انتخاب می‌کند که کمترین هزینه تا Root را دارد.</li>
+<li><b>انتخاب Designated Port:</b> روی هر Segment، پورتی که به Root نزدیک‌تر است فعال می‌ماند؛ پورت‌های باقی‌مانده Blocking می‌شوند.</li>
+</ol>
+<h3>Bridge ID چیست؟</h3>
+<p>Bridge ID از دو بخش ساخته می‌شود: اولویت (Priority) و MAC سوییچ. اولویت پیش‌فرض ۳۲۷۶۸ است. در PVST+ برای هر VLAN یک نمونه از STP اجرا می‌شود و شماره‌ی VLAN به اولویت اضافه می‌شود:</p>
+<pre><code>Bridge ID = Priority + VLAN ID + MAC address
+Example (VLAN 10): 32768 + 10 = 32778 , MAC 0001.aaaa.0001
+Lowest Bridge ID wins the Root election</code></pre>
+<p>اگر اولویت‌ها برابر بود، MAC کوچک‌تر برنده است. چون MAC معمولاً به سن سوییچ بستگی دارد، سوییچ «قدیمی‌ترین» ممکن است Root شود؛ همین یک اشتباه رایج طراحی است. باید Root را عمداً انتخاب کنیم (درس ۴-۲).</p>
+<h3>هزینه‌ی مسیر (Path Cost)</h3>
+<p>سوییچ‌ها هزینه‌ی مسیر تا Root را با جمع‌کردن هزینه‌ی لینک‌ها حساب می‌کنند. لینک سریع‌تر هزینه‌ی کمتر دارد:</p>
+<table>
+<tr><th>سرعت لینک</th><th>هزینه (روش کوتاه، Short)</th><th>هزینه (روش بلند، Long)</th></tr>
+<tr><td>10 Mbps</td><td>100</td><td>2,000,000</td></tr>
+<tr><td>100 Mbps</td><td>19</td><td>200,000</td></tr>
+<tr><td>1 Gbps</td><td>4</td><td>20,000</td></tr>
+<tr><td>10 Gbps</td><td>2</td><td>2,000</td></tr>
+</table>
+<h3>حالت‌ها و نقش پورت‌ها</h3>
+<table>
+<tr><th>STP کلاسیک (802.1D)</th><th>کار پورت</th></tr>
+<tr><td>Blocking</td><td>فریم داده نمی‌فرستد، فقط BPDU می‌شنود</td></tr>
+<tr><td>Listening</td><td>BPDU می‌شنود و پردازش می‌کند، MAC یاد نمی‌گیرد</td></tr>
+<tr><td>Learning</td><td>MAC یاد می‌گیرد، هنوز داده نمی‌فرستد</td></tr>
+<tr><td>Forwarding</td><td>کار عادی</td></tr>
+<tr><td>Disabled</td><td>خاموش</td></tr>
+</table>
+<p>در STP کلاسیک، تا Forwarding شدن یک پورت ۳۰ تا ۵۰ ثانیه طول می‌کشد. این تأخیر در شبکه‌ی امروز قابل‌قبول نیست؛ پس از RSTP استفاده می‌کنیم (درس بعد).</p>
+<pre><code>Blocking (20 s max age) -> Listening (15 s) -> Learning (15 s) -> Forwarding
+Worst-case convergence = 20 + 15 + 15 = 50 seconds</code></pre>
+<h2><span class="hn">۳.</span> مثال ساده: دو سوییچ، دو لینک</h2>
+<p>SW-A و SW-B با دو کابل به هم وصل‌اند. هر دو با اولویت ۳۲۷۶۸. MAC سوییچ A کوچک‌تر است.</p>
+<pre><code>Election: priority equal (32768) -> lower MAC wins
+Root Bridge = SW-A
+On SW-B: both uplinks lead to Root with the same cost
+  -> choose the lower port ID (Gi0/1) as Root Port
+  -> Gi0/2 becomes Blocking (Alternate)</code></pre>
+<h2><span class="hn">۴.</span> مثال متوسط: سه سوییچ، مثلث</h2>
+<pre><code>Bridge IDs: SW-A 32769.0001.aaaa.0001 (VLAN1)
+            SW-B 32769.0001.aaaa.0002
+            SW-C 32769.0001.aaaa.0003
+Root Bridge = SW-A (lowest MAC)
+
+SW-B -> Root: direct link, cost 4 (1G)          -> Root Port = link A-B
+SW-C -> Root: direct link, cost 4 (1G)          -> Root Port = link A-C
+Segment B-C: both sides cost 4 to Root; tie -> lower Bridge ID
+  SW-B has lower ID than SW-C -> SW-B port is Designated (Forwarding)
+  SW-C port on B-C is Alternate (Blocking)</code></pre>
+<p>نتیجه: فقط پورت SW-C سمت لینک B-C بسته می‌شود؛ مثلث به یک درخت (A در ریشه، B و C فرزند) تبدیل شد.</p>
+<h2><span class="hn">۵.</span> مثال سخت: چرا Root اشتباه خطرناک است؟</h2>
+<p>در یک شعبه، یک سوییچ قدیمی دسترسی در انتهای شبکه، چون MAC کوچک دارد، Root می‌شود. حالا همه‌ی ترافیک بین سرورها و کاربران از لینک ۱۰۰ مگابیتی آن سوییچ عبور می‌کند.</p>
+<pre><code>Symptom  : network slow, traffic path goes through an old access switch
+Check    : show spanning-tree vlan 10  -> "This bridge is the root" on the wrong switch
+Cause    : default priority + lowest MAC
+Fix      : set core switch priority lower (e.g. 4096) or "root primary"</code></pre>
+<h2><span class="hn">۶.</span> دستورهای مشاهده</h2>
+<pre><code>SW1# show spanning-tree
+SW1# show spanning-tree vlan 10
+SW1# show spanning-tree summary
+SW1# show spanning-tree root
+SW1# show spanning-tree interface gi0/1 detail</code></pre>
+<ul>
+<li><code>show spanning-tree vlan 10</code>: Root، Bridge ID خودش، نقش هر پورت (Root/Desg/Altn) و حالت آن.</li>
+<li><code>show spanning-tree root</code>: خلاصه‌ی Root هر VLAN.</li>
+<li><code>show spanning-tree summary</code>: حالت STP و تعداد پورت‌ها به‌تفکیک.</li>
+</ul>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): چرا Loop در لایه ۲ خطرناک‌تر از لایه ۳ است؟</summary><pre><code>Layer-2 frames have no TTL, so they never expire.
+Layer-3 packets have a TTL and are dropped when it reaches 0.</code></pre>
+</details>
+<details><summary>۲ (ساده): Root Bridge را چطور انتخاب می‌کنند؟</summary><pre><code>Lowest Bridge ID = lowest (Priority + VLAN ID), then lowest MAC address.</code></pre>
+</details>
+<details><summary>۳ (متوسط): دو سوییچ با اولویت 32768 و 4096؛ کدام Root است؟</summary><pre><code>The switch with priority 4096 (lower value wins).</code></pre>
+</details>
+<details><summary>۴ (متوسط): هزینه‌ی مسیر سه لینک ۱ گیگ پشت‌سرهم تا Root با روش Short؟</summary><pre><code>Cost = 4 + 4 + 4 = 12</code></pre>
+</details>
+<details><summary>۵ (سخت): در مثلث A (Root)، B، C با لینک‌های 1G، اگر لینک A-C خراب شود، SW-C از کدام مسیر Root را می‌بیند و هزینه چقدر است؟</summary><pre><code>New path: C -> B -> A
+Cost = 4 (C-B) + 4 (B-A) = 8
+The previously blocked port on C (towards B) becomes the Root Port.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>توپولوژی: سه سوییچ vIOSL2 به نام‌های <code>SW1</code>، <code>SW2</code> و <code>SW3</code> که مثلث می‌سازند (SW1-SW2، SW2-SW3، SW1-SW3). همه‌ی لینک‌ها Trunk هستند. اگر SW3 ندارید، یک گره‌ی سوم از همان Image اضافه کنید. <b>هشدار:</b> قبل از وصل‌کردن لینک سوم، STP باید فعال باشد؛ در Lab ما STP پیش‌فرض روشن است ولی همین را با <code>show spanning-tree summary</code> تأیید کنید.</p>
+<h3>گام ۱: بکاپ و حالت STP</h3>
+<pre><code>SW1# copy running-config flash:SW1-before-stp.cfg
+SW1# show spanning-tree summary</code></pre>
+<h3>گام ۲: دیدن Root</h3>
+<pre><code>SW1# show spanning-tree vlan 1
+SW2# show spanning-tree vlan 1
+SW3# show spanning-tree vlan 1</code></pre>
+<p>در سه خروجی، Bridge ID و Root را مقایسه کنید. روی کدام سوییچ نوشته «This bridge is the root»؟ پیش‌بینی کنید چه سوییچی است و بعد بسنجید.</p>
+<h3>گام ۳: پیدا کردن پورت Blocking</h3>
+<pre><code>SWx# show spanning-tree vlan 1 | include Altn|Desg|Root</code></pre>
+<p>یک پورت Altn (Alternate) باید در مثلث پیدا کنید. آن را یادداشت کنید و نقش همه‌ی پورت‌ها را در یک جدول بنویسید.</p>
+<h3>گام ۴: شکستن لینک و دیدن Failover</h3>
+<pre><code>SW2(config)# interface gi0/1
+SW2(config-if)# shutdown
+SW3# show spanning-tree vlan 1</code></pre>
+<p>پورت Alternate چقدر زود Forwarding شد؟ (در Rapid-PVST کمتر از چند ثانیه؛ در PVST کلاسیک ۳۰ تا ۵۰ ثانیه.) بعد پورت را <code>no shutdown</code> کنید.</p>
+
+<h2>Lab مستقل</h2>
+<p>جدول «Bridge ID هر سوییچ، Root، نقش پورت‌ها» را برای VLAN 1 بسازید و در <code>03-ops/stp-baseline.md</code> ذخیره کنید. بدون رمز.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>شبکه ناگهان بسیار کند شد و LEDهای لینک‌ها مدام چشمک می‌زنند</td></tr>
+<tr><th>سرنخ</th><td>CPU بالا، پیام MACFLAP، ترافیک Broadcast زیاد</td></tr>
+<tr><th>چک‌لیست</th><td>۱) show spanning-tree summary<br>۲) آیا کابل جدیدی وصل شده؟<br>۳) آیا STP روی همه‌ی سوییچ‌ها فعال است؟<br>۴) پورت Blocking وجود دارد؟</td></tr>
+<tr><th>رفع</th><td>کابل اضافه را جدا کنید، STP را فعال کنید، سپس علت را مستند کنید</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>چرا لایه ۲ به STP نیاز دارد؟</summary><p>چون فریم TTL ندارد و در صورت وجود حلقه تا ابد می‌چرخد.</p></details>
+<details><summary>Root Bridge چه کسی است؟</summary><p>سوییچی با کوچک‌ترین Bridge ID؛ یعنی کوچک‌ترین اولویت و سپس کوچک‌ترین MAC.</p></details>
+<details><summary>Root Port و Designated Port چه فرقی دارند؟</summary><p>Root Port پورت غیر Root به سمت Root است؛ Designated Port پورت فعال هر Segment به سمت دورتر از Root.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>STP prevents layer-2 loops by blocking redundant links.</td><td>STP با بستن لینک‌های اضافه جلوی Loop لایه ۲ را می‌گیرد.</td></tr>
+<tr><td>The switch with the lowest bridge ID becomes the root bridge.</td><td>سوییچ با کوچک‌ترین Bridge ID Root می‌شود.</td></tr>
+<tr><td>A blocked port still receives BPDUs.</td><td>پورت Blocking هنوز BPDU دریافت می‌کند.</td></tr>
+<tr><td>A broadcast storm can bring down the entire network.</td><td>طوفان Broadcast می‌تواند کل شبکه را از کار بیندازد.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What does STP do with a redundant link?</summary><p>It places one of the ports in a blocking (alternate) state to prevent a loop, and unblocks it if the active link fails.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ سه عارضه‌ی Loop را بگویم.</li>
+<li>☐ Root را برای مثلث به‌دست آورم و نقش پورت‌ها را بنویسم.</li>
+<li>☐ Lab را انجام دهم و Failover را ثبت کنم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w4-2': {
+      sub: "RSTP، تعیین Root، PortFast، BPDU Guard، Root Guard.",
+      html: `
+<div class="meta"><span class="tag">هفته ۴ - روز ۲</span><span class="tag">پیش‌نیاز: درس ۴-۱</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> نسخه‌ی سریع STP یعنی <span class="en">RSTP</span> و پیاده‌سازی سیسکو <span class="en">Rapid-PVST+</span>؛ انتخاب عمدی Root؛ و محافظ‌های <span class="en">PortFast</span> و <span class="en">BPDU Guard</span> و <span class="en">Root Guard</span>.</p>
+<p><b>چرا لازم است:</b> STP کلاسیک تا ۵۰ ثانیه همگرا می‌شود و Root را به‌صورت تصادفی انتخاب می‌کند. در شبکه‌ی واقعی باید همگرایی چند ثانیه‌ای و Root از پیش‌تعیین‌شده داشته باشیم، و باید جلوی اتصال سوییچ یا BPDU ناخواسته به پورت کاربر را بگیریم.</p>
+<ul>
+<li><b>در کار روزانه:</b> تقریباً همه‌ی سوییچ‌های سازمانی Rapid-PVST اجرا می‌کنند.</li>
+<li><b>در امنیت:</b> BPDU Guard جلوی اتصال سوییچ جعلی (Rogue) را می‌گیرد؛ Root Guard جلوی Root شدن سوییچ ناخواسته را.</li>
+<li><b>در عیب‌یابی:</b> پورت err-disabled بعد از وصل‌کردن یک سوییچ، کار BPDU Guard است.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>RSTP چه فرقی دارد ← تنظیم Root ← PortFast ← BPDU Guard و Root Guard ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>RSTP</td><td>Rapid Spanning Tree Protocol (802.1w)</td><td>نسخه‌ی سریع STP</td></tr>
+<tr><td>PVST+</td><td>Per-VLAN Spanning Tree Plus</td><td>یک STP جدا برای هر VLAN (سیسکو)</td></tr>
+<tr><td>Rapid-PVST+</td><td>Rapid Per-VLAN Spanning Tree Plus</td><td>RSTP به‌صورت Per-VLAN</td></tr>
+<tr><td>PortFast</td><td>PortFast</td><td>پورت لبه‌ای که فوراً Forwarding می‌شود</td></tr>
+<tr><td>BPDU Guard</td><td>BPDU Guard</td><td>پورت را با دریافت BPDU خاموش می‌کند</td></tr>
+<tr><td>Root Guard</td><td>Root Guard</td><td>جلوی Root شدن سوییچ ناخواسته از یک پورت را می‌گیرد</td></tr>
+<tr><td>Alternate</td><td>Alternate Port</td><td>پورت جایگزین سریع برای Root Port</td></tr>
+<tr><td>Edge Port</td><td>Edge Port</td><td>پورتی که به دستگاه انتهایی وصل است</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> RSTP چه چیزی را سریع کرد؟</h2>
+<p>RSTP همان ایده‌ی STP است ولی به‌جای انتظار با تایمرها، سوییچ‌ها با هم «مذاکره» می‌کنند (Proposal/Agreement). حالت‌ها هم ساده‌تر شده‌اند:</p>
+<table>
+<tr><th>STP کلاسیک</th><th>RSTP</th></tr>
+<tr><td>Blocking</td><td>Discarding</td></tr>
+<tr><td>Listening</td><td>Discarding</td></tr>
+<tr><td>Learning</td><td>Learning</td></tr>
+<tr><td>Forwarding</td><td>Forwarding</td></tr>
+</table>
+<p>نقش‌ها هم یک نقش جدید دارند:</p>
+<table>
+<tr><th>نقش</th><th>معنی</th></tr>
+<tr><td>Root Port</td><td>بهترین مسیر به Root</td></tr>
+<tr><td>Designated Port</td><td>پورت فعال هر Segment</td></tr>
+<tr><td>Alternate Port</td><td>پشتیبان Root Port (همگرایی در حد ثانیه)</td></tr>
+<tr><td>Backup Port</td><td>پشتیبان Designated Port روی همان Segment</td></tr>
+</table>
+<pre><code>STP  : 30-50 seconds to converge
+RSTP : usually 1-2 seconds (link failure with alternate port)</code></pre>
+<h2><span class="hn">۲.</span> فعال‌کردن Rapid-PVST+</h2>
+<pre><code>SW1(config)# spanning-tree mode rapid-pvst
+SW1# show spanning-tree summary</code></pre>
+<p>در خروجی باید بنویسد <code>Switch is in rapid-pvst mode</code>. این دستور باید روی همه‌ی سوییچ‌ها یکسان زده شود؛ ترکیب حالت‌ها سازگار است ولی همگرایی سریع از دست می‌رود.</p>
+<h2><span class="hn">۳.</span> تعیین عمدی Root</h2>
+<p>دو روش داریم. روش اول Macro است و خودش اولویت را کم می‌کند؛ روش دوم دستی است و دقیق‌تر:</p>
+<pre><code>SW1(config)# spanning-tree vlan 1,10,20,30 root primary
+SW2(config)# spanning-tree vlan 1,10,20,30 root secondary
+
+! manual equivalent:
+SW1(config)# spanning-tree vlan 10 priority 4096
+SW2(config)# spanning-tree vlan 10 priority 8192</code></pre>
+<ul>
+<li><code>root primary</code>: اولویت را به اندازه‌ای کم می‌کند که Root شود (معمولاً 24576 یا کمتر).</li>
+<li><code>root secondary</code>: اولویت 28672 برای نقش Root پشتیبان.</li>
+<li>اولویت باید مضرب 4096 باشد (چون ۱۲ بیت دیگر برای شماره‌ی VLAN رزرو است).</li>
+</ul>
+<pre><code>Priority values allowed: 0, 4096, 8192, ... 61440 (multiples of 4096)
+Default priority : 32768
+Bridge priority in BPDU = Priority + VLAN ID  (e.g. 4096 + 10 = 4106)</code></pre>
+<div class="box"><b class="t">قانون طراحی</b>Root را همیشه روی سوییچ هسته (Core / Distribution) بگذارید و Root پشتیبان را روی هم‌ترازش. هرگز نگذارید یک سوییچ دسترسی Root شود.</div>
+<h2><span class="hn">۴.</span> PortFast: پورت کاربر را سریع بالا بیاور</h2>
+<p>پورتی که به کامپیوتر یا پرینتر وصل است نمی‌تواند Loop بسازد. پس نیازی نیست منتظر مراحل STP بماند. PortFast آن را فوراً Forwarding می‌کند:</p>
+<pre><code>SW1(config)# interface range gi0/1 - 4
+SW1(config-if-range)# switchport mode access
+SW1(config-if-range)# spanning-tree portfast
+
+! or enable globally for all access ports:
+SW1(config)# spanning-tree portfast default</code></pre>
+<div class="box"><b class="t">هشدار</b>PortFast فقط روی پورت‌های دستگاه انتهایی. روی لینک بین سوییچ‌ها خطرناک است، چون ممکن است Loop بسازد. برای همین حتماً با BPDU Guard همراه می‌شود.</div>
+<h2><span class="hn">۵.</span> BPDU Guard: اگر BPDU آمد، پورت را خاموش کن</h2>
+<p>پورت کاربر هرگز نباید BPDU دریافت کند. اگر دریافت کرد، یعنی کسی سوییچ وصل کرده. BPDU Guard پورت را به حالت <span class="en">err-disabled</span> می‌برد:</p>
+<pre><code>SW1(config)# interface gi0/1
+SW1(config-if)# spanning-tree bpduguard enable
+
+! global default for PortFast ports:
+SW1(config)# spanning-tree portfast bpduguard default
+
+! recovery (optional, careful):
+SW1(config)# errdisable recovery cause bpduguard
+SW1(config)# errdisable recovery interval 300</code></pre>
+<pre><code>SW1# show interfaces status err-disabled
+SW1# show spanning-tree summary
+SW1# show spanning-tree interface gi0/1 detail</code></pre>
+<p>بعد از رفع علت، پورت را دستی روشن کنید: <code>shutdown</code> سپس <code>no shutdown</code>. اگر <code>errdisable recovery</code> تنظیم شده باشد، بعد از ۳۰۰ ثانیه خودکار برمی‌گردد (ولی اگر علت هنوز هست، دوباره خاموش می‌شود).</p>
+<h2><span class="hn">۶.</span> Root Guard: جلوی Root ناخواسته</h2>
+<p>روی پورت‌هایی که به سمت سوییچ‌های «مشتری» یا بیرون از کنترل شما می‌روند، اگر BPDU بهتر (ادعای Root) رسید، پورت وارد حالت <code>root-inconsistent</code> می‌شود و ترافیک را نمی‌پذیرد:</p>
+<pre><code>SW1(config)# interface gi0/10
+SW1(config-if)# spanning-tree guard root
+SW1# show spanning-tree inconsistentports</code></pre>
+<table>
+<tr><th>ابزار</th><th>روی کدام پورت</th><th>عکس‌العمل</th></tr>
+<tr><td>PortFast</td><td>پورت دستگاه انتهایی</td><td>فوراً Forwarding</td></tr>
+<tr><td>BPDU Guard</td><td>پورت دستگاه انتهایی</td><td>err-disabled با دریافت BPDU</td></tr>
+<tr><td>Root Guard</td><td>پورت به سمت خارج از کنترل شما</td><td>root-inconsistent با BPDU برتر</td></tr>
+</table>
+<h2><span class="hn">۷.</span> مثال ساده/متوسط/سخت</h2>
+<h3>ساده</h3>
+<pre><code>Task  : make SW1 the root for VLAN 10
+Cmd   : spanning-tree vlan 10 root primary
+Verify: show spanning-tree vlan 10  -> "This bridge is the root"</code></pre>
+<h3>متوسط</h3>
+<p>کاربری یک سوییچ کوچک خانگی را به پورت دیوار وصل می‌کند. بدون BPDU Guard ممکن است Loop بسازد یا Root شود؛ با BPDU Guard پورت خاموش می‌شود:</p>
+<pre><code>Log: %SPANTREE-2-BLOCK_BPDUGUARD: Received BPDU on port Gi0/3 with BPDU Guard enabled
+Show: show interfaces status err-disabled -> Gi0/3 err-disabled bpduguard</code></pre>
+<h3>سخت</h3>
+<p>در شبکه‌ی ۳ سوییچی، Root را روی SW1 و Root پشتیبان را روی SW2 بگذارید، روی پورت‌های دسترسی SW3 PortFast و BPDU Guard فعال کنید، روی پورت اتصال به شبکه‌ی خارجی Root Guard؛ سپس نشان دهید با قطع SW1 همگرایی کمتر از چند ثانیه است.</p>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): چرا RSTP سریع‌تر است؟</summary><pre><code>Switches negotiate (proposal/agreement) instead of waiting for timers; alternate ports are ready.</code></pre>
+</details>
+<details><summary>۲ (ساده): اولویت‌های مجاز؟</summary><pre><code>Multiples of 4096 (0, 4096, 8192, ... 61440). Default 32768.</code></pre>
+</details>
+<details><summary>۳ (متوسط): PortFast بدون BPDU Guard چه خطری دارد؟</summary><pre><code>A switch plugged into a PortFast port can create a loop before STP reacts; BPDU Guard shuts the port.</code></pre>
+</details>
+<details><summary>۴ (متوسط): پورت err-disabled شد؛ مراحل رفع؟</summary><pre><code>1) show interfaces status err-disabled
+2) remove the cause (rogue switch)
+3) shutdown, then no shutdown
+4) verify</code></pre>
+</details>
+<details><summary>۵ (سخت): Root Guard را روی کدام پورت‌ها می‌گذاریم و چرا؟</summary><pre><code>On ports that face switches you do not control (customer/edge); a superior BPDU there puts the port in root-inconsistent state so no foreign switch becomes root.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>همان مثلث SW1-SW2-SW3 از درس قبل. SW1 باید Root باشد.</p>
+<h3>گام ۱: Rapid-PVST روی هر سه</h3>
+<pre><code>SWx(config)# spanning-tree mode rapid-pvst
+SWx# show spanning-tree summary</code></pre>
+<h3>گام ۲: Root و Root پشتیبان</h3>
+<pre><code>SW1(config)# spanning-tree vlan 1 root primary
+SW2(config)# spanning-tree vlan 1 root secondary
+SW3# show spanning-tree root</code></pre>
+<h3>گام ۳: PortFast و BPDU Guard روی پورت PC</h3>
+<pre><code>SW3(config)# interface gi0/3
+SW3(config-if)# switchport mode access
+SW3(config-if)# spanning-tree portfast
+SW3(config-if)# spanning-tree bpduguard enable</code></pre>
+<h3>گام ۴: ایجاد عمدی تخلف</h3>
+<p>به پورت Gi0/3 به‌جای PC، یک سوییچ (SW4) وصل کنید. باید پیام BPDU Guard را ببینید:</p>
+<pre><code>SW3# show interfaces status err-disabled
+SW3# show logging | include BPDUGUARD</code></pre>
+<p>اگر شبیه‌ساز BPDU Guard را اجرا نکرد (طبق Probe فقط پذیرفته شده بود)، دقیقاً همان را ثبت کنید و در Lab واقعی تکرار کنید.</p>
+<h3>گام ۵: رفع</h3>
+<pre><code>SW3(config)# interface gi0/3
+SW3(config-if)# shutdown
+SW3(config-if)# no shutdown</code></pre>
+
+<h2>Lab مستقل</h2>
+<p>یک چک‌لیست «Hardening لایه ۲» یک‌صفحه‌ای بنویسید (Rapid-PVST، Root/Secondary، PortFast، BPDU Guard، Root Guard) در <code>03-ops/l2-hardening.md</code>.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>پورت کاربر خاموش شده و کاربر قطع است</td></tr>
+<tr><th>سرنخ</th><td>show interfaces status -> err-disabled</td></tr>
+<tr><th>علت متداول</th><td>BPDU Guard: سوییچ یا دستگاهی که BPDU می‌فرستد به پورت وصل شده</td></tr>
+<tr><th>رفع</th><td>دستگاه را جدا کنید و پورت را بالا بیاورید؛ علت را مستند کنید</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>PortFast برای چه پورتی؟</summary><p>فقط پورت دستگاه انتهایی (PC، پرینتر)، نه لینک بین سوییچ‌ها.</p></details>
+<details><summary>تفاوت BPDU Guard و Root Guard؟</summary><p>BPDU Guard با هر BPDU پورت را خاموش می‌کند؛ Root Guard فقط BPDUهای برتر (ادعای Root) را بلوک می‌کند.</p></details>
+<details><summary>چرا Root را دستی تعیین می‌کنیم؟</summary><p>تا سوییچ قدیمی یا ضعیف تصادفاً Root نشود و مسیر ترافیک قابل‌پیش‌بینی باشد.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Enable PortFast on access ports to skip the listening and learning states.</td><td>PortFast را روی پورت‌های Access فعال کنید تا حالت‌های Listening و Learning رد شوند.</td></tr>
+<tr><td>BPDU Guard puts the port in err-disabled state when a BPDU is received.</td><td>BPDU Guard با دریافت BPDU پورت را به حالت err-disabled می‌برد.</td></tr>
+<tr><td>Set the core switch as the root bridge for all VLANs.</td><td>سوییچ هسته را Root همه‌ی VLANها کنید.</td></tr>
+<tr><td>Root Guard prevents an unauthorized switch from becoming root.</td><td>Root Guard جلوی Root شدن سوییچ غیرمجاز را می‌گیرد.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): When should you not enable PortFast?</summary><p>On trunk or switch-to-switch links, because it can create temporary loops.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ Rapid-PVST و Root را تنظیم و تأیید کنم.</li>
+<li>☐ BPDU Guard را بسازم، تخلف را ببینم و رفع کنم.</li>
+<li>☐ چک‌لیست Hardening L2 را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w4-3': {
+      sub: "تجمیع لینک با LACP و عیب‌یابی Mismatch.",
+      html: `
+<div class="meta"><span class="tag">هفته ۴ - روز ۳</span><span class="tag">پیش‌نیاز: درس ۴-۲</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> چطور چند کابل فیزیکی بین دو سوییچ را به‌صورت یک لینک منطقی (<span class="en">EtherChannel</span>) در بیاوریم، با پروتکل <span class="en">LACP</span>؛ و چرا دو سر لینک باید تنظیمات یکسان داشته باشند.</p>
+<p><b>چرا لازم است:</b> اگر بین دو سوییچ دو کابل بکشید، STP یکی را می‌بندد و نیمی از پهنای باند هدر می‌رود. EtherChannel دو (تا هشت) کابل را یکی می‌کند: پهنای باند جمع می‌شود و با قطع یک کابل ارتباط قطع نمی‌شود.</p>
+<ul>
+<li><b>در کار روزانه:</b> لینک بین سوییچ‌های Core و Distribution تقریباً همیشه EtherChannel است.</li>
+<li><b>در امنیت:</b> EtherChannel نادرست باعث Loop یا قطع ناگهانی می‌شود؛ کنترل Mismatch ضروری است.</li>
+<li><b>در FortiGate:</b> همین مفهوم با «Aggregate Interface» در فایروال تکرار می‌شود.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>مشکل لینک‌های موازی ← Port-Channel ← LACP در برابر PAgP ← Load Balancing ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>EtherChannel</td><td>EtherChannel</td><td>تجمیع چند لینک فیزیکی در یک لینک منطقی</td></tr>
+<tr><td>Port-Channel</td><td>Port-Channel</td><td>Interface منطقی حاصل از تجمیع</td></tr>
+<tr><td>LACP</td><td>Link Aggregation Control Protocol (802.3ad)</td><td>پروتکل استاندارد مذاکره‌ی تجمیع</td></tr>
+<tr><td>PAgP</td><td>Port Aggregation Protocol</td><td>پروتکل اختصاصی سیسکو برای تجمیع</td></tr>
+<tr><td>Active</td><td>LACP Active</td><td>پورت فعالانه مذاکره را شروع می‌کند</td></tr>
+<tr><td>Passive</td><td>LACP Passive</td><td>پورت فقط منتظر مذاکره می‌ماند</td></tr>
+<tr><td>Hash</td><td>Load-balancing hash</td><td>الگوریتم انتخاب لینک برای هر جریان</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> مشکل: دو کابل، یک کابل کار می‌کند</h2>
+<p>دو سوییچ را با دو کابل ۱ گیگ وصل می‌کنیم تا هم پهنای باند بیشتر داشته باشیم و هم تحمل خطا. اما STP دو لینک موازی را «Loop» می‌داند و یکی را Block می‌کند. نتیجه: فقط ۱ گیگ، نه ۲ گیگ.</p>
+<p>مثال روزمره: دو باند موازی در یک جاده که یکی را بسته‌اند چون فکر می‌کنند دور می‌زند. EtherChannel به STP می‌گوید این دو باند «یک جاده‌ی دوبانده» هستند.</p>
+<figure class="fig"><svg viewBox="0 0 720 200" role="img" aria-label="topology"><path d="M115 100 L605 100" class="rq"/><text x="360" y="94" text-anchor="middle" class="cap">Gi0/1</text><path d="M115 100 L605 100" class="rq"/><text x="360" y="94" text-anchor="middle" class="cap">Gi0/2</text><rect x="40" y="70" width="150" height="60" rx="8" class="bx"/><text x="115" y="98" text-anchor="middle">SW1</text><text x="115" y="114" text-anchor="middle" class="cap">Po1</text><rect x="530" y="70" width="150" height="60" rx="8" class="bx"/><text x="605" y="98" text-anchor="middle">SW2</text><text x="605" y="114" text-anchor="middle" class="cap">Po1</text></svg><figcaption>شکل ۱: دو لینک فیزیکی که STP آن‌ها را یک لینک منطقی (Po1) می‌بیند.</figcaption></figure>
+<h2><span class="hn">۲.</span> EtherChannel چطور کار می‌کند؟</h2>
+<ul>
+<li>چند پورت فیزیکی عضو یک <b>Port-Channel</b> می‌شوند.</li>
+<li>STP و Trunk فقط Port-Channel را می‌بینند، نه پورت‌های عضو.</li>
+<li>توزیع ترافیک به‌صورت Hash است: هر جریان (مثلاً یک جفت IP) یک لینک را می‌گیرد؛ پس یک جریان تنها از یک لینک می‌رود و ۱ گیگ می‌ماند، ولی چند جریان روی لینک‌ها پخش می‌شود.</li>
+<li>اگر یک لینک قطع شود، ترافیک به لینک‌های دیگر منتقل می‌شود.</li>
+</ul>
+<div class="box"><b class="t">نکته‌ی مهم</b>EtherChannel سرعت یک ارتباط تکی را بیشتر نمی‌کند؛ ظرفیت کل را بالا می‌برد و تحمل خطا می‌دهد.</div>
+<h2><span class="hn">۳.</span> LACP یا PAgP یا ثابت؟</h2>
+<table>
+<tr><th>حالت</th><th>پروتکل</th><th>Modeهای مجاز</th></tr>
+<tr><td>LACP</td><td>استاندارد 802.3ad، با تجهیزات هر سازنده</td><td>active / passive</td></tr>
+<tr><td>PAgP</td><td>اختصاصی سیسکو</td><td>desirable / auto</td></tr>
+<tr><td>Static</td><td>بدون مذاکره (خطرناک)</td><td>on</td></tr>
+</table>
+<table>
+<tr><th>ترکیب دو سر</th><th>نتیجه</th></tr>
+<tr><td>active — active</td><td>Channel تشکیل می‌شود</td></tr>
+<tr><td>active — passive</td><td>Channel تشکیل می‌شود</td></tr>
+<tr><td>passive — passive</td><td>تشکیل نمی‌شود (هر دو منتظرند)</td></tr>
+<tr><td>on — active</td><td>تشکیل نمی‌شود (Mismatch)</td></tr>
+<tr><td>LACP — PAgP</td><td>تشکیل نمی‌شود</td></tr>
+</table>
+<p>توصیه: همیشه LACP با <code>active</code> در هر دو سر.</p>
+<h2><span class="hn">۴.</span> شرط‌های یکسان بودن پورت‌ها</h2>
+<p>همه‌ی پورت‌های عضو باید این‌ها را یکسان داشته باشند، وگرنه Channel بالا نمی‌آید یا Suspend می‌شود:</p>
+<ul>
+<li>سرعت و Duplex</li>
+<li>حالت Trunk/Access و VLANهای مجاز و Native</li>
+<li>VLAN دسترسی (برای Access)</li>
+<li>تنظیمات STP پورت</li>
+</ul>
+<h2><span class="hn">۵.</span> دستورها (خط‌به‌خط)</h2>
+<pre><code>SW1(config)# interface range gi0/1 - 2
+SW1(config-if-range)# switchport trunk encapsulation dot1q
+SW1(config-if-range)# switchport mode trunk
+SW1(config-if-range)# channel-group 1 mode active
+SW1(config-if-range)# exit
+SW1(config)# interface port-channel 1
+SW1(config-if)# switchport trunk allowed vlan 10,20,30
+SW1(config-if)# switchport trunk native vlan 999</code></pre>
+<ul>
+<li><code>channel-group 1 mode active</code>: پورت را عضو Port-Channel شماره‌ی ۱ می‌کند و LACP را فعال.</li>
+<li>تنظیمات Trunk را هم روی Port-Channel بزنید (نه فقط پورت‌ها)، تا تغییرات یکجا اعمال شود.</li>
+</ul>
+<pre><code>SW1# show etherchannel summary
+SW1# show etherchannel port-channel
+SW1# show interfaces port-channel 1
+SW1# show lacp neighbor
+SW1# show etherchannel load-balance</code></pre>
+<p>در <code>show etherchannel summary</code> حروف داخل پرانتز مهم‌اند:</p>
+<table>
+<tr><th>علامت</th><th>معنی</th></tr>
+<tr><td>P</td><td>پورت در Bundle است (سالم)</td></tr>
+<tr><td>I</td><td>پورت مستقل (Stand-alone) است</td></tr>
+<tr><td>D</td><td>Down</td></tr>
+<tr><td>s</td><td>Suspended (Mismatch)</td></tr>
+<tr><td>SU</td><td>Port-channel: L2 و In-use</td></tr>
+<tr><td>SD</td><td>Port-channel: L2 و Down</td></tr>
+</table>
+<h2><span class="hn">۶.</span> مثال‌ها</h2>
+<h3>ساده</h3>
+<pre><code>Po1(SU)  Gi0/1(P)  Gi0/2(P)
+Meaning: Layer-2 port-channel in use, both members bundled</code></pre>
+<h3>متوسط: Mismatch</h3>
+<pre><code>Po1(SD)  Gi0/1(s)  Gi0/2(D)
+Cause: native VLAN or allowed VLAN list differs on the two ports/sides
+Fix  : make all member ports identical, then shutdown/no shutdown the ports</code></pre>
+<h3>سخت: توزیع ترافیک (Load Balancing)</h3>
+<p>سوییچ با Hash روی مبدأ و مقصد MAC یا IP، لینک را انتخاب می‌کند. اگر فقط یک سرور به یک کلاینت ترافیک بفرستد، همیشه یک لینک پر می‌شود. راه‌حل: Hash بر اساس IP و پورت (در تجهیزات پشتیبان) یا افزایش تنوع جریان‌ها.</p>
+<pre><code>SW1(config)# port-channel load-balance src-dst-ip
+SW1# show etherchannel load-balance</code></pre>
+<div class="box"><b class="t">صادقانه درباره‌ی Lab</b>در شبیه‌ساز vIOSL2 موتور LACP روشن است ولی در Probe اولیه دیدیم Po1 بدون همتای واقعی در حالت <code>SD</code> می‌ماند (پیام «LACP currently not enabled on remote port»). پس Lab را با دو سوییچ شبیه‌سازی‌شده انجام دهید و اگر Bundle تشکیل نشد، ثبت کنید؛ این بخش در Lab واقعی (سخت‌افزار) کاملاً تمرین می‌شود.</div>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): چرا EtherChannel لازم است؟</summary><pre><code>Without it STP blocks the parallel link; with it the links are bundled into one logical link.</code></pre>
+</details>
+<details><summary>۲ (ساده): LACP با کدام Modeها؟</summary><pre><code>active and passive</code></pre>
+</details>
+<details><summary>۳ (متوسط): کدام ترکیب Channel نمی‌سازد؟</summary><pre><code>passive-passive, on-active, LACP-PAgP</code></pre>
+</details>
+<details><summary>۴ (متوسط): تفسیر Po1(SD) Gi0/1(D) Gi0/2(D)</summary><pre><code>Port-channel is down; both member ports are down (cable or remote side down).</code></pre>
+</details>
+<details><summary>۵ (سخت): چرا ۲ لینک ۱G برای یک انتقال فایل تکی ۲G سرعت نمی‌دهد؟</summary><pre><code>A single flow is hashed to one member link, so one flow is limited to 1G; many flows spread across links.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>توپولوژی: SW1 و SW2 با دو کابل: <code>Gi0/1</code> و <code>Gi0/2</code> هر سمت. VLANها از درس ۳-۲.</p>
+<h3>گام ۱: بکاپ و تنظیم هر دو سر</h3>
+<pre><code>SWx# copy running-config flash:SWx-before-ec.cfg
+SWx(config)# interface range gi0/1 - 2
+SWx(config-if-range)# switchport trunk encapsulation dot1q
+SWx(config-if-range)# switchport mode trunk
+SWx(config-if-range)# channel-group 1 mode active</code></pre>
+<h3>گام ۲: بررسی</h3>
+<pre><code>SWx# show etherchannel summary
+SWx# show interfaces trunk
+SWx# show spanning-tree vlan 1</code></pre>
+<p>در STP باید فقط Po1 را ببینید (نه Gi0/1 و Gi0/2 جداگانه).</p>
+<h3>گام ۳: خراب‌کردن عمدی (Mismatch)</h3>
+<pre><code>SW2(config)# interface gi0/2
+SW2(config-if)# switchport trunk native vlan 5
+SW2# show etherchannel summary</code></pre>
+<p>وضعیت پورت را ببینید و سپس رفع کنید (Native را مثل بقیه کنید و پورت را <code>shutdown</code> / <code>no shutdown</code>).</p>
+<h3>گام ۴: تحمل خطا</h3>
+<pre><code>SW1(config)# interface gi0/1
+SW1(config-if)# shutdown
+PC1&gt; ping 10.10.20.14 -t   (should keep working over Gi0/2)</code></pre>
+
+<h2>Lab مستقل</h2>
+<p>در <code>03-ops/etherchannel-runbook.md</code> چک‌لیست «قبل از ساخت Channel» (یکسان‌بودن سرعت/VLAN/Native/Allowed) را بنویسید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>Port-channel بالا نمی‌آید (SD) یا پورت‌ها s هستند</td></tr>
+<tr><th>چک‌لیست</th><td>۱) Modeها سازگارند؟<br>۲) Native/Allowed/Trunk دو سر یکی است؟<br>۳) سرعت/Duplex یکی است؟<br>۴) کابل‌ها به همان پورت‌های درست وصل‌اند؟</td></tr>
+<tr><th>ابزار</th><td>show etherchannel summary ، show lacp neighbor</td></tr>
+<tr><th>رفع</th><td>یکسان‌سازی پیکربندی، سپس shutdown و no shutdown پورت‌ها</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>EtherChannel چه مشکلی را حل می‌کند؟</summary><p>پهنای باند و تحمل خطا برای لینک‌های موازی که STP آن‌ها را نمی‌بندد.</p></details>
+<details><summary>چرا LACP را ترجیح می‌دهیم؟</summary><p>استاندارد است و با تجهیزات سازنده‌های مختلف کار می‌کند.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Bundle the physical ports into a port-channel using LACP.</td><td>پورت‌های فیزیکی را با LACP در یک Port-Channel تجمیع کنید.</td></tr>
+<tr><td>All member ports must have identical settings.</td><td>همه‌ی پورت‌های عضو باید تنظیمات یکسان داشته باشند.</td></tr>
+<tr><td>Traffic is distributed across links using a hash.</td><td>ترافیک با Hash بین لینک‌ها توزیع می‌شود.</td></tr>
+<tr><td>The port-channel stays up if one member link fails.</td><td>با قطع یک لینک عضو، Port-Channel بالا می‌ماند.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why does a single file transfer not use the full bundled bandwidth?</summary><p>Because one flow is hashed onto a single member link.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ Channel را بسازم و در STP یک لینک ببینم.</li>
+<li>☐ Mismatch را بسازم و رفع کنم.</li>
+<li>☐ نتیجه‌ی واقعی Lab (SU یا SD) را ثبت کنم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w4-4': {
+      sub: "Port Security، Violation، Sticky.",
+      html: `
+<div class="meta"><span class="tag">هفته ۴ - روز ۴</span><span class="tag">پیش‌نیاز: درس ۴-۳</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> چطور هر پورت دسترسی را به تعداد مشخصی از MACهای مجاز محدود کنیم (<span class="en">Port Security</span>)، سه نوع واکنش (<span class="en">Violation</span>) و بازیابی از <span class="en">err-disabled</span>.</p>
+<p><b>چرا لازم است:</b> هر کسی با یک کابل و لپ‌تاپ می‌تواند به پورت خالی وصل شود. Port Security جلوی دستگاه‌های ناشناس را می‌گیرد و حمله‌ی پر‌کردن جدول MAC (MAC Flooding) را بی‌اثر می‌کند.</p>
+<ul>
+<li><b>در کار روزانه:</b> برای پورت‌های میز کار و پرینتر در اکثر سازمان‌ها استفاده می‌شود.</li>
+<li><b>در امنیت:</b> لایه‌ی اول کنترل دسترسی فیزیکی و جلوگیری از MAC Flooding.</li>
+<li><b>در عیب‌یابی:</b> پورتی که ناگهان err-disabled شد، اغلب Violation است.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>تهدید ← Port Security ← انواع Violation ← Sticky MAC ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>Port Security</td><td>Port Security</td><td>محدودکردن MACهای مجاز روی پورت</td></tr>
+<tr><td>Violation</td><td>Security Violation</td><td>تخلف: MAC غیرمجاز یا بیش از حد</td></tr>
+<tr><td>Sticky</td><td>Sticky MAC</td><td>یادگیری و ذخیره‌ی خودکار MAC مجاز</td></tr>
+<tr><td>Shutdown</td><td>Violation shutdown</td><td>پورت را err-disabled می‌کند</td></tr>
+<tr><td>Restrict</td><td>Violation restrict</td><td>فریم غیرمجاز را دور می‌ریزد و لاگ می‌دهد</td></tr>
+<tr><td>Protect</td><td>Violation protect</td><td>فریم غیرمجاز را بی‌صدا دور می‌ریزد</td></tr>
+<tr><td>MAC Flooding</td><td>MAC Flooding attack</td><td>پرکردن جدول MAC با MACهای جعلی</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> تهدید: «کسی کابل را به پورت خالی زد»</h2>
+<p>سوییچ پورت‌های متعددی دارد و معمولاً بعضی از آن‌ها در دیوار سالن آزاد هستند. مهمان یا مهاجم لپ‌تاپ را وصل می‌کند و به شبکه می‌رسد. تهدید دوم: مهاجم هزاران MAC جعلی می‌فرستد تا جدول MAC پر شود و سوییچ شروع به Flooding کند؛ آنگاه ترافیک را می‌شنود.</p>
+<h2><span class="hn">۲.</span> ایده‌ی Port Security</h2>
+<p>روی هر پورت می‌گوییم: «فقط N تا MAC مجاز است، و آن‌ها این‌ها هستند». اگر MAC دیگری آمد، واکنش تعریف‌شده اجرا می‌شود. سه چیز باید تعیین کنیم:</p>
+<ol>
+<li><b>حداکثر MAC</b> (Maximum): معمولاً ۱ برای کامپیوتر، ۲ برای کامپیوتر+IP Phone.</li>
+<li><b>MACهای مجاز:</b> دستی (static)، یا یادگیری خودکار (sticky).</li>
+<li><b>واکنش (Violation):</b> shutdown، restrict یا protect.</li>
+</ol>
+<table>
+<tr><th>Violation</th><th>فریم غیرمجاز</th><th>پورت</th><th>لاگ/شمارنده</th></tr>
+<tr><td>shutdown (پیش‌فرض)</td><td>دور ریخته</td><td>err-disabled</td><td>بله</td></tr>
+<tr><td>restrict</td><td>دور ریخته</td><td>فعال می‌ماند</td><td>بله</td></tr>
+<tr><td>protect</td><td>دور ریخته</td><td>فعال می‌ماند</td><td>خیر</td></tr>
+</table>
+<h2><span class="hn">۳.</span> دستورها (خط‌به‌خط)</h2>
+<pre><code>SW1(config)# interface gi0/1
+SW1(config-if)# switchport mode access
+SW1(config-if)# switchport access vlan 20
+SW1(config-if)# switchport port-security
+SW1(config-if)# switchport port-security maximum 2
+SW1(config-if)# switchport port-security violation restrict
+SW1(config-if)# switchport port-security mac-address sticky
+SW1(config-if)# switchport port-security aging time 10
+SW1(config-if)# switchport port-security aging type inactivity</code></pre>
+<ul>
+<li><code>switchport port-security</code>: قابلیت را روشن می‌کند (فقط روی پورت Access/Trunk ثابت، نه Dynamic).</li>
+<li><code>maximum 2</code>: حداکثر دو MAC.</li>
+<li><code>violation restrict</code>: واکنش (پیش‌فرض shutdown).</li>
+<li><code>mac-address sticky</code>: MACهای یادگرفته‌شده به running-config اضافه می‌شوند (با <code>copy run start</code> دائمی می‌شوند).</li>
+<li><code>aging</code>: بعد از ۱۰ دقیقه بی‌فعالیتی، MAC ثابت‌نشده حذف می‌شود.</li>
+</ul>
+<pre><code>SW1# show port-security
+SW1# show port-security interface gi0/1
+SW1# show port-security address
+SW1# show interfaces status err-disabled</code></pre>
+<p>مهم‌ترین خطوط <code>show port-security interface</code>:</p>
+<table>
+<tr><th>فیلد</th><th>معنی</th></tr>
+<tr><td>Port Status</td><td>Secure-up / Secure-down / Secure-shutdown</td></tr>
+<tr><td>Violation Mode</td><td>نوع واکنش</td></tr>
+<tr><td>Maximum MAC Addresses</td><td>سقف</td></tr>
+<tr><td>Total MAC Addresses</td><td>تعداد فعلی</td></tr>
+<tr><td>Last Source Address</td><td>آخرین MAC متخلف</td></tr>
+<tr><td>Security Violation Count</td><td>تعداد تخلف‌ها</td></tr>
+</table>
+<h2><span class="hn">۴.</span> مثال‌ها</h2>
+<h3>ساده: یک کامپیوتر، یک MAC</h3>
+<pre><code>maximum 1 , sticky
+PC1 connects -> its MAC is learned and stored
+Another laptop plugged in -> violation</code></pre>
+<h3>متوسط: Violation shutdown</h3>
+<pre><code>Log: %PM-4-ERR_DISABLE: psecure-violation error detected on Gi0/1, putting Gi0/1 in err-disable state
+show port-security interface gi0/1 -> Port Status: Secure-shutdown</code></pre>
+<p>رفع: دستگاه غیرمجاز را جدا کنید، سپس <code>shutdown</code> و <code>no shutdown</code>. یا برای رفع خودکار: <code>errdisable recovery cause psecure-violation</code>.</p>
+<h3>سخت: IP Phone و کامپیوتر</h3>
+<p>در میز کار، IP Phone به پورت وصل است و کامپیوتر پشت آن. پس دو MAC لازم است (یا Voice VLAN). maximum را ۳ بگذارید تا یک MAC برای Phone، یکی برای PC و یکی حاشیه برای تعویض دستگاه باشد.</p>
+<pre><code>Rule of thumb: maximum = number of expected devices + 1 spare
+Too low -> user complaints; too high -> weaker protection</code></pre>
+<div class="box"><b class="t">صادقانه درباره‌ی Lab</b>در Probe اولیه، دستور Port Security در vIOSL2 «پذیرفته» شد، ولی ممکن است تخلف واقعاً شناسایی نشود (شبیه‌ساز). برای هر گام، نتیجه‌ی واقعی را ثبت کنید. اگر کار نکرد، مفهوم را با خروجی نمونه یاد بگیرید و در تجهیز واقعی تمرین کنید.</div>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): سه نوع Violation؟</summary><pre><code>shutdown, restrict, protect</code></pre>
+</details>
+<details><summary>۲ (ساده): sticky یعنی چه؟</summary><pre><code>The switch learns MAC addresses dynamically and stores them in the running-config.</code></pre>
+</details>
+<details><summary>۳ (متوسط): چرا بعد از reload ممکن است sticky پاک شود؟</summary><pre><code>Sticky MACs are only in running-config; without copy running-config startup-config they are lost.</code></pre>
+</details>
+<details><summary>۴ (متوسط): پورت err-disabled شد؛ مراحل؟</summary><pre><code>1) find the offending MAC
+2) remove the device
+3) shutdown / no shutdown
+4) verify</code></pre>
+</details>
+<details><summary>۵ (سخت): maximum را برای پورت Phone+PC چند می‌گذاریم و چرا؟</summary><pre><code>3 (Phone + PC + one spare), to avoid unnecessary lockouts.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<h3>گام ۱: فعال‌سازی روی پورت PC1</h3>
+<pre><code>SW1(config)# interface gi0/1
+SW1(config-if)# switchport mode access
+SW1(config-if)# switchport access vlan 20
+SW1(config-if)# switchport port-security
+SW1(config-if)# switchport port-security maximum 1
+SW1(config-if)# switchport port-security violation shutdown
+SW1(config-if)# switchport port-security mac-address sticky</code></pre>
+<h3>گام ۲: بررسی</h3>
+<pre><code>PC1&gt; ping 10.10.20.1
+SW1# show port-security interface gi0/1
+SW1# show running-config interface gi0/1</code></pre>
+<p>باید MAC یادگرفته‌شده را به‌صورت <code>sticky</code> در پیکربندی ببینید.</p>
+<h3>گام ۳: تخلف عمدی</h3>
+<p>PC1 را جدا کنید و PC2 (MAC متفاوت) را به همان پورت وصل کنید. نتیجه را با <code>show interfaces status err-disabled</code> و <code>show logging</code> بررسی کنید.</p>
+<h3>گام ۴: رفع</h3>
+<pre><code>SW1(config)# interface gi0/1
+SW1(config-if)# shutdown
+SW1(config-if)# no shutdown
+SW1# clear port-security sticky interface gi0/1</code></pre>
+
+<h2>Lab مستقل</h2>
+<p>استاندارد Port Security (حداکثر، Violation، Sticky، Recovery) را برای پورت‌های کاربر، پرینتر و Phone در <code>03-ops/port-security-standard.md</code> بنویسید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>کاربر مجاز قطع شد</td></tr>
+<tr><th>چک‌لیست</th><td>۱) پورت err-disabled است؟<br>۲) MAC جدیدی دیده شده؟<br>۳) Maximum کم است؟<br>۴) Sticky قدیمی تغییر نکرده؟</td></tr>
+<tr><th>ابزار</th><td>show port-security interface ، show logging</td></tr>
+<tr><th>رفع</th><td>پاک‌کردن MAC قدیمی، تنظیم maximum، و بالا آوردن پورت</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>Port Security چه چیزی را کنترل می‌کند؟</summary><p>تعداد و هویت MACهای مجاز روی یک پورت.</p></details>
+<details><summary>تفاوت restrict و shutdown؟</summary><p>restrict فریم را دور می‌ریزد و لاگ می‌دهد ولی پورت فعال می‌ماند؛ shutdown پورت را err-disabled می‌کند.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Port security limits the number of MAC addresses allowed on an access port.</td><td>Port Security تعداد MACهای مجاز روی پورت Access را محدود می‌کند.</td></tr>
+<tr><td>Sticky MAC addresses are saved to the running configuration.</td><td>MACهای Sticky در running-config ذخیره می‌شوند.</td></tr>
+<tr><td>The port goes into the err-disabled state on a violation.</td><td>در صورت تخلف، پورت به حالت err-disabled می‌رود.</td></tr>
+<tr><td>Always allow one spare MAC for device replacement.</td><td>همیشه یک MAC اضافه برای تعویض دستگاه در نظر بگیرید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What is the default violation mode?</summary><p>Shutdown: the port goes into err-disabled state.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ Port Security را فعال و تخلف را تست کنم.</li>
+<li>☐ نتیجه‌ی واقعی Lab را ثبت کنم.</li>
+<li>☐ استاندارد را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w4-5': {
+      sub: "DORA، DHCP Snooping و DAI.",
+      html: `
+<div class="meta"><span class="tag">هفته ۴ - روز ۵</span><span class="tag">پیش‌نیاز: درس ۴-۴</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> چطور کلاینت از <span class="en">DHCP</span> آدرس می‌گیرد (چهار مرحله‌ی <span class="en">DORA</span>)، و دو سپر امنیتی لایه ۲ یعنی <span class="en">DHCP Snooping</span> و <span class="en">DAI</span> چطور جلوی سرور جعلی و جعل ARP را می‌گیرند.</p>
+<p><b>چرا لازم است:</b> اگر کسی یک مودم یا روتر خانگی را به شبکه وصل کند و DHCP Server جعلی راه بیندازد، کلاینت‌ها Gateway و DNS اشتباه می‌گیرند و ترافیک از مسیر مهاجم می‌گذرد (حمله‌ی Man-in-the-Middle). این یکی از رایج‌ترین حمله‌های داخلی است.</p>
+<ul>
+<li><b>در کار روزانه:</b> «کاربر IP نمی‌گیرد» یا «IP اشتباه گرفته» مشکل روزانه‌ی پشتیبانی است.</li>
+<li><b>در امنیت:</b> Snooping و DAI دو لایه‌ی استاندارد Hardening هستند.</li>
+<li><b>در Capstone:</b> Windows Server DHCP همین هفته در W4 مطرح می‌شود؛ سوییچ باید فقط پورت آن را Trusted کند.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>DORA ← حمله‌ی DHCP جعلی ← DHCP Snooping ← DAI ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>DHCP</td><td>Dynamic Host Configuration Protocol</td><td>تخصیص خودکار IP، Mask، Gateway و DNS</td></tr>
+<tr><td>DORA</td><td>Discover Offer Request Acknowledge</td><td>چهار پیام DHCP</td></tr>
+<tr><td>Rogue DHCP</td><td>Rogue DHCP server</td><td>سرور DHCP جعلی</td></tr>
+<tr><td>Snooping</td><td>DHCP Snooping</td><td>تحلیل پیام‌های DHCP و جداکردن پورت مجاز</td></tr>
+<tr><td>Trusted</td><td>Trusted port</td><td>پورتی که اجازه‌ی عبور OFFER/ACK دارد</td></tr>
+<tr><td>Binding</td><td>DHCP Snooping Binding table</td><td>جدول MAC-IP-VLAN-Port</td></tr>
+<tr><td>DAI</td><td>Dynamic ARP Inspection</td><td>بازرسی ARP بر اساس جدول Binding</td></tr>
+<tr><td>ARP Spoofing</td><td>ARP Spoofing</td><td>جعل پاسخ ARP برای شنود</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> DHCP چطور کار می‌کند؟ (DORA)</h2>
+<p>کلاینت تازه‌وارد IP ندارد و نمی‌داند سرور کجاست؛ پس فریاد می‌زند (Broadcast) و سرور جواب می‌دهد. چهار پیام داریم:</p>
+<figure class="fig"><svg viewBox="0 0 720 222" role="img" aria-label="sequence"><rect x="55" y="10" width="130" height="34" rx="8" class="bx"/><text x="120" y="32" text-anchor="middle">Client</text><path d="M120 44 V216" class="ln" stroke-dasharray="4 4"/><rect x="295" y="10" width="130" height="34" rx="8" class="bx"/><text x="360" y="32" text-anchor="middle">Switch</text><path d="M360 44 V216" class="ln" stroke-dasharray="4 4"/><rect x="535" y="10" width="130" height="34" rx="8" class="bx"/><text x="600" y="32" text-anchor="middle">DHCP Server</text><path d="M600 44 V216" class="ln" stroke-dasharray="4 4"/><path d="M120 75 H600" class="rq"/><path d="M592 70 l8 5 l-8 5" class="rq"/><text x="360" y="67" text-anchor="middle" class="cap">1 DISCOVER (broadcast)</text><path d="M600 113 H120" class="rp"/><path d="M128 108 l-8 5 l8 5" class="rp"/><text x="360" y="105" text-anchor="middle" class="cap">2 OFFER</text><path d="M120 151 H600" class="rq"/><path d="M592 146 l8 5 l-8 5" class="rq"/><text x="360" y="143" text-anchor="middle" class="cap">3 REQUEST (broadcast)</text><path d="M600 189 H120" class="rp"/><path d="M128 184 l-8 5 l8 5" class="rp"/><text x="360" y="181" text-anchor="middle" class="cap">4 ACK</text></svg><figcaption>شکل ۱: چهار مرحله‌ی DORA بین کلاینت و سرور.</figcaption></figure>
+<table>
+<tr><th>مرحله</th><th>پیام</th><th>نوع</th><th>محتوا</th></tr>
+<tr><td>D</td><td>Discover</td><td>Broadcast</td><td>کلاینت: «سرور DHCP هست؟»</td></tr>
+<tr><td>O</td><td>Offer</td><td>Unicast/Broadcast</td><td>سرور: «این IP را پیشنهاد می‌کنم»</td></tr>
+<tr><td>R</td><td>Request</td><td>Broadcast</td><td>کلاینت: «همین IP را می‌خواهم»</td></tr>
+<tr><td>A</td><td>Acknowledge</td><td>Unicast/Broadcast</td><td>سرور: «تأیید؛ مدت Lease این است»</td></tr>
+</table>
+<p>در پاسخ، سرور IP، Mask، Gateway، DNS و زمان اجاره (Lease) را می‌دهد. اگر هیچ پاسخی نرسد، کلاینت Windows خودش آدرس <code>169.254.x.x</code> می‌سازد (درس ۲-۱).</p>
+<h2><span class="hn">۲.</span> تهدید: DHCP جعلی</h2>
+<p>چون Discover یک Broadcast است، هر سرور DHCP در شبکه می‌تواند جواب دهد؛ و کلاینت معمولاً اولین پاسخ را می‌پذیرد. مهاجم با یک سرور جعلی، Gateway را آدرس خودش می‌گذارد و همه‌ی ترافیک را می‌بیند.</p>
+<h2><span class="hn">۳.</span> DHCP Snooping: فقط پورت مجاز OFFER بدهد</h2>
+<figure class="fig"><svg viewBox="0 0 720 260" role="img" aria-label="topology"><path d="M360 48 L125 178" class="rp"/><text x="242" y="107" text-anchor="middle" class="cap">trusted</text><path d="M360 48 L595 178" class="rq"/><text x="477" y="107" text-anchor="middle" class="cap">blocked</text><path d="M360 48 L360 218" class="ln"/><rect x="280" y="20" width="160" height="56" rx="8" class="bx"/><text x="360" y="46" text-anchor="middle">Switch</text><text x="360" y="62" text-anchor="middle" class="cap">DHCP Snooping</text><rect x="40" y="150" width="170" height="56" rx="8" class="hst"/><text x="125" y="176" text-anchor="middle" class="on">Real DHCP</text><text x="125" y="192" text-anchor="middle" class="cap">trusted port</text><rect x="510" y="150" width="170" height="56" rx="8" class="wrn"/><text x="595" y="176" text-anchor="middle" class="on">Rogue DHCP</text><text x="595" y="192" text-anchor="middle" class="cap">untrusted</text><rect x="275" y="190" width="170" height="56" rx="8" class="net"/><text x="360" y="216" text-anchor="middle" class="on">Client</text><text x="360" y="232" text-anchor="middle" class="cap">untrusted</text></svg><figcaption>شکل ۲: پورت سرور واقعی Trusted است؛ OFFER از پورت Untrusted مسدود می‌شود.</figcaption></figure>
+<p>سوییچ هر پورت را «Trusted» یا «Untrusted» می‌داند. پیام‌های سرور (Offer/ACK) فقط از پورت Trusted عبور می‌کنند. پورت کاربر Untrusted است؛ اگر DHCP Server روی آن دیده شود، مسدود می‌شود. سوییچ همچنین جدول Binding می‌سازد (MAC، IP، VLAN، پورت).</p>
+<pre><code>SW1(config)# ip dhcp snooping
+SW1(config)# ip dhcp snooping vlan 20,30
+SW1(config)# no ip dhcp snooping information option
+SW1(config)# interface gi0/10
+SW1(config-if)# ip dhcp snooping trust
+SW1(config-if)# exit
+SW1(config)# interface range gi0/1 - 4
+SW1(config-if-range)# ip dhcp snooping limit rate 15</code></pre>
+<ul>
+<li><code>ip dhcp snooping</code> و <code>vlan</code>: قابلیت را عمومی و برای VLANهای مشخص فعال می‌کند.</li>
+<li><code>trust</code>: فقط روی پورت به سمت DHCP Server (یا Uplink به سمت آن) و Trunkهای بین سوییچ‌ها.</li>
+<li><code>limit rate</code>: سقف تعداد بسته‌ی DHCP در ثانیه برای جلوگیری از حمله‌ی Starvation.</li>
+<li><code>no ... information option</code>: جلوگیری از Option 82 در بعضی سناریوها (مشکل رایج وقتی سرور Option 82 را قبول نمی‌کند).</li>
+</ul>
+<pre><code>SW1# show ip dhcp snooping
+SW1# show ip dhcp snooping binding
+SW1# show ip dhcp snooping statistics</code></pre>
+<h2><span class="hn">۴.</span> DAI: جعل ARP را متوقف کن</h2>
+<p>در ARP Spoofing مهاجم پاسخ ARP جعلی می‌فرستد: «IP Gateway مال MAC من است». <span class="en">DAI</span> هر ARP را با جدول Binding مقایسه می‌کند؛ اگر IP و MAC با هم نخواند، بسته را می‌اندازد.</p>
+<pre><code>SW1(config)# ip arp inspection vlan 20,30
+SW1(config)# interface gi0/10
+SW1(config-if)# ip arp inspection trust
+SW1# show ip arp inspection
+SW1# show ip arp inspection statistics</code></pre>
+<div class="box"><b class="t">شرط DAI</b>DAI به جدول Binding وابسته است؛ پس Snooping باید فعال باشد. برای دستگاه‌هایی با IP ثابت (سرور، پرینتر) باید ورودی دستی در Binding یا ARP ACL بنویسید، وگرنه DAI ترافیکشان را می‌اندازد.</div>
+<h2><span class="hn">۵.</span> مثال‌ها</h2>
+<h3>ساده</h3>
+<pre><code>Client sends DISCOVER on Gi0/1 (untrusted)
+Real server replies via Gi0/10 (trusted) -> OFFER passes
+Binding: MAC aaaa.0000.0005  IP 10.10.20.50  VLAN 20  Gi0/1</code></pre>
+<h3>متوسط: سرور جعلی</h3>
+<pre><code>Rogue router on Gi0/3 (untrusted) sends OFFER
+Switch drops it  -> client only hears the real server
+Log: %DHCP_SNOOPING-5-DHCP_SNOOPING_UNTRUSTED_PORT</code></pre>
+<h3>سخت: چرا بعد از فعال‌کردن Snooping هیچ‌کس IP نمی‌گیرد؟</h3>
+<pre><code>Cause 1: the port to the DHCP server is NOT trusted -> OFFERs dropped
+Cause 2: trunk between switches not trusted
+Cause 3: Option 82 inserted and the server rejects it
+Fix    : trust server/uplink ports; no ip dhcp snooping information option</code></pre>
+<div class="box"><b class="t">صادقانه درباره‌ی Lab</b>طبق Probe اولیه، در vIOSL2 دستورهای DHCP Snooping و DAI فقط «پذیرفته» می‌شوند و ممکن است واقعاً بسته‌ها را بلوک نکنند. در Lab ما، Windows Server DHCP یک VM در ESXi است که در Capstone اصلی کامل می‌شود. اینجا نتیجه‌ی واقعی هر گام را ثبت کنید؛ و مفهوم و دستورها را کامل بدانید.</div>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): نام چهار پیام DORA؟</summary><pre><code>Discover, Offer, Request, Acknowledge</code></pre>
+</details>
+<details><summary>۲ (ساده): کدام پورت‌ها Trusted می‌شوند؟</summary><pre><code>Ports toward the legitimate DHCP server and inter-switch trunks. Never user ports.</code></pre>
+</details>
+<details><summary>۳ (متوسط): DAI به چه چیزی وابسته است؟</summary><pre><code>The DHCP Snooping binding table (or static ARP ACL entries).</code></pre>
+</details>
+<details><summary>۴ (متوسط): کلاینت 169.254.x.x گرفته؛ دو علت محتمل؟</summary><pre><code>1) DHCP server unreachable/down
+2) Snooping drops the OFFER (server port not trusted)</code></pre>
+</details>
+<details><summary>۵ (سخت): چرا سرور با IP ثابت بعد از DAI قطع می‌شود؟</summary><pre><code>It has no DHCP binding entry; DAI drops its ARP packets. Fix: add a static binding / ARP ACL.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>سرور DHCP: یا یک VM ویندوزی/لینوکسی که بعداً می‌سازیم، یا موقتاً یک روتر با DHCP Pool. در این Lab، روی R1 یک Pool تست می‌سازیم.</p>
+<h3>گام ۱: DHCP موقت روی R1</h3>
+<pre><code>R1(config)# ip dhcp excluded-address 10.10.20.1 10.10.20.10
+R1(config)# ip dhcp pool USERS20
+R1(dhcp-config)# network 10.10.20.0 255.255.255.0
+R1(dhcp-config)# default-router 10.10.20.1
+R1(dhcp-config)# dns-server 10.10.10.53
+R1(dhcp-config)# lease 0 8</code></pre>
+<h3>گام ۲: کلاینت VPCS آدرس بگیرد</h3>
+<pre><code>PC1&gt; ip dhcp
+PC1&gt; show ip</code></pre>
+<h3>گام ۳: Snooping</h3>
+<pre><code>SW1(config)# ip dhcp snooping
+SW1(config)# ip dhcp snooping vlan 20
+SW1(config)# interface gi0/0
+SW1(config-if)# ip dhcp snooping trust
+SW1# show ip dhcp snooping binding</code></pre>
+<h3>گام ۴: DAI</h3>
+<pre><code>SW1(config)# ip arp inspection vlan 20
+SW1(config)# interface gi0/0
+SW1(config-if)# ip arp inspection trust</code></pre>
+<p>نتیجه‌ی هر گام را ثبت کنید؛ اگر Binding ساخته نشد، همین را به‌عنوان محدودیت شبیه‌ساز ثبت کنید.</p>
+
+<h2>Lab مستقل</h2>
+<p>یک «تحلیل خطر DHCP» یک‌صفحه‌ای بنویسید: ۳ تهدید، ۳ کنترل (Snooping، DAI، Port Security)، و ۳ دستور Verification در <code>03-ops/dhcp-l2-security.md</code>.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>بعد از Snooping کلاینت‌ها IP نمی‌گیرند</td></tr>
+<tr><th>چک‌لیست</th><td>۱) پورت سرور Trusted است؟<br>۲) Trunkهای بین سوییچ‌ها Trusted هستند؟<br>۳) VLAN درست در لیست Snooping است؟<br>۴) Option 82 مشکل می‌سازد؟<br>۵) Rate Limit خیلی کم است؟</td></tr>
+<tr><th>ابزار</th><td>show ip dhcp snooping ، show ip dhcp snooping binding</td></tr>
+<tr><th>رفع</th><td>Trust صحیح و حذف Option 82</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>DHCP Snooping چه مشکلی را حل می‌کند؟</summary><p>مسدودکردن سرور DHCP جعلی و ساخت جدول Binding.</p></details>
+<details><summary>DAI چطور کار می‌کند؟</summary><p>هر ARP را با جدول Binding مقایسه می‌کند و ARP نامعتبر را می‌اندازد.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Enable DHCP snooping on the access VLANs and trust only the uplink.</td><td>DHCP Snooping را روی VLANهای Access فعال و فقط Uplink را Trust کنید.</td></tr>
+<tr><td>A rogue DHCP server can redirect clients to a malicious gateway.</td><td>سرور DHCP جعلی می‌تواند کلاینت‌ها را به Gateway مخرب هدایت کند.</td></tr>
+<tr><td>Dynamic ARP inspection validates ARP packets against the binding table.</td><td>DAI بسته‌های ARP را با جدول Binding اعتبارسنجی می‌کند.</td></tr>
+<tr><td>The client fell back to an APIPA address.</td><td>کلاینت به آدرس APIPA برگشت.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why must the trunk between switches be trusted for DHCP snooping?</summary><p>Otherwise legitimate DHCP replies arriving over the trunk are dropped.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ DORA را بدون نگاه توضیح دهم.</li>
+<li>☐ Snooping و DAI را بنویسم و نتیجه‌ی واقعی را ثبت کنم.</li>
+<li>☐ تحلیل خطر را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w4-6': {
+      sub: "سه‌لایه، Collapsed Core، TS06-TS08 و G2.",
+      html: `
+<div class="meta"><span class="tag">هفته ۴ - روز ۶</span><span class="tag">پیش‌نیاز: درس‌های ۴-۱ تا ۴-۵</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> چطور شبکه‌ی سازمانی را در سه لایه (<span class="en">Access</span>، <span class="en">Distribution</span>، <span class="en">Core</span>) طراحی می‌کنیم، چه زمانی «Collapsed Core» کافی است، عیب‌یابی خرابی‌های هفته ۴ (TS06 تا TS08)، و آزمون عملی Gate G2.</p>
+<p><b>چرا لازم است:</b> طراحی بد یعنی گسترش‌ناپذیری و عیب‌یابی سخت. طراحی لایه‌ای (Hierarchical) برای هر سازمان استانداردی است که جواب سؤال «این سوییچ را کجا بگذارم؟» را می‌دهد؛ و Gate G2 تضمین می‌کند Switching را عملی یاد گرفته‌اید.</p>
+<ul>
+<li><b>در کار روزانه:</b> هر ساختمان یا شعبه با یکی از دو الگوی ۳لایه یا Collapsed Core طراحی می‌شود.</li>
+<li><b>در امنیت:</b> لایه‌بندی یعنی نقاط کنترل مشخص (Policy روی Distribution/Core).</li>
+<li><b>در Capstone:</b> شعبه‌ی کوچک Collapsed Core و مرکز ۳لایه‌ی ساده دارد.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>سه لایه ← Collapsed Core ← طراحی برای Capstone ← عیب‌یابی TS06-TS08 ← Lab ← Gate G2.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>Access</td><td>Access layer</td><td>لایه‌ی اتصال کاربران و دستگاه‌ها</td></tr>
+<tr><td>Distribution</td><td>Distribution layer</td><td>تجمیع Accessها، Policy و مسیریابی بین VLAN</td></tr>
+<tr><td>Core</td><td>Core layer</td><td>هسته‌ی سریع شبکه</td></tr>
+<tr><td>Collapsed Core</td><td>Collapsed Core</td><td>ادغام Distribution و Core در یک لایه</td></tr>
+<tr><td>HLD</td><td>High-Level Design</td><td>طراحی سطح بالا</td></tr>
+<tr><td>G2</td><td>Gate 2</td><td>آزمون عملی پایان هفته ۴</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> چرا سه لایه؟</h2>
+<p>شهری را تصور کنید که هر خانه مستقیماً به همه‌ی خانه‌ها خیابان دارد؛ ۱۰۰ خانه یعنی ۴۹۵۰ خیابان! لایه‌بندی مثل «کوچه، خیابان، بزرگراه» است: هر لایه کار مشخصی دارد و تعداد اتصال‌ها کم می‌ماند.</p>
+<figure class="fig"><svg viewBox="0 0 720 270" role="img" aria-label="topology"><path d="M360 35 L195 125" class="rq"/><path d="M360 35 L525 125" class="rq"/><path d="M195 125 L525 125" class="rq"/><path d="M195 125 L115 225" class="ln"/><path d="M195 125 L360 225" class="ln"/><path d="M525 125 L360 225" class="ln"/><path d="M525 125 L605 225" class="ln"/><rect x="285" y="10" width="150" height="50" rx="8" class="net"/><text x="360" y="33" text-anchor="middle" class="on">Core</text><text x="360" y="49" text-anchor="middle" class="cap">L3</text><rect x="120" y="100" width="150" height="50" rx="8" class="hst"/><text x="195" y="123" text-anchor="middle" class="on">Distribution 1</text><text x="195" y="139" text-anchor="middle" class="cap">L3</text><rect x="450" y="100" width="150" height="50" rx="8" class="hst"/><text x="525" y="123" text-anchor="middle" class="on">Distribution 2</text><text x="525" y="139" text-anchor="middle" class="cap">L3</text><rect x="40" y="200" width="150" height="50" rx="8" class="bx"/><text x="115" y="223" text-anchor="middle">Access 1</text><text x="115" y="239" text-anchor="middle" class="cap">L2</text><rect x="285" y="200" width="150" height="50" rx="8" class="bx"/><text x="360" y="223" text-anchor="middle">Access 2</text><text x="360" y="239" text-anchor="middle" class="cap">L2</text><rect x="530" y="200" width="150" height="50" rx="8" class="bx"/><text x="605" y="223" text-anchor="middle">Access 3</text><text x="605" y="239" text-anchor="middle" class="cap">L2</text></svg><figcaption>شکل ۱: شبکه‌ی سه‌لایه؛ هر Access به دو Distribution وصل است (Redundancy).</figcaption></figure>
+<table>
+<tr><th>لایه</th><th>کار</th><th>دستگاه نمونه</th><th>ویژگی</th></tr>
+<tr><td>Access</td><td>اتصال کاربران، PortFast، Port Security، Snooping</td><td>سوییچ L2</td><td>تعداد پورت زیاد، ساده</td></tr>
+<tr><td>Distribution</td><td>تجمیع، Gateway VLANها، ACL/Policy</td><td>سوییچ L3</td><td>Redundancy، EtherChannel</td></tr>
+<tr><td>Core</td><td>انتقال سریع بین Distributionها</td><td>سوییچ/روتر L3</td><td>فقط سرعت و پایداری</td></tr>
+</table>
+<h2><span class="hn">۲.</span> Collapsed Core: وقتی دو لایه کافی است</h2>
+<p>در شعبه‌ی کوچک، Distribution و Core را یکی می‌کنیم (دو سوییچ L3 که هم Gateway‌اند و هم هسته). این ارزان‌تر است و برای ۵۰ تا ۲۰۰ کاربر کافی.</p>
+<table>
+<tr><th>معیار</th><th>سه‌لایه</th><th>Collapsed Core</th></tr>
+<tr><td>اندازه</td><td>سازمان بزرگ/چند ساختمان</td><td>شعبه‌ی کوچک</td></tr>
+<tr><td>هزینه</td><td>بیشتر</td><td>کمتر</td></tr>
+<tr><td>پیچیدگی</td><td>بیشتر</td><td>کمتر</td></tr>
+<tr><td>گسترش</td><td>آسان‌تر</td><td>محدودتر</td></tr>
+</table>
+<div class="box"><b class="t">در Capstone ما</b>مرکز: Core/Distribution ساده روی یک جفت سوییچ؛ شعبه‌ها: Collapsed Core. Gateway اصلی همه‌ی VLANها FortiGate است و سوییچ‌ها L2 هستند (طبق تصمیم معماری).</div>
+<h2><span class="hn">۳.</span> سه خرابی این هفته (TS06 تا TS08)</h2>
+<h3>TS06: Root اشتباه</h3>
+<pre><code>Symptom : slow network, traffic path goes through an old switch
+Evidence: show spanning-tree -> wrong bridge is root
+Fix     : spanning-tree vlan X root primary on the core switch
+Verify  : show spanning-tree root</code></pre>
+<h3>TS07: پورت err-disabled با BPDU Guard یا Port Security</h3>
+<pre><code>Symptom : user port down, link light on
+Evidence: show interfaces status err-disabled
+Fix     : remove cause, shutdown / no shutdown
+Verify  : port up, user online</code></pre>
+<h3>TS08: EtherChannel Mismatch</h3>
+<pre><code>Symptom : Po1(SD) or member ports (s)
+Evidence: show etherchannel summary, show interfaces trunk
+Fix     : make allowed/native/speed identical, bounce the ports
+Verify  : Po1(SU), members (P)</code></pre>
+<h2><span class="hn">۴.</span> طراحی خودتان: HLD کوتاه</h2>
+<p>برای یک شعبه با ۱۵۰ کاربر، ۱۰ سرور و ۲۰ دستگاه مدیریتی، یک طراحی Collapsed Core بنویسید: چند سوییچ، چه VLANهایی، کجا Root، چه لینک‌هایی EtherChannel.</p>
+<pre><code>Branch (Collapsed Core)
+- 2 x L3 core/distribution switches (EtherChannel between them)
+- 3 x access switches, each uplinked to both cores
+- VLAN 20 users, 30 servers, 10 management
+- STP root: core 1 (secondary: core 2)
+- Access: PortFast + BPDU Guard + Port Security + DHCP Snooping</code></pre>
+<h2><span class="hn">۵.</span> آزمون عملی Gate G2 (پایان هفته ۴)</h2>
+<p>بدون نگاه به درس، با مدرک (خروجی دستورها):</p>
+<table>
+<tr><th>#</th><th>وظیفه</th><th>مدرک</th></tr>
+<tr><td>۱</td><td>Rapid-PVST و Root/Secondary برای ۳ VLAN</td><td>show spanning-tree root</td></tr>
+<tr><td>۲</td><td>PortFast + BPDU Guard روی پورت‌های کاربر و ساخت تخلف</td><td>show interfaces status err-disabled</td></tr>
+<tr><td>۳</td><td>EtherChannel با LACP بین دو سوییچ</td><td>show etherchannel summary</td></tr>
+<tr><td>۴</td><td>Port Security با Sticky و ثبت تخلف</td><td>show port-security interface</td></tr>
+<tr><td>۵</td><td>DHCP Snooping + DAI (یا ثبت محدودیت شبیه‌ساز)</td><td>show ip dhcp snooping</td></tr>
+<tr><td>۶</td><td>سه عیب TS06 تا TS08 با RCA</td><td>گزارش یک‌صفحه‌ای</td></tr>
+<tr><td>۷</td><td>HLD شعبه‌ی Collapsed Core</td><td>فایل طراحی</td></tr>
+</table>
+<p><b>معیار قبولی:</b> حداقل ۶ از ۷ مورد با مدرک (طبق Blueprint G2). وقتی تمام شد بگویید «G2 انجام شد».</p>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): سه لایه‌ی شبکه؟</summary><pre><code>Access, Distribution, Core</code></pre>
+</details>
+<details><summary>۲ (ساده): Collapsed Core یعنی چه؟</summary><pre><code>Distribution and Core are merged into one layer (two layer-3 switches).</code></pre>
+</details>
+<details><summary>۳ (متوسط): چرا Access به دو Distribution وصل است؟</summary><pre><code>Redundancy: if one uplink or distribution switch fails, the other keeps the access switch online.</code></pre>
+</details>
+<details><summary>۴ (سخت): در طراحی سه‌لایه، Root STP کجا باشد؟</summary><pre><code>On the Distribution/Core switches, never on access switches.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>این Lab یک «مرور کل هفته ۴» است: روی مثلث SW1-SW2-SW3 همه‌ی تنظیمات را اعمال کنید.</p>
+<ol>
+<li>Rapid-PVST و Root/Secondary (درس ۴-۲).</li>
+<li>PortFast و BPDU Guard روی پورت کاربر (درس ۴-۲).</li>
+<li>EtherChannel بین SW1 و SW2 (درس ۴-۳).</li>
+<li>Port Security روی پورت PC (درس ۴-۴).</li>
+<li>Snooping و DAI (درس ۴-۵).</li>
+<li>پیکربندی را بکاپ و در Git (بدون رمز) ذخیره کنید.</li>
+</ol>
+<pre><code>SWx# show spanning-tree summary
+SWx# show etherchannel summary
+SWx# show port-security
+SWx# show ip dhcp snooping
+SWx# copy running-config flash:SWx-w4-final.cfg</code></pre>
+
+<h2>Lab مستقل</h2>
+<p>سه سناریوی TS06 تا TS08 را بسازید و هرکدام را با RCA یک‌صفحه‌ای در <code>03-ops/rca-w4.md</code> ثبت کنید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>بعد از تغییرات هفته ۴ شبکه ناپایدار است</td></tr>
+<tr><th>روش</th><td>لایه‌به‌لایه: لینک و STP و Channel و Port Security و DHCP</td></tr>
+<tr><th>ابزار</th><td>show spanning-tree ، show etherchannel summary ، show interfaces status</td></tr>
+<tr><th>پیشگیری</th><td>تغییر مرحله‌ای با بکاپ و reload in</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>چرا لایه‌بندی؟</summary><p>برای مقیاس‌پذیری و کنترل: هر لایه کار مشخصی دارد.</p></details>
+<details><summary>Collapsed Core کی مناسب است؟</summary><p>شعبه‌ی کوچک با کاربران کم.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>A hierarchical design simplifies troubleshooting and scaling.</td><td>طراحی سلسله‌مراتبی عیب‌یابی و مقیاس‌پذیری را ساده می‌کند.</td></tr>
+<tr><td>Every access switch has redundant uplinks to the distribution layer.</td><td>هر سوییچ Access Uplink پشتیبان به لایه‌ی Distribution دارد.</td></tr>
+<tr><td>Collapsed core merges the core and distribution layers.</td><td>Collapsed Core لایه‌های Core و Distribution را ادغام می‌کند.</td></tr>
+<tr><td>Document the design before you configure.</td><td>پیش از پیکربندی، طراحی را مستند کنید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why should the STP root never be an access switch?</summary><p>Because all traffic would flow through a low-capacity edge device instead of the core.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ HLD شعبه را بنویسم.</li>
+<li>☐ TS06 تا TS08 را با RCA ثبت کنم.</li>
+<li>☐ Gate G2 را کامل کنم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
 `
     },
     guide: {
