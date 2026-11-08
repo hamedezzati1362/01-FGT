@@ -149,7 +149,7 @@ summary{cursor:pointer;font-weight:600}
      ===================================================================== -->
 <script id="course-data">
 window.COURSE = {
-  version: "1.1 (هفته ۱ تا ۷)",
+  version: "1.2 (هفته ۱ تا ۸)",
   updated: "2026-11-07",
   modules: [
     {id:"m0", title:"شروع و راهنما", lessons:[
@@ -208,7 +208,13 @@ window.COURSE = {
       {id:"w7-4", title:"درس ۷-۴: ACL", ready:true},
       {id:"w7-5", title:"درس ۷-۵: Syslog و SNMP", ready:true},
       {id:"w7-6", title:"درس ۷-۶: QoS، Service Matrix و آزمون هفته", ready:true},
-      {id:"w8", title:"هفته ۸: اتوماسیون، Hardening، چک‌پوینت", ready:false}
+      {id:"w8", title:"هفته ۸ — نقشه درس‌ها", ready:true},
+      {id:"w8-1", title:"درس ۸-۱: Hardening تجهیزات", ready:true},
+      {id:"w8-2", title:"درس ۸-۲: AAA و سطح‌های دسترسی", ready:true},
+      {id:"w8-3", title:"درس ۸-۳: JSON، YAML و REST", ready:true},
+      {id:"w8-4", title:"درس ۸-۴: Python و Netmiko", ready:true},
+      {id:"w8-5", title:"درس ۸-۵: Ansible", ready:true},
+      {id:"w8-6", title:"درس ۸-۶: Git، As-Built و CP1", ready:true}
     ]},
     {id:"p5", title:"فاز ۵ — FortiGate: هسته و Policy (هفته ۹–۱۰)", lessons:[
       {id:"w9", title:"هفته ۹: معماری، Interface، Zone، Routing", ready:false},
@@ -6760,6 +6766,1038 @@ R1# show class-map</code></pre>
 <li>☐ MQC را بسازم و Verify کنم.</li>
 <li>☐ Service Matrix را بنویسم.</li>
 <li>☐ آزمون کوچک را کامل کنم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+
+    w8: {
+      sub: "نقشه هفته ۸: Hardening و Automation.",
+      html: `
+<div class="meta"><span class="tag">هفته ۸</span><span class="tag">۶ درس</span><span class="tag">CP1 پایان فاز Cisco</span></div>
+<p>این هفته شبکه‌ی ساخته‌شده را امن و قابل‌نگه‌داری می‌کنیم: سخت‌سازی، کنترل دسترسی، و اتوماسیون ایمن (فقط خواندن در ابتدا). در پایان، مستند As-Built و نقطه‌ی بازبینی CP1 را کامل می‌کنیم.</p>
+<table>
+<tr><th>درس</th><th>موضوع</th><th>خروجی که باید بتوانید</th></tr>
+<tr><td>8-1</td><td>Hardening تجهیزات</td><td>سه صفحه‌ی دستگاه را امن کنید</td></tr>
+<tr><td>8-2</td><td>AAA و سطح‌های دسترسی</td><td>Least Privilege و Fallback</td></tr>
+<tr><td>8-3</td><td>JSON، YAML و REST</td><td>داده‌ی ساختاریافته و API</td></tr>
+<tr><td>8-4</td><td>Python و Netmiko</td><td>بکاپ read-only چند دستگاه</td></tr>
+<tr><td>8-5</td><td>Ansible</td><td>Baseline Idempotent با Check/Diff</td></tr>
+<tr><td>8-6</td><td>Git، As-Built و CP1</td><td>نسخه‌بندی Config و مستند نهایی</td></tr>
+</table>
+<div class="box"><b class="t">نیازمندی Lab</b>تمرین‌های اتوماسیون روی PC/VM خود شما اجرا می‌شود؛ Claude به هیچ تجهیزی وصل نمی‌شود. اگر دسترسی SSH به گره‌های PNetLab ندارید، ابتدا مسیر مدیریت (VLAN10) را با هم طراحی می‌کنیم.</div>
+`
+    },
+    'w8-1': {
+      sub: "سخت‌سازی سه صفحه‌ی دستگاه.",
+      html: `
+<div class="meta"><span class="tag">هفته ۸ - روز ۱</span><span class="tag">پیش‌نیاز: درس‌های ۲-۵، ۴-۲ و ۷-۴</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> سخت‌سازی (<span class="en">Hardening</span>) تجهیزات سیسکو: بستن سرویس‌های غیرضروری، محافظت از سه صفحه‌ی دستگاه (مدیریت، کنترل، داده)، و تهیه‌ی یک چک‌لیست استاندارد قابل‌اجرا روی همه‌ی دستگاه‌ها.</p>
+<p><b>چرا لازم است:</b> تجهیز شبکه‌ی «روشن‌شده و کار می‌کند» با تنظیمات پیش‌فرض آسیب‌پذیر است: سرویس‌های اضافه، رمزهای ضعیف، Telnet و پورت‌های باز. بیشتر نفوذها از پیکربندی ضعیف است، نه ضعف الگوریتم. Hardening ارزان‌ترین کنترل امنیتی است.</p>
+<ul>
+<li><b>در کار روزانه:</b> هر دستگاه جدید قبل از ورود به Production باید طبق چک‌لیست سخت‌سازی شود.</li>
+<li><b>در امنیت:</b> کاهش سطح حمله (Attack Surface).</li>
+<li><b>در Capstone:</b> CP1 (نقطه‌ی بازبینی ۱) بر اساس همین استاندارد ارزیابی می‌شود.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>سه صفحه‌ی دستگاه ← چک‌لیست مدیریت ← کنترل ← داده ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>Hardening</td><td>Device hardening</td><td>سخت‌سازی؛ کاهش سطح حمله</td></tr>
+<tr><td>Attack Surface</td><td>Attack Surface</td><td>مجموع نقاط قابل‌حمله</td></tr>
+<tr><td>Management Plane</td><td>Management Plane</td><td>مدیریت دستگاه (SSH، SNMP)</td></tr>
+<tr><td>Control Plane</td><td>Control Plane</td><td>پروتکل‌های مسیریابی/STP</td></tr>
+<tr><td>Data Plane</td><td>Data Plane</td><td>ترافیک کاربران</td></tr>
+<tr><td>CDP</td><td>Cisco Discovery Protocol</td><td>کشف همسایه (اطلاعات‌افشا)</td></tr>
+<tr><td>LLDP</td><td>Link Layer Discovery Protocol</td><td>نسخه‌ی استاندارد CDP</td></tr>
+<tr><td>CoPP</td><td>Control Plane Policing</td><td>محدودسازی ترافیک به CPU</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> سه صفحه‌ی هر دستگاه</h2>
+<p>یک تجهیز شبکه سه «لایه‌ی کار» دارد؛ هر کدام راه حمله‌ی خودش را دارد:</p>
+<figure class="fig"><svg viewBox="0 0 720 240" role="img" aria-label="topology"><rect x="40" y="30" width="200" height="56" rx="8" class="net"/><text x="140" y="56" text-anchor="middle" class="on">Management plane</text><text x="140" y="72" text-anchor="middle" class="cap">SSH, AAA, SNMP, logs</text><rect x="260" y="30" width="200" height="56" rx="8" class="hst"/><text x="360" y="56" text-anchor="middle" class="on">Control plane</text><text x="360" y="72" text-anchor="middle" class="cap">OSPF, STP, HSRP</text><rect x="480" y="30" width="200" height="56" rx="8" class="wrn"/><text x="580" y="56" text-anchor="middle" class="on">Data plane</text><text x="580" y="72" text-anchor="middle" class="cap">user traffic</text><rect x="130" y="150" width="460" height="60" rx="8" class="bx"/><text x="360" y="178" text-anchor="middle">Hardening = protect each plane</text><text x="360" y="194" text-anchor="middle" class="cap">least privilege, disable unused, log everything</text></svg><figcaption>شکل ۱: سه صفحه‌ی دستگاه و هدف Hardening.</figcaption></figure>
+<table>
+<tr><th>صفحه</th><th>کار</th><th>خطر</th><th>کنترل</th></tr>
+<tr><td>Management</td><td>ورود ادمین، SNMP، Log</td><td>دسترسی غیرمجاز</td><td>SSH، ACL، AAA، رمز قوی</td></tr>
+<tr><td>Control</td><td>OSPF، STP، HSRP</td><td>تزریق مسیر/Root جعلی</td><td>Authentication، BPDU/Root Guard</td></tr>
+<tr><td>Data</td><td>ترافیک کاربران</td><td>اسکن، Spoofing، Flooding</td><td>ACL، Port Security، Snooping</td></tr>
+</table>
+<h2><span class="hn">۲.</span> چک‌لیست Management Plane</h2>
+<pre><code>! 1. strong local credentials, hashed
+enable secret &lt;SECRET>
+username admin privilege 15 secret &lt;PASSWORD>
+service password-encryption
+no enable password
+
+! 2. SSH only, version 2, key >= 2048
+ip domain-name lab.local
+crypto key generate rsa modulus 2048
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+line vty 0 4
+ transport input ssh
+ login local
+ exec-timeout 10 0
+ access-class MGMT-ONLY in
+line console 0
+ exec-timeout 10 0
+ logging synchronous
+
+! 3. brute-force protection
+login block-for 120 attempts 5 within 60
+login on-failure log
+login on-success log
+
+! 4. banners
+banner login # Authorized access only #
+
+! 5. turn off unneeded management
+no ip http server
+no ip http secure-server
+no service pad
+no service finger
+no ip bootp server</code></pre>
+<ul>
+<li><code>service password-encryption</code>: رمزهای Type 7 را مخفی می‌کند ولی ضعیف است؛ رمز واقعی را فقط با <code>secret</code> بگذارید.</li>
+<li><code>login block-for</code>: بعد از ۵ تلاش ناموفق در ۶۰ ثانیه، ۱۲۰ ثانیه ورود بسته می‌شود.</li>
+<li><code>no ip http server</code>: وب‌مدیریت بدون نیاز را می‌بندد.</li>
+</ul>
+<div class="box"><b class="t">هشدار</b>رمز واقعی را در ریپو نگذارید (جانگهدار). و قبل از اعمال ACL/تغییر VTY از راه دور، <code>reload in 5</code> بگذارید تا قفل نشوید (درس ۲-۴).</div>
+<h2><span class="hn">۳.</span> چک‌لیست Control Plane</h2>
+<pre><code>! Layer 2
+spanning-tree mode rapid-pvst
+spanning-tree portfast bpduguard default
+spanning-tree guard root     (on edge facing ports)
+
+! Neighbor discovery: only where needed
+no cdp run                   (or: no cdp enable on user-facing ports)
+lldp run                     (only on trusted links)
+
+! Routing: passive interfaces and authentication
+router ospf 1
+ passive-interface default
+ no passive-interface gi0/1
+interface gi0/1
+ ip ospf authentication message-digest
+ ip ospf message-digest-key 1 md5 &lt;OSPF-KEY></code></pre>
+<p>CDP/LLDP اطلاعات دستگاه (نام، IP، Image) را برای هر همسایه می‌گوید. روی پورت‌های کاربر باید خاموش باشد، چون مهاجم اطلاعات ارزشمند می‌گیرد.</p>
+<h2><span class="hn">۴.</span> چک‌لیست Data Plane</h2>
+<pre><code>! unused access ports: shut down and park in an unused VLAN
+interface range gi0/10 - 24
+ switchport mode access
+ switchport access vlan 999
+ shutdown
+
+! disable negotiation, avoid VLAN hopping
+interface range gi0/1 - 24
+ switchport nonegotiate
+
+! trunks: explicit native + allowed
+interface gi0/0
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 10,20,50
+
+! anti-spoofing basics
+no ip source-route
+no ip proxy-arp     (on user-facing interfaces)
+no ip redirects
+no ip unreachables  (on untrusted interfaces)</code></pre>
+<p>«VLAN 999 بدون استفاده» جای پارک پورت‌های خالی است؛ حتی اگر کسی کابل بزند، به شبکه‌ی خالی می‌رسد.</p>
+<h2><span class="hn">۵.</span> مثال‌ها</h2>
+<h3>ساده: بستن وب‌مدیریت</h3>
+<pre><code>Core# show ip http server status
+HTTP server status: Enabled
+Core(config)# no ip http server</code></pre>
+<h3>متوسط: پورت‌های خالی</h3>
+<pre><code>Before: 18 unused ports, all in VLAN 1, no shutdown (open door)
+After : shutdown + VLAN 999 for all unused ports</code></pre>
+<h3>سخت: کنترل خودکار</h3>
+<pre><code>Compare each device against the golden baseline:
+  show running-config | include http|telnet|cdp|snmp
+Any deviation = finding; record it and fix with a CHG.</code></pre>
+<div class="box"><b class="t">صادقانه</b>بعضی دستورها (مثل <code>login block-for</code> یا <code>service-policy</code>) روی Imageهای شبیه‌ساز ممکن است محدود باشند. نتیجه‌ی واقعی را ثبت کنید و در تجهیز واقعی تکرار کنید.</div>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): سه صفحه‌ی دستگاه؟</summary><pre><code>Management, control and data plane.</code></pre>
+</details>
+<details><summary>۲ (ساده): چرا no ip http server؟</summary><pre><code>To close an unnecessary management service and reduce the attack surface.</code></pre>
+</details>
+<details><summary>۳ (متوسط): چرا پورت‌های خالی shutdown و VLAN 999؟</summary><pre><code>So that a rogue device plugged into an unused port gets no access.</code></pre>
+</details>
+<details><summary>۴ (متوسط): چرا CDP روی پورت کاربر خاموش؟</summary><pre><code>It leaks device information (name, IP, software) to any host.</code></pre>
+</details>
+<details><summary>۵ (سخت): قبل از Hardening VTY از راه دور چه شبکه‌ی ایمنی می‌گذاریم؟</summary><pre><code>Backup the config and use "reload in 5" so a mistake does not lock you out.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>یک دستگاه (مثلاً Core-1) را با چک‌لیست سخت‌سازی کنید، مرحله‌ای و با بکاپ:</p>
+<h3>گام ۱: بکاپ و Baseline</h3>
+<pre><code>Core-1# copy running-config flash:Core1-before-hardening.cfg
+Core-1# show running-config | include http|telnet|cdp|snmp|password</code></pre>
+<h3>گام ۲: Management Plane</h3>
+<p>بخش ۲ را اعمال کنید (با <code>reload in 5</code>).</p>
+<h3>گام ۳: Control/Data Plane</h3>
+<p>بخش‌های ۳ و ۴ را اعمال و <code>reload cancel</code> کنید.</p>
+<h3>گام ۴: بازبینی</h3>
+<pre><code>Core-1# show running-config | include http|telnet|cdp|password
+Core-1# show ip ssh
+Core-1# show login</code></pre>
+
+<h2>Lab مستقل</h2>
+<p>«Hardening Baseline» (چک‌لیست ≥ ۲۰ بند با Verification) را در <code>03-ops/hardening-baseline.md</code> بنویسید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>بعد از Hardening دسترسی SSH قطع شد</td></tr>
+<tr><th>چک‌لیست</th><td>۱) ACL VTY شامل آدرس شما؟<br>۲) transport input ssh؟<br>۳) کلید RSA و نام‌کاربری؟<br>۴) login block-for فعال شده؟</td></tr>
+<tr><th>رفع</th><td>از Console وارد شوید و اصلاح کنید یا reload in منتظر بماند</td></tr>
+<tr><th>پیشگیری</th><td>بکاپ + reload in</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>Hardening چیست؟</summary><p>کاهش سطح حمله با بستن سرویس‌های اضافه و تنظیم امن.</p></details>
+<details><summary>چرا Management Plane مهم‌ترین است؟</summary><p>کنترل کامل دستگاه را می‌دهد.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Disable all unused services and ports.</td><td>همه‌ی سرویس‌ها و پورت‌های بلااستفاده را غیرفعال کنید.</td></tr>
+<tr><td>Restrict management access to a dedicated subnet.</td><td>دسترسی مدیریتی را به یک Subnet اختصاصی محدود کنید.</td></tr>
+<tr><td>Use secret instead of password for stored credentials.</td><td>برای رمزهای ذخیره‌شده به‌جای password از secret استفاده کنید.</td></tr>
+<tr><td>Compare every device against a hardening baseline.</td><td>هر دستگاه را با Baseline سخت‌سازی مقایسه کنید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why is "enable secret" preferred over "enable password"?</summary><p>Secret is stored as a strong hash; password is clear text or weak Type 7.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ Hardening را روی یک دستگاه اجرا و Verify کنم.</li>
+<li>☐ Baseline را بنویسم.</li>
+<li>☐ بکاپ قبل/بعد را نگه دارم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w8-2': {
+      sub: "AAA، Privilege و TACACS+/RADIUS.",
+      html: `
+<div class="meta"><span class="tag">هفته ۸ - روز ۲</span><span class="tag">پیش‌نیاز: درس ۸-۱</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> کنترل «چه کسی، چه کاری، چه زمانی» روی دستگاه: <span class="en">AAA</span> (احراز هویت، مجوز، حسابداری)، سطح‌های دسترسی (<span class="en">Privilege Level</span>)، و مفهوم <span class="en">TACACS+</span> و <span class="en">RADIUS</span>.</p>
+<p><b>چرا لازم است:</b> اگر همه‌ی ادمین‌ها یک رمز مشترک بدانند، نمی‌توانید بگویید «چه کسی این تغییر را داد». AAA هر ادمین را جدا می‌شناسد، دسترسی را به نیاز او محدود می‌کند (Least Privilege) و ثبت می‌کند چه دستوری زد.</p>
+<ul>
+<li><b>در کار روزانه:</b> کارمند کمک‌حال فقط show می‌بیند؛ ارشد تنظیم می‌کند.</li>
+<li><b>در امنیت:</b> مسئولیت‌پذیری (Accountability) و اصل Least Privilege.</li>
+<li><b>در Capstone:</b> Admin FortiGate هم با Profile و Trusted Host همین منطق را دارد.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>سه A ← Local AAA ← Privilege Level ← TACACS+ و RADIUS ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>AAA</td><td>Authentication, Authorization, Accounting</td><td>احراز هویت، مجوز، حسابداری</td></tr>
+<tr><td>TACACS+</td><td>Terminal Access Controller Access-Control System Plus</td><td>پروتکل AAA سیسکو برای مدیریت دستگاه</td></tr>
+<tr><td>RADIUS</td><td>Remote Authentication Dial-In User Service</td><td>پروتکل AAA برای دسترسی شبکه</td></tr>
+<tr><td>Privilege</td><td>Privilege level</td><td>سطح دسترسی 0 تا 15</td></tr>
+<tr><td>RBAC</td><td>Role-Based Access Control</td><td>دسترسی بر اساس نقش</td></tr>
+<tr><td>Fallback</td><td>Fallback</td><td>روش جایگزین وقتی سرور AAA در دسترس نیست</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> سه A</h2>
+<table>
+<tr><th>حرف</th><th>معنی</th><th>سؤال</th></tr>
+<tr><td>Authentication</td><td>احراز هویت</td><td>تو کیستی؟</td></tr>
+<tr><td>Authorization</td><td>مجوز</td><td>چه کاری مجازی انجام دهی؟</td></tr>
+<tr><td>Accounting</td><td>حسابداری</td><td>چه کاری انجام دادی؟</td></tr>
+</table>
+<p>مثال: ورود به ساختمان: کارت (هویت)، دسترسی فقط به طبقه‌ی خودت (مجوز)، و دفتر ورود و خروج (ثبت).</p>
+<h2><span class="hn">۲.</span> Local AAA (بدون سرور)</h2>
+<pre><code>R1(config)# username netadmin privilege 15 secret &lt;PASSWORD1>
+R1(config)# username helpdesk privilege 5 secret &lt;PASSWORD2>
+R1(config)# aaa new-model
+R1(config)# aaa authentication login default local
+R1(config)# aaa authorization exec default local
+R1(config)# aaa accounting exec default start-stop group tacacs+
+R1(config)# line vty 0 4
+R1(config-line)# login authentication default</code></pre>
+<div class="box"><b class="t">هشدار قفل‌شدن</b><code>aaa new-model</code> رفتار ورود را عوض می‌کند. قبل از آن حتماً یک کاربر محلی بسازید، با <code>reload in 5</code> کار کنید، و همیشه یک روش Fallback (Local) بگذارید.</div>
+<h2><span class="hn">۳.</span> سطح‌های دسترسی (Privilege Level)</h2>
+<table>
+<tr><th>سطح</th><th>معنی</th></tr>
+<tr><td>0</td><td>دستورهای حداقلی (logout، exit...)</td></tr>
+<tr><td>1</td><td>User EXEC (مشاهده‌ی محدود)</td></tr>
+<tr><td>5 (سفارشی)</td><td>مثلاً show و ping برای کمک‌حال</td></tr>
+<tr><td>15</td><td>دسترسی کامل (Privileged EXEC)</td></tr>
+</table>
+<pre><code>R1(config)# privilege exec level 5 show running-config
+R1(config)# privilege exec level 5 show ip interface brief
+R1(config)# privilege exec level 5 ping
+R1(config)# privilege exec level 5 traceroute</code></pre>
+<p>کاربر helpdesk با سطح ۵ فقط دستورهایی که به سطح ۵ داده‌اید را می‌بیند. راه امن‌تر و مدرن‌تر: <span class="en">Role-Based CLI (Parser View)</span>.</p>
+<h2><span class="hn">۴.</span> TACACS+ و RADIUS</h2>
+<p>به‌جای ساختن کاربر روی ۵۰ دستگاه، یک سرور مرکزی کاربران را نگه می‌دارد؛ دستگاه از سرور می‌پرسد.</p>
+<table>
+<tr><th>ویژگی</th><th>TACACS+</th><th>RADIUS</th></tr>
+<tr><td>سازنده</td><td>سیسکو</td><td>استاندارد</td></tr>
+<tr><td>پورت</td><td>TCP 49</td><td>UDP 1812/1813</td></tr>
+<tr><td>رمزگذاری</td><td>کل بسته</td><td>فقط رمز</td></tr>
+<tr><td>مجوز دستور (Command Authorization)</td><td>بله، دقیق</td><td>محدود</td></tr>
+<tr><td>کاربرد معمول</td><td>مدیریت دستگاه</td><td>VPN، Wi-Fi، 802.1X</td></tr>
+</table>
+<pre><code>R1(config)# tacacs server TAC1
+R1(config-server-tacacs)# address ipv4 10.10.10.70
+R1(config-server-tacacs)# key &lt;TACACS-KEY>
+R1(config)# aaa group server tacacs+ TAC-GRP
+R1(config-sg-tacacs+)# server name TAC1
+R1(config)# aaa authentication login default group TAC-GRP local
+R1(config)# aaa authorization exec default group TAC-GRP local</code></pre>
+<p>ترتیب در انتها یعنی: اول سرور، اگر در دسترس نبود Local (Fallback). این دستورها نیاز به سرور واقعی دارند؛ در Lab فقط ساخت و مفهوم را می‌بینیم و بعداً در FortiGate با RADIUS/LDAP کار می‌کنیم.</p>
+<h2><span class="hn">۵.</span> مثال‌ها</h2>
+<h3>ساده</h3>
+<pre><code>Two users: netadmin (priv 15) and helpdesk (priv 5)
+helpdesk logs in via SSH and can only run show and ping</code></pre>
+<h3>متوسط: ثبت فعالیت</h3>
+<pre><code>Accounting on: every exec session and command is logged to the AAA server
+Audit question "who changed the ACL at 14:05?" is answerable</code></pre>
+<h3>سخت: سرور AAA از کار افتاد</h3>
+<pre><code>Config: group TAC-GRP local
+TAC server down  -> login falls back to the local user (still works)
+Without "local" -> everyone is locked out (only console recovery)</code></pre>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): سه A؟</summary><pre><code>Authentication, Authorization, Accounting.</code></pre>
+</details>
+<details><summary>۲ (ساده): TACACS+ چه پورتی؟</summary><pre><code>TCP 49</code></pre>
+</details>
+<details><summary>۳ (متوسط): چرا Local را Fallback می‌گذاریم؟</summary><pre><code>If the AAA server is unreachable you can still log in with a local account.</code></pre>
+</details>
+<details><summary>۴ (متوسط): Privilege 15 یعنی؟</summary><pre><code>Full administrative access.</code></pre>
+</details>
+<details><summary>۵ (سخت): TACACS+ در برابر RADIUS برای مدیریت دستگاه؟</summary><pre><code>TACACS+ encrypts the whole packet and supports granular command authorization.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<h3>گام ۱: بکاپ و شبکه‌ی ایمنی</h3>
+<pre><code>R1# copy running-config flash:R1-before-aaa.cfg
+R1# reload in 10</code></pre>
+<h3>گام ۲: کاربران و AAA محلی</h3>
+<p>بخش ۲ را اجرا کنید.</p>
+<h3>گام ۳: تست</h3>
+<p>از R2 با <code>ssh -l helpdesk</code> وارد شوید و ببینید فقط دستورهای سطح ۵ کار می‌کنند. با netadmin وارد شوید و تنظیم بزنید.</p>
+<h3>گام ۴: برداشتن reload</h3>
+<pre><code>R1# reload cancel
+R1# copy running-config startup-config</code></pre>
+
+<h2>Lab مستقل</h2>
+<p>یک «Access Matrix» (نقش‌ها، سطح، دستورها، دستگاه‌ها) در <code>03-ops/access-matrix.md</code> بنویسید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>بعد از aaa new-model هیچ‌کس وارد نمی‌شود</td></tr>
+<tr><th>چک‌لیست</th><td>۱) کاربر محلی وجود دارد؟<br>۲) login authentication روی VTY؟<br>۳) Fallback؟<br>۴) سرور AAA در دسترس؟</td></tr>
+<tr><th>رفع</th><td>Console + اصلاح؛ یا انتظار برای reload in</td></tr>
+<tr><th>پیشگیری</th><td>همیشه شبکه‌ی ایمنی</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>Authorization چیست؟</summary><p>تعیین اینکه کاربر چه کارهایی مجاز است.</p></details>
+<details><summary>چرا Accounting؟</summary><p>ثبت اینکه چه کسی چه کرده؛ برای مسئولیت‌پذیری.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>AAA controls who can log in, what they can do and what they did.</td><td>AAA تعیین می‌کند چه کسی وارد شود، چه کاری کند و چه کرده است.</td></tr>
+<tr><td>Configure a local fallback in case the AAA server is down.</td><td>برای زمانی که سرور AAA قطع است Fallback محلی بگذارید.</td></tr>
+<tr><td>Apply least privilege to each role.</td><td>برای هر نقش اصل حداقل دسترسی را رعایت کنید.</td></tr>
+<tr><td>TACACS+ encrypts the entire payload.</td><td>TACACS+ کل بار بسته را رمز می‌کند.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What happens if you configure AAA with no local fallback and the server is down?</summary><p>Everyone is locked out of the device, except via console recovery.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ AAA محلی را با دو سطح بسازم.</li>
+<li>☐ Fallback را توضیح دهم.</li>
+<li>☐ Access Matrix را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w8-3': {
+      sub: "JSON، YAML، REST و curl.",
+      html: `
+<div class="meta"><span class="tag">هفته ۸ - روز ۳</span><span class="tag">پیش‌نیاز: هفته ۷</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> زبان مشترک اتوماسیون: <span class="en">JSON</span> و <span class="en">YAML</span>، مفهوم <span class="en">REST API</span> (متدها و کدهای وضعیت)، و ابزار <span class="en">curl</span>؛ همراه با تمرین خواندن داده‌ی ساختاریافته.</p>
+<p><b>چرا لازم است:</b> دستگاه‌ها و سرویس‌های امروزی (FortiGate، Zabbix، Ansible، ابزارهای ابری) همه با API و JSON صحبت می‌کنند. اگر نتوانید JSON بخوانید و یک درخواست API بفرستید، از بخش بزرگی از کار مدرن بیرون می‌مانید.</p>
+<ul>
+<li><b>در کار روزانه:</b> API فایروال برای گرفتن لیست Policy یا اضافه‌کردن Object.</li>
+<li><b>در امنیت:</b> اتوماسیون ایمن (Token، Least Privilege) و جلوگیری از افشای رمز.</li>
+<li><b>در FortiGate:</b> REST API فایروال با Token (W9 به بعد).</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>داده ساختاریافته ← JSON ← YAML ← REST ← curl ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>JSON</td><td>JavaScript Object Notation</td><td>قالب داده‌ی کلید-مقدار</td></tr>
+<tr><td>YAML</td><td>YAML Ain't Markup Language</td><td>قالب خوانای انسان برای تنظیمات</td></tr>
+<tr><td>API</td><td>Application Programming Interface</td><td>رابط برنامه‌نویسی</td></tr>
+<tr><td>REST</td><td>Representational State Transfer</td><td>سبک API مبتنی بر HTTP</td></tr>
+<tr><td>HTTP</td><td>HyperText Transfer Protocol</td><td>پروتکل وب</td></tr>
+<tr><td>Token</td><td>API token</td><td>کلید دسترسی به API</td></tr>
+<tr><td>Endpoint</td><td>API endpoint</td><td>آدرس یک منبع API</td></tr>
+<tr><td>jq</td><td>jq</td><td>ابزار خط فرمان برای JSON</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> چرا داده «ساختاریافته»؟</h2>
+<p>خروجی <code>show ip interface brief</code> برای انسان خوانا و برای برنامه دشوار است؛ باید ستون‌ها را جدا کرد و هر نسخه فرق می‌کند. اگر دستگاه همین اطلاعات را به‌صورت «کلید و مقدار» بدهد، برنامه مستقیم می‌خواند.</p>
+<h2><span class="hn">۲.</span> JSON</h2>
+<p>JSON از دو ساختار ساخته می‌شود: شیء (Object) داخل آکولاد و آرایه (Array) داخل کروشه. مقدارها: رشته، عدد، true/false، null:</p>
+<pre><code>{
+  "hostname": "R1",
+  "interfaces": [
+    { "name": "Gi0/0", "ip": "10.0.12.1", "status": "up" },
+    { "name": "Gi0/1", "ip": null,        "status": "down" }
+  ],
+  "ospf_enabled": true,
+  "uptime_days": 42
+}</code></pre>
+<p>خواندن: <code>hostname</code> کلید است و <code>"R1"</code> مقدار. <code>interfaces</code> آرایه‌ای از دو شیء است. قواعد: کلیدها با دابل‌کوتیشن، بین عناصر ویرگول، بدون ویرگول آخر.</p>
+<pre><code>Path examples:
+  hostname            -> "R1"
+  interfaces[0].ip    -> "10.0.12.1"
+  interfaces[1].status-> "down"</code></pre>
+<h2><span class="hn">۳.</span> YAML</h2>
+<p>همان داده، بدون آکولاد، با تورفتگی (فاصله‌ها، نه Tab):</p>
+<pre><code>hostname: R1
+interfaces:
+  - name: Gi0/0
+    ip: 10.0.12.1
+    status: up
+  - name: Gi0/1
+    ip: null
+    status: down
+ospf_enabled: true
+uptime_days: 42</code></pre>
+<div class="box"><b class="t">قانون YAML</b>تورفتگی معنی دارد. دو فاصله برای هر سطح؛ هرگز Tab. یک فاصله‌ی اضافه ساختار را خراب می‌کند. Ansible با YAML کار می‌کند.</div>
+<h2><span class="hn">۴.</span> REST API و HTTP</h2>
+<p>REST یعنی هر «منبع» (مثلاً یک Interface) یک آدرس (URL) دارد و با متدهای HTTP روی آن کار می‌کنیم:</p>
+<table>
+<tr><th>متد</th><th>کار</th><th>مثال</th></tr>
+<tr><td>GET</td><td>خواندن</td><td>لیست Interfaceها</td></tr>
+<tr><td>POST</td><td>ساختن</td><td>Object جدید</td></tr>
+<tr><td>PUT</td><td>جایگزینی کامل</td><td>به‌روزرسانی کامل</td></tr>
+<tr><td>PATCH</td><td>تغییر جزئی</td><td>یک فیلد</td></tr>
+<tr><td>DELETE</td><td>حذف</td><td>حذف Object</td></tr>
+</table>
+<table>
+<tr><th>کد وضعیت</th><th>معنی</th></tr>
+<tr><td>200</td><td>موفق</td></tr>
+<tr><td>201</td><td>ساخته شد</td></tr>
+<tr><td>400</td><td>درخواست نامعتبر</td></tr>
+<tr><td>401</td><td>احراز هویت نشده</td></tr>
+<tr><td>403</td><td>دسترسی ممنوع</td></tr>
+<tr><td>404</td><td>یافت نشد</td></tr>
+<tr><td>500</td><td>خطای سرور</td></tr>
+</table>
+<h2><span class="hn">۵.</span> curl و jq</h2>
+<p>ابزار خط فرمان برای ارسال درخواست HTTP. در Lab ما، سرویس API لوکال و Token نمونه استفاده می‌شود (بدون رمز واقعی):</p>
+<pre><code># GET request with a token header (token comes from an environment variable)
+curl -s -H "Authorization: Bearer $LAB_TOKEN" https://10.10.10.80/api/v2/monitor/system/status
+
+# pretty print and pick a field with jq
+curl -s -H "Authorization: Bearer $LAB_TOKEN" https://10.10.10.80/api/v2/monitor/system/status | jq ".results.hostname"
+
+# POST a JSON body
+curl -s -X POST -H "Content-Type: application/json" -d "{\\"name\\":\\"web1\\"}" https://10.10.10.80/api/v2/cmdb/firewall/address</code></pre>
+<div class="box"><b class="t">امنیت</b>Token را در دستور یا فایل ذخیره‌شده در Git ننویسید؛ از متغیر محیطی یا مدیر رمز استفاده کنید. <code>-k</code> (نادیده‌گرفتن Certificate) فقط در Lab و با علم به خطر.</div>
+<h2><span class="hn">۶.</span> مثال‌ها</h2>
+<h3>ساده: خواندن JSON</h3>
+<pre><code>From the JSON above: what is the IP of Gi0/0?  -> 10.0.12.1</code></pre>
+<h3>متوسط: تبدیل به YAML</h3>
+<p>همان شیء Gi0/1 را به YAML بنویسید (بخش ۳).</p>
+<h3>سخت: خطای 401</h3>
+<pre><code>curl returns HTTP 401
+Causes: missing/expired token, wrong header name, wrong scheme (Bearer vs api_key),
+        token tied to a different source IP (trusted host)
+Do not retry blindly: fix auth first</code></pre>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): تفاوت Object و Array؟</summary><pre><code>Object = key/value pairs in { }; Array = ordered list in [ ].</code></pre>
+</details>
+<details><summary>۲ (ساده): GET چه می‌کند؟</summary><pre><code>Reads a resource without changing it.</code></pre>
+</details>
+<details><summary>۳ (متوسط): کد 403 یعنی؟</summary><pre><code>Forbidden: authenticated but not allowed.</code></pre>
+</details>
+<details><summary>۴ (متوسط): چرا YAML با Tab خراب می‌شود؟</summary><pre><code>Indentation defines structure and tabs are not allowed.</code></pre>
+</details>
+<details><summary>۵ (سخت): چرا Token در Git ممنوع؟</summary><pre><code>Anyone with repo access could use it; it must come from a secret store or environment variable.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>این Lab روی لپ‌تاپ/VM شماست و به تجهیزات دست نمی‌زند.</p>
+<h3>گام ۱: فایل JSON بسازید</h3>
+<p>با یک ویرایشگر، JSON بخش ۲ را در <code>interfaces.json</code> ذخیره کنید.</p>
+<h3>گام ۲: خواندن با jq</h3>
+<pre><code>jq ".hostname" interfaces.json
+jq ".interfaces[].name" interfaces.json
+jq ".interfaces[] | select(.status==\\"down\\")" interfaces.json</code></pre>
+<h3>گام ۳: تبدیل به YAML</h3>
+<p>همان داده را دستی به YAML بنویسید و با یک ابزار آنلاین/محلی اعتبارسنجی کنید.</p>
+<h3>گام ۴: درخواست API آزمایشی</h3>
+<p>اگر API لوکال ندارید، با یک سرویس عمومی تست (مثلاً یک API نمونه) یک GET بزنید و کد وضعیت را بخوانید؛ بعداً با FortiGate تکرار می‌کنیم.</p>
+
+<h2>Lab مستقل</h2>
+<p>سه خروجی show را (دستی) به JSON ساختاریافته تبدیل کنید و در <code>04-automation/data-samples/</code> ذخیره کنید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>JSON خطای Parse می‌دهد</td></tr>
+<tr><th>چک‌لیست</th><td>۱) دابل‌کوتیشن؟<br>۲) ویرگول آخر؟<br>۳) آکولاد/کروشه بسته؟</td></tr>
+<tr><th>ابزار</th><td>jq ، validator</td></tr>
+<tr><th>رفع</th><td>اصلاح دستور نگارشی</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>REST چیست؟</summary><p>API مبتنی بر HTTP که هر منبع یک URL دارد.</p></details>
+<details><summary>چرا YAML برای Ansible؟</summary><p>خوانا و برای تنظیمات مناسب است.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>The API returns the data in JSON format.</td><td>API داده را به قالب JSON برمی‌گرداند.</td></tr>
+<tr><td>Send a GET request with the authorization header.</td><td>یک درخواست GET با هدر Authorization بفرستید.</td></tr>
+<tr><td>The server responded with HTTP 401, so the token is invalid.</td><td>سرور HTTP 401 داد، پس Token نامعتبر است.</td></tr>
+<tr><td>Keep tokens in environment variables, not in the repository.</td><td>Tokenها را در متغیر محیطی نگه دارید نه در ریپو.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What is the difference between PUT and PATCH?</summary><p>PUT replaces the whole resource; PATCH modifies part of it.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ JSON را بخوانم و بنویسم.</li>
+<li>☐ YAML را بنویسم.</li>
+<li>☐ curl/jq را تمرین کنم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w8-4': {
+      sub: "بکاپ read-only با Netmiko.",
+      html: `
+<div class="meta"><span class="tag">هفته ۸ - روز ۴</span><span class="tag">پیش‌نیاز: درس‌های ۸-۱ و ۸-۳</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> نوشتن یک اسکریپت <span class="en">Python</span> با کتابخانه‌ی <span class="en">Netmiko</span> که به چند دستگاه با SSH وصل شود، فقط دستورهای مشاهده (<code>show</code>) اجرا کند و پیکربندی را بکاپ بگیرد؛ بدون ذخیره‌ی رمز در کد.</p>
+<p><b>چرا لازم است:</b> گرفتن بکاپ از ۵۰ سوییچ به‌صورت دستی ساعت‌ها طول می‌کشد و فراموش می‌شود. یک اسکریپت ساده همین کار را در دقیقه‌ها و هر شب انجام می‌دهد و یک «تاریخچه‌ی تغییرات» می‌سازد. این اولین قدم عملی اتوماسیون است و ریسکش (چون فقط read است) پایین است.</p>
+<ul>
+<li><b>در کار روزانه:</b> بکاپ شبانه و گزارش Inventory.</li>
+<li><b>در امنیت:</b> اسکریپت اشتباه می‌تواند همه‌ی دستگاه‌ها را همزمان خراب کند؛ برای همین فقط read-only و تست روی یک دستگاه.</li>
+<li><b>در Capstone:</b> بکاپ خودکار Config همه‌ی تجهیزات در Git.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>چرا Netmiko ← محیط امن ← اسکریپت قدم‌به‌قدم ← خطاها ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>Python</td><td>Python</td><td>زبان برنامه‌نویسی</td></tr>
+<tr><td>Netmiko</td><td>Netmiko</td><td>کتابخانه‌ی Python برای SSH به تجهیزات شبکه</td></tr>
+<tr><td>venv</td><td>Python virtual environment</td><td>محیط جدا برای بسته‌ها</td></tr>
+<tr><td>Idempotent</td><td>Idempotent</td><td>اجرای چندباره = نتیجه‌ی یکسان</td></tr>
+<tr><td>Read-only</td><td>Read-only</td><td>فقط خواندن؛ بدون تغییر</td></tr>
+<tr><td>Inventory</td><td>Device inventory</td><td>فهرست دستگاه‌ها</td></tr>
+<tr><td>Environment variable</td><td>Environment variable</td><td>متغیر محیطی برای نگه‌داری رمز</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> ایده</h2>
+<p>Netmiko یک «کاربر خودکار» است: با SSH وارد دستگاه می‌شود، دستور می‌زند و خروجی را برمی‌گرداند.</p>
+<figure class="fig"><svg viewBox="0 0 720 222" role="img" aria-label="sequence"><rect x="55" y="10" width="130" height="34" rx="8" class="bx"/><text x="120" y="32" text-anchor="middle">Admin PC</text><path d="M120 44 V216" class="ln" stroke-dasharray="4 4"/><rect x="295" y="10" width="130" height="34" rx="8" class="bx"/><text x="360" y="32" text-anchor="middle">Script</text><path d="M360 44 V216" class="ln" stroke-dasharray="4 4"/><rect x="535" y="10" width="130" height="34" rx="8" class="bx"/><text x="600" y="32" text-anchor="middle">Device</text><path d="M600 44 V216" class="ln" stroke-dasharray="4 4"/><path d="M120 75 H360" class="rq"/><path d="M352 70 l8 5 l-8 5" class="rq"/><text x="240" y="67" text-anchor="middle" class="cap">run backup.py</text><path d="M360 113 H600" class="rq"/><path d="M592 108 l8 5 l-8 5" class="rq"/><text x="480" y="105" text-anchor="middle" class="cap">SSH + show running-config</text><path d="M600 151 H360" class="rp"/><path d="M368 146 l-8 5 l8 5" class="rp"/><text x="480" y="143" text-anchor="middle" class="cap">output</text><path d="M360 189 H120" class="rp"/><path d="M128 184 l-8 5 l8 5" class="rp"/><text x="240" y="181" text-anchor="middle" class="cap">save file + git commit</text></svg><figcaption>شکل ۱: اسکریپت با SSH به دستگاه وصل می‌شود، show می‌زند و خروجی را ذخیره می‌کند.</figcaption></figure>
+<h2><span class="hn">۲.</span> آماده‌سازی محیط (روی PC/VM شما)</h2>
+<p>این دستورها را شما روی دستگاه خودتان اجرا می‌کنید (من فقط فرمان می‌دهم و به شبکه‌ی شما متصل نمی‌شوم):</p>
+<pre><code>python3 -m venv netauto
+source netauto/bin/activate          # Windows: netauto\\Scripts\\activate
+pip install netmiko
+pip freeze > requirements.txt</code></pre>
+<p>رمز را در متغیر محیطی می‌گذاریم، نه در کد:</p>
+<pre><code>export NET_USER=netadmin
+export NET_PASS='&lt;your-password>'
+# Windows PowerShell:  $env:NET_USER="netadmin"; $env:NET_PASS="&lt;your-password>"</code></pre>
+<h2><span class="hn">۳.</span> Inventory</h2>
+<p>فایل <code>inventory.yaml</code> فقط آدرس‌ها و نوع دستگاه را دارد؛ رمز ندارد:</p>
+<pre><code>devices:
+  - name: CORE-SW1
+    host: 10.10.10.2
+    device_type: cisco_ios
+  - name: CORE-SW2
+    host: 10.10.10.3
+    device_type: cisco_ios
+  - name: EDGE-R1
+    host: 10.10.10.1
+    device_type: cisco_ios</code></pre>
+<h2><span class="hn">۴.</span> اسکریپت (Read-only)</h2>
+<pre><code>import os, sys, datetime, pathlib
+import yaml
+from netmiko import ConnectHandler
+from netmiko.exceptions import NetmikoTimeoutException, NetmikoAuthenticationException
+
+USER = os.environ.get("NET_USER")
+PASS = os.environ.get("NET_PASS")
+if not USER or not PASS:
+    sys.exit("Set NET_USER and NET_PASS first")
+
+# read-only: only show commands are allowed
+ALLOWED = ("show ",)
+COMMANDS = ["show running-config", "show version", "show ip interface brief"]
+for c in COMMANDS:
+    assert c.startswith(ALLOWED), "only show commands are allowed"
+
+out_dir = pathlib.Path("backups")
+out_dir.mkdir(exist_ok=True)
+stamp = datetime.date.today().isoformat()
+
+with open("inventory.yaml") as f:
+    inventory = yaml.safe_load(f)["devices"]
+
+for dev in inventory:
+    params = {"device_type": dev["device_type"], "host": dev["host"],
+              "username": USER, "password": PASS, "timeout": 20}
+    try:
+        with ConnectHandler(**params) as conn:
+            for cmd in COMMANDS:
+                text = conn.send_command(cmd)
+                name = cmd.replace(" ", "_")
+                (out_dir / f"{dev['name']}_{name}_{stamp}.txt").write_text(text)
+        print(f"OK   {dev['name']}")
+    except NetmikoTimeoutException:
+        print(f"FAIL {dev['name']}: timeout")
+    except NetmikoAuthenticationException:
+        print(f"FAIL {dev['name']}: authentication")
+    except Exception as e:
+        print(f"FAIL {dev['name']}: {e}")</code></pre>
+<p>توضیح بخش‌ها:</p>
+<ul>
+<li>رمز از متغیر محیطی خوانده می‌شود، نه از کد.</li>
+<li><code>ALLOWED</code>: اسکریپت فقط اجازه‌ی show دارد؛ اگر دستور دیگری اضافه شود برنامه می‌ایستد.</li>
+<li><code>try/except</code>: خرابی یک دستگاه بقیه را متوقف نمی‌کند.</li>
+<li>فایل خروجی هر دستگاه و تاریخ دارد؛ در Git نگه‌داری می‌شود (درس ۸-۶).</li>
+</ul>
+<h2><span class="hn">۵.</span> قبل از اجرا: چک‌لیست ایمنی</h2>
+<ol>
+<li>اول روی <b>یک</b> دستگاه تست کنید.</li>
+<li>فقط دستورهای show.</li>
+<li>رمز در متغیر محیطی؛ فایل خروجی هم ممکن است Hash رمز داشته باشد؛ خروجی را در Git عمومی نگذارید.</li>
+<li>حد تعداد اتصال همزمان؛ در Lab ما یکی‌یکی.</li>
+<li>لاگ اجرا را نگه دارید.</li>
+</ol>
+<h2><span class="hn">۶.</span> مثال‌ها</h2>
+<h3>ساده: یک دستگاه</h3>
+<pre><code>Inventory has 1 device -> script prints "OK CORE-SW1" and one file per command</code></pre>
+<h3>متوسط: خطای SSH</h3>
+<pre><code>FAIL CORE-SW2: timeout
+Check: ping, SSH enabled, VTY ACL allows the automation host, route</code></pre>
+<h3>سخت: تغییرات امن</h3>
+<p>وقتی بخواهید پیکربندی هم بزنید (<code>send_config_set</code>)، اول <code>--check</code> یا Dry-run، تغییر روی یک دستگاه، تأیید، بعد بقیه؛ و بکاپ قبل از تغییر. اتوماسیون خطا را سریع‌تر و گسترده‌تر پخش می‌کند.</p>
+<div class="box"><b class="t">دسترسی در PNetLab</b>گره‌های PNetLab به‌طور پیش‌فرض از بیرون SSH ندارند. یا مدیریت را به Lab وصل می‌کنید (VLAN10 مدیریت با آدرس قابل‌دسترس از VM اتوماسیون)، یا از <code>cisco_ios_telnet</code> روی پورت Console PNetLab استفاده می‌کنید. این تصمیم را قبل از اجرا با هم می‌گیریم؛ من به تجهیزات شما وصل نمی‌شوم.</div>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): چرا رمز در متغیر محیطی؟</summary><pre><code>So the password never ends up in the source code or in Git.</code></pre>
+</details>
+<details><summary>۲ (ساده): read-only یعنی چه؟</summary><pre><code>The script only runs show commands and never changes the device.</code></pre>
+</details>
+<details><summary>۳ (متوسط): چرا try/except؟</summary><pre><code>So a failing device does not stop the run for the remaining devices.</code></pre>
+</details>
+<details><summary>۴ (متوسط): چرا اول روی یک دستگاه؟</summary><pre><code>To limit the blast radius of a mistake.</code></pre>
+</details>
+<details><summary>۵ (سخت): چه چیزی در خروجی show running-config حساس است؟</summary><pre><code>Password hashes, SNMP communities, keys; do not publish the files.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>این Lab روی PC/VM شماست؛ هر گام را خودتان اجرا و نتیجه را گزارش می‌کنید:</p>
+<ol>
+<li>محیط و بسته‌ها را بسازید (بخش ۲).</li>
+<li><code>inventory.yaml</code> را با یک دستگاه بسازید.</li>
+<li>اسکریپت را اجرا کنید و فایل خروجی را ببینید.</li>
+<li>یک دستگاه را عمداً با آدرس اشتباه بگذارید و خطا را ببینید.</li>
+<li>سپس با ۳ دستگاه اجرا کنید.</li>
+</ol>
+
+<h2>Lab مستقل</h2>
+<p>اسکریپت را به «گزارش Inventory» (hostname، Version، Interfaceهای down) گسترش دهید؛ بدون هیچ تغییر روی دستگاه. در <code>04-automation/backup.py</code> (بدون رمز) ذخیره کنید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>اسکریپت به دستگاه وصل نمی‌شود</td></tr>
+<tr><th>چک‌لیست</th><td>۱) ping؟<br>۲) SSH روشن؟<br>۳) ACL VTY؟<br>۴) رمز/کاربر؟<br>۵) device_type</td></tr>
+<tr><th>ابزار</th><td>ssh دستی ، debug Netmiko با session_log</td></tr>
+<tr><th>رفع</th><td>اصلاح اتصال</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>Netmiko چه می‌کند؟</summary><p>با SSH به تجهیز شبکه وصل شده و دستور اجرا می‌کند.</p></details>
+<details><summary>چرا Read-only برای شروع؟</summary><p>ریسک کم و قابل‌بازگشت.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>The script connects over SSH and saves the running configuration.</td><td>اسکریپت با SSH وصل می‌شود و running-config را ذخیره می‌کند.</td></tr>
+<tr><td>Store credentials in environment variables.</td><td>اعتبارنامه‌ها را در متغیر محیطی نگه دارید.</td></tr>
+<tr><td>Test on a single device before running against the whole inventory.</td><td>قبل از اجرا روی کل Inventory روی یک دستگاه تست کنید.</td></tr>
+<tr><td>Handle exceptions so one failure does not stop the run.</td><td>خطاها را مدیریت کنید تا یک شکست اجرا را متوقف نکند.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why is a read-only script a safe first step in network automation?</summary><p>It cannot change any device, so a bug cannot cause an outage.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ اسکریپت را روی یک دستگاه اجرا کنم.</li>
+<li>☐ هیچ رمزی در کد یا ریپو نباشد.</li>
+<li>☐ خروجی بکاپ را ذخیره کنم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w8-5': {
+      sub: "Ansible، Idempotency، Check/Diff.",
+      html: `
+<div class="meta"><span class="tag">هفته ۸ - روز ۵</span><span class="tag">پیش‌نیاز: درس‌های ۸-۳ و ۸-۴</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> ابزار <span class="en">Ansible</span> برای مدیریت پیکربندی چند دستگاه: <span class="en">Inventory</span>، <span class="en">Playbook</span>، ماژول‌های <code>ios_command</code> و <code>ios_config</code>، مفهوم <span class="en">Idempotency</span>، و حالت‌های امن <code>--check</code> و <code>--diff</code>.</p>
+<p><b>چرا لازم است:</b> Python به شما آزادی کامل می‌دهد ولی همه‌چیز را خودتان باید بنویسید. Ansible تنظیمات را «توصیفی» می‌کند: بگویید «این Banner و این NTP روی همه‌ی ۵ دستگاه باشد»، و خودش فقط تفاوت‌ها را اعمال می‌کند. نتیجه یکنواختی تنظیمات و سرعت است.</p>
+<ul>
+<li><b>در کار روزانه:</b> استقرار استاندارد (Banner، NTP، Syslog) روی ده‌ها دستگاه.</li>
+<li><b>در امنیت:</b> Playbook = سند قابل‌بازبینی و Rollback؛ Vault برای رمزها.</li>
+<li><b>در Capstone:</b> اعمال Baseline سخت‌سازی روی همه‌ی تجهیزات Cisco.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>چرا Ansible ← Inventory ← Playbook ← Idempotency ← Check/Diff ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>Ansible</td><td>Ansible</td><td>ابزار اتوماسیون بدون Agent</td></tr>
+<tr><td>Playbook</td><td>Playbook</td><td>فایل YAML مراحل کار</td></tr>
+<tr><td>Module</td><td>Ansible module</td><td>واحد عمل مثل ios_config</td></tr>
+<tr><td>Inventory</td><td>Inventory</td><td>فهرست دستگاه‌ها و گروه‌ها</td></tr>
+<tr><td>Idempotency</td><td>Idempotency</td><td>اجرای مکرر، نتیجه‌ی یکسان</td></tr>
+<tr><td>Vault</td><td>Ansible Vault</td><td>رمزگذاری فایل‌های حساس</td></tr>
+<tr><td>Check mode</td><td>--check</td><td>اجرای آزمایشی بدون تغییر</td></tr>
+<tr><td>Diff</td><td>--diff</td><td>نمایش تفاوت</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> تفاوت اسکریپت و Ansible</h2>
+<table>
+<tr><th>موضوع</th><th>اسکریپت Python</th><th>Ansible</th></tr>
+<tr><td>سبک</td><td>دستوری: «این کارها را بکن»</td><td>توصیفی: «وضعیت باید این باشد»</td></tr>
+<tr><td>اجرای مکرر</td><td>ممکن است دوباره اعمال شود</td><td>فقط تفاوت اعمال می‌شود (Idempotent)</td></tr>
+<tr><td>تنظیم</td><td>کد</td><td>YAML</td></tr>
+<tr><td>یادگیری</td><td>نیاز به برنامه‌نویسی</td><td>ساده‌تر برای ادمین</td></tr>
+</table>
+<h2><span class="hn">۲.</span> نصب و Inventory</h2>
+<pre><code>python3 -m venv ansenv && source ansenv/bin/activate
+pip install ansible ansible-pylibssh
+ansible-galaxy collection install cisco.ios
+ansible --version</code></pre>
+<pre><code># inventory.ini
+[cisco]
+CORE-SW1 ansible_host=10.10.10.2
+CORE-SW2 ansible_host=10.10.10.3
+EDGE-R1  ansible_host=10.10.10.1
+
+[cisco:vars]
+ansible_network_os=cisco.ios.ios
+ansible_connection=ansible.netcommon.network_cli
+ansible_user={{ lookup('env','NET_USER') }}
+ansible_password={{ lookup('env','NET_PASS') }}</code></pre>
+<p>رمز دوباره از متغیر محیطی می‌آید؛ در فایل ننویسید.</p>
+<h2><span class="hn">۳.</span> Playbook اول: فقط خواندن</h2>
+<pre><code># show_version.yml
+- name: Collect version
+  hosts: cisco
+  gather_facts: false
+  tasks:
+    - name: Run show version
+      cisco.ios.ios_command:
+        commands:
+          - show version
+      register: out
+
+    - name: Print first lines
+      ansible.builtin.debug:
+        msg: "{{ out.stdout_lines[0][:3] }}"</code></pre>
+<pre><code>ansible-playbook -i inventory.ini show_version.yml</code></pre>
+<h2><span class="hn">۴.</span> Playbook تنظیم: Banner و NTP</h2>
+<pre><code># baseline.yml
+- name: Apply baseline
+  hosts: cisco
+  gather_facts: false
+  tasks:
+    - name: Set login banner
+      cisco.ios.ios_banner:
+        banner: login
+        text: "Authorized access only"
+        state: present
+
+    - name: Set NTP and syslog
+      cisco.ios.ios_config:
+        lines:
+          - ntp server 10.10.10.53
+          - logging host 10.10.10.60
+          - service timestamps log datetime msec localtime</code></pre>
+<h3>اجرای امن (سه قدم)</h3>
+<ol>
+<li><b>Check:</b> <code>ansible-playbook baseline.yml --check --diff --limit CORE-SW1</code> فقط نشان می‌دهد چه تغییر می‌کند.</li>
+<li><b>یک دستگاه:</b> بدون <code>--check</code> ولی با <code>--limit CORE-SW1</code>.</li>
+<li><b>همه:</b> بعد از تأیید، بدون <code>--limit</code>.</li>
+</ol>
+<div class="box"><b class="t">Idempotency</b>اگر Banner و NTP قبلاً تنظیم شده باشند، اجرای دوباره <code>changed=0</code> می‌دهد. این یعنی Playbook «حالت مطلوب» را می‌گوید، نه «کار».</div>
+<pre><code>PLAY RECAP
+CORE-SW1 : ok=2 changed=1 unreachable=0 failed=0   (first run)
+CORE-SW1 : ok=2 changed=0 unreachable=0 failed=0   (second run: idempotent)</code></pre>
+<h2><span class="hn">۵.</span> Vault: رمز امن</h2>
+<p>اگر مجبور شدید رمز در فایل بگذارید، با Vault رمزگذاری کنید:</p>
+<pre><code>ansible-vault create secrets.yml
+ansible-playbook -i inventory.ini baseline.yml --ask-vault-pass</code></pre>
+<p>فایل Vault هم نباید به‌همراه کلیدش در Git عمومی برود.</p>
+<h2><span class="hn">۶.</span> مثال‌ها</h2>
+<h3>ساده</h3>
+<pre><code>ios_command: show version on all hosts -> read-only, safe</code></pre>
+<h3>متوسط: همگن‌سازی</h3>
+<pre><code>Baseline applied to 5 devices -> all have the same NTP/syslog/banner
+Second run -> changed=0</code></pre>
+<h3>سخت: تغییر خطرناک</h3>
+<pre><code>Wrong ios_config line (e.g. removing the VTY ACL) pushed to ALL devices at once
+-> everyone loses SSH
+Prevention: --check/--diff first, --limit to one device, backup before, reload in on critical changes</code></pre>
+<div class="box"><b class="t">صادقانه</b>اجرای Ansible روی IOS شبیه‌ساز ممکن است به‌خاطر نسخه‌ی SSH یا الگوریتم‌ها خطا بدهد. اگر شد، خطا را ثبت کنید؛ این هم بخشی از یادگیری است.</div>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): Idempotency چیست؟</summary><pre><code>Running the same playbook again changes nothing if the desired state is already in place.</code></pre>
+</details>
+<details><summary>۲ (ساده): --check چه می‌کند؟</summary><pre><code>A dry run: shows what would change without changing anything.</code></pre>
+</details>
+<details><summary>۳ (متوسط): چرا --limit؟</summary><pre><code>To run on a single device first and limit the blast radius.</code></pre>
+</details>
+<details><summary>۴ (متوسط): رمز را کجا نگه می‌داریم؟</summary><pre><code>Environment variables or Ansible Vault, never plain text in Git.</code></pre>
+</details>
+<details><summary>۵ (سخت): تفاوت ios_command و ios_config؟</summary><pre><code>ios_command runs exec/show commands; ios_config pushes configuration lines.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>روی PC/VM شما:</p>
+<ol>
+<li>Inventory با ۲ دستگاه بسازید.</li>
+<li>Playbook <code>show_version.yml</code> را اجرا کنید.</li>
+<li><code>baseline.yml</code> را با <code>--check --diff --limit</code> اجرا کنید.</li>
+<li>روی یک دستگاه اعمال و سپس روی همه.</li>
+<li>دوباره اجرا کنید و <code>changed=0</code> را تأیید کنید.</li>
+</ol>
+
+<h2>Lab مستقل</h2>
+<p>یک Playbook «hardening-lite» (Banner، no ip http server، NTP، Syslog) در <code>04-automation/baseline.yml</code> بنویسید؛ بدون رمز.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>Playbook خطای اتصال می‌دهد</td></tr>
+<tr><th>چک‌لیست</th><td>۱) network_cli و network_os؟<br>۲) collection نصب است؟<br>۳) SSH کار می‌کند؟<br>۴) رمز/متغیر محیطی؟</td></tr>
+<tr><th>ابزار</th><td>ansible -m ping ، -vvv</td></tr>
+<tr><th>رفع</th><td>اصلاح Inventory یا اتصال</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>Ansible در چه چیزی بهتر از اسکریپت است؟</summary><p>تنظیم توصیفی و Idempotent برای چند دستگاه.</p></details>
+<details><summary>--diff چه نشان می‌دهد؟</summary><p>تفاوت پیکربندی قبل و بعد.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Run the playbook in check mode before applying changes.</td><td>قبل از اعمال تغییرات Playbook را در Check Mode اجرا کنید.</td></tr>
+<tr><td>The task is idempotent, so the second run reports no changes.</td><td>Task Idempotent است، پس اجرای دوم تغییری گزارش نمی‌کند.</td></tr>
+<tr><td>Limit the run to a single host first.</td><td>ابتدا اجرا را به یک میزبان محدود کنید.</td></tr>
+<tr><td>Encrypt secrets with Ansible Vault.</td><td>رمزها را با Ansible Vault رمز کنید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What does changed=0 on a second run tell you?</summary><p>The device already matches the desired state; the playbook is idempotent.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ Playbook را با Check/Diff اجرا کنم.</li>
+<li>☐ Idempotency را ببینم.</li>
+<li>☐ هیچ رمزی در Git نباشد.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w8-6': {
+      sub: "Git، مقایسه‌ی دستی/خودکار، As-Built و CP1.",
+      html: `
+<div class="meta"><span class="tag">هفته ۸ - روز ۶</span><span class="tag">پیش‌نیاز: درس‌های ۸-۴ و ۸-۵</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> نسخه‌بندی پیکربندی‌ها با <span class="en">Git</span> (commit، diff، branch)، جلوگیری از ورود رمز به ریپو، مقایسه‌ی روش دستی و خودکار، و تکمیل مستند <span class="en">Cisco Campus As-Built</span> برای نقطه‌ی بازبینی CP1.</p>
+<p><b>چرا لازم است:</b> وقتی شبکه خراب شد، سؤال اول «چه چیزی تغییر کرد؟» است. Git هر تغییر را با زمان و دلیل نگه می‌دارد و با <code>git diff</code> تفاوت را نشان می‌دهد. As-Built هم تصویر دقیق شبکه‌ی ساخته‌شده است و بدون آن هیچ‌چیز قابل‌نگه‌داری نیست.</p>
+<ul>
+<li><b>در کار روزانه:</b> تاریخچه‌ی Config و بازگشت به نسخه‌ی قبل.</li>
+<li><b>در امنیت:</b> جلوگیری از افشای رمز در Git و ثبت تغییرات برای حسابرسی.</li>
+<li><b>در Capstone:</b> CP1 پایان فاز Cisco و آغاز FortiGate است.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>Git چیست ← دستورها ← فایل‌های حساس ← مقایسه‌ی دستی و خودکار ← As-Built ← CP1 ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>Git</td><td>Git</td><td>سیستم کنترل نسخه</td></tr>
+<tr><td>Commit</td><td>Commit</td><td>ثبت یک نسخه با پیام</td></tr>
+<tr><td>Diff</td><td>Diff</td><td>تفاوت دو نسخه</td></tr>
+<tr><td>Branch</td><td>Branch</td><td>شاخه‌ی موازی کار</td></tr>
+<tr><td>Remote</td><td>Remote repository</td><td>ریپوی راه دور</td></tr>
+<tr><td>.gitignore</td><td>.gitignore</td><td>فهرست فایل‌هایی که ثبت نمی‌شوند</td></tr>
+<tr><td>As-Built</td><td>As-Built documentation</td><td>مستند وضعیت نهایی</td></tr>
+<tr><td>CP1</td><td>Checkpoint 1</td><td>نقطه‌ی بازبینی پایان فاز Cisco</td></tr>
+<tr><td>Secret scanning</td><td>Secret scanning</td><td>جست‌وجوی رمز در ریپو</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> Git به زبان ساده</h2>
+<p>Git مثل «Ctrl+Z با حافظه‌ی نامحدود» است: هر بار که چیزی را مهم می‌دانید، یک «عکس» (commit) می‌گیرید با یک پیام؛ بعداً هر عکس را می‌بینید و تفاوت‌ها را مقایسه می‌کنید.</p>
+<figure class="fig"><svg viewBox="0 0 720 184" role="img" aria-label="sequence"><rect x="55" y="10" width="130" height="34" rx="8" class="bx"/><text x="120" y="32" text-anchor="middle">Working dir</text><path d="M120 44 V178" class="ln" stroke-dasharray="4 4"/><rect x="295" y="10" width="130" height="34" rx="8" class="bx"/><text x="360" y="32" text-anchor="middle">Git (local)</text><path d="M360 44 V178" class="ln" stroke-dasharray="4 4"/><rect x="535" y="10" width="130" height="34" rx="8" class="bx"/><text x="600" y="32" text-anchor="middle">Remote repo</text><path d="M600 44 V178" class="ln" stroke-dasharray="4 4"/><path d="M120 75 H360" class="rq"/><path d="M352 70 l8 5 l-8 5" class="rq"/><text x="240" y="67" text-anchor="middle" class="cap">git add / commit</text><path d="M360 113 H600" class="rq"/><path d="M592 108 l8 5 l-8 5" class="rq"/><text x="480" y="105" text-anchor="middle" class="cap">git push</text><path d="M600 151 H360" class="rp"/><path d="M368 146 l-8 5 l8 5" class="rp"/><text x="480" y="143" text-anchor="middle" class="cap">git pull</text></svg><figcaption>شکل ۱: جریان کار Git؛ تغییر ← commit محلی ← push به ریپو.</figcaption></figure>
+<h2><span class="hn">۲.</span> دستورهای اصلی</h2>
+<pre><code>git init                                   # create a repository
+git status                                 # what changed?
+git add configs/CORE-SW1.cfg               # stage a file
+git commit -m "CORE-SW1: add NTP and syslog (CHG-0012)"
+git log --oneline                          # history
+git diff                                   # unstaged changes
+git diff HEAD~1 HEAD -- configs/CORE-SW1.cfg   # compare two versions
+git checkout -b feature/hardening          # new branch
+git restore configs/CORE-SW1.cfg           # undo local changes to a file</code></pre>
+<ul>
+<li>پیام commit باید بگوید «چه کسی/چرا» (شماره‌ی CHG).</li>
+<li><code>git diff</code> بعد از هر بکاپ: اگر تفاوتی هست، یعنی کسی تغییر داده؛ بدون تفاوت = شبکه تغییر نکرده.</li>
+</ul>
+<h2><span class="hn">۳.</span> رمز در Git: خط قرمز</h2>
+<pre><code># .gitignore
+backups/*.raw
+*.vault
+secrets*.yml
+.env
+*.pcap
+*.pcapng</code></pre>
+<p>قبل از commit فایل‌های Config را از رمزها پاک‌سازی (Sanitize) کنید:</p>
+<pre><code># redact secrets from a config before committing
+sed -E -e "s/(secret [0-9] ).*/\\1&lt;REDACTED>/" \\
+       -e "s/(password [0-9] ).*/\\1&lt;REDACTED>/" \\
+       -e "s/(snmp-server community ).*/\\1&lt;REDACTED>/" \\
+       CORE-SW1.raw > configs/CORE-SW1.cfg</code></pre>
+<div class="box"><b class="t">اگر رمز اشتباهی commit شد</b>۱) فوراً رمز را عوض کنید (فرض کنید لو رفته). ۲) تاریخچه را پاک‌سازی کنید (فقط با راهنمایی؛ حذف از commit‌های قبلی ساده نیست). ۳) Secret Scanning را فعال کنید. هرگز فقط «پاک‌کردن فایل در commit بعدی» را کافی ندانید.</div>
+<h2><span class="hn">۴.</span> دستی در برابر خودکار: قضاوت مستدل</h2>
+<table>
+<tr><th>معیار</th><th>دستی</th><th>خودکار</th></tr>
+<tr><td>سرعت (۵۰ دستگاه)</td><td>ساعت‌ها</td><td>دقیقه‌ها</td></tr>
+<tr><td>خطای تایپی</td><td>محتمل</td><td>کم</td></tr>
+<tr><td>یکنواختی</td><td>کم</td><td>زیاد</td></tr>
+<tr><td>ریسک خطای گسترده</td><td>محدود به یک دستگاه</td><td>همه‌ی دستگاه‌ها همزمان</td></tr>
+<tr><td>ردپا/Audit</td><td>دستی</td><td>Playbook + Git</td></tr>
+<tr><td>یادگیری</td><td>کم</td><td>نیاز به مهارت</td></tr>
+<tr><td>مناسب برای</td><td>تغییر یک‌باره/خاص</td><td>تغییرات تکراری و استاندارد</td></tr>
+</table>
+<p>نتیجه: اتوماسیون ابزار است، نه جایگزین قضاوت. تغییر پرریسک را با Check، یک دستگاه، سپس همه و همیشه با بکاپ انجام دهید.</p>
+<h2><span class="hn">۵.</span> Cisco Campus As-Built (محصول CP1)</h2>
+<p>مستند نهایی بخش Cisco باید این‌ها را داشته باشد:</p>
+<table>
+<tr><th>بخش</th><th>محتوا</th><th>منبع</th></tr>
+<tr><td>۱. توپولوژی</td><td>نمودار فیزیکی و منطقی</td><td>Lab A و PNetLab</td></tr>
+<tr><td>۲. IP Plan</td><td>VLAN، Subnet، Gateway</td><td>02-design/ip-plan.md</td></tr>
+<tr><td>۳. VLAN Matrix</td><td>VLAN، پورت‌ها</td><td>02-design/vlan-matrix.md</td></tr>
+<tr><td>۴. L2</td><td>STP، EtherChannel، Port Security، Snooping</td><td>تنظیمات و show</td></tr>
+<tr><td>۵. L3</td><td>OSPF، HSRP، Default</td><td>As-Built Lab A</td></tr>
+<tr><td>۶. سرویس‌ها</td><td>DHCP، DNS، NTP، NAT، ACL، Syslog، SNMP</td><td>Service Matrix</td></tr>
+<tr><td>۷. Hardening</td><td>Baseline و نتیجه‌ی بازبینی</td><td>03-ops/hardening-baseline.md</td></tr>
+<tr><td>۸. Runbookها</td><td>Change/Rollback و TSها</td><td>03-ops</td></tr>
+<tr><td>۹. Config Backup</td><td>نسخه‌های Git (Sanitize‌شده)</td><td>Git</td></tr>
+<tr><td>۱۰. محدودیت‌ها</td><td>موارد Unverified و نتیجه‌ی واقعی Lab</td><td>یادداشت Lab</td></tr>
+</table>
+<h2><span class="hn">۶.</span> نقطه‌ی بازبینی CP1</h2>
+<p>CP1 پایان فاز Cisco (هفته ۱ تا ۸) است. چک‌لیست قبولی:</p>
+<table>
+<tr><th>#</th><th>معیار</th><th>مدرک</th></tr>
+<tr><td>۱</td><td>IP Plan و VLAN Matrix کامل</td><td>فایل‌های طراحی</td></tr>
+<tr><td>۲</td><td>Lab A کامل و Failover تست‌شده</td><td>As-Built + نتیجه‌ی تست</td></tr>
+<tr><td>۳</td><td>Hardening Baseline روی همه‌ی تجهیزات</td><td>گزارش مقایسه</td></tr>
+<tr><td>۴</td><td>Service Matrix و سرویس‌ها</td><td>فایل Matrix</td></tr>
+<tr><td>۵</td><td>بکاپ Git (بدون رمز)</td><td>git log</td></tr>
+<tr><td>۶</td><td>Gate G1، G2، G3 گذرانده</td><td>سوابق</td></tr>
+<tr><td>۷</td><td>لیست درس‌آموخته‌ها و اشتباهات</td><td>صفحه‌ی مرور</td></tr>
+</table>
+<p><b>معیار قبولی:</b> هر ۷ مورد. با پایان CP1 و تأیید شما، فاز FortiGate (هفته ۹ به بعد) شروع می‌شود. تا آن زمان FortiGate را بوت نمی‌کنیم تا ساعت Evaluation مصرف نشود.</p>
+<h2><span class="hn">۷.</span> مثال‌ها</h2>
+<h3>ساده</h3>
+<pre><code>git add backups/CORE-SW1.cfg && git commit -m "baseline backup"</code></pre>
+<h3>متوسط: پیدا کردن تغییر</h3>
+<pre><code>git diff HEAD~1 HEAD -- backups/CORE-SW1.cfg
++ no ip http server        (someone hardened the device)</code></pre>
+<h3>سخت: رمز لو رفته</h3>
+<pre><code>A SNMP community appeared in a committed config
+Action: rotate the community immediately, sanitize history, enable secret scanning, add sanitize step before commit</code></pre>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): commit چیست؟</summary><pre><code>A recorded snapshot of the files with a message.</code></pre>
+</details>
+<details><summary>۲ (ساده): git diff چه می‌کند؟</summary><pre><code>Shows the differences between versions.</code></pre>
+</details>
+<details><summary>۳ (متوسط): چرا رمز را بعد از commit اشتباهی باید عوض کنیم؟</summary><pre><code>Anyone with repository access (or history) could have already read it.</code></pre>
+</details>
+<details><summary>۴ (متوسط): دستی یا خودکار برای ۵۰ دستگاه؟</summary><pre><code>Automated for repeated standard changes, with check mode and a single-device pilot.</code></pre>
+</details>
+<details><summary>۵ (سخت): CP1 چه چیزی را می‌سنجد؟</summary><pre><code>Completeness of the Cisco campus design: documents, Lab A, hardening, services, backup and gates.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>روی PC/VM شما:</p>
+<ol>
+<li>یک ریپوی جدید برای Config بسازید (<code>git init</code>).</li>
+<li>بکاپ‌های هفته ۸-۴ را با اسکریپت Sanitize کنید و commit کنید.</li>
+<li>یک تغییر کوچک روی یک دستگاه بدهید، دوباره بکاپ بگیرید و <code>git diff</code> را ببینید.</li>
+<li><code>.gitignore</code> را بسازید و تأیید کنید فایل‌های حساس commit نمی‌شوند.</li>
+<li>As-Built را بنویسید و چک‌لیست CP1 را پر کنید.</li>
+</ol>
+
+<h2>Lab مستقل</h2>
+<p>مستند «Cisco Campus As-Built» (۱۰ بخش) را در <code>03-ops/campus-as-built.md</code> کامل کنید. این محصول CP1 است.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>git push رد می‌شود یا رمز در ریپو است</td></tr>
+<tr><th>چک‌لیست</th><td>۱) .gitignore؟<br>۲) Sanitize انجام شده؟<br>۳) Secret scan؟<br>۴) Remote درست؟</td></tr>
+<tr><th>ابزار</th><td>git status ، git log ، grep برای الگوهای رمز</td></tr>
+<tr><th>رفع</th><td>عوض‌کردن رمز و پاک‌سازی</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>Git برای Config چه فایده‌ای دارد؟</summary><p>تاریخچه، Diff و Rollback.</p></details>
+<details><summary>CP1 چیست؟</summary><p>نقطه‌ی بازبینی پایان فاز Cisco قبل از FortiGate.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Commit every configuration change with a meaningful message.</td><td>هر تغییر پیکربندی را با پیام معنادار commit کنید.</td></tr>
+<tr><td>Use git diff to see what changed between two backups.</td><td>با git diff ببینید بین دو بکاپ چه تغییر کرده است.</td></tr>
+<tr><td>Never commit passwords or API tokens.</td><td>هرگز رمز یا Token را commit نکنید.</td></tr>
+<tr><td>The as-built document describes the network as it was actually built.</td><td>مستند As-Built شبکه را همان‌طور که واقعاً ساخته شده توصیف می‌کند.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What should you do if a secret was committed to the repository?</summary><p>Rotate the secret immediately, clean the history and enable secret scanning.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ ریپوی Config را بسازم و diff ببینم.</li>
+<li>☐ As-Built را کامل کنم.</li>
+<li>☐ چک‌لیست CP1 را پر کنم.</li>
 </ul>
 <h2>یادآوری اشتباهات شما</h2>
 <div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>

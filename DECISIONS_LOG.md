@@ -64,3 +64,8 @@ Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خ�
 ## موارد باز
 - Auto-start `NAS-BKP1`؛ پوشه‌های بکاپ (`configs`، `pnetlab-labs`، `vm-exports`، `iso-images`، `captures-logs`)؛ کپی ISOها و Export Golden؛ SFTP برای بکاپ دستگاه‌ها.
 تأیید Phase 0B؛ فرمت و اتصال هارد 1 TB (USB Passthrough به `NAS-BKP1`)؛ Samba/SFTP؛ Tier نهایی؛ Image Validation؛ IP واقعی Subnet/ماسک تأییدشده (`192.168.88.0/24`).
+
+## 2026-11-08 — محتوای هفته ۳ تا ۸ تکمیل شد (نسخه 1.2 فایل درس‌ها)
+- هفته ۳ (Switching I)، ۴ (Switching II + G2)، ۵ (Routing I)، ۶ (Routing II + FHRP + Lab A + G3)، ۷ (IP Services)، ۸ (Hardening/Automation + CP1) نوشته شد.
+- همه‌ی Labها «فرمان برای اجرا توسط کاربر» هستند و روی تجهیزات اجرا نشده‌اند؛ محدودیت‌های شبیه‌ساز (DHCP Snooping/DAI/Port-Security/ACL/QoS روی vIOSL2، LACP) در خود درس‌ها با «صادقانه درباره‌ی Lab» علامت‌گذاری شده است.
+- هفته ۹ به بعد (FortiGate) شروع نشده؛ FortiGate تا W9 بوت نمی‌شود.
