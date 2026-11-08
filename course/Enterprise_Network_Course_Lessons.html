@@ -149,7 +149,7 @@ summary{cursor:pointer;font-weight:600}
      ===================================================================== -->
 <script id="course-data">
 window.COURSE = {
-  version: "1.0 (هفته ۱ تا ۶)",
+  version: "1.1 (هفته ۱ تا ۷)",
   updated: "2026-11-07",
   modules: [
     {id:"m0", title:"شروع و راهنما", lessons:[
@@ -201,7 +201,13 @@ window.COURSE = {
       {id:"w6-6", title:"درس ۶-۶: عیب‌یابی و آزمون Gate G3", ready:true}
     ]},
     {id:"p4", title:"فاز ۴ — سرویس‌های IP و Hardening (هفته ۷–۸)", lessons:[
-      {id:"w7", title:"هفته ۷: DHCP، NAT، ACL، NTP، Syslog، SNMP", ready:false},
+      {id:"w7", title:"هفته ۷ — نقشه درس‌ها", ready:true},
+      {id:"w7-1", title:"درس ۷-۱: DHCP و Relay", ready:true},
+      {id:"w7-2", title:"درس ۷-۲: DNS و NTP", ready:true},
+      {id:"w7-3", title:"درس ۷-۳: NAT و PAT", ready:true},
+      {id:"w7-4", title:"درس ۷-۴: ACL", ready:true},
+      {id:"w7-5", title:"درس ۷-۵: Syslog و SNMP", ready:true},
+      {id:"w7-6", title:"درس ۷-۶: QoS، Service Matrix و آزمون هفته", ready:true},
       {id:"w8", title:"هفته ۸: اتوماسیون، Hardening، چک‌پوینت", ready:false}
     ]},
     {id:"p5", title:"فاز ۵ — FortiGate: هسته و Policy (هفته ۹–۱۰)", lessons:[
@@ -5786,6 +5792,974 @@ Fix     : bring a port up in the VLAN / allow it on a trunk</code></pre>
 <li>☐ پنج TS را با RCA ثبت کنم.</li>
 <li>☐ Gate G3 را کامل کنم.</li>
 <li>☐ As-Built را به‌روز کنم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+
+    w7: {
+      sub: "نقشه هفته ۷: سرویس‌های IP.",
+      html: `
+<div class="meta"><span class="tag">هفته ۷</span><span class="tag">۶ درس</span><span class="tag">آزمون کوچک پایان هفته</span></div>
+<p>تا اینجا شبکه را ساختید. این هفته سرویس‌هایی را اضافه می‌کنیم که شبکه را «قابل‌استفاده» و «قابل‌مدیریت» می‌کنند: آدرس‌دهی خودکار، نام و ساعت، NAT، کنترل دسترسی، Log و پایش.</p>
+<table>
+<tr><th>درس</th><th>موضوع</th><th>خروجی که باید بتوانید</th></tr>
+<tr><td>7-1</td><td>DHCP و Relay</td><td>آدرس‌دهی خودکار برای VLAN دیگر</td></tr>
+<tr><td>7-2</td><td>DNS و NTP</td><td>نام و ساعت هماهنگ</td></tr>
+<tr><td>7-3</td><td>NAT و PAT</td><td>دسترسی به اینترنت و انتشار سرور</td></tr>
+<tr><td>7-4</td><td>ACL</td><td>Policy ساده بین VLANها</td></tr>
+<tr><td>7-5</td><td>Syslog و SNMP</td><td>Log مرکزی و پایش امن</td></tr>
+<tr><td>7-6</td><td>QoS و Service Matrix</td><td>اولویت‌دهی و جمع‌بندی سرویس‌ها</td></tr>
+</table>
+<div class="box"><b class="t">نیازمندی Lab</b>همان Lab A (Core، Edge، PC/VPCS). برای Syslog/DNS بعداً یک VM لینوکسی در ESXi (MON) می‌سازیم؛ همین هفته مفهوم و پیکربندی سیسکو را تمرین کنید. هیچ تغییری روی ESXi/MikroTik توسط Claude انجام نمی‌شود.</div>
+`
+    },
+    'w7-1': {
+      sub: "DHCP Pool، Reservation و Relay.",
+      html: `
+<div class="meta"><span class="tag">هفته ۷ - روز ۱</span><span class="tag">پیش‌نیاز: درس ۴-۵</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> راه‌اندازی <span class="en">DHCP Server</span> روی روتر/سوییچ سیسکو، رزرو آدرس، و <span class="en">DHCP Relay</span> (<span class="en">ip helper-address</span>) برای زمانی که سرور در VLAN دیگری است.</p>
+<p><b>چرا لازم است:</b> هیچ سازمانی آدرس‌ها را دستی روی صدها کامپیوتر نمی‌زند. DHCP این کار را خودکار می‌کند؛ ولی چون Discover یک Broadcast است و Broadcast از VLAN خارج نمی‌شود، بدون Relay هر VLAN باید سرور جدا داشته باشد. فراموش‌کردن Relay از رایج‌ترین خطاهاست.</p>
+<ul>
+<li><b>در کار روزانه:</b> «کاربر آدرس نمی‌گیرد» پرتکرارترین تیکت است.</li>
+<li><b>در امنیت:</b> Reservation و Snooping از آدرس‌های غیرمجاز جلوگیری می‌کنند.</li>
+<li><b>در Capstone:</b> Windows Server DHCP مرکز برای همه‌ی VLANها Relay می‌شود.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>DHCP Pool ← آدرس‌های مستثنا ← Lease و Reservation ← Relay ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>DHCP</td><td>Dynamic Host Configuration Protocol</td><td>تخصیص خودکار IP</td></tr>
+<tr><td>Pool</td><td>DHCP Pool</td><td>محدوده‌ی آدرس قابل‌واگذاری</td></tr>
+<tr><td>Lease</td><td>Lease time</td><td>مدت اجاره‌ی آدرس</td></tr>
+<tr><td>Reservation</td><td>DHCP Reservation</td><td>اختصاص آدرس ثابت به یک MAC</td></tr>
+<tr><td>Relay</td><td>DHCP Relay Agent</td><td>انتقال Discover به سرور در VLAN دیگر</td></tr>
+<tr><td>giaddr</td><td>Gateway IP address</td><td>آدرس Interface Relay داخل پیام</td></tr>
+<tr><td>Scope</td><td>DHCP Scope</td><td>معادل Pool در Windows Server</td></tr>
+<tr><td>Option</td><td>DHCP Option</td><td>اطلاعات اضافه مثل DNS (۶) و Gateway (۳)</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> DHCP روی روتر یا سوییچ</h2>
+<p>یک Pool تعریف می‌کنیم: بازه‌ی آدرس، Gateway، DNS و مدت اجاره. آدرس‌های ثابت (Gateway، سرورها، پرینترها) را «مستثنا» می‌کنیم تا به کسی داده نشود.</p>
+<pre><code>R1(config)# ip dhcp excluded-address 10.10.20.1 10.10.20.20
+R1(config)# ip dhcp pool USERS20
+R1(dhcp-config)# network 10.10.20.0 255.255.255.0
+R1(dhcp-config)# default-router 10.10.20.1
+R1(dhcp-config)# dns-server 10.10.10.53
+R1(dhcp-config)# domain-name lab.local
+R1(dhcp-config)# lease 0 8 0</code></pre>
+<ul>
+<li><code>excluded-address</code>: بازه‌ی .1 تا .20 هرگز داده نمی‌شود.</li>
+<li><code>lease 0 8 0</code>: روز، ساعت، دقیقه؛ یعنی ۸ ساعت. برای Wi-Fi مهمان کوتاه‌تر، برای کاربران ثابت بلندتر.</li>
+<li><code>dns-server</code> و <code>default-router</code>: Optionهای ۶ و ۳ که به کلاینت می‌رسند.</li>
+</ul>
+<h2><span class="hn">۲.</span> Reservation: آدرس ثابت برای یک دستگاه</h2>
+<p>پرینتر باید همیشه یک IP داشته باشد ولی تنظیم دستی روی آن ممکن نیست. با MAC آن یک رزرو می‌سازیم:</p>
+<pre><code>R1(config)# ip dhcp pool PRINTER1
+R1(dhcp-config)# host 10.10.20.50 255.255.255.0
+R1(dhcp-config)# client-identifier 01aa.bbcc.0001.00
+R1(dhcp-config)# default-router 10.10.20.1</code></pre>
+<p>نکته: <code>client-identifier</code> با 01 شروع می‌شود (نوع Ethernet) و بعد MAC می‌آید.</p>
+<h2><span class="hn">۳.</span> مشکل: سرور در VLAN دیگر</h2>
+<p>DHCP Server معمولاً در VLAN سرورهاست، نه در VLAN کاربران. Discover یک Broadcast است و Router/Core آن را عبور نمی‌دهد. <b>DHCP Relay</b> روی Interface Gateway کاربران، Broadcast را می‌گیرد و به‌صورت Unicast به سرور می‌فرستد:</p>
+<figure class="fig"><svg viewBox="0 0 720 222" role="img" aria-label="sequence"><rect x="55" y="10" width="130" height="34" rx="8" class="bx"/><text x="120" y="32" text-anchor="middle">Client VLAN20</text><path d="M120 44 V216" class="ln" stroke-dasharray="4 4"/><rect x="295" y="10" width="130" height="34" rx="8" class="bx"/><text x="360" y="32" text-anchor="middle">Core (relay)</text><path d="M360 44 V216" class="ln" stroke-dasharray="4 4"/><rect x="535" y="10" width="130" height="34" rx="8" class="bx"/><text x="600" y="32" text-anchor="middle">DHCP Server</text><path d="M600 44 V216" class="ln" stroke-dasharray="4 4"/><path d="M120 75 H360" class="rq"/><path d="M352 70 l8 5 l-8 5" class="rq"/><text x="240" y="67" text-anchor="middle" class="cap">DISCOVER (broadcast)</text><path d="M360 113 H600" class="rq"/><path d="M592 108 l8 5 l-8 5" class="rq"/><text x="480" y="105" text-anchor="middle" class="cap">unicast, giaddr=10.10.20.2</text><path d="M600 151 H360" class="rp"/><path d="M368 146 l-8 5 l8 5" class="rp"/><text x="480" y="143" text-anchor="middle" class="cap">OFFER (to giaddr)</text><path d="M360 189 H120" class="rp"/><path d="M128 184 l-8 5 l8 5" class="rp"/><text x="240" y="181" text-anchor="middle" class="cap">OFFER (to client)</text></svg><figcaption>شکل ۱: Relay، Discover را Unicast می‌کند و آدرس Interface خودش را در giaddr می‌گذارد تا سرور Pool درست را انتخاب کند.</figcaption></figure>
+<pre><code>Core(config)# interface vlan 20
+Core(config-if)# ip helper-address 10.10.30.10
+! 10.10.30.10 = DHCP server in VLAN 30</code></pre>
+<p>سرور با <b>giaddr</b> می‌فهمد Discover از کدام Subnet آمده و Pool مربوط (VLAN 20) را به کلاینت می‌دهد. پس سرور باید Scope برای هر Subnet داشته باشد.</p>
+<div class="box"><b class="t">هشدار</b><code>ip helper-address</code> علاوه بر DHCP، ۸ سرویس UDP دیگر را هم Forward می‌کند (TFTP، DNS، NetBIOS، TACACS و ...). در Hardening با <code>no ip forward-protocol udp ...</code> محدودشان می‌کنیم.</div>
+<h2><span class="hn">۴.</span> دستورهای مشاهده</h2>
+<pre><code>R1# show ip dhcp pool
+R1# show ip dhcp binding
+R1# show ip dhcp conflict
+R1# show ip dhcp server statistics
+R1# debug ip dhcp server events   (briefly)</code></pre>
+<ul>
+<li><code>binding</code>: کدام MAC چه IP گرفته و تا کی.</li>
+<li><code>conflict</code>: آدرسی که قبل از واگذاری Ping داده شد و کسی جواب داد (تداخل).</li>
+<li><code>pool</code>: تعداد آدرس‌های مصرف‌شده و باقی‌مانده.</li>
+</ul>
+<h2><span class="hn">۵.</span> مثال‌ها</h2>
+<h3>ساده</h3>
+<pre><code>PC1> ip dhcp
+DDORA IP 10.10.20.21/24 GW 10.10.20.1</code></pre>
+<h3>متوسط: Relay</h3>
+<pre><code>Server in VLAN 30, clients in VLAN 20
+ip helper-address on Vlan20 -> clients get 10.10.20.x from the right scope</code></pre>
+<h3>سخت: Pool تمام شد</h3>
+<pre><code>Symptom : new clients get 169.254.x.x
+Check   : show ip dhcp pool -> 0 free addresses
+Cause   : lease too long + many short-lived devices (e.g. guest Wi-Fi)
+Fix     : shorten the lease, enlarge the pool, clear stale bindings</code></pre>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): چرا آدرس Gateway را exclude می‌کنیم؟</summary><pre><code>So the DHCP server never hands out the gateway address to a client.</code></pre>
+</details>
+<details><summary>۲ (ساده): DHCP Relay چه می‌کند؟</summary><pre><code>It converts the client broadcast into a unicast to a DHCP server on another subnet.</code></pre>
+</details>
+<details><summary>۳ (متوسط): giaddr برای چیست؟</summary><pre><code>It tells the server which subnet the request came from, so it picks the right scope.</code></pre>
+</details>
+<details><summary>۴ (متوسط): ۲۵۴ آدرس، ۲۰ مستثنا؛ حداکثر کلاینت؟</summary><pre><code>254 - 20 = 234</code></pre>
+</details>
+<details><summary>۵ (سخت): کاربران VLAN 20 آدرس نمی‌گیرند ولی VLAN 10 می‌گیرد؛ علت محتمل؟</summary><pre><code>Missing ip helper-address on Vlan20 (or no scope for that subnet on the server).</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<h3>گام ۱: DHCP روی Core</h3>
+<pre><code>Core(config)# ip dhcp excluded-address 10.10.20.1 10.10.20.20
+Core(config)# ip dhcp pool USERS20
+Core(dhcp-config)# network 10.10.20.0 255.255.255.0
+Core(dhcp-config)# default-router 10.10.20.254
+Core(dhcp-config)# dns-server 10.10.10.53</code></pre>
+<h3>گام ۲: تست با VPCS</h3>
+<pre><code>PC1> ip dhcp
+PC1> show ip
+Core# show ip dhcp binding</code></pre>
+<h3>گام ۳: Relay</h3>
+<p>DHCP Pool را روی یک روتر دیگر (مثلاً R-SRV در VLAN 30) بسازید و روی <code>interface vlan 20</code> دستور helper-address بزنید؛ از VPCS دوباره آدرس بگیرید و Capture را ببینید: Discover Broadcast روی لینک PC، Unicast روی لینک سرور.</p>
+<h3>گام ۴: Reservation</h3>
+<p>یک رزرو برای MAC یکی از VPCSها بسازید و تأیید کنید همیشه همان IP را می‌گیرد.</p>
+
+<h2>Lab مستقل</h2>
+<p>جدول «Scope Plan» (VLAN، Subnet، بازه، Excluded، Lease، DNS، Reservationها) را در <code>02-design/dhcp-plan.md</code> بنویسید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>کلاینت 169.254.x.x می‌گیرد</td></tr>
+<tr><th>چک‌لیست</th><td>۱) Relay تنظیم است؟<br>۲) Scope برای آن Subnet هست؟<br>۳) Pool پر نشده؟<br>۴) Snooping/ACL جلوی Offer را نمی‌گیرد؟<br>۵) مسیر به سرور</td></tr>
+<tr><th>ابزار</th><td>show ip dhcp binding ، show ip dhcp pool ، Capture</td></tr>
+<tr><th>رفع</th><td>افزودن Relay یا Scope</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>DHCP Relay کی لازم است؟</summary><p>وقتی سرور DHCP در Subnet دیگری است.</p></details>
+<details><summary>Reservation چیست؟</summary><p>اختصاص آدرس ثابت به یک MAC در Pool.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Exclude the static addresses from the DHCP pool.</td><td>آدرس‌های ثابت را از Pool DHCP مستثنا کنید.</td></tr>
+<tr><td>The relay agent forwards the broadcast as a unicast.</td><td>Relay Agent، Broadcast را به‌صورت Unicast ارسال می‌کند.</td></tr>
+<tr><td>The client received an APIPA address.</td><td>کلاینت آدرس APIPA گرفت.</td></tr>
+<tr><td>Create a reservation for the printer.</td><td>برای پرینتر یک Reservation بسازید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why does a DHCP request not cross a router by default?</summary><p>Because it is a broadcast and routers do not forward broadcasts.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ DHCP و Reservation را بسازم.</li>
+<li>☐ Relay را تست و Capture را تحلیل کنم.</li>
+<li>☐ Scope Plan را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w7-2': {
+      sub: "DNS و NTP و وابستگی‌ها.",
+      html: `
+<div class="meta"><span class="tag">هفته ۷ - روز ۲</span><span class="tag">پیش‌نیاز: درس ۷-۱</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> دو سرویس پایه که همه‌چیز به آن‌ها وابسته است: <span class="en">DNS</span> (تبدیل نام به IP) و <span class="en">NTP</span> (هماهنگی ساعت). چطور کار می‌کنند، چطور روی سیسکو تنظیم و بررسی می‌شوند، و چرا خرابی‌شان شبکه را «عجیب» می‌کند.</p>
+<p><b>چرا لازم است:</b> بیشتر شکایت‌های «اینترنت قطع است» در واقع «DNS خراب است». و Logها، Certificateها، Kerberos و Active Directory بدون ساعت درست بی‌معنی یا خراب می‌شوند؛ اختلاف بیش از ۵ دقیقه، ورود به دامنه را ناممکن می‌کند.</p>
+<ul>
+<li><b>در کار روزانه:</b> ping به IP جواب می‌دهد ولی به نام نه؟ DNS است.</li>
+<li><b>در امنیت:</b> Log با ساعت اشتباه برای تحلیل حادثه بی‌ارزش است.</li>
+<li><b>در Capstone:</b> DNS و NTP مرکز روی Windows Server است و همه‌ی تجهیزات به آن اشاره می‌کنند.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>DNS چطور کار می‌کند ← رکوردها ← تنظیم روی سیسکو ← NTP و Stratum ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>DNS</td><td>Domain Name System</td><td>سیستم نام دامنه</td></tr>
+<tr><td>Resolver</td><td>DNS Resolver</td><td>سرویس‌دهنده‌ای که پرس‌وجوی کلاینت را حل می‌کند</td></tr>
+<tr><td>A</td><td>A record</td><td>نام به IPv4</td></tr>
+<tr><td>AAAA</td><td>AAAA record</td><td>نام به IPv6</td></tr>
+<tr><td>PTR</td><td>Pointer record</td><td>IP به نام</td></tr>
+<tr><td>CNAME</td><td>Canonical Name</td><td>نام مستعار</td></tr>
+<tr><td>NTP</td><td>Network Time Protocol</td><td>پروتکل هماهنگی ساعت</td></tr>
+<tr><td>Stratum</td><td>Stratum</td><td>فاصله از منبع زمان دقیق</td></tr>
+<tr><td>UTC</td><td>Coordinated Universal Time</td><td>زمان هماهنگ جهانی</td></tr>
+<tr><td>FQDN</td><td>Fully Qualified Domain Name</td><td>نام کامل دامنه</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> DNS چطور کار می‌کند؟</h2>
+<p>دفترچه‌ی تلفن را تصور کنید: شما نام «example.com» را می‌دانید و DNS «شماره» (IP) آن را می‌دهد. کلاینت از سرور DNS خودش می‌پرسد؛ اگر سرور پاسخ را نداشت، از سرورهای بالاتر می‌پرسد و در پایان جواب را می‌گیرد و برای مدتی نگه می‌دارد (Cache).</p>
+<pre><code>Client -> local DNS server : www.example.com ?
+Local DNS -> root / TLD / authoritative servers (if not cached)
+Local DNS -> client : 203.0.113.10   (cached for TTL seconds)</code></pre>
+<table>
+<tr><th>رکورد</th><th>کار</th><th>مثال</th></tr>
+<tr><td>A</td><td>نام به IPv4</td><td>srv1.lab.local = 10.10.30.10</td></tr>
+<tr><td>AAAA</td><td>نام به IPv6</td><td>srv1.lab.local = 2001:db8:30::10</td></tr>
+<tr><td>PTR</td><td>IP به نام (Reverse)</td><td>10.10.30.10 = srv1.lab.local</td></tr>
+<tr><td>CNAME</td><td>نام مستعار</td><td>www = srv1</td></tr>
+<tr><td>MX</td><td>سرور ایمیل</td><td>mail.lab.local</td></tr>
+<tr><td>NS</td><td>سرور DNS یک Zone</td><td>dns1.lab.local</td></tr>
+</table>
+<h2><span class="hn">۲.</span> تنظیم DNS روی سیسکو</h2>
+<pre><code>R1(config)# ip domain-name lab.local
+R1(config)# ip name-server 10.10.10.53
+R1(config)# ip domain lookup
+R1# ping srv1
+R1# nslookup srv1  (not on all images)</code></pre>
+<div class="box"><b class="t">یادآوری از دوره</b>در درس ۲-۴ گفتیم <code>no ip domain-lookup</code> برای جلوگیری از «Translating...». اگر DNS واقعی دارید و می‌خواهید روی دستگاه از نام استفاده کنید، <code>ip domain lookup</code> و <code>ip name-server</code> را بزنید.</div>
+<p>روی کلاینت Windows: <code>nslookup srv1.lab.local</code> و <code>ipconfig /flushdns</code>.</p>
+<h2><span class="hn">۳.</span> NTP: همه‌ی ساعت‌ها یکی</h2>
+<p>ساعت کامپیوترها کم‌کم از هم فاصله می‌گیرد (Drift). NTP آن‌ها را با یک منبع دقیق هماهنگ می‌کند. سلسله‌مراتب Stratum: منبع اتمی/GPS ‏Stratum 0، سروری که مستقیم به آن وصل است Stratum 1، و هر مرحله پایین‌تر یک عدد بیشتر.</p>
+<pre><code>Stratum 0 : atomic clock / GPS
+Stratum 1 : server directly attached
+Stratum 2 : synchronizes from stratum 1
+...
+Stratum 16 : unsynchronized (invalid)</code></pre>
+<h3>تنظیم NTP روی سیسکو</h3>
+<pre><code>R1(config)# clock timezone IRST 3 30
+R1(config)# ntp server 10.10.10.53
+R1(config)# ntp server 192.168.88.1 prefer
+R1(config)# service timestamps log datetime msec localtime
+R1(config)# service timestamps debug datetime msec localtime
+R1# show ntp status
+R1# show ntp associations
+R1# show clock detail</code></pre>
+<ul>
+<li><code>clock timezone IRST 3 30</code>: ایران +۳:۳۰ (UTC). منطقه‌ی زمانی را در نظر بگیرید.</li>
+<li><code>ntp server ... prefer</code>: منبع ترجیحی. چند منبع برای تحمل خطا.</li>
+<li><code>show ntp status</code>: باید <code>Clock is synchronized</code> باشد.</li>
+</ul>
+<pre><code>R1# show ntp associations
+  address        ref clock   st  when  poll reach  delay  offset
+*~10.10.10.53   .GPS.       2   18    64   377    1.2   0.3
+
+* = synchronized   ~ = configured   reach 377 = all last 8 polls succeeded</code></pre>
+<p>در Lab ما ESXi از MikroTik (192.168.88.1) NTP می‌گیرد؛ همان منبع می‌تواند ریشه‌ی Stratum کل Lab باشد.</p>
+<h2><span class="hn">۴.</span> مثال‌ها</h2>
+<h3>ساده</h3>
+<pre><code>ping 10.10.30.10 works but ping srv1 fails
+-> DNS problem (name resolution), not connectivity</code></pre>
+<h3>متوسط: ساعت اشتباه</h3>
+<pre><code>Syslog entries from R1 show 2000-01-01 and from SW1 2026-11-08
+-> logs cannot be correlated; configure NTP on all devices</code></pre>
+<h3>سخت: Kerberos و Windows</h3>
+<p>اگر ساعت یک کلاینت بیش از ۵ دقیقه با Domain Controller اختلاف داشته باشد، ورود به دامنه یا دسترسی به فایل‌سرور شکست می‌خورد، با پیام‌های مبهم احراز هویت. همیشه اول ساعت را بررسی کنید.</p>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): A و PTR چه فرقی دارند؟</summary><pre><code>A maps a name to an IP; PTR maps an IP back to a name (reverse lookup).</code></pre>
+</details>
+<details><summary>۲ (ساده): Stratum 16 یعنی؟</summary><pre><code>The device is not synchronized (invalid time source).</code></pre>
+</details>
+<details><summary>۳ (متوسط): ping به IP می‌رسد ولی به نام نه؛ علت؟</summary><pre><code>DNS resolution failure (no/wrong DNS server, missing record).</code></pre>
+</details>
+<details><summary>۴ (متوسط): ساعت Windows 6 دقیقه عقب است؛ اثر؟</summary><pre><code>Kerberos authentication to the domain fails (allowed skew is about 5 minutes).</code></pre>
+</details>
+<details><summary>۵ (سخت): reach 0 در show ntp associations یعنی؟</summary><pre><code>None of the recent polls succeeded: server unreachable or filtered.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<h3>گام ۱: NTP روی روترها</h3>
+<pre><code>R1(config)# clock timezone IRST 3 30
+R1(config)# ntp server 192.168.88.1
+R1# show ntp status
+R1# show ntp associations</code></pre>
+<p>اگر IP مسیر نداشت، در Lab ایزوله NTP محلی را روی یک روتر (<code>ntp master 3</code>) بسازید و بقیه را به آن وصل کنید:</p>
+<pre><code>R1(config)# ntp master 3
+R2(config)# ntp server 10.0.12.1
+R2# show ntp status</code></pre>
+<h3>گام ۲: DNS</h3>
+<p>در PNetLab یک VM سبک (مثلاً لینوکس) به‌عنوان DNS بسازید یا فعلاً روی سیسکو یک نگاشت محلی بنویسید:</p>
+<pre><code>R1(config)# ip host srv1 10.10.30.10
+R1# ping srv1</code></pre>
+<h3>گام ۳: Syslog با ساعت درست</h3>
+<pre><code>R1(config)# service timestamps log datetime msec localtime
+R1# show logging | include %</code></pre>
+
+<h2>Lab مستقل</h2>
+<p>«Service Dependency Map» بنویسید: چه تجهیزی به DNS/NTP کدام سرور اشاره می‌کند؛ در <code>02-design/dns-ntp-map.md</code>.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>IP کار می‌کند، نام نه (یا ساعت اشتباه)</td></tr>
+<tr><th>چک‌لیست</th><td>۱) DNS Server درست روی کلاینت؟<br>۲) رکورد A هست؟<br>۳) NTP reach؟<br>۴) Timezone؟<br>۵) فایروال UDP 53/123</td></tr>
+<tr><th>ابزار</th><td>nslookup ، show ntp associations ، show clock detail</td></tr>
+<tr><th>رفع</th><td>اصلاح DNS/NTP</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>DNS چه می‌کند؟</summary><p>نام را به IP تبدیل می‌کند.</p></details>
+<details><summary>چرا NTP برای امنیت مهم است؟</summary><p>تحلیل Log و احراز هویت به ساعت صحیح وابسته است.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>The device synchronizes its clock with the NTP server.</td><td>دستگاه ساعتش را با سرور NTP هماهنگ می‌کند.</td></tr>
+<tr><td>DNS resolves hostnames to IP addresses.</td><td>DNS نام میزبان را به IP تبدیل می‌کند.</td></tr>
+<tr><td>A time skew of more than five minutes breaks Kerberos.</td><td>اختلاف ساعت بیش از پنج دقیقه Kerberos را خراب می‌کند.</td></tr>
+<tr><td>Flush the DNS cache on the client.</td><td>Cache DNS کلاینت را پاک کنید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why do all devices need the same NTP source?</summary><p>So timestamps in logs and certificates are consistent and events can be correlated.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ NTP را بالا بیاورم و Synchronized ببینم.</li>
+<li>☐ فرق خرابی DNS و اتصال را توضیح دهم.</li>
+<li>☐ Dependency Map را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w7-3': {
+      sub: "NAT استاتیک و PAT.",
+      html: `
+<div class="meta"><span class="tag">هفته ۷ - روز ۳</span><span class="tag">پیش‌نیاز: درس‌های ۲-۱ و ۷-۱</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> <span class="en">NAT</span> و <span class="en">PAT</span>: چطور آدرس‌های خصوصی با یک (یا چند) آدرس عمومی به اینترنت می‌روند؛ انواع Static، Dynamic و Overload؛ Inside/Outside؛ و جدول Translation.</p>
+<p><b>چرا لازم است:</b> آدرس‌های خصوصی (10.x، 192.168.x) در اینترنت Route نمی‌شوند. NAT مبدأ بسته را در لبه عوض می‌کند تا پاسخ برگردد. هر شبکه‌ی داخلی که به اینترنت وصل است NAT دارد؛ و خرابی آن (مثلاً NAT دوگانه) مبهم‌ترین مشکلات را می‌سازد.</p>
+<ul>
+<li><b>در کار روزانه:</b> تقریباً همه‌ی اینترنت‌ها PAT هستند.</li>
+<li><b>در امنیت:</b> NAT امنیت نیست؛ فقط پنهان‌سازی آدرس است. محافظ اصلی Policy فایروال است.</li>
+<li><b>در FortiGate:</b> Policy NAT، IP Pool و VIP همین مفاهیم را در فایروال دارند (W10).</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>چرا NAT ← Inside/Outside ← Static ← Dynamic ← PAT/Overload ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>NAT</td><td>Network Address Translation</td><td>ترجمه‌ی آدرس</td></tr>
+<tr><td>PAT</td><td>Port Address Translation</td><td>ترجمه‌ی آدرس و پورت (Overload)</td></tr>
+<tr><td>Inside Local</td><td>Inside Local</td><td>آدرس داخلی قبل از ترجمه</td></tr>
+<tr><td>Inside Global</td><td>Inside Global</td><td>آدرس عمومی بعد از ترجمه</td></tr>
+<tr><td>Overload</td><td>NAT Overload</td><td>چند آدرس داخلی با یک آدرس عمومی</td></tr>
+<tr><td>VIP</td><td>Virtual IP</td><td>Port Forward در فایروال (DNAT)</td></tr>
+<tr><td>DNAT</td><td>Destination NAT</td><td>تغییر آدرس مقصد</td></tr>
+<tr><td>SNAT</td><td>Source NAT</td><td>تغییر آدرس مبدأ</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> NAT چرا و چطور؟</h2>
+<p>فرض کنید یک ساختمان اداری یک شماره‌ی تلفن بیرونی دارد و داخل داخلی‌ها (۱۰۱، ۱۰۲...). وقتی کارمند ۱۰۲ تماس می‌گیرد، گیرنده شماره‌ی بیرونی را می‌بیند؛ منشی (NAT) می‌داند پاسخ را به کدام داخلی بدهد. NAT هم همین جدول را نگه می‌دارد.</p>
+<figure class="fig"><svg viewBox="0 0 720 240" role="img" aria-label="topology"><path d="M90 128 L360 128" class="rq"/><path d="M360 128 L630 128" class="rp"/><rect x="20" y="100" width="140" height="56" rx="8" class="net"/><text x="90" y="126" text-anchor="middle" class="on">Inside</text><text x="90" y="142" text-anchor="middle" class="cap">10.10.20.0/24</text><rect x="290" y="100" width="140" height="56" rx="8" class="wrn"/><text x="360" y="126" text-anchor="middle" class="on">NAT router</text><text x="360" y="142" text-anchor="middle" class="cap">inside/outside</text><rect x="560" y="100" width="140" height="56" rx="8" class="hst"/><text x="630" y="126" text-anchor="middle" class="on">Outside</text><text x="630" y="142" text-anchor="middle" class="cap">203.0.113.2</text><text x="40" y="50" class="cap">src 10.10.20.11 : 51000</text><text x="430" y="50" class="cap">src 203.0.113.2 : 51000 (translated)</text></svg><figcaption>شکل ۱: NAT مبدأ بسته را از آدرس داخلی به آدرس عمومی تبدیل می‌کند و در جدول نگه می‌دارد.</figcaption></figure>
+<table>
+<tr><th>اصطلاح</th><th>معنی</th><th>مثال</th></tr>
+<tr><td>Inside Local</td><td>آدرس داخلی (قبل از ترجمه)</td><td>10.10.20.11</td></tr>
+<tr><td>Inside Global</td><td>آدرس داخلی از دید بیرون (بعد از ترجمه)</td><td>203.0.113.2</td></tr>
+<tr><td>Outside Global</td><td>آدرس مقصد در اینترنت</td><td>8.8.8.8</td></tr>
+</table>
+<h2><span class="hn">۲.</span> سه نوع NAT</h2>
+<table>
+<tr><th>نوع</th><th>نگاشت</th><th>کاربرد</th></tr>
+<tr><td>Static NAT</td><td>یک به یک ثابت</td><td>انتشار سرور (مثلاً وب) به بیرون</td></tr>
+<tr><td>Dynamic NAT</td><td>داخلی به Pool از چند آدرس عمومی</td><td>نادر؛ وقتی چند IP عمومی داریم</td></tr>
+<tr><td>PAT / Overload</td><td>چند داخلی به یک IP عمومی با پورت متفاوت</td><td>اینترنت عادی</td></tr>
+</table>
+<p>PAT چطور؟ برای هر ارتباط، علاوه بر آدرس، شماره‌ی پورت مبدأ هم عوض می‌شود تا ارتباط‌ها از هم جدا بمانند:</p>
+<pre><code>10.10.20.11:51000 -> 203.0.113.2:51000
+10.10.20.12:51000 -> 203.0.113.2:51001   (port changed to stay unique)</code></pre>
+<h2><span class="hn">۳.</span> دستورها (خط‌به‌خط)</h2>
+<h3>PAT (Overload) با ACL</h3>
+<pre><code>R1(config)# access-list 10 permit 10.10.20.0 0.0.0.255
+R1(config)# interface gi0/0
+R1(config-if)# ip nat inside
+R1(config)# interface gi0/1
+R1(config-if)# ip nat outside
+R1(config)# ip nat inside source list 10 interface gi0/1 overload</code></pre>
+<ul>
+<li><code>ip nat inside / outside</code>: هر Interface را نقش می‌دهد؛ بدون این‌ها NAT کار نمی‌کند.</li>
+<li><code>access-list 10</code>: مشخص می‌کند کدام ترافیک ترجمه شود (چه کسی «داخل» است).</li>
+<li><code>overload</code>: PAT. <code>interface gi0/1</code>: از IP همان Interface خروجی استفاده شود.</li>
+</ul>
+<h3>Static NAT (انتشار سرور)</h3>
+<pre><code>R1(config)# ip nat inside source static 10.10.30.10 203.0.113.10
+! port forward only HTTPS:
+R1(config)# ip nat inside source static tcp 10.10.30.10 443 203.0.113.10 443</code></pre>
+<h3>مشاهده</h3>
+<pre><code>R1# show ip nat translations
+R1# show ip nat statistics
+R1# clear ip nat translation *
+R1# debug ip nat   (briefly)</code></pre>
+<pre><code>Pro Inside global        Inside local        Outside local    Outside global
+icmp 203.0.113.2:1       10.10.20.11:1       8.8.8.8:1        8.8.8.8:1
+tcp  203.0.113.2:51000   10.10.20.12:51000   93.184.216.34:443 93.184.216.34:443</code></pre>
+<h2><span class="hn">۴.</span> مثال‌ها</h2>
+<h3>ساده</h3>
+<pre><code>PC (10.10.20.11) pings 8.8.8.8
+show ip nat translations shows the entry with inside global 203.0.113.2</code></pre>
+<h3>متوسط: Static برای سرور</h3>
+<pre><code>Outside client -> 203.0.113.10:443
+Router translates the destination to 10.10.30.10:443 (inbound)
+Return traffic is translated back automatically</code></pre>
+<h3>سخت: چرا NAT کار نمی‌کند؟</h3>
+<pre><code>Cause 1: ip nat inside/outside missing or on the wrong interface
+Cause 2: ACL does not match the inside subnet
+Cause 3: missing default route to the ISP
+Cause 4: double NAT (router and firewall both translate)
+Check : show ip nat translations (empty?) , show ip nat statistics (misses)</code></pre>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): PAT چه چیزی را علاوه بر IP تغییر می‌دهد؟</summary><pre><code>The source port, so many hosts can share one public IP.</code></pre>
+</details>
+<details><summary>۲ (ساده): Inside Global چیست؟</summary><pre><code>The inside host's address as seen from outside after translation.</code></pre>
+</details>
+<details><summary>۳ (متوسط): دو دستور لازم برای NAT روی یک Interface؟</summary><pre><code>ip nat inside on the LAN interface and ip nat outside on the WAN interface.</code></pre>
+</details>
+<details><summary>۴ (متوسط): چرا NAT امنیت نیست؟</summary><pre><code>It only hides addresses; it does not filter traffic. A firewall policy provides the protection.</code></pre>
+</details>
+<details><summary>۵ (سخت): NAT دوگانه (Double NAT) چه مشکلی می‌سازد؟</summary><pre><code>Translations at two devices break inbound port forwards and complicate troubleshooting.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>روتر EDGE-R1 با Inside = لینک به Core و Outside = Loopback شبیه اینترنت (یا یک روتر دیگر).</p>
+<h3>گام ۱: PAT</h3>
+<pre><code>EDGE-R1(config)# access-list 10 permit 10.10.0.0 0.0.255.255
+EDGE-R1(config)# interface gi0/0
+EDGE-R1(config-if)# ip nat inside
+EDGE-R1(config)# interface gi0/2
+EDGE-R1(config-if)# ip address 203.0.113.2 255.255.255.0
+EDGE-R1(config-if)# ip nat outside
+EDGE-R1(config)# ip nat inside source list 10 interface gi0/2 overload</code></pre>
+<h3>گام ۲: تست</h3>
+<pre><code>PC1> ping 203.0.113.1
+EDGE-R1# show ip nat translations
+EDGE-R1# show ip nat statistics</code></pre>
+<p>طبق Probe اولیه، دستور NAT در vIOSL2 «پذیرفته» می‌شود؛ روی روتر vIOS (IOS واقعی) باید کار کند. نتیجه‌ی واقعی را ثبت کنید.</p>
+<h3>گام ۳: Static NAT</h3>
+<p>یک سرور Inside را با Static منتشر کنید و از «بیرون» تست کنید.</p>
+<h3>گام ۴: قبل/بعد Capture</h3>
+<p>روی لینک Inside و Outside Capture بگیرید و آدرس مبدأ را مقایسه کنید.</p>
+
+<h2>Lab مستقل</h2>
+<p>جدول «NAT Matrix» (Inside Local، Inside Global، نوع، سرویس) و تصویر Packet Flow قبل/بعد NAT را در <code>02-design/nat-matrix.md</code> بنویسید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>اینترنت ندارم؛ ping داخلی OK</td></tr>
+<tr><th>چک‌لیست</th><td>۱) show ip nat translations خالی؟<br>۲) inside/outside درست؟<br>۳) ACL مطابق؟<br>۴) Default route؟<br>۵) Double NAT؟</td></tr>
+<tr><th>ابزار</th><td>show ip nat statistics ، debug ip nat</td></tr>
+<tr><th>رفع</th><td>اصلاح نقش Interface یا ACL</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>PAT چطور چند کاربر را با یک IP می‌برد؟</summary><p>با تغییر پورت مبدأ برای هر ارتباط.</p></details>
+<details><summary>Static NAT برای چیست؟</summary><p>انتشار یک سرور داخلی با آدرس ثابت به بیرون.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Configure NAT overload on the outside interface.</td><td>NAT Overload را روی Interface خارجی تنظیم کنید.</td></tr>
+<tr><td>The translation table shows the inside local and inside global addresses.</td><td>جدول Translation، آدرس‌های Inside Local و Inside Global را نشان می‌دهد.</td></tr>
+<tr><td>NAT is not a security feature.</td><td>NAT ویژگی امنیتی نیست.</td></tr>
+<tr><td>Double NAT breaks inbound port forwarding.</td><td>Double NAT ارسال پورت ورودی را خراب می‌کند.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What does PAT add to the translation to keep sessions unique?</summary><p>The source port number.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ PAT را بسازم و Translation را ببینم.</li>
+<li>☐ Static NAT را تست کنم.</li>
+<li>☐ NAT Matrix را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w7-4': {
+      sub: "ACL استاندارد و Extended.",
+      html: `
+<div class="meta"><span class="tag">هفته ۷ - روز ۴</span><span class="tag">پیش‌نیاز: درس‌های ۲-۵ و ۶-۵</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> فهرست کنترل دسترسی (<span class="en">ACL</span>): انواع Standard و Extended، قاعده‌ی «اولین تطابق» و <span class="en">Implicit Deny</span>، جای درست گذاشتن ACL، و نوشتن Policy بین VLANها.</p>
+<p><b>چرا لازم است:</b> ACL اولین ابزار کنترل ترافیک روی سیسکوست و پایه‌ی فهم Policy فایروال است. ترتیب اشتباه یک قاعده یا فراموشی Implicit Deny می‌تواند کل شبکه را قطع کند یا درِ امنیت را باز بگذارد.</p>
+<ul>
+<li><b>در کار روزانه:</b> جداکردن مهمان از شبکه‌ی داخلی و محدودکردن مدیریت (SSH).</li>
+<li><b>در امنیت:</b> ACL، Least Privilege را در لایه‌ی شبکه پیاده می‌کند.</li>
+<li><b>در FortiGate:</b> Policy فایروال همان منطق Top-Down و First Match را دارد (با Stateful بودن).</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>ACL چیست ← First Match و Implicit Deny ← Standard در برابر Extended ← جای ACL ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>ACL</td><td>Access Control List</td><td>فهرست قوانین permit/deny</td></tr>
+<tr><td>Standard</td><td>Standard ACL</td><td>فقط آدرس مبدأ</td></tr>
+<tr><td>Extended</td><td>Extended ACL</td><td>مبدأ، مقصد، پروتکل، پورت</td></tr>
+<tr><td>Implicit Deny</td><td>Implicit Deny</td><td>انکار ضمنی در پایان هر ACL</td></tr>
+<tr><td>Wildcard</td><td>Wildcard mask</td><td>معکوس Mask</td></tr>
+<tr><td>ACE</td><td>Access Control Entry</td><td>یک خط ACL</td></tr>
+<tr><td>Stateless</td><td>Stateless</td><td>بدون حافظه‌ی وضعیت ارتباط</td></tr>
+<tr><td>established</td><td>TCP established</td><td>بسته‌های بعد از برقراری TCP</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> ACL چیست؟</h2>
+<p>ACL فهرستی از قوانین است. هر قانون می‌گوید: «اگر بسته با این مشخصات بود، اجازه بده (permit) یا ببند (deny)». مثل لیست مهمانان در ورودی یک سالن؛ نگهبان از بالای لیست شروع می‌کند و هر نامی را پیدا کرد همان‌جا تصمیم می‌گیرد.</p>
+<div class="box"><b class="t">دو قانون اصلی</b>۱) <b>اولین تطابق</b> (First Match): از بالا به پایین؛ به محض اولین قانونی که جور شد، بقیه خوانده نمی‌شود. ۲) <b>Implicit Deny</b>: در انتهای هر ACL یک <code>deny any</code> نامرئی هست؛ پس هر چه صریحاً permit نشده، بسته می‌شود.</div>
+<figure class="fig"><svg viewBox="0 0 720 250" role="img" aria-label="topology"><path d="M105 128 L365 128" class="rq"/><path d="M365 128 L630 56" class="rq"/><text x="497" y="86" text-anchor="middle" class="cap">deny</text><path d="M365 128 L630 196" class="rp"/><text x="497" y="156" text-anchor="middle" class="cap">permit</text><rect x="30" y="100" width="150" height="56" rx="8" class="wrn"/><text x="105" y="126" text-anchor="middle" class="on">Guest VLAN 50</text><text x="105" y="142" text-anchor="middle" class="cap">10.10.50.0/24</text><rect x="290" y="100" width="150" height="56" rx="8" class="bx"/><text x="365" y="126" text-anchor="middle">Core SVI</text><text x="365" y="142" text-anchor="middle" class="cap">ACL in on Vlan50</text><rect x="560" y="30" width="140" height="52" rx="8" class="hst"/><text x="630" y="54" text-anchor="middle" class="on">Servers VLAN 30</text><text x="630" y="70" text-anchor="middle" class="cap">10.10.30.0/24</text><rect x="560" y="170" width="140" height="52" rx="8" class="net"/><text x="630" y="194" text-anchor="middle" class="on">Internet</text><text x="630" y="210" text-anchor="middle" class="cap">via Edge</text></svg><figcaption>شکل ۱: ACL روی ورودی SVI مهمان: دسترسی به سرورها بسته و اینترنت باز است.</figcaption></figure>
+<h2><span class="hn">۲.</span> Standard در برابر Extended</h2>
+<table>
+<tr><th>معیار</th><th>Standard</th><th>Extended</th></tr>
+<tr><td>شماره</td><td>1-99 و 1300-1999</td><td>100-199 و 2000-2699</td></tr>
+<tr><td>معیار</td><td>فقط IP مبدأ</td><td>مبدأ، مقصد، پروتکل، پورت</td></tr>
+<tr><td>جای نصب</td><td>نزدیک مقصد</td><td>نزدیک مبدأ</td></tr>
+<tr><td>کاربرد</td><td>فیلتر ساده (مثل VTY)</td><td>Policy دقیق بین VLANها</td></tr>
+</table>
+<p>چرا Standard نزدیک مقصد؟ چون فقط مبدأ را می‌شناسد؛ اگر نزدیک مبدأ بگذارید، ترافیک آن مبدأ به همه‌ی مقصدها بسته می‌شود. Extended را نزدیک مبدأ می‌گذارند تا ترافیک ناخواسته زودتر از شبکه خارج شود.</p>
+<h2><span class="hn">۳.</span> دستورها (خط‌به‌خط)</h2>
+<p>روش Named که قابل‌ویرایش و خواناست:</p>
+<pre><code>Core(config)# ip access-list extended GUEST-IN
+Core(config-ext-nacl)# remark block guests from internal networks
+Core(config-ext-nacl)# deny ip 10.10.50.0 0.0.0.255 10.10.0.0 0.0.255.255
+Core(config-ext-nacl)# permit udp 10.10.50.0 0.0.0.255 any eq 53
+Core(config-ext-nacl)# permit tcp 10.10.50.0 0.0.0.255 any eq 80
+Core(config-ext-nacl)# permit tcp 10.10.50.0 0.0.0.255 any eq 443
+Core(config-ext-nacl)# deny ip any any log
+Core(config-ext-nacl)# exit
+Core(config)# interface vlan 50
+Core(config-if)# ip access-group GUEST-IN in</code></pre>
+<ul>
+<li><code>remark</code>: توضیح خط‌به‌خط (حتماً بنویسید).</li>
+<li>اول <code>deny</code> برای شبکه‌ی داخلی (10.10.0.0/16)؛ بعد permitهای لازم (DNS، وب).</li>
+<li><code>log</code>: برای دیدن Hit در Log (روی خطوط deny مفید است).</li>
+<li><code>ip access-group NAME in</code>: ACL را روی ورودی Interface اعمال می‌کند.</li>
+</ul>
+<pre><code>Core# show access-lists
+Core# show ip interface vlan 50 | include access list
+Core# show running-config | section ip access-list</code></pre>
+<pre><code>Extended IP access list GUEST-IN
+    10 deny ip 10.10.50.0 0.0.0.255 10.10.0.0 0.0.255.255 (12 matches)
+    20 permit udp 10.10.50.0 0.0.0.255 any eq domain (45 matches)
+    30 permit tcp 10.10.50.0 0.0.0.255 any eq www
+    40 permit tcp 10.10.50.0 0.0.0.255 any eq 443
+    50 deny ip any any log (3 matches)</code></pre>
+<h2><span class="hn">۴.</span> نکته‌های حرفه‌ای</h2>
+<ul>
+<li><b>ترتیب مهم است:</b> اگر permit کلی را بالای deny بگذارید، deny هرگز اجرا نمی‌شود.</li>
+<li><b>ACL فقط ترافیک عبوری را فیلتر می‌کند،</b> نه ترافیکی که خود روتر می‌سازد.</li>
+<li><b>Stateless است:</b> برگشت ترافیک باید صراحتاً مجاز شود (مثلاً <code>established</code> برای TCP)؛ فایروال Stateful این را خودکار می‌کند.</li>
+<li><b>جهت (in/out) را درست انتخاب کنید:</b> in = ورودی به Interface از بیرون؛ out = خروجی.</li>
+<li><b>قبل از اعمال،</b> مطمئن شوید قانون مدیریت (SSH) شما را قطع نمی‌کند.</li>
+</ul>
+<pre><code>Return traffic example (TCP, stateless ACL):
+  permit tcp any 10.10.20.0 0.0.0.255 established
+matches only packets with ACK/RST bits set (replies), not new connections</code></pre>
+<h2><span class="hn">۵.</span> مثال‌ها</h2>
+<h3>ساده: SSH فقط از مدیریت (Standard)</h3>
+<pre><code>Core(config)# ip access-list standard MGMT-ONLY
+Core(config-std-nacl)# permit 10.10.10.0 0.0.0.255
+Core(config)# line vty 0 4
+Core(config-line)# access-class MGMT-ONLY in</code></pre>
+<h3>متوسط: کاربران فقط HTTPS و DNS به سرور</h3>
+<pre><code>ip access-list extended USERS-TO-SRV
+ permit tcp 10.10.20.0 0.0.0.255 host 10.10.30.10 eq 443
+ permit udp 10.10.20.0 0.0.0.255 host 10.10.30.53 eq 53
+ deny ip 10.10.20.0 0.0.0.255 10.10.30.0 0.0.0.255 log
+ permit ip any any</code></pre>
+<h3>سخت: چرا Ping کار می‌کند ولی HTTPS نه؟</h3>
+<pre><code>Cause 1: ACL has permit icmp above, no permit for tcp 443
+Cause 2: ACL applied in the wrong direction or on the wrong interface
+Cause 3: implicit deny (no permit for the traffic)
+Cause 4: return path ACL blocks the replies (stateless)
+Check : show access-lists (hit counters), show ip interface ... | include access</code></pre>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): Implicit Deny چیست؟</summary><pre><code>An invisible "deny any" at the end of every ACL.</code></pre>
+</details>
+<details><summary>۲ (ساده): Extended را کجا می‌گذاریم؟</summary><pre><code>Close to the source of the traffic.</code></pre>
+</details>
+<details><summary>۳ (متوسط): Wildcard برای 10.10.20.0/24؟</summary><pre><code>0.0.0.255</code></pre>
+</details>
+<details><summary>۴ (متوسط): چرا ترتیب مهم است؟</summary><pre><code>Evaluation stops at the first match; a broad permit above a deny makes the deny unreachable.</code></pre>
+</details>
+<details><summary>۵ (سخت): ACL روی VLAN مهمان هر چیزی را می‌بندد؛ چه چیزی فراموش شده؟</summary><pre><code>A permit for DNS (udp/53) and required web ports, because of the implicit deny.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>روی Core از Lab A (یا هر روتر با دو VLAN):</p>
+<h3>گام ۱: Baseline</h3>
+<pre><code>PC-guest> ping 10.10.30.10   (before ACL: success)</code></pre>
+<h3>گام ۲: ACL و اعمال</h3>
+<p>ACL بخش ۳ را بسازید و روی <code>interface vlan 50</code> اعمال کنید (in). قبل از آن بکاپ بگیرید.</p>
+<h3>گام ۳: Verify</h3>
+<pre><code>PC-guest> ping 10.10.30.10   (expect: fail)
+PC-guest> ping 8.8.8.8        (expect: success via edge)
+Core# show access-lists       (hit counters rise)</code></pre>
+<p>طبق Probe، ACL روی vIOSL2 «پذیرفته» می‌شود و ممکن است عملاً اعمال نشود؛ روی روتر vIOS (L3) تست کنید و نتیجه‌ی واقعی را ثبت کنید.</p>
+<h3>گام ۴: خراب‌کردن عمدی ترتیب</h3>
+<p>یک <code>permit ip any any</code> بالای deny بگذارید و ببینید deny بی‌اثر می‌شود؛ سپس با شماره‌ی خط ترتیب را اصلاح کنید.</p>
+
+<h2>Lab مستقل</h2>
+<p>یک «Policy Matrix» (مبدأ VLAN، مقصد VLAN، سرویس، اجازه/انکار) برای ۳ VLAN در <code>02-design/policy-matrix.md</code> بنویسید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>ترافیک مجاز بسته شده یا ترافیک ممنوع رد می‌شود</td></tr>
+<tr><th>چک‌لیست</th><td>۱) ACL روی کدام Interface و جهت؟<br>۲) ترتیب خطوط؟<br>۳) Hit Count؟<br>۴) Implicit Deny؟<br>۵) برگشت ترافیک</td></tr>
+<tr><th>ابزار</th><td>show access-lists ، show ip interface</td></tr>
+<tr><th>رفع</th><td>اصلاح ترتیب یا افزودن permit</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>اولین تطابق یعنی چه؟</summary><p>بررسی از بالا به پایین و توقف در اولین قانون مطابق.</p></details>
+<details><summary>تفاوت Stateless و Stateful؟</summary><p>Stateless هر بسته را مستقل بررسی می‌کند؛ Stateful وضعیت ارتباط را نگه می‌دارد.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Apply the ACL inbound on the VLAN interface.</td><td>ACL را روی ورودی Interface مربوط به VLAN اعمال کنید.</td></tr>
+<tr><td>Rules are evaluated top-down, first match wins.</td><td>قوانین از بالا به پایین ارزیابی می‌شوند؛ اولین تطابق برنده است.</td></tr>
+<tr><td>Add a remark to document the purpose of each entry.</td><td>برای مستندسازی هدف هر خط یک remark بگذارید.</td></tr>
+<tr><td>The implicit deny drops everything that is not explicitly permitted.</td><td>Implicit Deny هر چه صریحاً مجاز نشده را می‌اندازد.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Where should a standard ACL be placed and why?</summary><p>Close to the destination, because it matches only the source address.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ ACL را بسازم و Hit Count ببینم.</li>
+<li>☐ ترتیب اشتباه را بسازم و رفع کنم.</li>
+<li>☐ Policy Matrix را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w7-5': {
+      sub: "Syslog، rsyslog و SNMP.",
+      html: `
+<div class="meta"><span class="tag">هفته ۷ - روز ۵</span><span class="tag">پیش‌نیاز: درس ۷-۲</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> پایش دستگاه‌ها: ارسال Log به سرور مرکزی با <span class="en">Syslog</span> (سطح‌های ۰ تا ۷)، تنظیم سرور rsyslog، و پرس‌وجوی وضعیت با <span class="en">SNMP</span> (v2c فقط در Lab و v3 امن).</p>
+<p><b>چرا لازم است:</b> وقتی شبکه خراب شد، اولین سؤال این است: «چه چیزی تغییر کرد؟». Log مرکزی با ساعت درست جواب می‌دهد. SNMP هم داده‌ی عددی (CPU، ترافیک، Interface) برای مانیتورینگ و هشدار می‌دهد. بدون این دو، مدیریت شبکه کور است.</p>
+<ul>
+<li><b>در کار روزانه:</b> هر Interface که قطع/وصل می‌شود در Log دیده می‌شود.</li>
+<li><b>در امنیت:</b> Log مرکزی پایه‌ی SIEM و تحلیل حادثه است؛ Community لو رفته یعنی نفوذ.</li>
+<li><b>در Capstone:</b> Zabbix و rsyslog در Phase مانیتورینگ همین داده‌ها را می‌گیرند.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>Syslog و سطح‌ها ← سرور rsyslog ← SNMP v2c و v3 ← امنیت ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>Syslog</td><td>System Logging Protocol</td><td>ارسال پیام Log به سرور</td></tr>
+<tr><td>Severity</td><td>Syslog severity</td><td>سطح اهمیت ۰ تا ۷</td></tr>
+<tr><td>rsyslog</td><td>rsyslog</td><td>سرور Syslog در لینوکس</td></tr>
+<tr><td>SNMP</td><td>Simple Network Management Protocol</td><td>پروتکل پایش و مدیریت</td></tr>
+<tr><td>MIB</td><td>Management Information Base</td><td>پایگاه اشیاء قابل‌پایش</td></tr>
+<tr><td>OID</td><td>Object Identifier</td><td>شناسه‌ی هر شیء</td></tr>
+<tr><td>Community</td><td>SNMP Community</td><td>رمز ساده‌ی v2c (متن ساده)</td></tr>
+<tr><td>Trap</td><td>SNMP Trap</td><td>اعلان غیرهم‌زمان دستگاه</td></tr>
+<tr><td>SIEM</td><td>Security Information and Event Management</td><td>تحلیل متمرکز Log</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> Syslog: دفتر ثبت وقایع</h2>
+<p>دستگاه هر رویداد مهم را به‌صورت یک خط پیام می‌نویسد: لینک بالا رفت، کاربر وارد شد، ACL بسته را رد کرد. هر پیام یک سطح اهمیت (Severity) دارد:</p>
+<table>
+<tr><th>سطح</th><th>نام</th><th>معنی</th></tr>
+<tr><td>0</td><td>Emergency</td><td>سیستم از کار افتاده</td></tr>
+<tr><td>1</td><td>Alert</td><td>نیاز به اقدام فوری</td></tr>
+<tr><td>2</td><td>Critical</td><td>وضعیت بحرانی</td></tr>
+<tr><td>3</td><td>Error</td><td>خطا</td></tr>
+<tr><td>4</td><td>Warning</td><td>هشدار</td></tr>
+<tr><td>5</td><td>Notice</td><td>رویداد معمولی مهم</td></tr>
+<tr><td>6</td><td>Informational</td><td>اطلاعات</td></tr>
+<tr><td>7</td><td>Debug</td><td>اشکال‌زدایی</td></tr>
+</table>
+<p>قاعده: عدد کمتر یعنی مهم‌تر. اگر روی «سطح ۶» تنظیم کنید، سطح‌های ۰ تا ۶ ارسال می‌شود.</p>
+<h2><span class="hn">۲.</span> تنظیم سیسکو برای ارسال Log</h2>
+<pre><code>R1(config)# service timestamps log datetime msec localtime
+R1(config)# logging host 10.10.10.60
+R1(config)# logging trap informational
+R1(config)# logging source-interface loopback 0
+R1(config)# logging buffered 16384
+R1(config)# logging console warnings
+R1# show logging</code></pre>
+<ul>
+<li><code>logging host</code>: آدرس سرور rsyslog (UDP 514).</li>
+<li><code>logging trap informational</code>: سطح ارسال (تا ۶).</li>
+<li><code>source-interface loopback 0</code>: همه‌ی Logها با آدرس ثابت دستگاه می‌آیند.</li>
+<li><code>buffered</code>: نگه‌داری در حافظه‌ی خود دستگاه (برای وقتی سرور نیست).</li>
+</ul>
+<div class="box"><b class="t">ساعت!</b>بدون NTP (درس ۷-۲)، Log بی‌ارزش است. اول NTP، بعد Syslog.</div>
+<h2><span class="hn">۳.</span> سرور rsyslog (لینوکس)</h2>
+<p>روی VM مانیتورینگ (<code>MON</code>) rsyslog را برای دریافت UDP 514 فعال می‌کنیم و Log هر دستگاه را در فایل جدا می‌نویسیم:</p>
+<pre><code># /etc/rsyslog.d/10-network.conf
+module(load="imudp")
+input(type="imudp" port="514")
+
+template(name="PerHost" type="string"
+  string="/var/log/network/%HOSTNAME%.log")
+if ($fromhost-ip startswith "10.10.") then {
+  action(type="omfile" dynaFile="PerHost")
+  stop
+}</code></pre>
+<pre><code>sudo mkdir -p /var/log/network
+sudo systemctl restart rsyslog
+sudo ss -ulnp | grep 514
+sudo tail -f /var/log/network/R1.log</code></pre>
+<p>این دستورها را شما روی VM اجرا می‌کنید؛ من فقط فرمان می‌دهم. VM هنوز ساخته نشده؛ در Phase مانیتورینگ ساخته می‌شود، اینجا مفهوم و پیکربندی را بشناسید.</p>
+<h2><span class="hn">۴.</span> SNMP: سؤال‌وجواب با دستگاه</h2>
+<p>سرور مانیتورینگ هر چند ثانیه از دستگاه می‌پرسد (Poll): «CPU چند درصد؟ ترافیک Interface؟». هر مقدار با یک OID مشخص می‌شود. دستگاه می‌تواند خودش هم رویداد اعلام کند (Trap).</p>
+<table>
+<tr><th>نسخه</th><th>احراز هویت</th><th>رمزگذاری</th><th>توصیه</th></tr>
+<tr><td>v1</td><td>Community (متن ساده)</td><td>ندارد</td><td>ممنوع</td></tr>
+<tr><td>v2c</td><td>Community (متن ساده)</td><td>ندارد</td><td>فقط Lab</td></tr>
+<tr><td>v3</td><td>نام‌کاربری + SHA</td><td>AES (authPriv)</td><td>تولید</td></tr>
+</table>
+<h3>v2c فقط برای Lab</h3>
+<pre><code>R1(config)# ip access-list standard SNMP-MGR
+R1(config-std-nacl)# permit host 10.10.10.60
+R1(config)# snmp-server community &lt;LAB-COMMUNITY> RO SNMP-MGR
+R1(config)# snmp-server location LAB-HQ
+R1(config)# snmp-server contact netadmin@lab.local</code></pre>
+<h3>v3 امن</h3>
+<pre><code>R1(config)# snmp-server group MON-GRP v3 priv
+R1(config)# snmp-server user monitor MON-GRP v3 auth sha &lt;AUTH-PASS> priv aes 128 &lt;PRIV-PASS>
+R1(config)# snmp-server host 10.10.10.60 version 3 priv monitor
+R1(config)# snmp-server enable traps</code></pre>
+<div class="box"><b class="t">نکته‌ی امنیتی</b>رمزها و Communityها را در ریپو و اسناد ننویسید؛ جانگهدار بگذارید و مقدار واقعی را در مدیریت رمز نگه دارید. Community پیش‌فرض (public/private) ممنوع است. دسترسی SNMP را با ACL به آدرس سرور مانیتورینگ محدود کنید. سینتکس v3 روی Image شما باید تأیید شود (Unverified).</div>
+<pre><code>R1# show snmp
+R1# show snmp user
+R1# show snmp host
+! from the monitoring VM (Linux):
+snmpwalk -v2c -c &lt;LAB-COMMUNITY> 10.0.12.1 1.3.6.1.2.1.1.1.0</code></pre>
+<h2><span class="hn">۵.</span> مثال‌ها</h2>
+<h3>ساده</h3>
+<pre><code>Interface flaps -> log line on the server:
+Nov  8 10:12:01 R1 %LINK-3-UPDOWN: Interface GigabitEthernet0/1, changed state to down</code></pre>
+<h3>متوسط: تحلیل رویداد</h3>
+<pre><code>10:12:01 %LINK-3-UPDOWN gi0/1 down
+10:12:02 %OSPF-5-ADJCHG neighbor 2.2.2.2 Full -> Down
+10:12:32 %LINK-3-UPDOWN gi0/1 up
+10:12:40 %OSPF-5-ADJCHG neighbor 2.2.2.2 Down -> Full
+Conclusion: a 31 s link outage caused an OSPF flap</code></pre>
+<h3>سخت: چرا Log نمی‌رسد؟</h3>
+<pre><code>Cause 1: no route to the log server
+Cause 2: ACL/firewall blocks UDP 514
+Cause 3: wrong logging trap level
+Cause 4: server not listening (ss -ulnp)
+Cause 5: wrong time makes entries look missing</code></pre>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): سطح Syslog برای «خطا»؟</summary><pre><code>3 (Error)</code></pre>
+</details>
+<details><summary>۲ (ساده): چرا v2c خطرناک است؟</summary><pre><code>The community string is sent in clear text and there is no encryption.</code></pre>
+</details>
+<details><summary>۳ (متوسط): logging trap warnings چه سطح‌هایی را می‌فرستد؟</summary><pre><code>Levels 0 to 4 (emergencies to warnings).</code></pre>
+</details>
+<details><summary>۴ (متوسط): چرا source-interface loopback؟</summary><pre><code>The log source address stays stable even if a physical interface fails.</code></pre>
+</details>
+<details><summary>۵ (سخت): Poll در برابر Trap؟</summary><pre><code>Poll: the server asks periodically. Trap: the device sends an event on its own.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<h3>گام ۱: Syslog روی روتر</h3>
+<pre><code>R1(config)# service timestamps log datetime msec localtime
+R1(config)# logging buffered 16384
+R1(config)# logging host 10.10.10.60
+R1(config)# logging trap informational
+R1# show logging</code></pre>
+<h3>گام ۲: تولید رویداد</h3>
+<pre><code>R1(config)# interface loopback 99
+R1(config-if)# shutdown
+R1(config-if)# no shutdown
+R1# show logging | include LINEPROTO</code></pre>
+<p>اگر سرور rsyslog ندارید، فقط <code>show logging</code> (Buffer) را بررسی کنید؛ بعداً سرور را می‌سازیم.</p>
+<h3>گام ۳: SNMP (فقط ساخت و Verify)</h3>
+<pre><code>R1# show snmp
+R1# show snmp community</code></pre>
+<p>طبق Probe، SNMP روی vIOSL2 فقط «پذیرفته» بود؛ روی روتر نتیجه را ثبت کنید.</p>
+
+<h2>Lab مستقل</h2>
+<p>یک «Monitoring Matrix» بنویسید: هر دستگاه، ارسال Syslog (سطح)، SNMP (نسخه/ACL)، منبع NTP، در <code>02-design/monitoring-matrix.md</code>.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>Log روی سرور نمی‌رسد</td></tr>
+<tr><th>چک‌لیست</th><td>۱) logging host درست؟<br>۲) مسیر و ACL؟<br>۳) سطح trap؟<br>۴) سرور گوش می‌دهد؟<br>۵) ساعت</td></tr>
+<tr><th>ابزار</th><td>show logging ، tcpdump روی سرور</td></tr>
+<tr><th>رفع</th><td>اصلاح مسیر یا سطح</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>Syslog چیست؟</summary><p>ارسال پیام رویدادها به سرور مرکزی.</p></details>
+<details><summary>چرا SNMPv3؟</summary><p>احراز هویت و رمزگذاری دارد، برخلاف v2c.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Send logs to a central syslog server for correlation.</td><td>Logها را برای همبستگی به سرور Syslog مرکزی بفرستید.</td></tr>
+<tr><td>SNMPv3 provides authentication and encryption.</td><td>SNMPv3 احراز هویت و رمزگذاری دارد.</td></tr>
+<tr><td>Never use the default community strings.</td><td>هرگز از Community پیش‌فرض استفاده نکنید.</td></tr>
+<tr><td>Make sure the clocks are synchronized before analyzing logs.</td><td>قبل از تحلیل Log مطمئن شوید ساعت‌ها هماهنگ‌اند.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What does a lower syslog severity number mean?</summary><p>A more severe event (0 = emergency, 7 = debug).</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ Syslog را تنظیم و رویداد تولید کنم.</li>
+<li>☐ تفاوت v2c و v3 را بگویم.</li>
+<li>☐ Monitoring Matrix را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w7-6': {
+      sub: "QoS مقدماتی و Service Matrix.",
+      html: `
+<div class="meta"><span class="tag">هفته ۷ - روز ۶</span><span class="tag">پیش‌نیاز: درس‌های ۷-۱ تا ۷-۵</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> مفهوم کیفیت سرویس (<span class="en">QoS</span>): دسته‌بندی، علامت‌گذاری (<span class="en">DSCP</span>)، صف‌بندی و محدودسازی؛ و جمع‌بندی هفته با «Service Matrix» و آزمون کوچک.</p>
+<p><b>چرا لازم است:</b> وقتی پهنای باند کم است، صدا و تصویر زنده (VoIP) باید جلوتر از دانلود فایل بروند وگرنه قطع‌وصل می‌شوند. QoS تعیین می‌کند چه ترافیکی اولویت دارد. حتی اگر روزانه استفاده نکنید، باید مفهومش را بدانید.</p>
+<ul>
+<li><b>در کار روزانه:</b> تماس صوتی/ویدیویی و پشتیبان‌گیری هم‌زمان؛ QoS راه‌حل است.</li>
+<li><b>در امنیت:</b> محدودسازی ترافیک مشکوک و جلوگیری از اشباع لینک.</li>
+<li><b>در FortiGate:</b> Traffic Shaper همین مفاهیم را دارد.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>مشکل رقابت ترافیک ← چهار ابزار QoS ← DSCP ← مثال ساده/متوسط/سخت ← Lab ← Service Matrix ← آزمون.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>QoS</td><td>Quality of Service</td><td>کیفیت سرویس؛ اولویت‌دهی ترافیک</td></tr>
+<tr><td>DSCP</td><td>Differentiated Services Code Point</td><td>علامت ۶ بیتی اولویت در IP</td></tr>
+<tr><td>EF</td><td>Expedited Forwarding (DSCP 46)</td><td>اولویت بالا برای صدا</td></tr>
+<tr><td>AF</td><td>Assured Forwarding</td><td>کلاس‌های تضمین‌شده</td></tr>
+<tr><td>Policing</td><td>Policing</td><td>قطع/کاهش ترافیک اضافی</td></tr>
+<tr><td>Shaping</td><td>Shaping</td><td>کند کردن و صف‌کردن برای رعایت نرخ</td></tr>
+<tr><td>Queuing</td><td>Queuing</td><td>صف‌بندی بر اساس کلاس</td></tr>
+<tr><td>Class-map</td><td>Class-map</td><td>تعریف کلاس ترافیک</td></tr>
+<tr><td>Policy-map</td><td>Policy-map</td><td>تعریف رفتار هر کلاس</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> مشکل: رقابت روی یک لینک</h2>
+<p>جاده‌ای را تصور کنید که آمبولانس و کامیون باری هر دو در آن گرفتار ترافیک‌اند. آمبولانس (صدا) باید جلو برود؛ کامیون (دانلود) می‌تواند صبر کند. QoS همان «لاین ویژه» است.</p>
+<h2><span class="hn">۲.</span> چهار ابزار QoS</h2>
+<table>
+<tr><th>ابزار</th><th>کار</th></tr>
+<tr><td>Classification</td><td>تشخیص نوع ترافیک (با ACL یا DSCP)</td></tr>
+<tr><td>Marking</td><td>علامت‌گذاری اولویت (DSCP/CoS)</td></tr>
+<tr><td>Queuing</td><td>صف‌بندی؛ ترافیک مهم زودتر خارج می‌شود</td></tr>
+<tr><td>Policing/Shaping</td><td>محدودکردن نرخ؛ Policing قطع می‌کند، Shaping صف می‌کند</td></tr>
+</table>
+<h3>DSCP چیست؟</h3>
+<p>یک فیلد ۶ بیتی در هدر IP که اولویت را نشان می‌دهد؛ ۶ بیت یعنی ۶۴ مقدار:</p>
+<pre><code>DSCP bits = 6 -> 2 ^ 6 = 64 values (0 .. 63)</code></pre>
+<table>
+<tr><th>کلاس</th><th>DSCP</th><th>کاربرد</th></tr>
+<tr><td>EF</td><td>46</td><td>صدا (VoIP)</td></tr>
+<tr><td>AF41</td><td>34</td><td>ویدیو</td></tr>
+<tr><td>AF31</td><td>26</td><td>داده‌ی مهم</td></tr>
+<tr><td>BE (Default)</td><td>0</td><td>ترافیک عادی</td></tr>
+<tr><td>CS1</td><td>8</td><td>کم‌اهمیت (Scavenger)</td></tr>
+</table>
+<h2><span class="hn">۳.</span> دستورها (MQC)</h2>
+<p>سیسکو QoS را با «Modular QoS CLI» می‌سازد: سه قدم Class-map، Policy-map، Service-policy:</p>
+<pre><code>R1(config)# ip access-list extended VOICE
+R1(config-ext-nacl)# permit udp any any range 16384 32767
+R1(config-ext-nacl)# exit
+R1(config)# class-map match-any VOICE-CLASS
+R1(config-cmap)# match access-group name VOICE
+R1(config-cmap)# exit
+R1(config)# policy-map WAN-OUT
+R1(config-pmap)# class VOICE-CLASS
+R1(config-pmap-c)# priority percent 20
+R1(config-pmap-c)# set dscp ef
+R1(config-pmap)# class class-default
+R1(config-pmap-c)# fair-queue
+R1(config-pmap-c)# exit
+R1(config)# interface gi0/1
+R1(config-if)# service-policy output WAN-OUT</code></pre>
+<ul>
+<li><code>priority percent 20</code>: ۲۰٪ پهنای باند برای صدا با اولویت مطلق (صف LLQ).</li>
+<li><code>set dscp ef</code>: علامت‌گذاری EF.</li>
+<li><code>class-default</code>: بقیه‌ی ترافیک.</li>
+<li><code>service-policy output</code>: روی Interface خروجی اعمال می‌شود (QoS معمولاً روی خروجی صف می‌سازد).</li>
+</ul>
+<pre><code>R1# show policy-map interface gi0/1
+R1# show class-map
+R1# show policy-map</code></pre>
+<div class="box"><b class="t">صادقانه</b>QoS در شبیه‌ساز vIOS ممکن است فقط پیکربندی را بپذیرد بدون صف‌بندی واقعی. هدف این درس فهم مفهوم و دستورهاست؛ نتیجه‌ی واقعی Lab را ثبت کنید.</div>
+<h2><span class="hn">۴.</span> Service Matrix: جمع‌بندی هفته ۷</h2>
+<p>یک جدول که برای هر سرویس مشخص می‌کند «چه کسی، کجا، با چه تنظیمی»:</p>
+<table>
+<tr><th>سرویس</th><th>سرور/دستگاه</th><th>Client</th><th>تنظیم کلیدی</th><th>Verification</th></tr>
+<tr><td>DHCP</td><td>Core/Windows</td><td>همه‌ی VLANها</td><td>Scope + helper-address</td><td>show ip dhcp binding</td></tr>
+<tr><td>DNS</td><td>Windows</td><td>همه</td><td>ip name-server</td><td>nslookup</td></tr>
+<tr><td>NTP</td><td>MikroTik/Windows</td><td>همه تجهیزات</td><td>ntp server</td><td>show ntp status</td></tr>
+<tr><td>NAT</td><td>Edge/FGT</td><td>VLANهای کاربر</td><td>overload</td><td>show ip nat translations</td></tr>
+<tr><td>ACL</td><td>Core/FGT</td><td>VLAN مهمان</td><td>access-group</td><td>show access-lists</td></tr>
+<tr><td>Syslog</td><td>MON VM</td><td>همه تجهیزات</td><td>logging host</td><td>tail log</td></tr>
+<tr><td>SNMP</td><td>MON VM</td><td>همه تجهیزات</td><td>v3 + ACL</td><td>snmpwalk</td></tr>
+</table>
+<h2><span class="hn">۵.</span> آزمون کوچک پایان هفته‌ی ۷ (بدون نگاه به درس)</h2>
+<table>
+<tr><th>#</th><th>وظیفه</th><th>مدرک</th></tr>
+<tr><td>۱</td><td>DHCP + Relay برای VLAN دیگر</td><td>show ip dhcp binding</td></tr>
+<tr><td>۲</td><td>NTP روی همه‌ی تجهیزات</td><td>show ntp status</td></tr>
+<tr><td>۳</td><td>PAT و Static NAT</td><td>show ip nat translations</td></tr>
+<tr><td>۴</td><td>ACL برای مهمان (Policy Matrix)</td><td>show access-lists</td></tr>
+<tr><td>۵</td><td>Syslog + مفهوم SNMPv3</td><td>show logging</td></tr>
+<tr><td>۶</td><td>Service Matrix کامل</td><td>فایل طراحی</td></tr>
+</table>
+<p>معیار: حداقل ۵ از ۶ مورد. وقتی تمام شد بگویید «هفته ۷ انجام شد».</p>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): DSCP چند بیت و چند مقدار؟</summary><pre><code>6 bits, 64 values.</code></pre>
+</details>
+<details><summary>۲ (ساده): فرق Policing و Shaping؟</summary><pre><code>Policing drops/marks excess traffic; shaping buffers and delays it to smooth the rate.</code></pre>
+</details>
+<details><summary>۳ (متوسط): سه قدم MQC؟</summary><pre><code>class-map, policy-map, service-policy</code></pre>
+</details>
+<details><summary>۴ (متوسط): DSCP صدا؟</summary><pre><code>EF (46).</code></pre>
+</details>
+<details><summary>۵ (سخت): چرا QoS را معمولاً روی خروجی اعمال می‌کنیم؟</summary><pre><code>Congestion (queues) forms when sending out a slower/limited interface, so queuing is applied on egress.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<h3>گام ۱: ساخت MQC</h3>
+<p>Class-map و Policy-map بخش ۳ را بسازید.</p>
+<h3>گام ۲: Verify</h3>
+<pre><code>R1# show policy-map interface gi0/1
+R1# show class-map</code></pre>
+<h3>گام ۳: تولید ترافیک</h3>
+<p>ping با اندازه‌ی بزرگ و ترافیک ساده تولید کنید و شمارنده‌ی کلاس را ببینید؛ اگر شمارنده بالا نرفت، همان را به‌عنوان محدودیت شبیه‌ساز ثبت کنید.</p>
+
+<h2>Lab مستقل</h2>
+<p>Service Matrix هفته ۷ را در <code>02-design/service-matrix.md</code> بنویسید و آزمون کوچک را کامل کنید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>صدا قطع‌وصل می‌شود</td></tr>
+<tr><th>چک‌لیست</th><td>۱) لینک اشباع است؟<br>۲) کلاس صدا مطابق؟<br>۳) policy روی Interface خروجی؟<br>۴) DSCP حفظ می‌شود؟</td></tr>
+<tr><th>ابزار</th><td>show policy-map interface</td></tr>
+<tr><th>رفع</th><td>افزودن کلاس اولویت</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>QoS برای چیست؟</summary><p>اولویت‌دهی ترافیک حساس هنگام کمبود پهنای باند.</p></details>
+<details><summary>DSCP چه می‌کند؟</summary><p>اولویت ترافیک را در هدر IP علامت می‌زند.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Classify the voice traffic and give it strict priority.</td><td>ترافیک صدا را دسته‌بندی کنید و اولویت مطلق بدهید.</td></tr>
+<tr><td>Apply the service policy in the outbound direction.</td><td>Service Policy را روی جهت خروجی اعمال کنید.</td></tr>
+<tr><td>Shaping buffers excess traffic while policing drops it.</td><td>Shaping ترافیک اضافه را بافر می‌کند، Policing آن را حذف می‌کند.</td></tr>
+<tr><td>QoS only matters when the link is congested.</td><td>QoS فقط هنگام ازدحام لینک اهمیت دارد.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): When does QoS actually make a difference?</summary><p>Only when there is congestion on a link.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ MQC را بسازم و Verify کنم.</li>
+<li>☐ Service Matrix را بنویسم.</li>
+<li>☐ آزمون کوچک را کامل کنم.</li>
 </ul>
 <h2>یادآوری اشتباهات شما</h2>
 <div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
