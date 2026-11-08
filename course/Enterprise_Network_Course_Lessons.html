@@ -149,7 +149,7 @@ summary{cursor:pointer;font-weight:600}
      ===================================================================== -->
 <script id="course-data">
 window.COURSE = {
-  version: "0.8 (هفته ۱ تا ۴)",
+  version: "0.9 (هفته ۱ تا ۵)",
   updated: "2026-11-07",
   modules: [
     {id:"m0", title:"شروع و راهنما", lessons:[
@@ -185,7 +185,13 @@ window.COURSE = {
       {id:"w4-6", title:"درس ۴-۶: طراحی سه‌لایه و آزمون Gate G2", ready:true}
     ]},
     {id:"p3", title:"فاز ۳ — Routing (هفته ۵–۶)", lessons:[
-      {id:"w5", title:"هفته ۵: Static و OSPFv2", ready:false},
+      {id:"w5", title:"هفته ۵ — نقشه درس‌ها", ready:true},
+      {id:"w5-1", title:"درس ۵-۱: جدول مسیریابی، LPM و AD", ready:true},
+      {id:"w5-2", title:"درس ۵-۲: Static Route و مسیر برگشت", ready:true},
+      {id:"w5-3", title:"درس ۵-۳: Default، Floating و IP SLA", ready:true},
+      {id:"w5-4", title:"درس ۵-۴: مفهوم OSPF", ready:true},
+      {id:"w5-5", title:"درس ۵-۵: پیاده‌سازی OSPF", ready:true},
+      {id:"w5-6", title:"درس ۵-۶: عیب‌یابی مسیریابی و آزمون هفته", ready:true},
       {id:"w6", title:"هفته ۶: OSPF چندناحیه‌ای، HSRP، IPv6", ready:false}
     ]},
     {id:"p4", title:"فاز ۴ — سرویس‌های IP و Hardening (هفته ۷–۸)", lessons:[
@@ -3866,6 +3872,972 @@ SWx# copy running-config flash:SWx-w4-final.cfg</code></pre>
 <li>☐ HLD شعبه را بنویسم.</li>
 <li>☐ TS06 تا TS08 را با RCA ثبت کنم.</li>
 <li>☐ Gate G2 را کامل کنم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+
+    w5: {
+      sub: "نقشه هفته ۵: Routing I.",
+      html: `
+<div class="meta"><span class="tag">هفته ۵</span><span class="tag">۶ درس</span><span class="tag">آزمون کوچک پایان هفته</span></div>
+<p>از این هفته به لایه ۳ می‌رسیم: روتر چطور مسیر انتخاب می‌کند و چطور با Static و OSPF شبکه‌های دور را به هم وصل می‌کنیم.</p>
+<table>
+<tr><th>درس</th><th>موضوع</th><th>خروجی که باید بتوانید</th></tr>
+<tr><td>5-1</td><td>جدول مسیریابی، LPM و AD</td><td>هر Route را بخوانید و مسیر بسته را پیش‌بینی کنید</td></tr>
+<tr><td>5-2</td><td>Static Route و مسیر برگشت</td><td>دو LAN را با مسیر رفت و برگشت وصل کنید</td></tr>
+<tr><td>5-3</td><td>Default، Floating و IP SLA</td><td>Failover دو ISP بسازید</td></tr>
+<tr><td>5-4</td><td>مفهوم OSPF</td><td>همسایگی، LSDB و Cost را توضیح دهید</td></tr>
+<tr><td>5-5</td><td>پیاده‌سازی OSPF</td><td>شبکه‌ی سه‌روتری با OSPF بالا بیاورید</td></tr>
+<tr><td>5-6</td><td>عیب‌یابی مسیریابی</td><td>پنج عیب OSPF را رفع کنید</td></tr>
+</table>
+<div class="box"><b class="t">نیازمندی Lab</b>سه روتر vIOS (R1، R2، R3) به‌صورت خطی. اگر RAM کم است هر vIOS را ۵۱۲ مگابیت کنید. ESXi و MikroTik دست نمی‌خورد.</div>
+`
+    },
+    'w5-1': {
+      sub: "جدول مسیریابی، Longest Prefix Match و AD.",
+      html: `
+<div class="meta"><span class="tag">هفته ۵ - روز ۱</span><span class="tag">پیش‌نیاز: هفته ۴</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> روتر چطور تصمیم می‌گیرد هر بسته را به کدام سمت بفرستد: خواندن <span class="en">Routing Table</span>، معنی کدها، قانون <span class="en">Longest Prefix Match</span>، و دو معیار انتخاب بین مسیرها یعنی <span class="en">Administrative Distance</span> و <span class="en">Metric</span>.</p>
+<p><b>چرا لازم است:</b> تمام ارتباط بین شبکه‌ها (و بین VLANها، شعبه‌ها و اینترنت) به جدول مسیریابی بستگی دارد. اگر آن را درست نخوانید، نمی‌توانید بفهمید چرا یک بسته از مسیر غلط رفت یا اصلاً رد نشد. این درس پایه‌ی کل هفته‌های ۵ و ۶ و فایروال است.</p>
+<ul>
+<li><b>در کار روزانه:</b> اولین دستور عیب‌یابی هر ارتباط بین شبکه‌ای <code>show ip route</code> است.</li>
+<li><b>در امنیت:</b> Route اشتباه یعنی ترافیک از مسیر ناخواسته (مثلاً دور زدن فایروال) می‌رود.</li>
+<li><b>در FortiGate:</b> Routing Table فایروال دقیقاً همین منطق را دارد (<code>get router info routing-table all</code>).</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>روتر چیست ← جدول مسیریابی ← کدها ← Longest Prefix Match ← AD و Metric ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>Routing Table</td><td>Routing Table</td><td>جدول مسیرهای شناخته‌شده‌ی روتر</td></tr>
+<tr><td>Next-hop</td><td>Next-hop</td><td>آدرس روتر بعدی در مسیر</td></tr>
+<tr><td>LPM</td><td>Longest Prefix Match</td><td>انتخاب Route با طولانی‌ترین Prefix مطابق</td></tr>
+<tr><td>AD</td><td>Administrative Distance</td><td>اعتبار منبع Route؛ کمتر بهتر است</td></tr>
+<tr><td>Metric</td><td>Metric</td><td>هزینه‌ی مسیر در یک پروتکل</td></tr>
+<tr><td>Connected</td><td>Connected route</td><td>شبکه‌ای که مستقیماً به Interface وصل است</td></tr>
+<tr><td>Local</td><td>Local route</td><td>آدرس خود Interface (/32)</td></tr>
+<tr><td>Static</td><td>Static route</td><td>مسیر دستی</td></tr>
+<tr><td>Gateway of last resort</td><td>Gateway of last resort</td><td>مسیر پیش‌فرض</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> روتر چه کاری می‌کند؟</h2>
+<p>روتر مثل یک اداره‌ی پست است. نامه (بسته) می‌رسد؛ منشی فقط به آدرس مقصد نگاه می‌کند و در دفتر خود می‌بیند «برای این منطقه به کدام اداره بفرستم؟». او کل مسیر را نمی‌داند، فقط «قدم بعدی» (Next-hop) را می‌داند.</p>
+<div class="box"><b class="t">دو کار روتر</b>۱) یاد گرفتن مسیرها (دستی یا با پروتکل). ۲) ارسال هر بسته بر اساس جدول مسیرها (Forwarding).</div>
+<h2><span class="hn">۲.</span> جدول مسیریابی را بخوانیم</h2>
+<pre><code>R1# show ip route
+Codes: C - connected, L - local, S - static, O - OSPF
+
+Gateway of last resort is 10.0.12.2 to network 0.0.0.0
+
+S*    0.0.0.0/0 [1/0] via 10.0.12.2
+      10.0.0.0/8 is variably subnetted, 4 subnets, 2 masks
+C        10.0.12.0/30 is directly connected, GigabitEthernet0/1
+L        10.0.12.1/32 is directly connected, GigabitEthernet0/1
+O        10.0.23.0/30 [110/2] via 10.0.12.2, 00:05:10, GigabitEthernet0/1
+C        192.168.1.0/24 is directly connected, Loopback10</code></pre>
+<p>هر خط یک Route است. با یک خط نمونه آشنا می‌شویم:</p>
+<pre><code>O   10.0.23.0/30 [110/2] via 10.0.12.2, 00:05:10, GigabitEthernet0/1
+|   |            |  |     |          |         |
+|   |            |  |     |          |         +-- exit interface
+|   |            |  |     |          +-- age of the route
+|   |            |  |     +-- next-hop address
+|   |            |  +-- metric (OSPF cost)
+|   |            +-- administrative distance
+|   +-- destination prefix
++-- source code (O = OSPF)</code></pre>
+<table>
+<tr><th>کد</th><th>معنی</th></tr>
+<tr><td>C</td><td>Connected؛ شبکه‌ی مستقیماً وصل‌شده</td></tr>
+<tr><td>L</td><td>Local؛ آدرس خود Interface (/32)</td></tr>
+<tr><td>S</td><td>Static؛ دستی</td></tr>
+<tr><td>S*</td><td>Static به‌عنوان مسیر پیش‌فرض</td></tr>
+<tr><td>O</td><td>OSPF</td></tr>
+<tr><td>D</td><td>EIGRP</td></tr>
+<tr><td>R</td><td>RIP</td></tr>
+</table>
+<h2><span class="hn">۳.</span> قانون اول: Longest Prefix Match</h2>
+<p>اگر چند Route با مقصد جور باشد، آن که Prefix بلندتر دارد (دقیق‌تر است) برنده است. مثل نشانی پستی: «تهران، ولیعصر، پلاک ۱۲» از «تهران» دقیق‌تر است.</p>
+<figure class="fig"><svg viewBox="0 0 720 260" role="img" aria-label="topology"><path d="M360 33 L360 116" class="rq"/><path d="M360 116 L360 206" class="rq"/><path d="M360 206 L115 206" class="rp"/><path d="M360 206 L605 206" class="ln"/><rect x="250" y="10" width="220" height="46" rx="8" class="bx"/><text x="360" y="31" text-anchor="middle">Packet arrives</text><text x="360" y="47" text-anchor="middle" class="cap">dst IP = 10.1.1.77</text><rect x="250" y="90" width="220" height="52" rx="8" class="wrn"/><text x="360" y="114" text-anchor="middle" class="on">Routing table lookup</text><text x="360" y="130" text-anchor="middle" class="cap">all matching routes</text><rect x="250" y="180" width="220" height="52" rx="8" class="net"/><text x="360" y="204" text-anchor="middle" class="on">Longest prefix wins</text><text x="360" y="220" text-anchor="middle" class="cap">/24 beats /16 beats /0</text><rect x="520" y="180" width="170" height="52" rx="8" class="bx"/><text x="605" y="204" text-anchor="middle">No match</text><text x="605" y="220" text-anchor="middle" class="cap">default route or drop</text><rect x="30" y="180" width="170" height="52" rx="8" class="hst"/><text x="115" y="204" text-anchor="middle" class="on">Forward</text><text x="115" y="220" text-anchor="middle" class="cap">to next-hop / interface</text></svg><figcaption>شکل ۱: مراحل تصمیم روتر برای هر بسته.</figcaption></figure>
+<pre><code>Routing table:
+  10.0.0.0/8      via R-A
+  10.1.0.0/16     via R-B
+  10.1.1.0/24     via R-C
+  0.0.0.0/0       via R-D (default)
+
+Packet to 10.1.1.77:
+  matches /0, /8, /16, /24  -> longest = /24  -> via R-C
+Packet to 10.1.9.5:
+  matches /0, /8, /16       -> longest = /16  -> via R-B
+Packet to 8.8.8.8:
+  matches /0 only           -> via R-D</code></pre>
+<div class="box"><b class="t">نکته</b>اول طول Prefix تعیین می‌کند. فقط وقتی دو Route هم‌طول بودند، AD و Metric وارد می‌شوند.</div>
+<h2><span class="hn">۴.</span> قانون دوم: Administrative Distance و Metric</h2>
+<p>فرض کنید همان شبکه را دو منبع مختلف (مثلاً Static و OSPF) به روتر معرفی کنند. روتر به منبعی که «معتبرتر» است اعتماد می‌کند. این اعتبار را AD می‌گویند و هرچه کمتر باشد بهتر است:</p>
+<table>
+<tr><th>منبع</th><th>AD</th></tr>
+<tr><td>Connected</td><td>0</td></tr>
+<tr><td>Static</td><td>1</td></tr>
+<tr><td>EIGRP (داخلی)</td><td>90</td></tr>
+<tr><td>OSPF</td><td>110</td></tr>
+<tr><td>RIP</td><td>120</td></tr>
+</table>
+<p>Metric هزینه‌ی مسیر <b>داخل یک پروتکل</b> است (مثلاً Cost در OSPF). Metricهای پروتکل‌های مختلف قابل مقایسه با هم نیستند؛ برای همین AD وجود دارد.</p>
+<pre><code>Decision order for the same destination:
+1) Longest prefix       (most specific wins)
+2) Lowest AD             (most trusted source)
+3) Lowest metric         (best path inside one protocol)
+4) ECMP                  (equal metric -> load share)</code></pre>
+<h2><span class="hn">۵.</span> مثال‌ها (ساده تا سخت)</h2>
+<h3>ساده: بسته به شبکه‌ی Connected</h3>
+<pre><code>Dest 192.168.1.50 -> matches C 192.168.1.0/24
+Router ARPs for the host and delivers directly</code></pre>
+<h3>متوسط: Static یا OSPF؟</h3>
+<pre><code>Both learn 10.0.23.0/30:
+  S  10.0.23.0/30 [1/0]   via 10.0.12.2
+  O  10.0.23.0/30 [110/2] via 10.0.12.2
+Same prefix -> lower AD (1) wins -> Static is installed</code></pre>
+<h3>سخت: دو Route با Prefixهای مختلف</h3>
+<pre><code>S  10.0.0.0/8   [1/0]   via 10.9.9.9   (static, AD 1)
+O  10.0.23.0/30 [110/2] via 10.0.12.2   (OSPF, AD 110)
+Packet to 10.0.23.5:
+  both match; /30 is longer than /8 -> OSPF route wins
+  (AD is NOT compared here; prefix length decides first)</code></pre>
+<p>این خطای ذهنی بسیار رایج است: «Static همیشه برنده است». نه! اول طول Prefix است.</p>
+<h2><span class="hn">۶.</span> دستورهای مشاهده</h2>
+<pre><code>R1# show ip route
+R1# show ip route 10.1.1.77
+R1# show ip route connected
+R1# show ip route static
+R1# show ip route ospf
+R1# show ip protocols
+R1# show ip cef 10.1.1.77</code></pre>
+<ul>
+<li><code>show ip route 10.1.1.77</code>: دقیقاً می‌گوید کدام Route برای این مقصد انتخاب می‌شود (بهترین ابزار عیب‌یابی).</li>
+<li><code>show ip protocols</code>: پروتکل‌های مسیریابی فعال و تنظیماتشان.</li>
+<li><code>show ip cef ...</code>: مسیر واقعی Forwarding (CEF).</li>
+</ul>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): L و C چه فرقی دارند؟</summary><pre><code>C = the connected network (prefix); L = the local router address on it (/32).</code></pre>
+</details>
+<details><summary>۲ (ساده): AD برای Static و OSPF؟</summary><pre><code>Static 1, OSPF 110</code></pre>
+</details>
+<details><summary>۳ (متوسط): بسته به 10.1.1.77؛ Routeهای /8، /16 و /0 موجودند. کدام؟</summary><pre><code>/16 (longest matching prefix among those that match).</code></pre>
+</details>
+<details><summary>۴ (متوسط): آیا Metric یک Route در OSPF با RIP قابل مقایسه است؟</summary><pre><code>No. Different protocols use different metrics; AD decides between sources.</code></pre>
+</details>
+<details><summary>۵ (سخت): Static 10.0.0.0/8 و OSPF 10.0.23.0/30 هر دو موجود؛ بسته به 10.0.23.5 از کجا می‌رود؟</summary><pre><code>Via the OSPF route: /30 is the longest prefix. AD is only used for identical prefixes.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>توپولوژی این هفته: سه روتر vIOS به نام‌های <code>R1</code>، <code>R2</code>، <code>R3</code> به‌صورت خطی. اتصال‌ها: <code>R1 Gi0/1 ↔ R2 Gi0/0</code> و <code>R2 Gi0/1 ↔ R3 Gi0/0</code>. اگر RAM روتر زیاد است، می‌توانید vIOS را ۵۱۲ مگابایت کنید (راهنمای CML). برای فعلاً فقط Connected داریم.</p>
+<h3>گام ۱: آدرس‌دهی</h3>
+<pre><code>R1(config)# interface gi0/1
+R1(config-if)# ip address 10.0.12.1 255.255.255.252
+R1(config-if)# no shutdown
+R1(config)# interface loopback 10
+R1(config-if)# ip address 192.168.1.1 255.255.255.0
+
+R2(config)# interface gi0/0
+R2(config-if)# ip address 10.0.12.2 255.255.255.252
+R2(config-if)# no shutdown
+R2(config)# interface gi0/1
+R2(config-if)# ip address 10.0.23.1 255.255.255.252
+R2(config-if)# no shutdown
+
+R3(config)# interface gi0/0
+R3(config-if)# ip address 10.0.23.2 255.255.255.252
+R3(config-if)# no shutdown
+R3(config)# interface loopback 30
+R3(config-if)# ip address 192.168.3.1 255.255.255.0</code></pre>
+<h3>گام ۲: مشاهده</h3>
+<pre><code>R1# show ip interface brief
+R1# show ip route
+R1# ping 10.0.12.2
+R1# ping 192.168.3.1</code></pre>
+<p>پیش‌بینی: ping به همسایه OK، ولی به 192.168.3.1 شکست؛ چون R1 مسیری به آن ندارد. جدول R1 فقط C و L دارد؛ آن را یادداشت کنید.</p>
+<h3>گام ۳: LPM را خودتان بسنجید</h3>
+<p>از روی جدول بالا، با <code>show ip route 10.0.23.5</code> ببینید چه Routeی انتخاب می‌شود (هنوز هیچ؛ در درس بعد Static اضافه می‌کنیم).</p>
+
+<h2>Lab مستقل</h2>
+<p>جدول مسیریابی هر سه روتر را (فقط C و L) در <code>03-ops/routing-baseline-w5.md</code> ذخیره و هر کد را توضیح دهید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>ping به شبکه‌ی دور شکست می‌خورد</td></tr>
+<tr><th>روش</th><td>show ip route <مقصد>؛ اگر «Network not in table» بود، مسیر وجود ندارد</td></tr>
+<tr><th>چک‌لیست</th><td>۱) Route هست؟<br>۲) Next-hop قابل‌دسترس است؟<br>۳) مسیر برگشت هم دارد؟</td></tr>
+<tr><th>نکته</th><td>برگشت (Return Path) را همیشه چک کنید؛ مسیر یک‌طرفه کار نمی‌کند</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>اولین چیزی که روتر برای انتخاب Route نگاه می‌کند؟</summary><p>طول Prefix (Longest Prefix Match).</p></details>
+<details><summary>AD برای چیست؟</summary><p>انتخاب بین منابع مختلف Route برای یک Prefix یکسان.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>The router selects the route with the longest matching prefix.</td><td>روتر Route با طولانی‌ترین Prefix مطابق را انتخاب می‌کند.</td></tr>
+<tr><td>Administrative distance expresses how trustworthy a routing source is.</td><td>AD نشان می‌دهد منبع Route چقدر قابل‌اعتماد است.</td></tr>
+<tr><td>There is no route to the destination network.</td><td>مسیری به شبکه‌ی مقصد وجود ندارد.</td></tr>
+<tr><td>Check the return path as well.</td><td>مسیر برگشت را هم بررسی کنید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Which is compared first: administrative distance or prefix length?</summary><p>Prefix length (longest match) is compared first; AD only breaks ties between equal prefixes.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ خط‌به‌خط یک Route را توضیح دهم.</li>
+<li>☐ LPM را با ۳ مثال حل کنم.</li>
+<li>☐ Lab را انجام دهم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w5-2': {
+      sub: "Static Route، Next-hop و مسیر برگشت.",
+      html: `
+<div class="meta"><span class="tag">هفته ۵ - روز ۲</span><span class="tag">پیش‌نیاز: درس ۵-۱</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> ساخت مسیر دستی (<span class="en">Static Route</span>) با Next-hop، تفاوت Next-hop و Exit-interface، اهمیت مسیر برگشت (<span class="en">Return Path</span>) و خلاصه‌سازی با Static.</p>
+<p><b>چرا لازم است:</b> ساده‌ترین و قابل‌پیش‌بینی‌ترین مسیریابی است و در شعبه‌های کوچک و لینک اینترنت هنوز پرکاربرد است. اکثر «شبکه‌ی دور قابل‌دسترس نیست» ها به مسیر برگشت فراموش‌شده برمی‌گردد.</p>
+<ul>
+<li><b>در کار روزانه:</b> Default Route به سمت ISP یا فایروال در ۹۰٪ شعبه‌ها Static است.</li>
+<li><b>در امنیت:</b> Static Route قابل‌پیش‌بینی است و از تزریق مسیر جعلی جلوگیری می‌کند.</li>
+<li><b>در FortiGate:</b> <code>config router static</code> دقیقاً همین مفهوم است.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>Static چیست ← Next-hop در برابر Interface ← مسیر برگشت ← خلاصه‌سازی ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>Static Route</td><td>Static Route</td><td>مسیر دستی</td></tr>
+<tr><td>Next-hop</td><td>Next-hop IP</td><td>آدرس روتر بعدی</td></tr>
+<tr><td>Exit Interface</td><td>Exit Interface</td><td>Interface خروجی</td></tr>
+<tr><td>Return Path</td><td>Return Path</td><td>مسیر برگشت بسته</td></tr>
+<tr><td>Recursive</td><td>Recursive lookup</td><td>جستجوی دوباره برای رسیدن به Next-hop</td></tr>
+<tr><td>Null0</td><td>Null0</td><td>Interface مجازی دورریز</td></tr>
+<tr><td>Summary</td><td>Route Summarization</td><td>خلاصه‌سازی چند Route در یکی</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> Static Route چیست؟</h2>
+<p>یعنی خودتان به روتر می‌گویید: «برای رسیدن به شبکه X، بسته را به روتر Y بده». مثل اینکه به راننده‌ی تاکسی بگویید «برای رفتن به فرودگاه از این خیابان برو»؛ خودش تصمیم نمی‌گیرد، شما گفته‌اید.</p>
+<p>فرمت:</p>
+<pre><code>ip route <destination network> <mask> <next-hop | exit-interface> [AD]
+
+Example:
+R1(config)# ip route 192.168.3.0 255.255.255.0 10.0.12.2</code></pre>
+<p>یعنی «برای شبکه‌ی 192.168.3.0/24، بسته را به 10.0.12.2 بده».</p>
+<h2><span class="hn">۲.</span> Next-hop در برابر Exit-interface</h2>
+<table>
+<tr><th>روش</th><th>مثال</th><th>کاربرد</th></tr>
+<tr><td>Next-hop</td><td>ip route 192.168.3.0 255.255.255.0 10.0.12.2</td><td>پیشنهاد اصلی؛ روی اترنت امن است</td></tr>
+<tr><td>Exit-interface</td><td>ip route 192.168.3.0 255.255.255.0 gi0/1</td><td>فقط لینک نقطه‌به‌نقطه (Serial)؛ روی اترنت ARP برای هر مقصد</td></tr>
+<tr><td>هر دو</td><td>ip route 192.168.3.0 255.255.255.0 gi0/1 10.0.12.2</td><td>دقیق‌ترین (توصیه برای اترنت)</td></tr>
+</table>
+<div class="box"><b class="t">قانون</b>روی اترنت فقط Exit-interface ننویسید؛ روتر برای هر مقصد ARP می‌زند و به Proxy-ARP وابسته می‌شود. Next-hop (یا هر دو) بنویسید.</div>
+<p>«Recursive»: اگر Next-hop را بنویسید، روتر یک جستجوی دوم می‌کند تا Next-hop را از Connected/Route دیگری پیدا کند. به همین دلیل Next-hop باید حتماً در یک شبکه‌ی Connected یا شناخته‌شده باشد.</p>
+<h2><span class="hn">۳.</span> مسیر برگشت: مهم‌ترین نکته</h2>
+<p>ارتباط دوطرفه است. اگر فقط R1 مسیر رفت را بداند، ولی R3 راه برگشت به 192.168.1.0/24 را نداند، پاسخ هرگز نمی‌رسد و ping شکست می‌خورد.</p>
+<pre><code>PC (192.168.1.10) -> R1 -> R2 -> R3 -> Server (192.168.3.10)
+Forward path : R1 needs route to 192.168.3.0/24, R2 as well
+Return path  : R3 needs route to 192.168.1.0/24, R2 as well
+If any hop lacks the return route -> ping fails (one-way)</code></pre>
+<h2><span class="hn">۴.</span> خلاصه‌سازی با Static و Null0</h2>
+<p>به‌جای چند Route ریز، یک Route کلی می‌نویسیم. مثال: چهار شبکه‌ی 10.1.0.0/24 تا 10.1.3.0/24 را می‌توان با یک /22 خلاصه کرد:</p>
+<pre><code>10.1.0.0/24, 10.1.1.0/24, 10.1.2.0/24, 10.1.3.0/24
+Third octet: 0,1,2,3 -> block size 4 -> /22
+Summary = 10.1.0.0/22</code></pre>
+<p>برای جلوگیری از Loop هنگام خلاصه‌سازی روی مرز، گاهی یک Route به Null0 می‌گذارند تا بسته‌ی بی‌صاحب دور ریخته شود:</p>
+<pre><code>R2(config)# ip route 10.1.0.0 255.255.252.0 null0 200</code></pre>
+<p>AD برابر 200 است تا Routeهای واقعی (دقیق‌تر یا با AD کمتر) را بلوک نکند.</p>
+<h2><span class="hn">۵.</span> مثال‌ها</h2>
+<h3>ساده: یک مسیر</h3>
+<pre><code>R1(config)# ip route 192.168.3.0 255.255.255.0 10.0.12.2
+R1# show ip route static
+S  192.168.3.0/24 [1/0] via 10.0.12.2</code></pre>
+<h3>متوسط: مسیر رفت و برگشت</h3>
+<pre><code>R1(config)# ip route 192.168.3.0 255.255.255.0 10.0.12.2
+R1(config)# ip route 10.0.23.0 255.255.255.252 10.0.12.2
+R2(config)# ip route 192.168.3.0 255.255.255.0 10.0.23.2
+R2(config)# ip route 192.168.1.0 255.255.255.0 10.0.12.1
+R3(config)# ip route 192.168.1.0 255.255.255.0 10.0.23.1
+R3(config)# ip route 10.0.12.0 255.255.255.252 10.0.23.1</code></pre>
+<h3>سخت: Next-hop غیرقابل‌دسترس</h3>
+<pre><code>R1(config)# ip route 192.168.3.0 255.255.255.0 10.9.9.9
+R1# show ip route 192.168.3.0
+  -> Route is NOT installed: next-hop 10.9.9.9 is not reachable
+Fix: use a next-hop inside a connected network (10.0.12.2)</code></pre>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): Static برای شبکه‌ی 172.16.5.0/24 با Next-hop 10.0.0.2</summary><pre><code>ip route 172.16.5.0 255.255.255.0 10.0.0.2</code></pre>
+</details>
+<details><summary>۲ (ساده): چرا روی اترنت Next-hop می‌نویسیم؟</summary><pre><code>Interface-only routes make the router ARP for every destination; next-hop is deterministic.</code></pre>
+</details>
+<details><summary>۳ (متوسط): Summary چهار شبکه‌ی 10.2.4.0/24 تا 10.2.7.0/24؟</summary><pre><code>Third octet 4..7 -> block 4 -> 10.2.4.0/22</code></pre>
+</details>
+<details><summary>۴ (متوسط): ping یک‌طرفه شکست می‌خورد؛ علت؟</summary><pre><code>Missing return route on one of the hops.</code></pre>
+</details>
+<details><summary>۵ (سخت): چرا Route به Null0 با AD 200؟</summary><pre><code>To drop unmatched traffic inside a summary without overriding real (more specific or lower AD) routes.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<h3>گام ۱: مسیرهای رفت</h3>
+<pre><code>R1(config)# ip route 10.0.23.0 255.255.255.252 10.0.12.2
+R1(config)# ip route 192.168.3.0 255.255.255.0 10.0.12.2
+R3(config)# ip route 10.0.12.0 255.255.255.252 10.0.23.1
+R3(config)# ip route 192.168.1.0 255.255.255.0 10.0.23.1
+R2(config)# ip route 192.168.1.0 255.255.255.0 10.0.12.1
+R2(config)# ip route 192.168.3.0 255.255.255.0 10.0.23.2</code></pre>
+<h3>گام ۲: تست</h3>
+<pre><code>R1# ping 192.168.3.1 source 192.168.1.1
+R1# traceroute 192.168.3.1 source 192.168.1.1</code></pre>
+<p>با <code>source</code> مبدأ را Loopback می‌کنیم تا شبکه‌ی LAN شبیه‌سازی شود.</p>
+<h3>گام ۳: خراب‌کردن عمدی مسیر برگشت</h3>
+<pre><code>R3(config)# no ip route 192.168.1.0 255.255.255.0 10.0.23.1
+R1# ping 192.168.3.1 source 192.168.1.1   (fails: no return)
+R3(config)# ip route 192.168.1.0 255.255.255.0 10.0.23.1</code></pre>
+<p>Capture روی لینک R2-R3: Echo Request می‌رسد ولی Reply برنمی‌گردد.</p>
+
+<h2>Lab مستقل</h2>
+<p>یک جدول «Static Route Plan» بنویسید: هر روتر، شبکه‌های مقصد، Next-hop و مسیر برگشت در <code>02-design/static-plan.md</code>.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>ping به شبکه‌ی دور شکست</td></tr>
+<tr><th>چک‌لیست</th><td>۱) Route رفت؟<br>۲) Next-hop Connected است؟<br>۳) Route برگشت؟<br>۴) Mask درست؟<br>۵) ACL یا فایروال؟</td></tr>
+<tr><th>ابزار</th><td>show ip route <مقصد> ، traceroute ، Capture</td></tr>
+<tr><th>رفع</th><td>افزودن مسیر گم‌شده</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>Static Route کی مناسب است؟</summary><p>شبکه‌ی کوچک یا لینک‌های ثابت مثل Default به ISP.</p></details>
+<details><summary>چرا مسیر برگشت مهم است؟</summary><p>ارتباط دوطرفه است؛ بدون Route برگشت پاسخ نمی‌رسد.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Configure a static route pointing to the next-hop address.</td><td>یک Static Route به آدرس Next-hop تنظیم کنید.</td></tr>
+<tr><td>The route is not installed because the next-hop is unreachable.</td><td>Route نصب نشده چون Next-hop در دسترس نیست.</td></tr>
+<tr><td>Ping fails because there is no return route.</td><td>ping شکست می‌خورد چون Route برگشت وجود ندارد.</td></tr>
+<tr><td>Summarize contiguous networks into a single route.</td><td>شبکه‌های متوالی را در یک Route خلاصه کنید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why do we avoid exit-interface-only static routes on Ethernet?</summary><p>The router must ARP for every destination, relying on proxy ARP.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ Static رفت و برگشت را بزنم و ping موفق بگیرم.</li>
+<li>☐ مسیر برگشت را عمداً حذف کنم و Capture ببینم.</li>
+<li>☐ Summary را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w5-3': {
+      sub: "Default، Floating Static و IP SLA.",
+      html: `
+<div class="meta"><span class="tag">هفته ۵ - روز ۳</span><span class="tag">پیش‌نیاز: درس ۵-۲</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> Default Route (<span class="en">0.0.0.0/0</span>)، Route پشتیبان با AD بالا (<span class="en">Floating Static</span>)، و رصد سلامت لینک با <span class="en">IP SLA</span> برای Failover واقعی.</p>
+<p><b>چرا لازم است:</b> هر شعبه یک «در خروج» (اینترنت یا فایروال) دارد. اگر لینک اصلی خراب شود، باید ترافیک به لینک پشتیبان برود. Floating Static ساده‌ترین راه است؛ ولی بدون Tracking ممکن است Failover رخ ندهد چون لینک «بالا» است ولی اینترنت قطع.</p>
+<ul>
+<li><b>در کار روزانه:</b> تقریباً هر شعبه Default Route دارد و بعضی یک لینک پشتیبان (4G/ISP دوم).</li>
+<li><b>در امنیت:</b> Default Route تنها راه خروج است؛ اشتباه آن همه‌ی شبکه را ایزوله می‌کند.</li>
+<li><b>در FortiGate:</b> Failover دو ISP با Distance/Priority و Link Monitor همین منطق است.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>Default Route ← Floating Static ← IP SLA و Track ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>Default Route</td><td>Default Route</td><td>مسیر 0.0.0.0/0 برای هر مقصد ناشناخته</td></tr>
+<tr><td>Floating Static</td><td>Floating Static Route</td><td>Route پشتیبان با AD بالاتر</td></tr>
+<tr><td>IP SLA</td><td>IP Service Level Agreement</td><td>پروب سلامت مسیر با ping</td></tr>
+<tr><td>Track</td><td>Object Tracking</td><td>وابستگی Route به وضعیت یک شیء</td></tr>
+<tr><td>Failover</td><td>Failover</td><td>سوییچ خودکار به مسیر پشتیبان</td></tr>
+<tr><td>Reachability</td><td>Reachability</td><td>قابل‌دسترس بودن</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> Default Route: «هرجا نمی‌دانی، از اینجا برو»</h2>
+<p>Default Route همان آدرس ناشناخته در جدول است: مثل تابلوی «بقیه‌ی مسیرها» در بزرگراه. شبکه‌ی /0 همه‌ی آدرس‌ها را می‌پوشاند و چون کوتاه‌ترین Prefix است، فقط وقتی استفاده می‌شود که Route دقیق‌تری نباشد (LPM).</p>
+<pre><code>R1(config)# ip route 0.0.0.0 0.0.0.0 10.0.12.2
+R1# show ip route
+Gateway of last resort is 10.0.12.2 to network 0.0.0.0
+S*   0.0.0.0/0 [1/0] via 10.0.12.2</code></pre>
+<h2><span class="hn">۲.</span> Floating Static: پشتیبان که «شناور» است</h2>
+<p>دو Default Route با دو AD متفاوت می‌نویسیم: اصلی با AD پیش‌فرض (1) و پشتیبان با AD بالاتر (مثلاً 200). روتر فقط Route با AD کمتر را نصب می‌کند؛ اگر آن حذف شد، پشتیبان «بالا می‌آید».</p>
+<figure class="fig"><svg viewBox="0 0 720 260" role="img" aria-label="topology"><path d="M360 130 L125 48" class="rp"/><text x="242" y="83" text-anchor="middle" class="cap">primary</text><path d="M360 130 L125 208" class="rq"/><text x="242" y="163" text-anchor="middle" class="cap">floating</text><path d="M360 130 L605 130" class="ln"/><rect x="285" y="100" width="150" height="60" rx="8" class="bx"/><text x="360" y="128" text-anchor="middle">R1</text><text x="360" y="144" text-anchor="middle" class="cap">branch</text><rect x="40" y="20" width="170" height="56" rx="8" class="hst"/><text x="125" y="46" text-anchor="middle" class="on">ISP-1 (primary)</text><text x="125" y="62" text-anchor="middle" class="cap">AD 1</text><rect x="40" y="180" width="170" height="56" rx="8" class="wrn"/><text x="125" y="206" text-anchor="middle" class="on">ISP-2 (backup)</text><text x="125" y="222" text-anchor="middle" class="cap">AD 200</text><rect x="530" y="100" width="150" height="60" rx="8" class="net"/><text x="605" y="128" text-anchor="middle" class="on">LAN</text><text x="605" y="144" text-anchor="middle" class="cap">192.168.1.0/24</text></svg><figcaption>شکل ۱: لینک اصلی با AD 1 و پشتیبان با AD 200.</figcaption></figure>
+<pre><code>R1(config)# ip route 0.0.0.0 0.0.0.0 203.0.113.1
+R1(config)# ip route 0.0.0.0 0.0.0.0 198.51.100.1 200
+R1# show ip route 0.0.0.0
+  -> only the AD 1 route is in the table</code></pre>
+<h2><span class="hn">۳.</span> مشکل: لینک «بالا» است ولی اینترنت نیست</h2>
+<p>Route Static تا وقتی Interface خروجی up/up است در جدول می‌ماند؛ حتی اگر Next-hop (ISP) خراب باشد. پس Floating به‌تنهایی Failover واقعی نیست. باید «سلامت واقعی» مسیر را بسنجیم: IP SLA با ping به Next-hop یا یک آدرس دور.</p>
+<pre><code>Interface up/up + ISP dead -> Static route still installed -> no failover
+Solution: IP SLA probe + track -> route removed when probe fails</code></pre>
+<h2><span class="hn">۴.</span> IP SLA و Track (دستورها خط‌به‌خط)</h2>
+<pre><code>R1(config)# ip sla 1
+R1(config-ip-sla)# icmp-echo 203.0.113.1 source-interface gi0/1
+R1(config-ip-sla-echo)# frequency 5
+R1(config-ip-sla-echo)# exit
+R1(config)# ip sla schedule 1 life forever start-time now
+R1(config)# track 1 ip sla 1 reachability
+R1(config)# ip route 0.0.0.0 0.0.0.0 203.0.113.1 track 1
+R1(config)# ip route 0.0.0.0 0.0.0.0 198.51.100.1 200</code></pre>
+<ul>
+<li><code>ip sla 1</code> + <code>icmp-echo</code>: هر ۵ ثانیه ping به Next-hop اول.</li>
+<li><code>schedule ... start-time now</code>: پروب را همین الان و برای همیشه شروع می‌کند.</li>
+<li><code>track 1 ip sla 1 reachability</code>: شیء Track که وضعیت پروب را می‌داند.</li>
+<li><code>ip route ... track 1</code>: این Route فقط وقتی در جدول است که Track بالا باشد.</li>
+</ul>
+<pre><code>R1# show ip sla statistics
+R1# show track 1
+R1# show ip route 0.0.0.0</code></pre>
+<h2><span class="hn">۵.</span> مثال‌ها</h2>
+<h3>ساده</h3>
+<pre><code>Single ISP: ip route 0.0.0.0 0.0.0.0 <ISP gateway></code></pre>
+<h3>متوسط: Floating</h3>
+<pre><code>Primary link fails (interface down)
+-> AD 1 route removed
+-> AD 200 route installed automatically</code></pre>
+<h3>سخت: ISP خراب ولی Interface بالا</h3>
+<pre><code>Probe to 203.0.113.1 times out
+-> track 1 goes Down
+-> primary static removed
+-> backup (AD 200) installed
+Probe recovers -> primary returns (preempt)</code></pre>
+<div class="box"><b class="t">صادقانه درباره‌ی Lab</b>طبق Probe اولیه، IP SLA روی IOS ما کار می‌کند. در Lab، لینک ISP را با قطع کابل (shutdown رو Interface دور) یا حذف Route همسایه شبیه‌سازی کنید و نتیجه‌ی واقعی را ثبت کنید.</div>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): AD پیش‌فرض Static و Floating معمول؟</summary><pre><code>Static default AD = 1; floating backup typically 200 (any value higher than the primary).</code></pre>
+</details>
+<details><summary>۲ (ساده): چرا 0.0.0.0 0.0.0.0 همه‌ی مقاصد را می‌پوشاند؟</summary><pre><code>Prefix length 0 matches every address; it is only used when nothing longer matches.</code></pre>
+</details>
+<details><summary>۳ (متوسط): چرا Floating به‌تنهایی کافی نیست؟</summary><pre><code>The static route stays installed while the interface is up, even if the ISP is dead.</code></pre>
+</details>
+<details><summary>۴ (متوسط): دستور Route وابسته به Track؟</summary><pre><code>ip route 0.0.0.0 0.0.0.0 203.0.113.1 track 1</code></pre>
+</details>
+<details><summary>۵ (سخت): چه چیزی را باید پروب کنیم؟</summary><pre><code>The next-hop and ideally something beyond it (a reliable remote address) to detect upstream failure.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>روی R1 یک Interface دوم به R2 فرض می‌کنیم (یا Loopback). اگر ندارید، با <code>Loopback</code> هم می‌شود مسیر را شبیه‌سازی کرد.</p>
+<h3>گام ۱: Default اصلی و پشتیبان</h3>
+<pre><code>R1(config)# ip route 0.0.0.0 0.0.0.0 10.0.12.2
+R1(config)# ip route 0.0.0.0 0.0.0.0 10.0.99.2 200
+R1# show ip route</code></pre>
+<h3>گام ۲: IP SLA و Track</h3>
+<pre><code>R1(config)# ip sla 1
+R1(config-ip-sla)# icmp-echo 10.0.12.2 source-interface gi0/1
+R1(config-ip-sla-echo)# frequency 5
+R1(config)# ip sla schedule 1 life forever start-time now
+R1(config)# track 1 ip sla 1 reachability
+R1(config)# no ip route 0.0.0.0 0.0.0.0 10.0.12.2
+R1(config)# ip route 0.0.0.0 0.0.0.0 10.0.12.2 track 1
+R1# show track 1</code></pre>
+<h3>گام ۳: شبیه‌سازی خرابی</h3>
+<pre><code>R2(config)# interface gi0/0
+R2(config-if)# shutdown
+R1# show track 1
+R1# show ip route 0.0.0.0</code></pre>
+<p>ثبت کنید چند ثانیه طول کشید تا Track پایین بیاید و Route پشتیبان نصب شود، و بعد از <code>no shutdown</code> چه شد.</p>
+
+<h2>Lab مستقل</h2>
+<p>یک Runbook «Failover دو ISP» در <code>03-ops/dual-isp-failover.md</code> بنویسید: تنظیم، Verification، و آزمون خرابی.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>Failover رخ نمی‌دهد</td></tr>
+<tr><th>چک‌لیست</th><td>۱) AD پشتیبان بیشتر است؟<br>۲) Track روی Route اصلی است؟<br>۳) پروب به آدرس درست می‌رود؟<br>۴) Interface هنوز up/up است؟</td></tr>
+<tr><th>ابزار</th><td>show track ، show ip sla statistics ، show ip route</td></tr>
+<tr><th>رفع</th><td>اصلاح پروب و AD</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>Floating Static چیست؟</summary><p>Route پشتیبان با AD بالاتر که فقط با حذف Route اصلی فعال می‌شود.</p></details>
+<details><summary>IP SLA برای چیست؟</summary><p>سنجش سلامت واقعی مسیر تا Failover درست انجام شود.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Configure a floating static route with a higher administrative distance.</td><td>Floating Static با AD بالاتر تنظیم کنید.</td></tr>
+<tr><td>The track object goes down when the probe fails.</td><td>وقتی پروب شکست بخورد، شیء Track پایین می‌رود.</td></tr>
+<tr><td>The backup route is installed automatically.</td><td>Route پشتیبان خودکار نصب می‌شود.</td></tr>
+<tr><td>Always test failover before production.</td><td>Failover را همیشه قبل از Production تست کنید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Why can a static route stay in the table even if the ISP is down?</summary><p>Because it depends on the local interface state, not on end-to-end reachability.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ Floating و Track را تنظیم کنم.</li>
+<li>☐ خرابی را شبیه‌سازی و زمان Failover را ثبت کنم.</li>
+<li>☐ Runbook را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w5-4': {
+      sub: "OSPF: همسایگی، LSDB، Cost.",
+      html: `
+<div class="meta"><span class="tag">هفته ۵ - روز ۴</span><span class="tag">پیش‌نیاز: درس‌های ۵-۱ تا ۵-۳</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> مفهوم پروتکل مسیریابی پویا <span class="en">OSPF</span>: چرا Static در شبکه‌ی بزرگ جواب نمی‌دهد، چطور روترها همسایه می‌شوند، پایگاه داده‌ی مشترک (<span class="en">LSDB</span>) چیست، و هزینه (<span class="en">Cost</span>) چطور مسیر را انتخاب می‌کند.</p>
+<p><b>چرا لازم است:</b> در شبکه‌ای با ۵۰ روتر، نوشتن دستی هزاران Static غیرممکن است و با هر تغییر باید همه را اصلاح کنید. OSPF خودش مسیرها را پیدا می‌کند، با خرابی لینک در چند ثانیه مسیر جایگزین می‌سازد و استاندارد سازمان‌هاست.</p>
+<ul>
+<li><b>در کار روزانه:</b> OSPF رایج‌ترین IGP در سازمان‌هاست.</li>
+<li><b>در امنیت:</b> Adjacency بدون Authentication یعنی هر روتر جعلی می‌تواند مسیر تزریق کند.</li>
+<li><b>در FortiGate:</b> FortiGate هم OSPF می‌فهمد و در Capstone با Cisco هم‌نشین می‌شود.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>چرا مسیریابی پویا ← OSPF چطور کار می‌کند ← حالت‌های همسایگی ← Cost و SPF ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>OSPF</td><td>Open Shortest Path First</td><td>پروتکل مسیریابی Link-State داخلی</td></tr>
+<tr><td>IGP</td><td>Interior Gateway Protocol</td><td>پروتکل مسیریابی داخل یک سازمان</td></tr>
+<tr><td>LSA</td><td>Link-State Advertisement</td><td>اعلان وضعیت لینک</td></tr>
+<tr><td>LSDB</td><td>Link-State Database</td><td>پایگاه داده‌ی مشترک همه‌ی روترهای یک Area</td></tr>
+<tr><td>SPF</td><td>Shortest Path First (Dijkstra)</td><td>الگوریتم محاسبه‌ی کوتاه‌ترین مسیر</td></tr>
+<tr><td>Router ID</td><td>Router Identifier</td><td>شناسه‌ی یکتای روتر (مثل IP)</td></tr>
+<tr><td>Adjacency</td><td>Adjacency</td><td>همسایگی کامل بین دو روتر</td></tr>
+<tr><td>Area</td><td>OSPF Area</td><td>ناحیه؛ بخش‌بندی شبکه</td></tr>
+<tr><td>Cost</td><td>OSPF Cost</td><td>هزینه‌ی لینک بر اساس پهنای باند</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> چرا مسیریابی پویا؟</h2>
+<p>فرض کنید ۱۰ روتر دارید. Static یعنی به هر روتر درباره‌ی هر شبکه بگویید؛ با اضافه‌شدن یک شبکه همه را عوض می‌کنید، و اگر لینکی خراب شود هیچ‌چیز خودکار تغییر نمی‌کند. مسیریابی پویا مثل گوگل‌مپ است: هر روتر وضعیت خودش را اعلام می‌کند و همه با هم نقشه‌ی یکسان می‌سازند.</p>
+<h2><span class="hn">۲.</span> OSPF چطور کار می‌کند؟ (سه مرحله)</h2>
+<ol>
+<li><b>همسایه‌یابی:</b> روترها با پیام Hello همدیگر را پیدا می‌کنند.</li>
+<li><b>تبادل نقشه:</b> هر روتر وضعیت لینک‌های خودش (LSA) را با همه‌ی روترهای Area به اشتراک می‌گذارد؛ نتیجه LSDB یکسان در همه است.</li>
+<li><b>محاسبه‌ی مسیر:</b> هر روتر با الگوریتم SPF از روی LSDB کوتاه‌ترین مسیر به هر شبکه را حساب می‌کند.</li>
+</ol>
+<div class="box"><b class="t">تفاوت با RIP</b>OSPF «نقشه‌ی کامل» را دارد (Link-State)، نه فقط «شنیده‌های همسایه» (Distance Vector). برای همین سریع‌تر همگرا می‌شود و حلقه نمی‌سازد.</div>
+<h2><span class="hn">۳.</span> همسایگی: از Down تا Full</h2>
+<figure class="fig"><svg viewBox="0 0 720 298" role="img" aria-label="sequence"><rect x="115" y="10" width="130" height="34" rx="8" class="bx"/><text x="180" y="32" text-anchor="middle">Router A</text><path d="M180 44 V292" class="ln" stroke-dasharray="4 4"/><rect x="475" y="10" width="130" height="34" rx="8" class="bx"/><text x="540" y="32" text-anchor="middle">Router B</text><path d="M540 44 V292" class="ln" stroke-dasharray="4 4"/><path d="M180 75 H540" class="rq"/><path d="M532 70 l8 5 l-8 5" class="rq"/><text x="360" y="67" text-anchor="middle" class="cap">Hello (I know nobody)</text><path d="M540 113 H180" class="rp"/><path d="M188 108 l-8 5 l8 5" class="rp"/><text x="360" y="105" text-anchor="middle" class="cap">Hello (I saw A)</text><path d="M180 151 H540" class="rq"/><path d="M532 146 l8 5 l-8 5" class="rq"/><text x="360" y="143" text-anchor="middle" class="cap">DBD (database summary)</text><path d="M540 189 H180" class="rp"/><path d="M188 184 l-8 5 l8 5" class="rp"/><text x="360" y="181" text-anchor="middle" class="cap">DBD</text><path d="M180 227 H540" class="rq"/><path d="M532 222 l8 5 l-8 5" class="rq"/><text x="360" y="219" text-anchor="middle" class="cap">LSR / LSU (missing LSAs)</text><path d="M540 265 H180" class="rp"/><path d="M188 260 l-8 5 l8 5" class="rp"/><text x="360" y="257" text-anchor="middle" class="cap">LSAck -> state FULL</text></svg><figcaption>شکل ۱: ساده‌شده‌ی تبادل پیام‌ها تا رسیدن به حالت Full.</figcaption></figure>
+<table>
+<tr><th>حالت</th><th>معنی</th></tr>
+<tr><td>Down</td><td>Hello نرسیده</td></tr>
+<tr><td>Init</td><td>Hello دریافت شد ولی همسایه هنوز ما را ندیده</td></tr>
+<tr><td>2-Way</td><td>دوطرفه دیدیم (روی Broadcast: DR/BDR انتخاب می‌شود)</td></tr>
+<tr><td>ExStart</td><td>انتخاب Master/Slave برای تبادل</td></tr>
+<tr><td>Exchange</td><td>تبادل خلاصه‌ی پایگاه داده (DBD)</td></tr>
+<tr><td>Loading</td><td>دریافت LSAهای مفقود</td></tr>
+<tr><td>Full</td><td>پایگاه‌ها یکسان؛ Adjacency کامل</td></tr>
+</table>
+<p>اگر روتری در ExStart یا Exchange گیر کرد، معمولاً MTU یا مشکل پایگاه داده است. اگر در Init می‌ماند، یکی از دو طرف Hello را نمی‌بیند (ACL، Hello/Dead، Subnet).</p>
+<h2><span class="hn">۴.</span> شرط‌های تشکیل Adjacency</h2>
+<p>برای اینکه دو روتر همسایه شوند، این مقادیر باید یکی باشند:</p>
+<ul>
+<li>هر دو Interface در یک Subnet با Mask یکسان.</li>
+<li>Area یکسان.</li>
+<li>Hello و Dead Interval یکسان (پیش‌فرض اترنت: 10 و 40 ثانیه).</li>
+<li>Authentication یکسان.</li>
+<li>MTU برابر (یا <code>ip ospf mtu-ignore</code> در موارد خاص).</li>
+<li>Router ID یکتا.</li>
+</ul>
+<pre><code>Hello interval (Ethernet) = 10 s
+Dead interval  (Ethernet) = 4 x Hello = 40 s
+(Non-broadcast: Hello 30 s, Dead 120 s)</code></pre>
+<h2><span class="hn">۵.</span> Router ID</h2>
+<p>هر روتر یک شناسه‌ی ۳۲ بیتی شبیه IP دارد. اگر دستی تنظیم نکنید، بزرگ‌ترین IP روی Loopbackها، و در نبود Loopback بزرگ‌ترین IP روی Interfaceهای فعال انتخاب می‌شود. توصیه: همیشه دستی تنظیم کنید تا پایدار و قابل‌پیش‌بینی باشد:</p>
+<pre><code>R1(config)# router ospf 1
+R1(config-router)# router-id 1.1.1.1</code></pre>
+<h2><span class="hn">۶.</span> Cost: چطور مسیر انتخاب می‌شود؟</h2>
+<p>هر لینک یک هزینه دارد که از پهنای باند به‌دست می‌آید. هزینه‌ی کل یک مسیر مجموع هزینه‌ی لینک‌های خروجی تا مقصد است و کمترین برنده می‌شود:</p>
+<pre><code>Cost = Reference bandwidth / Interface bandwidth
+Default reference bandwidth = 100 Mbps
+
+ 10 Mbps  -> 100 / 10   = 10
+100 Mbps  -> 100 / 100  = 1
+  1 Gbps  -> 100 / 1000 = 0.1 -> rounded up to 1   (problem!)
+ 10 Gbps  -> also 1</code></pre>
+<div class="box"><b class="t">مشکل شناخته‌شده</b>با مرجع ۱۰۰ مگابیت، لینک‌های ۱ و ۱۰ گیگابیت هزینه‌ی یکسان (۱) دارند؛ پس OSPF سریع‌تر را از کندتر تشخیص نمی‌دهد. راه‌حل: مرجع را بالا ببرید و در همه‌ی روترها یکسان کنید: <code>auto-cost reference-bandwidth 10000</code> (ده گیگ).</div>
+<pre><code>Reference 10000 Mbps:
+  1 Gbps  -> 10000 / 1000  = 10
+ 10 Gbps  -> 10000 / 10000 = 1
+100 Mbps  -> 10000 / 100   = 100</code></pre>
+<h2><span class="hn">۷.</span> مثال‌ها</h2>
+<h3>ساده: دو روتر</h3>
+<pre><code>R1 Gi0/1 10.0.12.1/30  <->  R2 Gi0/0 10.0.12.2/30, area 0
+Hello exchanged -> neighbors -> state FULL
+Each learns the other LANs automatically</code></pre>
+<h3>متوسط: کدام مسیر؟</h3>
+<pre><code>Path A: R1 -> R2 -> R3     cost 10 + 10 = 20
+Path B: R1 -> R3 direct     cost 30
+SPF picks Path A (20 < 30)</code></pre>
+<h3>سخت: چرا Adjacency نمی‌شود؟</h3>
+<pre><code>R1: ip ospf hello-interval 5   (dead 20)
+R2: default (hello 10, dead 40)
+Result: neighbors never reach 2-Way; hello/dead mismatch
+Fix: make both sides identical</code></pre>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): سه مرحله‌ی کار OSPF؟</summary><pre><code>1) discover neighbors 2) exchange LSAs to build the same LSDB 3) run SPF to compute best paths</code></pre>
+</details>
+<details><summary>۲ (ساده): Hello/Dead پیش‌فرض اترنت؟</summary><pre><code>10 s / 40 s</code></pre>
+</details>
+<details><summary>۳ (متوسط): Cost لینک 1 Gbps با Reference 100 Mbps؟</summary><pre><code>100 / 1000 = 0.1 -> rounded up to 1</code></pre>
+</details>
+<details><summary>۴ (متوسط): Cost لینک 100 Mbps با Reference 10000؟</summary><pre><code>10000 / 100 = 100</code></pre>
+</details>
+<details><summary>۵ (سخت): دو روتر در Init مانده‌اند؛ علت‌های محتمل؟</summary><pre><code>Hello not received on one side: ACL blocking, hello/dead mismatch, subnet/mask mismatch, wrong interface in OSPF.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>در این درس فقط مشاهده‌ی مفهوم؛ پیکربندی کامل در درس بعد. ولی Router ID را می‌توانیم از الان برنامه‌ریزی کنیم:</p>
+<table>
+<tr><th>روتر</th><th>Router ID</th><th>Loopback</th></tr>
+<tr><td>R1</td><td>1.1.1.1</td><td>Loopback0 = 1.1.1.1/32</td></tr>
+<tr><td>R2</td><td>2.2.2.2</td><td>Loopback0 = 2.2.2.2/32</td></tr>
+<tr><td>R3</td><td>3.3.3.3</td><td>Loopback0 = 3.3.3.3/32</td></tr>
+</table>
+<h3>گام: ساخت Loopback0 روی هر روتر</h3>
+<pre><code>R1(config)# interface loopback 0
+R1(config-if)# ip address 1.1.1.1 255.255.255.255
+R2(config)# interface loopback 0
+R2(config-if)# ip address 2.2.2.2 255.255.255.255
+R3(config)# interface loopback 0
+R3(config-if)# ip address 3.3.3.3 255.255.255.255</code></pre>
+<p>سپس با Static قبلی، دسترسی به این Loopbackها را برقرار کنید (یا صبر کنید تا OSPF در درس بعد انجامش دهد).</p>
+
+<h2>Lab مستقل</h2>
+<p>ترسیم دستی LSDB یک مثلث سه‌روتری روی کاغذ: هر روتر چه LSAهایی می‌سازد؟ و جدول Cost هر لینک را با Reference 10000 بنویسید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>دو روتر همسایه نمی‌شوند</td></tr>
+<tr><th>چک‌لیست</th><td>۱) Subnet و Mask یکی؟<br>۲) Area یکی؟<br>۳) Hello/Dead یکی؟<br>۴) Authentication؟<br>۵) MTU؟<br>۶) Router ID تکراری؟<br>۷) ACL؟</td></tr>
+<tr><th>ابزار</th><td>show ip ospf neighbor ، show ip ospf interface ، debug ip ospf adj (با احتیاط)</td></tr>
+<tr><th>رفع</th><td>یکسان‌سازی پارامتر ناسازگار</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>OSPF چه نوع پروتکلی است؟</summary><p>Link-State؛ هر روتر نقشه‌ی کامل Area را دارد.</p></details>
+<details><summary>Hello و Dead چیست؟</summary><p>Hello برای معرفی دوره‌ای؛ Dead زمان انتظار قبل از اعلام قطع همسایه.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>OSPF routers exchange link-state advertisements to build an identical database.</td><td>روترهای OSPF با تبادل LSA پایگاه داده‌ی یکسان می‌سازند.</td></tr>
+<tr><td>Neighbors must agree on area, hello and dead timers.</td><td>همسایه‌ها باید روی Area و تایمرهای Hello/Dead توافق داشته باشند.</td></tr>
+<tr><td>The lowest total cost path is selected.</td><td>مسیر با کمترین هزینه‌ی کل انتخاب می‌شود.</td></tr>
+<tr><td>Set the router ID manually for stability.</td><td>Router ID را برای پایداری دستی تنظیم کنید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): What are the three steps of OSPF operation?</summary><p>Form neighbor adjacencies, exchange LSAs to build the LSDB, and run SPF to calculate best paths.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ وضعیت‌های همسایگی را بدون نگاه بگویم.</li>
+<li>☐ Cost را با دو Reference حساب کنم.</li>
+<li>☐ Loopbackها را بسازم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w5-5': {
+      sub: "OSPF تک‌ناحیه‌ای، passive-interface، default-information.",
+      html: `
+<div class="meta"><span class="tag">هفته ۵ - روز ۵</span><span class="tag">پیش‌نیاز: درس ۵-۴</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> پیاده‌سازی OSPF تک‌ناحیه‌ای روی سه روتر: <span class="en">router ospf</span>، معرفی شبکه‌ها، <span class="en">passive-interface</span>، پخش Default Route، تنظیم Cost و بررسی با دستورهای show.</p>
+<p><b>چرا لازم است:</b> تا اینجا مفهوم را فهمیدید؛ حالا باید بتوانید یک شبکه‌ی چندروتری را در کمتر از ده دقیقه با OSPF بالا بیاورید و درستی‌اش را اثبات کنید. این مهارت در مصاحبه و کار روزانه مستقیماً سنجیده می‌شود.</p>
+<ul>
+<li><b>در کار روزانه:</b> تنظیم OSPF برای شبکه‌ی جدید و عیب‌یابی همسایگی.</li>
+<li><b>در امنیت:</b> Passive-interface جلوی ارسال Hello به سمت کاربران را می‌گیرد.</li>
+<li><b>در Capstone:</b> Lab A (Cisco L3 Core) و ارتباط با FortiGate از همین مبانی استفاده می‌کند.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>طراحی ← دستورها خط‌به‌خط ← passive-interface ← default-information ← مثال ساده/متوسط/سخت ← Lab ← عیب‌یابی.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>network</td><td>OSPF network statement</td><td>Interfaceها را با Wildcard به OSPF معرفی می‌کند</td></tr>
+<tr><td>Wildcard</td><td>Wildcard mask</td><td>معکوس Mask</td></tr>
+<tr><td>passive-interface</td><td>Passive interface</td><td>Interface که Hello نمی‌فرستد ولی شبکه‌اش اعلام می‌شود</td></tr>
+<tr><td>default-information originate</td><td>Default information originate</td><td>پخش Default Route</td></tr>
+<tr><td>reference-bandwidth</td><td>Auto-cost reference bandwidth</td><td>پهنای مرجع برای Cost</td></tr>
+<tr><td>E2</td><td>OSPF External Type 2</td><td>Route خارجی با Cost ثابت</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> طراحی Lab</h2>
+<pre><code>R1 --10.0.12.0/30-- R2 --10.0.23.0/30-- R3
+R1 LAN: 192.168.1.0/24 (Loopback10)
+R3 LAN: 192.168.3.0/24 (Loopback30)
+Router IDs: 1.1.1.1 , 2.2.2.2 , 3.3.3.3
+All in area 0</code></pre>
+<p>اول Static درس قبل را حذف کنید تا نتیجه‌ی OSPF را درست ببینید.</p>
+<pre><code>R1(config)# no ip route 192.168.3.0 255.255.255.0 10.0.12.2
+R1(config)# no ip route 10.0.23.0 255.255.255.252 10.0.12.2
+(similarly remove statics on R2 and R3)</code></pre>
+<h2><span class="hn">۲.</span> دستورها (خط‌به‌خط)</h2>
+<pre><code>R1(config)# router ospf 1
+R1(config-router)# router-id 1.1.1.1
+R1(config-router)# auto-cost reference-bandwidth 10000
+R1(config-router)# network 10.0.12.0 0.0.0.3 area 0
+R1(config-router)# network 192.168.1.0 0.0.0.255 area 0
+R1(config-router)# passive-interface loopback 10
+R1(config-router)# end</code></pre>
+<ul>
+<li><code>router ospf 1</code>: شماره‌ی Process فقط محلی است و لازم نیست با همسایه یکی باشد.</li>
+<li><code>network ... area 0</code>: هر Interface که آدرسش در این بازه بیفتد در OSPF شرکت می‌کند. از Wildcard استفاده می‌شود: برای /30 برابر 0.0.0.3 و برای /24 برابر 0.0.0.255.</li>
+<li><code>passive-interface</code>: روی Interface مربوط به LAN کاربران؛ شبکه‌اش اعلام می‌شود ولی Hello نمی‌رود (کاربر نمی‌تواند همسایه جعلی بسازد).</li>
+<li><code>reference-bandwidth 10000</code>: باید در همه‌ی روترها یکسان باشد.</li>
+</ul>
+<pre><code>Wildcard = 255.255.255.255 - Mask
+/30: 255.255.255.255 - 255.255.255.252 = 0.0.0.3
+/24: 255.255.255.255 - 255.255.255.0   = 0.0.0.255</code></pre>
+<p>روش جایگزین (مدرن): فعال‌سازی روی خود Interface بدون <code>network</code>:</p>
+<pre><code>R1(config)# interface gi0/1
+R1(config-if)# ip ospf 1 area 0
+R1(config)# interface loopback 10
+R1(config-if)# ip ospf 1 area 0</code></pre>
+<h2><span class="hn">۳.</span> Verification (چهار دستور اصلی)</h2>
+<pre><code>R1# show ip ospf neighbor
+R1# show ip ospf interface brief
+R1# show ip route ospf
+R1# show ip protocols</code></pre>
+<p>نمونه‌ی خروجی سالم:</p>
+<pre><code>R1# show ip ospf neighbor
+Neighbor ID   Pri  State     Dead Time  Address     Interface
+2.2.2.2         1  FULL/BDR  00:00:35   10.0.12.2   Gi0/1
+
+R1# show ip route ospf
+O   10.0.23.0/30 [110/20] via 10.0.12.2, Gi0/1
+O   192.168.3.0/24 [110/21] via 10.0.12.2, Gi0/1</code></pre>
+<p>خوانش: State باید <code>FULL</code> باشد. مقدار Cost به‌صورت زیر حساب می‌شود (با Reference 10000 و لینک 1 گیگ):</p>
+<pre><code>Reference 10000, each 1G link = 10, Loopback = 1
+R1 -> 10.0.23.0/30 : 10 (R1-R2) + 10 (R2-R3)        = 20
+R1 -> 192.168.3.0/24: 10 + 10 + 1 (Loopback30)        = 21</code></pre>
+<h2><span class="hn">۴.</span> پخش Default Route</h2>
+<p>R1 به اینترنت (یا فایروال) وصل است و Default دارد. می‌خواهیم R2 و R3 هم بدانند:</p>
+<pre><code>R1(config)# ip route 0.0.0.0 0.0.0.0 203.0.113.1
+R1(config)# router ospf 1
+R1(config-router)# default-information originate</code></pre>
+<p>در R2 و R3 مسیر <code>O*E2 0.0.0.0/0</code> می‌بینید؛ E2 یعنی Route خارجی با Cost ثابت. اگر Default روی R1 نباشد، دستور بی‌اثر است (مگر با <code>always</code>).</p>
+<h2><span class="hn">۵.</span> مثال‌ها</h2>
+<h3>ساده</h3>
+<pre><code>R1 and R2: both "network 10.0.12.0 0.0.0.3 area 0"
+show ip ospf neighbor -> FULL</code></pre>
+<h3>متوسط: ping سراسری</h3>
+<pre><code>R1# ping 192.168.3.1 source 192.168.1.1
+R3# ping 192.168.1.1 source 192.168.3.1
+Both succeed through OSPF-learned routes</code></pre>
+<h3>سخت: تغییر Cost برای هدایت مسیر</h3>
+<pre><code>R2(config)# interface gi0/1
+R2(config-if)# ip ospf cost 500
+R1# show ip route 192.168.3.0   -> cost increases accordingly
+Used to steer traffic to a preferred path</code></pre>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): Wildcard برای /27؟</summary><pre><code>255.255.255.255 - 255.255.255.224 = 0.0.0.31</code></pre>
+</details>
+<details><summary>۲ (ساده): چرا Loopback را passive می‌کنیم؟</summary><pre><code>It does not need to form neighbors but its network must be advertised.</code></pre>
+</details>
+<details><summary>۳ (متوسط): Cost 21 در R1 برای شبکه‌ی R3 را توضیح بده</summary><pre><code>Two links of 10 each (R1-R2, R2-R3) plus 1 for the Loopback = 21.</code></pre>
+</details>
+<details><summary>۴ (متوسط): state ExStart گیر کرده؛ علت؟</summary><pre><code>Typically an MTU mismatch (or duplicate router ID).</code></pre>
+</details>
+<details><summary>۵ (سخت): default-information originate بدون Default روی روتر چه می‌شود؟</summary><pre><code>Nothing is advertised unless "always" is used; the router needs its own default route.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<h3>گام ۱: بکاپ و حذف Static</h3>
+<pre><code>Rx# copy running-config flash:Rx-before-ospf.cfg</code></pre>
+<h3>گام ۲: OSPF روی هر سه</h3>
+<pre><code>R2(config)# router ospf 1
+R2(config-router)# router-id 2.2.2.2
+R2(config-router)# auto-cost reference-bandwidth 10000
+R2(config-router)# network 10.0.12.0 0.0.0.3 area 0
+R2(config-router)# network 10.0.23.0 0.0.0.3 area 0
+
+R3(config)# router ospf 1
+R3(config-router)# router-id 3.3.3.3
+R3(config-router)# auto-cost reference-bandwidth 10000
+R3(config-router)# network 10.0.23.0 0.0.0.3 area 0
+R3(config-router)# network 192.168.3.0 0.0.0.255 area 0
+R3(config-router)# passive-interface loopback 30</code></pre>
+<h3>گام ۳: بررسی</h3>
+<pre><code>Rx# show ip ospf neighbor
+Rx# show ip route ospf
+R1# ping 192.168.3.1 source 192.168.1.1</code></pre>
+<h3>گام ۴: Capture Hello</h3>
+<p>روی لینک R1-R2 Capture بگیرید و فیلتر <code>ospf</code> بزنید. بسته‌های Hello را ببینید: هر ۱۰ ثانیه، به مقصد Multicast <code>224.0.0.5</code> (همه‌ی روترهای OSPF).</p>
+<h3>گام ۵: Failover</h3>
+<pre><code>R2(config)# interface gi0/1
+R2(config-if)# shutdown
+R1# show ip route ospf   (route to R3 LAN disappears)
+R2(config-if)# no shutdown</code></pre>
+
+<h2>Lab مستقل</h2>
+<p>یک «OSPF As-Built» در <code>03-ops/ospf-as-built.md</code> بنویسید: Router IDها، شبکه‌ها، Cost، خروجی show ip ospf neighbor و جدول Route.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>Neighbor نیست یا Route نیامده</td></tr>
+<tr><th>چک‌لیست</th><td>۱) network statement شامل Interface هست؟<br>۲) Area یکی؟<br>۳) passive-interface اشتباهی روی لینک؟<br>۴) Hello/Dead؟<br>۵) Reference bandwidth یکسان؟</td></tr>
+<tr><th>ابزار</th><td>show ip ospf interface ، show ip protocols</td></tr>
+<tr><th>رفع</th><td>اصلاح network یا حذف passive از لینک اتصال</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>network statement چه می‌کند؟</summary><p>Interfaceهایی که آدرسشان در بازه است را وارد OSPF می‌کند.</p></details>
+<details><summary>passive-interface چه فایده‌ای دارد؟</summary><p>Hello نمی‌فرستد؛ امنیت و کاهش ترافیک، ولی شبکه همچنان اعلام می‌شود.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Advertise the networks with the network command and a wildcard mask.</td><td>شبکه‌ها را با دستور network و Wildcard Mask اعلام کنید.</td></tr>
+<tr><td>Make user-facing interfaces passive.</td><td>Interfaceهای سمت کاربر را Passive کنید.</td></tr>
+<tr><td>The neighbor reached the FULL state.</td><td>همسایه به حالت FULL رسید.</td></tr>
+<tr><td>The default route is injected into OSPF as an external type 2 route.</td><td>Default Route به‌صورت Route خارجی نوع ۲ در OSPF تزریق می‌شود.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): Which command verifies that neighbors reached FULL?</summary><p>show ip ospf neighbor</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ OSPF را روی سه روتر بالا بیاورم و FULL ببینم.</li>
+<li>☐ Hello را در Capture ببینم.</li>
+<li>☐ OSPF As-Built را بنویسم.</li>
+</ul>
+<h2>یادآوری اشتباهات شما</h2>
+<div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
+
+`
+    },
+    'w5-6': {
+      sub: "پنج عیب OSPF و آزمون.",
+      html: `
+<div class="meta"><span class="tag">هفته ۵ - روز ۶</span><span class="tag">پیش‌نیاز: درس‌های ۵-۱ تا ۵-۵</span><span class="tag">۶ ساعت</span></div>
+
+<h2>این درس درباره چیست و چرا باید یاد بگیریم؟</h2>
+<p><b>چه چیزی یاد می‌گیریم:</b> روش عیب‌یابی مسیریابی و پنج دلیل رایج تشکیل‌نشدن همسایگی OSPF؛ و آزمون کوچک پایان هفته‌ی ۵.</p>
+<p><b>چرا لازم است:</b> «شبکه‌ی دور در دسترس نیست» پرتکرارترین شکایت است و علتش یکی از چند مورد محدود است. اگر روش داشته باشید، ریشه را در چند دقیقه پیدا می‌کنید.</p>
+<ul>
+<li><b>در کار روزانه:</b> عیب‌یابی مسیریابی مهارت پایه‌ی هر ادمین شبکه است.</li>
+<li><b>در امنیت:</b> اشتباه مسیر یعنی ترافیک از مسیر ناخواسته یا نامشخص می‌رود.</li>
+<li><b>در مصاحبه:</b> سناریوی «دو روتر همسایه نمی‌شوند» سؤال تکراری مصاحبه‌هاست.</li>
+</ul>
+<div class="box"><b class="t">مسیر درس</b>روش ۵ مرحله‌ای ← پنج خرابی OSPF ← مثال‌ها ← Lab عیب‌یابی ← آزمون کوچک.</div>
+<h3>اصطلاحات این درس (مخفف ← شکل کامل ← معنی)</h3>
+<table>
+<tr><th>مخفف</th><th>شکل کامل انگلیسی</th><th>معنی فارسی</th></tr>
+<tr><td>TS</td><td>Troubleshooting Scenario</td><td>سناریوی عیب‌یابی</td></tr>
+<tr><td>MTU</td><td>Maximum Transmission Unit</td><td>بزرگ‌ترین اندازه‌ی بسته روی لینک</td></tr>
+<tr><td>Mismatch</td><td>Mismatch</td><td>عدم تطابق پارامتر دو طرف</td></tr>
+<tr><td>Asymmetric</td><td>Asymmetric routing</td><td>مسیر رفت و برگشت متفاوت</td></tr>
+<tr><td>RCA</td><td>Root Cause Analysis</td><td>علت ریشه‌ای</td></tr>
+<tr><td>Traceroute</td><td>traceroute</td><td>نمایش مسیر Hop به Hop</td></tr>
+</table>
+
+<h2><span class="hn">۱.</span> روش سیستماتیک مسیریابی</h2>
+<ol>
+<li><b>Symptom:</b> از کجا به کجا نمی‌رسد؟ (مبدأ و مقصد دقیق)</li>
+<li><b>ping و traceroute:</b> تا کدام Hop می‌رسد؟</li>
+<li><b>Route رفت:</b> <code>show ip route &lt;مقصد&gt;</code> روی هر روتر مسیر.</li>
+<li><b>Route برگشت:</b> همان کار از سمت مقصد.</li>
+<li><b>پروتکل:</b> همسایگی OSPF (<code>show ip ospf neighbor</code>) و فیلتر/ACL.</li>
+</ol>
+<p>مهم‌ترین قاعده: Hop به Hop بروید و هر روتر را بررسی کنید؛ حدس ممنوع.</p>
+<h2><span class="hn">۲.</span> پنج دلیل رایج Adjacency نشدن OSPF</h2>
+<h3>۱: Hello/Dead Mismatch</h3>
+<pre><code>Symptom : neighbor stuck / flapping
+Evidence: show ip ospf interface -> Hello 5 vs 10
+Fix     : set the same hello/dead on both ends</code></pre>
+<h3>۲: Area Mismatch</h3>
+<pre><code>Symptom : no neighbor; log "Mismatched area"
+Evidence: show ip ospf interface -> Area 0 vs Area 1
+Fix     : use the same area</code></pre>
+<h3>۳: Subnet/Mask Mismatch</h3>
+<pre><code>Symptom : no neighbor
+Evidence: 10.0.12.1/30 vs 10.0.12.2/29 (different masks)
+Fix     : same subnet and mask</code></pre>
+<h3>۴: Authentication Mismatch</h3>
+<pre><code>Symptom : neighbor does not form; log auth failure
+Evidence: show ip ospf interface -> auth type/key differs
+Fix     : same auth mode and key</code></pre>
+<h3>۵: MTU Mismatch</h3>
+<pre><code>Symptom : stuck in ExStart/Exchange
+Evidence: show interfaces -> MTU 1500 vs 1400
+Fix     : same MTU (or ip ospf mtu-ignore as a temporary workaround)</code></pre>
+<h2><span class="hn">۳.</span> مسیر برگشت و مسیر نامتقارن</h2>
+<p>اگر رفت از R2 و برگشت از R3 باشد (Asymmetric)، فایروال‌ها و NAT اغلب ارتباط را قطع می‌کنند چون Stateful هستند. همیشه مسیر رفت و برگشت را جدا بررسی کنید.</p>
+<h2><span class="hn">۴.</span> آزمون کوچک پایان هفته‌ی ۵ (بدون نگاه به درس)</h2>
+<table>
+<tr><th>#</th><th>وظیفه</th><th>مدرک</th></tr>
+<tr><td>۱</td><td>LPM را برای ۳ بسته حل کنید</td><td>جدول جواب</td></tr>
+<tr><td>۲</td><td>Static رفت و برگشت بین دو LAN</td><td>ping موفق</td></tr>
+<tr><td>۳</td><td>Default + Floating + Track</td><td>show track</td></tr>
+<tr><td>۴</td><td>OSPF سه‌روتری و ping سراسری</td><td>show ip ospf neighbor / route</td></tr>
+<tr><td>۵</td><td>سه عیب OSPF را بسازید و رفع کنید</td><td>گزارش RCA</td></tr>
+</table>
+<p>معیار: حداقل ۴ از ۵ مورد. وقتی تمام شد بگویید «هفته ۵ انجام شد».</p>
+<h2>تمرین‌ها</h2>
+<details><summary>۱ (ساده): اولین ابزار عیب‌یابی مسیریابی؟</summary><pre><code>show ip route <destination> and ping/traceroute.</code></pre>
+</details>
+<details><summary>۲ (ساده): پنج دلیل Adjacency نشدن؟</summary><pre><code>Hello/Dead, Area, Subnet/Mask, Authentication, MTU.</code></pre>
+</details>
+<details><summary>۳ (متوسط): در ExStart گیر کرده؛ اول چه چیزی را بررسی می‌کنی؟</summary><pre><code>MTU mismatch between the two interfaces.</code></pre>
+</details>
+<details><summary>۴ (سخت): ping از A به B شکست می‌خورد ولی traceroute تا Hop آخر پیش می‌رود؛ حدس؟</summary><pre><code>Return path issue at the destination or an ACL/firewall on the destination side.</code></pre>
+</details>
+
+<h2>Lab هدایت‌شده</h2>
+<p>روی OSPF سه‌روتری، هر پنج خرابی را به ترتیب بسازید و رفع کنید:</p>
+<ol>
+<li>Hello: <code>ip ospf hello-interval 3</code> روی یک سمت.</li>
+<li>Area: network statement با area 1 روی یک سمت.</li>
+<li>Mask: Mask متفاوت روی Interface یک سمت.</li>
+<li>Authentication: <code>ip ospf authentication message-digest</code> فقط یک سمت.</li>
+<li>MTU: <code>ip mtu 1400</code> روی یک سمت.</li>
+</ol>
+<pre><code>Rx# show ip ospf neighbor
+Rx# show ip ospf interface gi0/1
+Rx# debug ip ospf adj   (use briefly; then: undebug all)</code></pre>
+<p>برای هر مورد Symptom، Evidence، Fix و Verify را یادداشت کنید. در شبیه‌ساز اگر رفتار با واقعیت فرق داشت، همان را ثبت کنید.</p>
+
+<h2>Lab مستقل</h2>
+<p>گزارش RCA پنج‌گانه را در <code>03-ops/rca-ospf.md</code> بنویسید.</p>
+
+<h2>عیب‌یابی</h2>
+<table>
+<tr><th>Symptom</th><td>ارتباط به شبکه‌ی دور نیست</td></tr>
+<tr><th>روش</th><td>Hop به Hop: Route رفت، Route برگشت، همسایگی، ACL</td></tr>
+<tr><th>ابزار</th><td>ping ، traceroute ، show ip route ، show ip ospf neighbor</td></tr>
+<tr><th>پیشگیری</th><td>مستندسازی As-Built و بکاپ قبل از تغییر</td></tr>
+</table>
+
+<h2>سؤال‌های مرور</h2>
+<details><summary>قدم اول عیب‌یابی مسیریابی؟</summary><p>تعیین مبدأ و مقصد دقیق و بررسی Route رفت و برگشت.</p></details>
+<details><summary>MTU Mismatch چه علامتی دارد؟</summary><p>همسایه در ExStart/Exchange می‌ماند.</p></details>
+
+<h2>English Corner: انگلیسی تخصصی این درس</h2>
+<p>این جمله‌ها از مستندات و محیط کار واقعی‌اند. بلند بخوانید و ترجمه را بپوشانید.</p>
+<table>
+<tr><th>English sentence</th><th>ترجمه</th></tr>
+<tr><td>Verify the route in both directions.</td><td>Route را در هر دو جهت بررسی کنید.</td></tr>
+<tr><td>The adjacency is stuck in ExStart due to an MTU mismatch.</td><td>Adjacency به‌خاطر MTU Mismatch در ExStart گیر کرده است.</td></tr>
+<tr><td>Use traceroute to find where the path breaks.</td><td>با traceroute نقطه‌ی قطع مسیر را پیدا کنید.</td></tr>
+<tr><td>Document the root cause and the fix.</td><td>علت ریشه‌ای و راه‌حل را مستند کنید.</td></tr>
+</table>
+<details><summary>Quick quiz (answer in English): A neighbor is stuck in ExStart. What is the most likely cause?</summary><p>An MTU mismatch between the two interfaces.</p></details>
+
+<h2>تکلیف و چک‌لیست تسلط</h2>
+<ul>
+<li>☐ پنج عیب OSPF را بسازم و رفع کنم.</li>
+<li>☐ آزمون کوچک را کامل کنم.</li>
+<li>☐ RCA را بنویسم.</li>
 </ul>
 <h2>یادآوری اشتباهات شما</h2>
 <div class="box review"><b class="t">یادآوری</b>پیش‌بینی قبل از اجرا؛ بکاپ قبل از تغییر؛ پذیرفته‌شدن دستور ≠ کار کردن؛ فرمول‌ها در بلوک مستقل.</div>
