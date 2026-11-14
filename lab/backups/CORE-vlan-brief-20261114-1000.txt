@@ -1,0 +1,15 @@
+VLAN Name          Status    Ports
+1    default       active    Gi0/2, Gi0/3, Gi1/0, Gi1/1, Gi1/2, Gi1/3
+2    CAMERA        active
+89   MGMT-OLD      active
+90   SERVERS       active
+97   VOICE         active
+100  MGMT-DEV      active
+101  FIN-ADMIN     active
+102  IT            active
+103  CALLCENTER    active
+104  CEO           active
+105  WIFI-AP       active
+107  USERS-GEN     active
+108  WIFI-CLIENT   active
+! SAMPLE text (VLAN database snapshot). Restore: re-create from this list or copy vlan.dat.bak

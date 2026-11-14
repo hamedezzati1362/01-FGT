@@ -1,0 +1,16 @@
+# چک‌لیست خودارزیابی
+- [ ] Lab را بدون کمک بالا آوردم (۱۱ گره، Config، SRV1، HOSTها)
+- [ ] Prompt و حالت‌ها، `?`، فیلتر show، CDP
+- [ ] یک MAC را از هسته تا پورت نهایی پیدا کردم
+- [ ] VLAN را روی VTP Server ساختم و روی Client دیدم؛ چرا Revision خطرناک است توضیح دادم
+- [ ] Trunk را با `add` تغییر دادم و خطای فراموشی add را ساختم و برگرداندم
+- [ ] DHCP Relay، Scope و رزرو را اثبات کردم؛ 169.254 را توضیح دادم
+- [ ] PC + Phone روی یک پورت (دو MAC، دو VLAN) دیدم
+- [ ] Port-Security: maximum 3، Violation، err-disabled و بازیابی، `clear port-security sticky`
+- [ ] چهار وضعیت پورت (notconnect/disabled/inactive/err-disabled) را بدون نگاه گفتم
+- [ ] روش «تفاضل شمارنده» را بدون `clear counters` انجام دادم
+- [ ] بکاپ: دستی، flash:، TFTP، archive، diff
+- [ ] Merge در برابر Replace را با اشتباه عمدی روی Trunk تجربه کردم
+- [ ] جابه‌جایی میز و ساخت VLAN جدید را بدون خطا انجام دادم
+- [ ] ≥ ۸ از ۱۲ خرابی را قبل از دیدن کلید پیدا کردم
+- [ ] چک‌لیست ۶‌مورده‌ی «قبل از هر تغییر» را از حفظ نوشتم

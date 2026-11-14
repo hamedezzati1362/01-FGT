@@ -69,3 +69,9 @@ Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خ�
 - هفته ۳ (Switching I)، ۴ (Switching II + G2)، ۵ (Routing I)، ۶ (Routing II + FHRP + Lab A + G3)، ۷ (IP Services)، ۸ (Hardening/Automation + CP1) نوشته شد.
 - همه‌ی Labها «فرمان برای اجرا توسط کاربر» هستند و روی تجهیزات اجرا نشده‌اند؛ محدودیت‌های شبیه‌ساز (DHCP Snooping/DAI/Port-Security/ACL/QoS روی vIOSL2، LACP) در خود درس‌ها با «صادقانه درباره‌ی Lab» علامت‌گذاری شده است.
 - هفته ۹ به بعد (FortiGate) شروع نشده؛ FortiGate تا W9 بوت نمی‌شود.
+
+## 2026-11-14 — کارگاه عملی «Cisco Daily Ops» (پوشه‌ی `lab/`)
+- ۴ ساعته (قابل‌فشرده تا ۳ ساعت): ۶ سوییچ viosl2 + ۱ روتر vios + ۴ Linux (Image لینوکس باید یک‌بار ساخته شود؛ در Inventory ثبت نشده).
+- فایل Import (.unl) عمداً ساخته نشد (قالب بدون آزمایش روی PNETLab شما قابل تضمین نیست)؛ ساخت دستی + Config قابل Paste.
+- ۱۲ خرابی با شماره‌ی تصادفی؛ نام/علت فقط در `lab/04-faults-answer-key.md`.
+- همه‌ی رفتارهای VTP، voice VLAN، Port-Security Violation، archive/configure replace روی viosl2 «آزمایش‌نشده» و با Probe ماژول M01 سنجیده می‌شود.
