@@ -154,18 +154,12 @@
 | G7 | هفته ۱۹ | عیب‌یابی و Blue Team |
 | G8 | هفته ۲۴ | Capstone و تحویل |
 
-## ۵) کارگاه کمکی (بیرون از ۲۴ هفته)
-| کارگاه | مدت | محتوا |
-|---|---|---|
-| Cisco Daily Ops (پوشه‌ی `lab/`) | ۴ ساعت | شبکه‌ی سه‌لایه‌ی شبیه سازمان: VLAN، VTP، Trunk، DHCP Relay، IP Phone (شبیه‌سازی‌شده)، Port-Security، جابه‌جایی میز، بکاپ/بازیابی، ۱۲ خرابی پنهان |
-
-## ۶) وضعیت اجرا
+## ۵) وضعیت اجرا
 | بخش | وضعیت |
 |---|---|
 | هفته ۱ تا ۸ (Cisco) | درس‌ها در فایل `course/Enterprise_Network_Course_Lessons.html` (نسخه ۱.۲) |
 | هفته ۹ تا ۲۴ | سرفصل طراحی‌شده؛ درس‌ها نوشته نشده |
 | FortiGate | Image آماده، بوت تا هفته ۹ به تعویق افتاده (برای حفظ ساعت Evaluation) |
-| کارگاه Cisco Daily Ops | تحویل‌شده؛ آزمایش روی PNetLab بعد از اجرای M01 (Probe) |
 
-## ۷) مراجع
-`Enterprise_Network_Security_Course_Master_Blueprint_v2.1.md` (طرح کامل) ، `DECISIONS_LOG.md` ، `phase0a/` ، `lab/`
+## ۶) مراجع
+`Enterprise_Network_Security_Course_Master_Blueprint_v2.1.md` (طرح کامل) ، `DECISIONS_LOG.md` ، `phase0a/`
