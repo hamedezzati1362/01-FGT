@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="VLSM address bar" role="img" viewBox="0 0 720 130"><style>
+text{font-family:Tahoma,Arial,sans-serif;font-size:13px;fill:#1b2430}
+.cap{font-size:12px;fill:#5b687a}
+.bx{fill:#eef2f8;stroke:#9aa7b8}
+.net{fill:#7fb8f2}.hst{fill:#8fdcb8}.wrn{fill:#f3cf7a}
+.on{fill:#0b1018;font-weight:700}
+.ln{stroke:#5b687a;stroke-width:1.6;fill:none}
+.rq{stroke:#1d6fd8;stroke-width:2.2;fill:none}.rp{stroke:#0f9d6b;stroke-width:2.2;fill:none}
+text.on+text.cap{fill:#0b1018}
+</style><rect x="0" y="0" width="720" height="130" fill="#ffffff"/><rect class="net" height="46" stroke="#0b1018" width="340.0" x="20.0" y="30"></rect><text class="on" text-anchor="middle" x="190.0" y="58">Sales /25</text><rect class="hst" height="46" stroke="#0b1018" width="170.0" x="360.0" y="30"></rect><text class="on" text-anchor="middle" x="445.0" y="58">Tech /26</text><rect class="net" height="46" stroke="#0b1018" width="42.5" x="530.0" y="30"></rect><text class="on" text-anchor="middle" x="551.2" y="58">Mgmt /28</text><rect class="hst" height="46" stroke="#0b1018" width="10.6" x="572.5" y="30"></rect><rect class="bx" height="46" stroke="#0b1018" width="116.9" x="583.1" y="30"></rect><text class="" text-anchor="middle" x="641.6" y="58">Free</text><text class="cap" text-anchor="middle" x="20.0" y="98">.0</text><text class="cap" text-anchor="middle" x="360.0" y="98">.128</text><text class="cap" text-anchor="middle" x="530.0" y="98">.192</text><text class="cap" text-anchor="middle" x="572.5" y="98">.208</text><text class="cap" text-anchor="middle" x="583.1" y="98">.212</text><text class="cap" text-anchor="middle" x="700.0" y="98">.255</text><text class="cap" text-anchor="middle" x="360" y="122">192.168.10.0 → 255 : هر Subnet درست بعد از Broadcast قبلی شروع می‌شود</text></svg>

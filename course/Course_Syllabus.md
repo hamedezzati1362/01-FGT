@@ -1,4 +1,6 @@
-# سرفصل آموزشی دوره‌ی «مدیر شبکه و امنیت سازمانی»
+> **توجه (۲۰۲۶-۱۱-۲۵):** این سرفصل (۲۴ هفته) با **Blueprint v3.0** (۳۲ فصل/هفته) جایگزین شد؛ مرجع جاری: `Enterprise_Network_Security_Course_Master_Blueprint_v3.0.md`.
+
+# سرفصل آموزشی دوره‌ی «مدیر شبکه و امنیت سازمانی» (نسخه‌ی قبلی)
 **Cisco R&S (در حد CCNA عملی) + FortiGate (FortiOS 7.0.3) + Windows/Linux + پایش + Blue Team + Capstone**
 نسخه‌ی سرفصل: ۲۰۲۶-۱۱-۲۵ (بر اساس Blueprint v2.1 و درس‌های تحویل‌شده)
 

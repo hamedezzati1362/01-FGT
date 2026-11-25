@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="ARP flow" role="img" viewBox="0 0 720 230"><style>
+text{font-family:Tahoma,Arial,sans-serif;font-size:13px;fill:#1b2430}
+.cap{font-size:12px;fill:#5b687a}
+.bx{fill:#eef2f8;stroke:#9aa7b8}
+.net{fill:#7fb8f2}.hst{fill:#8fdcb8}.wrn{fill:#f3cf7a}
+.on{fill:#0b1018;font-weight:700}
+.ln{stroke:#5b687a;stroke-width:1.6;fill:none}
+.rq{stroke:#1d6fd8;stroke-width:2.2;fill:none}.rp{stroke:#0f9d6b;stroke-width:2.2;fill:none}
+text.on+text.cap{fill:#0b1018}
+</style><rect x="0" y="0" width="720" height="230" fill="#ffffff"/><rect class="bx" height="44" rx="8" width="120" x="60" y="20"></rect><text text-anchor="middle" x="120" y="40">Host A</text><text class="cap" text-anchor="middle" x="120" y="56">10.10.10.1</text><path class="ln" d="M120 64 V215" stroke-dasharray="4 4"></path><rect class="bx" height="44" rx="8" width="120" x="330" y="20"></rect><text text-anchor="middle" x="390" y="40">Switch</text><text class="cap" text-anchor="middle" x="390" y="56"></text><path class="ln" d="M390 64 V215" stroke-dasharray="4 4"></path><rect class="bx" height="44" rx="8" width="120" x="600" y="20"></rect><text text-anchor="middle" x="660" y="40">Host B</text><text class="cap" text-anchor="middle" x="660" y="56">10.10.10.2</text><path class="ln" d="M660 64 V215" stroke-dasharray="4 4"></path><path class="rq" d="M120 100 H660"></path><path class="rq" d="M652 94 l8 6 l-8 6"></path><text text-anchor="middle" x="390" y="92">① ARP Request (Broadcast ff:ff:ff:ff:ff:ff): who has 10.10.10.2 ?</text><path class="rp" d="M660 160 H120"></path><path class="rp" d="M128 154 l-8 6 l8 6"></path><text text-anchor="middle" x="390" y="152">② ARP Reply (Unicast): 10.10.10.2 is at MAC-B</text><text text-anchor="middle" x="390" y="200">③ ICMP Echo Request / Reply  (ping)</text></svg>

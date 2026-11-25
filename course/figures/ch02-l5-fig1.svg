@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="SSH handshake" role="img" viewBox="0 0 720 260"><style>
+text{font-family:Tahoma,Arial,sans-serif;font-size:13px;fill:#1b2430}
+.cap{font-size:12px;fill:#5b687a}
+.bx{fill:#eef2f8;stroke:#9aa7b8}
+.net{fill:#7fb8f2}.hst{fill:#8fdcb8}.wrn{fill:#f3cf7a}
+.on{fill:#0b1018;font-weight:700}
+.ln{stroke:#5b687a;stroke-width:1.6;fill:none}
+.rq{stroke:#1d6fd8;stroke-width:2.2;fill:none}.rp{stroke:#0f9d6b;stroke-width:2.2;fill:none}
+text.on+text.cap{fill:#0b1018}
+</style><rect x="0" y="0" width="720" height="260" fill="#ffffff"/><rect class="bx" height="36" rx="8" width="120" x="80" y="14"></rect><text text-anchor="middle" x="140" y="37">Client</text><path class="ln" d="M140 50 V250" stroke-dasharray="4 4"></path><rect class="bx" height="36" rx="8" width="120" x="560" y="14"></rect><text text-anchor="middle" x="620" y="37">Server (SW1)</text><path class="ln" d="M620 50 V250" stroke-dasharray="4 4"></path><path class="rq" d="M140 80 H620"></path><path class="rq" d="M612 75 l8 5 l-8 5"></path><text text-anchor="middle" x="380" y="72">1  TCP 22 connect</text><path class="rp" d="M620 120 H140"></path><path class="rp" d="M148 115 l-8 5 l8 5"></path><text text-anchor="middle" x="380" y="112">2  Host Key + Fingerprint</text><path class="rq" d="M140 160 H620"></path><path class="rq" d="M612 155 l8 5 l-8 5"></path><text text-anchor="middle" x="380" y="152">3  Key exchange → session key</text><path class="rq" d="M140 200 H620"></path><path class="rq" d="M612 195 l8 5 l-8 5"></path><text text-anchor="middle" x="380" y="192">4  Login (user + password/key)</text><path class="rp" d="M620 240 H140"></path><path class="rp" d="M148 235 l-8 5 l8 5"></path><text text-anchor="middle" x="380" y="232">5  Encrypted session</text></svg>

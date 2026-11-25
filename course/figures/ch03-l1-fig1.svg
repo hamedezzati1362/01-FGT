@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="switch MAC learning" role="img" viewBox="0 0 720 250"><style>
+text{font-family:Tahoma,Arial,sans-serif;font-size:13px;fill:#1b2430}
+.cap{font-size:12px;fill:#5b687a}
+.bx{fill:#eef2f8;stroke:#9aa7b8}
+.net{fill:#7fb8f2}.hst{fill:#8fdcb8}.wrn{fill:#f3cf7a}
+.on{fill:#0b1018;font-weight:700}
+.ln{stroke:#5b687a;stroke-width:1.6;fill:none}
+.rq{stroke:#1d6fd8;stroke-width:2.2;fill:none}.rp{stroke:#0f9d6b;stroke-width:2.2;fill:none}
+text.on+text.cap{fill:#0b1018}
+</style><rect x="0" y="0" width="720" height="250" fill="#ffffff"/><rect class="bx" height="60" rx="8" width="140" x="290" y="20"></rect><text text-anchor="middle" x="360" y="50">Switch</text><text class="cap" text-anchor="middle" x="360" y="66">MAC table</text><rect class="bx" height="56" rx="8" width="140" x="30" y="170"></rect><text text-anchor="middle" x="100" y="198">PC-A</text><text class="cap" text-anchor="middle" x="100" y="214">MAC-A</text><path class="ln" d="M100 170 L320 80"></path><text class="cap" text-anchor="middle" x="125" y="132">Gi0/1</text><rect class="bx" height="56" rx="8" width="140" x="290" y="170"></rect><text text-anchor="middle" x="360" y="198">PC-B</text><text class="cap" text-anchor="middle" x="360" y="214">MAC-B</text><path class="ln" d="M360 170 L360 80"></path><text class="cap" text-anchor="middle" x="360" y="132">Gi0/2</text><rect class="bx" height="56" rx="8" width="140" x="550" y="170"></rect><text text-anchor="middle" x="620" y="198">PC-C</text><text class="cap" text-anchor="middle" x="620" y="214">MAC-C</text><path class="ln" d="M620 170 L400 80"></path><text class="cap" text-anchor="middle" x="595" y="132">Gi0/3</text><path class="rq" d="M100 170 L330 80"></path><text class="cap" x="150" y="118">frame A to B</text></svg>

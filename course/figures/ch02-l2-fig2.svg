@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="/22 block" role="img" viewBox="0 0 720 150"><style>
+text{font-family:Tahoma,Arial,sans-serif;font-size:13px;fill:#1b2430}
+.cap{font-size:12px;fill:#5b687a}
+.bx{fill:#eef2f8;stroke:#9aa7b8}
+.net{fill:#7fb8f2}.hst{fill:#8fdcb8}.wrn{fill:#f3cf7a}
+.on{fill:#0b1018;font-weight:700}
+.ln{stroke:#5b687a;stroke-width:1.6;fill:none}
+.rq{stroke:#1d6fd8;stroke-width:2.2;fill:none}.rp{stroke:#0f9d6b;stroke-width:2.2;fill:none}
+text.on+text.cap{fill:#0b1018}
+</style><rect x="0" y="0" width="720" height="150" fill="#ffffff"/><rect class="net" height="50" rx="6" stroke="#0b1018" width="165" x="20" y="40"></rect><text class="on" text-anchor="middle" x="102" y="63">10.20.0.0 - .255</text><text class="cap" text-anchor="middle" x="102" y="80">256 addresses</text><rect class="hst" height="50" rx="6" stroke="#0b1018" width="165" x="190" y="40"></rect><text class="on" text-anchor="middle" x="272" y="63">10.20.1.0 - .255</text><text class="cap" text-anchor="middle" x="272" y="80">256 addresses</text><rect class="net" height="50" rx="6" stroke="#0b1018" width="165" x="360" y="40"></rect><text class="on" text-anchor="middle" x="442" y="63">10.20.2.0 - .255</text><text class="cap" text-anchor="middle" x="442" y="80">256 addresses</text><rect class="hst" height="50" rx="6" stroke="#0b1018" width="165" x="530" y="40"></rect><text class="on" text-anchor="middle" x="612" y="63">10.20.3.0 - .255</text><text class="cap" text-anchor="middle" x="612" y="80">256 addresses</text><path class="ln" d="M20 108 H685"></path><text text-anchor="middle" x="352" y="130">10.20.0.0/22 = 4 x 256 = 1024 addresses</text></svg>

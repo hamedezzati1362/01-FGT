@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="IPv6 anatomy" role="img" viewBox="0 0 720 150"><style>
+text{font-family:Tahoma,Arial,sans-serif;font-size:13px;fill:#1b2430}
+.cap{font-size:12px;fill:#5b687a}
+.bx{fill:#eef2f8;stroke:#9aa7b8}
+.net{fill:#7fb8f2}.hst{fill:#8fdcb8}.wrn{fill:#f3cf7a}
+.on{fill:#0b1018;font-weight:700}
+.ln{stroke:#5b687a;stroke-width:1.6;fill:none}
+.rq{stroke:#1d6fd8;stroke-width:2.2;fill:none}.rp{stroke:#0f9d6b;stroke-width:2.2;fill:none}
+text.on+text.cap{fill:#0b1018}
+</style><rect x="0" y="0" width="720" height="150" fill="#ffffff"/><rect class="net" height="50" stroke="#0b1018" width="330" x="20" y="30"></rect><text class="on" text-anchor="middle" x="185" y="60">Routing Prefix (48 bit)</text><rect class="wrn" height="50" stroke="#0b1018" width="80" x="350" y="30"></rect><text class="on" text-anchor="middle" x="390" y="60">Subnet ID (16)</text><rect class="hst" height="50" stroke="#0b1018" width="270" x="430" y="30"></rect><text class="on" text-anchor="middle" x="565" y="60">Interface ID (64 bit)</text><text text-anchor="middle" x="190" y="105">2001:0db8:abcd</text><text text-anchor="middle" x="390" y="105">0010</text><text text-anchor="middle" x="565" y="105">0000:0000:0000:0001</text><path class="ln" d="M20 120 H430"></path><text class="cap" text-anchor="middle" x="225" y="140">Network = /64</text><path class="ln" d="M430 120 H700"></path><text class="cap" text-anchor="middle" x="565" y="140">Host</text></svg>

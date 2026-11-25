@@ -1,0 +1,198 @@
+# Enterprise Network & Security Engineering — Course Master Blueprint v3.0
+**دوره‌ی تخصصی Cisco و Enterprise Firewall (FortiGate)** — نسخه‌ی اصلاح‌شده بر مبنای v2.1
+تاریخ: ۲۰۲۶-۱۱-۲۵ | وضعیت: **فعال؛ فصل‌های ۱ تا ۳ تحویل (بخش ۱)** | جایگزین مرجع اجرایی: `Course_Syllabus.md` (v1) و فصل ۲۶ از v2.1
+
+---
+## ۰) فهرست
+۱. منابع واقعی بررسی‌شده ‖ ۲. تطبیق با هدف نهایی (تحلیل شکاف) ‖ ۳. تعارض‌ها و تصمیم‌ها ‖ ۴. معماری دوره و فصل‌ها ‖ ۵. Cisco: حفظ / اصلاح / جدید ‖ ۶. FortiGate: شروع و استاندارد هر قابلیت ‖ ۷. معماری‌های سازمانی الزامی ‖ ۸. استانداردها (درس، Lab، عیب‌یابی، تغییر) ‖ ۹. ارزیابی و Capstone ‖ ۱۰. فایل‌های خروجی و پروتکل ممیزی ‖ ۱۱. نسخه‌ها و محدودیت‌ها ‖ ۱۲. برنامه‌ی تولید و وضعیت ‖ ۱۳. ریسک‌ها و پرسش‌های باز
+
+---
+## ۱) منابع واقعی بررسی‌شده (مخزن `01-FGT`)
+| فایل/پوشه | وضعیت | استفاده در v3 |
+|---|---|---|
+| `Enterprise_Network_Security_Course_Master_Blueprint_v2.1.md` (+ v1، v2.0، Revision Report) | موجود، ۳۸ فصل | مبنا؛ تصمیم‌ها حفظ شد مگر نقص مشخص (بند ۳) |
+| `course/Course_Syllabus.md` | موجود (۲۴ هفته) | **جایگزین شد** با بند ۴ همین سند |
+| `course/Enterprise_Network_Course_Lessons.html` (نسخه ۱٫۲) | موجود: هفته ۱ تا ۸ (۴۹ صفحه‌ی درس) | منبع محتوای Cisco؛ تبدیل به Markdown بخش‌به‌بخش |
+| `DECISIONS_LOG.md`، `CLAUDE.md` | موجود | قوانین و تصمیم‌ها؛ این سند به‌روزشان کرد |
+| `phase0a/*` (Inventory، Report، Runbook بکاپ FortiGate، `cisco_feature_probe.md`، `pnetlab_inventory.md`، Golden Runbooks، `fortigate_eval_tracker.md`) | موجود | منبع حقیقت محیط Lab |
+| `02-design/ip-plan-drill.md`، `ip-plan.md` | موجود | خروجی Labهای مستقل فصل ۲ |
+| `tools/Send-ToLab.ps1` | موجود، **آزمایش‌نشده** | بدون تغییر |
+| **فایل‌های Lab و سناریو** | **موجود نیست.** کارگاه «Cisco Daily Ops» (`lab/`) به درخواست کاربر حذف شد (تاریخچه‌ی Git باقی است) | Labها از این پس داخل فصل‌ها (Lab Card) تولید می‌شوند |
+| **درس‌های FortiGate** | **موجود نیست** (فقط سرفصل v2.1 ف۱۶) | تولید از فصل ۱۲ |
+| Image FortiGate | `fortinet-7.0.3` در PNetLab (طبق Inventory)؛ **هرگز بوت نشده** | نسخه‌ی واقعی در بوت اول تأیید می‌شود (بند ۱۱) |
+| Image دوم سازنده | `csr1000vng-universalk9.17.03.02` (IOS-XE) موجود | سناریوی چندسازنده‌ای (معماری ۶) |
+| FortiManager/FortiAnalyzer Image | **موجود نیست** | مفهومی + Demo/مستند؛ جایگزین rsyslog/Zabbix (بند ۶) |
+هیچ محتوایی درباره‌ی فایل‌های بررسی‌نشده فرض نشد.
+
+## ۲) تطبیق با هدف نهایی — تحلیل شکاف
+| محور | وضعیت در v2.1 / محتوای تحویل‌شده | شکاف | اقدام v3 |
+|---|---|---|---|
+| IPv4/IPv6، VLSM، VLAN/Trunk، STP/EC، L2/L3، Static/Floating، OSPF، FHRP، ACL، NAT، DHCP/DNS، NTP/Syslog/SNMP، Hardening، Backup، Automation | **تحویل‌شده** (ف۱–۸) | فقط استاندارد قالب (بند ۸) | حفظ؛ ممیزی و Lab Card |
+| BGP، Redistribution، ECMP، PBR، Route Filtering، VRF، Asymmetric Routing | BGP فقط «مقدماتی»؛ بقیه یا نبود یا اشاره | **شکاف جدی** برای چندفایروالی | فصل ۹ و ۱۰ (جدید) |
+| مبانی فایروال (Stateless/Stateful، Zone، Trust Boundary، Default Deny، مسیر بسته) | پراکنده در ف۱۶ | بخش مستقل نبود | فصل ۱۱ (جدید) |
+| FortiGate (Interface…Performance) | سرفصل بود، محتوا نبود | محتوا + کارت قابلیت | فصل‌های ۱۲–۲۷ |
+| ابزار عیب‌یابی FortiOS (Sniffer، Debug Flow، Session، iprope) | W9–W10، کم | عیب‌یابی باید از ابتدا | فصل ۱۴ + در هر فصل |
+| معماری‌های ۱–۹ | HQ + ۳ شعبه + DMZ ساده | ۲فایروالی، ۲ISP، چندفایروالی، DC، مهاجرت، چندسازنده، FMG | بند ۷ |
+| FortiManager/FortiAnalyzer | مفهومی | عملیاتی (Policy Package، Revision) | فصل ۲۶ (وابسته به لایسنس) |
+| API/Automation روی FortiGate | نبود | REST + Ansible | فصل ۲۷ |
+| ارزیابی تسلط | Gateها | تسلط «چرایی»؛ Capstoneهای مستقل و ناشناخته | بند ۹ |
+| MTU/MSS، Session Sync، Shadowed Policy، چندخرابی هم‌زمان | پراکنده | سناریوهای نامگذاری‌شده | جدول پوشش بند ۸٫۵ |
+
+## ۳) تعارض‌ها و تصمیم‌ها (ثبت در DECISIONS_LOG)
+| ID | موضوع | تصمیم |
+|---|---|---|
+| D-301 | مدت دوره | ۲۴ هفته (۸۶۴ ساعت) ← **۳۲ هفته (۱۱۵۲ ساعت)**. دلیل: +۸ فصل واقعی (بند ۴): ۲ Routing پیشرفته، ۱ مبانی فایروال، ۱ ابزار عیب‌یابی، ۱ دو‌فایروالی+DMZ، ۱ چندفایروالی/نامتقارن، ۱ مرکز داده، ۱ چندسازنده. هر فصل = ۱ هفته (۶ روز × ۶ ساعت) |
+| D-302 | عمق Routing | در حد نیاز فایروال، نه CCNP: BGP (eBGP/iBGP، Attribute پایه، Filtering)، Redistribution، ECMP، PBR، VRF-lite |
+| D-303 | قالب خروجی | از این پس منبع اصلی **Markdown سه‌فصلی** (۱۱ فایل). HTML فعلی فقط برای فصل‌های ۴–۸ تا زمان تبدیل منبع است |
+| D-304 | شکل‌ها در Markdown | SVG جدا در `course/figures/` با لینک تصویر؛ کنار آن توضیح متنی؛ ASCII/Mermaid برای نقشه‌های ساده |
+| D-305 | پاسخ تمرین | پاسخ **بلافاصله بعد از سؤال نمی‌آید**؛ در بخش «پاسخ‌ها»ی انتهای هر فصل |
+| D-306 | نسخه FortiOS | ۷٫۰٫۳ **اسمی** (نام پوشه‌ی Image). قبل از تولید هر درس FortiGate با `get system status` و مستند رسمی همان نسخه تأیید؛ ویژگی غیرموجود = «قابلیت نسخه‌ی دیگر» |
+| D-307 | HA، FMG/FAZ، UTM | وابسته به لایسنس/Image؛ هر مورد با برچسب `Needs-License`/`Unverified` و مسیر جایگزین؛ حذف نمی‌شود |
+| D-308 | تعارض ظاهری با قوانین قبلی | (الف) «فایل را نفرست مگر خواسته شود» لغو **نیست**؛ بخش سه‌فصلی صریحاً درخواست شد ← ارسال. (ب) «Phase 0B/بوت FortiGate تا تأیید» پابرجا؛ بوت FortiGate در فصل ۱۲ با تأیید کاربر |
+| D-309 | چاپ پاسخ و ممیزی | بعد از هر فایل سه‌فصلی **توقف** تا نتیجه‌ی ممیزی کاربر؛ تصمیم‌ها در Decision Log و «گزارش تغییرات» |
+| D-310 | فصل ۱ | فصل ۱ (زیرساخت Lab) به‌صورت «فصل عملیاتی» حفظ شد و یک درس مفهومی (۱-۰) برای ادمین مایکروسافت اضافه شد |
+
+## ۴) معماری دوره و فصل‌ها (۳۲ فصل، ۳۲ هفته)
+هر فصل ۶ درس روزانه (قالب بند ۸) + Lab Card؛ «✔» = محتوای Cisco موجود (حفظ + استانداردسازی).
+| فصل | عنوان | پیش‌نیاز | هدف اصلی | سناریوی کلیدی | Gate | منبع |
+|---|---|---|---|---|---|---|
+| ۱ | زیرساخت Lab، کشف وضع موجود، تغییر ایمن | — | درک Lab و مدل تغییر | PNetLab بدون لینک | — | ✔ ف۱ + درس ۱-۰ |
+| ۲ | IP/VLSM/IPv6، CLI، SSH، Wireshark | ۱ | IP Plan و CLI مستقل | Mask/Gateway اشتباه | **G1** | ✔ ف۲ |
+| ۳ | Switching I: MAC، VLAN، Trunk، RoAS، SVI | ۲ | VLAN Matrix، Inter-VLAN | TS01–05 | — | ✔ ف۳ |
+| ۴ | Switching II: STP، EtherChannel، امنیت L2 | ۳ | L2 پایدار و امن | Loop، err-disable | **G2** | ✔ ف۴ |
+| ۵ | Routing I: Static، Floating، OSPF | ۴ | مسیریابی داخلی | Return Path، Adjacency | — | ✔ ف۵ |
+| ۶ | Routing II: OSPF چندناحیه‌ای، IPv6، HSRP، Lab A | ۵ | Core Campus | Failover | **G3** | ✔ ف۶ |
+| ۷ | IP Services: DHCP/DNS/NTP/NAT/ACL/Syslog/SNMP/QoS | ۶ | سرویس‌های شبکه | Relay، NAT، ACL | — | ✔ ف۷ |
+| ۸ | Hardening، AAA، Automation، As-Built | ۷ | Cisco امن و مستند | ضعف Baseline | **CP1** | ✔ ف۸ |
+| ۹ | **BGP عملی و Route Filtering** | ۶ | eBGP/iBGP، Prefix-List، Route-Map | Peering/Policy | — | جدید |
+| ۱۰ | **Redistribution، ECMP، PBR، VRF-lite، Asymmetric** | ۹ | کنترل مسیر | Loop ریدیستری، برگشت نامتقارن | — | جدید |
+| ۱۱ | **مبانی فایروال** | ۷،۸ | مفاهیم Stateful، Zone، Default Deny، مسیر بسته | تحلیل کاغذی ۱۰ پرسش | **G4** | جدید |
+| ۱۲ | FortiGate I: معماری، Interface/VLAN، Zone، Object، Routing، Admin، Backup | ۱۱ | FGT Baseline (معماری ۱) | قفل شدن مدیریت | — | جدید |
+| ۱۳ | FortiGate II: Policy، Session، NAT، VIP، IP Pool، Central NAT | ۱۲ | تک‌فایروالی کامل | Policy/NAT اشتباه، Shadow | **G5** | جدید |
+| ۱۴ | ابزار عیب‌یابی FortiOS: Sniffer، Debug Flow، Session، iprope، MTU/MSS، DNS | ۱۳ | تحلیل بسته‌ی End-to-End | ۱۰ پرسش مسیر | — | جدید |
+| ۱۵ | **دوفایروالی + DMZ** (Edge/Internal، Web/App/DB) | ۱۴ | معماری ۲ | NAT/Route در دو نقطه | **G6** | جدید |
+| ۱۶ | UTM: AV، IPS، AppCtrl، WebFilter، SSL Inspection | ۱۳ | حفاظت لایه ۷ (مشروط لایسنس) | Inspection و Performance | — | جدید |
+| ۱۷ | Authentication: AD، LDAP، RADIUS، FSSO، Captive | ۱۳ | هویت‌محور | Auth شکست | — | جدید |
+| ۱۸ | IPsec Site-to-Site | ۱۴،۹ | VPN Route-Based | VPN up ولی بدون ترافیک، MTU | **G7** | جدید |
+| ۱۹ | Hub-and-Spoke + Routing پویا (OSPF/BGP) + Breakout | ۱۸،۱۰ | معماری ۴ | Spoke Failover | — | جدید |
+| ۲۰ | Remote Access VPN | ۱۷،۱۸ | SSL VPN (ایزوله)، Dial-up IPsec | Split Tunnel/DNS | — | جدید |
+| ۲۱ | دو ISP، SD-WAN، Failover | ۱۰،۱۳ | معماری ۳ | Failover ناموفق | **G8** | جدید |
+| ۲۲ | HA و همگام‌سازی Session | ۱۴،۱۳ | معماری HA (مشروط) | Split-brain، Session Sync | — | جدید |
+| ۲۳ | **چندفایروالی و Routing پیچیده / Asymmetric** | ۱۰،۱۵ | معماری ۵ | برگشت متفاوت | — | جدید |
+| ۲۴ | **مرکز داده**: DMZ، Server Segmentation | ۱۵،۲۳ | معماری ۷ | East-West | **G9** | جدید |
+| ۲۵ | **چندسازنده** (FGT + Cisco IOS-XE CSR) | ۱۸،۹ | معماری ۶ | IKE/BGP Interop | — | جدید |
+| ۲۶ | مدیریت مرکزی: FortiManager/FortiAnalyzer | ۲۲ | معماری ۹ | Policy Install شکست | — | جدید (لایسنس) |
+| ۲۷ | Logging، Monitoring، Performance، API/Automation، Hardening، Backup FGT | ۲۶ | عملیات سازمانی | Log ناقص، CPU | **G10** | جدید |
+| ۲۸ | تحلیل عمیق بسته و Troubleshooting Blocks | ۲۷ | RCA | چندخرابی | — | جدید |
+| ۲۹ | Blue Team، Hardening Audit، Lifecycle/Vulnerability | ۲۷ | ممیزی امنیتی | CVEهای نسخه | — | جدید |
+| ۳۰ | **مهاجرت سازمانی** | ۲۹ | معماری ۸ | Rollback | **G11** | جدید |
+| ۳۱ | Capstone I: طراحی/ساخت از نیازمندی، Capstone II: ممیزی+مهاجرت | همه | طراحی مستقل | توپولوژی ناشناخته | — | جدید |
+| ۳۲ | Capstone III: خرابی کور چندگانه؛ Capstone IV: Handover نهایی | همه | تسلط نهایی | محل خرابی ناشناخته | **Final** | جدید |
+**FortiGate از فصل ۱۲ شروع می‌شود**؛ فصل‌های ۱۱–۱۲ بعد از «CP1» (فصل ۸) و تأیید صریح کاربر برای بوت اول.
+
+### ۴٫۱ فایل‌های سه‌فصلی (۱۱ بخش)
+| فایل | فصل‌ها |
+|---|---|
+| `Course_Part_01_Chapters_01-03.md` | ۱–۳ **(تحویل)** |
+| `Course_Part_02_Chapters_04-06.md` | ۴–۶ |
+| `Course_Part_03_Chapters_07-09.md` | ۷–۹ |
+| `Course_Part_04_Chapters_10-12.md` | ۱۰–۱۲ |
+| `Course_Part_05_Chapters_13-15.md` | ۱۳–۱۵ |
+| `Course_Part_06_Chapters_16-18.md` | ۱۶–۱۸ |
+| `Course_Part_07_Chapters_19-21.md` | ۱۹–۲۱ |
+| `Course_Part_08_Chapters_22-24.md` | ۲۲–۲۴ |
+| `Course_Part_09_Chapters_25-27.md` | ۲۵–۲۷ |
+| `Course_Part_10_Chapters_28-30.md` | ۲۸–۳۰ |
+| `Course_Part_11_Chapters_31-32.md` | ۳۱–۳۲ |
+
+## ۵) Cisco: حفظ / اصلاح / جدید
+- **حفظ (بدون تولید مجدد):** هفته ۱–۸ در فصل‌های ۱–۸.
+- **اصلاح در تبدیل به Markdown:** (۱) پاسخ تمرین‌ها از کنار سؤال به انتهای فصل؛ (۲) افزودن «کارت Lab» ۱۶‌فیلدی؛ (۳) افزودن بخش اهداف/پیش‌نیاز/معیار تسلط/اشتباهات رایج به هر فصل؛ (۴) درس مفهومی ۱-۰؛ (۵) فصل‌های ۴–۸ در بخش‌های ۲ و ۳ همین کارها را می‌گیرند.
+- **ضعف‌های شناخته‌شده‌ی محتوای فعلی (ثبت‌شده برای اصلاح):** مثال «سازمانی» در همه‌ی درس‌ها صریح نیست؛ ستون «کاربرد واقعی» در جدول اصطلاحات ندارد؛ نتیجه‌ی واقعی Lab در شبیه‌ساز برای بسیاری از Featureها **آزمایش‌نشده** (VTP، Port-Security Violation، DHCP Snooping، ACL، QoS، Snooping/DAI در vIOSL2).
+- **جدید:** فصل‌های ۹، ۱۰ (Routing برای فایروال).
+
+## ۶) FortiGate: استاندارد قابلیت و وابستگی‌ها
+### ۶٫۱ «کارت قابلیت» الزامی برای هر Feature (۱۰ پرسش)
+۱ مفهوم ‖ ۲ مشکلی که حل می‌کند ‖ ۳ چه زمانی استفاده ‖ ۴ چه زمانی **نه** ‖ ۵ پیش‌نیازها ‖ ۶ وابستگی به Routing/Policy/NAT ‖ ۷ پیاده‌سازی (CLI/GUI) ‖ ۸ راستی‌آزمایی ‖ ۹ عیب‌یابی ‖ ۱۰ خطاهای رایج.
+### ۶٫۲ نگاشت قابلیت ← فصل
+| قابلیت | فصل | قابلیت | فصل |
+|---|---|---|---|
+| معماری، Interface/VLAN، Zone، Address/Service Object، Routing، Admin، Backup/Restore | ۱۲ | Authentication (LDAP/RADIUS/FSSO/Captive) | ۱۷ |
+| Firewall Policy، Session، NAT، VIP، IP Pool، Central NAT | ۱۳ | IPsec S2S | ۱۸ |
+| Sniffer، Debug Flow، Session، Routing Table، ابزار Policy، Log | ۱۴ | Hub-and-Spoke + OSPF/BGP | ۱۹ |
+| UTM: AV، IPS، AppCtrl، WebFilter، SSL Inspection | ۱۶ | Remote Access VPN | ۲۰ |
+| SD-WAN | ۲۱ | HA | ۲۲ |
+| FortiManager/FortiAnalyzer | ۲۶ | Logging، Monitoring، Performance، API/Automation، Hardening، Backup | ۲۷ |
+### ۶٫۳ وابستگی به لایسنس/Image (Needs-License)
+UTM (FortiGuard)، HA، FortiManager/FortiAnalyzer، SSL VPN Tunnel (FortiClient): هرکدام با ماتریس v2.1 §۱۶٫۸؛ اگر در Evaluation محدود بود، «مفهومی + Lab حداقلی + مستند رسمی» با برچسب صریح؛ **حذف نمی‌شود**.
+
+## ۷) معماری‌های سازمانی الزامی
+| # | معماری | فصل‌ها | الزامات طراحی/Lab |
+|---|---|---|---|
+| ۱ | تک‌فایروالی | ۱۲–۱۳ | VLANها، NAT، Policy، Logging |
+| ۲ | دوفایروالی + DMZ | ۱۵ | Edge/Internal، Web/App/DB، تحلیل مسیر در هر دو |
+| ۳ | دو ISP | ۲۱ | Failover، SD-WAN، تست قطع/بازگشت |
+| ۴ | مرکز + شعب | ۱۸–۱۹ | Hub-Spoke، S2S، Routing پویا، Breakout |
+| ۵ | چندفایروالی پیچیده | ۲۳ | Policy/NAT/Route مستقل، Asymmetric |
+| ۶ | چندسازنده | ۲۵ | FGT + Cisco IOS-XE: IPsec/BGP/OSPF |
+| ۷ | مرکز داده | ۲۴ | Segmentation، East-West، مدیریت |
+| ۸ | مهاجرت | ۳۰ | استخراج Policy، مرحله‌ای، Rollback |
+| ۹ | مدیریت مرکزی | ۲۶ | Policy Package، Revision، گزارش |
+در هر معماری: نقشه‌ی IP، Packet Walk رفت/برگشت، Policy Matrix، Test Plan، Rollback Plan.
+
+## ۸) استانداردها
+### ۸٫۱ قالب درس (۱۲ بخش، الزامی)
+۱ معرفی (چرا/مشکل/محل در شبکه) ‖ ۲ پیش‌نیازها ‖ ۳ مفهوم ‖ ۴ مثال ساده ‖ ۵ مثال سازمانی ‖ ۶ تصویر/توپولوژی ‖ ۷ پیکربندی با توضیح هر دستور (چه/چرا/خروجی/راستی‌آزمایی/بازگشت) ‖ ۸ تست ‖ ۹ عیب‌یابی (حداقل یک خرابی) ‖ ۱۰ تمرین مستقل (پاسخ جدا) ‖ ۱۱ مرور و ارزیابی (مفهومی، سناریو، عملی، معیار تسلط، اشتباهات رایج) ‖ ۱۲ واژگان (شکل کامل، معنی، کاربرد).
+### ۸٫۲ کارت Lab (۱۶ فیلد)
+۱ عنوان/هدف ‖ ۲ پیش‌نیاز ‖ ۳ توپولوژی ‖ ۴ تجهیزات ‖ ۵ نسخه نرم‌افزار ‖ ۶ IP Plan ‖ ۷ وضعیت اولیه ‖ ۸ صورت مسئله ‖ ۹ مراحل هدایت‌شده ‖ ۱۰ تست ‖ ۱۱ سناریوی خرابی ‖ ۱۲ روش عیب‌یابی ‖ ۱۳ نتیجه‌ی مورد انتظار ‖ ۱۴ معیار پذیرش ‖ ۱۵ مستندات نهایی ‖ ۱۶ Cleanup و بازگردانی.
+### ۸٫۳ چارچوب عیب‌یابی (۱۰ پرسش برای هر ارتباط)
+ورود؟ ‖ مبدأ/مقصد واقعی؟ ‖ Route انتخاب‌شده؟ ‖ Policy مطابق؟ ‖ NAT؟ ‖ Session؟ ‖ Interface خروجی؟ ‖ دریافت در مقصد؟ ‖ مسیر برگشت؟ ‖ نقطه‌ی دقیق شکست؟ — ابزار برای هر کدام (FortiOS: Sniffer، Debug Flow، Session، Routing، iprope؛ Cisco: show/debug؛ Wireshark؛ Windows/Linux) با فیلتر، نمونه‌ی خروجی و تفسیر.
+### ۸٫۴ فرایند تغییر (۱۰ مرحله)
+وضع موجود ← Backup ← وابستگی ← ریسک ← Change Plan ← Test Plan ← Rollback Plan ← اجرا ← بررسی ← مستندسازی. هیچ دستور مخرب بدون اثر/پیش‌نیاز/بازیابی.
+### ۸٫۵ پوشش سناریوهای الزامی
+| سناریو | فصل | سناریو | فصل |
+|---|---|---|---|
+| Policy اشتباه، Shadowed Policy | ۱۳ | Authentication | ۱۷ |
+| NAT اشتباه | ۱۳ | Policy Install شکست | ۲۶ |
+| Route اشتباه | ۵،۱۰،۱۲ | Logging | ۲۷ |
+| مسیر برگشت | ۵،۲۳ | Performance | ۲۷ |
+| Asymmetric | ۱۰،۲۳ | تداخل Address Object | ۱۳ |
+| DNS | ۷،۱۴،۱۷ | MTU/MSS | ۱۴،۱۸ |
+| VPN up بدون ترافیک | ۱۸ | TCP/UDP | ۱۴،۲۸ |
+| Failover ناموفق | ۲۱،۲۲ | HA/Session Sync | ۲۲ |
+| چند خرابی هم‌زمان | ۲۸،۳۲ | | |
+در برخی سناریوها محل خرابی **اعلام نمی‌شود**.
+
+## ۹) ارزیابی و Capstone
+- **معیار تسلط هر فصل:** توضیح با زبان خود؛ مثال مستقل؛ تنظیم؛ راستی‌آزمایی؛ تشخیص خطا؛ مستندسازی؛ و **توضیح «چرا»** (Route/Policy/NAT/معماری).
+- **Gateها:** G1 (ف۲)، G2 (ف۴)، G3 (ف۶)، CP1 (ف۸)، G4 (ف۱۱)، G5 (ف۱۳)، G6 (ف۱۵)، G7 (ف۱۸)، G8 (ف۲۱)، G9 (ف۲۴)، G10 (ف۲۷)، G11 (ف۳۰)، Final (ف۳۲).
+- **Capstone مستقل (فصل ۳۱–۳۲):** I طراحی از نیازمندی؛ II ممیزی + مهاجرت؛ III خرابی کور چندگانه؛ IV Handover. توپولوژی و محل خرابی از قبل اعلام نمی‌شود.
+
+## ۱۰) فایل‌های خروجی و پروتکل ممیزی
+هر فایل سه‌فصلی: **ابتدا** (نام دوره، شماره بخش، فصل‌ها، تاریخ، نسخه Blueprint، نسخه نرم‌افزارها، وضعیت) و **انتها** (خلاصه مهارت، آزمون پایان سه فصل، معیار تسلط، موارد باقی‌مانده، پیش‌نیاز بخش بعد، فهرست Lab/منابع، وضعیت دوره). کنترل کامل‌بودن با اسکریپت: همه‌ی درس‌ها حاضر، لینک‌های داخلی معتبر، پاسخ‌ها موجود.
+**پروتکل ممیزی:** پس از هر فایل → توقف؛ کاربر ممیزی ChatGPT را می‌آورد؛ بررسی فنی/آموزشی؛ تعارض (اگر بود) توضیح؛ اعمال موارد تأییدشده؛ ثبت در Decision Log + «گزارش تغییرات»؛ سپس بخش بعد.
+
+## ۱۱) نسخه‌ها و محدودیت‌ها
+| مورد | نسخه/وضعیت |
+|---|---|
+| ESXi | 8.0U2 (Inventory) |
+| PNetLab | 4.2.8 (Ubuntu 18.04.5؛ 16 vCPU، 48 GB RAM) |
+| Cisco سوییچ | vIOS-L2 15.2(20200924)، Experimental؛ **Featureهای L2 بسیاری فقط CLI-Accepted** |
+| Cisco روتر | IOSv 15.9(3)M9 |
+| IOS-XE | CSR1000v 17.03.02 (Image موجود؛ آزمایش‌نشده) |
+| FortiGate | `fortinet-7.0.3` (اسمی از نام پوشه؛ **بوت‌نشده**؛ تأیید با `get system status`). آسیب‌پذیری‌های ۷٫۰٫x (CVE-2022-40684، 2022-42475، 2023-27997) ← Lab ایزوله |
+| Windows | Server (Golden)؛ Eval ۱۸۰ روزه |
+| Linux | Ubuntu 22.04 (Golden) |
+| FortiOS Eval | محدودیت HA/FMG/FAZ/UTM `Unverified` |
+قاعده‌ی منبع: برای هر درس FortiGate مستند رسمی همان نسخه (docs.fortinet.com، شاخه‌ی 7.0) خوانده و ثبت می‌شود.
+
+## ۱۲) برنامه‌ی تولید و وضعیت
+| بخش | وضعیت |
+|---|---|
+| Blueprint v3.0 | تحویل |
+| بخش ۱ (فصل ۱–۳) | تحویل برای ممیزی |
+| بخش ۲ (فصل ۴–۶)، بخش ۳ (۷–۹) | بعد از ممیزی بخش ۱ (محتوای ف۴–۸ در دسترس؛ فصل ۹ جدید) |
+| بخش ۴ به بعد | تولید پس از ممیزی؛ بوت FortiGate در فصل ۱۲ با تأیید کاربر |
+
+## ۱۳) ریسک‌ها و پرسش‌های باز
+۱) صحت رفتار Featureهای vIOSL2 (Probe در هر فصل). ۲) لایسنس/Eval FortiGate برای HA/UTM/FMG. ۳) ۳۲ هفته × ۶ ساعت بار زیادی است؛ اگر لازم بود فصل‌های ۲۶ و ۲۹ فشرده می‌شوند (تصمیم با کاربر). ۴) Image سازنده‌ی دوم (CSR) آزمایش‌نشده. ۵) Linux Image در PNetLab ثبت نشده.
