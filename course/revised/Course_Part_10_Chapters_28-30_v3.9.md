@@ -2300,99 +2300,149 @@ diagnose sys session list
 
 <a id="l-30-4"></a>
 
-## درس 30-4 — Gate G11: آزمون عملی Migration — صورت مسئله، کلید و Rubric
+## درس 30-4 — Gate G11: آزمون عملی Migration — صورت مسئله، کلید پاسخ کامل و Rubric
 
-**فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰ تا ۳۰-۳ · ≈ 8 ساعت**
+**فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۱ تا ۳۰-۳ · ≈ 12 ساعت**
 
-> **وضعیت:** روش‌شناسی مستقل از برند؛ نگاشت ASA→FortiGate مفهومی/`Unverified`؛ فقط Lab/Change مجاز؛ FortiOS 7.0.3 (بوت‌نشده).
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Inventory/Hygiene، Plan/Rollback، Cutover Lab و Test Matrix را تحویل دهد.
-2. یک اختلاف تزریق‌شده (NAT/Implicit rule) را RCA و رفع کند.
-3. Rollback را در Lab آزمایش کند.
-4. Evidence و Sign-off ارائه دهد.
+1. برنامه‌ی Migration (Plan، Pre-check، Cutover، Post-check، Rollback) را بنویسد.
+2. Test Matrix پیش/پس را اجرا و مقایسه کند.
+3. اختلاف‌ها را با RCA تحلیل کند.
+4. Rollback را در Lab آزمون کند.
+5. گزارش و Rubric را تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون عملی جامع مهاجرت.
+Migration یعنی تعویض فایروال قدیمی با جدید بدون قطع طولانی. خطر اصلی «کار می‌کرد، حالا نه» است؛ پس باید از قبل بدانید چه چیزی کار می‌کرد (Baseline) و پس از آن همان را اندازه بگیرید. این Gate سنجش همین انضباط است.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-مبدأ: فایروال قدیمی با ۲۰۰ Rule و NAT. هدف: FortiGate. دو اختلاف تزریق‌شده: (۱) Implicit rule؛ (۲) IP Pool.
+جایگزینی FGT-OLD (v6.4) با FGT-NEW (v7.0.3) در Lab. نیاز: Config تبدیل‌شده، Policyها هم‌ارز، Cutover در Window ۶۰ دقیقه‌ای، Rollback زیر ۱۰ دقیقه.
 
-#### کلید
+#### ۲) Plan
 
-- Hygiene: حذف Rule صفر-Hit؛ Mapping.
-- Implicit: Policy صریح؛ آزمون.
-- Pool: IP قبلی.
-- Rollback آزمایش‌شده ≤ ۱۵ دقیقه.
+``` text
+T-7d  inventory, baseline, backup
+T-3d  convert config, review diff, lab test
+T-1d  dry run in Lab, rollback test
+T0    cutover (change window 60 min)
+T+1h  post-check
+T+1d  monitoring review, close CHG
+```
 
-#### Rubric
+#### ۳) Test Matrix
 
-Inventory/Hygiene ۲۰؛ Plan/Rollback ۲۵؛ Cutover و Matrix ۳۰؛ RCA ۱۵؛ صداقت ۱۰.
+| # | آزمون | قبل | بعد |
+|---|---|---|---|
+| 1 | ping GW و DNS | ok | ok |
+| 2 | HTTPS خروج | ok | ok |
+| 3 | VIP وب | ok | ok |
+| 4 | IPsec Site-to-Site | up | up |
+| 5 | Session count | N | ≈N |
+| 6 | Policy hit counts | baseline | مقایسه |
+| 7 | Log ingestion | ok | ok |
+
+#### ۴) Cutover و Rollback
+
+``` text
+1 backup OLD and NEW
+2 move cables or VIP in documented order
+3 run test matrix (items 1-7)
+4 if any critical fail within 15 min -> rollback: restore cabling/IP, verify OLD
+```
+
+#### ۵) مقایسه‌ی اختلاف‌ها
+
+- Session count بعد ۱۰٪ کمتر: Timeout یا offload متفاوت؛ بررسی `get system session-ttl`.
+- IPsec up نمی‌شود: Proposal پیش‌فرض نسخه‌ی جدید عوض شده؛ مقایسه با Release Notes.
+- Policy hit صفر: ترتیب/Interface نگاشت اشتباه.
+
+#### ۶) Rubric
+
+Plan ۲۰، Test Matrix ۲۵، Cutover/Rollback ۲۰، اختلاف‌ها و RCA ۲۰، Evidence و صداقت ۱۵. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Window | ۶۰ دقیقه با Rollback |
+| Baseline | قبل از تغییر |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Inventory.
+**ساده (حل‌شده):** Test Matrix ردیف ۱–۳ قبل از Cutover ok؛ بعد ok؛ ثبت زمان و خروجی.
 
-**متوسط:** Cutover Lab.
+**متوسط (اختلاف):** IPsec پس از Cutover down. مراحل: ۱) Debug IKE: NO_PROPOSAL. ۲) نسخه‌ی جدید Proposal پیش‌فرض متفاوت. ۳) تنظیم صریح Proposal. ۴) up. RCA: وابستگی به پیش‌فرض نسخه.
 
-**سخت:** RCA و Rollback.
+**سخت (Rollback):** ۱۵ دقیقه پس از Cutover VIP وب کار نمی‌کند و علت نامشخص. تصمیم: Rollback طبق Plan: بازگرداندن کابل/IP، تأیید Test Matrix روی OLD (۸ دقیقه). پس از آن RCA در Lab. درس: Rollback بر اساس زمان از پیش تعیین‌شده است نه عجله.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose sys session stat
+get system session-ttl
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence G11.
+- Test Matrix همه‌ی ردیف‌ها.
+- Rollback آزمون شده.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| ناقص | Rubric | کسری |
+| Session کمتر | Timeout | session-ttl |
+| IPsec down | Proposal | تنظیم صریح |
 
 ### ۱۰) نکات امنیتی
 
-- Lab.
+- Backup رمزگذاری.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- شواهد.
+- Baseline.
+- Test Matrix.
+- Rollback زمان‌دار.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) وظایف G11؟ *(پاسخ: 30-4-ت1)*
+**ت1.** (ساده) چرا Baseline؟ *(پاسخ: 30-4-ت1)*
 
-**ت2.** (ساده) چرا Rollback آزمایش می‌شود؟ *(پاسخ: 30-4-ت2)*
+**ت2.** (ساده) Rollback کی؟ *(پاسخ: 30-4-ت2)*
 
-**ت3.** (متوسط) اختلاف Implicit rule چگونه کشف می‌شود؟ *(پاسخ: 30-4-ت3)*
+**ت3.** (متوسط) IPsec down پس از Cutover؛ علت؟ *(پاسخ: 30-4-ت3)*
 
-**ت4.** (متوسط) رفع IP Pool؟ *(پاسخ: 30-4-ت4)*
+**ت4.** (متوسط) Session کمتر؟ *(پاسخ: 30-4-ت4)*
 
-**ت5.** (سخت) RCA کامل یک اختلاف. *(پاسخ: 30-4-ت5)*
+**ت5.** (سخت) Rollback را آزمون کنید. *(پاسخ: 30-4-ت5)*
 
-**ت6.** (سخت، طراحی) بهبود پس از آزمون. *(پاسخ: 30-4-ت6)*
+**ت6.** (سخت، طراحی) Plan T-7d تا T+1d. *(پاسخ: 30-4-ت6)*
 
-**Q1.** Quick quiz (English): What must a G11 submission include? *(پاسخ: 30-4-Q1)*
+**Q1.** Quick quiz (English): Why must the rollback plan be tested before cutover? *(پاسخ: 30-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| G11 | Gate 11 | دروازه ۱۱ |
+| CHG | Change request | درخواست تغییر |
 
-- *A plan without rollback is incomplete.* ← Plan بدون Rollback ناقص است.
+- *Test the rollback before the cutover.* ← Rollback را پیش از Cutover آزمون کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** G11. **Evidence:** `03-ops/g11.md`.
+**کارت Lab:** G11 (اجرا نشده). **Evidence:** `03-ops/g11-migration.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۳۰-۰ تا ۳۰-۳
+- Fortinet FortiOS 7.0 Administration Guide: Upgrade and migration
 
 ## پاسخ‌های فصل 30
 
@@ -2452,19 +2502,22 @@ Inventory/Hygiene ۲۰؛ Plan/Rollback ۲۵؛ Cutover و Matrix ۳۰؛ RCA ۱۵�
 
 ### پاسخ‌های بازنویسی عمیق درس 30-4
 
-**30-4-ت1** — Inventory/Hygiene، Plan/Rollback، Cutover Lab، Matrix، RCA.
 
-**30-4-ت2** — تا اطمینان باشد در شرایط واقعی کار می‌کند.
+### پاسخ‌های بازنویسی عمیق درس 30-4
 
-**30-4-ت3** — Test Matrix: ترافیکی که در مبدأ بود و در مقصد Block است؛ Debug Flow Policy 0.
+**30-4-ت1** — برای مقایسه‌ی قبل/بعد.
 
-**30-4-ت4** — Pool مطابق IP قبلی؛ آزمون مجدد T5.
+**30-4-ت2** — طبق زمان و معیار از پیش تعیین‌شده.
 
-**30-4-ت5** — علامت، شواهد، علت (Implicit/NAT)، رفع، تأیید، پیشگیری.
+**30-4-ت3** — Proposal پیش‌فرض متفاوت.
 
-**30-4-ت6** — استخراج Implicit rules، قالب Mapping، Test Matrix استاندارد.
+**30-4-ت4** — Timeout/Offload.
 
-**30-4-Q1** — Inventory, a plan with tested rollback, cutover evidence and a before/after matrix with root-cause analysis of differences.
+**30-4-ت5** — در Lab: بازگرداندن کابل/IP و Test Matrix.
+
+**30-4-ت6** — طبق متن.
+
+**30-4-Q1** — To be sure the old state can be restored within the change window.
 
 ### پاسخ‌های درس افزوده‌ی 30-0 (فصل 30)
 

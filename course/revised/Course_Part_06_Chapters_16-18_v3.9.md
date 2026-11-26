@@ -3816,100 +3816,251 @@ diagnose vpn tunnel list
 
 <a id="l-18-6"></a>
 
-## درس 18-6 — Gate G7: آزمون عملی IPsec — صورت مسئله، کلید پاسخ و Rubric
+## درس 18-6 — Gate G7: آزمون عملی IPsec — صورت مسئله، کلید پاسخ کامل و Rubric
 
-**فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰ تا ۱۸-۵ · ≈ 8 ساعت**
+**فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۱ تا ۱۸-۵ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده) و CSR1000v؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. G7: Tunnel، Route/Policy، MTU، عیب‌یابی و مستندسازی را با شواهد تحویل دهد.
-2. سه عیب (Selector/PFS، Policy، MTU) را رفع کند.
-3. Backup/Rollback را اثبات کند.
+1. یک تونل Site-to-Site IPsec (IKEv2) را از طراحی تا Verification مستند و پیاده‌سازی کند.
+2. سه خرابی تزریق‌شده (عدم‌تطابق Proposal، Selector، NAT-T/MTU) را با شواهد تشخیص دهد.
+3. هر خرابی را با Debug محدود و دستور Verification اثبات و رفع کند.
+4. گزارش RCA و Evidence Index را تحویل دهد.
+5. خود را با Rubric نمره‌دهی و ضعف‌ها را صادقانه ثبت کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-اثبات توانایی ساخت و عیب‌یابی IPsec. کلید پاسخ پس از تلاش.
+Gate G7 آخرین سنجش فصل IPsec است. در دنیای واقعی تونل «بالا نمی‌آید» و مشتری فقط همین را می‌گوید؛ شما باید مرحله‌به‌مرحله ثابت کنید مشکل در Phase 1 است یا Phase 2، در Proposal است یا Selector، در NAT-T است یا MTU. این درس صورت مسئله، کلید پاسخ کامل و Rubric را یک‌جا می‌دهد تا هم تمرین کنید و هم خودتان را ارزیابی.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-1. Tunnel S2S بین دو FGT با برگه‌ی پارامتر؛ Route/Policy دوطرفه.
-2. MTU/MSS آزمون‌شده.
-3. عیب‌ها (مربی): PFS Group ناهمسان؛ Policy یک‌طرفه؛ MTU 1500 بدون Clamp.
-4. Backup قبل/بعد؛ Rollback.
+دو سایت: HQ (FGT-HQ، WAN 198.51.100.2، LAN 10.10.0.0/16) و Branch (FGT-BR، WAN 203.0.113.2، LAN 10.20.0.0/16). نیاز: تونل IPsec IKEv2 با AES-256/SHA-256، DH Group 14، PFS فعال، DPD، فقط ترافیک LAN↔LAN، Log و Policy دوطرفه.
 
-#### کلید
+#### ۲) طراحی (پاسخ مرجع)
 
-- PFS: Debug INVALID_KE_PAYLOAD/NO_PROPOSAL؛ هم‌گروه‌کردن.
-- Policy: Bytes in=0؛ Debug Flow Denied؛ Policy مقابل.
-- MTU: ping DF؛ MSS 1360.
+| پارامتر | مقدار |
+|---|---|
+| IKE | v2 |
+| Phase1 Proposal | aes256-sha256 |
+| DH Group | 14 |
+| Lifetime P1 | 86400 s |
+| Phase2 Proposal | aes256-sha256 |
+| PFS | enable (DH 14) |
+| Lifetime P2 | 43200 s |
+| Selector | 10.10.0.0/16 ↔ 10.20.0.0/16 |
+| DPD | on-idle، interval 10، retry 3 |
+| NAT-T | enable |
+| MTU/MSS | MSS-clamp 1350 |
 
-#### Rubric
+#### ۳) پیکربندی مرجع HQ
 
-ساخت ۲۵؛ عیب‌یابی ۳۰؛ MTU ۱۰؛ Policy/امنیت ۱۰؛ Evidence ۱۵؛ صداقت ۱۰.
+``` text
+config vpn ipsec phase1-interface
+ edit "TO-BR"
+  set interface "port1"
+  set ike-version 2
+  set peertype any
+  set net-device disable
+  set proposal aes256-sha256
+  set dhgrp 14
+  set remote-gw 203.0.113.2
+  set psksecret <PSK-FROM-VAULT>
+  set dpd on-idle
+  set dpd-retrycount 3
+  set dpd-retryinterval 10
+  set nattraversal enable
+ next
+end
+config vpn ipsec phase2-interface
+ edit "TO-BR-P2"
+  set phase1name "TO-BR"
+  set proposal aes256-sha256
+  set pfs enable
+  set dhgrp 14
+  set src-subnet 10.10.0.0 255.255.0.0
+  set dst-subnet 10.20.0.0 255.255.0.0
+ next
+end
+config router static
+ edit 50
+  set dst 10.20.0.0 255.255.0.0
+  set device "TO-BR"
+ next
+end
+config firewall policy
+ edit 70
+  set name "HQ-to-BR"
+  set srcintf "port2"
+  set dstintf "TO-BR"
+  set srcaddr "NET-HQ"
+  set dstaddr "NET-BR"
+  set action accept
+  set schedule "always"
+  set service "ALL"
+  set logtraffic all
+ next
+ edit 71
+  set name "BR-to-HQ"
+  set srcintf "TO-BR"
+  set dstintf "port2"
+  set srcaddr "NET-BR"
+  set dstaddr "NET-HQ"
+  set action accept
+  set schedule "always"
+  set service "ALL"
+  set logtraffic all
+ next
+end
+```
+
+(PSK را هرگز در ریپو ننویسید؛ دستورها `Unverified` تا Lab؛ نام پارامتر `dpd` و `net-device` را با CLI help تأیید کنید.)
+
+#### ۴) خرابی‌های تزریق‌شده و کلید پاسخ
+
+**خرابی A: Proposal متفاوت.** Branch با aes128-sha1 پیکربندی شده. شاهد:
+
+``` text
+diagnose vpn ike gateway list
+diagnose debug application ike -1
+diagnose debug enable
+ ... "no proposal chosen" / NO_PROPOSAL_CHOSEN
+```
+
+علت: عدم‌تطابق Phase 1 Proposal. رفع: یکسان‌سازی aes256-sha256. آزمون: `diagnose vpn ike gateway list` وضعیت established.
+
+**خرابی B: Selector.** Phase 1 ok ولی Phase 2 نمی‌آید؛ Branch Selector 10.20.0.0/24 است. شاهد: `diagnose vpn tunnel list` بدون SA یا پیام `TS_UNACCEPTABLE`/`no matching selector`. رفع: یکسان‌سازی /16 (یا Selector دقیق در هر دو). آزمون: `get vpn ipsec tunnel summary` up و ping.
+
+**خرابی C: MTU/NAT-T.** تونل up ولی انتقال فایل بزرگ می‌ایستد. شاهد: ping با DF: 1372 ok و 1422 fail؛ Capture: Retransmission بزرگ. رفع: MSS-clamp 1350 و اجازه‌ی ICMP؛ NAT-T فعال و UDP 4500 باز. آزمون: دانلود ۱۰۰ MB.
+
+#### ۵) Verification مرجع
+
+``` text
+get vpn ipsec tunnel summary
+diagnose vpn ike gateway list
+diagnose vpn tunnel list name TO-BR
+diagnose sys session filter dst 10.20.0.5
+diagnose sys session list
+```
+
+#### ۶) Rubric (۱۰۰ امتیاز)
+
+| معیار | امتیاز |
+|---|---|
+| طراحی و جدول پارامتر | 15 |
+| پیکربندی صحیح هر دو سر | 20 |
+| تشخیص سه خرابی با شواهد | 30 |
+| رفع و آزمون مثبت/منفی | 20 |
+| Evidence Index و RCA | 10 |
+| صداقت (Unverified و محدودیت‌ها) | 5 |
+
+نمره‌ی قبولی ۷۵ و حداقل ۲۰ در بخش «تشخیص».
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| IKEv2 یا v1 | IKEv2 برای Site-to-Site جدید |
+| PFS | enable |
+| DPD | on-idle |
+| Policy | دوطرفه با Log |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Tunnel Up؛ ping.
+**ساده (حل‌شده: خرابی A):** ورودی: Debug IKE پیام NO_PROPOSAL_CHOSEN. مراحل: ۱) `diagnose vpn ike gateway list` تونل در حالت connecting. ۲) Debug محدود به peer: `diagnose vpn ike log-filter dst-addr4 203.0.113.2`. ۳) خط Proposal دو سر مقایسه می‌شود: HQ aes256-sha256، BR aes128-sha1. پاسخ: عدم‌تطابق Proposal؛ رفع در BR و آزمون established.
 
-**متوسط:** عیب PFS.
+**متوسط (خرابی B):** Phase 1 established ولی ping به 10.20.0.5 ندارد. مراحل: ۱) `diagnose vpn tunnel list` تعداد SA صفر برای Phase 2. ۲) Selector HQ /16 و BR /24. ۳) رفع Selector. ۴) `get vpn ipsec tunnel summary` selectors up. پاسخ: Selector Mismatch؛ با /16 یکسان یا Subnet دقیق.
 
-**سخت:** Policy/MTU و RCA.
+**سخت (خرابی C + RCA):** تونل up ولی فایل بزرگ می‌ایستد. مراحل: ۱) PMTU با ping DF: 1372 ok، 1422 fail ⇒ PMTU≈1400. ۲) MSS=1400−40=1360 با حاشیه 1350. ۳) `set tcp-mss-sender 1350` روی Policy تونل. ۴) ICMP frag-needed مجاز. ۵) دانلود ۱۰۰MB سه بار بدون Retransmission. RCA: سربار ESP/UDP-encap MTU مؤثر را کم کرد و MSS تنظیم نشده بود؛ پیشگیری: MSS-clamp استاندارد برای همه‌ی تونل‌ها.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. VPN → IPsec Wizard یا Custom: Phase 1 و Phase 2 را مطابق جدول بسازید.
+2. Network → Static Routes: مسیر 10.20.0.0/16 به Interface تونل.
+3. Policy & Objects → دو Policy (HQ→BR و BR→HQ).
+4. Monitor → IPsec Monitor برای وضعیت.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get vpn ipsec tunnel summary
+diagnose vpn ike gateway list
+diagnose vpn tunnel list name TO-BR
+diagnose debug application ike -1
+diagnose debug enable
+diagnose debug disable
+diagnose debug reset
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence G7.
+- Phase 1 و Phase 2 در حالت up.
+- ping و TCP بین LANها.
+- Session با policy_id درست.
+- دانلود بزرگ بدون Retransmission.
+- آزمون منفی: ترافیک غیرمجاز رد.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| ناقص | Rubric | کسری |
+| NO_PROPOSAL_CHOSEN | Proposal دو سر | یکسان‌سازی |
+| TS_UNACCEPTABLE | Selector | Subnet |
+| فایل بزرگ می‌ایستد | PMTU | MSS-clamp |
+| تونل flap | DPD/NAT-T | تایمر/UDP 4500 |
 
 ### ۱۰) نکات امنیتی
 
-- Secret پاک.
+- PSK قوی و در Vault.
+- Policy حداقلی.
+- Debug را خاموش کنید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- شواهد.
+- Proposal، Selector، MTU سه خرابی رایج.
+- Debug محدود به peer.
+- Rubric و Evidence.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) وظایف G7؟ *(پاسخ: 18-6-ت1)*
+**ت1.** (ساده) NO_PROPOSAL_CHOSEN یعنی چه؟ *(پاسخ: 18-6-ت1)*
 
-**ت2.** (ساده) چرا آزمون منفی؟ *(پاسخ: 18-6-ت2)*
+**ت2.** (ساده) Selector چیست؟ *(پاسخ: 18-6-ت2)*
 
-**ت3.** (متوسط) عیب PFS را از Debug چگونه می‌فهمید؟ *(پاسخ: 18-6-ت3)*
+**ت3.** (متوسط) Phase 1 up ولی ping نه؛ بررسی‌ها؟ *(پاسخ: 18-6-ت3)*
 
-**ت4.** (متوسط) Policy یک‌طرفه چه علامتی دارد؟ *(پاسخ: 18-6-ت4)*
+**ت4.** (متوسط) چرا Debug محدود به peer؟ *(پاسخ: 18-6-ت4)*
 
-**ت5.** (سخت) RCA MTU. *(پاسخ: 18-6-ت5)*
+**ت5.** (سخت) MSS را برای PMTU 1400 محاسبه کنید. *(پاسخ: 18-6-ت5)*
 
-**ت6.** (سخت، طراحی) برنامه‌ی تکرار Gate پس از Patch. *(پاسخ: 18-6-ت6)*
+**ت6.** (سخت، طراحی) Evidence Index برای G7. *(پاسخ: 18-6-ت6)*
 
-**Q1.** Quick quiz (English): What does Gate G7 prove? *(پاسخ: 18-6-Q1)*
+**Q1.** Quick quiz (English): Which command lists IKE gateways and their state? *(پاسخ: 18-6-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| G7 | Gate 7 | دروازه ۷ |
+| IKE | Internet Key Exchange | تبادل کلید اینترنت |
+| PFS | Perfect Forward Secrecy | محرمانگی پیش‌رونده |
+| DPD | Dead Peer Detection | تشخیص همتای مرده |
+| NAT-T | NAT Traversal | عبور از NAT |
 
-- *Evidence is part of the grade.* ← شاهد جزء نمره است.
+- *The tunnel is up but traffic does not flow.* ← تونل up است ولی ترافیک عبور نمی‌کند.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** G7. **Evidence:** `03-ops/g7.md`.
+**کارت Lab:** G7 IPsec (اجرا نشده). **Evidence:** `03-ops/g7-ipsec.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۱۸-۰ تا ۱۸-۵
+- Fortinet FortiOS 7.0 Administration Guide: IPsec VPN
+- FortiOS 7.0 IPsec troubleshooting
 
 ## پاسخ‌های فصل 18
 
@@ -3996,19 +4147,22 @@ diagnose vpn tunnel list
 
 ### پاسخ‌های بازنویسی عمیق درس 18-6
 
-**18-6-ت1** — ساخت، آزمون، سه عیب، Backup/Rollback.
 
-**18-6-ت2** — اثبات Least Privilege.
+### پاسخ‌های بازنویسی عمیق درس 18-6
 
-**18-6-ت3** — INVALID_KE_PAYLOAD/NO_PROPOSAL_CHOSEN در Phase 2؛ مقایسه PFS دو سر.
+**18-6-ت1** — دو سر روی الگوریتم‌های Phase 1 توافق نکردند؛ Proposal هر دو سر را مقایسه و یکسان کنید.
 
-**18-6-ت4** — Bytes out>0 و in=0؛ Debug Flow Denied در سمت مقابل.
+**18-6-ت2** — شبکه‌های مبدأ و مقصدی که در Phase 2 رمز می‌شوند؛ باید در دو سر یکسان (متقارن) باشد.
 
-**18-6-ت5** — ping DF، Retransmission، MSS 1360، دانلود موفق.
+**18-6-ت3** — Phase 2/Selector، Route به Interface تونل، Policy دوطرفه، سپس Debug و Session.
 
-**18-6-ت6** — Test Matrix دوره‌ای و Evidence.
+**18-6-ت4** — تا CPU و حجم Log کنترل شود و فقط همان تونل دیده شود.
 
-**18-6-Q1** — That you can build, break, troubleshoot and document an IPsec tunnel.
+**18-6-ت5** — MSS = 1400 − 40 = 1360؛ با حاشیه 1350 تنظیم و با دانلود بزرگ آزمون می‌شود.
+
+**18-6-ت6** — فهرست خروجی‌ها: ike gateway، tunnel list، session، ping/TCP، Debug محدود، تصویر، زمان و نتیجه.
+
+**18-6-Q1** — diagnose vpn ike gateway list.
 
 ### پاسخ‌های درس افزوده‌ی 18-0 (فصل 18)
 

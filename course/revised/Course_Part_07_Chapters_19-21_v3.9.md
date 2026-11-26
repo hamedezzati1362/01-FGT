@@ -2998,102 +2998,214 @@ diagnose sys session filter clear
 
 <a id="l-21-5"></a>
 
-## درس 21-5 — Gate G8: آزمون عملی Dual-ISP و SD-WAN — صورت مسئله، کلید پاسخ و Rubric
+## درس 21-5 — Gate G8: آزمون عملی Dual-ISP و SD-WAN — صورت مسئله، کلید پاسخ کامل و Rubric
 
-**فصل 21 · بازنویسی عمیق · پیش‌نیاز: ۲۱-۱ تا ۲۱-۷ · ≈ 8 ساعت**
+**فصل 21 · بازنویسی عمیق · پیش‌نیاز: ۲۱-۱ تا ۲۱-۴ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده) و CSR1000v؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. G8: Zone/Member/Health-check/Rule/Failover/Failback را با شواهد تحویل دهد.
-2. عیب Health-check و Rule را رفع کند.
-3. RCA و Backup ارائه دهد.
+1. SD-WAN با دو Member (ISP-A و ISP-B)، Health-check و Service Rule را طراحی و پیاده‌سازی کند.
+2. Failover و Failback را با اندازه‌گیری (Failtime/Recoverytime) آزمون کند.
+3. تفاوت Mode (priority/load-balance/Best Quality) را انتخاب و توجیه کند.
+4. سه خرابی (Health-check اشتباه، Policy ناهمخوان، Route) را رفع کند.
+5. گزارش و Rubric را تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-اثبات Dual-ISP/SD-WAN. کلید پاسخ پس از تلاش.
+دو ISP داریم. اگر ISP-A قطع شد، ترافیک مالی باید خودکار به ISP-B برود و پس از بازگشت A ظرف زمان مشخص برگردد. «قطع شد ولی Failover نشد» رایج‌ترین گزارش است و علتش اغلب Health-check نادرست یا Policy بدون SD-WAN است. این Gate سنجش همین است.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-1. SD-WAN Zone با دو Member و HC دوسروره.
-2. Rule VoIP (sla) و Backup (load-balance).
-3. افت کیفیت ساختگی (Latency 150 ms با `tc`) و قطع لینک.
-4. عیب‌ها: Server HC نامعتبر؛ Rule عمومی بالا؛ Policy روی Interface به‌جای Zone.
-5. Backup/Rollback.
+FortiGate شعبه: port1 (ISP-A، 198.51.100.2/30، GW 198.51.100.1) و port4 (ISP-B، 203.0.113.2/30، GW 203.0.113.1). LAN 10.10.0.0/24. نیاز: ترافیک عادی از A؛ Failover به B ظرف زیر ۱۰ ثانیه؛ Failback پس از ۳۰ ثانیه پایداری A؛ ترافیک ویدئو (Microsoft Teams) ترجیحاً با کمترین Latency.
 
-#### کلید
+#### ۲) طراحی مرجع (FortiOS 7.0)
 
-- HC Dead کاذب: Server/Protocol.
-- Rule Hit: ترتیب.
-- Policy روی Zone.
-- Failover/Failback با SLA.
+| مورد | مقدار |
+|---|---|
+| Members | port1 (seq 1)، port4 (seq 2) |
+| Health-check | HC-GLOBAL: server 8.8.8.8 و 1.1.1.1، ping، interval 1000 ms |
+| failtime / recoverytime | 5 / 10 |
+| Rule 1 | Teams: Mode best-quality (latency) |
+| Rule 2 | Default: priority-mode (member 1 اول) |
 
-#### Rubric
+``` text
+config system sdwan
+ set status enable
+ config zone
+  edit "virtual-wan-link"
+  next
+ end
+ config members
+  edit 1
+   set interface "port1"
+   set gateway 198.51.100.1
+  next
+  edit 2
+   set interface "port4"
+   set gateway 203.0.113.1
+  next
+ end
+ config health-check
+  edit "HC-GLOBAL"
+   set server "8.8.8.8" "1.1.1.1"
+   set protocol ping
+   set interval 1000
+   set failtime 5
+   set recoverytime 10
+   set members 1 2
+  next
+ end
+ config service
+  edit 1
+   set name "Teams"
+   set mode sla
+   set dst "Microsoft-Teams"
+   config sla
+    edit "HC-GLOBAL"
+     set id 1
+    next
+   end
+   set priority-members 1 2
+  next
+  edit 2
+   set name "Default"
+   set mode manual
+   set dst "all"
+   set priority-members 1 2
+  next
+ end
+end
+```
 
-ساخت ۲۵؛ آزمون ۳۰؛ عیب‌یابی ۲۰؛ Policy ۱۰؛ Evidence ۱۰؛ صداقت ۵.
+نکته‌ی 7.0: `mode` و گزینه‌های `sla`/`manual`/`priority`/`load-balance` با CLI help تأیید شود؛ تغییرات 7.4.1 در Failtime/Recoverytime مرتبط نیست؛ `Unverified`.
+
+Policy باید `srcintf LAN` و `dstintf virtual-wan-link` (Zone SD-WAN) داشته باشد، نه Interface فیزیکی.
+
+#### ۳) خرابی‌ها و کلید
+
+**خرابی A:** Health-check فقط Gateway ISP را می‌زند؛ ISP قطع ولی Gateway زنده ⇒ Failover نمی‌شود. شاهد: `diagnose sys sdwan health-check` وضعیت alive. رفع: Server خارجی (8.8.8.8).
+
+**خرابی B:** Policy `dstintf port1` است نه Zone SD-WAN ⇒ Service Rule اعمال نمی‌شود. شاهد: `diagnose sys sdwan service` و Session: خروجی ثابت port1. رفع: Policy به Zone.
+
+**خرابی C:** Route Static Default هنوز با Distance کمتر از SD-WAN ⇒ ترافیک از Static. شاهد: `get router info routing-table all`. رفع: حذف Static Default یا Distance بزرگ‌تر.
+
+#### ۴) آزمون Failover
+
+``` text
+diagnose sys sdwan health-check
+diagnose sys sdwan member
+diagnose sys sdwan service
+# 1 ping -t to 8.8.8.8 from LAN host
+# 2 disable ISP-A (cable or interface down)
+# 3 measure packets lost -> time to failover
+# 4 enable ISP-A; measure failback after recoverytime
+```
+
+معیار: Failover ≤ 10 s، Failback ≈ 10–30 s، بدون قطع Sessionهای فعال مهم (Session Pickup/Preserve برای Session موجود طبق Rule).
+
+#### ۵) Rubric
+
+طراحی ۱۵، پیکربندی ۲۵، تشخیص ۳ خرابی ۳۰، آزمون Failover/Failback با اندازه‌گیری ۲۰، Evidence و صداقت ۱۰. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Mode | priority برای Failover ساده؛ SLA برای حساس به Latency |
+| Health-check | Server خارجی نه Gateway |
+| Policy | به Zone SD-WAN |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Members Alive.
+**ساده (حل‌شده):** Health-check به 8.8.8.8 با failtime 5 و interval 1000 ms: زمان تشخیص ≈ 5 ثانیه؛ پس Failover حدود ۵–۷ ثانیه. محاسبه: failtime × interval = 5 × 1 s = 5 s.
 
-**متوسط:** VoIP به wan2.
+**متوسط (خرابی B):** Policy dstintf=port1. مراحل: ۱) `diagnose sys sdwan service` نشان می‌دهد Rule ساخته شده ولی Hit ندارد. ۲) `session list` ⇒ خروجی port1. ۳) تغییر dstintf به Zone. ۴) Hit افزایش و Session از member انتخابی. پاسخ: Policy باید Zone SD-WAN را هدف بگیرد.
 
-**سخت:** عیب‌ها و RCA.
+**سخت (Failback ناپایدار):** A هر چند دقیقه Flap می‌کند و ترافیک مرتب بین دو ISP می‌پرد. تحلیل: recoverytime کوتاه؛ A ناپایدار برمی‌گردد. رفع: افزایش recoverytime به 30–60، Health-check با دو Server، و در صورت نیاز Hold. آزمون: ۳ بار قطع/وصل؛ حداکثر یک Failback. ریسک: Failback دیرتر ⇒ مصرف ISP گران‌تر.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Network → SD-WAN → Interface Members: افزودن port1 و port4.
+2. Performance SLA: ساخت HC-GLOBAL.
+3. SD-WAN Rules: Teams و Default.
+4. Policy & Objects: خروجی Zone SD-WAN.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose sys sdwan health-check
+diagnose sys sdwan member
+diagnose sys sdwan service
+get router info routing-table all
+diagnose sys session list
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence G8.
+- Health-check alive برای هر دو.
+- Failover ≤ 10 s.
+- Failback پس از recoverytime.
+- Rule Hit و Session روی member درست.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| ناقص | Rubric | کسری |
+| Failover نمی‌شود | Health-check | Server خارجی |
+| Rule اثر ندارد | Policy dstintf | Zone SD-WAN |
+| ترافیک از Static | routing-table | Distance/حذف Static |
+| Flap | recoverytime | افزایش |
 
 ### ۱۰) نکات امنیتی
 
-- Probe Local-out.
+- Policy حداقلی.
+- ثبت تغییرات.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- شواهد.
+- SD-WAN=Member+Health-check+Rule.
+- Policy به Zone.
+- Failover/Failback اندازه‌گیری.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) وظایف G8؟ *(پاسخ: 21-5-ت1)*
+**ت1.** (ساده) چرا Health-check به Gateway کافی نیست؟ *(پاسخ: 21-5-ت1)*
 
-**ت2.** (ساده) افت کیفیت ساختگی را چگونه می‌سازید؟ *(پاسخ: 21-5-ت2)*
+**ت2.** (ساده) Failtime و Recoverytime چیست؟ *(پاسخ: 21-5-ت2)*
 
-**ت3.** (متوسط) Rule VoIP Hit ندارد؛ علت؟ *(پاسخ: 21-5-ت3)*
+**ت3.** (متوسط) زمان تقریبی Failover با failtime 5 و interval 1000 ms؟ *(پاسخ: 21-5-ت3)*
 
-**ت4.** (متوسط) HC Dead با اینترنت سالم؛ علت؟ *(پاسخ: 21-5-ت4)*
+**ت4.** (متوسط) چرا Policy باید به Zone SD-WAN باشد؟ *(پاسخ: 21-5-ت4)*
 
-**ت5.** (سخت) RCA Policy روی Interface. *(پاسخ: 21-5-ت5)*
+**ت5.** (سخت) Flap باعث پرش ترافیک می‌شود؛ تحلیل و رفع. *(پاسخ: 21-5-ت5)*
 
-**ت6.** (سخت، طراحی) بهبود پس از آزمون. *(پاسخ: 21-5-ت6)*
+**ت6.** (سخت، طراحی) Rule برای Teams. *(پاسخ: 21-5-ت6)*
 
-**Q1.** Quick quiz (English): What does G8 verify? *(پاسخ: 21-5-Q1)*
+**Q1.** Quick quiz (English): Why should the policy destination be the SD-WAN zone? *(پاسخ: 21-5-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| G8 | Gate 8 | دروازه ۸ |
+| SD-WAN | Software-Defined WAN | شبکه‌ی گسترده‌ی نرم‌افزاری |
+| SLA | Service Level Agreement | توافق سطح سرویس |
 
-- *Record evidence for every gate.* ← برای هر Gate شاهد ثبت کنید.
+- *A health check should probe a remote target.* ← Health-check باید مقصد دور را پایش کند.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** G8. **Evidence:** `03-ops/g8.md`.
+**کارت Lab:** G8 Dual-ISP/SD-WAN (اجرا نشده). **Evidence:** `03-ops/g8-sdwan.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۱-۲، ۲۱-۳، ۲۱-۷
+- Fortinet FortiOS 7.0 Administration Guide: SD-WAN
+- FortiOS 7.0 SD-WAN guide
 
 ## درس 21-7 — SD-WAN از درون: Health-check، SLA، استراتژی‌ها، Failover/Failback و تفاوت با Routing
 
@@ -3397,19 +3509,22 @@ get router info routing-table all
 
 ### پاسخ‌های بازنویسی عمیق درس 21-5
 
-**21-5-ت1** — Zone/HC/Rule/آزمون/عیب‌ها/Backup.
 
-**21-5-ت2** — با `tc netem` روی Lab برای Latency/Loss.
+### پاسخ‌های بازنویسی عمیق درس 21-5
 
-**21-5-ت3** — Rule عمومی بالاتر Match می‌شود؛ ترتیب.
+**21-5-ت1** — Gateway ممکن است زنده باشد ولی ISP قطع؛ باید مقصد خارجی را پایش کرد.
 
-**21-5-ت4** — Server/Protocol/Policy/Route Probe.
+**21-5-ت2** — تعداد شکست پشت‌سرهم برای Dead و تعداد موفقیت برای بازگشت (Alive).
 
-**21-5-ت5** — Policy باید روی Zone؛ Failover Policy را از بین برده بود.
+**21-5-ت3** — حدود ۵ ثانیه (۵ × ۱ ثانیه) به‌علاوه‌ی چند صد میلی‌ثانیه.
 
-**21-5-ت6** — Multi-server HC، Hysteresis، Alert.
+**21-5-ت4** — Rule و انتخاب Member فقط برای ترافیک وارد Zone SD-WAN اعمال می‌شود.
 
-**21-5-Q1** — Failover, rule-based path selection and SLA behavior with evidence.
+**21-5-ت5** — recoverytime کوتاه؛ افزایش و Health-check دو-Server؛ آزمون ۳ قطع/وصل.
+
+**21-5-ت6** — Mode SLA با Latency و Health-check؛ Default priority؛ آزمون اندازه‌گیری Latency.
+
+**21-5-Q1** — Because SD-WAN rules only apply to traffic that goes to the SD-WAN zone.
 
 ### پاسخ‌های درس افزوده‌ی 21-7 (فصل 21)
 

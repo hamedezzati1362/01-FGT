@@ -722,102 +722,174 @@ execute backup config sftp pre-upgrade.conf 192.168.90.10 backup-user <PASSWORD>
 
 <a id="l-22-5"></a>
 
-## درس 22-5 — آزمون عملی HA: طراحی، Failover، Split-brain کنترل‌شده، Upgrade و RCA — صورت مسئله و Rubric
+## درس 22-5 — آزمون عملی HA: طراحی، Failover، Split-brain کنترل‌شده، Upgrade و RCA — کلید پاسخ و Rubric
 
-**فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰ تا ۲۲-۴ · ≈ 8 ساعت**
+**فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۱ تا ۲۲-۴ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ HA/VDOM Needs-License؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Cluster را بسازد و ۶ آزمون Failover را اندازه بگیرد.
-2. Split-brain را در Lab شبیه‌سازی و رفع کند.
-3. ارتقا/Rollback آزمایشی را اجرا کند.
-4. RCA و Evidence ارائه دهد.
+1. Cluster Active-Passive FGCP را با پارامترهای درست طراحی و Verify کند.
+2. Failover و Failback را اندازه‌گیری و Session Pickup را آزمون کند.
+3. Split-brain را در Lab کنترل‌شده تولید، تشخیص و رفع کند.
+4. Upgrade Cluster و Rollback را برنامه‌ریزی کند.
+5. RCA و گزارش تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون جامع HA (Lab، Needs-License).
+HA مثل دو راننده‌ی هم‌ماشین است: یکی رانندگی می‌کند و دیگری آماده. اگر ارتباط بین دو راننده قطع شود (Heartbeat) و هر دو فکر کنند راننده‌اند، تصادف رخ می‌دهد: Split-brain. این Gate همین ریسک‌ها را آزمون می‌کند. HA به لایسنس/مدل وابسته است؛ در Lab VM لایسنس لازم است (Needs-License).
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-1. HA A-P با HB Redundant و Monitor.
-2. ماتریس ۶ آزمون (۲۲-۳).
-3. Split-brain کنترل‌شده (قطع HBها) و بازیابی.
-4. ارتقا/Rollback.
-5. عیب (مربی): Heartbeat تنها یک لینک؛ Monitor اشتباه.
+دو FortiGate (FGT-A، FGT-B) هم‌مدل و هم‌نسخه 7.0.3. نیاز: Active-Passive؛ Failover زیر ۵ ثانیه؛ Session Pickup برای TCP؛ Heartbeat روی دو لینک جدا؛ Monitor روی WAN و LAN؛ Upgrade بدون قطع طولانی.
 
-#### کلید
+#### ۲) طراحی
 
-- Failover ≈ ۳–۶ s (اندازه).
-- Split-brain: دو Primary؛ بازیابی با ریست یک عضو و Checksum.
-- پیشگیری: HB Redundant/Back-to-back.
+| پارامتر | مقدار |
+|---|---|
+| Mode | a-p |
+| Group name / password | FGT-HA / از Vault |
+| hbdev | port3 (50)، port4 (100) |
+| Priority | A=200، B=100 |
+| override | disable (پیش‌فرض ایمن) |
+| session-pickup | enable |
+| monitor | port1 port2 |
 
-#### Rubric
+``` text
+config system ha
+ set group-name "FGT-HA"
+ set mode a-p
+ set password <FROM-VAULT>
+ set hbdev "port3" 50 "port4" 100
+ set priority 200
+ set session-pickup enable
+ set monitor "port1" "port2"
+ set override disable
+end
+```
 
-ساخت ۲۵؛ آزمون ۳۰؛ Split-brain ۱۵؛ ارتقا ۱۰؛ Evidence ۱۵؛ صداقت ۵.
+#### ۳) Verification
+
+``` text
+get system ha status
+diagnose sys ha status
+diagnose sys ha checksum cluster
+execute ha manage 1 admin
+```
+
+انتظار: دو عضو، Primary=A، checksum یکسان (in-sync).
+
+#### ۴) آزمون‌ها
+
+1. ping -t از LAN به اینترنت؛ Reboot Primary؛ شمارش بسته‌های گمشده؛ Failover.
+2. Session TCP (SSH) باز؛ Failover؛ ماندگاری Session با session-pickup.
+3. قطع یک لینک HB: Cluster باید هنوز یکپارچه (HB دوم).
+4. Split-brain کنترل‌شده: قطع هر دو HB؛ ثبت دو Primary.
+5. بازیابی: وصل HB؛ تعیین Primary؛ بررسی out-of-sync و Re-sync.
+
+#### ۵) Upgrade Cluster
+
+Path Tool؛ Backup هر دو؛ Upgrade Secondary؛ Failover؛ Upgrade Primary قبلی؛ تأیید checksum؛ Rollback: Partition قبلی.
+
+#### ۶) Rubric
+
+طراحی ۱۵، Verify ۱۵، Failover/Session ۲۵، Split-brain ۲۰، Upgrade/Rollback ۱۵، RCA ۱۰. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Heartbeat | دو لینک مستقل |
+| override | disable |
+| Session pickup | enable برای TCP مهم |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Cluster Healthy.
+**ساده (حل‌شده):** `get system ha status` نشان می‌دهد دو عضو، Primary=FGT-A. checksum یکسان ⇒ هماهنگ.
 
-**متوسط:** Failover.
+**متوسط (Failover):** ping -t با Interval 200 ms؛ Reboot Primary؛ ۱۲ بسته‌ی گمشده ⇒ ۲٫۴ ثانیه قطع؛ کمتر از ۵ ثانیه؛ پذیرفته. Session SSH با session-pickup باقی ماند.
 
-**سخت:** Split-brain.
+**سخت (Split-brain):** دو لینک HB هم‌زمان قطع شد؛ هر دو خود را Primary دیدند و IP/MAC یکسان روی شبکه آمد؛ ARP ناپایدار. اثبات: `get system ha status` در هر دو Primary. رفع: بازگرداندن HB؛ تعیین Primary با Priority و Reboot Secondary؛ پیشگیری: دو لینک HB مستقل، Monitor Interface و Alert. درس: Heartbeat تنها نقطه‌ی هماهنگی است.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. System → HA: Mode، Group name، Password، Heartbeat Interfaces، Priority.
+2. Monitor Interfaces را انتخاب کنید.
+3. System → Firmware برای Upgrade.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get system ha status
+diagnose sys ha status
+diagnose sys ha checksum cluster
+execute ha manage 1 admin
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence HA.
+- دو عضو و Primary درست.
+- checksum یکسان.
+- Failover < 5 s.
+- Session پایدار.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| ناقص | Rubric | کسری |
+| Out-of-sync | checksum | ha sync/ریبوت Secondary |
+| Split-brain | دو Primary | HB |
+| Failover طولانی | Monitor/Heartbeat | Interface |
 
 ### ۱۰) نکات امنیتی
 
-- Lab فقط.
+- رمز HA در Vault.
+- HB را از شبکه‌ی کاربر جدا کنید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- شواهد.
+- HA=Heartbeat+Priority+Monitor.
+- Split-brain خطرناک.
+- Upgrade ثانویه اول.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) وظایف آزمون؟ *(پاسخ: 22-5-ت1)*
+**ت1.** (ساده) Heartbeat چیست؟ *(پاسخ: 22-5-ت1)*
 
-**ت2.** (ساده) چرا Split-brain فقط Lab؟ *(پاسخ: 22-5-ت2)*
+**ت2.** (ساده) override disable چه می‌کند؟ *(پاسخ: 22-5-ت2)*
 
-**ت3.** (متوسط) Failover را چگونه اندازه می‌گیرید؟ *(پاسخ: 22-5-ت3)*
+**ت3.** (متوسط) چرا دو لینک HB؟ *(پاسخ: 22-5-ت3)*
 
-**ت4.** (متوسط) Monitor اشتباه چه می‌کند؟ *(پاسخ: 22-5-ت4)*
+**ت4.** (متوسط) Session pickup چه می‌کند؟ *(پاسخ: 22-5-ت4)*
 
-**ت5.** (سخت) RCA Split-brain. *(پاسخ: 22-5-ت5)*
+**ت5.** (سخت) Split-brain را شرح و رفع کنید. *(پاسخ: 22-5-ت5)*
 
-**ت6.** (سخت، طراحی) بهبود. *(پاسخ: 22-5-ت6)*
+**ت6.** (سخت، طراحی) برنامه‌ی Upgrade Cluster. *(پاسخ: 22-5-ت6)*
 
-**Q1.** Quick quiz (English): How is split-brain best avoided? *(پاسخ: 22-5-Q1)*
+**Q1.** Quick quiz (English): What causes a split-brain in an HA cluster? *(پاسخ: 22-5-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| HB | Heartbeat | نبض |
+| FGCP | FortiGate Clustering Protocol | پروتکل خوشه‌بندی |
+| HB | Heartbeat | ضربان |
 
-- *Test every failure mode.* ← هر حالت خرابی را تست کنید.
+- *Use two independent heartbeat links.* ← از دو لینک Heartbeat مستقل استفاده کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** آزمون HA. **Evidence:** `03-ops/ha-exam.md`.
+**کارت Lab:** آزمون HA (اجرا نشده؛ Needs-License). **Evidence:** `03-ops/g-ha.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۲-۰ تا ۲۲-۴
+- Fortinet FortiOS 7.0 Administration Guide: HA (FGCP)
+- FortiOS 7.0 HA guide
 
 ## پاسخ‌های فصل 22
 
@@ -881,19 +953,22 @@ execute backup config sftp pre-upgrade.conf 192.168.90.10 backup-user <PASSWORD>
 
 ### پاسخ‌های بازنویسی عمیق درس 22-5
 
-**22-5-ت1** — Cluster، Failover، Split-brain، Upgrade، Evidence.
 
-**22-5-ت2** — قطعی شدید و Session/آدرس تکراری در تولید.
+### پاسخ‌های بازنویسی عمیق درس 22-5
 
-**22-5-ت3** — ping پیوسته؛ lost×interval.
+**22-5-ت1** — ارتباط بین اعضا برای تشخیص سلامت و همگام‌سازی؛ قطع کامل آن Split-brain می‌سازد.
 
-**22-5-ت4** — Failover بی‌دلیل یا نبود Failover هنگام خرابی لینک.
+**22-5-ت2** — پس از بازگشت عضو قوی‌تر، Primary فعلی را تغییر نمی‌دهد و از Flap جلوگیری می‌کند.
 
-**22-5-ت5** — HB قطع؛ دو Primary؛ ریست یک عضو؛ HB Redundant.
+**22-5-ت3** — تا خرابی یک لینک Cluster را Split نکند.
 
-**22-5-ت6** — HB اضافی، Alert، Pre-check.
+**22-5-ت4** — Sessionهای TCP را بین اعضا همگام می‌کند تا پس از Failover ادامه یابند.
 
-**22-5-Q1** — By using redundant, preferably back-to-back, heartbeat links.
+**22-5-ت5** — دو Primary؛ بازگرداندن HB؛ انتخاب Primary و Re-sync؛ پیشگیری با HB مضاعف و Monitor.
+
+**22-5-ت6** — Path، Backup، Secondary اول، Failover، Primary قبلی، checksum، Rollback.
+
+**22-5-Q1** — Loss of all heartbeat links so both units think they are primary.
 
 ### پاسخ‌های درس افزوده‌ی 22-0 (فصل 22)
 
@@ -2261,100 +2336,150 @@ end
 
 ## درس 24-4 — Logging Data Center و Gate G9: اثبات Isolation، آزمون منفی، Alert و مستندسازی
 
-**فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۲۴-۰ تا ۲۴-۳، ۲۷-۰ · ≈ 8 ساعت**
+**فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۲۴-۱ تا ۲۴-۳ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ HA/VDOM Needs-License؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Logging East-West را طراحی کند.
-2. G9 را اجرا کند و Isolation را با آزمون منفی ثابت کند.
-3. Alert بر Deny غیرعادی را بسازد.
-4. Evidence و RCA ارائه دهد.
+1. Logging Policy برای DC (Forward Traffic، Event، UTM) را طراحی کند.
+2. آزمون Isolation مثبت/منفی را اجرا و از Log اثبات کند.
+3. Alert برای تلاش‌های ممنوع بسازد.
+4. گزارش Evidence و Rubric G9 را تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-اثبات Segmentation = آزمون منفی + Log + Alert.
+امنیت Data Center بدون Log اثبات‌پذیر نیست. ادعای «وب به DB دسترسی ندارد» تا وقتی Log آزمون منفی را نشان ندهد، فقط ادعاست. G9 همین اثبات را می‌خواهد.
 
 ### ۳) توضیح عمیق فنی
 
-#### وظایف G9
+#### ۱) صورت مسئله
 
-1. سه Zone + Policy.
-2. nmap منفی از هر Zone (فقط Lab).
-3. Log Deny و Alert نمونه.
-4. VDOM مفهومی/Lab (لایسنس).
-5. Evidence.
+DC با Zoneهای WEB، APP، DB و MGMT. نیاز: Policy حداقلی، آزمون Isolation، Log متمرکز (Syslog/FortiAnalyzer)، Alert روی Deny بین لایه‌ها، گزارش.
 
-#### کلید
+#### ۲) Logging
 
-- نتیجه‌ی nmap WEB→DB: filtered؛ APP→DB 1433 open.
-- Log: Deny policyid=0 برای اسکن.
-- Alert: >50 Deny از یک srcip به DB.
+``` text
+config log syslogd setting
+ set status enable
+ set server 10.99.0.20
+ set port 514
+ set facility local7
+end
+config firewall policy
+ edit 61
+  set logtraffic all
+ next
+end
+```
 
-#### Rubric
+(`Unverified`.) برای FortiAnalyzer: `config log fortianalyzer setting` (Needs-License اگر Appliance/VM).
 
-Policy ۲۵؛ Isolation ۳۰؛ Log/Alert ۲۰؛ VDOM ۱۰؛ Evidence ۱۰؛ صداقت ۵.
+#### ۳) ماتریس آزمون (مثبت/منفی)
+
+| # | آزمون | انتظار | Log |
+|---|---|---|---|
+| 1 | Internet→WEB 443 | Accept | policyid VIP |
+| 2 | WEB→APP 8443 | Accept | policy 50 |
+| 3 | APP→DB 1433 | Accept | policy 60 |
+| 4 | WEB→DB 1433 | Deny | policy Deny |
+| 5 | DB→Internet | Deny | policy Deny |
+| 6 | MGMT→WEB SSH | Accept | policy 70 |
+| 7 | WEB→MGMT | Deny | policy Deny |
+
+#### ۴) Alert
+
+``` text
+Alert: action=deny and (srcintf=WEB and dstintf=DB) count>=5 in 5 min -> notify SOC
+```
+
+#### ۵) نمونه Log
+
+``` text
+date=2026-11-26 time=11:02:10 type="traffic" subtype="forward" srcip=10.30.1.10 dstip=10.30.3.10 dstport=1433 policyid=61 action="deny"
+```
+
+#### ۶) Rubric
+
+طراحی Log ۱۵، آزمون ۷ مورد ۳۰، Alert ۲۰، Evidence ۲۰، گزارش و صداقت ۱۵. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Log | Deny همیشه؛ Accept حساس |
+| Alert | روی Deny بین لایه‌ها |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Zoneها.
+**ساده (حل‌شده):** آزمون ۴: telnet 10.30.3.10 1433 از WEB؛ Timeout؛ Log: action=deny policyid=61؛ ثبت Evidence.
 
-**متوسط:** nmap.
+**متوسط (Alert):** ۶ تلاش WEB→DB در ۲ دقیقه؛ Alert ارسال؛ SOC بررسی؛ تشخیص Scan؛ Quarantine وب‌سرور؛ زمان تشخیص ۳ دقیقه.
 
-**سخت:** Policy باز و رفع.
+**سخت (Log ناقص):** Log Deny DB→Internet نیست. مراحل: ۱) Policy Deny صریح با Log ندارد. ۲) Implicit Deny بی‌Log. ۳) افزودن Policy Deny با Log. ۴) آزمون ۵ دوباره Log دارد. درس: Implicit Deny Log ندارد.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+execute log filter field policyid 61
+execute log display
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence G9.
+- هر ۷ آزمون Log دارد.
+- Alert ارسال شد.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Isolation شکست | nmap | Policy |
+| Log Deny نیست | Policy Deny صریح | Log |
+| Alert نمی‌آید | فیلتر/Threshold | اصلاح |
 
 ### ۱۰) نکات امنیتی
 
-- nmap فقط Lab.
+- Log را متمرکز کنید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- آزمون منفی + Log.
+- Isolation با Log اثبات می‌شود.
+- Alert روی Deny.
+- Evidence.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) وظایف G9؟ *(پاسخ: 24-4-ت1)*
+**ت1.** (ساده) چرا Deny صریح با Log؟ *(پاسخ: 24-4-ت1)*
 
-**ت2.** (ساده) آزمون منفی چیست؟ *(پاسخ: 24-4-ت2)*
+**ت2.** (ساده) Isolation را چگونه اثبات می‌کنید؟ *(پاسخ: 24-4-ت2)*
 
-**ت3.** (متوسط) Alert چه آستانه‌ای؟ *(پاسخ: 24-4-ت3)*
+**ت3.** (متوسط) Alert چه شرطی دارد؟ *(پاسخ: 24-4-ت3)*
 
-**ت4.** (متوسط) nmap WEB→DB باز بود؛ رفع. *(پاسخ: 24-4-ت4)*
+**ت4.** (متوسط) Log کجا؟ *(پاسخ: 24-4-ت4)*
 
-**ت5.** (سخت) RCA Policy باز. *(پاسخ: 24-4-ت5)*
+**ت5.** (سخت) Log ناقص. *(پاسخ: 24-4-ت5)*
 
-**ت6.** (سخت، طراحی) بازبینی ماهانه. *(پاسخ: 24-4-ت6)*
+**ت6.** (سخت، طراحی) ماتریس آزمون DC. *(پاسخ: 24-4-ت6)*
 
-**Q1.** Quick quiz (English): How is isolation proven? *(پاسخ: 24-4-Q1)*
+**Q1.** Quick quiz (English): Why is a negative test needed to prove isolation? *(پاسخ: 24-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| G9 | Gate 9 | دروازه ۹ |
+| SOC | Security Operations Center | مرکز عملیات امنیت |
 
-- *Prove isolation with evidence.* ← جداسازی را با شاهد ثابت کنید.
+- *Isolation must be proven with logs.* ← ایزولاسیون باید با Log اثبات شود.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** G9. **Evidence:** `03-ops/g9.md`.
+**کارت Lab:** G9 (اجرا نشده). **Evidence:** `03-ops/g9-dc.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۴-۰ تا ۲۴-۳
+- Fortinet FortiOS 7.0 Administration Guide: Logging
 
 ## پاسخ‌های فصل 24
 
@@ -2401,19 +2526,22 @@ Policy ۲۵؛ Isolation ۳۰؛ Log/Alert ۲۰؛ VDOM ۱۰؛ Evidence ۱۰؛ صد
 
 ### پاسخ‌های بازنویسی عمیق درس 24-4
 
-**24-4-ت1** — Zone/Policy، nmap، Log/Alert، VDOM، Evidence.
 
-**24-4-ت2** — اتصالی که باید بلاک شود.
+### پاسخ‌های بازنویسی عمیق درس 24-4
 
-**24-4-ت3** — >50 Deny از یک srcip به DB در ۵ دقیقه.
+**24-4-ت1** — Implicit Deny Log ندارد.
 
-**24-4-ت4** — Policy گسترده؛ محدودسازی.
+**24-4-ت2** — آزمون منفی و Log Deny.
 
-**24-4-ت5** — Any-Any موقت؛ حذف و آزمون.
+**24-4-ت3** — تعداد Deny بین WEB و DB در بازه.
 
-**24-4-ت6** — Hit Count.
+**24-4-ت4** — Syslog/FortiAnalyzer.
 
-**24-4-Q1** — By negative tests showing blocked connections plus deny logs.
+**24-4-ت5** — Deny صریح با Log.
+
+**24-4-ت6** — ۷ آزمون.
+
+**24-4-Q1** — Because isolation is proven by showing that forbidden traffic is denied and logged.
 
 ### پاسخ‌های درس افزوده‌ی 24-0 (فصل 24)
 
