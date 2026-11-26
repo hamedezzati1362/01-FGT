@@ -935,11 +935,19 @@ tls.alert_message
 
 **28-1-ت1** — تا مشخص شود بسته کجا ناپدید می‌شود: قبل یا بعد از فایروال.
 
+Capture چند نقطه‌ای تا معلوم شود بسته قبل یا بعد از فایروال ناپدید می‌شود.
+
 **28-1-ت2** — هدر IP به‌علاوه‌ی نام Interface.
+
+verbosity 4: هدر IP و نام Interface.
 
 **28-1-ت3** — `tcp[tcpflags] & (tcp-syn|tcp-rst) != 0`.
 
+فیلتر `tcp[tcpflags] & (tcp-syn|tcp-rst) != 0` فقط SYN و RST را می‌گیرد.
+
 **28-1-ت4** — بسته هم روی Interface ورودی و هم خروجی ثبت می‌شود.
+
+Capture روی Interface ورودی و خروجی نشان می‌دهد بسته از فایروال عبور کرده یا نه.
 
 **28-1-ت5** — Offload؛ Capture روی نقطه‌ی بیرونی یا غیرفعال موقت Offload در Window؛ تأیید.
 
@@ -952,15 +960,31 @@ tls.alert_message
 
 **28-2-ت1** — پورت مقصد بسته یا سرویس پاسخ‌گو نیست.
 
+RST پس از SYN: پورت مقصد بسته یا سرویس پاسخ‌گو نیست.
+
 **28-2-ت2** — گیرنده بافر پر دارد و فرستنده باید متوقف شود؛ معمولاً مشکل برنامه است.
 
 **28-2-ت3** — 64 KB/0.1 s ≈ 640 KB/s ≈ 5.2 Mbit/s.
 
+سرعت ≈ 64 KB / 0.1 s = 640 KB/s ≈ 5.2 Mbit/s؛ RTT بالا پنجره‌ی کوچک را محدود می‌کند.
+
+``` text
+64 KB / 0.1 s = 640 KB/s ~ 5.2 Mbit/s
+```
+
 **28-2-ت4** — 100 Mbit/s × 0.08 s = 8 Mbit = 1 MB.
+
+BDP = 100 Mbit/s × 0.08 s = 8 Mbit = 1 MB؛ پنجره‌ی TCP باید حداقل ۱ MB باشد.
+
+``` text
+BDP = 100 Mbit/s x 0.08 s = 8 Mbit = 1 MB
+```
 
 **28-2-ت5** — ping DF اندازه‌ها برای MTU؛ Interface Errors/Loss برای لینک؛ MSS Clamp و رفع لینک؛ اندازه‌گیری مجدد.
 
 **28-2-ت6** — سؤال، نقطه، Filter، الگوها، محاسبات، علت، رفع، تأیید.
+
+گزارش تحلیل PCAP: سؤال، نقطه‌ی Capture، Filter، الگوها، محاسبات، علت، رفع و تأیید.
 
 **28-2-Q1** — Throughput is limited to the window size divided by the round-trip time.
 
@@ -969,7 +993,11 @@ tls.alert_message
 
 **28-3-ت1** — نام سرور در ClientHello که معمولاً رمزنشده است.
 
+SNI نام سرور در ClientHello است و معمولاً رمزنشده.
+
 **28-3-ت2** — چون پس از ServerHello رمز می‌شود.
+
+پس از ServerHello بقیه‌ی Handshake رمز می‌شود.
 
 **28-3-ت3** — کلاینت CA صادرکننده را نمی‌شناسد؛ معمولاً CA فایروال نصب نیست.
 
@@ -977,7 +1005,11 @@ tls.alert_message
 
 **28-3-ت5** — Exemption آن مقصد؛ مستندسازی؛ آزمون منفی سایر مقصدها.
 
+Exemption محدود برای آن مقصد، مستندسازی و آزمون منفی سایر مقصدها.
+
 **28-3-ت6** — بلاک QUIC، پایش ECH، Exemption محدود، بازبینی.
+
+بلاک QUIC، پایش ECH، Exemption محدود و بازبینی دوره‌ای.
 
 **28-3-Q1** — openssl s_client combined with openssl x509 -noout -issuer.
 
@@ -988,11 +1020,17 @@ tls.alert_message
 
 **28-4-ت2** — بار CPU و Log زیاد و خطر اطلاعات حساس.
 
+Debug بار CPU و Log زیاد و ریسک اطلاعات حساس دارد.
+
 **28-4-ت3** — احتمال×اثر÷هزینه‌ی آزمون؛ ارزان و محتمل اول.
+
+اولویت فرضیه: احتمال × اثر ÷ هزینه‌ی آزمون؛ ارزان و محتمل اول.
 
 **28-4-ت4** — Policy مقابل، Route برگشت، NAT-T/ESP، Selector؛ Debug Flow مقابل مشخص می‌کند.
 
 **28-4-ت5** — شواهد مستقل برای هر علت، رفع یکی و اندازه‌گیری، سپس دیگری.
+
+چندعلتی: شواهد مستقل برای هر علت؛ رفع یکی و اندازه‌گیری؛ سپس دیگری.
 
 **28-4-ت6** — قالب یکسان، دسته‌بندی، جستجو، نسخه‌دار، بازبینی فصلی، پیوند به Runbook.
 
@@ -1006,15 +1044,27 @@ tls.alert_message
 
 **28-5-ت1** — مقصد/مسیر پاسخ نمی‌دهد.
 
+SYN بدون SYN-ACK: مقصد/مسیر پاسخ نمی‌دهد.
+
 **28-5-ت2** — Fragmentation needed.
+
+ICMP نوع 3 کد 4 یعنی Fragmentation needed.
 
 **28-5-ت3** — MTU/Loss.
 
+Retransmission بزرگ: MTU یا Loss.
+
 **28-5-ت4** — گواهی ناشناخته.
+
+TLS alert certificate_unknown یعنی گواهی ناشناخته.
 
 **28-5-ت5** — CA یا Exempt.
 
+Case 3: CA مورد اعتماد کلاینت یا Exempt در SSL Inspection.
+
 **28-5-ت6** — frames، finding، fix، verify.
+
+قالب Evidence: frames، finding، fix و verify.
 
 **28-5-Q1** — tcp.analysis.retransmission.
 
@@ -1744,13 +1794,19 @@ execute log display
 
 **29-1-ت2** — تا انحراف از رفتار عادی تشخیص داده شود و FP کم شود.
 
+Baseline تا انحراف از رفتار عادی تشخیص داده شود و False Positive کم شود.
+
 **29-1-ت3** — مقداری بیش از میانگین به‌علاوه‌ی سه برابر انحراف معیار Alert می‌دهد (تقریباً رویداد نادر).
 
 **29-1-ت4** — تا استثنا فراموش و به حفره تبدیل نشود؛ بازبینی دوره‌ای.
 
+استثنا باید تاریخ پایان داشته باشد تا فراموش و حفره نشود؛ بازبینی دوره‌ای.
+
 **29-1-ت5** — ناموفق مکرر + ورود موفق + خروجی بالا ⇒ احتمال نفوذ؛ Severity بحرانی؛ Contain/Scope/RCA.
 
 **29-1-ت6** — جدول بالا بسط داده شود.
+
+چک‌لیست تشخیص: منبع Log، قانون، آستانه، مالک و اقدام.
 
 **29-1-Q1** — Because attackers can change IPs and hashes easily but their behaviors change much less.
 
@@ -1762,6 +1818,8 @@ execute log display
 **29-2-ت2** — کوتاه‌مدت جلوگیری فوری (Block/Quarantine)؛ بلندمدت رفع ریشه‌ای (بازسازی/Patch/چرخش).
 
 **29-2-ت3** — Session قبلی باقی است؛ باید Clear فیلترشده انجام شود.
+
+Session قبلی باقی است؛ Clear فیلترشده انجام شود.
 
 **29-2-ت4** — حساب‌های موجود روی سرور، سرویس‌ها، Tokenها و Credentialهایی که سرور به آن‌ها دسترسی داشت.
 
@@ -1776,15 +1834,21 @@ execute log display
 
 **29-3-ت1** — پایان پشتیبانی و Patch امنیتی محصول.
 
+EoL پایان پشتیبانی و Patch امنیتی محصول است.
+
 **29-3-ت2** — آسیب‌پذیری قابل‌دسترس از اینترنت سریع‌تر و گسترده‌تر سوءاستفاده می‌شود.
 
 **29-3-ت3** — Compensating Controls: Source Restriction، غیرفعال ویژگی، IPS، Segmentation، پایش.
 
 **29-3-ت4** — فاصله‌ی انتشار Advisory تا اعمال Patch.
 
+Exposure window فاصله‌ی انتشار Advisory تا اعمال Patch است.
+
 **29-3-ت5** — اولویت بر Exposure، Canary، HA یکی‌یکی، Backup/Rollback، Verification، هدف Time-to-patch.
 
 **29-3-ت6** — Coverage، Time-to-patch، تعداد EoL، Exception فعال، Trend.
+
+شاخص‌ها: Coverage، Time-to-patch، تعداد EoL، Exception فعال و Trend.
 
 **29-3-Q1** — Internet exposure, available exploits and high asset criticality.
 
@@ -1796,15 +1860,27 @@ execute log display
 
 **29-4-ت1** — زمان تا کشف.
 
+MTTD زمان تا کشف است.
+
 **29-4-ت2** — جلوگیری از گسترش.
+
+Containment جلوگیری از گسترش حادثه است.
 
 **29-4-ت3** — Block و غیرفعال حساب.
 
+اولین اقدام: Block مهاجم و غیرفعال‌کردن حساب‌ها.
+
 **29-4-ت4** — SSH WAN و رمز.
+
+ریشه: SSH روی WAN و رمز ضعیف.
 
 **29-4-ت5** — قالب.
 
+PIR با قالب: Summary، Impact، Timeline، Root cause، Actions.
+
 **29-4-ت6** — حذف SSH WAN، MFA، Alert.
+
+اقدام پیشگیرانه: حذف SSH از WAN، MFA، Alert.
 
 **29-4-Q1** — The mean time between the start of an incident and its detection.
 
@@ -2537,13 +2613,19 @@ get system session-ttl
 
 **30-1-ت2** — تا قوانین مرده/پرریسک منتقل نشوند.
 
+قوانین مرده/پرریسک نباید منتقل شوند؛ ابتدا پاک‌سازی.
+
 **30-1-ت3** — ASA بین سطوح امنیت پیش‌فرض اجازه می‌دهد؛ FortiGate Implicit deny.
 
 **30-1-ت4** — IP داخلی (post-DNAT) چون DNAT قبل از Policy انجام می‌شود.
 
+Policy با IP داخلی (post-DNAT) چون DNAT قبل از Policy انجام می‌شود.
+
 **30-1-ت5** — VIP/Policy NAT/IP Pool، Policy با آدرس درست، Test Matrix، بررسی Hairpin/ALG.
 
 **30-1-ت6** — ستون‌ها: مبدأ، مقصد، Policy، NAT، Gap، Test؛ ۱۰ سطر.
+
+جدول نگاشت: مبدأ، مقصد، Policy، NAT، Gap و Test؛ ۱۰ سطر نمونه.
 
 **30-1-Q1** — Because the two platforms process traffic differently, so identical text can behave differently.
 
@@ -2552,15 +2634,25 @@ get system session-ttl
 
 **30-2-ت1** — چک‌لیست تصمیم پیش از شروع؛ یک «No» ⇒ لغو.
 
+Go/No-Go چک‌لیست تصمیم پیش از شروع است؛ یک «No» یعنی لغو.
+
 **30-2-ت2** — شرط از پیش تعریف‌شده که بازگشت را الزامی می‌کند.
+
+Rollback trigger شرط از پیش تعریف‌شده است که بازگشت را الزامی می‌کند.
 
 **30-2-ت3** — اگر مسیر اصلی قطع شود امکان بازگرداندن/مدیریت دستگاه باشد.
 
+Out-of-band دسترسی مستقل از مسیر اصلی تا اگر قطع شد بتوان دستگاه را مدیریت/برگرداند.
+
 **30-2-ت4** — Test Matrix، Log/Session، Monitoring، آزمون مثبت/منفی.
+
+Post-check: Test Matrix، Log/Session، Monitoring و آزمون مثبت/منفی.
 
 **30-2-ت5** — اگر حیاتی: Rollback؛ وگرنه رفع محدود و ادامه؛ ثبت دلیل/زمان.
 
 **30-2-ت6** — طبق قالب؛ با زمان‌بندی و مسئولان.
+
+Plan T-7d تا T+1d با زمان‌بندی و مسئول.
 
 **30-2-Q1** — So the decision is made objectively before pressure and emotions affect judgment.
 
@@ -2572,15 +2664,27 @@ get system session-ttl
 
 **30-3-ت1** — برای مقایسه.
 
+Baseline برای مقایسه‌ی قبل/بعد.
+
 **30-3-ت2** — حد قابل‌قبول Session.
+
+±۱۰٪ حد قابل‌قبول Session.
 
 **30-3-ت3** — Mapping اشتباه.
 
+Policy hit صفر معمولاً Mapping اشتباه است.
+
 **30-3-ت4** — قابل‌قبول/بحرانی.
+
+اختلاف‌ها: قابل‌قبول یا بحرانی.
 
 **30-3-ت5** — Rollback و RCA.
 
+No-Go: Rollback و RCA.
+
 **30-3-ت6** — جدول.
+
+Test Matrix: آزمون، قبل، بعد و معیار.
 
 **30-3-Q1** — To compare the state before and after the change with numbers.
 
@@ -2591,21 +2695,35 @@ get system session-ttl
 
 **30-4-ت1** — برای مقایسه‌ی قبل/بعد.
 
+Baseline برای مقایسه‌ی قبل/بعد.
+
 **30-4-ت2** — طبق زمان و معیار از پیش تعیین‌شده.
+
+Rollback طبق زمان و معیار از پیش تعیین‌شده.
 
 **30-4-ت3** — Proposal پیش‌فرض متفاوت.
 
+IPsec down پس از Cutover: Proposal پیش‌فرض نسخه‌ی جدید تغییر کرده.
+
 **30-4-ت4** — Timeout/Offload.
+
+Session کمتر: Timeout یا Offload.
 
 **30-4-ت5** — در Lab: بازگرداندن کابل/IP و Test Matrix.
 
+Rollback آزمایشی در Lab: بازگرداندن کابل/IP و اجرای Test Matrix.
+
 **30-4-ت6** — طبق متن.
+
+Plan T-7d تا T+1d با Checkpoint.
 
 **30-4-Q1** — To be sure the old state can be restored within the change window.
 
 ### پاسخ‌های درس افزوده‌ی 30-0 (فصل 30)
 
 **30-0-ت1** — Discovery، Design، Build، Test، Cutover، Stabilize.
+
+مراحل Migration: Discovery، Design، Build، Test، Cutover، Stabilize.
 
 **30-0-ت2** — تا قوانین مرده/تکراری/Any-Any منتقل نشوند و پیچیدگی/ریسک کم شود.
 

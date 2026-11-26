@@ -852,15 +852,27 @@ show crypto ipsec sa
 
 **25-1-ت1** — get router info routing-table all.
 
+معادل `show ip route`: `get router info routing-table all`.
+
 **25-1-ت2** — Firewall Policy.
+
+ACL در FortiGate: Firewall Policy.
 
 **25-1-ت3** — Cisco دستی؛ Fortinet خودکار.
 
+Cisco Config را دستی ذخیره می‌کند؛ FortiOS تغییرات را خودکار ذخیره می‌کند.
+
 **25-1-ت4** — Fortinet Stateful.
+
+FortiGate Stateful است و برگشت ترافیک را خودکار می‌پذیرد؛ ACL ساده Stateless.
 
 **25-1-ت5** — Object، Policy، Log.
 
+ACL را به Policy ببرید: Object، Policy، Log و آزمون Lookup.
+
 **25-1-ت6** — جدول.
+
+برگه‌ی تطبیق: ستون مفهوم، Cisco، FortiGate و نکته‌ی تفاوت.
 
 **25-1-Q1** — A firewall policy.
 
@@ -869,6 +881,8 @@ show crypto ipsec sa
 **25-2-ت1** — معمولاً MTU متفاوت؛ DBD بزرگ‌تر از MTU همتا کنار گذاشته می‌شود.
 
 **25-2-ت2** — eBGP = 20 و OSPF = 110؛ پس BGP برنده است.
+
+eBGP با AD 20 بر OSPF با 110 برنده می‌شود.
 
 **25-2-ت3** — CSR: `show ip ospf neighbor`؛ FGT: `get router info ospf neighbor`.
 
@@ -888,15 +902,27 @@ show crypto ipsec sa
 
 **25-3-ت1** — DH، Selector، Lifetime.
 
+Mismatch رایج: DH، Selector و Lifetime.
+
 **25-3-ت2** — تطبیق خطوط Debug.
+
+NTP تا خطوط Debug دو سازنده قابل‌تطبیق باشند.
 
 **25-3-ت3** — Lifetime نامتقارن.
 
+Rekey قطع: Lifetime نامتقارن؛ یکسان کنید.
+
 **25-3-ت4** — تشخیص همتای مرده.
+
+DPD همتای مرده را تشخیص می‌دهد و SA را پاک می‌کند.
 
 **25-3-ت5** — interval/retry دو سر.
 
+DPD کند: interval/retry را در دو سر هماهنگ کنید.
+
 **25-3-ت6** — جدول.
+
+Test Plan شش آزمون: Establish، ping، Rekey، DPD، MTU/MSS، Failover.
 
 **25-3-Q1** — To match corresponding events across both logs.
 
@@ -907,15 +933,27 @@ show crypto ipsec sa
 
 **25-4-ت1** — ACL crypto.
 
+Selector در Cisco ACL crypto است.
+
 **25-4-ت2** — ۲۰۴۸ بیت MODP.
+
+DH گروه 14 همان MODP 2048 بیت است.
 
 **25-4-ت3** — Selector/PFS/Transform.
 
+P1 up و P2 down: Selector، PFS یا Transform Set.
+
 **25-4-ت4** — هر دو سمت.
+
+Debug را در هر دو سمت هم‌زمان بگیرید.
 
 **25-4-ت5** — Lifetime.
 
+Rekey Flap: Lifetime را یکسان کنید.
+
 **25-4-ت6** — طبق جدول.
+
+جدول معادل Proposal، Auth، Selector، P2، PFS و Lifetime برای FGT و CSR.
 
 **25-4-Q1** — Because mismatched selectors prevent phase 2 from negotiating.
 
@@ -923,7 +961,11 @@ show crypto ipsec sa
 
 **25-0-ت1** — get router info routing-table all.
 
+`show ip route` ↔ `get router info routing-table all`.
+
 **25-0-ت2** — اغلب MTU Mismatch بین دو سر.
+
+اغلب MTU Mismatch بین دو سر (مثلاً در OSPF) علت گیرکردن است.
 
 **25-0-ت3** — IKEv2، AES-256-GCM، SHA-256، DH 20 (یا ≥ 14)، PFS روشن با همان Group، Lifetime یکسان، DPD، MTU/MSS مشترک، Authentication PSK/Cert.
 
@@ -1738,9 +1780,17 @@ Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ �
 
 **26-2-ت1** — TCP؛ از دست رفتن Log کمتر و برای Extended Logging لازم است.
 
+Syslog روی TCP تضمین تحویل بهتر دارد و برای Extended Logging لازم است.
+
 **26-2-ت2** — مبدأ یکتا و قابل‌کنترل برای ACL/مسیر و شناسایی دستگاه در سرور.
 
 **26-2-ت3** — ≈ 3.6 GB/روز؛ ×90 ≈ 324 GB؛ با فشرده‌سازی 10:1 ≈ 32 GB.
+
+حجم Log ≈ 3.6 GB/روز؛ ۹۰ روز ≈ 324 GB؛ با فشرده‌سازی ۱۰:۱ ≈ 32 GB.
+
+``` text
+3.6 GB x 90 = 324 GB ; 324 / 10 = 32.4 GB
+```
 
 **26-2-ت4** — `execute ping` با source-ip، Sniffer روی Interface خروجی FGT، tcpdump روی سرور و بررسی Firewall سرور.
 
@@ -1755,11 +1805,17 @@ Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ �
 
 **26-3-ت1** — چون نمی‌دانیم فایل کامل/سازگار است و RTO واقعی چقدر است.
 
+Backup را باید Restore کرد تا مطمئن شویم فایل کامل است و RTO واقعی معلوم شود.
+
 **26-3-ت2** — تفاوت پیکربندی واقعی دستگاه با نسخه‌ی مرجع در Git.
+
+Drift یعنی تفاوت Config واقعی دستگاه با نسخه‌ی مرجع در Git.
 
 **26-3-ت3** — `password`، `psksecret`، `secret`، `passwd`، گواهی/کلید خصوصی و توکن API.
 
 **26-3-ت4** — نقطه‌ی بازگشت مشخص برای Rollback و مقایسه.
+
+Revision/Tag نقطه‌ی بازگشت مشخص برای Rollback و مقایسه است.
 
 **26-3-ت5** — حذف از تاریخچه، چرخش همه‌ی اعتبارنامه‌ها، بازبینی دسترسی، Pre-commit scan، PIR؛ فرض افشا.
 
@@ -1775,15 +1831,27 @@ Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ �
 
 **26-4-ت1** — دامنه‌ی مدیریتی جدا.
 
+ADOM دامنه‌ی مدیریتی جدا برای گروهی از دستگاه‌ها است.
+
 **26-4-ت2** — Rollback.
+
+Revision امکان Rollback می‌دهد.
 
 **26-4-ت3** — نمایش تغییرات پیش از اعمال.
 
+Install Preview تغییرات را پیش از اعمال نشان می‌دهد.
+
 **26-4-ت4** — دسترسی به همه‌ی دستگاه‌ها.
+
+مرکز مدیریت هدف جذاب است چون دسترسی به همه‌ی دستگاه‌ها دارد.
 
 **26-4-ت5** — Revision قبلی.
 
+Install قطع کرد: به Revision قبلی برگردید و Install مجدد.
+
 **26-4-ت6** — جدول.
+
+RBAC چهارسطحی: Super، Network، ReadOnly، Auditor با مثال دسترسی.
 
 **26-4-Q1** — To review the changes that will be applied and avoid unintended impact.
 
@@ -1791,9 +1859,13 @@ Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ �
 
 **26-0-ت1** — FMG پیکربندی/Policy مرکزی؛ FAZ جمع‌آوری و تحلیل Log.
 
+FMG پیکربندی/Policy مرکزی؛ FAZ جمع‌آوری و تحلیل Log.
+
 **26-0-ت2** — دامنه‌ی مدیریتی مجزا برای دستگاه‌ها/مدیران با Policy Package و Object خودش.
 
 **26-0-ت3** — تا تأثیر نصب پیش از اعمال دیده شود و خطای گسترده رخ ندهد.
+
+Install Preview تا اثر نصب پیش از اعمال دیده شود.
 
 **26-0-ت4** — Syslog مرکزی (rsyslog)، Backup روزانه به Git/SFTP بدون Secret، SNMPv3 + Zabbix، Ansible/API خواندنی، ثبت Change با Diff.
 
@@ -2884,11 +2956,15 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 
 **27-1-ت1** — Traffic، Event و Security/UTM.
 
+سه نوع Log: Traffic، Event و Security/UTM.
+
 **27-1-ت2** — all همه‌ی Sessionها را ثبت می‌کند؛ utm فقط Sessionهایی را که رویداد UTM دارند.
 
 **27-1-ت3** — 12M×450B = 5.4 GB/روز؛ ×180 ≈ 972 GB؛ با 20٪ حاشیه ≈ 1.17 TB؛ فشرده‌سازی کاهش می‌دهد.
 
 **27-1-ت4** — برای کشف Scan/حمله و عیب‌یابی Policy.
+
+Log Deny برای کشف Scan/حمله و عیب‌یابی Policy.
 
 **27-1-ت5** — Allow عمومی utm، Allow حیاتی all، Deny همیشه، Alert روی Deny مدیریتی و Bytes غیرعادی، Syslog مرکزی.
 
@@ -2901,11 +2977,17 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 
 **27-2-ت1** — احراز و رمزنگاری؛ v2c Community را متن آشکار می‌فرستد.
 
+SNMPv3 احراز و رمزنگاری دارد؛ v2c Community را متن آشکار می‌فرستد.
+
 **27-2-ت2** — تفاوت آستانه‌ی ورود و خروج Alert برای جلوگیری از نوسان.
+
+Hysteresis: تفاوت آستانه‌ی ورود و خروج Alert برای جلوگیری از نوسان.
 
 **27-2-ت3** — آستانه از Baseline با ضریب، Maintenance window، Trigger مدت‌دار (10m).
 
 **27-2-ت4** — Alert وابسته را وقتی وابستگی اصلی Down است سرکوب می‌کند.
+
+Dependency suppression Alert وابسته را وقتی وابستگی اصلی Down است سرکوب می‌کند.
 
 **27-2-ت5** — Dependency، Alert مرکزی سایت، Flap با بررسی متوالی، Escalation؛ هدف ≤ ۳ Alert.
 
@@ -2922,6 +3004,8 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 
 **27-3-ت3** — Trusthost، Token لغو/منقضی، API user غیرفعال.
 
+API Token: Trusthost، لغو/انقضا و غیرفعال‌کردن API user.
+
 **27-3-ت4** — Diff تغییرات را بدون اعمال نشان می‌دهد و خطای گسترده را قبل از وقوع کشف می‌کند.
 
 **27-3-ت5** — نبود بررسی وجود؛ GET نام، مقایسه، PUT/POST شرطی؛ تست دو بار اجرا؛ پاک‌سازی تکراری‌ها با Backup.
@@ -2937,11 +3021,15 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 
 **27-4-ت2** — کاهش خطر Session رهاشده.
 
+Idle timeout خطر Session رهاشده را کم می‌کند.
+
 **27-4-ت3** — گواهی/کلید/PSK یا لایسنس جداگانه بازیابی نشده؛ باید در Runbook باشد.
 
 **27-4-ت4** — زمان از شروع Restore تا سرویس‌های حیاتی تأییدشده؛ در Lab با زمان‌سنج.
 
 **27-4-ت5** — جدول بالا؛ هر کنترل یک آزمون منفی.
+
+چک‌لیست Hardening با آزمون منفی برای هر کنترل.
 
 **27-4-ت6** — اتوماسیون Restore، Runbook مرحله‌ای، Secrets از Vault، آزمون فصلی.
 
@@ -2955,21 +3043,35 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 
 **27-5-ت1** — احراز هویت و رمزگذاری.
 
+SNMPv3 احراز هویت و رمزگذاری دارد.
+
 **27-5-ت2** — تأیید صحت.
+
+Hash Backup صحت فایل را تأیید می‌کند.
 
 **27-5-ت3** — Sniffer، Route، Policy، سرور.
 
+Log نمی‌رسد: Sniffer، Route، Policy و سرور.
+
 **27-5-ت4** — لازم برای پاسخ SNMP.
+
+allowaccess snmp برای پاسخ SNMP لازم است.
 
 **27-5-ت5** — Backup، خراب، Restore، مقایسه.
 
+Restore آزمایشی: Backup، خرابی عمدی، Restore و مقایسه.
+
 **27-5-ت6** — ۷ مورد.
+
+چک‌لیست G10: Log، SNMP، Alert، Hardening، Backup، Restore، Evidence.
 
 **27-5-Q1** — Because they contain passwords and keys.
 
 ### پاسخ‌های درس افزوده‌ی 27-0 (فصل 27)
 
 **27-0-ت1** — Traffic، Event، UTM/Security.
+
+سه نوع Log: Traffic، Event، UTM.
 
 **27-0-ت2** — تا انحراف را با مرجع عادی تشخیص دهیم و آستانه‌ی معنادار بگذاریم.
 
@@ -2983,6 +3085,8 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 ### پاسخ‌های درس افزوده‌ی 27-7 (فصل 27)
 
 **27-7-ت1** — رمز و داده را بدون رمزنگاری می‌فرستند و قابل شنودند.
+
+Telnet/HTTP/SNMPv1-2c رمز و داده را بدون رمزنگاری می‌فرستند و قابل شنودند.
 
 **27-7-ت2** — در Lab هم‌نسخه Restore، مقایسه Interface/Policy/Route، اندازه‌گیری RTO و ثبت.
 

@@ -1026,15 +1026,31 @@ execute ha manage 1 admin
 
 **22-1-ت1** — نقطه‌ی شکست واحد.
 
+نقطه‌ی شکست واحد (SPOF) جزئی است که خرابی آن کل سرویس را قطع می‌کند؛ فایروال تکی SPOF کلاسیک است و HA آن را حذف می‌کند.
+
 **22-1-ت2** — خیر؛ SD-WAN/Dual-ISP.
+
+خیر؛ HA فایروال خرابی ISP را پوشش نمی‌دهد؛ برای آن Dual-ISP/SD-WAN لازم است.
 
 **22-1-ت3** — 1−0.005×0.005 = 99.9975٪.
 
+دو فایروال موازی با دسترس‌پذیری ۹۹٫۵٪ هر کدام: احتمال خرابی هم‌زمان 0.005×0.005=0.000025 ⇒ دسترس‌پذیری 99.9975٪ (با فرض استقلال).
+
+``` text
+A = 1 - (0.005 x 0.005) = 99.9975 %
+```
+
 **22-1-ت4** — دسترس‌پذیری سری ضرب می‌شود؛ ISP 99.9٪ کل را محدود می‌کند.
+
+در اجزای سری دسترس‌پذیری ضرب می‌شود؛ ISP با ۹۹٫۹٪ سقف کل سیستم را محدود می‌کند، هرقدر فایروال HA باشد.
 
 **22-1-ت5** — ISP، Config خراب، CVE مشترک، Split-brain.
 
+HA همه‌ی خرابی‌ها را حل نمی‌کند: خرابی ISP، Config خراب (همگام می‌شود!)، CVE مشترک بین دو دستگاه و Split-brain.
+
 **22-1-ت6** — جدول با ستون راه مکمل و RTO.
+
+جدول SPOF: هر جزء، ریسک، راه مکمل (HA، Dual-ISP، UPS) و RTO هدف.
 
 **22-1-Q1** — Because serial availabilities multiply, so the lowest one dominates.
 
@@ -1045,15 +1061,25 @@ execute ha manage 1 admin
 
 **22-2-ت1** — هم‌مدل، هم‌نسخه، لایسنس، Heartbeat، پورت‌های مشابه.
 
+پیش‌نیاز HA: هم‌مدل، هم‌نسخه (Build یکسان)، لایسنس، Heartbeat اختصاصی و پورت‌های مشابه.
+
 **22-2-ت2** — تا خرابی یک لینک Cluster را نشکند.
+
+دو لینک Heartbeat تا خرابی یک لینک Cluster را نشکند و Split-brain نشود.
 
 **22-2-ت3** — پس از بازگشت عضو قوی‌تر، Primary تغییر نمی‌کند و Flap نمی‌شود.
 
 **22-2-ت4** — Config اعضا یکی نیست؛ checksum متفاوت.
 
+Out-of-sync یعنی Config اعضا یکی نیست و checksum متفاوت است؛ با `diagnose sys ha checksum cluster` دیده می‌شود.
+
 **22-2-ت5** — نسخه، Group، Password، لایسنس، HB.
 
+عضو دوم Join نمی‌شود: نسخه، Group name، Password، لایسنس و Heartbeat را بررسی کنید.
+
 **22-2-ت6** — جدول بالا.
+
+برگه‌ی HA: Mode، Group، Password (Vault)، hbdev، Priority، monitor، override و session-pickup با دلیل.
 
 **22-2-Q1** — Because configuration is synchronized from the primary to the secondary.
 
@@ -1064,15 +1090,27 @@ execute ha manage 1 admin
 
 **22-3-ت1** — تعداد بسته‌ی گمشده × Interval.
 
+زمان قطع = تعداد بسته‌ی گمشده × فاصله‌ی ping؛ مثال ۱۲ بسته × ۰٫۲ ثانیه = ۲٫۴ ثانیه.
+
 **22-3-ت2** — همگام‌سازی Session.
+
+Session pickup Sessionهای TCP را بین اعضا همگام می‌کند تا پس از Failover ادامه یابند.
 
 **22-3-ت3** — برخی UTM/Proxy.
 
+Sessionهای مبتنی بر UTM/Proxy یا SSL Inspection ممکن است پس از Failover ریست شوند.
+
 **22-3-ت4** — جلوگیری از Flap.
+
+Failback کنترل‌شده از Flap و قطع‌های پیاپی جلوگیری می‌کند.
 
 **22-3-ت5** — Monitor/HB timers.
 
+Failover کند: Monitor، Heartbeat timers و Link Failed Threshold را بررسی کنید.
+
 **22-3-ت6** — ۵ آزمون.
+
+ماتریس ۵ آزمون: Reboot، قطع Monitor، قطع یک HB، قطع هر دو HB، Failback.
 
 **22-3-Q1** — Lost packets multiplied by the ping interval.
 
@@ -1083,15 +1121,27 @@ execute ha manage 1 admin
 
 **22-4-ت1** — دو عضو هر دو Primary شده‌اند.
 
+Split-brain یعنی هر دو عضو خود را Primary می‌دانند (HB قطع)؛ ARP/IP تکراری و قطعی ایجاد می‌کند.
+
 **22-4-ت2** — تاریخچه‌ی علل تغییر Primary.
+
+`diagnose sys ha history read` تاریخچه و علت تغییر Primary را نشان می‌دهد.
 
 **22-4-ت3** — تغییر روی Secondary یا HB.
 
+Out-of-sync معمولاً از تغییر مستقیم روی Secondary یا ضعف Heartbeat می‌آید.
+
 **22-4-ت4** — Secondary، Failover، Primary.
+
+ترتیب Upgrade: Secondary، Failover، سپس Primary قبلی؛ با checksum پس از هر مرحله.
 
 **22-4-ت5** — HB، Reboot، Re-sync.
 
+Split-brain رفع: HB را وصل، یک عضو را Reboot، Primary را تعیین و Re-sync کنید.
+
 **22-4-ت6** — Partition قبلی.
+
+Rollback Cluster: Boot از Partition قبلی هر دو یا Restore Config+Firmware.
 
 **22-4-Q1** — diagnose sys ha history read.
 
@@ -1105,6 +1155,8 @@ execute ha manage 1 admin
 **22-5-ت2** — پس از بازگشت عضو قوی‌تر، Primary فعلی را تغییر نمی‌دهد و از Flap جلوگیری می‌کند.
 
 **22-5-ت3** — تا خرابی یک لینک Cluster را Split نکند.
+
+دو لینک HB مستقل تا خرابی یک لینک Cluster را Split نکند.
 
 **22-5-ت4** — Sessionهای TCP را بین اعضا همگام می‌کند تا پس از Failover ادامه یابند.
 
@@ -1120,15 +1172,23 @@ execute ha manage 1 admin
 
 **22-0-ت2** — قطع Heartbeat با دو دستگاه زنده که هر دو Primary می‌شوند.
 
+Split-brain: HB قطع ولی هر دو دستگاه زنده‌اند و هر دو Primary می‌شوند.
+
 **22-0-ت3** — Failback خودکار نمی‌شود؛ عضو فعلی Primary می‌ماند.
 
+با override disable، Failback خودکار انجام نمی‌شود؛ عضو فعلی Primary می‌ماند.
+
 **22-0-ت4** — تا خرابی یک لینک باعث Split-brain نشود.
+
+دو لینک HB تا خرابی یک لینک Split-brain نسازد.
 
 **22-0-ت5** — Session Pickup خاموش است؛ فعال‌کردن آن (TCP) و بررسی محدودیت UDP/ICMP.
 
 **22-0-ت6** — HA از خرابی دستگاه، SD-WAN از خرابی/افت کیفیت ISP؛ هر دو لازم‌اند؛ Heartbeat جدا و Health-check مستقل.
 
 **22-0-م1** — بررسی هم‌خوانی Config بین اعضا.
+
+Checksum Cluster هم‌خوانی Config بین اعضا را بررسی می‌کند.
 
 **22-0-Q1** — Loss of heartbeat between members that are both still running, so each assumes the primary role.
 
@@ -1904,7 +1964,11 @@ diagnose firewall proute list
 
 **23-3-ت1** — Log و عیب‌یابی ساده می‌ماند و آدرس واقعی حفظ می‌شود.
 
+NAT فقط روی Edge: Log و عیب‌یابی ساده می‌ماند و IP واقعی کاربر در Internal حفظ می‌شود.
+
 **23-3-ت2** — دامنه‌ی اثر یک خطا/خرابی.
+
+Blast radius دامنه‌ی اثر یک خطا یا خرابی است؛ جداسازی آن را کم می‌کند.
 
 **23-3-ت3** — Canary ابتدا روی یک دستگاه؛ اگر سالم بود ادامه؛ تغییر هم‌زمان خطا را همه‌جا ایجاد می‌کند.
 
@@ -1924,15 +1988,27 @@ diagnose firewall proute list
 
 **23-4-ت1** — تا هر Session روی یک فایروال بماند.
 
+Source-based تا هر Session روی یک فایروال بماند و Asymmetric نشود.
+
 **23-4-ت2** — تشخیص سریع خرابی مسیر.
+
+BFD خرابی مسیر را در حد ثانیه (یا کمتر) تشخیص می‌دهد؛ OSPF به‌تنهایی کندتر است.
 
 **23-4-ت3** — Sync نیست.
 
+پس از Failover Sessionها ریست می‌شوند چون فایروال‌ها Cluster نیستند و Session sync ندارند.
+
 **23-4-ت4** — لیست مجاز مقصد.
+
+SNAT دوم با IP متفاوت ریسک دارد: لیست مجاز مقصد باید هر دو IP را بپذیرد.
 
 **23-4-ت5** — فیلتر Host روی هر دو.
 
+Capture دو سمتی: Host فیلتر روی هر دو فایروال و مقایسه‌ی جهت‌ها.
+
 **23-4-ت6** — جدول.
+
+طرح سه‌فایروالی: جدول نقش، مسیر، Failover و آزمون Asymmetric.
 
 **23-4-Q1** — By capturing on both firewalls and showing each sees only one direction.
 
@@ -1940,9 +2016,13 @@ diagnose firewall proute list
 
 **23-0-ت1** — رفت و برگشت یک ارتباط از دو مسیر/دستگاه متفاوت.
 
+Asymmetric: رفت و برگشت یک ارتباط از دو مسیر/دستگاه متفاوت.
+
 **23-0-ت2** — چون برگشتی بدون Session مطابق Handshake نیست (و/یا RPF fail) و رد می‌شود.
 
 **23-0-ت3** — پیام reverse path check fail, drop.
+
+پیام Debug flow: `reverse path check fail, drop` در ترافیک نامتقارن.
 
 **23-0-ت4** — طراحی متقارن (کم‌ریسک)، Policy Route/SNAT (سریع ولی Log مبهم)، Session Sync/HA (حفظ Session ولی پیچیده)، asymroute (امنیت کم).
 
@@ -2804,15 +2884,27 @@ execute log display
 
 **24-1-ت1** — ترافیک بین سرورهای داخلی.
 
+East-West ترافیک بین سرورهای داخلی است و فایروال لبه آن را نمی‌بیند.
+
 **24-1-ت2** — تا Policy روی جریان واقعی باشد.
+
+Flow Discovery تا Policy روی جریان واقعی نوشته شود نه حدس.
 
 **24-1-ت3** — جلوگیری از قطع سرویس ناشناخته.
 
+Rollout مرحله‌ای از قطع سرویس ناشناخته (مثل Backup شبانه) جلوگیری می‌کند.
+
 **24-1-ت4** — مسیر ممنوع طراحی.
+
+WEB→DB در Log مسیر ممنوع طراحی بود و باید بررسی/مسدود شود.
 
 **24-1-ت5** — Log طولانی‌تر و مالک.
 
+Backup شبانه قطع شد: Log طولانی‌تر (۳۰ روز) و مشورت مالک برای مسیرهای کم‌تکرار.
+
 **24-1-ت6** — جدول.
+
+ماتریس DC: Internet→WEB 443، WEB→APP 8443، APP→DB 1433، MGMT→SSH و بقیه Deny.
 
 **24-1-Q1** — Because attackers move laterally between servers once inside.
 
@@ -2823,15 +2915,27 @@ execute log display
 
 **24-2-ت1** — Least privilege.
 
+Address Object در سطح Host تا Least privilege رعایت شود.
+
 **24-2-ت2** — Log و Alert.
+
+Deny صریح برای Log و Alert لازم است؛ Implicit Deny Log ندارد.
 
 **24-2-ت3** — WEB→DB.
 
+آزمون منفی WEB→DB: telnet 1433 رد و در Log Deny دیده شود.
+
 **24-2-ت4** — Policy مطابق.
+
+`iprope lookup` Policy مطابق جریان را نشان می‌دهد.
 
 **24-2-ت5** — تلاش‌های ممنوع؛ بررسی.
 
+Hit Count ۱۲ برای Deny یعنی ۱۲ تلاش ممنوع؛ Source را بررسی و مستند کنید.
+
 **24-2-ت6** — طبق متن.
+
+Policyهای ۵۰ (WEB→APP)، ۶۰ (APP→DB) و ۶۱ (Deny WEB→DB) با Log All.
 
 **24-2-Q1** — To grant only the minimum necessary access.
 
@@ -2842,15 +2946,27 @@ execute log display
 
 **24-3-ت1** — فایروال مجازی مستقل.
 
+VDOM فایروال مجازی مستقل است (Routing، Policy، Admin، منابع جدا).
+
 **24-3-ت2** — لینک منطقی بین دو VDOM.
+
+Inter-VDOM Link لینک منطقی بین دو VDOM بدون پورت فیزیکی است.
 
 **24-3-ت3** — جلوگیری از مصرف همه‌ی منابع.
 
+Resource Limit تا یک VDOM همه‌ی Sessionها و منابع را نخورد.
+
 **24-3-ت4** — VDOM سرویس‌های سیستمی.
+
+Management VDOM VDOM سرویس‌های سیستمی (DNS، FortiGuard) است؛ معمولاً root.
 
 **24-3-ت5** — IP، Route، Policy دو جهت.
 
+ping بین VDOM ندارد: IP دو سر vlk، Route هر VDOM و Policy دو جهت را بررسی کنید.
+
 **24-3-ت6** — DMZ/INT.
+
+دو VDOM (DMZ و INT) با vlk و Policy دو جهت و Resource Limit.
 
 **24-3-Q1** — To route traffic between two virtual domains.
 
@@ -2861,15 +2977,27 @@ execute log display
 
 **24-4-ت1** — Implicit Deny Log ندارد.
 
+Implicit Deny Log ندارد؛ پس Deny صریح با Log لازم است.
+
 **24-4-ت2** — آزمون منفی و Log Deny.
+
+Isolation با آزمون منفی و Log Deny اثبات می‌شود.
 
 **24-4-ت3** — تعداد Deny بین WEB و DB در بازه.
 
+شرط Alert: تعداد Deny بین WEB و DB در یک بازه (مثلاً ≥۵ در ۵ دقیقه).
+
 **24-4-ت4** — Syslog/FortiAnalyzer.
+
+Log متمرکز در Syslog یا FortiAnalyzer ذخیره می‌شود.
 
 **24-4-ت5** — Deny صریح با Log.
 
+Log ناقص: Deny صریح با Log اضافه کنید.
+
 **24-4-ت6** — ۷ آزمون.
+
+ماتریس آزمون DC: ۷ آزمون مثبت/منفی با Log.
 
 **24-4-Q1** — Because isolation is proven by showing that forbidden traffic is denied and logged.
 
@@ -2877,11 +3005,19 @@ execute log display
 
 **24-0-ت1** — فایروال مجازی مستقل با Routing/Policy/Admin/منابع جدا.
 
+VDOM فایروال مجازی مستقل با Routing/Policy/Admin/منابع جدا.
+
 **24-0-ت2** — اتصال دو VDOM بدون پورت فیزیکی.
+
+Inter-VDOM Link اتصال دو VDOM بدون پورت فیزیکی.
 
 **24-0-ت3** — تا یک VDOM همه‌ی منابع (Session و ...) را نخورد.
 
+Resource Limit تا یک VDOM همه‌ی منابع را مصرف نکند.
+
 **24-0-ت4** — Zone در یک Routing/Policy مشترک؛ VDOM جدا و با Link ارتباط.
+
+Zone در یک Routing/Policy مشترک است؛ VDOM جدا و با Link ارتباط می‌گیرد.
 
 **24-0-ت5** — دو VDOM با Routing جدا (Overlap مجاز)، NAT و اینترنت در root، بدون ارتباط مشتری‌ها، DNS مشترک با Policy.
 

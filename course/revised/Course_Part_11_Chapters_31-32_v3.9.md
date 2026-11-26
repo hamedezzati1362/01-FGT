@@ -1080,15 +1080,31 @@ Improvement: run T-12/T-15 in lab; verify commands
 
 **31-1-ت1** — Failover شعبه A کمتر از ۱۰ ثانیه با آزمون ping پیوسته.
 
+Failover شعبه کمتر از ۱۰ ثانیه با آزمون ping پیوسته.
+
 **31-1-ت2** — ثبت تصمیم معماری با زمینه، گزینه‌ها، تصمیم و پیامدها.
+
+ADR ثبت تصمیم معماری با زمینه، گزینه‌ها، تصمیم و پیامدها است.
 
 **31-1-ت3** — 8.76 ساعت.
 
+۹۹٫۹٪ در سال ≈ ۸٫۷۶ ساعت قطع مجاز.
+
+``` text
+(1 - 0.999) x 8760 h = 8.76 h
+```
+
 **31-1-ت4** — تا موفقیت قابل‌اندازه‌گیری باشد و بحث بعدی کم شود.
+
+معیار پذیرش عددی تا موفقیت قابل‌اندازه‌گیری و بحث بعدی کم شود.
 
 **31-1-ت5** — سطح‌بندی دسترس‌پذیری، ADR، پذیرش ریسک مستند.
 
+سطح‌بندی دسترس‌پذیری، ADR و پذیرش ریسک مستند.
+
 **31-1-ت6** — ساختار بالا با محتوای هر بخش.
+
+ساختار سند طراحی: نیازمندی، HLD، LLD، آزمون، ریسک.
 
 **31-1-Q1** — So that success is measurable and can be verified objectively later.
 
@@ -1100,15 +1116,27 @@ Improvement: run T-12/T-15 in lab; verify commands
 
 **31-2-ت1** — HLD ساختار؛ LLD مقادیر دقیق.
 
+HLD ساختار؛ LLD مقادیر دقیق.
+
 **31-2-ت2** — برای ردیابی و ممیزی.
+
+ردیف Policy نیازمندی دارد برای ردیابی و ممیزی.
 
 **31-2-ت3** — تغییر Pool.
 
+Overlap Pool VPN با Servers: Pool را تغییر دهید.
+
 **31-2-ت4** — Edge.
+
+NAT فقط روی Edge.
 
 **31-2-ت5** — SD-WAN و Capture.
 
+Asymmetric در LLD: SD-WAN و Capture.
+
 **31-2-ت6** — جدول.
+
+LLD Internal: جدول Interface، Route و Policy.
 
 **31-2-Q1** — For traceability and audit.
 
@@ -1118,13 +1146,21 @@ Improvement: run T-12/T-15 in lab; verify commands
 
 **31-3-ت2** — نقطه‌ی بازگشت با Backup و Tag.
 
+Snapshot/Backup با Tag نقطه‌ی بازگشت است.
+
 **31-3-ت3** — Guest به Internal باید Block باشد.
 
+Guest به Internal باید Block باشد؛ آزمون منفی.
+
 **31-3-ت4** — ≤ ۱۵ دقیقه؛ باید زمان‌سنجی شود.
+
+Rollback ≤ ۱۵ دقیقه و باید زمان‌سنجی شود.
 
 **31-3-ت5** — شواهد مستقل: ping DF برای MTU؛ زمان Failover برای Timer؛ رفع و اندازه‌گیری جدا.
 
 **31-3-ت6** — جدول بالا با مسئول و زمان.
+
+برنامه‌ی Build با مسئول و زمان.
 
 **31-3-Q1** — So a failure can be attributed to the stage just built instead of an unknown layer.
 
@@ -1136,15 +1172,27 @@ Improvement: run T-12/T-15 in lab; verify commands
 
 **31-4-ت1** — فهرست شاهدها با شناسه، فایل، زمان و نتیجه.
 
+Evidence Index فهرست شاهدها با شناسه، فایل، زمان و نتیجه است.
+
 **31-4-ت2** — صادقانه ثبت.
+
+آزمون اجرانشده صادقانه ثبت شود.
 
 **31-4-ت3** — با Gap و تاریخ.
 
+Sign-off مشروط: با Gap و تاریخ.
+
 **31-4-ت4** — Health-check.
+
+F2 (Failover کند): Health-check را به Server خارجی تغییر دهید.
 
 **31-4-ت5** — پذیرفته‌ی مشروط.
 
+دو آزمون اجرانشده: پذیرفته‌ی مشروط.
+
 **31-4-ت6** — جدول.
+
+Evidence Index: جدول شناسه، آزمون، فایل، زمان، نتیجه، وضعیت.
 
 **31-4-Q1** — Acceptance with documented gaps that must be closed later.
 
@@ -1155,15 +1203,27 @@ Improvement: run T-12/T-15 in lab; verify commands
 
 **31-5-ت1** — مجموعه‌ی گام‌های مستند برای وضعیت مشخص.
 
+Runbook گام‌های مستند برای وضعیت مشخص است.
+
 **31-5-ت2** — برای کاهش خطا.
+
+هر گام یک اقدام تا خطا کم شود.
 
 **31-5-ت3** — نقص‌های مبهم آشکار می‌شود.
 
+همکار ناآشنا نقص‌های مبهم را آشکار می‌کند.
+
 **31-5-ت4** — As-Built، LLD، Runbook، دسترسی.
+
+Handover: As-Built، LLD، Runbook و دسترسی.
 
 **31-5-ت5** — قالب بالا.
 
+Runbook Failover ISP: ۸ گام با خروجی مورد انتظار.
+
 **31-5-ت6** — فصلی و پس از حادثه.
+
+نگهداری: بازبینی فصلی و پس از حادثه.
 
 **31-5-Q1** — To reveal ambiguous or missing steps.
 
@@ -1174,15 +1234,27 @@ Improvement: run T-12/T-15 in lab; verify commands
 
 **31-6-ت1** — مسئله، HLD، LLD، آزمون، Gap، جمع‌بندی.
 
+ساختار ارائه: مسئله، HLD، LLD، آزمون، Gap، جمع‌بندی.
+
 **31-6-ت2** — ۷۵ با حداقل ۲۰ در Evidence.
+
+نمره‌ی قبولی ۷۵ با حداقل ۲۰ در Evidence.
 
 **31-6-ت3** — فهرست Unverified و آزمون اجرانشده.
 
+پاسخ به «چه چیزی ثابت نکرده‌اید؟»: فهرست Unverified و آزمون اجرانشده.
+
 **31-6-ت4** — نمره با دلیل.
+
+خودارزیابی: نمره با دلیل برای هر معیار.
 
 **31-6-ت5** — خارج از طراحی؛ ریسک؛ پیشنهاد.
 
+«اگر دو ISP قطع شود؟»: خارج از طراحی؛ ریسک؛ پیشنهاد (LTE).
+
 **31-6-ت6** — اقدام، مالک، تاریخ.
+
+برنامه‌ی بهبود: اقدام، مالک، تاریخ.
 
 **31-6-Q1** — Because claiming unverified results undermines trust and can cause real outages.
 
@@ -1197,11 +1269,19 @@ Improvement: run T-12/T-15 in lab; verify commands
 
 **31-0-ت3** — مثلاً R-02: DMZ→DB ممنوع با ۱۰ آزمون منفی Deny و Log.
 
+مثلاً R-02: DMZ→DB ممنوع با ۱۰ آزمون منفی Deny و Log.
+
 **31-0-ت4** — «طراحی‌شده/اجرا نشده»، نه «موفق».
+
+آزمون‌های اجرانشده «طراحی‌شده/اجرا نشده» ثبت می‌شوند نه «موفق».
 
 **31-0-ت5** — اهمیت×ریسک؛ «باید»ها اول؛ Evidence هفتگی.
 
+۱۲ نیازمندی در ۴ هفته: اهمیت×ریسک؛ «باید»ها اول؛ Evidence هفتگی.
+
 **31-0-ت6** — جدول بالا با امتیاز و شواهد.
+
+Rubric خودارزیابی: معیار، امتیاز، شاهد.
 
 **31-0-Q1** — Because without a test and evidence the requirement is only an unverified claim.
 
@@ -2239,15 +2319,27 @@ execute ping-options df-bit yes
 
 **32-1-ت1** — سلامت، Alert، Backup، Log غیرعادی.
 
+روزانه: سلامت، Alert، Backup و Log غیرعادی.
+
 **32-1-ت2** — Backup و بررسی‌های قبل.
+
+Pre-check: Backup و بررسی‌های قبل از تغییر.
 
 **32-1-ت3** — Rollback، ثبت علت و درس.
 
+CHG ناموفق: Rollback، ثبت علت و درس.
+
 **32-1-ت4** — کم‌ترافیک با تیم آماده.
+
+Window: زمان کم‌ترافیک با تیم آماده.
 
 **32-1-ت5** — ترتیب Policy؛ Rollback؛ CHG جدید.
 
+Post-check Lookup=61: ترتیب Policy؛ Rollback و CHG جدید.
+
 **32-1-ت6** — قالب بالا.
+
+قالب CHG: عنوان، مالک، دلیل، ریسک، Window، Pre/Post-check، Rollback.
 
 **32-1-Q1** — That the change works as intended and nothing else broke.
 
@@ -2258,15 +2350,27 @@ execute ping-options df-bit yes
 
 **32-2-ت1** — تصمیم‌گیر و هماهنگ‌کننده.
 
+Incident Commander تصمیم‌گیر و هماهنگ‌کننده است.
+
 **32-2-ت2** — زمان تا کشف.
+
+MTTD زمان تا کشف است.
 
 **32-2-ت3** — اطمینان مدیریت و کاهش تماس‌ها.
 
+Status دوره‌ای اطمینان مدیریت را می‌دهد و تماس‌ها را کم می‌کند.
+
 **32-2-ت4** — ثبت Timeline.
+
+Scribe Timeline را ثبت می‌کند.
 
 **32-2-ت5** — قالب.
 
+PIR: Summary، Impact، Timeline، Root cause، Actions.
+
 **32-2-ت6** — سناریو و نقش‌ها.
+
+Game Day: سناریو، نقش‌ها و Timeline.
 
 **32-2-Q1** — To avoid confusion and ensure decisions, actions and records are handled.
 
@@ -2277,15 +2381,27 @@ execute ping-options df-bit yes
 
 **32-3-ت1** — وضعیت پیش از تغییر.
 
+Baseline وضعیت پیش از تغییر است.
+
 **32-3-ت2** — نقطه‌ی تصمیم.
+
+Checkpoint نقطه‌ی تصمیم ادامه/توقف است.
 
 **32-3-ت3** — برای تصمیم به‌موقع.
 
+Rollback زمان‌دار برای تصمیم به‌موقع.
+
 **32-3-ت4** — حدود ±۱۰٪.
+
+Session count حدود ±۱۰٪.
 
 **32-3-ت5** — Debug سریع؛ Rollback اگر در زمان.
 
+IPsec بعد Upgrade down: Debug سریع؛ Rollback اگر در زمان.
+
 **32-3-ت6** — جدول.
+
+Plan T-7d تا T+1d: جدول زمان و کار.
 
 **32-3-Q1** — To avoid delaying the decision and extending the outage.
 
@@ -2296,15 +2412,27 @@ execute ping-options df-bit yes
 
 **32-4-ت1** — مستقل و با شاهد.
 
+سطح ۳: مستقل و با شاهد.
+
 **32-4-ت2** — تفاوت سطح فعلی با هدف.
+
+شکاف تفاوت سطح فعلی با هدف است.
 
 **32-4-ت3** — شاهد عملی نیست.
 
+Lab اجرا نشده شاهد عملی نمی‌دهد و سطح را کم می‌کند.
+
 **32-4-ت4** — پروژه، Evidence، Runbook، PIR.
+
+Portfolio: پروژه، Evidence، Runbook، PIR.
 
 **32-4-ت5** — Capstone I، Runbook، برچسب صادقانه.
 
+Portfolio Firewall Engineer: Capstone I، Runbook و برچسب صادقانه.
+
 **32-4-ت6** — Lab، شاهد، زمان.
+
+برنامه‌ی پر کردن شکاف: Lab، شاهد، زمان.
 
 **32-4-Q1** — It shows real skill level and guides focused improvement.
 
@@ -2315,15 +2443,27 @@ execute ping-options df-bit yes
 
 **32-5-ت1** — تا یادگیری به عمل تبدیل شود.
 
+برنامه‌ی ۶ ماهه تا یادگیری به عمل تبدیل شود.
+
 **32-5-ت2** — اندازه‌گیری‌پذیر.
+
+معیار موفقیت اندازه‌گیری‌پذیر.
 
 **32-5-ت3** — هدف شغلی.
 
+اولویت Lab: هدف شغلی.
+
 **32-5-ت4** — Read-only و Pilot.
+
+Automation امن: Read-only و Pilot.
 
 **32-5-ت5** — کاهش دامنه.
 
+برنامه شکست خورد: دامنه را کم کنید.
+
 **32-5-ت6** — جدول.
+
+برنامه‌ی ۶ ماهه: ماه، هدف، Evidence.
 
 **32-5-Q1** — To verify real progress rather than assumed progress.
 
@@ -2334,15 +2474,27 @@ execute ping-options df-bit yes
 
 **32-6-ت1** — Health-check روی Gateway.
 
+علت ۱: Health-check روی Gateway.
+
 **32-6-ت2** — dst=IP داخلی.
+
+علت ۳: Policy با dst=IP داخلی نه VIP.
 
 **32-6-ت3** — لایه‌ی پایین‌تر اول.
 
+ترتیب رفع: لایه‌ی پایین‌تر اول.
+
 **32-6-ت4** — PMTU−40.
+
+MSS = PMTU − 40.
 
 **32-6-ت5** — سه مرحله با Rollback.
 
+CHG سه مرحله با Rollback.
+
 **32-6-ت6** — ریشه، شاخص، اقدام.
+
+PIR: ریشه، شاخص، اقدام.
 
 **32-6-Q1** — To know which change solved which problem.
 
@@ -2353,15 +2505,27 @@ execute ping-options df-bit yes
 
 **32-0-ت1** — تغییر کم‌ریسک و از پیش تأییدشده.
 
+Standard Change تغییر کم‌ریسک و از پیش تأییدشده است.
+
 **32-0-ت2** — میانگین زمان بازیابی.
+
+MTTR میانگین زمان بازیابی است.
 
 **32-0-ت3** — ۹۴٪.
 
+Change Success Rate = ۴۷/۵۰ = ۹۴٪.
+
 **32-0-ت4** — هیئت تأیید تغییرات پرریسک.
+
+CAB هیئت تأیید تغییرات پرریسک است.
 
 **32-0-ت5** — ثبت، تأیید Owner، اجرا، Verify، ثبت رسمی.
 
+Emergency Change: ثبت، تأیید Owner، اجرا، Verify، ثبت رسمی.
+
 **32-0-ت6** — ثبت، ارزیابی، تأیید، اجرا، Verify، Close.
+
+فرایند Change: ثبت، ارزیابی، تأیید، اجرا، Verify، Close.
 
 **32-0-Q1** — An urgent change to restore service that is documented and reviewed afterwards.
 
