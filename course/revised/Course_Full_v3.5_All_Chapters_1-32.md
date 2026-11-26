@@ -53,7 +53,7 @@
 ---
 <a id="ch1"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.4):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲-۰ (فصل ۲). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.5):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲-۰ (فصل ۲). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 1 — زیرساخت Lab، کشف وضع موجود و تغییر ایمن
 
@@ -5144,7 +5144,7 @@ Symptom, Scope, Hypothesis, Test, Fix and Verify.
 
 <a id="ch4"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.4؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_02_Chapters_04-06.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۵-۰ و ۵-۷ (فصل ۵). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.5؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_02_Chapters_04-06.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۵-۰ و ۵-۷ (فصل ۵). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 4 — Switching II: STP، EtherChannel و امنیت L2
 
@@ -11077,7 +11077,7 @@ Lab A و سوییچ‌ها؛ OSPF؛ آماده‌بودن Image CSR/IOSv برا�
 
 <a id="ch7"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.4؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_03_Chapters_07-09.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۹-۰ و ۹-۷ (فصل ۹). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.5؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_03_Chapters_07-09.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۹-۰ و ۹-۷ (فصل ۹). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 7 — IP Services: DHCP، DNS، NTP، NAT، ACL، Syslog و QoS
 
@@ -16141,7 +16141,7 @@ BGP عملی روی دو vIOS؛ آماده‌بودن Image دوم برای ISP-
 
 > **نسخه‌ی اصلاح‌شده (v3.1، دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_04_Chapters_10-12.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۱۰-۸ و ۱۰-۹ (فصل ۱۰). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
 
-> **نسخه‌ی اصلاح‌شده (v3.4):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۰-۸، ۱۰-۹، ۱۱-۰، ۱۱-۷، ۱۲-۰، ۱۲-۸، ۱۲-۹ (دسته‌های B و A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.5):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۰-۸، ۱۰-۹، ۱۱-۰، ۱۱-۷، ۱۲-۰، ۱۲-۸، ۱۲-۹ (دسته‌های B و A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 10 — Redistribution، ECMP، PBR، VRF-lite و Asymmetric Routing
 
@@ -20991,7 +20991,7 @@ Console + بازگرداندن Route.
 
 <a id="ch13"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.4):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۳-۷، ۱۴-۷ (دسته A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.5):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۳-۷، ۱۴-۷ (دسته A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 13 — FortiGate II: Policy، Session، NAT، VIP، IP Pool و Central NAT (تک‌فایروالی کامل)
 
@@ -24739,7 +24739,7 @@ Lab معماری ۲ ساخته و Backup؛ لایسنس UTM (Needs-License) بر
 
 <a id="ch16"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.4):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۶-۰، ۱۶-۷، ۱۸-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.5):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۶-۰، ۱۶-۷، ۱۸-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 16 — UTM: آنتی‌ویروس، IPS، Application Control، Web Filter و SSL Inspection
 
@@ -24989,139 +24989,151 @@ get firewall ssl-ssh-profile
 - Fortinet Docs: [Inspection modes](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/721410/inspection-modes)، [Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison)، [SSL & SSH Inspection](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/929997/ssl-ssh-inspection)، [Inspection mode per policy](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/366651/inspection-mode-per-policy).
 - RFC 8446 — TLS 1.3؛ RFC 6066 (SNI)؛ RFC 5280 (X.509 PKI).
 
-## درس 16-1 — Security Profile و لایسنس: نقشه‌ی UTM
+## درس 16-1 — نقشه‌ی UTM: Security Profileها، لایسنس FortiGuard و ماتریس قابلیت
 
-**فصل 16 - روز 1 · پیش‌نیاز: فصل ۱۳ · ۶ ساعت**
+**فصل 16 · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰، ۱۲-۰، ۱۳-۱ · ≈ 6 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده»؛ وابستگی لایسنس هر قابلیت صریح ذکر شده است.
 
-Profileهای امنیتی بازرسی لایه‌ی ۷ را روی Policy اضافه می‌کنند. اول باید بدانیم کدام نیاز به Subscription دارد.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۱۳
+1. فهرست Security Profileها و محل اتصال آن‌ها به Policy را بگوید.
+2. برای هر قابلیت وابستگی لایسنس را مشخص کند (Needs-License/بدون لایسنس).
+3. یک «ماتریس لایسنس و قابلیت» برای Lab خود تکمیل کند.
+4. نتیجه‌ی بررسی را با شواهد (وضعیت FortiGuard، Log) ثبت و از ادعای بدون شاهد پرهیز کند.
+5. مسیر پردازش UTM را در Packet Flow (پس از Policy) جایابی کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Profileها: AntiVirus، Web Filter، DNS Filter، IPS، Application Control، SSL/SSH Inspection، File Filter.
-- Profile به Policy وصل می‌شود (`utm-status enable` در 7.0؛ `Unverified`).
-- **Needs-License:** AV/IPS/Web Rating/App DB به FortiGuard وابسته؛ در Lab ایزوله به‌روزرسانی ممکن نیست.
-- **بدون لایسنس:** Static URL Filter، Custom IPS، DoS Policy، Port-based App، File Filter ساده.
-- ثبت «Feature/License Log» برای هر قابلیت (آزمایش‌شده/Needs-License/Unverified).
+Security Profile مجموعه‌ی تنظیمات بازرسی لایه‌ی ۷ است که **داخل Firewall Policy** فعال می‌شود: Antivirus، Web Filter، DNS Filter، Application Control، IPS، File Filter، SSL/SSH Inspection (و DLP/Email Filter بسته به نسخه). Policy می‌گوید «اجازه‌ی عبور هست»؛ Profile می‌گوید «محتوای مجاز را هم بررسی کن».
 
-### ۴) مثال ساده
+مشکل رایج: تیم‌ها فرض می‌کنند چون Profile ساخته‌اند، حفاظت فعال است. حفاظت فقط وقتی واقعی است که (۱) Profile به Policy درست وصل باشد، (۲) سرویس مربوط لایسنس/DB داشته باشد، (۳) ترافیک قابل‌دیدن باشد (TLS)، (۴) Log اثباتش کند.
 
-یک Profile ساده روی Policy کاربران.
+### ۳) توضیح عمیق فنی
 
-### ۵) مثال سازمانی
+#### ۱) جای UTM در Packet Flow
 
-سازمان: Profile استاندارد برای هر گروه (کاربران، سرورها، مهمان).
-
-### ۶) تصویر و توپولوژی
-
-```text
-Policy -> [Profile: AV/IPS/Web/App/SSL] -> accept/block
+``` text
+Ingress -> RPF -> Session -> DNAT -> Route -> Policy match -> [Security profiles] -> SNAT -> Egress
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+UTM فقط برای ترافیکی اجرا می‌شود که **Policy مطابق، `accept` کرده** باشد؛ ترافیک Denied اصلاً به Profile نمی‌رسد.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۲) ماتریس قابلیت و لایسنس
 
-#### روش گرافیکی (GUI)
-
-1. Security Profiles > Web Filter > Create New.
-2. Policy > Security Profiles: Web Filter را روشن و Profile را انتخاب.
-3. System > FortiGuard: وضعیت لایسنس را ببینید.
-4. Log & Report > Web Filter.
-
-#### روش خط فرمان (CLI)
-
-```text
-config firewall policy
-    edit 10
-        set utm-status enable
-        set ssl-ssh-profile "certificate-inspection"
-        set webfilter-profile "WF-STD"
-    next
-end
-get system fortiguard-service status
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- `ssl-ssh-profile`: لازم برای بازرسی HTTPS.
-- `get system fortiguard-service status` (`Unverified`) وضعیت لایسنس.
-- راستی‌آزمایی: Log با فیلد utm/ action.
-- بازگشت: `unset webfilter-profile`.
-
-### ۸) تست عملکرد
-
-- وضعیت FortiGuard را ثبت و Matrix لایسنس را پر کنید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Profile اثر ندارد |
-| شواهد/دستور | Log: بدون utm |
-| علت | Profile به Policy وصل نشده |
-| رفع | اتصال Profile |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** کدام Profileها Needs-License؟ *(پاسخ: 16-1-ت1)*
-
-**ت2.** بدون لایسنس چه؟ *(پاسخ: 16-1-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Feature/License Log؟ *(پاسخ: 16-1-م1)*
-
-**م2.** سناریو: AV کار نمی‌کند؛ علت؟ *(پاسخ: 16-1-م2)*
-
-**معیار تسلط:** ساخت Profile، اتصال به Policy، اثبات با Log/تست.
-
-**اشتباهات رایج:** فعال‌کردن بی‌برنامه؛ نادیده‌گرفتن لایسنس.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
+| قابلیت | کار اصلی | نیاز لایسنس FortiGuard | بدون لایسنس چه می‌شود؟ |
 |---|---|---|---|
-| Security profile | Security profile | بازرسی لایه ۷ | Policy |
-| FortiGuard | FortiGuard Services | سرویس به‌روزرسانی | Subscription |
-| Feature log | Feature/License log | ثبت وضعیت قابلیت | طراحی |
+| Antivirus | Signature بدافزار | بله (DB) | File Filter، بلاک نوع فایل |
+| Web Filter | Category/URL | Category: بله | Static URL Filter |
+| DNS Filter | بلاک دامنه‌ی مخرب | Category: بله | Static domain |
+| Application Control | شناخت برنامه | DB برنامه: بله | Port/Service-based |
+| IPS | Signature حمله | Signature: بله | Custom Signature، DoS Policy |
+| File Filter | نوع فایل | خیر | کار می‌کند |
+| SSL/SSH Inspection | رمزگشایی TLS | خیر (CA لازم) | کار می‌کند |
 
-| English sentence | ترجمه |
+(ستون لایسنس بر اساس مدل FortiGuard است؛ جزئیات هر مدل/نسخه را در مستند 7.0 و Contract بررسی کنید.)
+
+#### ۳) راستی‌آزمایی لایسنس
+
+وضعیت سرویس‌ها از GUI (System → FortiGuard) و CLI دیده می‌شود. در Lab ایزوله به‌روزرسانی ممکن نیست؛ پس «Profile ساخته‌شده» ≠ «محافظت فعال».
+
+#### ۴) سه سطح شاهد
+
+1. **پیکربندی:** Profile در Policy (`show firewall policy`).
+2. **وضعیت سرویس:** FortiGuard Valid/Expired.
+3. **رفتار:** تست با فایل/سایت/پورت و Log.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Many UTM features require a FortiGuard subscription. | بسیاری از قابلیت‌های UTM به اشتراک FortiGuard نیاز دارند. |
-| Record what you actually tested. | آنچه واقعاً آزمایش کرده‌اید را ثبت کنید. |
+| کدام Profile روی کدام Policy؟ | Users→Internet: همه؛ Servers: IPS؛ Guest: Web/DNS |
+| Inspection Mode | Flow برای عموم؛ Proxy برای نیاز خاص (۱۶-۰) |
+| حالت لایسنس‌نداشتن | لایه‌ی جایگزین بدون لایسنس + ثبت صریح محدودیت |
 
-#### کارت Lab — درس 16-1
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-| # | فیلد | محتوا |
+**ساده:** Policy 10 (Users→Internet) فقط Web Filter دارد. با `show firewall policy 10` اثبات می‌کنید `webfilter-profile` وصل است؛ بدون این شاهد، «Web Filter فعال است» ادعای تأییدنشده است.
+
+**متوسط:** AV Profile ساخته و به Policy وصل است ولی EICAR رد می‌شود. بررسی: FortiGuard AV DB تاریخ دارد؟ (نه در Lab ایزوله) ← علت: نبود DB. ثبت: «Needs-License؛ آزمایش ناموفق».
+
+**سخت:** سازمان می‌خواهد «هیچ بدافزاری وارد نشود». تحلیل: AV Signature به‌تنهایی کافی نیست (Zero-day، رمزدار، TLS بدون Deep). طرح لایه‌ای: File Filter + SSL Inspection + IPS + Sandbox (لایسنس) + EDR/Patch؛ و معیار «کشف/پیشگیری» را با FP/FN مستند کنید.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Security Profiles → هر Profile: وضعیت و گزینه‌ها.
+2. Policy & Objects → Firewall Policy → Security Profiles: فعال‌سازی و انتخاب.
+3. System → FortiGuard: وضعیت لایسنس/DB.
+4. Log & Report → Security Events.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get system fortiguard-service status
+show firewall policy 10
+show antivirus profile
+show webfilter profile
+```
+
+### ۸) Verification (اثبات صحت)
+
+- ماتریس لایسنس را با خروجی واقعی پر کنید.
+- برای هر قابلیت یک آزمون و Log ثبت کنید.
+- قابلیت بدون شاهد = «اجرا نشده».
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Matrix لایسنس UTM |
-| 2 | پیش‌نیاز | فصل ۱۳ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Matrix لایسنس |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `get system fortiguard-service status` |
-| 11 | سناریوی خرابی | Profile اثر ندارد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | جدول |
-| 14 | معیار پذیرش | با شواهد |
-| 15 | مستندات نهایی | `03-ops/utm-license-log.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Profile اثر ندارد | Log بدون رویداد UTM | Profile به Policy وصل نیست یا Policy دیگری Match شده |
+| Category کار نمی‌کند | Log: rating error | لایسنس/ارتباط FortiGuard |
+| HTTPS دیده نمی‌شود | فقط SNI در Log | SSL Inspection فعال نیست |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Profile پیش‌فرض را بدون بازبینی روی همه‌چیز فعال نکنید.
+- UTM جایگزین Patch و Segmentation نیست.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Profile فقط برای ترافیک Accept‌شده اجرا می‌شود.
+- سه سطح شاهد: پیکربندی، وضعیت سرویس، رفتار.
+- Needs-License را صریح ثبت کنید.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) UTM در کجای Packet Flow است؟ *(پاسخ: 16-1-ت1)*
+
+**ت2.** (ساده) کدام قابلیت‌ها بدون لایسنس کار می‌کنند؟ *(پاسخ: 16-1-ت2)*
+
+**ت3.** (متوسط) چرا «Profile ساخته شد» شاهد کافی نیست؟ *(پاسخ: 16-1-ت3)*
+
+**ت4.** (سخت) ماتریس لایسنس Lab خود را با ۳ شاهد بسازید. *(پاسخ: 16-1-ت4)*
+
+**ت5.** (سخت، طراحی) طرح لایه‌ای ضدبدافزار برای سازمانی بدون Sandbox. *(پاسخ: 16-1-ت5)*
+
+**Q1.** Quick quiz (English): Why is a created profile not proof of protection? *(پاسخ: 16-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| UTM | Unified Threat Management | مدیریت یکپارچه‌ی تهدید |
+| FortiGuard | FortiGuard Services | سرویس به‌روزرسانی Fortinet |
+| Profile | Security profile | مجموعه‌ی تنظیم بازرسی |
+
+- *A security profile only works when it is attached to an accepting policy.* ← Profile فقط وقتی کار می‌کند که به Policy مجاز وصل شده باشد.
+
+### ۱۴) کارت Lab
+
+**Lab:** ماتریس UTM. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/utm-license-log.md`. **Rollback:** ندارد (فقط خواندنی).
+
+### ۱۵) منابع
+
+- Fortinet Docs: FortiOS 7.0 Administration Guide — Security Profiles، FortiGuard.
+- [Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison).
 
 <a id="l-16-2"></a>
 
@@ -25735,133 +25747,144 @@ end
 
 <a id="l-16-6"></a>
 
-## درس 16-6 — Performance، عیب‌یابی UTM و آزمون فصل
+## درس 16-6 — Performance UTM، اندازه‌گیری، عیب‌یابی و آزمون عملی فصل ۱۶
 
-**فصل 16 - روز 6 · پیش‌نیاز: درس ۱۶-۵ · ۶ ساعت**
+**فصل 16 · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰ تا ۱۶-۵، ۱۲-۹، ۲۷-۰ · ≈ 6 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده»؛ وابستگی لایسنس هر قابلیت صریح ذکر شده است.
 
-UTM منابع می‌خورد. باید اثر را بسنجید و خطاهای رایج را پیدا کنید.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۶-۵
+1. اثر هر Profile بر CPU/Throughput را با آزمایش کنترل‌شده بسنجد.
+2. مشکلات UTM (کندی، FP، عدم اثر) را با شواهد عیب‌یابی کند.
+3. Exception را امن و مستند بنویسد.
+4. آزمون عملی فصل را با Rubric اجرا کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- شاخص‌ها: CPU، Memory، Session، Throughput (`get system performance status`, `diagnose sys top`).
-- Flow vs Proxy و اثر آن.
-- کاهش بار: Profile انتخابی، Exempt، IPS سبک.
-- عیب‌یابی: Log UTM، Debug Flow، `diagnose test application ...` (`Unverified`).
-- آزمون: ۵ مورد.
+UTM منابع می‌خورد؛ «فعال کن و ببین» روش مهندسی نیست. باید **Baseline** داشت، **یک Profile در هر زمان** اضافه کرد، و اثر را اندازه گرفت.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-یک Profile ساده روی Policy کاربران.
+#### ۱) روش اندازه‌گیری
 
-### ۵) مثال سازمانی
-
-سازمان: Profile استاندارد برای هر گروه (کاربران، سرورها، مهمان).
-
-### ۶) تصویر و توپولوژی
-
-```text
-Policy -> [Profile: AV/IPS/Web/App/SSL] -> accept/block
+``` text
+1 Baseline: no profiles; run iperf (N parallel streams, 5 min); record CPU, Throughput, Latency, Sessions
+2 Enable profile A only; repeat; record
+3 Enable A+B; repeat
+4 Compare: delta CPU, delta Throughput
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+شرایط یکسان: همان سرور، همان تعداد Flow، همان نوع ترافیک. نتیجه = جدول اثر هر Profile.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۲) علل رایج کندی
 
-#### روش گرافیکی (GUI)
+- Proxy-based + Deep Inspection روی ترافیک سنگین.
+- IPS روی همه‌ی ترافیک (Offload کم، ۱۲-۹).
+- File/Archive بزرگ در AV Proxy (Buffer).
+- Logging همه‌ی Allow (I/O).
 
-1. Monitor > Performance/Dashboard: CPU/Memory.
-2. FortiView.
-3. Log & Report > Security Events.
+#### ۳) ابزارها
 
-#### روش خط فرمان (CLI)
-
-```text
+``` text
 get system performance status
 diagnose sys top 2 20
-diagnose debug flow filter addr 192.168.20.11
+diagnose sys session stat
+diagnose debug flow filter addr <host>
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+#### ۴) FP: Exception امن
 
-- `diagnose sys top`: فرایندها (q برای خروج).
-- راستی‌آزمایی: CPU قبل/بعد از فعال‌سازی Profile.
-- بازگشت: کاهش Profile.
+Exception را (۱) فقط برای همان Signature/دامنه، (۲) فقط برای همان Source/Destination، (۳) با تاریخ بازبینی، (۴) با صاحب ثبت کنید.
 
-### ۸) تست عملکرد
+### ۴) طراحی و تصمیم‌گیری
 
-- اندازه‌گیری CPU قبل/بعد.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | CPU بالا بعد از UTM |
-| شواهد/دستور | `diagnose sys top`: ipsengine/wad |
-| علت | Profile گسترده |
-| رفع | Profile انتخابی |
+| ترتیب فعال‌سازی | Web/DNS → AV → App → IPS → Deep |
+| چه چیزی را Log کنیم | Deny + رویداد UTM؛ نه همه‌ی Allow |
+| مدل فایروال | Throughput با UTM فعال، نه عدد Datasheet خام |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده:** Baseline 900 Mbps و CPU 12٪؛ با Web Filter 880 Mbps و CPU 20٪؛ اثر کم.
 
-**ت1.** چرا UTM CPU می‌خورد؟ *(پاسخ: 16-6-ت1)*
+**متوسط:** با IPS: 420 Mbps، CPU 85٪. تحلیل: IPS روی همه‌ی ترافیک. اقدام: Sensor انتخابی (Target=Server) و Monitor برای بقیه؛ اندازه‌گیری مجدد: 760 Mbps.
 
-**ت2.** Flow/Proxy؟ *(پاسخ: 16-6-ت2)*
+**سخت:** کاربران گزارش می‌دهند «بعضی سایت‌ها لود نمی‌شود» پس از Deep Inspection. شواهد: Capture: TLS Alert unknown_ca فقط برای چند برنامه؛ Log: Certificate error. علت: Pinning. رفع: Exemption آن FQDN؛ آزمون منفی: برنامه‌های دیگر هنوز Inspect می‌شوند.
 
-### ۱۱) مرور و ارزیابی
+### ۶) پیاده‌سازی از مسیر GUI
 
-**م1.** چرا اندازه‌گیری قبل/بعد؟ *(پاسخ: 16-6-م1)*
+1. Dashboard → Performance (CPU/Memory/Sessions).
+2. FortiView → Sources/Destinations.
+3. Log & Report → Security Events.
+4. Policy → ستون Security Profiles برای مقایسه.
 
-**م2.** سناریو: کندی بعد از Deep Inspection؛ چه می‌کنید؟ *(پاسخ: 16-6-م2)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-**معیار تسلط:** ساخت Profile، اتصال به Policy، اثبات با Log/تست.
+``` text
+get system performance status
+diagnose sys top 2 20
+diagnose sys session stat
+```
 
-**اشتباهات رایج:** فعال‌کردن بی‌برنامه؛ نادیده‌گرفتن لایسنس.
+### ۸) Verification (اثبات صحت)
 
-### ۱۲) واژگان و English Corner
+- جدول Baseline/اثر هر Profile با اعداد واقعی.
+- آزمون مثبت/منفی Exception.
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| CPU | Central Processing Unit | پردازنده | Performance |
-| wad | WAD proxy daemon | فرایند Proxy | CPU |
+### ۹) Troubleshooting
 
-| English sentence | ترجمه |
-|---|---|
-| Measure CPU before and after enabling profiles. | CPU را قبل و بعد از فعال‌سازی Profile اندازه بگیرید. |
-| Apply profiles selectively. | Profileها را انتخابی اعمال کنید. |
-
-#### کارت Lab — درس 16-6
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون فصل ۱۶ |
-| 2 | پیش‌نیاز | درس ۱۶-۵ |
-| 3 | توپولوژی | FGT + Client |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Policy v1 |
-| 8 | صورت مسئله | اندازه‌گیری |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | sys top |
-| 11 | سناریوی خرابی | CPU بالا بعد از UTM |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | جدول CPU |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/utm-perf.md` |
-| 16 | Cleanup و بازگردانی | — |
+| CPU بالا | `diagnose sys top` | Profile گسترده؛ Flow/Proxy؛ Deep |
+| FP | Log (Signature ID) | Exception دقیق |
+| برنامه خطا می‌دهد | Capture: TLS Alert | Pinning؛ Exemption |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Exception بدون تاریخ بازبینی ممنوع.
+- Profile را بر اساس ریسک، نه همه‌جا.
 
-<a id="ans-16"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- Baseline → یک Profile در هر زمان → مقایسه.
+- Exception دقیق و مستند.
+- عدد Datasheet برای انتخاب مدل کافی نیست.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا هر بار فقط یک Profile اضافه می‌کنیم؟ *(پاسخ: 16-6-ت1)*
+
+**ت2.** (متوسط) Offload IPS را چگونه محدود می‌کند؟ *(پاسخ: 16-6-ت2)*
+
+**ت3.** (سخت) جدول اثر برای ۴ Profile طراحی کنید. *(پاسخ: 16-6-ت3)*
+
+**ت4.** (سخت) آزمون عملی: Web Filter + File Filter + Deep با Exemption را پیاده و ۵ آزمون مثبت/منفی بنویسید. *(پاسخ: 16-6-ت4)*
+
+**ت5.** (سخت، طراحی) Rubric ۱۰۰ نمره‌ای برای آزمون این فصل بنویسید. *(پاسخ: 16-6-ت5)*
+
+**Q1.** Quick quiz (English): Why measure performance with one profile at a time? *(پاسخ: 16-6-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Baseline | Performance baseline | مرجع عملکرد عادی |
+| iperf | iperf | ابزار اندازه‌گیری Throughput |
+| Exception | Exception rule | استثنای کنترل‌شده |
+
+- *Measure before and after enabling each profile.* ← قبل و بعد از فعال‌سازی هر Profile اندازه بگیرید.
+
+### ۱۴) کارت Lab
+
+**Lab:** آزمون UTM. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/utm-perf.md`. **Rollback:** حذف Profile از Policy.
+
+### ۱۵) منابع
+
+- Fortinet Docs: FortiOS 7.0 — Performance، Inspection modes؛ iperf3 documentation.
 
 ## درس 16-7 — کارت قابلیت هر Security Profile: چه می‌بیند، چه نمی‌بیند، هزینه و راستی‌آزمایی
 
@@ -26078,22 +26101,20 @@ diagnose debug flow filter addr 192.168.10.5
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**16-1-ت1** — کدام Profileها Needs-License؟
 
-AV، IPS، Web Rating، App DB.
+### پاسخ‌های بازنویسی درس 16-1
 
-**16-1-ت2** — بدون لایسنس چه؟
+**16-1-ت1** — بعد از Policy lookup و قبل از SNAT؛ فقط برای ترافیک Accept‌شده.
 
-Static URL، Custom IPS، DoS.
+**16-1-ت2** — File Filter، SSL Inspection، Static URL، DoS Policy، Custom IPS.
 
-**16-1-م1** — چرا Feature/License Log؟
+**16-1-ت3** — باید به Policy وصل، لایسنس معتبر و رفتار با Log اثبات شود.
 
-تا ادعای بدون آزمایش نکنیم.
+**16-1-ت4** — برای هر ردیف: خروجی `fortiguard-service status`، `show firewall policy`، و Log آزمون؛ ردیف بدون شاهد «اجرا نشده».
 
-**16-1-م2** — سناریو: AV کار نمی‌کند؛ علت؟
+**16-1-ت5** — File Filter، Deep Inspection با Exemption، AV، IPS، Web/DNS Filter، EDR و Patch؛ FN باقی‌مانده را مستند کنید.
 
-لایسنس/DB.
-
+**16-1-Q1** — Because it must be attached to a policy, backed by a valid license/database, and verified by logs.
 
 ### پاسخ‌های بازنویسی درس 16-2
 
@@ -26156,27 +26177,20 @@ Static URL، Custom IPS، DoS.
 
 **16-5-Q1** — The certificate issuer is the firewall CA instead of the real public CA.
 
-**16-6-ت1** — چرا UTM CPU می‌خورد؟
 
-بازرسی لایه ۷.
+### پاسخ‌های بازنویسی درس 16-6
 
-**16-6-ت2** — Flow/Proxy؟
+**16-6-ت1** — تا اثر هر Profile جداگانه دیده شود.
 
-Flow سبک‌تر.
+**16-6-ت2** — بازرسی محتوایی در CPU/CP انجام می‌شود و Session کامل Offload نمی‌شود.
 
-**16-6-م1** — چرا اندازه‌گیری قبل/بعد؟
+**16-6-ت3** — ستون‌ها: Profile، CPU، Throughput، Latency، FP؛ ردیف Baseline و هر Profile و ترکیب؛ شرایط یکسان.
 
-اثر را ثابت می‌کند.
+**16-6-ت4** — مثبت: سایت مجاز باز؛ دانلود مجاز؛ منفی: سایت ممنوع Block؛ exe Block؛ سایت Exempt بدون Inspect؛ همه با Log.
 
-**16-6-م2** — سناریو: کندی بعد از Deep Inspection؛ چه می‌کنید؟
+**16-6-ت5** — پیکربندی ۳۰، آزمون مثبت/منفی ۳۰، Log و Evidence ۲۰، عیب‌یابی ۱۰، صداقت (Unverified/اجرا نشده) ۱۰.
 
-Exempt/Profile انتخابی.
-
-
----
-
-<a id="ch17"></a>
-
+**16-6-Q1** — To isolate the impact of each profile instead of guessing which one caused the load.
 
 ### پاسخ‌های درس افزوده‌ی 16-0 (فصل 16)
 
@@ -26432,590 +26446,637 @@ diagnose debug disable
 - Fortinet Docs: [FSSO polling connector agent installation](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/503764/fsso-polling-connector-agent-installation)، [FSSO](https://docs.fortinet.com/document/fortigate/7.0.8/administration-guide/450337)، [config user fsso-polling](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/516620/config-user-fsso-polling).
 - RFC 4511 (LDAP)، RFC 4120 (Kerberos)، RFC 2865 (RADIUS).
 
-## درس 17-1 — AD، DNS و DHCP روی Windows Server (آماده‌سازی Lab)
+## درس 17-1 — آماده‌سازی Lab هویت: Active Directory، DNS، OU، گروه و حساب سرویس روی Windows Server
 
-**فصل 17 - روز 1 · پیش‌نیاز: فصل ۷ · ۶ ساعت**
+**فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، Golden_W2025_Runbook · ≈ 6 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده»؛ وابستگی لایسنس هر قابلیت صریح ذکر شده است. دستورهای Windows را شما اجرا می‌کنید؛ رمزها نمونه‌اند.
 
-FortiGate برای هویت به Directory نیاز دارد. DC را با دامنه‌ی `lab.local` آماده می‌کنیم.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۷
+1. زیرساخت AD را برای Lab بسازد (Forest/Domain، DNS، OU، گروه، کاربر تست، حساب سرویس).
+2. وابستگی‌های FortiGate (DNS، زمان، پورت‌ها) را بشناسد.
+3. ساختار OU/گروه را برای Policy هویتی طراحی کند.
+4. Snapshot و Rollback را اجرا کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- DC با DNS؛ کاربران/گروه‌ها (IT، Finance) و حساب سرویس read-only.
-- ساعت هماهنگ (NTP) برای Kerberos.
-- FortiGate باید DNS/IP DC را بتواند برساند.
-- LDAP 389 / LDAPS 636.
-- رمزها نمونه، حساب سرویس حداقل دسترسی.
+FortiGate برای Policy مبتنی بر هویت به یک Directory نیاز دارد. بدون AD تمیز و DNS/ساعت درست، همه‌ی مراحل بعد (LDAP، FSSO، RADIUS) شکست می‌خورند و مشکل در جای اشتباه جست‌وجو می‌شود.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کاربر IT با گروه AD به منابع خاص دسترسی دارد.
+#### ۱) طراحی دامنه‌ی Lab
 
-### ۵) مثال سازمانی
-
-سازمان: Policy بر اساس گروه (Finance، IT) به‌جای IP.
-
-### ۶) تصویر و توپولوژی
-
-```text
-User -> FGT (Auth) -> AD/NPS ; Policy by group
+``` text
+Domain  : lab.local       DC: DC1 192.168.90.40   DNS: DC1
+OU      : Corp -> Users, Groups, ServiceAccounts
+Groups  : GRP-FINANCE, GRP-IT, GRP-GUEST
+Users   : u.fin1 (Finance), u.it1 (IT), svc-fgt (read-only bind)
+Time    : DC is time source (NTP upstream); FortiGate uses same NTP
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) چرا این طراحی؟
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+- **OU جدا برای ServiceAccounts:** حساب Bind حداقل دسترسی و قابل‌ممیزی.
+- **گروه‌ها برای نقش:** Policy روی گروه نوشته می‌شود، نه کاربر.
+- **DNS روی DC:** AD بدون DNS درست کار نمی‌کند (SRV records).
+- **زمان:** Kerberos به اختلاف زمان حساس است (۱۷-۰).
 
-#### روش گرافیکی (GUI)
+#### ۳) پورت‌های مورد نیاز (مرور)
 
-1. (Windows GUI) Server Manager > Add Roles > AD DS و DNS.
-2. Active Directory Users and Computers: گروه IT و کاربر testuser.
-3. FortiGate: System > DNS: DC.
+LDAP 389/TCP، LDAPS 636/TCP، Kerberos 88/TCP+UDP، DNS 53، RADIUS 1812/UDP (NPS)، FSSO Collector 8000/TCP (۱۷-۰).
 
-#### روش خط فرمان (CLI)
+### ۴) طراحی و تصمیم‌گیری
 
-```text
-# Windows PowerShell on the lab DC (lab only)
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| OU/گروه | ساختار نقش‌محور؛ نام‌گذاری استاندارد |
+| حساب سرویس | Read-only، رمز قوی، بدون Interactive logon |
+| زمان | یک منبع NTP برای DC و FGT |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده:** PowerShell: ساخت Forest و گروه‌ها؛ تست `Get-ADDomain` و `nslookup lab.local`.
+
+**متوسط:** FortiGate نمی‌تواند DC را resolve کند: DNS فایروال را روی DC1 بگذارید یا Conditional Forward؛ آزمون `execute nslookup`.
+
+**سخت:** LDAP Bind از FGT شکست می‌خورد با پیام invalid credentials: حساب svc-fgt با UPN اشتباه (DN صحیح لازم). اثبات: `ldp.exe` یا `Get-ADUser svc-fgt` برای DN دقیق؛ سپس تست از FGT. درس: DN را از خود AD بخوانید، حدس نزنید.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Server Manager → Add Roles → Active Directory Domain Services و DNS.
+2. Active Directory Users and Computers → ساخت OU/Group/User.
+3. DNS Manager → بررسی Zone lab.local.
+4. FortiGate: Network → DNS = 192.168.90.40.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+# Windows PowerShell on DC1 (lab only; run by the user)
 Install-WindowsFeature AD-DS -IncludeManagementTools
 Install-ADDSForest -DomainName lab.local -InstallDns
-New-ADGroup -Name IT -GroupScope Global
-New-ADUser -Name svc-fgt -AccountPassword (Read-Host -AsSecureString) -Enabled $true
+New-ADOrganizationalUnit -Name Corp -Path "DC=lab,DC=local"
+New-ADGroup -Name GRP-FINANCE -GroupScope Global -Path "OU=Corp,DC=lab,DC=local"
+New-ADUser -Name svc-fgt -SamAccountName svc-fgt -AccountPassword (Read-Host -AsSecureString) -Enabled $true
+Get-ADDomain
+Get-ADUser svc-fgt | Select DistinguishedName
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- Forest فقط در Lab؛ پس از ساخت Reboot.
-- راستی‌آزمایی: `Get-ADDomain`.
-- بازگشت: Snapshot VM.
+- `nslookup lab.local` از FortiGate و کلاینت.
+- `Get-ADUser` DN حساب سرویس.
+- Snapshot VM گرفته شده.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- `nslookup lab.local` و `Get-ADUser`.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | DC دیده نمی‌شود |
-| شواهد/دستور | ping/ nslookup شکست |
-| علت | DNS/VLAN |
-| رفع | تنظیم DNS/Route |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** چرا DNS روی DC؟ *(پاسخ: 17-1-ت1)*
-
-**ت2.** حساب سرویس؟ *(پاسخ: 17-1-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا ساعت مهم؟ *(پاسخ: 17-1-م1)*
-
-**م2.** سناریو: LDAP وصل نمی‌شود؛ بررسی؟ *(پاسخ: 17-1-م2)*
-
-**معیار تسلط:** تنظیم Auth Server و تست با ابزار تشخیص.
-
-**اشتباهات رایج:** DN/Port/ساعت اشتباه.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| AD | Active Directory | دایرکتوری ویندوز | Auth |
-| DC | Domain Controller | سرور دامنه | AD |
-| LDAP | Lightweight Directory Access Protocol | پروتکل دایرکتوری | FGT |
-
-| English sentence | ترجمه |
-|---|---|
-| Use a least-privilege service account for LDAP binds. | برای LDAP Bind از حساب سرویس با حداقل دسترسی استفاده کنید. |
-| Synchronize time with NTP. | زمان را با NTP هماهنگ کنید. |
-
-#### کارت Lab — درس 17-1
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | DC و کاربران |
-| 2 | پیش‌نیاز | فصل ۷ |
-| 3 | توپولوژی | DC VM + FGT |
-| 4 | تجهیزات | Windows DC + FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | 192.168.90.40 |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | DC آماده |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | nslookup |
-| 11 | سناریوی خرابی | DC دیده نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | کاربر/گروه |
-| 14 | معیار پذیرش | LDAP قابل‌اتصال |
-| 15 | مستندات نهایی | `03-ops/ad-lab.md` |
-| 16 | Cleanup و بازگردانی | Snapshot |
+| FGT نام DC را نمی‌یابد | `execute nslookup` | DNS فایروال |
+| Kerberos خطا | اختلاف زمان | NTP/زمان DC |
+| Bind شکست | DN/رمز | DN دقیق از AD |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- رمزها نمونه و غیر ذخیره‌ای در ریپو.
+- حساب سرویس read-only.
+- DC را از اینترنت ایزوله نگه دارید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- AD تمیز + DNS + زمان = پیش‌نیاز هویت.
+- DN را از AD بخوانید.
+- Snapshot قبل از تغییر.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا DNS روی DC لازم است؟ *(پاسخ: 17-1-ت1)*
+
+**ت2.** (ساده) چرا حساب سرویس جدا؟ *(پاسخ: 17-1-ت2)*
+
+**ت3.** (متوسط) FGT نام DC را resolve نمی‌کند؛ مراحل. *(پاسخ: 17-1-ت3)*
+
+**ت4.** (سخت) طراحی OU/گروه برای ۳ نقش. *(پاسخ: 17-1-ت4)*
+
+**ت5.** (سخت، طراحی) برنامه‌ی Snapshot/Rollback برای Lab AD. *(پاسخ: 17-1-ت5)*
+
+**Q1.** Quick quiz (English): Why must DNS be correct before AD authentication works? *(پاسخ: 17-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| AD DS | Active Directory Domain Services | سرویس Directory |
+| OU | Organizational Unit | واحد سازمانی |
+| SRV | DNS service record | رکورد سرویس |
+
+- *Use a least-privilege service account for LDAP binds.* ← برای Bind از حساب سرویس با حداقل دسترسی استفاده کنید.
+
+### ۱۴) کارت Lab
+
+**Lab:** DC و کاربران. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ad-lab.md`. **Rollback:** Snapshot.
+
+### ۱۵) منابع
+
+- Microsoft Learn: Active Directory Domain Services Overview.
+- `phase0a/Golden_W2025_Runbook.md`.
 
 <a id="l-17-2"></a>
 
-## درس 17-2 — LDAP و Policy بر اساس گروه
+## درس 17-2 — LDAP در FortiGate و Policy بر اساس گروه: Bind، Search، User Group و آزمون
 
-**فصل 17 - روز 2 · پیش‌نیاز: درس ۱۷-۱ · ۶ ساعت**
+**فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، ۱۷-۱، ۱۲-۰ · ≈ 7 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده»؛ وابستگی لایسنس هر قابلیت صریح ذکر شده است.
 
-FortiGate را به AD وصل می‌کنیم و Policy را بر اساس گروه می‌نویسیم.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۷-۱
+1. سرور LDAP را در FortiGate بسازد (cnid، dn، Bind، LDAPS).
+2. User Group با Remote Group (DN کامل) بسازد.
+3. Policy گروهی بنویسد و رفتار نگاشت IP→User را بداند.
+4. با ابزار تست و Debug مشکل را عیب‌یابی کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- `config user ldap`: server، cnid=sAMAccountName، dn، bind account.
-- User Group با `match` گروه AD (DN کامل).
-- Policy مبتنی بر هویت نیاز به Authentication فعال (Firewall Auth/Captive/FSSO).
-- تست: `diagnose test authserver ldap`.
-- Debug: `diagnose debug application fnbamd -1`.
+LDAP به FortiGate می‌گوید «کاربر کیست و عضو کدام گروه است». اما Policy مبتنی بر هویت فقط وقتی کار می‌کند که کاربر **احراز هویت** شده باشد (Captive/FSSO/VPN)؛ خود LDAP فقط منبع تأیید و عضویت است.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کاربر IT با گروه AD به منابع خاص دسترسی دارد.
+#### ۱) اجزای تنظیم LDAP
 
-### ۵) مثال سازمانی
+- **Server/Port/Secure:** `ldaps`/636 یا StartTLS.
+- **cnid:** ویژگی نام ورود (`sAMAccountName`).
+- **dn:** ریشه‌ی جست‌وجو (`dc=lab,dc=local`).
+- **Bind:** `regular` با DN و رمز حساب سرویس.
+- **Group:** Remote Group با DN کامل گروه.
 
-سازمان: Policy بر اساس گروه (Finance، IT) به‌جای IP.
+#### ۲) جریان احراز هویت
 
-### ۶) تصویر و توپولوژی
-
-```text
-User -> FGT (Auth) -> AD/NPS ; Policy by group
+``` text
+user -> FGT (login)
+FGT -> LDAP: bind with svc-fgt, search cnid=user under dn
+FGT -> LDAP: bind with found user DN + user password
+FGT -> LDAP: read memberOf / match remote group
+FGT: allow policy for group
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۳) نکات
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+- DN گروه باید دقیق باشد؛ فرق Users container و OU.
+- Nested group ممکن است نیاز به تنظیم جداگانه داشته باشد (`Unverified` برای 7.0.3).
+- گواهی LDAPS باید معتبر باشد (CA را به FortiGate معرفی کنید).
 
-#### روش گرافیکی (GUI)
+### ۴) طراحی و تصمیم‌گیری
 
-1. User & Authentication > LDAP Servers > Create New: Name، Server IP، Common Name Identifier sAMAccountName، Distinguished Name.
-2. Bind Type Regular؛ Username/Password.
-3. Test Connectivity و Test User Credentials.
-4. User Groups > Create New: Remote Groups > Add > گروه IT.
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| LDAP یا LDAPS | LDAPS/StartTLS |
+| گروه‌ها | نقش‌محور؛ Nested را آگاهانه |
+| Fallback | Captive Portal برای IP بدون هویت |
 
-#### روش خط فرمان (CLI)
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-```text
+**ساده:** Test Connectivity موفق و Test User Credentials برای u.fin1 موفق.
+
+**متوسط:** کاربر یافت نمی‌شود: dn روی OU محدود بود؛ تغییر dn به ریشه‌ی دامنه.
+
+**سخت:** کاربر Login می‌کند ولی Policy گروه Finance مطابق نمی‌شود. فرضیه‌ها: DN گروه اشتباه (CN=Finance در OU دیگر)، کاربر عضو مستقیم نیست (Nested)، نگاشت IP→User نیامده، ترتیب Policy. آزمون: `diagnose test authserver`، Group membership در AD، Debug Flow Policy ID.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. User & Authentication → LDAP Servers → Create New (Server، cnid، dn، Bind).
+2. Test Connectivity و Test User Credentials.
+3. User Groups → Create New → Remote Groups → Add (انتخاب گروه از LDAP).
+4. Policy → Source = گروه.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 config user ldap
     edit "LDAP-AD"
         set server "192.168.90.40"
         set cnid "sAMAccountName"
         set dn "dc=lab,dc=local"
         set type regular
-        set username "CN=svc-fgt,CN=Users,DC=lab,DC=local"
+        set username "CN=svc-fgt,OU=ServiceAccounts,OU=Corp,DC=lab,DC=local"
         set password <SERVICE-ACCOUNT-PASSWORD>
+        set secure ldaps
+        set port 636
     next
 end
-diagnose test authserver ldap LDAP-AD testuser <PASSWORD>
+config user group
+    edit "GRP-FINANCE"
+        config match
+            edit 1
+                set server-name "LDAP-AD"
+                set group-name "CN=GRP-FINANCE,OU=Groups,OU=Corp,DC=lab,DC=local"
+            next
+        end
+    next
+end
+diagnose test authserver ldap LDAP-AD u.fin1 <PASSWORD>
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `dn`: ریشه‌ی جستجو.
-- `username/password`: حساب Bind.
-- تست باید Authentication success بدهد.
-- بازگشت: `delete "LDAP-AD"`.
+- Test Connectivity/Credentials در GUI.
+- `diagnose test authserver ldap ...` موفق.
+- آزمون مثبت/منفی Policy.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- Test Connectivity موفق.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Test credentials شکست |
-| شواهد/دستور | `diagnose debug application fnbamd -1` |
-| علت | DN/رمز/پورت |
-| رفع | اصلاح DN/رمز/Firewall |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** cnid؟ *(پاسخ: 17-2-ت1)*
-
-**ت2.** Bind؟ *(پاسخ: 17-2-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا DN دقیق؟ *(پاسخ: 17-2-م1)*
-
-**م2.** سناریو: کاربر یافت نمی‌شود؛ علت؟ *(پاسخ: 17-2-م2)*
-
-**معیار تسلط:** تنظیم Auth Server و تست با ابزار تشخیص.
-
-**اشتباهات رایج:** DN/Port/ساعت اشتباه.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| cnid | Common name identifier | ویژگی ورود | LDAP |
-| DN | Distinguished Name | نام مسیر | LDAP |
-| Bind | LDAP bind | احراز حساب سرویس | LDAP |
-
-| English sentence | ترجمه |
-|---|---|
-| Test the LDAP connection before building policies. | قبل از ساخت Policy اتصال LDAP را تست کنید. |
-| Use the full DN of the group. | از DN کامل گروه استفاده کنید. |
-
-#### کارت Lab — درس 17-2
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | LDAP |
-| 2 | پیش‌نیاز | درس ۱۷-۱ |
-| 3 | توپولوژی | FGT + DC |
-| 4 | تجهیزات | FGT + DC |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | 192.168.90.40 |
-| 7 | وضعیت اولیه | DC آماده |
-| 8 | صورت مسئله | LDAP + Group |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | diagnose test |
-| 11 | سناریوی خرابی | Test credentials شکست |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | success |
-| 14 | معیار پذیرش | کاربر تأیید |
-| 15 | مستندات نهایی | `03-ops/ldap.md` |
-| 16 | Cleanup و بازگردانی | حذف LDAP |
+| Bind شکست | `diagnose debug application fnbamd -1` | DN/رمز/TLS/پورت |
+| User یافت نمی‌شود | Debug | cnid/dn |
+| Policy مطابق نمی‌شود | Debug Flow | گروه/نگاشت |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- LDAPS؛ رمز در ریپو نیست؛ حساب Read-only.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- LDAP منبع احراز و عضویت است؛ Policy هویتی به نگاشت نیاز دارد.
+- DN دقیق و TLS.
+- آزمون مثبت/منفی.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) cnid چیست؟ *(پاسخ: 17-2-ت1)*
+
+**ت2.** (ساده) چرا LDAPS؟ *(پاسخ: 17-2-ت2)*
+
+**ت3.** (متوسط) کاربر یافت نمی‌شود؛ علت محتمل؟ *(پاسخ: 17-2-ت3)*
+
+**ت4.** (سخت) Policy گروهی مطابق نمی‌شود؛ فرضیه‌ها. *(پاسخ: 17-2-ت4)*
+
+**ت5.** (سخت، طراحی) طرح گروه‌بندی برای ۳ دسترسی. *(پاسخ: 17-2-ت5)*
+
+**Q1.** Quick quiz (English): Which information must an LDAP server entry in FortiGate contain to find a user? *(پاسخ: 17-2-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| cnid | Common name identifier | ویژگی ورود |
+| DN | Distinguished Name | نام مسیر |
+| LDAPS | LDAP over TLS | LDAP رمزشده |
+
+- *Test the LDAP connection before building policies.* ← قبل از Policy اتصال LDAP را تست کنید.
+
+### ۱۴) کارت Lab
+
+**Lab:** LDAP. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ldap.md`. **Rollback:** حذف User Group/LDAP.
+
+### ۱۵) منابع
+
+- RFC 4511 (LDAP)؛ Fortinet Docs: FortiOS 7.0 — LDAP servers، User groups.
 
 <a id="l-17-3"></a>
 
-## درس 17-3 — RADIUS (NPS) و MFA
+## درس 17-3 — RADIUS و NPS، احراز هویت چندعاملی (MFA) و Attributeها
 
-**فصل 17 - روز 3 · پیش‌نیاز: درس ۱۷-۲ · ۶ ساعت**
+**فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، ۱۷-۲ · ≈ 6 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده»؛ وابستگی لایسنس هر قابلیت صریح ذکر شده است. MFA به FortiToken/OTP وابسته است (Needs-License/سرویس جداگانه).
 
-RADIUS برای Authentication VPN/Wi-Fi/Firewall با NPS ویندوز یا سرور دیگر.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۷-۲
+1. جریان RADIUS (Access-Request/Accept/Reject/Challenge) را شرح دهد.
+2. NPS را به‌عنوان RADIUS Server با Client و Policy پیکربندی کند.
+3. FortiGate را RADIUS Client کند و تست را بخواند.
+4. MFA را با Access-Challenge/OTP مفهومی توضیح دهد.
+5. Attributeها (Group/VLAN) را برای Authorization به‌کار ببرد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- `config user radius`: server، secret.
-- NPS: Network Policy/Client (FGT به‌عنوان RADIUS Client).
-- پورت‌ها UDP 1812/1813.
-- MFA (مفهومی): OTP/Token.
-- تست: `diagnose test authserver radius`.
+RADIUS برای احراز هویت دسترسی راه‌دور/شبکه (VPN، Wi-Fi، Admin) و مدیریت متمرکز است. FortiGate Client است؛ NPS (یا FreeRADIUS) Server. مزیت: سیاست یکجا، Accounting، MFA.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کاربر IT با گروه AD به منابع خاص دسترسی دارد.
+#### ۱) جریان
 
-### ۵) مثال سازمانی
-
-سازمان: Policy بر اساس گروه (Finance، IT) به‌جای IP.
-
-### ۶) تصویر و توپولوژی
-
-```text
-User -> FGT (Auth) -> AD/NPS ; Policy by group
+``` text
+FGT (client) -> NPS: Access-Request (User-Name, User-Password encrypted with shared secret, NAS-IP)
+NPS: check AD + Network Policy
+NPS -> FGT: Access-Accept (attributes) | Access-Reject | Access-Challenge (OTP)
+FGT: Accounting-Request (1813) optional
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) NPS
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+- RADIUS Client: IP فایروال + Shared Secret.
+- Network Policy: شرط (گروه AD) + روش احراز (PAP/MS-CHAPv2/EAP) + Constraints.
+- پورت‌ها 1812/1813 UDP.
 
-#### روش گرافیکی (GUI)
+#### ۳) امنیت RADIUS
 
-1. User & Authentication > RADIUS Servers > Create New.
-2. Name، Primary Server IP، Secret.
-3. Test Connectivity.
-4. NPS (Windows): RADIUS Clients > New > IP فایروال و Secret.
+Shared Secret قوی؛ PAP رمز را (با Secret) رمز می‌کند ولی در برابر شنود/جعل ضعیف‌تر از EAP-TLS؛ برای VPN با MFA از Challenge استفاده کنید.
 
-#### روش خط فرمان (CLI)
+#### ۴) MFA
 
-```text
+پس از رمز، سرور OTP می‌خواهد (Access-Challenge)؛ کاربر کد را وارد می‌کند. FortiToken یا OTP خارجی (Needs-License/سرویس).
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| PAP/CHAP/EAP | EAP/MS-CHAPv2 برای VPN؛ PAP فقط با Secret قوی و شبکه‌ی مدیریت |
+| Accounting | برای حسابرسی ورود |
+| MFA | OTP/Token برای Admin و VPN |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده:** `diagnose test authserver radius RADIUS-NPS pap u.fin1 <PASSWORD>` ← success.
+
+**متوسط:** Access-Reject: NPS Event Viewer: «policy not matched» چون کاربر در گروه مجاز نیست.
+
+**سخت:** VPN با MFA: کاربر بعد از رمز OTP می‌خواهد ولی GUI FortiClient خطا می‌دهد. بررسی: RADIUS timeout (کوتاه)، Challenge پشتیبانی کلاینت، Secret. اثبات با Sniffer 1812 و NPS Log.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. User & Authentication → RADIUS Servers → Create New (Name، Primary Server، Secret).
+2. Test Connectivity/Credentials.
+3. NPS: RADIUS Clients → New (IP فایروال، Secret).
+4. NPS: Network Policies → شرط Group.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 config user radius
     edit "RADIUS-NPS"
         set server "192.168.90.41"
         set secret <RADIUS-SECRET>
+        set timeout 10
     next
 end
-diagnose test authserver radius RADIUS-NPS pap testuser <PASSWORD>
+diagnose test authserver radius RADIUS-NPS pap u.fin1 <PASSWORD>
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- Secret باید در NPS هم یکی باشد.
-- `pap`: روش تست.
-- بازگشت: `delete`.
+- Test موفق؛ NPS Event "granted".
+- Sniffer: Access-Request/Accept.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- Test موفق.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Access-Reject |
-| شواهد/دستور | NPS Event Log |
-| علت | Secret/Policy NPS |
-| رفع | تطبیق Secret/Policy |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** پورت RADIUS؟ *(پاسخ: 17-3-ت1)*
-
-**ت2.** Secret؟ *(پاسخ: 17-3-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا RADIUS Client لازم؟ *(پاسخ: 17-3-م1)*
-
-**م2.** سناریو: Reject؛ بررسی؟ *(پاسخ: 17-3-م2)*
-
-**معیار تسلط:** تنظیم Auth Server و تست با ابزار تشخیص.
-
-**اشتباهات رایج:** DN/Port/ساعت اشتباه.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| RADIUS | Remote Authentication Dial-In User Service | پروتکل AAA | VPN/Wi-Fi |
-| NPS | Network Policy Server | سرور RADIUS ویندوز | Windows |
-| MFA | Multi-Factor Authentication | احراز چندعاملی | VPN |
-
-| English sentence | ترجمه |
-|---|---|
-| Define the firewall as a RADIUS client on NPS. | فایروال را در NPS به‌عنوان RADIUS Client تعریف کنید. |
-| The shared secret must match. | Secret مشترک باید یکی باشد. |
-
-#### کارت Lab — درس 17-3
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | RADIUS |
-| 2 | پیش‌نیاز | درس ۱۷-۲ |
-| 3 | توپولوژی | FGT + NPS |
-| 4 | تجهیزات | FGT + Windows NPS |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | 192.168.90.41 |
-| 7 | وضعیت اولیه | DC |
-| 8 | صورت مسئله | RADIUS |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | diagnose test |
-| 11 | سناریوی خرابی | Access-Reject |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | success |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `03-ops/radius.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| Access-Reject | NPS Event | Secret/Policy/گروه |
+| بدون پاسخ | Sniffer 1812 | Client تعریف نشده/Firewall |
+| Challenge خطا | Log | Timeout/کلاینت |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Secret قوی و یکتا؛ RADIUS را از اینترنت ببندید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- RADIUS: Request/Accept/Reject/Challenge.
+- NPS Client+Policy.
+- MFA با Challenge.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) پورت‌های RADIUS؟ *(پاسخ: 17-3-ت1)*
+
+**ت2.** (ساده) Shared Secret چیست؟ *(پاسخ: 17-3-ت2)*
+
+**ت3.** (متوسط) Access-Reject با رمز درست؛ علت؟ *(پاسخ: 17-3-ت3)*
+
+**ت4.** (سخت) VPN با MFA بعد از رمز قطع می‌شود؛ فرضیه‌ها. *(پاسخ: 17-3-ت4)*
+
+**ت5.** (سخت، طراحی) طرح RADIUS برای مدیریت فایروال با MFA. *(پاسخ: 17-3-ت5)*
+
+**Q1.** Quick quiz (English): What does Access-Challenge enable? *(پاسخ: 17-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| NPS | Network Policy Server | سرور RADIUS ویندوز |
+| NAS | Network Access Server | دستگاه دسترسی (فایروال) |
+| OTP | One-Time Password | رمز یک‌بارمصرف |
+
+- *The shared secret must match on both sides.* ← Secret باید دو سر یکی باشد.
+
+### ۱۴) کارت Lab
+
+**Lab:** RADIUS. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/radius.md`. **Rollback:** حذف RADIUS.
+
+### ۱۵) منابع
+
+- RFC 2865 (RADIUS)؛ Microsoft Learn: NPS.
 
 <a id="l-17-4"></a>
 
-## درس 17-4 — FSSO: Single Sign-On
+## درس 17-4 — FSSO عملی: انتخاب حالت، پیکربندی، Group Filter و عیب‌یابی
 
-**فصل 17 - روز 4 · پیش‌نیاز: درس ۱۷-۳ · ۶ ساعت**
+**فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، ۱۷-۲ · ≈ 6 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده»؛ وابستگی لایسنس هر قابلیت صریح ذکر شده است.
 
-FSSO ورود ویندوزی کاربر را به FortiGate اطلاع می‌دهد تا کاربر دوباره لاگین نکند.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۷-۳
+1. حالت مناسب FSSO را (DC Agent/Collector/Polling) انتخاب کند.
+2. Polling را پیکربندی و کاربران را ببیند.
+3. Group Filter و Policy را درست بنویسد.
+4. مشکلات NTLM/زمان/Event Log را تشخیص دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Collector Agent روی DC یا پیمایش مستقیم (DC Agent / Polling).
-- FSSO groups در Policy.
-- پورت‌ها (TCP 8000 و ...) `Unverified`.
-- نیاز به Event Log خواندن از DC.
-- مناسب شبکه‌ی ویندوزی.
+FSSO کاربر را بدون Login دوباره به فایروال می‌شناساند. در 7.0، Polling بدون Agent ساده است ولی محدودیت دارد (Kerberos، ورود هم‌زمان)؛ Collector Agent مقیاس‌پذیرتر است.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کاربر IT با گروه AD به منابع خاص دسترسی دارد.
+#### ۱) انتخاب حالت
 
-### ۵) مثال سازمانی
+| شرایط | حالت |
+|---|---|
+| ≤ چند صد کاربر، Kerberos، ساده | FortiGate Polling |
+| NTLM یا بار زیاد | Collector Agent/DC Agent |
+| Terminal Server | Terminal Server Agent |
 
-سازمان: Policy بر اساس گروه (Finance، IT) به‌جای IP.
+#### ۲) تنظیم Polling (طبق مستند 7.0)
 
-### ۶) تصویر و توپولوژی
+پیش‌نیاز: LDAP Server موفق. سپس Security Fabric → External Connectors → FSSO (Poll Active Directory Server) با حساب مجاز خواندن Event Log. `polling-frequency` بین 1 تا 30 ثانیه (پیش‌فرض 10).
 
-```text
-User -> FGT (Auth) -> AD/NPS ; Policy by group
-```
+#### ۳) Group Filter
 
-### ۷) پیکربندی (GUI و CLI)
+فقط کاربران عضو گروه‌های Filter به لیست FSSO می‌روند؛ اگر گروه را نگذارید، کاربر دیده نمی‌شود.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۴) رویدادها
 
-#### روش گرافیکی (GUI)
+Polling فقط Kerberos 4768/4769 را می‌خواند؛ NTLM پشتیبانی نمی‌شود؛ ورود هم‌زمان زیاد ممکن است ورودی را از دست بدهد.
 
-1. Security Fabric > External Connectors > Create New > FSSO Agent on Windows AD.
-2. Name، Primary FSSO agent، Password.
-3. User Groups: FSSO > Members.
-4. Policy: Source = گروه FSSO.
+### ۴) طراحی و تصمیم‌گیری
 
-#### روش خط فرمان (CLI)
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| حالت | طبق جدول |
+| Fallback | Captive Portal |
+| Redundancy | چند Collector (تا ۵ طبق مستند) |
 
-```text
-config user fsso
-    edit "FSSO-AD"
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده:** کاربر u.fin1 به PC Login می‌کند؛ `diagnose debug authd fsso list` او را با IP و گروه نشان می‌دهد.
+
+**متوسط:** کاربر دیده نمی‌شود: گروه در Filter نبود؛ افزودن گروه؛ آزمون.
+
+**سخت:** نیمی از کاربران دیده نمی‌شوند: آن‌ها با NTLM (IP به‌جای نام) به File Server وصل می‌شوند و Kerberos Ticket ندارند. راه‌حل: اصلاح DNS/SPN تا Kerberos استفاده شود یا گذار به Collector Agent.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. User & Authentication → LDAP (از ۱۷-۲).
+2. Security Fabric → External Connectors → Create New → FSSO.
+3. Poll Active Directory Server: IP، User، Password، LDAP Server.
+4. User Groups → FSSO → Members.
+5. Policy: Source = گروه FSSO.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+config user fsso-polling
+    edit 1
         set server "192.168.90.40"
-        set password <FSSO-PASSWORD>
+        set ldap-server "LDAP-AD"
+        set polling-frequency 10
     next
 end
 diagnose debug authd fsso list
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `diagnose debug authd fsso list`: کاربران لاگین‌شده (`Unverified`).
-- بازگشت: `delete`.
+- `fsso list` کاربر و IP.
+- Policy Hit و Log با User.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- ورود کاربر دامنه‌ای و دیدن در FSSO list.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | کاربر شناسایی نمی‌شود |
-| شواهد/دستور | `fsso list` خالی |
-| علت | Agent/Log/Port |
-| رفع | بررسی Agent و ارتباط |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** FSSO چیست؟ *(پاسخ: 17-4-ت1)*
-
-**ت2.** چرا کاربر دوباره لاگین نمی‌کند؟ *(پاسخ: 17-4-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا ساعت مهم؟ *(پاسخ: 17-4-م1)*
-
-**م2.** سناریو: گروه خالی؛ چرا؟ *(پاسخ: 17-4-م2)*
-
-**معیار تسلط:** تنظیم Auth Server و تست با ابزار تشخیص.
-
-**اشتباهات رایج:** DN/Port/ساعت اشتباه.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| FSSO | Fortinet Single Sign-On | ورود یکپارچه | AD |
-| Collector | FSSO collector agent | جمع‌آوری ورود | DC |
-
-| English sentence | ترجمه |
-|---|---|
-| FSSO maps Windows logons to firewall identities. | FSSO ورودهای ویندوز را به هویت‌های فایروال نگاشت می‌کند. |
-| Verify the collector can read the domain controller logs. | بررسی کنید Collector می‌تواند Log دامنه را بخواند. |
-
-#### کارت Lab — درس 17-4
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | FSSO |
-| 2 | پیش‌نیاز | درس ۱۷-۳ |
-| 3 | توپولوژی | FGT + DC + Client |
-| 4 | تجهیزات | FGT + DC |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | LDAP آماده |
-| 8 | صورت مسئله | FSSO |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | fsso list |
-| 11 | سناریوی خرابی | کاربر شناسایی نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | کاربر دیده شود |
-| 14 | معیار پذیرش | Policy گروهی |
-| 15 | مستندات نهایی | `03-ops/fsso.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| کاربر نیست | `fsso list` | Group Filter/Kerberos/ساعت |
+| IP→User اشتباه | Terminal Server | Agent مخصوص |
+| کند/ناقص | Load | Collector |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- حساب Polling حداقل دسترسی؛ شبکه‌ی مدیریت.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- حالت را با NTLM/بار انتخاب کنید.
+- Group Filter الزامی.
+- Fallback داشته باشید.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Polling چه رویدادهایی را می‌خواند؟ *(پاسخ: 17-4-ت1)*
+
+**ت2.** (متوسط) کاربر Login کرده ولی دیده نمی‌شود؛ ۳ علت. *(پاسخ: 17-4-ت2)*
+
+**ت3.** (سخت) چرا Terminal Server مشکل‌ساز است؟ *(پاسخ: 17-4-ت3)*
+
+**ت4.** (سخت) Collector یا Polling برای ۲۰۰۰ کاربر با NTLM؟ *(پاسخ: 17-4-ت4)*
+
+**ت5.** (سخت، طراحی) آزمون ۵ مورد FSSO. *(پاسخ: 17-4-ت5)*
+
+**Q1.** Quick quiz (English): Why can FSSO polling miss users who authenticate with NTLM? *(پاسخ: 17-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| FSSO | Fortinet Single Sign-On | ورود یکپارچه |
+| DC Agent | Domain controller agent | Agent روی DC |
+| Collector | Collector agent | جمع‌کننده |
+
+- *Choose the FSSO mode by authentication protocol and scale.* ← حالت FSSO را بر اساس پروتکل احراز و مقیاس انتخاب کنید.
+
+### ۱۴) کارت Lab
+
+**Lab:** FSSO. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/fsso.md`. **Rollback:** حذف Connector.
+
+### ۱۵) منابع
+
+- [FSSO polling connector agent installation](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/503764/fsso-polling-connector-agent-installation)
+- [FSSO](https://docs.fortinet.com/document/fortigate/7.0.8/administration-guide/450337)
 
 <a id="l-17-5"></a>
 
-## درس 17-5 — Captive Portal، مهمان و Firewall Authentication
+## درس 17-5 — Captive Portal، مهمان و Firewall Authentication: طراحی ایمن Guest
 
-**فصل 17 - روز 5 · پیش‌نیاز: درس ۱۷-۴ · ۶ ساعت**
+**فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، ۱۱-۰ · ≈ 6 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده»؛ وابستگی لایسنس هر قابلیت صریح ذکر شده است.
 
-برای مهمان/کاربران غیر دامنه‌ای، صفحه‌ی Login قبل از دسترسی.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۷-۴
+1. Captive Portal و Firewall Authentication (Policy-level) را مقایسه کند.
+2. شبکه‌ی Guest ایزوله با حساب موقت طراحی کند.
+3. HTTPS Redirect و گواهی Portal را درست بسازد.
+4. Timeout/Re-auth و محدودیت دسترسی را تنظیم کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Interface `security-mode captive-portal` یا Policy با Authentication.
-- Groups مجاز.
-- HTTPS Redirect و Certificate.
-- Timeout و Re-auth.
-- Guest: حساب موقت (Local User).
+کاربر بدون هویت (مهمان/BYOD) نمی‌تواند با FSSO دیده شود. Captive Portal قبل از دسترسی صفحه‌ی ورود می‌دهد؛ هویت و Policy بر اساس ورود ساخته می‌شود.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کاربر IT با گروه AD به منابع خاص دسترسی دارد.
+#### ۱) دو روش
 
-### ۵) مثال سازمانی
+- **Captive Portal روی Interface/Zone:** همه‌ی ترافیک آن شبکه قبل از Login مسدود و به Portal هدایت می‌شود.
+- **Authentication در Policy:** فقط ترافیک آن Policy نیازمند Login است.
 
-سازمان: Policy بر اساس گروه (Finance، IT) به‌جای IP.
+#### ۲) طراحی Guest
 
-### ۶) تصویر و توپولوژی
+Zone/VLAN جدا (Guest) ← فقط اینترنت (HTTP/HTTPS/DNS) ← بدون دسترسی به داخل ← حساب موقت (زمان‌دار) یا Sponsor ← Log.
 
-```text
-User -> FGT (Auth) -> AD/NPS ; Policy by group
-```
+#### ۳) HTTPS و گواهی
 
-### ۷) پیکربندی (GUI و CLI)
+Redirect HTTPS بدون گواهی معتبر هشدار می‌دهد؛ گواهی Portal معتبر یا CA داخلی. بدون آن کاربر عادت به «ادامه‌ی ناامن» می‌کند.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۴) Timeout
 
-#### روش گرافیکی (GUI)
+Idle Timeout، Session Timeout و Re-auth؛ برای مهمان کوتاه.
 
-1. Network > Interfaces > VLAN50 > Security Mode: Captive Portal؛ Authentication Portal: Local؛ Groups.
-2. User & Authentication > User Definition > Local User.
-3. Policy برای VLAN50.
-4. تست مرورگر.
+### ۴) طراحی و تصمیم‌گیری
 
-#### روش خط فرمان (CLI)
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Guest دسترسی | فقط اینترنت؛ Isolation داخلی |
+| حساب | موقت/Sponsor |
+| Timeout | کوتاه |
 
-```text
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده:** Guest به Portal هدایت می‌شود، با guest1 وارد و اینترنت دارد.
+
+**متوسط:** Portal باز نمی‌شود: allowaccess/Policy DNS؛ کاربر باید DNS را بتواند resolve کند.
+
+**سخت:** Login Loop: گواهی Portal نامعتبر و مرورگر Redirect را رد می‌کند؛ رفع: گواهی معتبر/CA؛ شواهد Capture و Log.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Network → Interfaces → VLAN Guest → Security Mode: Captive Portal.
+2. User & Authentication → User Definition → Local User موقت.
+3. Policy: Guest→WAN با Web Filter.
+4. Log & Report.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 config system interface
     edit "VLAN50"
         set security-mode captive-portal
@@ -27030,80 +27091,59 @@ config user local
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `security-mode captive-portal`: Portal روی VLAN.
-- Local User موقت.
-- راستی‌آزمایی: مرورگر به صفحه‌ی Login هدایت.
-- بازگشت: `set security-mode none`.
+- Redirect، Login، دسترسی اینترنت، آزمون منفی: Guest→داخل Block.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- ورود Guest و دسترسی اینترنت.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Portal باز نمی‌شود |
-| شواهد/دستور | HTTP/HTTPS؛ Certificate |
-| علت | allowaccess/Portal |
-| رفع | تنظیم Portal |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Captive Portal چه کاری می‌کند؟ *(پاسخ: 17-5-ت1)*
-
-**ت2.** Guest حساب چگونه؟ *(پاسخ: 17-5-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Certificate مهم؟ *(پاسخ: 17-5-م1)*
-
-**م2.** سناریو: Login لوپ؛ علت؟ *(پاسخ: 17-5-م2)*
-
-**معیار تسلط:** تنظیم Auth Server و تست با ابزار تشخیص.
-
-**اشتباهات رایج:** DN/Port/ساعت اشتباه.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Captive portal | Captive portal | صفحه‌ی Login | Guest |
-| Local user | Local user | کاربر محلی | Guest |
-
-| English sentence | ترجمه |
-|---|---|
-| Use a captive portal for guest access. | برای دسترسی مهمان از Captive Portal استفاده کنید. |
-| Time-limit the guest accounts. | حساب‌های مهمان را زمان‌دار کنید. |
-
-#### کارت Lab — درس 17-5
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Captive Portal |
-| 2 | پیش‌نیاز | درس ۱۷-۴ |
-| 3 | توپولوژی | FGT + Guest PC |
-| 4 | تجهیزات | FGT + Client |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | VLAN50 |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | Portal |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | مرورگر |
-| 11 | سناریوی خرابی | Portal باز نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Login |
-| 14 | معیار پذیرش | دسترسی |
-| 15 | مستندات نهایی | `03-ops/captive.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| Portal باز نمی‌شود | Capture | DNS/Policy/گواهی |
+| Loop | مرورگر | گواهی |
+| Guest به داخل | nmap | Policy گسترده |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- حساب مهمان زمان‌دار؛ بدون دسترسی داخلی؛ Log.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Portal برای IP بدون هویت.
+- Isolation Guest.
+- گواهی معتبر.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Captive Portal چیست؟ *(پاسخ: 17-5-ت1)*
+
+**ت2.** (متوسط) چرا گواهی Portal مهم است؟ *(پاسخ: 17-5-ت2)*
+
+**ت3.** (سخت) طراحی Guest با ۴ کنترل. *(پاسخ: 17-5-ت3)*
+
+**ت4.** (سخت) Login Loop را عیب‌یابی کنید. *(پاسخ: 17-5-ت4)*
+
+**ت5.** (سخت، طراحی) آزمون منفی Guest. *(پاسخ: 17-5-ت5)*
+
+**Q1.** Quick quiz (English): Why must a guest network be isolated from internal networks? *(پاسخ: 17-5-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Captive portal | Captive portal | صفحه‌ی ورود قبل از اینترنت |
+| Sponsor | Guest sponsor | مسئول تأیید مهمان |
+| BYOD | Bring Your Own Device | دستگاه شخصی |
+
+- *Keep guest accounts time-limited and isolated.* ← حساب‌های مهمان زمان‌دار و ایزوله باشند.
+
+### ۱۴) کارت Lab
+
+**Lab:** Captive Portal. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/captive.md`. **Rollback:** `set security-mode none`.
+
+### ۱۵) منابع
+
+- Fortinet Docs: FortiOS 7.0 — Captive portal، Firewall authentication.
 
 <a id="l-17-6"></a>
 
@@ -27333,85 +27373,80 @@ Auth را در ۸ لایه تقسیم کنید؛ شاهد جمع کنید؛ یک
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**17-1-ت1** — چرا DNS روی DC؟
 
-AD بدون DNS کار نمی‌کند.
+### پاسخ‌های بازنویسی درس 17-1
 
-**17-1-ت2** — حساب سرویس؟
+**17-1-ت1** — AD از SRV Record برای یافتن سرویس‌ها استفاده می‌کند.
 
-حداقل دسترسی read-only.
+**17-1-ت2** — حداقل دسترسی و ممیزی‌پذیری.
 
-**17-1-م1** — چرا ساعت مهم؟
+**17-1-ت3** — DNS فایروال، `execute nslookup`، Route/Policy Local-out، Sniffer 53.
 
-Kerberos.
+**17-1-ت4** — Corp/Users/Groups/ServiceAccounts؛ گروه‌های Finance/IT/Guest؛ Policy بر پایه‌ی گروه.
 
-**17-1-م2** — سناریو: LDAP وصل نمی‌شود؛ بررسی؟
+**17-1-ت5** — Snapshot قبل از Forest، بعد از پایه، قبل از هر تغییر؛ آزمون Restore.
 
-پورت و DNS.
+**17-1-Q1** — Because AD clients locate domain services through DNS SRV records.
 
-**17-2-ت1** — cnid؟
 
-نام ویژگی ورود (sAMAccountName).
+### پاسخ‌های بازنویسی درس 17-2
 
-**17-2-ت2** — Bind؟
+**17-2-ت1** — ویژگی نام ورود در Directory (مثل sAMAccountName).
 
-ورود حساب سرویس.
+**17-2-ت2** — تا رمزها قابل شنود نباشند.
 
-**17-2-م1** — چرا DN دقیق؟
+**17-2-ت3** — dn/OU اشتباه یا cnid ناسازگار.
 
-جستجو در مسیر درست.
+**17-2-ت4** — DN گروه، Nested، نگاشت IP→User، ترتیب Policy؛ آزمون‌ها: authserver، AD، Debug Flow.
 
-**17-2-م2** — سناریو: کاربر یافت نمی‌شود؛ علت؟
+**17-2-ت5** — گروه‌ها: Finance (ERP)، IT (مدیریت)، Guest (اینترنت)؛ Policy هر کدام Source=Group.
 
-DN/OU اشتباه.
+**17-2-Q1** — The base DN, the common name identifier (cnid) and bind credentials.
 
-**17-3-ت1** — پورت RADIUS؟
 
-UDP 1812/1813.
+### پاسخ‌های بازنویسی درس 17-3
 
-**17-3-ت2** — Secret؟
+**17-3-ت1** — UDP 1812 و 1813.
 
-رمز مشترک Client/Server.
+**17-3-ت2** — رمز مشترک Client/Server برای محافظت/اعتبارسنجی.
 
-**17-3-م1** — چرا RADIUS Client لازم؟
+**17-3-ت3** — Policy NPS/گروه مجاز نیست.
 
-NPS فقط Clientهای تعریف‌شده را می‌پذیرد.
+**17-3-ت4** — Timeout کوتاه، Challenge پشتیبانی‌نشده، Secret، NPS Policy.
 
-**17-3-م2** — سناریو: Reject؛ بررسی؟
+**17-3-ت5** — Admin remote auth=RADIUS، Challenge OTP، گروه Admin، Accounting، Fallback local admin.
 
-Event Viewer NPS.
+**17-3-Q1** — Additional authentication steps such as one-time passwords.
 
-**17-4-ت1** — FSSO چیست؟
 
-انتقال هویت ورود ویندوز به FGT.
+### پاسخ‌های بازنویسی درس 17-4
 
-**17-4-ت2** — چرا کاربر دوباره لاگین نمی‌کند؟
+**17-4-ت1** — Kerberos 4768/4769.
 
-SSO.
+**17-4-ت2** — Group Filter، NTLM، ساعت/Event Log.
 
-**17-4-م1** — چرا ساعت مهم؟
+**17-4-ت3** — چند کاربر با یک IP؛ نگاشت یک‌به‌یک ممکن نیست؛ TS Agent.
 
-Kerberos.
+**17-4-ت4** — Collector/DC Agent؛ Polling محدودیت‌های NTLM و بار دارد.
 
-**17-4-م2** — سناریو: گروه خالی؛ چرا؟
+**17-4-ت5** — Login/Logout، تغییر IP، گروه جدید، NTLM، قطع Collector؛ هر کدام Evidence.
 
-Collector نمی‌بیند.
+**17-4-Q1** — Polling reads only Kerberos events, so NTLM logons are not captured.
 
-**17-5-ت1** — Captive Portal چه کاری می‌کند؟
 
-Login قبل از دسترسی.
+### پاسخ‌های بازنویسی درس 17-5
 
-**17-5-ت2** — Guest حساب چگونه؟
+**17-5-ت1** — صفحه‌ی ورود قبل از دسترسی.
 
-Local User موقت.
+**17-5-ت2** — Redirect HTTPS و جلوگیری از عادت کاربر به هشدار.
 
-**17-5-م1** — چرا Certificate مهم؟
+**17-5-ت3** — Zone جدا، Policy حداقلی، حساب موقت، Log و Timeout.
 
-HTTPS Redirect.
+**17-5-ت4** — گواهی، Redirect، DNS، Policy.
 
-**17-5-م2** — سناریو: Login لوپ؛ علت؟
+**17-5-ت5** — nmap از Guest به Users/Servers باید Filtered باشد.
 
-Certificate/Redirect.
+**17-5-Q1** — Because guests are untrusted devices and could attack or scan internal systems.
 
 **17-6-ت1** — ابزار تست؟
 
@@ -27728,130 +27763,135 @@ diagnose sniffer packet wan1 "host 203.0.113.2 and (udp port 500 or udp port 450
 - Fortinet Docs: [config vpn ipsec phase1-interface](https://docs.fortinet.com/document/fortigate/7.0.5/cli-reference/371620/config-vpn-ipsec-phase1-interface)، [phase2-interface](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/371620/config-vpn-ipsec-phase2-interface)، [Phase 1 configuration](https://docs.fortinet.com/document/fortigate/7.0.2/administration-guide/790613/phase-1-configuration).
 - RFC 7296 — IKEv2؛ RFC 4303 — ESP؛ RFC 3947/3948 — NAT-T؛ RFC 3706 — DPD؛ RFC 8247 — Algorithm Requirements for IKEv2.
 
-## درس 18-1 — مفهوم IPsec: IKE، SA و Proposal
+## درس 18-1 — IPsec در عمل: از نیاز تا طراحی — Proposal، شبکه‌ها و برگه‌ی پارامتر
 
-**فصل 18 - روز 1 · پیش‌نیاز: فصل ۱۳ · ۶ ساعت**
+**فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۵-۰ · ≈ 5 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-IPsec ترافیک بین دو سایت را رمز می‌کند. اول مراحل و اصطلاحات را می‌فهمیم.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۱۳
+1. از نیاز کسب‌وکار به «برگه‌ی پارامتر IPsec» برسد.
+2. Proposal امن و سازگار انتخاب کند و دلیل بگوید.
+3. محدودیت‌های مسیر (NAT، فایروال میانی، MTU) را پیش از پیاده‌سازی بسنجد.
+4. معیار پذیرش Tunnel را بنویسد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- IKE Phase 1: ساخت کانال امن مدیریتی (IKE SA).
-- Phase 2: ساخت SA ترافیک داده (IPsec SA).
-- Proposal: الگوریتم رمز/Hash/DH باید دو طرف یکی باشد.
-- IKEv2 جدیدتر و ساده‌تر.
-- NAT-T: عبور از NAT (UDP 4500).
+در فصل ۱۸-۰ مفاهیم را آموختید. این درس همان مفاهیم را به **تصمیم طراحی** تبدیل می‌کند: چه Proposal، چه Selector، چه Route، چه Policy، و چه چیزی باید قبل از شروع بررسی شود.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو دفتر با Tunnel رمزشده.
+#### ۱) پرسش‌های پیش از طراحی
 
-### ۵) مثال سازمانی
+1. دو سر IP عمومی ثابت دارند یا یکی Dynamic/پشت NAT؟ (Static/Dynamic، NAT-T)
+2. چه شبکه‌هایی باید ارتباط داشته باشند؟ Overlap دارند؟ (IP Plan، NAT)
+3. مسیر بین دو سر چه فایروال‌هایی دارد؟ UDP 500/4500 و ESP باز است؟
+4. چه سرویس‌هایی؟ حجم/Latency؟ (MTU، MSS، Offload)
+5. یک مسیر یا Failover؟ (Dual-ISP، SD-WAN)
+6. هویت با PSK یا گواهی؟
 
-سازمان: شعبه به مرکز با IPsec و مسیر پشتیبان.
+#### ۲) برگه‌ی پارامتر (قالب)
 
-### ۶) تصویر و توپولوژی
-
-```text
-Site-A LAN -> FGT-A ==IPsec== FGT-B -> Site-B LAN
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Monitor > IPsec Monitor.
-2. VPN > IPsec Wizard (برای مقایسه).
-
-#### روش خط فرمان (CLI)
-
-```text
-diagnose vpn ike gateway list
-diagnose vpn tunnel list
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- فقط خواندن؛ ایمن.
-- راستی‌آزمایی: وضعیت IKE/Tunnel.
-
-### ۸) تست عملکرد
-
-- مراحل IKE را روی کاغذ بکشید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Phase 1 بالا نمی‌شود |
-| شواهد/دستور | Log IKE |
-| علت | Proposal/PSK |
-| رفع | تطبیق |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Phase 1 و 2؟ *(پاسخ: 18-1-ت1)*
-
-**ت2.** NAT-T؟ *(پاسخ: 18-1-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Proposal یکی؟ *(پاسخ: 18-1-م1)*
-
-**م2.** سناریو: فقط Phase 1 بالا؛ علت؟ *(پاسخ: 18-1-م2)*
-
-**معیار تسلط:** ساخت Tunnel، Route/Policy، اثبات با Ping و Diagnose.
-
-**اشتباهات رایج:** Proposal/Selector/Route.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| IPsec | Internet Protocol Security | رمزنگاری IP | VPN |
-| IKE | Internet Key Exchange | تبادل کلید | IPsec |
-| SA | Security Association | قرارداد امنیتی | IPsec |
-| DH | Diffie-Hellman | تبادل کلید | IKE |
-
-| English sentence | ترجمه |
-|---|---|
-| Phase 1 builds the control channel. | Phase 1 کانال کنترل را می‌سازد. |
-| Both ends must agree on proposals. | دو سر باید روی Proposalها توافق کنند. |
-
-#### کارت Lab — درس 18-1
-
-| # | فیلد | محتوا |
+| پارامتر | مقدار پیشنهادی | دلیل |
 |---|---|---|
-| 1 | عنوان و هدف | نقشه‌ی IKE |
-| 2 | پیش‌نیاز | فصل ۱۳ |
-| 3 | توپولوژی | FGT-A + FGT-B |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | نمودار IKE |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | Phase 1 بالا نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | نمودار |
-| 14 | معیار پذیرش | با شواهد |
-| 15 | مستندات نهایی | `03-ops/ike-map.md` |
-| 16 | Cleanup و بازگردانی | — |
+| IKE | v2 | مدرن‌تر؛ پیش‌فرض 7.0 v1 است و باید صریح تغییر کند |
+| Encryption | AES-256-GCM | AEAD |
+| Integrity/PRF | SHA-256 | امن |
+| DH | 20 (یا ≥ 14) | PFS قوی |
+| PFS | Enable | رازداری رو به جلو |
+| Lifetime | Phase1 86400، Phase2 43200 (پیش‌فرض‌های 7.0) | هماهنگ دو سر |
+| DPD | on-idle/on-demand | کشف مرگ Peer |
+| Auth | PSK قوی/گواهی | مقیاس |
+| Selector | 0.0.0.0/0 (route-based) | Routing تعیین‌کننده |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+#### ۳) معیار پذیرش
 
----
+IKE SA Established؛ Child SA با شمارنده‌ی دوطرفه؛ ping/TCP بین شبکه‌ها؛ آزمون منفی؛ MTU بدون فرگمنت؛ Failover (در صورت وجود) در زمان هدف.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| PSK یا Cert | Cert برای مقیاس؛ PSK قوی در کوچک |
+| Failover | دو Tunnel/دو ISP + SD-WAN (۲۱-۷) |
+| Overlap | NAT/Re-IP |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده:** دو شعبه با IP ثابت و بدون NAT: IKEv2، AES-GCM، DH 20، PFS، Route-based، دو Policy.
+
+**متوسط:** یک سر پشت NAT: NAT-T لازم؛ UDP 4500؛ Peer ID/Local ID مشخص.
+
+**سخت:** دو شعبه با Subnet هم‌پوشان 192.168.1.0/24: Route-based مستقیم ممکن نیست. گزینه‌ها: NAT یکطرفه/دوطرفه (VIP/IP Pool)، یا تغییر Addressing. معیار: ریسک، پیچیدگی، Log. راه‌حل: NAT به Subnetهای یکتا در Tunnel و ثبت در IP Plan.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. VPN → IPsec Wizard یا Custom: گام‌ها مطابق ۱۸-۲.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+show vpn ipsec phase1-interface
+show vpn ipsec phase2-interface
+diagnose vpn ike gateway list
+```
+
+### ۸) Verification (اثبات صحت)
+
+- برگه‌ی پارامتر امضا‌شده توسط دو سر.
+- Pre-check: ping Peer، UDP 500/4500، MTU مسیر.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Pre-check شکست | Sniffer/ping | فایروال میانی/Route |
+| Overlap | Route | NAT/Re-IP |
+
+### ۱۰) نکات امنیتی
+
+- الگوریتم ضعیف را حذف کنید.
+- PSK در ریپو نیست.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- طراحی پیش از پیکربندی.
+- برگه‌ی پارامتر آینه‌ای.
+- معیار پذیرش قابل‌آزمایش.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا IKEv2؟ *(پاسخ: 18-1-ت1)*
+
+**ت2.** (متوسط) چرا Pre-check شبکه؟ *(پاسخ: 18-1-ت2)*
+
+**ت3.** (سخت) Overlap 192.168.1.0/24 را چگونه حل می‌کنید؟ *(پاسخ: 18-1-ت3)*
+
+**ت4.** (سخت) برگه‌ی پارامتر برای دو شعبه بنویسید. *(پاسخ: 18-1-ت4)*
+
+**ت5.** (سخت، طراحی) معیار پذیرش Tunnel را ۵ بند بنویسید. *(پاسخ: 18-1-ت5)*
+
+**Q1.** Quick quiz (English): Why prepare a parameter sheet before configuring a tunnel? *(پاسخ: 18-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Peer ID | IKE peer identity | هویت همتا |
+
+- *Mirror every parameter on both peers.* ← هر پارامتر را روی هر دو سر آینه کنید.
+
+### ۱۴) کارت Lab
+
+**Lab:** برگه‌ی پارامتر. **Evidence:** `02-design/ipsec-params.md`.
+
+### ۱۵) منابع
+
+- [phase1-interface](https://docs.fortinet.com/document/fortigate/7.0.5/cli-reference/371620/config-vpn-ipsec-phase1-interface)
+- RFC 7296
 
 <a id="l-18-2"></a>
 
@@ -28524,22 +28564,20 @@ execute backup config tftp fgt-g7.conf 192.168.90.10
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**18-1-ت1** — Phase 1 و 2؟
 
-IKE SA و IPsec SA.
+### پاسخ‌های بازنویسی درس 18-1
 
-**18-1-ت2** — NAT-T؟
+**18-1-ت1** — مدرن‌تر؛ پیام کمتر؛ پیش‌فرض 7.0 v1 است.
 
-UDP 4500.
+**18-1-ت2** — تا خطای شبکه با خطای IPsec اشتباه نشود.
 
-**18-1-م1** — چرا Proposal یکی؟
+**18-1-ت3** — NAT به Subnet یکتا یا Re-IP؛ ثبت در IP Plan.
 
-وگرنه مذاکره شکست.
+**18-1-ت4** — جدول ۱۸-۱ کامل شده با مقادیر و دلایل.
 
-**18-1-م2** — سناریو: فقط Phase 1 بالا؛ علت؟
+**18-1-ت5** — IKE/Child SA، ping، TCP، MTU، Failover.
 
-Selector/Proposal Phase 2.
-
+**18-1-Q1** — To ensure both peers use mirrored settings and to avoid trial and error.
 
 ### پاسخ‌های بازنویسی درس 18-2
 
@@ -28759,7 +28797,7 @@ Tunnel S2S پایدار و Backup؛ آشنایی با OSPF/BGP؛ برنامه‌
 
 <a id="ch19"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.4):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۰-۷، ۲۱-۷ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.5):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۰-۷، ۲۱-۷ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 19 — Hub-and-Spoke، OSPF/BGP روی FortiGate و Local Breakout
 
@@ -31837,7 +31875,7 @@ Dual-ISP پایدار؛ آشنایی با HA؛ لایسنس HA بررسی.
 
 <a id="ch22"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.4):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۲-۰، ۲۴-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.5):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۲-۰، ۲۴-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 22 — High Availability: FGCP، Session Sync و Failover
 
@@ -34316,7 +34354,7 @@ Backup همه‌ی Gateها؛ آشنایی با FortiManager/Analyzer (لایس�
 
 <a id="ch25"></a>
 
-> **نسخه v3.4:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.5:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 25 — Multi-Vendor: FortiGate در کنار Cisco CSR (معماری ۶)
 
@@ -34455,124 +34493,104 @@ FortiGate: Network → OSPF/BGP؛ VPN → IPsec Tunnels. CSR: CLI. **Verificatio
 
 - Cisco: IOS XE OSPF/IKEv2 Configuration Guides؛ Fortinet Docs: FortiOS 7.0 CLI Reference (`config router ospf`، `phase1-interface`)؛ RFC 2328، RFC 7296.
 
-## درس 25-1 — تفاوت اصطلاحات Cisco و Fortinet
+## درس 25-1 — نگاشت مفاهیم Cisco و Fortinet: برگه‌ی تطبیق دستورها و مدل‌های پردازش
 
-**فصل 25 - روز 1 · پیش‌نیاز: فصل ۲۴ · ۶ ساعت**
+**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۰، ۱۲-۰ · ≈ 5 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 و CSR1000v 17.03.02 (بوت‌نشده/اجرا نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-جدول معادل‌ها قبل از پیکربندی.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۲۴
+1. مدل پردازش بسته را در IOS-XE و FortiOS مقایسه کند.
+2. برگه‌ی تطبیق دستورها (نمایش/تنظیم/عیب‌یابی) را بسازد.
+3. تفاوت‌های مدل (ACL در برابر Policy، Zone) را در طراحی لحاظ کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- VLAN Interface در برابر SVI.
-- Zone در برابر Security-level.
-- Policy در برابر ACL+NAT.
-- Route-map در برابر Route-map/Prefix-list.
-- Show در برابر get/diagnose.
+مهندس چندسازنده باید «ترجمه‌ی مفهومی» بلد باشد، نه فقط دستور. تفاوت اصلی: Cisco روتر/سوئیچ‌محور با ACL/NAT/Zone-Based Firewall؛ Fortinet فایروال‌محور با Policy و Session.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو برند باید با هم صحبت کنند.
+#### تطبیق
 
-### ۵) مثال سازمانی
-
-سازمان: لبه Fortinet و هسته Cisco.
-
-### ۶) تصویر و توپولوژی
-
-```text
-CSR (core) <-BGP-> FGT (edge)
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Network > Static Routes (FGT).
-
-#### روش خط فرمان (CLI)
-
-```text
-show ip route
-get router info routing-table all
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- خواندنی؛ هر دو.
-
-### ۸) تست عملکرد
-
-- جدول معادل را کامل کنید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | دستور اشتباه |
-| شواهد/دستور | خطا |
-| علت | Syntax برند |
-| رفع | معادل |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** get؟ *(پاسخ: 25-1-ت1)*
-
-**ت2.** ACL؟ *(پاسخ: 25-1-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا جدول؟ *(پاسخ: 25-1-م1)*
-
-**م2.** سناریو: show در FGT؛ چه؟ *(پاسخ: 25-1-م2)*
-
-**معیار تسلط:** اتصال دوبرندی.
-
-**اشتباهات رایج:** پیش‌فرض‌های ناهمسان.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| SVI | Switch Virtual Interface | Interface مجازی | Cisco |
-
-| English sentence | ترجمه |
-|---|---|
-| Keep a vendor command cheat sheet. | یک برگه‌ی تطبیق دستورها نگه دارید. |
-
-#### کارت Lab — درس 25-1
-
-| # | فیلد | محتوا |
+| کار | Cisco IOS-XE | FortiOS |
 |---|---|---|
-| 1 | عنوان و هدف | جدول معادل |
-| 2 | پیش‌نیاز | فصل ۲۴ |
-| 3 | توپولوژی | CSR+FGT |
-| 4 | تجهیزات | — |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | جدول |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | دستور اشتباه |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | سند |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `02-design/vendor-map.md` |
-| 16 | Cleanup و بازگردانی | — |
+| جدول مسیر | show ip route | get router info routing-table all |
+| Interface | show ip interface brief | get system interface physical / show system interface |
+| ARP | show ip arp | get system arp |
+| Session/NAT | show ip nat translations | diagnose sys session list |
+| Policy/ACL | show access-lists | show firewall policy |
+| OSPF | show ip ospf neighbor | get router info ospf neighbor |
+| BGP | show ip bgp summary | get router info bgp summary |
+| IPsec | show crypto ikev2 sa | diagnose vpn ike gateway list |
+| Sniffer | monitor capture | diagnose sniffer packet |
+| Debug flow | debug ip packet (خطرناک) | diagnose debug flow |
+| Backup | copy running-config tftp | execute backup config tftp |
+| CLI mode | enable/conf t | config / edit / next / end |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+#### مدل‌ها
 
----
+- IOS: ACL روی Interface (in/out)؛ NAT ip nat inside/outside؛ Stateful فقط با ZBFW/Inspect.
+- FortiOS: Policy بین Interface/Zone؛ Stateful پیش‌فرض؛ NAT در Policy؛ Session Table مرکز تصمیم.
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده:** `show ip route` ⇄ `get router info routing-table all`.
+
+**متوسط:** ACL ورودی IOS ⇄ Policy با srcintf در FortiOS؛ تفاوت: Implicit deny و Stateful.
+
+**سخت:** انتقال یک ACL با ۴۰ خط و NAT به Policy: ترتیب NAT/ACL در IOS با FortiOS فرق دارد؛ تست رفتاری لازم است.
+
+### ۸) Verification (اثبات صحت)
+
+- برگه‌ی تطبیق در Lab امتحان شود.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| دستور شناخته نمی‌شود | پیام CLI | Syntax برند |
+
+### ۱۰) نکات امنیتی
+
+- Backup از هر دو.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- ترجمه‌ی مفهومی؛ مدل پردازش متفاوت.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) معادل show ip arp؟ *(پاسخ: 25-1-ت1)*
+
+**ت2.** (ساده) معادل ACL؟ *(پاسخ: 25-1-ت2)*
+
+**ت3.** (متوسط) تفاوت Stateful؟ *(پاسخ: 25-1-ت3)*
+
+**ت4.** (سخت) انتقال ACL+NAT. *(پاسخ: 25-1-ت4)*
+
+**ت5.** (سخت، طراحی) برگه‌ی تطبیق ۱۵ سطری. *(پاسخ: 25-1-ت5)*
+
+**Q1.** Quick quiz (English): What is the FortiOS equivalent of an interface ACL? *(پاسخ: 25-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| ZBFW | Zone-Based Policy Firewall | فایروال مبتنی بر Zone سیسکو |
+
+- *Translate concepts, not just commands.* ← مفاهیم را ترجمه کنید نه فقط دستورها.
+
+### ۱۴) کارت Lab
+
+**Lab:** جدول معادل. **Evidence:** `02-design/vendor-map.md`.
+
+### ۱۵) منابع
+
+- Cisco IOS XE Command Reference
+- Fortinet CLI Reference 7.0
 
 <a id="l-25-2"></a>
 
@@ -34946,21 +34964,20 @@ get router info routing-table all
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**25-1-ت1** — get؟
 
-FGT show.
+### پاسخ‌های بازنویسی درس 25-1
 
-**25-1-ت2** — ACL؟
+**25-1-ت1** — get system arp.
 
-Policy.
+**25-1-ت2** — Firewall Policy.
 
-**25-1-م1** — چرا جدول؟
+**25-1-ت3** — FortiOS پیش‌فرض Stateful؛ ACL ساده نه.
 
-سرعت.
+**25-1-ت4** — تست رفتاری.
 
-**25-1-م2** — سناریو: show در FGT؛ چه؟
+**25-1-ت5** — جدول بالا بسط داده شود.
 
-get.
+**25-1-Q1** — A firewall policy between interfaces or zones.
 
 **25-2-ت1** — Exstart؟
 
@@ -36847,7 +36864,7 @@ Backup همه‌ی Gateها؛ Wireshark/Sniffer مسلط.
 
 <a id="ch28"></a>
 
-> **نسخه v3.4:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.5:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 28 — Packet Analysis و بلوک‌های عیب‌یابی
 
@@ -39202,7 +39219,7 @@ Plan+Rollback+Evidence.
 
 <a id="ch31"></a>
 
-> **نسخه v3.4:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.5:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 31 — Capstone I و II: طراحی و پیاده‌سازی شبکه‌ی سازمانی
 

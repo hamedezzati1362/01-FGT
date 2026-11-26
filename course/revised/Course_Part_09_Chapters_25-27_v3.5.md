@@ -36,7 +36,7 @@
 
 <a id="ch25"></a>
 
-> **نسخه v3.4:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.5:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 25 — Multi-Vendor: FortiGate در کنار Cisco CSR (معماری ۶)
 
@@ -175,124 +175,104 @@ FortiGate: Network → OSPF/BGP؛ VPN → IPsec Tunnels. CSR: CLI. **Verificatio
 
 - Cisco: IOS XE OSPF/IKEv2 Configuration Guides؛ Fortinet Docs: FortiOS 7.0 CLI Reference (`config router ospf`، `phase1-interface`)؛ RFC 2328، RFC 7296.
 
-## درس 25-1 — تفاوت اصطلاحات Cisco و Fortinet
+## درس 25-1 — نگاشت مفاهیم Cisco و Fortinet: برگه‌ی تطبیق دستورها و مدل‌های پردازش
 
-**فصل 25 - روز 1 · پیش‌نیاز: فصل ۲۴ · ۶ ساعت**
+**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۰، ۱۲-۰ · ≈ 5 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 و CSR1000v 17.03.02 (بوت‌نشده/اجرا نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-جدول معادل‌ها قبل از پیکربندی.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۲۴
+1. مدل پردازش بسته را در IOS-XE و FortiOS مقایسه کند.
+2. برگه‌ی تطبیق دستورها (نمایش/تنظیم/عیب‌یابی) را بسازد.
+3. تفاوت‌های مدل (ACL در برابر Policy، Zone) را در طراحی لحاظ کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- VLAN Interface در برابر SVI.
-- Zone در برابر Security-level.
-- Policy در برابر ACL+NAT.
-- Route-map در برابر Route-map/Prefix-list.
-- Show در برابر get/diagnose.
+مهندس چندسازنده باید «ترجمه‌ی مفهومی» بلد باشد، نه فقط دستور. تفاوت اصلی: Cisco روتر/سوئیچ‌محور با ACL/NAT/Zone-Based Firewall؛ Fortinet فایروال‌محور با Policy و Session.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو برند باید با هم صحبت کنند.
+#### تطبیق
 
-### ۵) مثال سازمانی
-
-سازمان: لبه Fortinet و هسته Cisco.
-
-### ۶) تصویر و توپولوژی
-
-```text
-CSR (core) <-BGP-> FGT (edge)
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Network > Static Routes (FGT).
-
-#### روش خط فرمان (CLI)
-
-```text
-show ip route
-get router info routing-table all
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- خواندنی؛ هر دو.
-
-### ۸) تست عملکرد
-
-- جدول معادل را کامل کنید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | دستور اشتباه |
-| شواهد/دستور | خطا |
-| علت | Syntax برند |
-| رفع | معادل |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** get؟ *(پاسخ: 25-1-ت1)*
-
-**ت2.** ACL؟ *(پاسخ: 25-1-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا جدول؟ *(پاسخ: 25-1-م1)*
-
-**م2.** سناریو: show در FGT؛ چه؟ *(پاسخ: 25-1-م2)*
-
-**معیار تسلط:** اتصال دوبرندی.
-
-**اشتباهات رایج:** پیش‌فرض‌های ناهمسان.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| SVI | Switch Virtual Interface | Interface مجازی | Cisco |
-
-| English sentence | ترجمه |
-|---|---|
-| Keep a vendor command cheat sheet. | یک برگه‌ی تطبیق دستورها نگه دارید. |
-
-#### کارت Lab — درس 25-1
-
-| # | فیلد | محتوا |
+| کار | Cisco IOS-XE | FortiOS |
 |---|---|---|
-| 1 | عنوان و هدف | جدول معادل |
-| 2 | پیش‌نیاز | فصل ۲۴ |
-| 3 | توپولوژی | CSR+FGT |
-| 4 | تجهیزات | — |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | جدول |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | دستور اشتباه |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | سند |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `02-design/vendor-map.md` |
-| 16 | Cleanup و بازگردانی | — |
+| جدول مسیر | show ip route | get router info routing-table all |
+| Interface | show ip interface brief | get system interface physical / show system interface |
+| ARP | show ip arp | get system arp |
+| Session/NAT | show ip nat translations | diagnose sys session list |
+| Policy/ACL | show access-lists | show firewall policy |
+| OSPF | show ip ospf neighbor | get router info ospf neighbor |
+| BGP | show ip bgp summary | get router info bgp summary |
+| IPsec | show crypto ikev2 sa | diagnose vpn ike gateway list |
+| Sniffer | monitor capture | diagnose sniffer packet |
+| Debug flow | debug ip packet (خطرناک) | diagnose debug flow |
+| Backup | copy running-config tftp | execute backup config tftp |
+| CLI mode | enable/conf t | config / edit / next / end |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+#### مدل‌ها
 
----
+- IOS: ACL روی Interface (in/out)؛ NAT ip nat inside/outside؛ Stateful فقط با ZBFW/Inspect.
+- FortiOS: Policy بین Interface/Zone؛ Stateful پیش‌فرض؛ NAT در Policy؛ Session Table مرکز تصمیم.
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده:** `show ip route` ⇄ `get router info routing-table all`.
+
+**متوسط:** ACL ورودی IOS ⇄ Policy با srcintf در FortiOS؛ تفاوت: Implicit deny و Stateful.
+
+**سخت:** انتقال یک ACL با ۴۰ خط و NAT به Policy: ترتیب NAT/ACL در IOS با FortiOS فرق دارد؛ تست رفتاری لازم است.
+
+### ۸) Verification (اثبات صحت)
+
+- برگه‌ی تطبیق در Lab امتحان شود.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| دستور شناخته نمی‌شود | پیام CLI | Syntax برند |
+
+### ۱۰) نکات امنیتی
+
+- Backup از هر دو.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- ترجمه‌ی مفهومی؛ مدل پردازش متفاوت.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) معادل show ip arp؟ *(پاسخ: 25-1-ت1)*
+
+**ت2.** (ساده) معادل ACL؟ *(پاسخ: 25-1-ت2)*
+
+**ت3.** (متوسط) تفاوت Stateful؟ *(پاسخ: 25-1-ت3)*
+
+**ت4.** (سخت) انتقال ACL+NAT. *(پاسخ: 25-1-ت4)*
+
+**ت5.** (سخت، طراحی) برگه‌ی تطبیق ۱۵ سطری. *(پاسخ: 25-1-ت5)*
+
+**Q1.** Quick quiz (English): What is the FortiOS equivalent of an interface ACL? *(پاسخ: 25-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| ZBFW | Zone-Based Policy Firewall | فایروال مبتنی بر Zone سیسکو |
+
+- *Translate concepts, not just commands.* ← مفاهیم را ترجمه کنید نه فقط دستورها.
+
+### ۱۴) کارت Lab
+
+**Lab:** جدول معادل. **Evidence:** `02-design/vendor-map.md`.
+
+### ۱۵) منابع
+
+- Cisco IOS XE Command Reference
+- Fortinet CLI Reference 7.0
 
 <a id="l-25-2"></a>
 
@@ -666,21 +646,20 @@ get router info routing-table all
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**25-1-ت1** — get؟
 
-FGT show.
+### پاسخ‌های بازنویسی درس 25-1
 
-**25-1-ت2** — ACL؟
+**25-1-ت1** — get system arp.
 
-Policy.
+**25-1-ت2** — Firewall Policy.
 
-**25-1-م1** — چرا جدول؟
+**25-1-ت3** — FortiOS پیش‌فرض Stateful؛ ACL ساده نه.
 
-سرعت.
+**25-1-ت4** — تست رفتاری.
 
-**25-1-م2** — سناریو: show در FGT؛ چه؟
+**25-1-ت5** — جدول بالا بسط داده شود.
 
-get.
+**25-1-Q1** — A firewall policy between interfaces or zones.
 
 **25-2-ت1** — Exstart؟
 
