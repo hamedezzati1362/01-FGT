@@ -2001,416 +2001,436 @@ diagnose debug reset
 
 <a id="l-14-4"></a>
 
-## درس 14-4 — Session، Routing و iprope: ابزارهای تکمیلی
+## درس 14-4 — Session، Routing و iprope: ابزارهای تکمیلی برای اثبات تصمیم‌ها
 
-**فصل 14 - روز 4 · پیش‌نیاز: درس ۱۴-۲ · ۶ ساعت**
+**فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۱ تا ۱۴-۳ · ≈ 10 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-ترکیب Session، Routing و iprope تصویر کامل می‌دهد: Route انتخاب‌شده، Policy، NAT.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس‌های ۱۴-۱ تا ۱۴-۳.
+1. جدول مسیر را با `get router info routing-table` (all/details/database) بخواند.
+2. Policy Route و جدول ARP را بررسی کند.
+3. iprope lookup و `diagnose firewall iprope list` را به‌کار ببرد.
+4. Session را برای اثبات NAT/Policy تفسیر کند.
+5. نتایج را در یک «پرونده‌ی شواهد» جمع کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- `get router info routing-table details <ip>`: Route برای مقصد.
-- `diagnose ip route list`/`get router info kernel`: جدول کرنل (`Unverified`).
-- `diagnose firewall iprope lookup`: Policy.
-- `get system arp`: ARP.
-- `diagnose sys session list`: NAT و Policy واقعی.
+گاهی debug flow کافی نیست یا نمی‌خواهید روی Production Debug بزنید. ابزارهای «فقط‌خواندنی» مثل جدول مسیر، ARP، Session و iprope بدون اثر جانبی جواب می‌دهند. یک مهندس خوب اول این‌ها را می‌خواند.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-ping از Client؛ هر ابزار یک قطعه از تصویر.
+#### ۱) جدول مسیر
 
-### ۵) مثال سازمانی
-
-تحلیل Session نیمه‌کاره.
-
-### ۶) تصویر و توپولوژی
-
-```text
-route + policy + NAT + session = full picture
+``` text
+get router info routing-table all
+get router info routing-table details 203.0.113.10
+get router info routing-table database
+get router info kernel
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+- `all`: مسیرهای فعال (RIB).
+- `details`: چرا این مسیر انتخاب شد (Distance، Metric، Interface).
+- `database`: همه‌ی مسیرهای دریافتی حتی غیرفعال (برای فهم اینکه چرا مسیر بهتر استفاده نمی‌شود).
+- `kernel`: جدول Forwarding واقعی.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۲) ARP و MAC
 
-#### روش گرافیکی (GUI)
-
-1. Monitor > Routing Monitor.
-2. Dashboard > FortiView Sessions.
-3. Policy Lookup.
-4. Network > Interfaces > ARP (در صورت وجود).
-5. CLI برای iprope.
-
-#### روش خط فرمان (CLI)
-
-```text
-get router info routing-table details 8.8.8.8
+``` text
+diagnose ip arp list
 get system arp
-diagnose firewall iprope lookup 192.168.20.11 51234 8.8.8.8 443 tcp VLAN20
-diagnose sys session filter dst 8.8.8.8
+```
+
+اگر Next-hop ARP ندارد (INCOMPLETE) یعنی لایه‌ی ۲ مشکل دارد، نه Policy.
+
+#### ۳) Policy Route
+
+``` text
+diagnose firewall proute list
+```
+
+Policy Route قبل از جدول مسیر اعمال می‌شود؛ مسیر «عجیب» اغلب از همین‌جاست.
+
+#### ۴) iprope
+
+``` text
+diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
+diagnose firewall iprope list 100004
+```
+
+lookup: کدام Policy؛ list: لیست Policyها با شمارنده‌ها (`Unverified` برای شماره‌ی گروه).
+
+#### ۵) Session
+
+``` text
+diagnose sys session filter src 10.10.0.5
 diagnose sys session list
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+فیلدهای مهم: policy_id، act=snat/dnat، state، npu.
 
-- هر دستور را با نتیجه‌ی Debug Flow مقایسه کنید.
-- راستی‌آزمایی: Route/Policy/NAT با Debug Flow یکی باشد.
-- بازگشت: ندارد.
+#### ۶) پرونده‌ی شواهد
 
-### ۸) تست عملکرد
+برای هر پرونده: خروجی‌ها (Route، ARP، Lookup، Session) با زمان و علت؛ بدون رمز/اطلاعات حساس.
 
-- برای یک ارتباط چهار ابزار را مقایسه کنید.
+### ۴) طراحی و تصمیم‌گیری
 
-### ۹) عیب‌یابی
-
-| بخش | شرح |
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | Policy درست ولی ارتباط نه |
-| شواهد/دستور | Session نیمه‌کاره (SYN) |
-| علت | مقصد پاسخ نمی‌دهد/برگشت |
-| رفع | Capture مقصد |
+| ابزار فقط‌خواندنی | قبل از debug |
+| Evidence | زمان‌دار |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** `get router info routing-table details 203.0.113.10`: Default via 198.51.100.1 port1 [10/0]؛ Policy Lookup: ID 2؛ نتیجه: مسیر و Policy سالم.
 
-**ت1.** ARP چه کمک می‌کند؟ *(پاسخ: 14-4-ت1)*
+**متوسط (ARP):** Route درست و Policy درست ولی ping به Next-hop نمی‌رود: `diagnose ip arp list` ورودی `incomplete`؛ لینک یا VLAN سوییچ؛ رفع و آزمون ping.
 
-**ت2.** Session نیمه‌کاره؟ *(پاسخ: 14-4-ت2)*
+**سخت (Policy Route پنهان):** ترافیک مالی از ISP2 می‌رود در حالی که Default ISP1 است. مراحل: ۱) routing-table درست. ۲) `proute list`: Policy Route 3 برای 10.10.20.0/24 به ISP2. ۳) علت: Policy قدیمی. رفع: حذف/اصلاح؛ آزمون traceroute.
 
-**ت3.** چرا چند ابزار؟ *(پاسخ: 14-4-ت3)*
+### ۶) پیاده‌سازی از مسیر GUI
 
-### ۱۱) مرور و ارزیابی
+1. Monitor → Routing Monitor.
+2. Network → Policy Routes.
 
-**م1.** چرا `get system arp` مفید است؟ *(پاسخ: 14-4-م1)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-**م2.** سناریو: Session SYN_SENT؛ چه می‌کنید؟ *(پاسخ: 14-4-م2)*
+``` text
+get router info routing-table details 203.0.113.10
+get router info routing-table database
+diagnose ip arp list
+diagnose firewall proute list
+diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
+diagnose sys session list
+```
 
-**معیار تسلط:** ترکیب ابزارها و ثبت تصویر کامل.
+### ۸) Verification (اثبات صحت)
 
-**اشتباهات رایج:** تکیه بر یک ابزار.
+- Route/ARP/Policy/Session هماهنگ.
 
-### ۱۲) واژگان و English Corner
+### ۹) Troubleshooting
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| ARP | Address Resolution Protocol | نگاشت IP-MAC | L2 |
-| iprope | IPv4 policy lookup | تطبیق Policy | عیب‌یابی |
-| Kernel route | Kernel routing table | جدول مسیر کرنل | — |
-
-| English sentence | ترجمه |
-|---|---|
-| Combine several tools to build the full picture. | برای ساختن تصویر کامل چند ابزار را ترکیب کنید. |
-| The session table shows the applied NAT and policy. | جدول Session NAT و Policy اعمال‌شده را نشان می‌دهد. |
-
-#### کارت Lab — درس 14-4
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | تصویر کامل یک ارتباط |
-| 2 | پیش‌نیاز | درس ۱۴-۲ |
-| 3 | توپولوژی | FGT + Client + Server |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Policy v1 |
-| 8 | صورت مسئله | یک ارتباط |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ۴ ابزار |
-| 11 | سناریوی خرابی | Policy درست ولی ارتباط نه |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | جدول Walk |
-| 14 | معیار پذیرش | همخوانی |
-| 15 | مستندات نهایی | `03-ops/full-picture.md` |
-| 16 | Cleanup و بازگردانی | — |
+| مسیر عجیب | proute | Policy Route |
+| ARP incomplete | L2 | سوییچ |
+| مسیر بهتر استفاده نمی‌شود | database | Distance |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- خروجی‌ها را بدون اطلاعات حساس نگه دارید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- ابزار فقط‌خواندنی.
+- proute.
+- پرونده‌ی شواهد.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) routing-table database چیست؟ *(پاسخ: 14-4-ت1)*
+
+**ت2.** (ساده) ARP incomplete؟ *(پاسخ: 14-4-ت2)*
+
+**ت3.** (متوسط) Policy Route قبل یا بعد از جدول مسیر؟ *(پاسخ: 14-4-ت3)*
+
+**ت4.** (متوسط) iprope lookup؟ *(پاسخ: 14-4-ت4)*
+
+**ت5.** (سخت) ترافیک از ISP اشتباه می‌رود. *(پاسخ: 14-4-ت5)*
+
+**ت6.** (سخت، طراحی) پرونده‌ی شواهد. *(پاسخ: 14-4-ت6)*
+
+**Q1.** Quick quiz (English): Which command lists policy routes? *(پاسخ: 14-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| ARP | Address Resolution Protocol | تبدیل IP به MAC |
+
+- *Prove each decision with evidence.* ← هر تصمیم را با شواهد ثابت کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** ابزارهای تکمیلی (اجرا نشده). **Evidence:** `03-ops/full-picture.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Routing monitor
+- FortiOS 7.0 CLI Reference: get router info
 
 <a id="l-14-5"></a>
 
-## درس 14-5 — MTU/MSS، DNS و مشکلات TCP/UDP
+## درس 14-5 — MTU/MSS، DNS و مشکلات TCP/UDP: عیب‌یابی «نیمه‌کارکرده»
 
-**فصل 14 - روز 5 · پیش‌نیاز: درس ۱۴-۴ · ۶ ساعت**
+**فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۵، ۱۴-۱ · ≈ 10 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-نشانه‌های «سایت‌های بزرگ باز نمی‌شود» یا «نام حل نمی‌شود» را با ابزار FortiOS ثابت می‌کنیم.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۱۱ (MTU/MSS)؛ درس ۱۴-۱.
+1. PMTU را با ping و DF اندازه بگیرد.
+2. MSS-clamp را روی Policy/Interface تنظیم و آزمون کند.
+3. DNS را (Resolver، Forwarder، TCP/UDP 53) عیب‌یابی کند.
+4. علائم Black-hole، Retransmission و RST را بخواند.
+5. رفع را با آزمون پایدار تأیید کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- MSS Clamp در Policy: `set tcp-mss-sender` / `tcp-mss-receiver` (`Unverified` برای 7.0.3).
-- MTU Interface: `set mtu-override enable` و `set mtu`.
-- DNS: `show system dns`, `execute ping <name>`؛ Policy باید UDP/TCP 53 را اجازه دهد.
-- TCP: Sniffer برای SYN/Retransmission؛ UDP: بدون Handshake.
-- ICMP «Fragmentation needed» اگر Drop شود MTU Discovery می‌شکند.
+خراب‌ترین گزارش‌ها «گاهی کار می‌کند» است. صفحه‌ی ساده باز می‌شود ولی ورود به پورتال تا لود شدن می‌ماند؛ یا ping کار می‌کند و دانلود فایل می‌ایستد. اینها معمولاً MTU یا DNS هستند، نه Policy.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-ping با اندازه‌ی بزرگ و تنظیم MSS.
+#### ۱) اندازه‌گیری PMTU
 
-### ۵) مثال سازمانی
-
-VPN: MSS Clamp برای حل بسته‌ی بزرگ.
-
-### ۶) تصویر و توپولوژی
-
-```text
-big packet + DF -> blocked by smaller MTU
-fix: MSS clamp / MTU
+``` text
+execute ping-options df-bit yes
+execute ping-options data-size 1472
+execute ping 203.0.113.10
+execute ping-options data-size 1372
+execute ping 203.0.113.10
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+1472+28=1500. اگر 1472 جواب ندهد و 1372 بدهد، PMTU بین 1400 و 1500؛ با جست‌وجوی دودویی دقیق کنید.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۲) MSS-clamp
 
-#### روش گرافیکی (GUI)
-
-1. Network > Interfaces > port1 > Edit: Override default MTU value را فعال و 1400 را بگذارید.
-2. Firewall Policy: ویژگی TCP MSS (در CLI) — GUI محدود است.
-3. Network > DNS: سرورها.
-4. Log & Report برای DNS Deny.
-5. CLI برای tcp-mss-*.
-
-#### روش خط فرمان (CLI)
-
-```text
-config system interface
-    edit "port1"
-        set mtu-override enable
-        set mtu 1400
-    next
-end
+``` text
 config firewall policy
-    edit 10
-        set tcp-mss-sender 1360
-        set tcp-mss-receiver 1360
-    next
+ edit 2
+  set tcp-mss-sender 1360
+  set tcp-mss-receiver 1360
+ next
 end
-execute ping www.example.com
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+(برای IPsec: روی Policy یا Phase1 `tcp-mss`؛ `Unverified`.)
 
-- MSS = MTU − 40 (در بلوک مستقل محاسبه کنید: 1400 − 40 = 1360).
-- بعد از تغییر، انتقال بزرگ را تست کنید.
-- بازگشت: `unset`/مقدار پیش‌فرض.
-- هشدار: MTU اشتباه ارتباط را می‌شکند.
+``` text
+MSS = PMTU - 40 = 1400 - 40 = 1360
+```
 
-### ۸) تست عملکرد
+#### ۳) DNS
 
-- آزمایش ping با DF و انتقال فایل بزرگ.
+- UDP/TCP 53؛ پاسخ بزرگ (DNSSEC) نیاز به TCP/EDNS.
+- FortiGate می‌تواند DNS Server داخلی باشد (`config system dns-server`).
+- تست: `execute ping www.example.com`، `diagnose test application dnsproxy 3` (Unverified).
+- علائم: ping به IP کار می‌کند، به نام نه.
 
-### ۹) عیب‌یابی
+#### ۴) نشانه‌ها در Capture
 
-| بخش | شرح |
+- بسته‌های بزرگ بی‌پاسخ و Retransmission ⇒ MTU.
+- DNS Query بدون Response ⇒ Policy/Resolver.
+- RST ⇒ سرور/Policy.
+
+#### ۵) آزمون پایدار
+
+دانلود ۱۰۰ MB، صفحه‌ی HTTPS بزرگ، چند DNS Query؛ ۳ بار تکرار.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | صفحه‌ی کوچک باز، بزرگ نه |
-| شواهد/دستور | ping با DF ۱۴۷۲ شکست |
-| علت | MTU مسیر کم |
-| رفع | MSS clamp/MTU |
+| MSS | PMTU-40 |
+| ICMP | Frag-needed را مجاز کنید |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** PMTU=1400 ⇒ MSS=1360.
 
-**ت1.** MSS چگونه؟ *(پاسخ: 14-5-ت1)*
+**متوسط (تحلیل):** ping IP ok، name no: DNS؛ Policy Port 53 نیست؛ رفع و آزمون.
 
-**ت2.** DNS Policy؟ *(پاسخ: 14-5-ت2)*
+**سخت (IPsec):** تونل MTU 1438؛ دانلود می‌ایستد؛ ICMP frag-needed بسته؛ رفع: MSS-clamp 1350 و اجازه‌ی ICMP؛ آزمون ۱۰۰ MB.
 
-**ت3.** نشانه MTU؟ *(پاسخ: 14-5-ت3)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-### ۱۱) مرور و ارزیابی
+``` text
+execute ping-options df-bit yes
+execute ping-options data-size 1472
+execute ping 203.0.113.10
+```
 
-**م1.** چرا ICMP فرگمنت را نباید Drop کرد؟ *(پاسخ: 14-5-م1)*
+### ۸) Verification (اثبات صحت)
 
-**م2.** سناریو: HTTPS باز نمی‌شود ولی ping OK؛ حدس؟ *(پاسخ: 14-5-م2)*
+- دانلود بزرگ.
+- DNS جواب.
 
-**معیار تسلط:** اثبات و رفع مشکل MTU/MSS و DNS.
+### ۹) Troubleshooting
 
-**اشتباهات رایج:** تنظیم MSS بدون محاسبه.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| MSS clamp | TCP MSS clamping | تنظیم MSS | VPN |
-| PMTUD | Path MTU Discovery | کشف MTU مسیر | ICMP |
-| DNS | Domain Name System | حل نام | سرویس |
-
-| English sentence | ترجمه |
-|---|---|
-| Clamp the TCP MSS on the tunnel. | MSS را روی Tunnel Clamp کنید. |
-| Do not block ICMP fragmentation-needed messages. | پیام‌های ICMP «Fragmentation needed» را مسدود نکنید. |
-
-#### کارت Lab — درس 14-5
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | MTU/MSS |
-| 2 | پیش‌نیاز | درس ۱۴-۴ |
-| 3 | توپولوژی | FGT + Client + Server |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | MTU 1400 |
-| 7 | وضعیت اولیه | Policy v1 |
-| 8 | صورت مسئله | MTU کم |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping/ curl |
-| 11 | سناریوی خرابی | صفحه‌ی کوچک باز، بزرگ نه |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | بسته بزرگ رد نمی‌شود/ بعد از MSS رد |
-| 14 | معیار پذیرش | انتقال موفق |
-| 15 | مستندات نهایی | `03-ops/mtu-mss.md` |
-| 16 | Cleanup و بازگردانی | برگشت MTU |
+| فقط بزرگ | DF ping | MSS |
+| نام کار نمی‌کند | DNS | Policy 53 |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- ICMP frag-needed را کامل نبندید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- PMTU.
+- MSS-clamp.
+- DNS.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) MSS برای MTU 1400؟ *(پاسخ: 14-5-ت1)*
+
+**ت2.** (ساده) علامت Black-hole؟ *(پاسخ: 14-5-ت2)*
+
+**ت3.** (متوسط) DNS کار نمی‌کند ولی ping IP بله؛ علت؟ *(پاسخ: 14-5-ت3)*
+
+**ت4.** (متوسط) چرا ICMP لازم؟ *(پاسخ: 14-5-ت4)*
+
+**ت5.** (سخت) IPsec دانلود می‌ایستد. *(پاسخ: 14-5-ت5)*
+
+**ت6.** (سخت، طراحی) آزمون پایدار. *(پاسخ: 14-5-ت6)*
+
+**Q1.** Quick quiz (English): How do you measure path MTU with ping? *(پاسخ: 14-5-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| MSS | Maximum Segment Size | حداکثر قطعه |
+
+- *Lower the MSS on tunnels.* ← MSS را روی تونل کم کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** MTU/DNS (اجرا نشده). **Evidence:** `03-ops/mtu-mss.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Troubleshooting
+- RFC 1191
 
 <a id="l-14-6"></a>
 
-## درس 14-6 — تحلیل Log، Packet Walk و آزمون فصل
+## درس 14-6 — تحلیل Log، Packet Walk و آزمون عملی فصل ۱۴
 
-**فصل 14 - روز 6 · پیش‌نیاز: درس‌های ۱۴-۱ تا ۱۴-۵ · ۶ ساعت**
+**فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۱ تا ۱۴-۵ · ≈ 10 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-خواندن Log ترافیک و دنبال‌کردن کامل یک ارتباط با Packet Walk. آزمون فصل ارزیابی عملی است.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس‌های ۱۴-۱ تا ۱۴-۵.
+1. Log ترافیک را (action، policyid، srcip، dstip، service) بخواند.
+2. با فیلتر Log علت Deny را بیابد.
+3. Packet Walk کامل بنویسد.
+4. آزمون عملی فصل ۱۴ را با Rubric تحویل دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Log: Forward Traffic فیلدها: srcip, dstip, policyid, action, nat, sentbyte.
-- CLI (`Unverified`): `execute log filter category 0` + `execute log filter field srcip X` + `execute log display`.
-- Packet Walk: جدول ۱۰ پرسش + خروجی ابزارها.
-- آزمون: ۳ ارتباط ناشناخته (موفق/ناموفق) با Walk کامل.
+Log حافظه‌ی بلندمدت است: Debug لحظه است، Log گذشته را می‌گوید. «ساعت ۹ دیروز چرا قطع شد؟» فقط با Log جواب داده می‌شود.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-تحلیل یک Log Deny.
+#### ۱) خواندن Log
 
-### ۵) مثال سازمانی
-
-سازمان: گزارش RCA با Log.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Log -> Session -> Route -> Policy -> NAT -> Walk table
+``` text
+date=2026-11-26 time=10:05:11 logid="0000000013" type="traffic" subtype="forward" level="notice" srcip=10.10.0.5 srcport=40000 srcintf="port2" dstip=203.0.113.10 dstport=443 dstintf="port1" policyid=2 action="accept" service="HTTPS" sentbyte=5320 rcvdbyte=48200
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+فیلدها: policyid=2، action=accept، service، بایت‌ها. action=deny و policyid=0 یعنی Implicit Deny.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۲) فیلتر
 
-#### روش گرافیکی (GUI)
-
-1. Log & Report > Forward Traffic: فیلتر.
-2. Add Filter: Source/Policy ID.
-3. Download Log.
-4. FortiView.
-5. Packet Capture.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
 execute log filter category 0
-execute log filter field srcip 192.168.20.11
+execute log filter field srcip 10.10.0.5
 execute log display
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+GUI: Log & Report → Forward Traffic → Filter.
 
-- Log باید قبل از تحلیل روشن باشد (`logtraffic all`).
-- تحلیل: action/policyid/nat.
-- معیار: ≥ ۴ از ۵ مورد.
+#### ۳) Packet Walk
 
-### ۸) تست عملکرد
+``` text
+1 Client 10.10.0.5 -> DNS -> 203.0.113.10
+2 Ingress port2, RPF ok
+3 Route default -> port1
+4 Policy 2 accept, SNAT 198.51.100.2
+5 Egress; server replies; session reply matched
+```
 
-- ۳ ارتباط ناشناخته را تحلیل کنید.
+#### ۴) آزمون عملی
 
-### ۹) عیب‌یابی
+سه پرونده؛ برای هرکدام Log، Flow، علت، رفع و آزمون. Rubric: Log ۲۰، تحلیل ۳۰، رفع ۲۰، Evidence ۱۵، صداقت ۱۵.
 
-| بخش | شرح |
-|---|---|
-| Symptom | Log خالی است |
-| شواهد/دستور | Policy بدون logtraffic |
-| علت | Log خاموش |
-| رفع | روشن‌کردن Log |
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-### ۱۰) تمرین مستقل
+**ساده (حل‌شده):** Log action=accept policyid=2.
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**متوسط (تحلیل):** Deny با policyid=0: Implicit Deny؛ Policy اضافه.
 
-**ت1.** کدام فیلد Policy را نشان می‌دهد؟ *(پاسخ: 14-6-ت1)*
+**سخت (Packet Walk):** Walk کامل سازمان.
 
-**ت2.** Action deny یعنی؟ *(پاسخ: 14-6-ت2)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-**ت3.** Packet Walk شامل؟ *(پاسخ: 14-6-ت3)*
+``` text
+execute log filter category 0
+execute log filter field srcip 10.10.0.5
+execute log display
+```
 
-### ۱۱) مرور و ارزیابی
+### ۸) Verification (اثبات صحت)
 
-**م1.** چرا Log اولین قدم است؟ *(پاسخ: 14-6-م1)*
+- Log و Flow همسو.
 
-**م2.** سناریو: Log نیست؛ چرا؟ *(پاسخ: 14-6-م2)*
+### ۹) Troubleshooting
 
-**معیار تسلط:** آزمون ≥ ۴ از ۵ با Packet Walk.
-
-**اشتباهات رایج:** تحلیل بدون Log.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Forward traffic | Forward traffic log | Log ترافیک عبوری | تحلیل |
-| policyid | Policy ID | شناسه‌ی Policy | Log |
-
-| English sentence | ترجمه |
-|---|---|
-| Analyze the forward traffic logs. | Logهای ترافیک عبوری را تحلیل کنید. |
-| Document the packet walk with evidence. | Packet Walk را با شواهد مستند کنید. |
-
-#### کارت Lab — درس 14-6
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون فصل ۱۴ |
-| 2 | پیش‌نیاز | درس‌های ۱۴-۱ تا ۱۴-۵ |
-| 3 | توپولوژی | FGT + Client + Server |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | طبق فصل |
-| 7 | وضعیت اولیه | Policy v1 |
-| 8 | صورت مسئله | ۳ ارتباط |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ابزارها |
-| 11 | سناریوی خرابی | Log خالی است |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Walk |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/g-fgt2.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Log نیست | logtraffic | Policy Log |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Log بدون رمز.
 
-<a id="ans-14"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- Log=گذشته.
+- Packet Walk.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) policyid=0؟ *(پاسخ: 14-6-ت1)*
+
+**ت2.** (ساده) action=deny؟ *(پاسخ: 14-6-ت2)*
+
+**ت3.** (متوسط) چرا Log نیست؟ *(پاسخ: 14-6-ت3)*
+
+**ت4.** (متوسط) Packet Walk؟ *(پاسخ: 14-6-ت4)*
+
+**ت5.** (سخت) سه پرونده. *(پاسخ: 14-6-ت5)*
+
+**ت6.** (سخت، طراحی) الگوی گزارش. *(پاسخ: 14-6-ت6)*
+
+**Q1.** Quick quiz (English): What does policyid=0 mean in a traffic log? *(پاسخ: 14-6-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Log | Traffic log | لاگ ترافیک |
+
+- *Logs explain what happened in the past.* ← Log گذشته را توضیح می‌دهد.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** G (اجرا نشده). **Evidence:** `03-ops/walk-arch2.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Log & Report
 
 ## درس 14-7 — روش نظام‌مند عیب‌یابی: از علامت تا علت و رفع (با پرونده‌های واقعی)
 
@@ -2657,71 +2677,56 @@ diagnose debug reset
 
 **14-3-Q1** — The route back to the source does not use the ingress interface.
 
-**14-4-ت1** — ARP چه کمک می‌کند؟
 
-تأیید L2 مقصد.
+### پاسخ‌های بازنویسی عمیق درس 14-4
 
-**14-4-ت2** — Session نیمه‌کاره؟
+**14-4-ت1** — همه‌ی مسیرها حتی غیرفعال.
 
-فقط SYN دیده شده.
+**14-4-ت2** — لایه‌ی ۲ پاسخ نمی‌دهد.
 
-**14-4-ت3** — چرا چند ابزار؟
+**14-4-ت3** — قبل.
 
-هر کدام لایه‌ای را می‌بیند.
+**14-4-ت4** — Policy مطابق جریان.
 
-**14-4-م1** — چرا `get system arp` مفید است؟
+**14-4-ت5** — proute، routing-table، رفع.
 
-نشان می‌دهد Gateway/مقصد L2 دیده شده یا نه.
+**14-4-ت6** — Route، ARP، Lookup، Session با زمان.
 
-**14-4-م2** — سناریو: Session SYN_SENT؛ چه می‌کنید؟
-
-Capture مقصد.
-
-**14-5-ت1** — MSS چگونه؟
-
-MTU − 40.
-
-**14-5-ت2** — DNS Policy؟
-
-UDP/TCP 53.
-
-**14-5-ت3** — نشانه MTU؟
-
-بسته کوچک OK، بزرگ قفل.
-
-**14-5-م1** — چرا ICMP فرگمنت را نباید Drop کرد؟
-
-PMTUD می‌شکند.
-
-**14-5-م2** — سناریو: HTTPS باز نمی‌شود ولی ping OK؛ حدس؟
-
-MSS/MTU.
-
-**14-6-ت1** — کدام فیلد Policy را نشان می‌دهد؟
-
-policyid.
-
-**14-6-ت2** — Action deny یعنی؟
-
-ترافیک مسدود شد.
-
-**14-6-ت3** — Packet Walk شامل؟
-
-۱۰ پرسش با شواهد.
-
-**14-6-م1** — چرا Log اولین قدم است؟
-
-سریع‌ترین راه دیدن Allow/Deny.
-
-**14-6-م2** — سناریو: Log نیست؛ چرا؟
-
-logtraffic خاموش.
+**14-4-Q1** — diagnose firewall proute list.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 14-5
 
-<a id="ch15"></a>
+**14-5-ت1** — 1360.
 
+**14-5-ت2** — بسته بزرگ بی‌پاسخ.
+
+**14-5-ت3** — Resolver/Policy 53.
+
+**14-5-ت4** — PMTUD.
+
+**14-5-ت5** — MSS-clamp و ICMP.
+
+**14-5-ت6** — دانلود ۱۰۰MB سه بار.
+
+**14-5-Q1** — Use the DF bit and vary packet size until it passes.
+
+
+### پاسخ‌های بازنویسی عمیق درس 14-6
+
+**14-6-ت1** — Implicit Deny.
+
+**14-6-ت2** — رد شد.
+
+**14-6-ت3** — Log Policy خاموش.
+
+**14-6-ت4** — مراحل بسته.
+
+**14-6-ت5** — Log+Flow.
+
+**14-6-ت6** — Log، علت، رفع.
+
+**14-6-Q1** — The implicit deny policy.
 
 ### پاسخ‌های درس افزوده‌ی 14-7 (فصل 14)
 
@@ -2955,289 +2960,357 @@ diagnose sys session filter dst 10.10.10.20
 - NIST SP 800-41 Rev.1 — Guidelines on Firewalls (DMZ designs).
 - Fortinet Docs: FortiOS 7.0 Administration Guide — Virtual IPs، Firewall policy.
 
-## درس 15-1 — طراحی معماری دوفایروالی
+## درس 15-1 — طراحی معماری دوفایروالی: نقش‌ها، Zoneها، آدرس‌دهی و جدول مسیر
 
-**فصل 15 - روز 1 · پیش‌نیاز: فصل ۱۳، ۱۴ · ۶ ساعت**
+**فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۰، ۱۲-۲، ۱۳-۱ · ≈ 10 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-دو فایروال دو لایه‌ی دفاعی می‌دهند: Edge لبه‌ی اینترنت و DMZ؛ Internal شبکه‌ی داخلی. مدل طراحی و IP Plan را اول می‌نویسیم.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل‌های ۱۱ تا ۱۴.
+1. نقش Edge و Internal را تفکیک و تصمیم‌های طراحی را توجیه کند.
+2. Zoneها، سطح اعتماد و آدرس‌دهی (VLSM) را برای معماری کامل بنویسد.
+3. جدول مسیر هر فایروال و Default/Static را طراحی کند.
+4. ماتریس Policy بین Zoneها را بسازد.
+5. خطرات (Asymmetric، Single point of failure، Rule drift) را شناسایی کند.
+6. مستند طراحی قابل‌ممیزی تحویل دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Edge: WAN، DMZ (Web)، Transit به Internal. Internal: Transit، Users، Servers (App/DB).
-- قاعده: هیچ ترافیک اینترنتی مستقیم به Servers؛ Web فقط به App؛ App فقط به DB.
-- Routing: Edge Default به ISP؛ Edge Static به شبکه‌های داخلی از Transit؛ Internal Default به Edge.
-- NAT: SNAT اینترنت در Edge؛ VIP برای Web در Edge؛ Internal معمولاً بدون NAT (مسیردهی).
-- هر دو فایروال Policy مستقل دارند؛ Packet Walk باید هر دو را شامل شود.
+چرا شرکت‌ها دو فایروال می‌گذارند؟ تصور کنید یک ساختمان دو نگهبان دارد: نگهبان در ورودی خیابان (Edge) افراد ناشناس را می‌پالاید؛ نگهبان داخل ساختمان (Internal) فقط کارمندان و بخش‌ها را کنترل می‌کند. اگر یکی دور زده شود، دومی هنوز هست. ولی هزینه‌ی دو نگهبان، هماهنگی و پیچیدگی مسیرها هم هست.
 
-### ۴) مثال ساده
+هدف این درس: طرحی بنویسید که هر Zone مالک مشخص، ماتریس Policy روشن و جدول مسیر بدون ابهام داشته باشد، قبل از اینکه یک دستور بزنید.
 
-کاربر داخلی به اینترنت از دو فایروال می‌گذرد.
+### ۳) توضیح عمیق فنی
 
-### ۵) مثال سازمانی
+#### ۱) نقش‌ها
 
-سازمان: Edge مدیریت‌شده توسط تیم امنیت؛ Internal توسط تیم شبکه.
-
-### ۶) تصویر و توپولوژی
-
-```text
-ISP -- Edge(port1 203.0.113.2) -- DMZ 192.168.50.0/24 (Web .10)
-         |port3 transit 10.255.0.1/30
-         Internal(port1 10.255.0.2) -- Users 192.168.20.0/24
-                                    -- Servers 192.168.90.0/24 (App .20, DB .30)
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Network > Interfaces برای هر FGT: طبق جدول.
-2. Policy & Objects > Addresses.
-3. Zones.
-4. Static Routes.
-5. VIP.
-
-#### روش خط فرمان (CLI)
-
-```text
-# IP plan (example)
-# WAN      203.0.113.0/29  ISP .1  EDGE .2  VIP web .3
-# DMZ      192.168.50.0/24 EDGE .254  WEB .10
-# TRANSIT  10.255.0.0/30   EDGE .1  INT .2
-# USERS    192.168.20.0/24 INT .254
-# SERVERS  192.168.90.0/24 INT .254  APP .20  DB .30
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- جدول IP مرجع همه‌ی Labهای فصل است.
-- راستی‌آزمایی: هر Subnet هم‌پوشانی ندارد.
-- بازگشت: ندارد.
-
-### ۸) تست عملکرد
-
-- جدول را با Subnet Calculator بدون ابزار بررسی کنید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | هم‌پوشانی Subnet |
-| شواهد/دستور | Routeهای متناقض |
-| علت | طراحی بی‌دقت |
-| رفع | اصلاح IP Plan |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** چرا دو فایروال؟ *(پاسخ: 15-1-ت1)*
-
-**ت2.** Web چه چیزی را می‌بیند؟ *(پاسخ: 15-1-ت2)*
-
-**ت3.** NAT کجا؟ *(پاسخ: 15-1-ت3)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Internal NAT نمی‌خواهد؟ *(پاسخ: 15-1-م1)*
-
-**م2.** سناریو: کاربر به اینترنت نمی‌رسد؛ کدام فایروال؟ *(پاسخ: 15-1-م2)*
-
-**معیار تسلط:** IP Plan و Policy Matrix هر دو فایروال.
-
-**اشتباهات رایج:** هم‌پوشانی؛ Policy فقط در یک فایروال.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Edge firewall | Edge firewall | فایروال لبه | Internet |
-| DMZ | Demilitarized zone | ناحیه‌ی حائل | Web |
-| Transit | Transit network | لینک بین فایروال‌ها | /30 |
-
-| English sentence | ترجمه |
-|---|---|
-| Place public services in the DMZ. | سرویس‌های عمومی را در DMZ بگذارید. |
-| Each firewall enforces its own policy. | هر فایروال Policy خودش را اعمال می‌کند. |
-
-#### کارت Lab — درس 15-1
-
-| # | فیلد | محتوا |
+| فایروال | نقش | کنترل |
 |---|---|---|
-| 1 | عنوان و هدف | طراحی معماری ۲ |
-| 2 | پیش‌نیاز | فصل ۱۳، ۱۴ |
-| 3 | توپولوژی | — |
-| 4 | تجهیزات | کاغذ |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | جدول IP |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | Plan + Matrix |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | هم‌پوشانی Subnet |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | فایل طراحی |
-| 14 | معیار پذیرش | کامل |
-| 15 | مستندات نهایی | `02-design/arch2.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Edge | اینترنت، DMZ، NAT/VIP، VPN | شمال-جنوب، UTM لبه |
+| Internal | کاربران، سرورها، مدیریت | شرق-غرب، تفکیک داخلی |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+#### ۲) توپولوژی
 
----
-
-<a id="l-15-2"></a>
-
-## درس 15-2 — ساخت Edge: WAN، DMZ، NAT و VIP
-
-**فصل 15 - روز 2 · پیش‌نیاز: درس ۱۵-۱ · ۶ ساعت**
-
-### ۱) معرفی درس
-
-Edge اینترنت را به DMZ و Internal وصل می‌کند و NAT/VIP را انجام می‌دهد.
-
-### ۲) پیش‌نیازها
-
-درس ۱۵-۱؛ فصل ۱۳.
-
-### ۳) توضیح مفهومی
-
-- Interfaces: port1 WAN، port2 DMZ، port3 Transit.
-- Default به ISP؛ Static به Users/Servers از Transit (10.255.0.2).
-- Policy: DMZ→WAN (به‌روزرسانی)، WAN→DMZ (VIP Web HTTPS)، Transit→WAN (کاربران با NAT)، DMZ→Transit (محدود به App).
-- VIP: 203.0.113.3:443 → 192.168.50.10:443.
-- Log همه‌ی Policyها.
-
-### ۴) مثال ساده
-
-اینترنت به Web از VIP.
-
-### ۵) مثال سازمانی
-
-Edge سازمانی با Policy فهرست‌شده.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Internet -> VIP -> DMZ Web ; Transit(Users) -> NAT -> Internet
+``` text
+Internet
+   |
+ [ISP-A]--port1--[EDGE FW]--port3--[DMZ switch: web]
+                    |
+                  port2 (transit 10.255.0.0/30)
+                    |
+                 [INTERNAL FW]--port2--[USERS 10.10.0.0/24]
+                               --port3--[SERVERS 10.20.0.0/24]
+                               --port4--[MGMT 10.99.0.0/24]
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۳) آدرس‌دهی
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+| شبکه | آدرس | استفاده |
+|---|---|---|
+| Transit Edge–Internal | 10.255.0.0/30 | .1 Edge، .2 Internal |
+| DMZ | 10.30.0.0/24 | وب |
+| Users | 10.10.0.0/24 | کاربران |
+| Servers | 10.20.0.0/24 | App/DB |
+| Mgmt | 10.99.0.0/24 | مدیریت |
+| WAN | 198.51.100.0/30 | به ISP |
 
-#### روش گرافیکی (GUI)
+#### ۴) جدول مسیر
 
-1. Interfaces: port1/2/3.
-2. Static Routes: Default + دو مسیر.
-3. Virtual IPs: VIP-WEB.
-4. Policy: WAN-to-WEB, USERS-to-WAN, DMZ-to-APP.
-5. Log & Report.
+``` text
+EDGE:
+  0.0.0.0/0      -> 198.51.100.1 (port1)
+  10.10.0.0/24   -> 10.255.0.2   (port2)   internal users
+  10.20.0.0/24   -> 10.255.0.2
+  10.99.0.0/24   -> 10.255.0.2
+INTERNAL:
+  0.0.0.0/0      -> 10.255.0.1   (port1 transit)
+  (connected) users/servers/mgmt
+```
 
-#### روش خط فرمان (CLI)
+اصل: Internal فقط یک Default به Edge؛ Edge همه‌ی شبکه‌های داخلی را از طریق Internal می‌شناسد. بدون Route برگشت در Edge، پاسخ‌ها گم می‌شوند.
 
-```text
+#### ۵) ماتریس Policy
+
+| از ↓ به → | Internet | DMZ | Users | Servers | Mgmt |
+|---|---|---|---|---|---|
+| Internet | - | HTTPS (VIP) | - | - | - |
+| DMZ | - | - | - | DB 1433 از App | - |
+| Users | HTTP/S/DNS (SNAT) | HTTPS | - | App 443 | - |
+| Servers | Updates | - | - | - | - |
+| Mgmt | - | SSH | - | SSH | - |
+
+#### ۶) خطرات
+
+- Asymmetric: فقط یک مسیر بین Edge و Internal.
+- NAT دوباره: فقط Edge NAT کند (NAT دوم تحلیل را سخت می‌کند).
+- Rule drift: فاصله‌ی سیاست دو فایروال؛ بازبینی فصلی.
+- Single point of failure: در فصل HA/DR.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| NAT کجا | فقط Edge |
+| Default Internal | به Edge |
+| DMZ | روی Edge یا Internal؟ Edge برای انتشار عمومی |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** کاربر 10.10.0.5 به اینترنت: Internal (Policy Users→Edge) ⇒ Edge (Transit→Internet, SNAT) ⇒ ISP. برگشت: Edge می‌داند 10.10.0.0/24 از port2 است ⇒ Internal ⇒ Users.
+
+**متوسط (تحلیل خطا):** Route 10.10.0.0/24 در Edge نیست: Session کاربران ساخته می‌شود ولی برگشت از Default به ISP می‌رود و Drop. اثبات: Edge debug flow: `reverse path check fail`/Sniffer port1 دیده می‌شود. رفع: Route.
+
+**سخت (طراحی ممیزی‌پذیر):** سازمان ۱۵۰ کاربر، ۱۰ سرور، وب‌سرور عمومی. تحویل: ۱) نمودار، ۲) جدول آدرس، ۳) ماتریس Policy، ۴) جدول مسیر دو فایروال، ۵) ریسک‌ها و آزمون: Users→Internet، Internet→Web، Users→DB (ممنوع)، DMZ→DB مستقیم (ممنوع). معیار: ۱۰۰٪ آزمون‌ها مطابق ماتریس.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. هر فایروال: Network → Interfaces برای Transit و Zoneها.
+2. Network → Static Routes.
+3. Policy & Objects برای ماتریس.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 config router static
-    edit 1
-        set gateway 203.0.113.1
-        set device "port1"
-    next
-    edit 2
-        set dst 192.168.20.0 255.255.255.0
-        set gateway 10.255.0.2
-        set device "port3"
-    next
-    edit 3
-        set dst 192.168.90.0 255.255.255.0
-        set gateway 10.255.0.2
-        set device "port3"
-    next
+ edit 1
+  set dst 10.10.0.0 255.255.255.0
+  set gateway 10.255.0.2
+  set device "port2"
+ next
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- Static به داخلی‌ها از Transit.
-- VIP و Policy مثل درس ۱۳-۳.
-- Policy کاربران: Transit→WAN با NAT.
-- راستی‌آزمایی: `get router info routing-table all` و تست‌ها.
-- بازگشت: حذف مسیرها/Policy.
+- ping/traceroute مطابق جدول.
+- آزمون مثبت/منفی ماتریس.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- ping از Edge به Transit و DMZ؛ curl به VIP.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Web از اینترنت نمی‌رسد |
-| شواهد/دستور | Debug Flow: denied policy |
-| علت | Policy WAN→DMZ نیست |
-| رفع | ساخت Policy |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Edge چه مسئولیتی دارد؟ *(پاسخ: 15-2-ت1)*
-
-**ت2.** Static به داخل چرا؟ *(پاسخ: 15-2-ت2)*
-
-**ت3.** VIP کجا؟ *(پاسخ: 15-2-ت3)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Edge باید Route به Users داشته باشد؟ *(پاسخ: 15-2-م1)*
-
-**م2.** سناریو: Return Path ناقص؛ علامت؟ *(پاسخ: 15-2-م2)*
-
-**معیار تسلط:** ساخت Edge با GUI/CLI و تست.
-
-**اشتباهات رایج:** فراموشی Route برگشت.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Transit | Transit link | لینک بین فایروال‌ها | — |
-| Return path | Return route | مسیر برگشت | Edge |
-
-| English sentence | ترجمه |
-|---|---|
-| Add static routes for the internal networks on the edge firewall. | برای شبکه‌های داخلی روی فایروال Edge مسیر Static اضافه کنید. |
-| Publish the web server using a VIP. | سرور وب را با VIP منتشر کنید. |
-
-#### کارت Lab — درس 15-2
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Edge |
-| 2 | پیش‌نیاز | درس ۱۵-۱ |
-| 3 | توپولوژی | FGT-EDGE + ISP + DMZ Web |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | طبق جدول |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Edge کامل |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | curl/ping |
-| 11 | سناریوی خرابی | Web از اینترنت نمی‌رسد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | دسترسی Web |
-| 14 | معیار پذیرش | Log Edge |
-| 15 | مستندات نهایی | `02-design/fgt-edge.md` |
-| 16 | Cleanup و بازگردانی | Restore |
+| برگشت ندارد | Route Edge | Route داخلی |
+| Policy تطابق ندارد | Zone | Interface |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Default Deny بین Zoneها.
+- Mgmt جدا.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Edge شمال-جنوب؛ Internal شرق-غرب.
+- جدول مسیر دو سمتی.
+- ماتریس Policy.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا NAT فقط روی Edge؟ *(پاسخ: 15-1-ت1)*
+
+**ت2.** (ساده) Default Internal به کجاست؟ *(پاسخ: 15-1-ت2)*
+
+**ت3.** (متوسط) چرا Edge باید Route شبکه‌های داخلی را داشته باشد؟ *(پاسخ: 15-1-ت3)*
+
+**ت4.** (متوسط) DMZ→DB مستقیم چرا ممنوع؟ *(پاسخ: 15-1-ت4)*
+
+**ت5.** (سخت) طرح ممیزی‌پذیر را بنویسید. *(پاسخ: 15-1-ت5)*
+
+**ت6.** (سخت، طراحی) ریسک Rule drift را چگونه کنترل می‌کنید؟ *(پاسخ: 15-1-ت6)*
+
+**Q1.** Quick quiz (English): Why configure NAT only on the edge firewall? *(پاسخ: 15-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| DMZ | Demilitarized Zone | منطقه‌ی حائل |
+
+- *Edge handles north-south traffic.* ← Edge ترافیک شمال-جنوب را کنترل می‌کند.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** طراحی دوفایروالی (اجرا نشده). **Evidence:** `02-design/arch2.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Firewall policies; Routing
+- NIST SP 800-41
+
+<a id="l-15-2"></a>
+
+## درس 15-2 — ساخت Edge: WAN، DMZ، NAT، VIP و Policy ورودی
+
+**فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱، ۱۳-۲، ۱۳-۳ · ≈ 10 ساعت**
+
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. Interfaceهای Edge را (WAN، DMZ، Transit) پیکربندی کند.
+2. Default Route و Route داخلی را اضافه کند.
+3. SNAT برای کاربران داخلی و VIP برای وب را بسازد.
+4. Policyهای Edge را با Log و Default Deny بنویسد.
+5. آزمون مثبت/منفی و Evidence را انجام دهد.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+Edge اولین چیزی است که اینترنت می‌بیند. هر اشتباه اینجا یعنی مواجهه‌ی مستقیم با اینترنت؛ پس ساخت باید نظم‌دار و با آزمون منفی باشد.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) Interface
+
+``` text
+config system interface
+ edit "port1"
+  set ip 198.51.100.2 255.255.255.252
+  set allowaccess ping
+  set role wan
+ next
+ edit "port2"
+  set ip 10.255.0.1 255.255.255.252
+  set allowaccess ping
+  set role lan
+ next
+ edit "port3"
+  set ip 10.30.0.1 255.255.255.0
+  set allowaccess ping
+  set role dmz
+ next
+end
+```
+
+#### ۲) Route
+
+``` text
+config router static
+ edit 1
+  set gateway 198.51.100.1
+  set device "port1"
+ next
+ edit 2
+  set dst 10.10.0.0 255.255.255.0
+  set gateway 10.255.0.2
+  set device "port2"
+ next
+end
+```
+
+#### ۳) NAT و VIP
+
+``` text
+config firewall vip
+ edit "VIP-WEB-443"
+  set extintf "port1"
+  set extip 203.0.113.10
+  set mappedip "10.30.0.10"
+  set portforward enable
+  set extport 443
+  set mappedport 443
+ next
+end
+```
+
+#### ۴) Policy
+
+| ID | از | به | Source | Dest | Service | NAT |
+|---|---|---|---|---|---|---|
+| 1 | port2 (Transit) | port1 | NET-INTERNAL | all | HTTP/HTTPS/DNS | Enable |
+| 2 | port1 | port3 | all | VIP-WEB-443 | HTTPS | - |
+| 3 | port3 | port2 | SRV-WEB | SRV-APP | TCP-8443 | - |
+| 99 | any | any | all | all | ALL | Deny + Log |
+
+#### ۵) آزمون
+
+از Internal Users: curl اینترنت؛ از Internet: HTTPS به VIP؛ منفی: SSH به VIP رد؛ DMZ→Users رد.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Policy 99 | Deny با Log |
+| Route | دقیق |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Policy 1 با SNAT؛ Session با IP 198.51.100.2.
+
+**متوسط (تحلیل):** VIP کار نمی‌کند: Policy 2 dst=VIP نبود؛ اصلاح.
+
+**سخت (آزمون منفی):** DMZ→Users باید Deny؛ Log policyid=99؛ ثبت Evidence.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Network → Interfaces.
+2. Static Routes.
+3. Virtual IPs.
+4. Firewall Policy.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+show system interface port1
+show router static
+show firewall vip
+show firewall policy
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Lookup/Flow/Session.
+- آزمون منفی در Log.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| اینترنت قطع | Route/NAT | Default/NAT |
+| VIP از بیرون نه | Policy | dst=VIP |
+
+### ۱۰) نکات امنیتی
+
+- port1 بدون مدیریت.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Interface، Route، NAT، Policy، آزمون.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Policy 99؟ *(پاسخ: 15-2-ت1)*
+
+**ت2.** (ساده) VIP چه می‌کند؟ *(پاسخ: 15-2-ت2)*
+
+**ت3.** (متوسط) چرا port1 بدون Admin access؟ *(پاسخ: 15-2-ت3)*
+
+**ت4.** (متوسط) آزمون منفی؟ *(پاسخ: 15-2-ت4)*
+
+**ت5.** (سخت) VIP جواب نمی‌دهد. *(پاسخ: 15-2-ت5)*
+
+**ت6.** (سخت، طراحی) ماتریس Edge. *(پاسخ: 15-2-ت6)*
+
+**Q1.** Quick quiz (English): Which policy should end the Edge rule list? *(پاسخ: 15-2-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| VIP | Virtual IP | آدرس مجازی |
+
+- *Test denied flows too.* ← جریان‌های ردشده را هم آزمون کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Edge (اجرا نشده). **Evidence:** `02-design/fgt-edge.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Virtual IPs
 
 <a id="l-15-3"></a>
 
@@ -3793,45 +3866,39 @@ diagnose debug flow filter addr 192.168.20.11
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**15-1-ت1** — چرا دو فایروال؟
 
-دو لایه‌ی دفاعی و جداسازی DMZ.
+### پاسخ‌های بازنویسی عمیق درس 15-1
 
-**15-1-ت2** — Web چه چیزی را می‌بیند؟
+**15-1-ت1** — تا Session و عیب‌یابی ساده بماند و NAT دوباره پیچیدگی نسازد.
 
-فقط App.
+**15-1-ت2** — به Edge (Transit).
 
-**15-1-ت3** — NAT کجا؟
+**15-1-ت3** — تا بسته‌ی برگشتی/پاسخ را به Internal برگرداند.
 
-Edge.
+**15-1-ت4** — اگر وب‌سرور هک شود، مهاجم مستقیم به DB نرسد؛ فقط App.
 
-**15-1-م1** — چرا Internal NAT نمی‌خواهد؟
+**15-1-ت5** — نمودار، آدرس، ماتریس، مسیر، آزمون.
 
-داخلی از مسیردهی کافی است و رد‌پایی ساده‌تر.
+**15-1-ت6** — بازبینی فصلی، Config مقایسه‌ی خودکار، Comment/Owner.
 
-**15-1-م2** — سناریو: کاربر به اینترنت نمی‌رسد؛ کدام فایروال؟
+**15-1-Q1** — To keep traffic analysis simple and avoid double translation.
 
-هر دو را با Walk بررسی کنید.
 
-**15-2-ت1** — Edge چه مسئولیتی دارد؟
+### پاسخ‌های بازنویسی عمیق درس 15-2
 
-NAT/VIP و ارتباط با ISP.
+**15-2-ت1** — Deny با Log.
 
-**15-2-ت2** — Static به داخل چرا؟
+**15-2-ت2** — DNAT.
 
-Edge باید بداند داخلی‌ها کجا هستند.
+**15-2-ت3** — سطح حمله.
 
-**15-2-ت3** — VIP کجا؟
+**15-2-ت4** — SSH به VIP.
 
-Edge.
+**15-2-ت5** — Policy، Route، Session.
 
-**15-2-م1** — چرا Edge باید Route به Users داشته باشد؟
+**15-2-ت6** — جدول.
 
-برای برگشت ترافیک.
-
-**15-2-م2** — سناریو: Return Path ناقص؛ علامت؟
-
-TCP برقرار نمی‌شود.
+**15-2-Q1** — An explicit deny with logging.
 
 **15-3-ت1** — Default Internal کجاست؟
 
