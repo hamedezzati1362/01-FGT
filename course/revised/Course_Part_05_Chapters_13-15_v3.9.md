@@ -3314,553 +3314,661 @@ show firewall policy
 
 <a id="l-15-3"></a>
 
-## درس 15-3 — ساخت Internal: Users و Servers و Routing به Edge
+## درس 15-3 — ساخت Internal: Users، Servers، Mgmt و Routing به Edge با آزمون کامل
 
-**فصل 15 - روز 3 · پیش‌نیاز: درس ۱۵-۲ · ۶ ساعت**
+**فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱، ۱۵-۲ · ≈ 10 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-Internal ارتباط کاربران و سرورها را کنترل می‌کند. Default آن Edge است.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۵-۲.
+1. Interfaceها و Zoneهای Internal را (Users، Servers، Mgmt، Transit) پیکربندی کند.
+2. Default به Edge و ترتیب Routeها را درست بسازد.
+3. Policyهای Users→Servers، Users→Edge و Mgmt را با Least Privilege بنویسد.
+4. دلیل خاموش‌بودن NAT روی Internal را توضیح دهد.
+5. Packet Walk و آزمون مثبت/منفی را اجرا و مستند کند.
+6. خطاهای رایج (Route، Zone، NAT دوباره) را عیب‌یابی کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Interfaces: port1 Transit، port2 Users، port3 Servers.
-- Default به Edge (10.255.0.1).
-- Policy: Users→Servers (SMB/HTTPS محدود)، Users→Transit (اینترنت)، Servers→Transit (به‌روزرسانی محدود).
-- بدون NAT در Internal.
-- Zone و Objectهای استاندارد.
+Edge در برابر اینترنت از ساختمان محافظت می‌کند؛ ولی بیشتر حوادث واقعی از «داخل» شروع می‌شوند: لپ‌تاپ آلوده‌ای که به سرور فایل می‌رسد، حسابی که لو رفته و به DB می‌رود. Internal فایروالی است که این حرکت جانبی (Lateral Movement) را می‌بندد.
 
-### ۴) مثال ساده
+ساخت Internal اغلب ساده فرض می‌شود و همین‌جا خطا می‌شود: Default اشتباه، NAT دوباره، یا Policyهای ALL «موقتی». این درس Internal را مرحله‌به‌مرحله می‌سازد و هر مرحله را با آزمون ثابت می‌کند.
 
-کاربران به اینترنت از Internal→Edge.
+### ۳) توضیح عمیق فنی
 
-### ۵) مثال سازمانی
+#### ۱) نقش و آدرس‌ها
 
-Internal Policy مجزای امنیت داخلی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Users -> Internal -> (Transit) -> Edge -> Internet
+``` text
+Internal FW
+ port1  10.255.0.2/30   Transit to Edge (Default gateway 10.255.0.1)
+ port2  10.10.0.1/24    USERS
+ port3  10.20.0.1/24    SERVERS
+ port4  10.99.0.1/24    MGMT
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) Interface، Zone و Route
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Interfaces/Zones.
-2. Static Route Default به 10.255.0.1.
-3. Policy.
-4. Log.
-5. Monitor.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
+config system interface
+ edit "port1"
+  set ip 10.255.0.2 255.255.255.252
+  set allowaccess ping
+  set role wan
+ next
+ edit "port2"
+  set ip 10.10.0.1 255.255.255.0
+  set allowaccess ping
+  set role lan
+ next
+ edit "port3"
+  set ip 10.20.0.1 255.255.255.0
+  set allowaccess ping
+  set role lan
+ next
+ edit "port4"
+  set ip 10.99.0.1 255.255.255.0
+  set allowaccess ping https ssh
+  set role lan
+ next
+end
 config router static
-    edit 1
-        set gateway 10.255.0.1
-        set device "port1"
-    next
-end
-config firewall policy
-    edit 10
-        set name "Users-to-Transit"
-        set srcintf "ZN-USERS"
-        set dstintf "port1"
-        set srcaddr "NET-USERS-20"
-        set dstaddr "all"
-        set action accept
-        set schedule "always"
-        set service "HTTP" "HTTPS" "DNS"
-        set logtraffic all
-    next
+ edit 1
+  set gateway 10.255.0.1
+  set device "port1"
+ next
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+فقط port4 (Mgmt) مدیریت مجاز دارد. Route داخلی لازم نیست چون شبکه‌ها Connected هستند.
 
-- NAT غیرفعال: Edge SNAT می‌کند.
-- Policy فقط سرویس‌های لازم.
-- راستی‌آزمایی: از Users ping/Browser؛ Log در هر دو فایروال.
-- بازگشت: حذف Policy/Route.
+#### ۳) چرا NAT خاموش؟
 
-### ۸) تست عملکرد
+اگر Internal هم NAT کند، Edge فقط IP Transit (10.255.0.2) را می‌بیند؛ Logها ناخوانا می‌شوند، رد‌یابی کاربر به IP سخت و Policy مبتنی بر Source در Edge بی‌معنا. NAT فقط یک‌بار و آن هم روی Edge.
 
-- Users به اینترنت و Servers.
+#### ۴) ماتریس Policy Internal
 
-### ۹) عیب‌یابی
+| ID | از | به | Source | Dest | Service | Log |
+|---|---|---|---|---|---|---|
+| 10 | port2 | port1 | NET-USERS | all | HTTP/HTTPS/DNS | Sec |
+| 20 | port2 | port3 | NET-USERS | SRV-APP | TCP-443 | All |
+| 30 | port4 | port2/port3 | HOST-ADMIN | all | SSH/HTTPS | All |
+| 40 | port3 | port1 | SRV-APP | UPDATE-SITES | HTTPS | All |
+| 99 | any | any | all | all | ALL | Deny+All |
 
-| بخش | شرح |
+#### ۵) Packet Walk
+
+``` text
+10.10.0.5 -> port2 (RPF ok) -> route default -> port1
+Policy 10 accept (no NAT) -> Edge 10.255.0.1 -> Edge Policy 1 SNAT -> ISP
+Reply: ISP -> Edge (session reply) -> route 10.10.0.0/24 via 10.255.0.2 -> Internal -> port2
+```
+
+#### ۶) آزمون‌ها
+
+مثبت: Users→Internet، Users→SRV-APP:443، Admin→SSH سرور. منفی: Users→SRV-DB، Users→Mgmt، Servers→Users، Internet→Users (از بیرون).
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | Users اینترنت ندارند |
-| شواهد/دستور | Log Internal: Allow؛ Edge: Deny |
-| علت | Policy در Edge نیست (Transit→WAN) |
-| رفع | ساخت Policy در Edge |
+| NAT | فقط Edge |
+| Mgmt | Interface و Policy جدا، Trusted host |
+| Servers→Internet | فقط مقاصد Update |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** ورودی: کاربر 10.10.0.5 به 203.0.113.10:443. مراحل: ۱) Policy 10 مطابق است. ۲) Default به 10.255.0.1. ۳) Edge SNAT می‌کند. پاسخ: Session در Internal با policy_id=10 و بدون NAT؛ در Edge با SNAT.
 
-**ت1.** Default Internal کجاست؟ *(پاسخ: 15-3-ت1)*
+**متوسط (NAT دوباره):** گزارش: در Edge Log همه‌ی کاربران IP 10.255.0.2 هستند. مراحل: ۱) Policy 10 در Internal `nat enable` دارد. ۲) خاموش‌کردن NAT. ۳) Log Edge IP واقعی کاربر را نشان می‌دهد. درس: NAT فقط روی Edge.
 
-**ت2.** NAT Internal؟ *(پاسخ: 15-3-ت2)*
+**سخت (چندعلتی):** پس از نصب Internal، Users به Servers می‌رسند ولی اینترنت ندارند. مراحل: ۱) Lookup: Policy 10 درست. ۲) Debug flow: Allowed، route port1. ۳) Sniffer port1: SYN خارج می‌شود. ۴) Edge: SYN دریافت نمی‌شود؟ در Edge Sniffer port2 چیزی نیست: کابل/VLAN Transit. ۵) رفع VLAN و آزمون. درس: Evidence هر دو فایروال.
 
-**ت3.** Policy مضاعف؟ *(پاسخ: 15-3-ت3)*
+### ۶) پیاده‌سازی از مسیر GUI
 
-### ۱۱) مرور و ارزیابی
+1. Network → Interfaces برای هر پورت.
+2. Network → Static Routes → Default به 10.255.0.1.
+3. Policy & Objects → Firewall Policy با ماتریس.
+4. Log & Report → Forward Traffic برای آزمون منفی.
 
-**م1.** چرا هر دو Log را می‌خوانیم؟ *(پاسخ: 15-3-م1)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-**م2.** سناریو: Internal Allow ولی ارتباط نه؛ چه می‌کنید؟ *(پاسخ: 15-3-م2)*
+``` text
+config firewall policy
+ edit 10
+  set name "USERS-to-EDGE"
+  set srcintf "port2"
+  set dstintf "port1"
+  set srcaddr "NET-USERS"
+  set dstaddr "all"
+  set action accept
+  set schedule "always"
+  set service "HTTP" "HTTPS" "DNS"
+  set nat disable
+  set logtraffic utm
+ next
+end
+get router info routing-table all
+diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
+```
 
-**معیار تسلط:** ساخت Internal و اثبات با Log دو فایروال.
+### ۸) Verification (اثبات صحت)
 
-**اشتباهات رایج:** Policy فقط در یک فایروال.
+- Lookup: Policy 10.
+- Session بدون NAT در Internal.
+- آزمون‌های منفی در Log با policyid=99.
 
-### ۱۲) واژگان و English Corner
+### ۹) Troubleshooting
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Internal firewall | Internal firewall | فایروال داخلی | Users/Servers |
-| Default route | Default route | مسیر پیش‌فرض | Edge |
-
-| English sentence | ترجمه |
-|---|---|
-| Check the logs on both firewalls. | Logهای هر دو فایروال را بررسی کنید. |
-| Do not NAT twice unless you must. | مگر ناچار نباشید دو بار NAT نکنید. |
-
-#### کارت Lab — درس 15-3
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Internal |
-| 2 | پیش‌نیاز | درس ۱۵-۲ |
-| 3 | توپولوژی | FGT-INT + Users + Servers |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | طبق جدول |
-| 7 | وضعیت اولیه | Edge آماده |
-| 8 | صورت مسئله | Internal کامل |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | Log |
-| 11 | سناریوی خرابی | Users اینترنت ندارند |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | اینترنت کاربران |
-| 14 | معیار پذیرش | Log دو فایروال |
-| 15 | مستندات نهایی | `02-design/fgt-internal.md` |
-| 16 | Cleanup و بازگردانی | Restore |
+| اینترنت نیست | Route/Transit | Default و لینک Transit |
+| IP کاربر در Edge پنهان | NAT Internal | NAT disable |
+| Users به Servers نمی‌رسند | Policy 20 | Service/Zone |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Mgmt جدا و محدود.
+- Default Deny با Log.
+- Servers→Internet فقط Update.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Internal ضد حرکت جانبی.
+- Default به Edge.
+- NAT فقط Edge.
+- آزمون مثبت و منفی.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا NAT روی Internal خاموش است؟ *(پاسخ: 15-3-ت1)*
+
+**ت2.** (ساده) Default Internal به کجا؟ *(پاسخ: 15-3-ت2)*
+
+**ت3.** (متوسط) چرا Servers→Internet باید محدود باشد؟ *(پاسخ: 15-3-ت3)*
+
+**ت4.** (متوسط) چرا Mgmt جدا؟ *(پاسخ: 15-3-ت4)*
+
+**ت5.** (سخت) اینترنت ندارند ولی Servers ok؛ مسیر عیب‌یابی؟ *(پاسخ: 15-3-ت5)*
+
+**ت6.** (سخت، طراحی) ماتریس Internal برای ۱۵۰ کاربر و ۱۰ سرور. *(پاسخ: 15-3-ت6)*
+
+**Q1.** Quick quiz (English): Why is NAT not enabled on the internal firewall in this design? *(پاسخ: 15-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Lateral movement | Lateral movement | حرکت جانبی مهاجم |
+| Transit | Transit network | شبکه‌ی ارتباطی دو فایروال |
+
+- *Internal firewall limits lateral movement.* ← فایروال داخلی حرکت جانبی را محدود می‌کند.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Internal (اجرا نشده). **Evidence:** `02-design/fgt-internal.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Firewall policies; Routing
+- NIST SP 800-41 Rev.1
 
 <a id="l-15-4"></a>
 
-## درس 15-4 — DMZ سه‌لایه: Web، App، DB و Policy بین لایه‌ها
+## درس 15-4 — DMZ سه‌لایه: Web، App، DB؛ Policy، آزمون منفی و پایش
 
-**فصل 15 - روز 4 · پیش‌نیاز: درس ۱۵-۳ · ۶ ساعت**
+**فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱ تا ۱۵-۳ · ≈ 10 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-Web در DMZ فقط با App حرف می‌زند؛ App فقط با DB. این با Policy در هر دو فایروال تضمین می‌شود.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس‌های ۱۵-۲، ۱۵-۳.
+1. دلیل معماری سه‌لایه را با سناریوی حمله توضیح دهد.
+2. آدرس‌دهی و Policy بین لایه‌ها را با Least Privilege بنویسد.
+3. آزمون منفی را برای هر خانه‌ی Deny اجرا کند.
+4. Log و Alert برای تلاش‌های ممنوع بسازد.
+5. خطاهای رایج (Web→DB مجاز، Update باز) را رفع کند.
+6. نتیجه را مستند و برای ممیز آماده کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Web (DMZ) → App (Servers) پورت 8080 از Edge Transit و Internal.
-- App → DB پورت 3306 فقط در Internal.
-- Internet → Web فقط 443.
-- هیچ مسیر Internet→App/DB.
-- تست منفی: Web→DB مسدود.
+مهاجم یک آسیب‌پذیری وب‌اپلیکیشن را پیدا می‌کند و کنترل وب‌سرور را می‌گیرد. در معماری یک‌لایه همه‌چیز (از جمله DB) همان‌جاست و کار تمام است. در معماری سه‌لایه، وب‌سرور فقط می‌تواند با App حرف بزند، و App فقط با DB روی یک پورت. مهاجم به دیوار بعدی می‌خورد و Log هم زنگ خطر می‌دهد.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-Web به App.
+#### ۱) لایه‌ها
 
-### ۵) مثال سازمانی
-
-سازمان: Policy هر لایه با Profile امنیتی (فصل ۱۶).
-
-### ۶) تصویر و توپولوژی
-
-```text
-Internet -> Web(DMZ) -> App -> DB   (only adjacent layers)
+``` text
+Internet -> [WEB 10.30.1.0/24] -> [APP 10.30.2.0/24] -> [DB 10.30.3.0/24]
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) ماتریس
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+| از ↓ به → | WEB | APP | DB | Internet |
+|---|---|---|---|---|
+| Internet | 443 (VIP) | - | - | - |
+| WEB | - | 8443 | **ممنوع** | - |
+| APP | - | - | 1433 | Update (کنترل‌شده) |
+| DB | - | - | - | **ممنوع** |
+| Users | 443 | 8443 (Admin) | - | - |
 
-#### روش گرافیکی (GUI)
+#### ۳) Policy نمونه
 
-1. Policy Edge.
-2. Policy Internal.
-3. Objects.
-4. Log.
-5. Policy Lookup.
-
-#### روش خط فرمان (CLI)
-
-```text
-# Edge: DMZ -> TRANSIT  : WEB -> APP tcp/8080
-# Internal: TRANSIT -> SERVERS: WEB -> APP tcp/8080
-# Internal: SERVERS -> SERVERS: APP -> DB tcp/3306 (same zone: intrazone or separate zones)
-# Negative test: WEB -> DB must be DENIED
+``` text
+config firewall policy
+ edit 60
+  set name "APP-to-DB-1433"
+  set srcintf "ZN-APP"
+  set dstintf "ZN-DB"
+  set srcaddr "SRV-APP"
+  set dstaddr "SRV-DB"
+  set action accept
+  set schedule "always"
+  set service "MS-SQL"
+  set logtraffic all
+ next
+ edit 61
+  set name "DENY-WEB-to-DB"
+  set srcintf "ZN-WEB"
+  set dstintf "ZN-DB"
+  set srcaddr "all"
+  set dstaddr "all"
+  set action deny
+  set logtraffic all
+ next
+end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+Policy Deny صریح (61) اگرچه Implicit Deny هم هست، ولی برای Log و Alert لازم است.
 
-- Policy هر لایه یک ماتریس است.
-- Intrazone بین App و DB اگر در یک Zone باشند: بهتر Zone جدا.
-- راستی‌آزمایی: تست مثبت/منفی.
-- بازگشت: حذف Policy.
+#### ۴) آزمون منفی
 
-### ۸) تست عملکرد
+``` text
+From WEB: telnet 10.30.3.10 1433  -> must FAIL, log policyid=61
+From Internet: connect to APP     -> FAIL
+From DB: curl https://example.com -> FAIL
+```
 
-- curl از Web به App؛ تلاش Web→DB.
+#### ۵) Alert
 
-### ۹) عیب‌یابی
+``` text
+Alert: policyid=61 count > 5 in 5 min  -> notify SOC
+```
 
-| بخش | شرح |
+(در FortiAnalyzer/Syslog؛ فصل ۲۴.)
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | Web به DB دسترسی دارد |
-| شواهد/دستور | Debug Flow: Allowed by Policy |
-| علت | Policy گسترده |
-| رفع | تنگ‌کردن |
+| تعداد لایه | سه لایه؛ دو لایه اگر ریسک کم |
+| Update | Proxy/ لیست مقاصد |
+| Alert | روی Deny بین لایه‌ها |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** App→DB 1433: Session با policyid=60؛ ارتباط برقرار.
 
-**ت1.** چرا Web به DB نه؟ *(پاسخ: 15-4-ت1)*
+**متوسط (تحلیل):** ممیزی کشف کرد Web→DB مجاز است (Policy ALL). اثبات: Lookup ID قدیمی؛ رفع: Policy 61 بالاتر و حذف ALL؛ آزمون منفی موفق؛ Log دارد.
 
-**ت2.** تست منفی؟ *(پاسخ: 15-4-ت2)*
+**سخت (حمله‌ی شبیه‌سازی‌شده):** فرض: Web آلوده است. مهاجم Scan 10.30.3.0/24 می‌زند. انتظار: ده‌ها Deny با policyid=61 در Log؛ Alert؛ پاسخ: ایزوله‌کردن وب‌سرور (Quarantine). معیار: زمان تشخیص < ۵ دقیقه، هیچ اتصال موفق به DB جز App.
 
-**ت3.** Policy در کدام فایروال؟ *(پاسخ: 15-4-ت3)*
+### ۶) پیاده‌سازی از مسیر GUI
 
-### ۱۱) مرور و ارزیابی
+1. Policy & Objects → Firewall Policy → ترتیب Policyها.
+2. Log & Report → Forward Traffic → Filter policyid=61.
 
-**م1.** چرا Zone جدا برای DB؟ *(پاسخ: 15-4-م1)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-**م2.** سناریو: Web به DB می‌رسد؛ چرا؟ *(پاسخ: 15-4-م2)*
+``` text
+show firewall policy 61
+diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp port3
+```
 
-**معیار تسلط:** ساخت سه‌لایه با تست مثبت/منفی.
+### ۸) Verification (اثبات صحت)
 
-**اشتباهات رایج:** Policy any بین Servers.
+- Lookup: Policy 61 برای Web→DB.
+- App→DB Session موفق.
+- Alert در آزمون.
 
-### ۱۲) واژگان و English Corner
+### ۹) Troubleshooting
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Three-tier | Three-tier architecture | Web/App/DB | — |
-| Intrazone | Intrazone traffic | ترافیک درون Zone | Policy |
-
-| English sentence | ترجمه |
-|---|---|
-| Allow only adjacent tiers to communicate. | فقط لایه‌های مجاور اجازه‌ی ارتباط دارند. |
-| Test the negative cases as well. | موارد منفی را هم تست کنید. |
-
-#### کارت Lab — درس 15-4
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | سه‌لایه |
-| 2 | پیش‌نیاز | درس ۱۵-۳ |
-| 3 | توپولوژی | Edge+Internal+Web/App/DB |
-| 4 | تجهیزات | ۲ FGT + 3 Linux |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | جدول IP |
-| 7 | وضعیت اولیه | Edge/Internal |
-| 8 | صورت مسئله | Policy لایه‌ها |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | curl |
-| 11 | سناریوی خرابی | Web به DB دسترسی دارد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | مثبت/منفی |
-| 14 | معیار پذیرش | Web→DB رد |
-| 15 | مستندات نهایی | `02-design/fgt-3tier.md` |
-| 16 | Cleanup و بازگردانی | حذف Policy |
+| Web به DB می‌رسد | Lookup | Policy ALL |
+| App به DB نمی‌رسد | Policy 60 | Service/Address |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- DB بدون Internet.
+- Log All روی Denyها.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- سه‌لایه مانع حرکت جانبی.
+- Least privilege.
+- آزمون منفی.
+- Alert روی Deny.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا Web→DB ممنوع است؟ *(پاسخ: 15-4-ت1)*
+
+**ت2.** (ساده) چرا Deny صریح با وجود Implicit Deny؟ *(پاسخ: 15-4-ت2)*
+
+**ت3.** (متوسط) DB→Internet چرا ممنوع؟ *(پاسخ: 15-4-ت3)*
+
+**ت4.** (متوسط) آزمون منفی چیست؟ *(پاسخ: 15-4-ت4)*
+
+**ت5.** (سخت) Web آلوده Scan می‌زند؛ پاسخ؟ *(پاسخ: 15-4-ت5)*
+
+**ت6.** (سخت، طراحی) ماتریس و Alertها. *(پاسخ: 15-4-ت6)*
+
+**Q1.** Quick quiz (English): Why use three tiers instead of placing web and database together? *(پاسخ: 15-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Tier | Application tier | لایه‌ی برنامه |
+| SOC | Security Operations Center | مرکز عملیات امنیت |
+
+- *The web tier must not reach the database directly.* ← لایه‌ی وب نباید مستقیماً به DB برسد.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** سه‌لایه (اجرا نشده). **Evidence:** `02-design/fgt-3tier.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Firewall policies
+- NIST SP 800-41; OWASP
 
 <a id="l-15-5"></a>
 
-## درس 15-5 — Packet Walk دو فایروال و NAT در دو نقطه
+## درس 15-5 — Packet Walk در دو فایروال: NAT در دو نقطه، Session در هر سمت و اثبات
 
-**فصل 15 - روز 5 · پیش‌نیاز: درس ۱۵-۴ · ۶ ساعت**
+**فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱ تا ۱۵-۴، ۱۴-۳ · ≈ 10 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-برای هر ارتباط باید Walk کامل از Client تا Server در هر دو فایروال بنویسید.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۵-۴.
+1. Packet Walk کامل سه جریان (Users→Internet، Internet→Web، Users→Web) را بنویسد.
+2. NAT و Session را در هر فایروال جداگانه بخواند.
+3. با Sniffer/Debug در هر فایروال اثبات کند.
+4. Hairpin و Split DNS را در این معماری حل کند.
+5. Walk را به‌عنوان مستند Runbook تحویل دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- برای هر جهت: Interface ورودی، Route، Policy، NAT، Interface خروجی در Edge و Internal.
-- NAT: فقط Edge (SNAT) و VIP؛ آدرس‌ها در هر Hop تغییر می‌کنند.
-- Sniffer در Transit برای دیدن آدرس‌های مقدماتی.
-- Debug Flow در هر دو.
-- جدول Walk محصول اصلی است.
+در یک فایروال، Packet Walk ساده است. با دو فایروال، یک بسته دو بار Policy و گاهی دو بار NAT می‌خورد. اگر Walk روی کاغذ نباشد، هنگام خرابی هیچ‌کس نمی‌داند کدام فایروال کجا تصمیم گرفته. این درس Walk را به یک مستند استاندارد تبدیل می‌کند.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-Users به اینترنت.
+#### ۱) جریان A: Users → Internet
 
-### ۵) مثال سازمانی
-
-Internet به Web.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Users -> INT -> EDGE -> ISP ; INTERNET -> EDGE(VIP) -> WEB
+``` text
+1 User 10.10.0.5:40000 -> 203.0.113.10:443
+2 Internal ingress port2, RPF ok, Policy 10 accept (NAT off)
+3 Internal route default -> port1 -> Edge 10.255.0.1
+4 Edge ingress port2, RPF ok, Policy 1 accept, SNAT -> 198.51.100.2:40000
+5 Edge egress port1 -> ISP
+Reply: Edge session reply -> un-NAT -> route 10.10.0.0/24 via 10.255.0.2
+       Internal session reply -> port2 -> user
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) جریان B: Internet → Web
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Packet Capture Transit.
-2. Log هر دو.
-3. Policy Lookup.
-4. FortiView.
-5. Routing Monitor.
-
-#### روش خط فرمان (CLI)
-
-```text
-# Walk table
-# hop  device  in-if  route  policy  NAT  out-if
-# 1    INT     port2  default-> p10   none  port1
-# 2    EDGE    port3  default-> p31   snat  port1
+``` text
+1 Client 8.8.4.4 -> 203.0.113.10:443
+2 Edge ingress port1: DNAT via VIP-WEB-443 -> 10.30.0.10:443
+3 Route 10.30.0.10 -> port3, Policy 2 accept
+4 Web server replies -> Edge session reply -> un-DNAT -> client
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+Internal در این جریان دخالتی ندارد.
 
-- هر ردیف با خروجی ابزار.
-- راستی‌آزمایی: Sniffer روی Transit آدرس اصلی کاربر را نشان دهد.
-- بازگشت: ندارد.
+#### ۳) جریان C: Users → Web (از داخل)
 
-### ۸) تست عملکرد
+``` text
+1 User 10.10.0.5 -> web.example.com
+2 DNS public IP 203.0.113.10  -> Hairpin problem
+3 With Split DNS: internal DNS returns 10.30.0.10
+4 Internal -> Edge (route 10.30.0.0/24) -> Edge Policy USERS->DMZ -> web
+```
 
-- دو Walk کامل.
+#### ۴) اثبات در هر دو فایروال
 
-### ۹) عیب‌یابی
+``` text
+Internal: diagnose sys session filter src 10.10.0.5 ; diagnose sys session list   (no snat)
+Edge:     diagnose sys session filter src 10.10.0.5 ; diagnose sys session list   (snat)
+```
 
-| بخش | شرح |
+#### ۵) قالب Runbook
+
+برای هر جریان: مسیر، Policyها، NAT، دستورهای اثبات، علائم خرابی و اقدام اول.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | آدرس مبدأ در Transit NAT شده |
-| شواهد/دستور | Sniffer Transit: مبدأ ≠ کاربر |
-| علت | NAT در Internal |
-| رفع | حذف NAT |
+| Hairpin | Split DNS |
+| Runbook | سه جریان اصلی |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** جریان A: Internal Policy 10 بدون NAT؛ Edge Policy 1 با SNAT. `session list` در Internal act=snat ندارد و در Edge دارد.
 
-**ت1.** NAT کجا؟ *(پاسخ: 15-5-ت1)*
+**متوسط (تحلیل):** کاربران به وب با IP عمومی نمی‌رسند ولی از اینترنت می‌رسد: Hairpin. مراحل: ۱) DNS عمومی. ۲) Route بسته به Edge می‌رود و DNAT می‌شود ولی پاسخ سرور مستقیم به کاربر نمی‌رود. رفع: Split DNS (پاسخ 10.30.0.10)؛ آزمون nslookup.
 
-**ت2.** Walk چند ردیف؟ *(پاسخ: 15-5-ت2)*
+**سخت (اثبات دوسمتی):** Users به یک سایت نمی‌رسند. مراحل: ۱) Internal: Session org بدون reply. ۲) Edge: Session ساخته نشده ⇒ بسته به Edge نمی‌رسد. ۳) Sniffer port1 Internal: خروج؛ Sniffer port2 Edge: دریافت نیست ⇒ لینک Transit. ۴) رفع. درس: هر فایروال را جداگانه اثبات کنید.
 
-**ت3.** Sniffer Transit چه می‌گوید؟ *(پاسخ: 15-5-ت3)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-### ۱۱) مرور و ارزیابی
+``` text
+diagnose sys session filter src 10.10.0.5
+diagnose sys session list
+diagnose debug flow trace start 20
+```
 
-**م1.** چرا جدول Walk؟ *(پاسخ: 15-5-م1)*
+### ۸) Verification (اثبات صحت)
 
-**م2.** سناریو: NAT مضاعف؛ علامت؟ *(پاسخ: 15-5-م2)*
+- Walk سه جریان.
+- Session دو سمت.
 
-**معیار تسلط:** دو Walk کامل با شواهد.
+### ۹) Troubleshooting
 
-**اشتباهات رایج:** Walk ناقص.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Walk | Packet walk | مسیر بسته | — |
-| SNAT | Source NAT | تغییر مبدأ | Edge |
-
-| English sentence | ترجمه |
-|---|---|
-| Build a packet walk table across both firewalls. | جدول Packet Walk را روی هر دو فایروال بسازید. |
-| Check the addresses on the transit link. | آدرس‌ها را روی لینک Transit بررسی کنید. |
-
-#### کارت Lab — درس 15-5
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Walk دوفایروالی |
-| 2 | پیش‌نیاز | درس ۱۵-۴ |
-| 3 | توپولوژی | کل معماری |
-| 4 | تجهیزات | ۲ FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | جدول IP |
-| 7 | وضعیت اولیه | آماده |
-| 8 | صورت مسئله | دو Walk |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | Sniffer/Debug |
-| 11 | سناریوی خرابی | آدرس مبدأ در Transit NAT شده |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | جدول |
-| 14 | معیار پذیرش | همخوانی |
-| 15 | مستندات نهایی | `03-ops/walk-arch2.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Session فقط در Internal | Transit | لینک |
+| وب داخلی باز نمی‌شود | DNS | Split DNS |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Debug را خاموش کنید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Walk دو فایروال.
+- NAT یک‌بار.
+- Split DNS.
+- Runbook.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) NAT کجا انجام می‌شود؟ *(پاسخ: 15-5-ت1)*
+
+**ت2.** (ساده) در جریان B، Internal نقش دارد؟ *(پاسخ: 15-5-ت2)*
+
+**ت3.** (متوسط) Hairpin چرا مشکل می‌سازد؟ *(پاسخ: 15-5-ت3)*
+
+**ت4.** (متوسط) Split DNS چیست؟ *(پاسخ: 15-5-ت4)*
+
+**ت5.** (سخت) Session فقط در Internal است؛ علت؟ *(پاسخ: 15-5-ت5)*
+
+**ت6.** (سخت، طراحی) Runbook سه‌جریانی. *(پاسخ: 15-5-ت6)*
+
+**Q1.** Quick quiz (English): How can internal users reach an internal web server by its public name? *(پاسخ: 15-5-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Un-NAT | Reverse translation | ترجمه‌ی معکوس |
+
+- *Document the packet walk in a runbook.* ← Packet Walk را در Runbook مستند کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Walk (اجرا نشده). **Evidence:** `03-ops/walk-arch2.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Packet flow
+- FortiOS 7.0: Virtual IPs
 
 <a id="l-15-6"></a>
 
-## درس 15-6 — خرابی‌ها و آزمون G6
+## درس 15-6 — خرابی‌ها و آزمون G6: Edge، Internal، DMZ و گزارش RCA
 
-**فصل 15 - روز 6 · پیش‌نیاز: درس‌های ۱۵-۱ تا ۱۵-۵ · ۶ ساعت**
+**فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱ تا ۱۵-۵ · ≈ 10 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-سه خرابی (Route برگشت، Policy فایروال دوم، NAT مضاعف) و Gate G6.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس‌های ۱۵-۱ تا ۱۵-۵.
+1. خرابی‌های رایج دوفایروالی را به علت نگاشت کند.
+2. سه پرونده را با Evidence دوسمتی حل کند.
+3. RCA و گزارش حادثه بنویسد.
+4. آزمون G6 را با Rubric تحویل دهد.
+5. درس‌های آموخته را به چک‌لیست پیشگیری تبدیل کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- خرابی A: Route برگشت در Edge حذف.
-- خرابی B: Policy Transit→WAN در Edge حذف.
-- خرابی C: NAT فعال در Internal.
-- روش: ۱۰ پرسش + Log هر دو + Sniffer Transit.
-- G6: ۵ مورد (طراحی، Edge، Internal، سه‌لایه، Walk).
+G6 آخرین دروازه‌ی بخش فایروال است. در دنیای واقعی خرابی با برچسب «اینترنت قطع است» می‌آید، نه با «Route Edge اشتباه است». شما باید از علامت به علت برسید و ثابت کنید.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-رفع خرابی A.
+#### ۱) جدول خرابی‌های رایج
 
-### ۵) مثال سازمانی
-
-RCA برای خرابی B/C.
-
-### ۶) تصویر و توپولوژی
-
-```text
-fault A,B,C -> evidence -> fix
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Log هر دو.
-2. Policy Lookup.
-3. Routing Monitor.
-4. Packet Capture.
-5. Backup/Restore.
-
-#### روش خط فرمان (CLI)
-
-```text
-get router info routing-table details 192.168.20.11
-diagnose sniffer packet port3 "host 192.168.20.11" 4 20 l
-diagnose debug flow filter addr 192.168.20.11
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- علت را با شواهد ثابت کنید.
-- معیار: ≥ ۴ از ۵.
-- Restore بکاپ بعد از آزمون.
-
-### ۸) تست عملکرد
-
-- سه خرابی با RCA.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Users اینترنت ندارند |
-| شواهد/دستور | Log Edge: Denied (Transit→WAN) |
-| علت | Policy Edge نیست |
-| رفع | ساخت Policy |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** اولین قدم؟ *(پاسخ: 15-6-ت1)*
-
-**ت2.** NAT مضاعف علامت؟ *(پاسخ: 15-6-ت2)*
-
-**ت3.** G6 چه می‌سنجد؟ *(پاسخ: 15-6-ت3)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Log هر دو؟ *(پاسخ: 15-6-م1)*
-
-**م2.** سناریو: TCP نمی‌بندد؛ بررسی؟ *(پاسخ: 15-6-م2)*
-
-**معیار تسلط:** G6 ≥ ۴ از ۵.
-
-**اشتباهات رایج:** حدس بدون شواهد.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| G6 | Gate 6 | آزمون فصل ۱۵ | — |
-| RCA | Root cause analysis | علت ریشه‌ای | گزارش |
-
-| English sentence | ترجمه |
-|---|---|
-| Verify the return route on the edge firewall. | مسیر برگشت را روی فایروال Edge بررسی کنید. |
-| Prove the fault with evidence. | خرابی را با شواهد ثابت کنید. |
-
-#### کارت Lab — درس 15-6
-
-| # | فیلد | محتوا |
+| علامت | علت محتمل | شاهد |
 |---|---|---|
-| 1 | عنوان و هدف | G6 |
-| 2 | پیش‌نیاز | درس‌های ۱۵-۱ تا ۱۵-۵ |
-| 3 | توپولوژی | Arch2 |
-| 4 | تجهیزات | ۲ FGT + میزبان‌ها |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | جدول IP |
-| 7 | وضعیت اولیه | آماده |
-| 8 | صورت مسئله | سه خرابی |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | Log/Sniffer |
-| 11 | سناریوی خرابی | Users اینترنت ندارند |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | RCA |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/rca-arch2.md` |
-| 16 | Cleanup و بازگردانی | Restore بکاپ |
+| کاربران اینترنت ندارند | Route Edge به داخل نیست | `reverse path check fail` یا بسته‌ی برگشت در port1 |
+| IP همه‌ی کاربران یکی است | NAT دوباره | Log Edge |
+| وب از اینترنت باز نمی‌شود | Policy روی VIP نیست | Lookup/Flow |
+| Web به DB می‌رسد | Policy ALL | Lookup |
+| بعضی Sessionها قطع | Asymmetric/ECMP | Sniffer دو سمت |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+#### ۲) سه پرونده‌ی نمونه
 
----
+**پرونده ۱:** کاربران Internal اینترنت ندارند. Internal: Session org ok. Edge: Session ساخته می‌شود؛ پاسخ Drop با RPF. علت: Route 10.10.0.0/24 در Edge نیست. رفع: Route.
 
-<a id="ans-15"></a>
+**پرونده ۲:** VIP وب از بیرون باز نمی‌شود. Flow: `Denied by forward policy check (policy 0)`. علت: Policy dst=VIP نیست. رفع: Policy.
+
+**پرونده ۳:** پس از افزودن لینک دوم، Sessionها گاهی قطع. Sniffer: SYN از لینک A و SYN-ACK از B. علت: Asymmetric. رفع: Route/Weight یا Active-Standby.
+
+#### ۳) گزارش RCA
+
+``` text
+Title: Internal users lost internet 2026-11-26
+Impact: 150 users, 25 min
+Timeline: 10:05 report; 10:12 edge sniffer; 10:20 route added
+Root cause: missing return route on Edge after Transit re-IP
+Corrective: add route; Preventive: pre-change checklist + route monitoring
+```
+
+#### ۴) آزمون G6
+
+سه عیب تزریقی؛ برای هرکدام: Evidence دو فایروال، علت، رفع، آزمون منفی. Rubric: کشف ۳۰، رفع ۳۰، Evidence ۲۰، آزمون منفی ۱۰، صداقت ۱۰.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| چک‌لیست قبل تغییر | Route، Policy، NAT، Backup |
+| Monitoring | Route و لینک Transit |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** پرونده ۱: Route برگشت در Edge؛ پس از افزودن، Session بسته می‌شود و اینترنت می‌آید.
+
+**متوسط (تحلیل):** پرونده ۲: Lookup ID 0 ⇒ Implicit Deny؛ Policy با dst=VIP ساخته می‌شود؛ آزمون از بیرون و پورت دیگر منفی.
+
+**سخت (دو عیب):** هم Route و هم Policy خراب. ابتدا Route را رفع (برگشت)؛ سپس Policy؛ هر رفع جدا آزمون؛ اگر هم‌زمان رفع کنید ریشه‌ی اصلی معلوم نمی‌شود.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose debug flow filter addr 10.10.0.5
+diagnose debug flow trace start 20
+diagnose debug enable
+diagnose debug disable
+get router info routing-table all
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Evidence دو فایروال.
+- آزمون منفی.
+- گزارش RCA.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| اینترنت نیست | Edge Route | Route داخلی |
+| VIP کار نمی‌کند | Policy | dst=VIP |
+
+### ۱۰) نکات امنیتی
+
+- Debug را خاموش کنید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- از علامت به علت.
+- Evidence دوسمتی.
+- RCA و پیشگیری.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Route برگشت چرا مهم است؟ *(پاسخ: 15-6-ت1)*
+
+**ت2.** (ساده) policy 0 یعنی؟ *(پاسخ: 15-6-ت2)*
+
+**ت3.** (متوسط) NAT دوباره چه علامتی دارد؟ *(پاسخ: 15-6-ت3)*
+
+**ت4.** (متوسط) چرا Evidence از هر دو فایروال؟ *(پاسخ: 15-6-ت4)*
+
+**ت5.** (سخت) دو عیب هم‌زمان را چگونه جدا می‌کنید؟ *(پاسخ: 15-6-ت5)*
+
+**ت6.** (سخت، طراحی) چک‌لیست پیشگیری. *(پاسخ: 15-6-ت6)*
+
+**Q1.** Quick quiz (English): Why should faults be fixed one at a time? *(پاسخ: 15-6-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| RCA | Root Cause Analysis | تحلیل ریشه‌ای |
+
+- *Collect evidence from both firewalls.* ← از هر دو فایروال شواهد جمع کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** G6 (اجرا نشده). **Evidence:** `03-ops/rca-arch2.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Troubleshooting
 
 ## پاسخ‌های فصل 15
 
@@ -3900,91 +4008,73 @@ diagnose debug flow filter addr 192.168.20.11
 
 **15-2-Q1** — An explicit deny with logging.
 
-**15-3-ت1** — Default Internal کجاست؟
 
-Edge.
+### پاسخ‌های بازنویسی عمیق درس 15-3
 
-**15-3-ت2** — NAT Internal؟
+**15-3-ت1** — NAT دوباره Log و رد‌یابی را خراب می‌کند و Edge IP واقعی را نمی‌بیند؛ ترجمه یک‌بار روی Edge کافی است.
 
-معمولاً ندارد.
+**15-3-ت2** — به Edge از طریق Transit (10.255.0.1).
 
-**15-3-ت3** — Policy مضاعف؟
+**15-3-ت3** — سرور آلوده نباید به C2 اینترنت وصل شود؛ فقط مقاصد Update و HTTPS لازم باز می‌ماند.
 
-هر دو فایروال لازم است.
+**15-3-ت4** — تا فقط Admin به مدیریت برسد و سطح حمله کم شود.
 
-**15-3-م1** — چرا هر دو Log را می‌خوانیم؟
+**15-3-ت5** — Lookup، Debug flow، Sniffer port1 Internal و port2 Edge، Route برگشت، Transit؛ Evidence هر دو سمت.
 
-Allow در یکی و Deny در دیگری شایع است.
+**15-3-ت6** — طبق جدول: Users→Internet، Users→App 443، Mgmt→SSH، Servers→Update، Deny با Log.
 
-**15-3-م2** — سناریو: Internal Allow ولی ارتباط نه؛ چه می‌کنید؟
-
-Log Edge.
-
-**15-4-ت1** — چرا Web به DB نه؟
-
-کاهش سطح حمله.
-
-**15-4-ت2** — تست منفی؟
-
-تلاش برای ارتباط ممنوع.
-
-**15-4-ت3** — Policy در کدام فایروال؟
-
-هر دو.
-
-**15-4-م1** — چرا Zone جدا برای DB؟
-
-کنترل Policy دقیق‌تر.
-
-**15-4-م2** — سناریو: Web به DB می‌رسد؛ چرا؟
-
-Policy گسترده/Intrazone.
-
-**15-5-ت1** — NAT کجا؟
-
-Edge.
-
-**15-5-ت2** — Walk چند ردیف؟
-
-هر Hop یک ردیف.
-
-**15-5-ت3** — Sniffer Transit چه می‌گوید؟
-
-آدرس واقعی قبل از SNAT.
-
-**15-5-م1** — چرا جدول Walk؟
-
-تحلیل و مستند.
-
-**15-5-م2** — سناریو: NAT مضاعف؛ علامت؟
-
-آدرس مبدأ در Transit تغییر کرده.
-
-**15-6-ت1** — اولین قدم؟
-
-Log هر دو فایروال.
-
-**15-6-ت2** — NAT مضاعف علامت؟
-
-مبدأ در Transit NAT شده.
-
-**15-6-ت3** — G6 چه می‌سنجد؟
-
-معماری دوفایروالی.
-
-**15-6-م1** — چرا Log هر دو؟
-
-خرابی ممکن در هر کدام.
-
-**15-6-م2** — سناریو: TCP نمی‌بندد؛ بررسی؟
-
-Route برگشت.
+**15-3-Q1** — Because translating twice hides real source addresses and complicates logging and troubleshooting.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 15-4
 
-<a id="end5"></a>
+**15-4-ت1** — اگر وب‌سرور هک شود، مهاجم مستقیم به DB نرسد؛ فقط App مجاز است.
 
+**15-4-ت2** — Implicit Deny Log ندارد؛ Deny صریح برای Log و Alert لازم است.
+
+**15-4-ت3** — تا سرور آلوده نتواند داده خارج کند یا به C2 وصل شود.
+
+**15-4-ت4** — تلاش برای ارتباط ممنوع و تأیید اینکه رد می‌شود و Log ثبت می‌شود.
+
+**15-4-ت5** — Alert، Quarantine، بررسی Log، حذف دسترسی؛ مستند.
+
+**15-4-ت6** — طبق جدول؛ Alert بر policyid=61.
+
+**15-4-Q1** — To limit lateral movement and expose the database to fewer systems.
+
+
+### پاسخ‌های بازنویسی عمیق درس 15-5
+
+**15-5-ت1** — فقط روی Edge.
+
+**15-5-ت2** — خیر؛ ترافیک فقط از Edge به DMZ می‌رود.
+
+**15-5-ت3** — پاسخ سرور مستقیم به کاربر می‌رود یا مسیر برگشت از فایروال دور می‌زند.
+
+**15-5-ت4** — DNS داخلی IP داخلی را برای کاربران داخلی می‌دهد.
+
+**15-5-ت5** — بسته به Edge نمی‌رسد؛ Transit/Route/ACL.
+
+**15-5-ت6** — قالب بالا.
+
+**15-5-Q1** — Use split DNS so the name resolves to the internal address.
+
+
+### پاسخ‌های بازنویسی عمیق درس 15-6
+
+**15-6-ت1** — Edge باید پاسخ را به Internal برگرداند؛ بدون Route به Default و ISP می‌رود و Drop می‌شود.
+
+**15-6-ت2** — Implicit Deny؛ Policy مطابق نیست.
+
+**15-6-ت3** — IP مبدأ همه‌ی کاربران در Edge Log یکسان است.
+
+**15-6-ت4** — تا معلوم شود بسته به کدام فایروال می‌رسد و کجا گم می‌شود.
+
+**15-6-ت5** — یکی‌یکی رفع و آزمون؛ ثبت اثر هر تغییر.
+
+**15-6-ت6** — Route، Policy، NAT، Backup، آزمون منفی، Monitoring Transit.
+
+**15-6-Q1** — To know which change solved the problem and avoid masking the root cause.
 
 ### پاسخ‌های درس افزوده‌ی 15-0 (فصل 15)
 
