@@ -41,7 +41,7 @@
 
 <a id="ch7"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.7؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_03_Chapters_07-09.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۹-۰ و ۹-۷ (فصل ۹). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.9؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_03_Chapters_07-09.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۹-۰ و ۹-۷ (فصل ۹). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 7 — IP Services: DHCP، DNS، NTP، NAT، ACL، Syslog و QoS
 
@@ -1542,6 +1542,169 @@ Service Matrix فصل ۷ را در `02-design/service-matrix.md` بنویسید 
 
 <a id="ans-7"></a>
 
+## درس 7-7 — امنیت سرویس‌های زیرساخت: DHCP Starvation/Rogue، DNS Poisoning/DNSSEC، NTP و راهکارهای دفاعی
+
+**فصل 7 · بازنویسی عمیق · پیش‌نیاز: ۷-۱، ۷-۲، ۴-۵ · ≈ 8 ساعت**
+
+> **وضعیت:** Cisco IOSv/IOSvL2 (vIOS 15.x)؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ برخی ویژگی‌ها روی vIOS `Unverified`.
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. حمله‌های DHCP (Starvation، Rogue Server) و دفاع (Snooping، Rate Limit، Port Security) را توضیح دهد.
+2. DNS Cache Poisoning، DNS Tunneling و DNSSEC را بفهمد و Resolver امن طراحی کند.
+3. NTP Spoofing و Authentication را بداند.
+4. Logging/Detection برای این سرویس‌ها طراحی کند.
+5. سناریوهای واقعی را تحلیل و کنترل‌ها را اولویت‌بندی کند.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+DHCP، DNS و NTP «سرویس‌های اعتماد» هستند: اگر مهاجم کنترلشان کند، شبکه را بدون هیچ Exploit پیچیده‌ای هدایت می‌کند: Gateway جعلی، DNS جعلی، زمان تغییریافته (Kerberos/Certificate خراب).
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) DHCP
+
+- **Starvation:** مهاجم با MACهای جعلی همه‌ی IPها را می‌گیرد ⇒ DoS.
+- **Rogue DHCP:** سرور جعلی Gateway/DNS مهاجم را می‌دهد ⇒ MITM.
+
+دفاع:
+
+``` text
+ip dhcp snooping
+ip dhcp snooping vlan 10,20
+interface Gi0/24 (uplink to legit DHCP)
+ ip dhcp snooping trust
+interface range Gi0/1-23
+ ip dhcp snooping limit rate 15
+ switchport port-security maximum 3
+```
+
+(+DAI مبتنی بر Binding، ۴-۵.)
+
+#### ۲) DNS
+
+| حمله | توضیح | دفاع |
+|---|---|---|
+| Cache Poisoning | پاسخ جعلی در Cache Resolver | DNSSEC، Source port randomization، Resolver به‌روز |
+| DNS Spoofing لوکال | MITM | DAI، Snooping |
+| DNS Tunneling | خروج داده در Query | Rate/Length/Entropy Detection، DNS Filter |
+| DDoS Amplification | Open Resolver | بستن Recursion خارجی |
+
+**DNSSEC:** امضای دیجیتال رکوردها؛ زنجیره‌ی اعتماد از Root؛ Validating Resolver جعل را رد می‌کند (SERVFAIL). محدودیت: پیچیدگی، پاسخ بزرگ‌تر (MTU/TCP).
+
+#### ۳) NTP
+
+حمله: Spoof/Reflection (monlist)، زمان اشتباه ⇒ Kerberos/Certificate/Log مختل. دفاع: `ntp authenticate` + کلید، ACL (`ntp access-group peer/serve-only`)، چند منبع، بستن Monlist/Control Query.
+
+``` text
+ntp authenticate
+ntp authentication-key 1 md5 <KEY>
+ntp trusted-key 1
+ntp server 192.168.90.5 key 1
+ntp access-group peer 10
+```
+
+#### ۴) Detection
+
+DHCP: Rogue Offer از پورت Untrusted (Log Snooping)، افزایش Discover؛ DNS: Query طولانی/بی‌شمار/دامنه‌ی تازه؛ NTP: تغییر ناگهانی Offset.
+
+#### ۵) اولویت
+
+۱) DHCP Snooping+DAI (ارزان، مؤثر)؛ ۲) Resolver امن؛ ۳) NTP Auth؛ ۴) Detection.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| DHCP | Snooping+DAI+Rate |
+| DNS | Resolver داخلی+DNSSEC+Filter |
+| NTP | Auth+ACL+چند منبع |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** DHCP Snooping با Uplink Trust و Rate 15؛ Rogue Offer از پورت کاربر ⇒ Drop و Log.
+
+**متوسط (تحلیل):** کاربران Gateway اشتباه می‌گیرند: Rogue DHCP؛ `show ip dhcp snooping binding`/Log؛ پورت مهاجم را یافتن؛ رفع.
+
+**سخت (DNS Tunneling):** ترافیک DNS حجیم با Query طولانی به یک دامنه‌ی عجیب؛ تحلیل: Entropy/طول؛ شواهد: Log DNS؛ مهار: Block دامنه، DNS Filter، Rate limit؛ بررسی میزبان آلوده؛ PIR.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+ip dhcp snooping
+ip dhcp snooping vlan 10
+show ip dhcp snooping
+show ip dhcp snooping binding
+ntp authenticate
+ntp authentication-key 1 md5 <KEY>
+ntp trusted-key 1
+show ntp associations
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Rogue DHCP آزمایشی (Lab) Drop.
+- DNSSEC validation (dig +dnssec).
+- NTP synchronized با Auth.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Gateway جعلی | Binding | Rogue |
+| DNS SERVFAIL | dig +dnssec | DNSSEC/Trust |
+| زمان اشتباه | ntp assoc | Spoof/Auth |
+
+### ۱۰) نکات امنیتی
+
+- سه سرویس اعتماد را محافظت کنید.
+- Open Resolver ممنوع.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- DHCP: Starvation/Rogue ⇒ Snooping.
+- DNS: Poisoning/Tunneling ⇒ DNSSEC/Filter.
+- NTP: Auth.
+- Detection.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Rogue DHCP چه می‌کند؟ *(پاسخ: 7-7-ت1)*
+
+**ت2.** (ساده) DHCP Snooping Trust روی کدام پورت؟ *(پاسخ: 7-7-ت2)*
+
+**ت3.** (متوسط) DNSSEC چه چیزی را تضمین می‌کند؟ *(پاسخ: 7-7-ت3)*
+
+**ت4.** (متوسط) چرا NTP Authentication؟ *(پاسخ: 7-7-ت4)*
+
+**ت5.** (سخت) DNS Tunneling را چگونه تشخیص و مهار می‌کنید؟ *(پاسخ: 7-7-ت5)*
+
+**ت6.** (سخت، طراحی) برنامه‌ی دفاع سه‌سرویس با اولویت. *(پاسخ: 7-7-ت6)*
+
+**Q1.** Quick quiz (English): Which switch feature prevents rogue DHCP servers? *(پاسخ: 7-7-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| DNSSEC | DNS Security Extensions | افزونه‌ی امنیتی DNS |
+| Starvation | DHCP starvation | تخلیه‌ی Pool DHCP |
+| Snooping | DHCP snooping | پایش DHCP روی سوئیچ |
+
+- *Protect DHCP, DNS and NTP as trust services.* ← DHCP، DNS و NTP را به‌عنوان سرویس‌های اعتماد محافظت کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** امنیت سرویس‌ها. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/infra-security.md`.
+
+### ۱۵) منابع
+
+- RFC 4033 (DNSSEC)
+- RFC 5905 (NTPv4)
+- Cisco DHCP snooping/DAI guides
+
 ## پاسخ‌های فصل 7
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -1801,6 +1964,23 @@ Only when there is congestion on a link.
 ---
 
 <a id="ch8"></a>
+
+
+### پاسخ‌های درس افزوده‌ی 7-7 (فصل 7)
+
+**7-7-ت1** — Gateway/DNS مهاجم را به کلاینت‌ها می‌دهد و ترافیک را منحرف می‌کند.
+
+**7-7-ت2** — پورت رو به DHCP Server/Uplink مجاز.
+
+**7-7-ت3** — اصالت و یکپارچگی پاسخ DNS با امضای دیجیتال.
+
+**7-7-ت4** — جلوگیری از Spoof زمان که Kerberos/Certificate/Log را مختل می‌کند.
+
+**7-7-ت5** — Query طولانی/Entropy/حجم، Log DNS، Block دامنه، DNS Filter، بررسی میزبان.
+
+**7-7-ت6** — Snooping+DAI، Resolver امن، NTP Auth، Detection.
+
+**7-7-Q1** — DHCP snooping, which only allows DHCP server messages from trusted ports.
 
 # فصل 8 — Hardening، AAA، Automation و As-Built (CP1)
 
@@ -3813,762 +3993,922 @@ R1# show ip route bgp
 - Cisco: [Select BGP Best-path Algorithm](https://www.cisco.com/c/en/us/support/docs/ip/border-gateway-protocol-bgp/13753-25.html).
 
 
-## درس 9-1 — مفهوم BGP: AS، eBGP/iBGP و حالت‌های Peer
+## درس 9-1 — BGP از درون: ماشین حالت Session، پیام‌ها، Capabilities، Timerها و تفسیر `show ip bgp summary`
 
-**فصل 9 - روز 1 · پیش‌نیاز: فصل ۶ · ۶ ساعت**
+**فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۰، ۵-۷ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ برخی ویژگی‌ها روی vIOS `Unverified`.
 
-BGP پروتکل مسیریابی «بین سازمان‌ها» است. ISPها و شعبه‌ها با آن مسیر رد و بدل می‌کنند. بدون آن نمی‌توانید دو ISP یا Hub-and-Spoke بزرگ را درست طراحی کنید. در شبکه‌ی سازمانی در لبه‌ی اینترنت و بین Hub و شعب استفاده می‌شود.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-مفهوم OSPF، Route Table و AD/Metric (فصل ۵ و ۶).
+1. حالت‌های Session BGP (Idle، Connect، Active، OpenSent، OpenConfirm، Established) و گذار بین آن‌ها را توضیح دهد.
+2. پیام‌های OPEN/UPDATE/KEEPALIVE/NOTIFICATION و فیلدهای مهم را بخواند.
+3. Timerها (Keepalive/Hold) و رفتار هنگام خرابی را محاسبه کند.
+4. `show ip bgp summary` و `neighbors` را تفسیر و علت گیرکردن در Active/Idle را بیابد.
+5. Capabilities (4-byte ASN، Route Refresh، MP-BGP) را بشناسد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- **AS (Autonomous System):** مجموعه‌ی شبکه‌هایی با یک سیاست مسیریابی؛ با عدد ASN شناخته می‌شود (۱۶ تا ۶۴۵۱۱ عمومی؛ ۶۴۵۱۲ تا ۶۵۵۳۴ خصوصی).
-- **eBGP** بین دو AS متفاوت؛ **iBGP** داخل یک AS.
-- روی **TCP 179** کار می‌کند؛ Peer باید دستی تعریف شود (کشف خودکار ندارد).
-- حالت‌های Peer: Idle ← Connect ← Active ← OpenSent ← OpenConfirm ← **Established**. فقط Established یعنی سالم.
-- BGP «Path Vector» است: هر مسیر فهرست ASهای عبوری (AS-Path) را دارد و با آن حلقه شناسایی می‌شود.
-- AD پیش‌فرض: eBGP = 20، iBGP = 200.
+BGP روی TCP/179 کار می‌کند ولی «Session»ی دارد که مثل ماشین حالت است. وقتی Session بالا نمی‌آید، باید بدانید در کدام حالت متوقف شده تا علت را بیابید: Idle (TCP ساخته نمی‌شود) با Active (تلاش TCP ناموفق) با OpenSent (OPEN رفت و پاسخ نیامد) متفاوت‌اند.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو روتر R1 (AS 65001) و ISP (AS 65000) با یک لینک /30 هم‌دیگر را Peer می‌کنند و ISP مسیر پیش‌فرض می‌دهد.
+#### ۱) ماشین حالت
 
-### ۵) مثال سازمانی
-
-شعبه‌ها ASN خصوصی ۶۵۰۱۰ تا ۶۵۰۱۲ و مرکز ۶۵۰۰۰ دارند؛ مرکز با هر شعبه eBGP برقرار می‌کند و مسیر شبکه‌ی داخلی هر شعبه را یاد می‌گیرد.
-
-### ۶) تصویر و توپولوژی
-
-```text
-AS65001 R1 ----eBGP (TCP 179)---- ISP AS65000
- 10.0.1.1/30                  10.0.1.2/30
+``` text
+Idle      : waiting to start (no route to peer / admin down / backoff after failure)
+Connect   : TCP connection attempt in progress
+Active    : TCP failed, retrying (common "stuck" state: peer unreachable or TCP 179 blocked)
+OpenSent  : TCP up, our OPEN sent, waiting for peer OPEN
+OpenConfirm: OPEN received, waiting KEEPALIVE
+Established: session up, UPDATEs exchanged
 ```
 
-### ۷) پیکربندی (CLI)
+نکته: «Active» یعنی «فعالانه تلاش می‌کنم وصل شوم» نه «فعال و سالم».
 
-```text
+#### ۲) پیام‌ها
+
+| پیام | محتوا |
+|---|---|
+| OPEN | نسخه، ASN، Hold Time، BGP Identifier، Capabilities |
+| UPDATE | Prefixهای جدید/حذف‌شده + Attributeها |
+| KEEPALIVE | زنده بودن (هر Keepalive) |
+| NOTIFICATION | خطا؛ Session بسته می‌شود (مثلاً Bad Peer AS، Hold Timer Expired) |
+
+Hold Time نهایی = کوچک‌ترین مقدار دو سر؛ Keepalive = Hold/3.
+
+``` text
+Cisco default: keepalive 60 s, hold 180 s
+Detect of silent failure <= Hold time (180 s) ; with BFD ~ 1 s
+```
+
+#### ۳) Capabilities
+
+4-byte ASN (RFC 6793)، Route Refresh (Soft reconfig بدون ریست)، Multiprotocol (IPv6/VPN)، Graceful Restart.
+
+#### ۴) تفسیر `show ip bgp summary`
+
+``` text
+Neighbor     V  AS  MsgRcvd MsgSent TblVer InQ OutQ Up/Down  State/PfxRcd
+10.0.12.2    4  65002  120    118      8    0    0 00:35:02          3
+10.0.13.3    4  65003    0      0      0    0    0 never    Active
+```
+
+- ستون آخر: عدد = Established و تعداد Prefix دریافتی؛ نام حالت = Established نیست.
+- `Up/Down never` + Active: هرگز برقرار نشده.
+- `MsgRcvd=0`: هیچ پیامی نیامده ⇒ TCP/Reachability.
+
+#### ۵) علل گیرکردن
+
+| حالت | علت‌ها |
+|---|---|
+| Idle | Route به Peer ندارد؛ neighbor shutdown؛ Backoff |
+| Active | TCP 179 بسته (ACL/Firewall)، IP Neighbor اشتباه، Source اشتباه (update-source)، AS خطا قبل از OPEN |
+| OpenSent | Peer جواب OPEN نمی‌دهد؛ ACL یک‌طرفه؛ MTU |
+| بالا و پایین (flap) | Hold/لینک/MD5 mismatch/Max-prefix |
+
+#### ۶) تغییر مهم: `update-source`
+
+eBGP/iBGP با Loopback نیاز به `neighbor X update-source Loopback0` دارد تا TCP از آدرس درست برقرار شود؛ و برای eBGP چندگامی `ebgp-multihop`.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Timer | پیش‌فرض یا کوتاه‌تر با BFD |
+| update-source | Loopback برای iBGP |
+| Max-prefix | محافظ |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** `show ip bgp summary`: Neighbor 10.0.12.2 State/PfxRcd = 3 ⇒ Established با ۳ Prefix؛ Up/Down 00:35:02.
+
+**متوسط (تحلیل):** Neighbor 10.0.13.3 در Active و `never`: بررسی: `ping 10.0.13.3`، `show ip route 10.0.13.3`، ACL/Firewall TCP 179 (`telnet 10.0.13.3 179`)؛ علت: ACL روی R3. رفع: مجازکردن 179؛ حالت به Established.
+
+**سخت (محاسبه+تحلیل):** Session هر ~۳ دقیقه می‌افتد: NOTIFICATION «Hold Timer Expired»؛ لینک Packet-loss ۴۰٪ و Keepalive 60/Hold 180؛ تحلیل: ۳ Keepalive متوالی گم می‌شود؛ Detect ≤ 180 s. راه: کاهش Loss/QoS برای Control Plane (Keepalive)، BFD برای Detect سریع‌تر؛ یا Timer 20/60 (با ریسک Flap). آزمون: ping با Loss؛ لاگ.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 show ip bgp summary
-show ip bgp neighbors 10.0.1.2
-show ip bgp
+show ip bgp neighbors 10.0.12.2
+show ip bgp neighbors 10.0.12.2 | include BGP state|Last reset|Hold
+telnet 10.0.13.3 179
+debug ip bgp events   ! lab only
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `show ip bgp summary`: ستون State/PfxRcd؛ عدد (تعداد مسیر دریافتی) یعنی Established؛ کلمه (Idle/Active) یعنی مشکل.
-- `show ip bgp neighbors`: دلیل آخرین Reset و تایمرها.
-- `show ip bgp`: جدول BGP (غیر از Route Table).
-- بازگشت: ندارد (فقط مشاهده).
+- State=Established.
+- `Last reset` مناسب.
+- TCP 179 reachability.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- `show ip bgp summary` را ببینید؛ Peer را با ping تا TCP 179 بررسی کنید (Telnet به 179 از روی روتر).
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Peer در حالت Active می‌ماند |
-| شواهد/دستور | `show ip bgp summary`: Active؛ `ping 10.0.1.2` موفق نیست یا ACL پورت 179 را می‌بندد |
-| علت | مسیر/ACL/Neighbor IP یا ASN اشتباه |
-| رفع | اصلاح آدرس/ASN؛ باز کردن TCP 179؛ بررسی `update-source` |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** eBGP و iBGP چه تفاوتی دارند و AD هر کدام چند است؟ *(پاسخ: 9-1-ت1)*
-
-**ت2.** چرا Peer در Active می‌ماند؟ *(پاسخ: 9-1-ت2)*
-
-**ت3.** پورت BGP؟ *(پاسخ: 9-1-ت3)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا BGP برای فایروال مهم است؟ *(پاسخ: 9-1-م1)*
-
-**م2.** سناریو: State = Idle (Admin)؛ چه می‌کنید؟ *(پاسخ: 9-1-م2)*
-
-**معیار تسلط:** توضیح Established و دلایل Active/Idle؛ تشخیص eBGP/iBGP از روی ASN.
-
-**اشتباهات رایج:** تصور اینکه BGP خودش همسایه را پیدا می‌کند؛ نخواندن State.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| BGP | Border Gateway Protocol | پروتکل مسیریابی بین AS | لبه‌ی اینترنت و Hub-Spoke |
-| ASN | Autonomous System Number | شماره‌ی AS | شناسایی سازمان/ISP |
-| AS-Path | AS Path attribute | فهرست ASهای عبوری | جلوگیری از حلقه و انتخاب مسیر |
-| Established | BGP Established state | Peer سالم | مشاهده در summary |
-
-| English sentence | ترجمه |
-|---|---|
-| BGP runs over TCP port 179. | BGP روی TCP پورت ۱۷۹ اجرا می‌شود. |
-| The neighbor is stuck in the Active state. | همسایه در حالت Active گیر کرده است. |
-
-#### کارت Lab — درس 9-1
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | مشاهده‌ی Peer BGP و خواندن State |
-| 2 | پیش‌نیاز | فصل ۶ |
-| 3 | توپولوژی | R1 ↔ ISP (/30) |
-| 4 | تجهیزات | R1، ISP (دو vIOS) |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | 10.0.1.0/30 |
-| 7 | وضعیت اولیه | ISP با BGP پیکربندی‌شده (از قبل) |
-| 8 | صورت مسئله | State را بخوانید؛ یک خطا (ASN غلط) بسازید |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `show ip bgp summary` |
-| 11 | سناریوی خرابی | Peer در حالت Active می‌ماند |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Established و یک Prefix |
-| 14 | معیار پذیرش | Established ثبت و علت Active توضیح داده شود |
-| 15 | مستندات نهایی | `03-ops/bgp-notes.md` |
-| 16 | Cleanup و بازگردانی | برگرداندن ASN |
+| Active | `telnet X 179` | TCP/ACL/Source |
+| OpenSent گیر | Capture | OPEN/MTU/ACL |
+| Flap | Last reset reason | Hold/لینک/MD5 |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+### ۱۰) نکات امنیتی
 
----
+- MD5/TTL security.
+- Max-prefix.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- ماشین حالت BGP.
+- Active ≠ سالم.
+- Hold/Keepalive.
+- `summary` ستون آخر.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) در `State/PfxRcd` عدد 5 یعنی چه؟ *(پاسخ: 9-1-ت1)*
+
+**ت2.** (ساده) Active یعنی چه؟ *(پاسخ: 9-1-ت2)*
+
+**ت3.** (متوسط) Hold نهایی بین 180 و 90؟ *(پاسخ: 9-1-ت3)*
+
+**ت4.** (متوسط) چرا update-source لازم است؟ *(پاسخ: 9-1-ت4)*
+
+**ت5.** (سخت) Session هر ۳ دقیقه می‌افتد؛ تحلیل. *(پاسخ: 9-1-ت5)*
+
+**ت6.** (سخت، طراحی) تنظیم Timer برای Failover سریع با ریسک Flap. *(پاسخ: 9-1-ت6)*
+
+**Q1.** Quick quiz (English): Which BGP state indicates that the TCP connection has failed and is being retried? *(پاسخ: 9-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| FSM | Finite State Machine | ماشین حالت |
+| Hold time | BGP hold timer | تایمر نگه‌داشتن |
+| Capability | BGP capability | قابلیت اعلام‌شده |
+
+- *Read the neighbor state to locate the failure.* ← از حالت Neighbor برای مکان‌یابی خرابی استفاده کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** BGP FSM. **Evidence:** `03-ops/bgp-fsm.md`.
+
+### ۱۵) منابع
+
+- RFC 4271
+- RFC 5492 (Capabilities)
+- Cisco BGP configuration guide
 
 <a id="l-9-2"></a>
 
-## درس 9-2 — eBGP عملی: Peering و اعلام شبکه
+## درس 9-2 — eBGP عملی: Peering، اعلام Prefix با `network`/Redistribute، AD، Verification و خطاهای رایج
 
-**فصل 9 - روز 2 · پیش‌نیاز: درس ۹-۱ · ۶ ساعت**
+**فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۰، ۹-۱ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ برخی ویژگی‌ها روی vIOS `Unverified`.
 
-اولین Peering واقعی: R1 شبکه‌ی داخلی‌اش را به ISP اعلام می‌کند و Default می‌گیرد. در شبکه‌ی سازمانی این همان ارتباط لبه‌ی شما با ISP است.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۹-۱.
+1. eBGP بین دو AS را با آدرس Interface و با Loopback (`ebgp-multihop`) پیکربندی کند.
+2. `network` (با Route دقیق در RIB) و `redistribute` را مقایسه و صحیح به‌کار ببرد.
+3. AD eBGP (20) و اثر آن را بداند.
+4. Verification سه‌سطحی (Session، Table، RIB) را اجرا کند.
+5. خطاهای رایج (network بدون Route، next-hop، ASN) را عیب‌یابی کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- `router bgp <ASN>` + `neighbor <IP> remote-as <ASN>` برای تعریف Peer.
-- `network <prefix> mask <mask>` فقط وقتی اعلام می‌کند که **همان Prefix دقیقاً در Route Table** باشد (Connected/Static).
-- برای اعلام Default به همسایه: `neighbor ... default-originate` (روی ISP).
-- `soft reconfiguration`/`clear ip bgp * soft` برای اعمال سیاست بدون قطع Session.
-- فیلتر پیش‌فرض ورودی/خروجی ندارد؛ در دنیای واقعی همیشه Prefix-List می‌گذاریم.
+eBGP ساده‌ترین حالت BGP است ولی ۴ اشتباه رایج دارد: Prefix در BGP اعلام نمی‌شود چون `network` دقیق نیست، Route در BGP هست ولی در RIB نیست، Next-hop غیرقابل‌دسترس، یا ASN/Neighbor اشتباه.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-R1 شبکه‌ی 192.168.1.0/24 را اعلام و ISP مسیر پیش‌فرض می‌دهد.
+#### ۱) توپولوژی
 
-### ۵) مثال سازمانی
-
-شعبه فقط Prefix خودش را اعلام می‌کند و فقط Default/Prefixهای مرکز را می‌پذیرد (فیلتر).
-
-### ۶) تصویر و توپولوژی
-
-```text
-R1 (AS65001) 192.168.1.0/24 --- 10.0.1.0/30 --- ISP (AS65000) 0.0.0.0/0
+``` text
+R1 (AS 65001) 10.0.12.1/30 ---- 10.0.12.2/30 R2 (AS 65002)
+R1 LAN 10.10.0.0/16     R2 LAN 10.20.0.0/16
 ```
 
-### ۷) پیکربندی (CLI)
+#### ۲) پیکربندی
 
-```text
+``` text
 ! R1
 router bgp 65001
  bgp router-id 1.1.1.1
- neighbor 10.0.1.2 remote-as 65000
- network 192.168.1.0 mask 255.255.255.0
-!
-ip route 192.168.1.0 255.255.255.0 Null0
-! ISP
-router bgp 65000
- neighbor 10.0.1.1 remote-as 65001
- neighbor 10.0.1.1 default-originate
+ bgp log-neighbor-changes
+ neighbor 10.0.12.2 remote-as 65002
+ network 10.10.0.0 mask 255.255.0.0
+! requires an exact matching route in the RIB:
+ip route 10.10.0.0 255.255.0.0 Null0
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+``` text
+! R2
+router bgp 65002
+ neighbor 10.0.12.1 remote-as 65001
+ network 10.20.0.0 mask 255.255.0.0
+ip route 10.20.0.0 255.255.0.0 Null0
+```
 
-- `bgp router-id`: شناسه‌ی پایدار؛ بدون آن بزرگ‌ترین IP انتخاب می‌شود.
-- `network ... mask`: اعلام Prefix؛ Route Null0 برای ساخت Prefix پایدار.
-- `default-originate` روی ISP: Default را فقط به این همسایه می‌دهد.
-- راستی‌آزمایی: `show ip route bgp` در R1 باید `B* 0.0.0.0/0` نشان دهد.
-- بازگشت: `no network ...` / `no neighbor ...`.
+قاعده‌ی `network`: Prefix و Mask باید **دقیقاً** با Route موجود در RIB مطابق باشد؛ وگرنه اعلام نمی‌شود. Null0 برای Summary رایج (Anchor).
 
-### ۸) تست عملکرد
+#### ۳) `redistribute`
 
-- `show ip bgp` روی ISP: Prefix 192.168.1.0/24 با AS-Path 65001.
-- `ping 8.8.8.8 source 192.168.1.1` (اگر ISP Loopback دارد).
+`redistribute connected/static/ospf` همه‌ی مسیرها را (با Origin Incomplete) وارد BGP می‌کند؛ کنترل کمتر و ریسک Leak؛ ترجیحاً `network` یا Route-map.
 
-### ۹) عیب‌یابی
+#### ۴) eBGP با Loopback
 
-| بخش | شرح |
+``` text
+neighbor 2.2.2.2 remote-as 65002
+neighbor 2.2.2.2 update-source Loopback0
+neighbor 2.2.2.2 ebgp-multihop 2
+ip route 2.2.2.2 255.255.255.255 10.0.12.2
+```
+
+eBGP پیش‌فرض TTL=1 است؛ Peer غیرمستقیم نیاز به `ebgp-multihop`. 
+
+#### ۵) AD و جدول
+
+eBGP AD=20 (بهتر از OSPF 110) ⇒ مسیر BGP RIB را می‌گیرد. `show ip bgp` Table؛ `show ip route bgp` RIB.
+
+#### ۶) Verification
+
+``` text
+show ip bgp summary
+show ip bgp
+show ip bgp 10.20.0.0
+show ip route 10.20.0.0
+show ip bgp neighbors 10.0.12.2 advertised-routes
+show ip bgp neighbors 10.0.12.2 received-routes
+```
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | R1 Prefix را اعلام نمی‌کند |
-| شواهد/دستور | `show ip bgp` روی ISP: Prefix نیست؛ `show ip route 192.168.1.0` روی R1: نیست |
-| علت | Prefix دقیق در Route Table نیست |
-| رفع | ساخت Route (Null0 یا Connected) مطابق Mask |
+| network یا redistribute | network؛ Redistribute فقط با Route-map |
+| Loopback | با update-source+multihop |
+| Summary | Null0 Anchor |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** Established؛ R1 Prefix 10.20.0.0/16 را از R2 می‌بیند و در RIB با [20/0].
 
-**ت1.** چرا `network` بدون Route کار نمی‌کند؟ *(پاسخ: 9-2-ت1)*
+**متوسط (تحلیل):** `network 10.10.0.0 mask 255.255.0.0` ولی در RIB فقط 10.10.1.0/24 هست ⇒ اعلام نمی‌شود؛ `show ip bgp` Prefix ندارد. رفع: Route Null0 دقیق یا `network` درست.
 
-**ت2.** دستور اعلام Default؟ *(پاسخ: 9-2-ت2)*
+**سخت (RIB failure):** Prefix در BGP Table با `r` (RIB-failure): مسیر بهتری با AD کمتر (Static AD 1) از منبع دیگر هست؛ شاهد: `show ip bgp rib-failure`. تحلیل: AD؛ راه: تنظیم Static/`distance bgp` یا حذف Static. درس: BGP Table ≠ RIB.
 
-**ت3.** Router-ID چه فایده‌ای دارد؟ *(پاسخ: 9-2-ت3)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-### ۱۱) مرور و ارزیابی
+``` text
+router bgp 65001
+ neighbor 10.0.12.2 remote-as 65002
+ network 10.10.0.0 mask 255.255.0.0
+ip route 10.10.0.0 255.255.0.0 Null0
+show ip bgp summary
+show ip bgp
+show ip route bgp
+show ip bgp rib-failure
+```
 
-**م1.** چرا همیشه Prefix-List روی eBGP می‌گذاریم؟ *(پاسخ: 9-2-م1)*
+### ۸) Verification (اثبات صحت)
 
-**م2.** سناریو: ISP مسیر نمی‌بیند؛ دو بررسی؟ *(پاسخ: 9-2-م2)*
+- Established و Prefix دریافتی.
+- Route در RIB و ping بین LANها.
+- advertised-routes مطابق انتظار.
 
-**معیار تسلط:** برپایی eBGP بدون راهنما و تأیید با دو دستور show.
+### ۹) Troubleshooting
 
-**اشتباهات رایج:** فراموشی Route Null0؛ Mask اشتباه در network.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| default-originate | BGP default-originate | ارسال Default به همسایه | ISP به مشتری |
-| Null0 | Null0 interface | دورریز؛ Route ثابت برای Prefix | پایدارسازی network |
-| Soft reset | Soft reconfiguration | اعمال سیاست بدون قطع | عیب‌یابی بدون قطع |
-
-| English sentence | ترجمه |
-|---|---|
-| Advertise only the prefixes you own. | فقط Prefixهایی را اعلام کنید که مالک آن‌ها هستید. |
-| Apply a prefix-list on every eBGP session. | روی هر Session eBGP یک Prefix-List بگذارید. |
-
-#### کارت Lab — درس 9-2
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | eBGP بین R1 و ISP |
-| 2 | پیش‌نیاز | درس ۹-۱ |
-| 3 | توپولوژی | R1 ↔ ISP |
-| 4 | تجهیزات | R1، ISP |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | 10.0.1.0/30؛ 192.168.1.0/24 |
-| 7 | وضعیت اولیه | Interfaceها بالا |
-| 8 | صورت مسئله | R1 شبکه را اعلام و Default بگیرد |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `show ip bgp`، `show ip route bgp` |
-| 11 | سناریوی خرابی | R1 Prefix را اعلام نمی‌کند |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Prefix در ISP؛ Default در R1 |
-| 14 | معیار پذیرش | پیش‌بینی با نتیجه تطبیق داده شود |
-| 15 | مستندات نهایی | `03-ops/ebgp-asbuilt.md` |
-| 16 | Cleanup و بازگردانی | حذف BGP |
+| Prefix اعلام نمی‌شود | `show ip route` دقیق؟ | network/mask دقیق + Anchor |
+| در BGP هست در RIB نه | `rib-failure` | AD/مسیر بهتر |
+| Next-hop inaccessible | `show ip bgp X` | Route به Next-hop |
+| Active | telnet 179 | ACL/Source |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+### ۱۰) نکات امنیتی
 
----
+- Prefix-list و Max-prefix.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- network نیاز به Route دقیق.
+- RIB ≠ BGP Table.
+- eBGP TTL=1.
+- AD 20.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا `network` باید با RIB دقیقاً مطابق باشد؟ *(پاسخ: 9-2-ت1)*
+
+**ت2.** (ساده) AD پیش‌فرض eBGP؟ *(پاسخ: 9-2-ت2)*
+
+**ت3.** (متوسط) eBGP با Loopback چه دستورهایی می‌خواهد؟ *(پاسخ: 9-2-ت3)*
+
+**ت4.** (متوسط) `redistribute connected` چه ریسکی دارد؟ *(پاسخ: 9-2-ت4)*
+
+**ت5.** (سخت) Prefix با `r` در Table یعنی چه؟ *(پاسخ: 9-2-ت5)*
+
+**ت6.** (سخت، طراحی) برگه‌ی eBGP دو سازمان. *(پاسخ: 9-2-ت6)*
+
+**Q1.** Quick quiz (English): Why might a prefix configured with the network command not be advertised? *(پاسخ: 9-2-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| RIB failure | BGP RIB failure | نصب‌نشدن مسیر BGP در RIB |
+| multihop | eBGP multihop | eBGP چندگامی |
+
+- *The network command requires an exact route in the routing table.* ← دستور network یک Route دقیق در جدول مسیریابی می‌خواهد.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** eBGP. **Evidence:** `03-ops/ebgp.md`.
+
+### ۱۵) منابع
+
+- RFC 4271
+- Cisco BGP guide
 
 <a id="l-9-3"></a>
 
-## درس 9-3 — iBGP: Loopback Peering و next-hop-self
+## درس 9-3 — iBGP: Full-mesh/RR، Loopback Peering، `next-hop-self`، Synchronization و Split-horizon
 
-**فصل 9 - روز 3 · پیش‌نیاز: درس ۹-۲ · ۶ ساعت**
+**فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۱، ۹-۲، ۶-۱ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ برخی ویژگی‌ها روی vIOS `Unverified`.
 
-وقتی چند روتر داخل یک AS داریم (مثلاً دو Edge)، باید مسیرهای BGP را بین‌شان پخش کنیم. بدون `next-hop-self` Next-hop به IP ISP می‌ماند و داخلی‌ها آن را نمی‌بینند.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۹-۲؛ OSPF برای دسترسی به Loopbackها.
+1. iBGP Split-horizon و لزوم Full-mesh/Route Reflector را توضیح دهد.
+2. iBGP با Loopback و IGP (OSPF) برای Reachability را پیکربندی کند.
+3. `next-hop-self` را درست به‌کار ببرد و دلیلش را بگوید.
+4. Route Reflector (Client/Non-client، Cluster-ID) را پیکربندی کند.
+5. عیب‌یابی Next-hop inaccessible و عدم انتشار را انجام دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- iBGP بین روترهای یک AS؛ مسیر یاد‌گرفته‌شده از iBGP **دوباره به iBGP‌Peer دیگر داده نمی‌شود** (قانون split-horizon)؛ پس Full-mesh یا Route-Reflector لازم است.
-- Peering با **Loopback** پایدارتر است (`update-source Loopback0`).
-- OSPF/IGP باید Loopbackها را قابل‌دسترس کند.
-- `next-hop-self` روی Edge: Next-hop را به IP خود Edge تغییر می‌دهد.
-- AD ۲۰۰ برای iBGP؛ IGP قبل از آن انتخاب می‌شود.
+iBGP مسیرهای خارجی را بین روترهای AS پخش می‌کند، ولی دو قاعده‌ی مهم دارد: (۱) مسیر iBGP را به iBGP Peer دیگر ندهید (Split-horizon)، (۲) Next-hop تغییر نمی‌کند. بدون درک این دو، «Route هست ولی استفاده نمی‌شود».
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو Edge (E1، E2) در AS 65001، هر دو با ISP eBGP؛ با هم iBGP.
+#### ۱) Split-horizon و راه‌حل‌ها
 
-### ۵) مثال سازمانی
+n روتر Full-mesh: n(n−1)/2 Session. یا **Route Reflector:** RR مسیر Client را به Clientهای دیگر بازتاب می‌دهد.
 
-دو فایروال Edge در یک AS؛ Peering iBGP با Loopback و `next-hop-self` تا مسیر Failover کامل شود.
-
-### ۶) تصویر و توپولوژی
-
-```text
-ISP --eBGP-- E1 ==iBGP (lo0)== E2 --eBGP-- ISP2
-          (AS65001 with internal OSPF)
-```
-
-### ۷) پیکربندی (CLI)
-
-```text
+``` text
 router bgp 65001
- neighbor 2.2.2.2 remote-as 65001
- neighbor 2.2.2.2 update-source Loopback0
- neighbor 2.2.2.2 next-hop-self
-! reachability via IGP
-router ospf 1
- network 1.1.1.1 0.0.0.0 area 0
+ neighbor 1.1.1.1 remote-as 65001
+ neighbor 1.1.1.1 update-source Loopback0
+ neighbor 1.1.1.1 route-reflector-client      ! on RR
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+Cluster-ID/Originator-ID برای جلوگیری از Loop.
 
-- `remote-as` برابر ASN خودتان = iBGP.
-- `update-source Loopback0`: Session از Loopback شروع شود (در Link-failure زنده می‌ماند).
-- `next-hop-self`: Next-hop را روی Peer iBGP خود Edge می‌کند.
-- راستی‌آزمایی: `show ip bgp 0.0.0.0` روی E2: Next-hop = IP E1.
-- بازگشت: `no neighbor ...`.
+#### ۲) Peering با Loopback
 
-### ۸) تست عملکرد
+``` text
+interface Loopback0
+ ip address 10.254.0.1 255.255.255.255
+router ospf 1
+ network 10.254.0.1 0.0.0.0 area 0
+router bgp 65001
+ neighbor 10.254.0.2 remote-as 65001
+ neighbor 10.254.0.2 update-source Loopback0
+```
 
-- `show ip bgp summary` Established؛ `show ip route` Next-hop قابل‌دسترس.
+IGP Reachability Loopback را فراهم می‌کند؛ Session با خرابی یک لینک نمی‌افتد (مسیر جایگزین).
 
-### ۹) عیب‌یابی
+#### ۳) `next-hop-self`
 
-| بخش | شرح |
-|---|---|
-| Symptom | iBGP مسیر دارد ولی Route Table ندارد |
-| شواهد/دستور | `show ip bgp`: مسیر هست؛ `show ip route <prefix>`: نیست یا Inaccessible |
-| علت | Next-hop خارجی از دید داخلی ناشناخته (next-hop-self نیست) |
-| رفع | `neighbor ... next-hop-self` یا اعلام لینک خارجی در IGP |
+R1 (Border) مسیر خارجی را با Next-hop = IP Peer خارجی (10.0.12.2) به iBGP Peerها می‌دهد؛ اگر آن آدرس در IGP نباشد ⇒ **Inaccessible**. راه: `neighbor X next-hop-self` روی Border یا Redistribute شبکه‌ی لینک خارجی در IGP (Passive).
 
-### ۱۰) تمرین مستقل
+#### ۴) Synchronization
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+قدیمی (فعلاً خاموش در IOS جدید)؛ نیاز IGP-BGP همگام بود؛ امروز BGP Full-mesh/RR کافی است.
 
-**ت1.** چرا iBGP Full-mesh می‌خواهد؟ *(پاسخ: 9-3-ت1)*
+#### ۵) تفاوت‌ها
 
-**ت2.** چرا Loopback Peering؟ *(پاسخ: 9-3-ت2)*
-
-**ت3.** next-hop-self چه می‌کند؟ *(پاسخ: 9-3-ت3)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا مسیر iBGP در Route Table نصب نمی‌شود؟ *(پاسخ: 9-3-م1)*
-
-**م2.** سناریو: Session iBGP Idle است؛ سه بررسی؟ *(پاسخ: 9-3-م2)*
-
-**معیار تسلط:** برپایی iBGP با Loopback و توضیح علت next-hop-self.
-
-**اشتباهات رایج:** فراموشی IGP برای Loopback؛ فراموشی next-hop-self.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| iBGP | Internal BGP | BGP داخل یک AS | دو Edge |
-| Full-mesh | BGP full mesh | Peer بین همه‌ی روترهای iBGP | طراحی iBGP |
-| Route Reflector | Route Reflector | کاهش نیاز به Full-mesh | شبکه‌های بزرگ |
-
-| English sentence | ترجمه |
-|---|---|
-| An iBGP route is not re-advertised to another iBGP peer. | مسیر iBGP به Peer iBGP دیگر بازپخش نمی‌شود. |
-| Peer from loopback interfaces for resilience. | برای تحمل خطا از Loopback Peer کنید. |
-
-#### کارت Lab — درس 9-3
-
-| # | فیلد | محتوا |
+| | eBGP | iBGP |
 |---|---|---|
-| 1 | عنوان و هدف | iBGP بین دو Edge |
-| 2 | پیش‌نیاز | درس ۹-۲ |
-| 3 | توپولوژی | E1 ↔ E2 |
-| 4 | تجهیزات | E1،E2،ISP،ISP2 |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | Loopback 1.1.1.1 و 2.2.2.2 |
-| 7 | وضعیت اولیه | OSPF بالا |
-| 8 | صورت مسئله | iBGP با next-hop-self |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `show ip bgp summary` |
-| 11 | سناریوی خرابی | iBGP مسیر دارد ولی Route Table ندارد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Established؛ Next-hop درست |
-| 14 | معیار پذیرش | Next-hop قابل‌دسترس در هر دو |
-| 15 | مستندات نهایی | `03-ops/ibgp-asbuilt.md` |
-| 16 | Cleanup و بازگردانی | حذف iBGP |
+| AD | 20 | 200 |
+| Next-hop | تغییر می‌کند | تغییر نمی‌کند |
+| TTL | 1 | 255 |
+| AS_PATH | افزوده می‌شود | نه |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+### ۴) طراحی و تصمیم‌گیری
 
----
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Full-mesh یا RR | >5 روتر ⇒ RR |
+| next-hop-self | روی Border |
+| Peering | Loopback+IGP |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** R1,R2,R3 در AS 65001 با RR=R2؛ `show ip bgp summary` در R3 Established با R2.
+
+**متوسط (تحلیل):** R3 مسیر خارجی را دارد ولی با `i` و Next-hop 10.0.12.2 (`inaccessible`): `next-hop-self` روی R1؛ پس از ریست نرم، `>` و RIB.
+
+**سخت (طراحی):** ۲۰ روتر Full-mesh = 190 Session؛ RR دوتایی با Cluster-ID یکتا ⇒ ≈ 40 Session؛ ریسک RR: SPOF → دو RR؛ Loop: Cluster-list؛ Policy RR روی Prefix. آزمون: قطع RR1 و Convergence.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+router bgp 65001
+ neighbor 10.254.0.2 remote-as 65001
+ neighbor 10.254.0.2 update-source Loopback0
+ neighbor 10.254.0.2 next-hop-self
+ neighbor 10.254.0.3 route-reflector-client
+show ip bgp
+show ip bgp 10.20.0.0
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Established.
+- Next-hop قابل‌دسترس.
+- Prefix `>` و در RIB.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| inaccessible | `show ip bgp X` | next-hop-self/IGP |
+| Route به همه نمی‌رسد | RR/Client | route-reflector-client |
+| Session flap | IGP | Loopback Reachability |
+
+### ۱۰) نکات امنیتی
+
+- Auth.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Split-horizon ⇒ Full-mesh/RR.
+- next-hop-self.
+- Loopback+IGP.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا iBGP Full-mesh می‌خواهد؟ *(پاسخ: 9-3-ت1)*
+
+**ت2.** (ساده) next-hop-self چیست؟ *(پاسخ: 9-3-ت2)*
+
+**ت3.** (متوسط) تعداد Session Full-mesh برای ۲۰ روتر؟ *(پاسخ: 9-3-ت3)*
+
+**ت4.** (متوسط) چرا Peering با Loopback؟ *(پاسخ: 9-3-ت4)*
+
+**ت5.** (سخت) Next-hop inaccessible؛ رفع. *(پاسخ: 9-3-ت5)*
+
+**ت6.** (سخت، طراحی) RR دوتایی با Cluster-ID. *(پاسخ: 9-3-ت6)*
+
+**Q1.** Quick quiz (English): Why does iBGP not change the next hop by default? *(پاسخ: 9-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| RR | Route Reflector | بازتاب‌دهنده |
+| Split-horizon | Split horizon | قاعده‌ی عدم بازگرداندن مسیر |
+
+- *Use next-hop-self on border routers.* ← روی روترهای مرزی next-hop-self بگذارید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** iBGP. **Evidence:** `03-ops/ibgp.md`.
+
+### ۱۵) منابع
+
+- RFC 4271
+- RFC 4456
 
 <a id="l-9-4"></a>
 
-## درس 9-4 — انتخاب بهترین مسیر: Weight، Local-Pref، AS-Path، MED
+## درس 9-4 — کنترل مسیر BGP: Weight، Local-Pref، AS-Path Prepend، MED، Community — طراحی ورودی/خروجی با مثال
 
-**فصل 9 - روز 4 · پیش‌نیاز: درس ۹-۳ · ۶ ساعت**
+**فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۱ تا ۹-۳، ۹-۷ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ برخی ویژگی‌ها روی vIOS `Unverified`.
 
-وقتی چند مسیر به یک مقصد دارید، BGP با ترتیب مشخصی انتخاب می‌کند. اگر ترتیب را ندانید، نمی‌توانید ترافیک را به ISP دلخواه هدایت کنید.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۹-۳.
+1. هر Attribute را برای هدف درست (ورودی/خروجی) به‌کار ببرد.
+2. Route-map برای Local-Pref/Prepend/MED/Community بنویسد و Soft reset اعمال کند.
+3. اثر را با `show ip bgp` (Best/ترتیب) تحلیل کند.
+4. Community (Well-known/Custom) را برای Policy بین AS به‌کار ببرد.
+5. خطاهای رایج (Route-map غلط، Soft reset فراموش) را رفع کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- ترتیب (ساده‌شده، بالاتر مهم‌تر): **Weight** (فقط Cisco، محلی) ← **Local Preference** (بالاتر بهتر، داخل AS) ← مسیرهای محلی ← **AS-Path** (کوتاه‌تر بهتر) ← Origin ← **MED** (کمتر بهتر، بین AS همسایه) ← eBGP بر iBGP ← IGP metric تا Next-hop ← Router-ID.
-- **Local-Pref** برای انتخاب ISP خروجی؛ **AS-Path Prepend** برای تأثیر روی ترافیک ورودی؛ **MED** برای پیشنهاد به همسایه.
-- تغییر سیاست با `route-map` و `set local-preference` / `set as-path prepend` / `set metric`.
-- بعد از تغییر سیاست: `clear ip bgp * soft in|out`.
+کنترل مسیر BGP یعنی: «ترافیک خروجی از ISP-A، ورودی ترجیحاً از ISP-A». ابزارها فرق دارند و خطا در انتخاب ابزار نتیجه‌ی معکوس می‌دهد.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-ISP1 مسیر اصلی (Local-Pref 200) و ISP2 پشتیبان (Local-Pref 100).
+#### ۱) نقشه‌ی ابزار
 
-### ۵) مثال سازمانی
-
-سازمان دو ISP دارد؛ خروجی از ISP1 است؛ برای ورودی با Prepend کاری می‌کند ISP2 کمتر انتخاب شود.
-
-### ۶) تصویر و توپولوژی
-
-```text
-E1--ISP1  (LP 200)
-E1==iBGP==E2--ISP2  (LP 100)
-Outbound uses ISP1; ISP2 is backup
-```
-
-### ۷) پیکربندی (CLI)
-
-```text
-route-map PREFER-ISP1 permit 10
- set local-preference 200
-router bgp 65001
- neighbor 10.0.1.2 route-map PREFER-ISP1 in
-!
-route-map PREPEND-ISP2 permit 10
- set as-path prepend 65001 65001
-router bgp 65001
- neighbor 10.0.2.2 route-map PREPEND-ISP2 out
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- `set local-preference 200` روی مسیرهای ورودی از ISP1: همه‌ی روترهای AS آن را ترجیح می‌دهند.
-- `set as-path prepend`: AS-Path را طولانی می‌کند تا ورودی از این ISP کمتر شود.
-- راستی‌آزمایی: `show ip bgp` ستون LocPrf و Path؛ `show ip bgp <prefix>` «best».
-- بازگشت: حذف route-map از neighbor و `clear ip bgp * soft`.
-
-### ۸) تست عملکرد
-
-- `show ip bgp 8.8.8.0` Best با LocPrf 200.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | ترافیک از ISP پشتیبان خارج می‌شود |
-| شواهد/دستور | `show ip bgp`: LocPrf برابر یا کمتر؛ route-map اعمال‌نشده (بدون soft clear) |
-| علت | Policy روی neighbor نیست یا clear نشد |
-| رفع | اعمال route-map `in` و `clear ip bgp * soft in` |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** کدام صفت برای انتخاب ISP خروجی است؟ *(پاسخ: 9-4-ت1)*
-
-**ت2.** Prepend برای چیست؟ *(پاسخ: 9-4-ت2)*
-
-**ت3.** کمتر بهتر کدام است: LocPrf یا MED؟ *(پاسخ: 9-4-ت3)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا LocPrf روی Weight ترجیح دارد در طراحی؟ *(پاسخ: 9-4-م1)*
-
-**م2.** سناریو: بعد از route-map تغییری نیست؛ چرا؟ *(پاسخ: 9-4-م2)*
-
-**معیار تسلط:** توضیح ترتیب انتخاب و اعمال LocPrf/Prepend با route-map.
-
-**اشتباهات رایج:** اشتباه جهت in/out؛ فراموشی soft clear.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Local Preference | BGP Local Preference | اولویت مسیر داخل AS | انتخاب ISP خروجی |
-| MED | Multi-Exit Discriminator | پیشنهاد مسیر به همسایه | ورودی |
-| Prepend | AS-Path prepend | طولانی‌کردن AS-Path | کاهش ورودی از یک ISP |
-
-| English sentence | ترجمه |
-|---|---|
-| Set the local preference to prefer the primary ISP. | Local Preference را برای ترجیح ISP اصلی تنظیم کنید. |
-| Reset the session softly after applying a policy. | بعد از اعمال سیاست Session را «نرم» ریست کنید. |
-
-#### کارت Lab — درس 9-4
-
-| # | فیلد | محتوا |
+| هدف | ابزار | محدوده |
 |---|---|---|
-| 1 | عنوان و هدف | ترجیح ISP1 با Local-Pref |
-| 2 | پیش‌نیاز | درس ۹-۳ |
-| 3 | توپولوژی | E1/E2 + ISP1/ISP2 |
-| 4 | تجهیزات | E1،E2،ISP1،ISP2 |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | 10.0.1.0/30 و 10.0.2.0/30 |
-| 7 | وضعیت اولیه | eBGP به هر دو |
-| 8 | صورت مسئله | LocPrf 200 روی ISP1 |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `show ip bgp` |
-| 11 | سناریوی خرابی | ترافیک از ISP پشتیبان خارج می‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Best از ISP1 |
-| 14 | معیار پذیرش | Best مطابق سیاست |
-| 15 | مستندات نهایی | `03-ops/bgp-policy.md` |
-| 16 | Cleanup و بازگردانی | حذف route-map |
+| خروج از ISP-A | Local-Pref بالاتر | کل AS (iBGP) |
+| خروج روی یک روتر | Weight | محلی |
+| ترجیح ورود از ISP-A | AS-Path Prepend روی B، MED، Community | تأثیر نه کنترل |
+| علامت‌گذاری مسیر | Community | بین AS |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+#### ۲) Route-map نمونه
 
----
+``` text
+ip prefix-list ALL permit 0.0.0.0/0 le 24
+route-map FROM-ISPA permit 10
+ set local-preference 200
+route-map TO-ISPB permit 10
+ set as-path prepend 65010 65010 65010
+router bgp 65010
+ neighbor 192.0.2.1 route-map FROM-ISPA in
+ neighbor 192.0.2.5 route-map TO-ISPB out
+clear ip bgp 192.0.2.1 soft in
+clear ip bgp 192.0.2.5 soft out
+```
+
+#### ۳) MED
+
+Metric برای همسایه‌ی AS دیگر: «از این لینک وارد شو». کمتر بهتر؛ فقط بین Pathهای همان AS همسایه مقایسه می‌شود.
+
+#### ۴) Community
+
+``` text
+route-map SET-COMM permit 10
+ set community 65010:100 additive
+neighbor X send-community
+```
+
+Well-known: `no-export`، `no-advertise`، `local-AS`. ISPها Communityهای Action (Prepend/Blackhole) را مستند می‌کنند.
+
+#### ۵) تحلیل
+
+``` text
+show ip bgp 198.51.100.0/24
+ *> best, with local-pref/weight/as-path shown
+```
+
+#### ۶) اشتباه رایج
+
+Prepend روی Inbound برای کنترل خروج (بی‌اثر)؛ MED برای AS مختلف (مقایسه نمی‌شود)؛ فراموشی `soft` ⇒ تغییر اعمال نمی‌شود.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| خروجی | Local-Pref |
+| ورودی | Prepend/MED/Community/Prefix splitting |
+| Soft reset | اجباری |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Local-Pref 200 برای ISP-A؛ `show ip bgp` Best از A.
+
+**متوسط (تحلیل):** ورودی هنوز از B: Prepend 3× روی B؛ بعضی ISPها اهمیت نمی‌دهند؛ Community ISP را بررسی؛ اندازه‌گیری Traffic ورودی.
+
+**سخت (طراحی):** دو ISP؛ ترافیک ورودی ۷۰٪ A و ۳۰٪ B؛ اعلام نیمی از Prefixها (/24 بالا) از A و نیمه‌ی دیگر از B؛ Prefix کل از هر دو با Prepend؛ ریسک Failover؛ آزمون با Looking Glass. معیار: Traffic Share.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+route-map FROM-ISPA permit 10
+ set local-preference 200
+router bgp 65010
+ neighbor 192.0.2.1 route-map FROM-ISPA in
+clear ip bgp 192.0.2.1 soft in
+show ip bgp
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Best Path مطابق Policy.
+- Traffic ورودی/خروجی اندازه‌گیری.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| تغییر اثر نکرد | soft reset؟ | clear soft |
+| MED اثر ندارد | AS همسایه | مقایسه فقط یک AS |
+| Prepend بی‌اثر | ISP | Community/Prefix |
+
+### ۱۰) نکات امنیتی
+
+- Community غیرمجاز را فیلتر کنید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- خروجی Local-Pref؛ ورودی نشانه‌دهی.
+- Soft reset.
+- Community.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) خروج را با چه کنترل می‌کنیم؟ *(پاسخ: 9-4-ت1)*
+
+**ت2.** (ساده) Prepend چه می‌کند؟ *(پاسخ: 9-4-ت2)*
+
+**ت3.** (متوسط) چرا Prepend روی Inbound برای خروج بی‌اثر است؟ *(پاسخ: 9-4-ت3)*
+
+**ت4.** (متوسط) MED چه زمانی مقایسه می‌شود؟ *(پاسخ: 9-4-ت4)*
+
+**ت5.** (سخت) ورودی ۷۰/۳۰ را چگونه طراحی می‌کنید؟ *(پاسخ: 9-4-ت5)*
+
+**ت6.** (سخت، طراحی) Policy کامل دو ISP. *(پاسخ: 9-4-ت6)*
+
+**Q1.** Quick quiz (English): Which BGP attribute is best for influencing outbound traffic within an AS? *(پاسخ: 9-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Community | BGP community | برچسب مسیر |
+| MED | Multi-Exit Discriminator | نشانه‌ی ترجیح ورود |
+
+- *Local preference controls outbound; prepending only influences inbound.* ← Local-Pref خروجی را کنترل می‌کند؛ Prepend فقط ورودی را تحت‌تأثیر می‌گذارد.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** کنترل مسیر. **Evidence:** `03-ops/bgp-policy.md`.
+
+### ۱۵) منابع
+
+- Cisco BGP best path
+- RFC 1997 (Communities)
 
 <a id="l-9-5"></a>
 
-## درس 9-5 — Route Filtering: Prefix-List، Route-Map و Community
+## درس 9-5 — Route Filtering در BGP: Prefix-List، AS-Path ACL، Route-map، Max-prefix و دفاع از Route Leak
 
-**فصل 9 - روز 5 · پیش‌نیاز: درس ۹-۴ · ۶ ساعت**
+**فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۴، ۹-۷، ۱۰-۱ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ برخی ویژگی‌ها روی vIOS `Unverified`.
 
-فیلتر مسیر جلوی اعلام/پذیرش مسیر ناخواسته را می‌گیرد. اشتباه در BGP می‌تواند مسیر کل اینترنت را خراب کند؛ پس فیلتر الزامی است.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۹-۳.
+1. Prefix-list (ge/le) و AS-path access-list را بنویسد و آزمایش کند.
+2. Route-map ترکیبی (Match/Set) را برای Inbound/Outbound طراحی کند.
+3. Bogon و Prefixهای نامعتبر را فیلتر و Default را کنترل کند.
+4. Max-prefix و Alert را تنظیم کند.
+5. Route Leak را شناسایی و رفع کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- **Prefix-List:** فهرست Prefixها با `ge/le`؛ سریع‌تر و خواناتر از ACL.
-- **Route-Map:** شرط (`match`) + عمل (`set`)؛ ترتیب `permit/deny` و **Implicit deny**.
-- اعمال: `neighbor X prefix-list NAME in|out` یا `route-map`.
-- **Community:** برچسب مسیر برای سیاست (مثل `no-export`).
-- قانون: به ISP فقط Prefix خودتان؛ از ISP فقط Default و آنچه لازم است.
+BGP بدون فیلتر خطرناک است: یک اشتباه ISP یا خودتان می‌تواند Prefix خصوصی را به اینترنت بدهد یا خودتان را Transit کند. فیلتر ورودی/خروجی «حداقل لازم» است.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-فقط 192.168.1.0/24 به ISP داده شود.
+#### ۱) Prefix-list
 
-### ۵) مثال سازمانی
-
-سازمان از ISP فقط Default می‌پذیرد و به ISP فقط Prefix عمومی خودش می‌دهد؛ هر چیز دیگر Drop.
-
-### ۶) تصویر و توپولوژی
-
-```text
-R1 --(out: only 192.168.1.0/24)--> ISP
-R1 <--(in: only 0.0.0.0/0)----- ISP
+``` text
+ip prefix-list MY-PFX seq 5 permit 203.0.113.0/24
+ip prefix-list BOGON seq 5 deny 10.0.0.0/8 le 32
+ip prefix-list BOGON seq 10 deny 172.16.0.0/12 le 32
+ip prefix-list BOGON seq 15 deny 192.168.0.0/16 le 32
+ip prefix-list BOGON seq 20 deny 0.0.0.0/0
+ip prefix-list BOGON seq 25 permit 0.0.0.0/0 le 24
 ```
 
-### ۷) پیکربندی (CLI)
+`ge/le` طول Prefix را محدود می‌کند: `10.0.0.0/8 le 32` یعنی 10/8 و همه‌ی زیرمجموعه‌ها.
 
-```text
-ip prefix-list OUT-ONLY seq 5 permit 192.168.1.0/24
-ip prefix-list IN-DEFAULT seq 5 permit 0.0.0.0/0
-router bgp 65001
- neighbor 10.0.1.2 prefix-list OUT-ONLY out
- neighbor 10.0.1.2 prefix-list IN-DEFAULT in
+#### ۲) AS-path ACL
+
+``` text
+ip as-path access-list 10 permit ^$                 ! only locally originated
+ip as-path access-list 20 permit ^65100_            ! learned from ISP-A directly
+ip as-path access-list 30 deny _65300_              ! block routes through AS 65300
+route-map TO-ISPB permit 10
+ match as-path 10
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+`^$` فقط مسیرهای خودمان را اعلام (جلوگیری از Transit).
 
-- هر Prefix-List در پایان Implicit deny دارد.
-- `permit 0.0.0.0/0` فقط Default را می‌پذیرد (`le` را بدون نیاز نگذارید).
-- راستی‌آزمایی: `show ip bgp neighbors X advertised-routes` و `received-routes` (نیاز soft-reconfig).
-- بازگشت: حذف prefix-list از neighbor.
+#### ۳) اعمال
 
-### ۸) تست عملکرد
+``` text
+router bgp 65010
+ neighbor 192.0.2.1 prefix-list BOGON in
+ neighbor 192.0.2.1 prefix-list MY-PFX out
+ neighbor 192.0.2.1 maximum-prefix 1000 80 warning-only
+ neighbor 192.0.2.1 filter-list 10 out
+clear ip bgp 192.0.2.1 soft
+```
 
-- `show ip prefix-list`؛ مسیر ناخواسته نباید در `show ip bgp` ISP دیده شود.
+#### ۴) Route Leak
 
-### ۹) عیب‌یابی
+Leak: Prefixهای ISP-A به ISP-B اعلام شود (ما Transit شویم). علائم: ترافیک اضافی روی لینک؛ ISPها شکایت. رفع: `filter-list ^$ out` یا Prefix-list خروجی.
 
-| بخش | شرح |
+#### ۵) آزمون
+
+``` text
+show ip bgp neighbors X advertised-routes
+show ip bgp regexp ^65100_
+show ip prefix-list MY-PFX
+```
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | مسیر مجاز هم دریافت نمی‌شود |
-| شواهد/دستور | `show ip prefix-list`: ردیف permit نیست؛ `show ip bgp neighbors ... received-routes` |
-| علت | Implicit deny یا Prefix اشتباه |
-| رفع | افزودن ردیف permit درست |
+| In | Bogon+Max-prefix |
+| Out | Prefix خودمان+^$ |
+| Default | فقط در صورت نیاز |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** Prefix-list خروجی فقط 203.0.113.0/24؛ `advertised-routes` فقط همان.
 
-**ت1.** چرا Implicit deny مهم است؟ *(پاسخ: 9-5-ت1)*
+**متوسط (تحلیل):** ISP-B ترافیک ISP-A را از ما عبور می‌دهد: Leak؛ شاهد: `advertised-routes` به B شامل Prefixهای A؛ رفع `filter-list ^$ out`؛ `soft out`.
 
-**ت2.** نشت مسیر چیست؟ *(پاسخ: 9-5-ت2)*
+**سخت (Max-prefix):** ISP به‌اشتباه ۲۰۰ هزار Prefix فرستاد و جدول پر می‌شود: Max-prefix 1000 قطع/هشدار؛ آزمون در Lab؛ Alert؛ ارتباط با ISP.
 
-**ت3.** Community no-export؟ *(پاسخ: 9-5-ت3)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-### ۱۱) مرور و ارزیابی
+``` text
+ip prefix-list MY-PFX seq 5 permit 203.0.113.0/24
+router bgp 65010
+ neighbor 192.0.2.1 prefix-list MY-PFX out
+ neighbor 192.0.2.1 maximum-prefix 1000 80
+show ip bgp neighbors 192.0.2.1 advertised-routes
+```
 
-**م1.** چرا هر eBGP باید فیلتر داشته باشد؟ *(پاسخ: 9-5-م1)*
+### ۸) Verification (اثبات صحت)
 
-**م2.** سناریو: Default از ISP نمی‌آید؛ علت محتمل؟ *(پاسخ: 9-5-م2)*
+- advertised-routes مطابق.
+- آزمون منفی: Prefix غیرمجاز رد.
 
-**معیار تسلط:** نوشتن Prefix-List ورودی/خروجی و راستی‌آزمایی.
+### ۹) Troubleshooting
 
-**اشتباهات رایج:** فراموشی ردیف permit؛ جهت in/out اشتباه.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Prefix-List | IP Prefix-List | فیلتر Prefix | کنترل BGP |
-| Community | BGP Community | برچسب مسیر | سیاست‌ها |
-| Route leak | Route leak | نشت مسیر ناخواسته | حادثه‌ی اینترنت |
-
-| English sentence | ترجمه |
-|---|---|
-| Filter inbound and outbound prefixes. | Prefixهای ورودی و خروجی را فیلتر کنید. |
-| An implicit deny exists at the end of every prefix list. | در پایان هر Prefix-List یک deny ضمنی هست. |
-
-#### کارت Lab — درس 9-5
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | فیلتر Prefix روی eBGP |
-| 2 | پیش‌نیاز | درس ۹-۴ |
-| 3 | توپولوژی | R1 ↔ ISP |
-| 4 | تجهیزات | R1،ISP |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | 192.168.1.0/24 |
-| 7 | وضعیت اولیه | eBGP Established |
-| 8 | صورت مسئله | فقط Prefix خود را اعلام و فقط Default را بپذیرید |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `show ip bgp neighbors ... advertised-routes` |
-| 11 | سناریوی خرابی | مسیر مجاز هم دریافت نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | فقط Prefix مجاز |
-| 14 | معیار پذیرش | عدم نشت Prefix |
-| 15 | مستندات نهایی | `03-ops/bgp-filter.md` |
-| 16 | Cleanup و بازگردانی | حذف prefix-list |
+| Leak | advertised-routes | Prefix-list/filter-list |
+| Prefix غایب | received-routes | Filter ورودی |
+| Session قطع | Max-prefix log | سقف |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+### ۱۰) نکات امنیتی
 
----
+- RFC 7454.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- فیلتر ورودی/خروجی.
+- Bogon.
+- Max-prefix.
+- ^$ ضد Transit.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) `le 24` یعنی چه؟ *(پاسخ: 9-5-ت1)*
+
+**ت2.** (ساده) `^$` چیست؟ *(پاسخ: 9-5-ت2)*
+
+**ت3.** (متوسط) Route Leak چیست؟ *(پاسخ: 9-5-ت3)*
+
+**ت4.** (متوسط) چرا Max-prefix؟ *(پاسخ: 9-5-ت4)*
+
+**ت5.** (سخت) Leak را کشف و رفع کنید. *(پاسخ: 9-5-ت5)*
+
+**ت6.** (سخت، طراحی) استاندارد فیلتر ISP. *(پاسخ: 9-5-ت6)*
+
+**Q1.** Quick quiz (English): What does the AS-path regex ^$ match? *(پاسخ: 9-5-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Bogon | Bogon prefix | Prefix نامعتبر |
+| Route leak | Route leak | نشت مسیر |
+
+- *Filter both inbound and outbound BGP prefixes.* ← Prefixهای BGP را هم ورودی و هم خروجی فیلتر کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** فیلتر BGP. **Evidence:** `03-ops/bgp-filter.md`.
+
+### ۱۵) منابع
+
+- RFC 7454
+- Cisco BGP filtering guide
 
 <a id="l-9-6"></a>
 
-## درس 9-6 — عیب‌یابی BGP و آزمون کوچک فصل
+## درس 9-6 — عیب‌یابی BGP و آزمون فصل ۹: پرونده‌های واقعی، روش، کلید و Rubric
 
-**فصل 9 - روز 6 · پیش‌نیاز: درس‌های ۹-۱ تا ۹-۴ · ۶ ساعت**
+**فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۰ تا ۹-۵، ۹-۷ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ برخی ویژگی‌ها روی vIOS `Unverified`.
 
-عیب‌یابی منظم BGP (State، TCP، Policy) و جمع‌بندی فصل. این روش در FortiGate هم تکرار می‌شود.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس‌های ۹-۱ تا ۹-۴.
+1. روش عیب‌یابی BGP (Session→Table→Policy→RIB→Forwarding) را اجرا کند.
+2. پنج پرونده‌ی رایج را حل و RCA کند.
+3. آزمون عملی فصل ۹ را با Rubric تحویل دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- **گام‌ها:** State Peer ← TCP 179/مسیر ← ASN/IP ← Policy (filter/route-map) ← جدول BGP ← Route Table.
-- دلایل رایج: ASN غلط؛ Neighbor IP غلط؛ ACL؛ `update-source`؛ next-hop؛ فیلتر؛ network بدون Route.
-- ابزار: `show ip bgp summary/neighbors`، `debug ip bgp` (کوتاه).
+عیب‌یابی BGP لایه‌ای است: اول Session، بعد Prefix دریافتی/ارسالی، بعد Best Path/Policy، بعد RIB و ارسال.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-Peer در Active: مسیر TCP قطع است.
+#### ۱) روش
 
-### ۵) مثال سازمانی
-
-Failover ISP کار نمی‌کند: LocPrf اشتباه.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Symptom -> State -> TCP -> Policy -> Table -> Route
+``` text
+1 Session: show ip bgp summary (state, PfxRcd)  2 Reachability/TCP 179
+3 Advertised/Received routes  4 Best path & attributes (show ip bgp prefix)
+5 RIB install (rib-failure?) 6 Forwarding (CEF/traceroute) 7 Policy (route-map/prefix-list)
 ```
 
-### ۷) پیکربندی (CLI)
+#### ۲) پرونده‌ها
 
-```text
+1. **Active:** ACL TCP 179؛ `telnet X 179`.
+2. **Established، PfxRcd=0:** Filter ورودی/Peer اعلام نمی‌کند.
+3. **Prefix در Table ولی نه RIB:** `rib-failure` / AD.
+4. **Next-hop inaccessible:** next-hop-self/IGP.
+5. **مسیر اشتباه Best:** Local-pref/Weight؛ `show ip bgp prefix`.
+
+#### ۳) آزمون عملی
+
+سه عیب تزریق‌شده؛ برای هرکدام: شواهد، علت، رفع، آزمون. Rubric: کشف ۳۰، رفع ۳۰، شواهد ۲۰، آزمون منفی ۱۰، صداقت ۱۰.
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Active با ACL.
+
+**متوسط (تحلیل):** PfxRcd=0: Prefix-list in.
+
+**سخت (چندعلتی):** دو عیب هم‌زمان؛ جدا‌سازی.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 show ip bgp summary
-show ip bgp neighbors 10.0.1.2 | include BGP state|Last reset
-show ip bgp neighbors 10.0.1.2 advertised-routes
-show ip route bgp
+show ip bgp neighbors X received-routes
+show ip bgp prefix
+show ip bgp rib-failure
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- هر دستور یک لایه از روش را می‌سنجد؛ `Last reset` دلیل قطع را می‌گوید.
-- `debug` را کوتاه و با `undebug all` ببندید.
+- Evidence آزمون.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- ۵ خطای عمدی بسازید و رفع کنید: ASN، Neighbor IP، ACL 179، فیلتر Prefix، next-hop.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Peer Established ولی مسیر در Route Table نیست |
-| شواهد/دستور | `show ip bgp`: مسیر دارد ولی `*` best ندارد یا Next-hop Inaccessible |
-| علت | Next-hop ناشناخته یا AD/IGP بهتر |
-| رفع | next-hop-self/Route برای Next-hop |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** ترتیب عیب‌یابی BGP؟ *(پاسخ: 9-6-ت1)*
-
-**ت2.** Last reset چه می‌دهد؟ *(پاسخ: 9-6-ت2)*
-
-**ت3.** چه زمانی debug مجاز است؟ *(پاسخ: 9-6-ت3)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا مسیر BGP در Route Table نیست؟ *(پاسخ: 9-6-م1)*
-
-**م2.** سناریو: بعد از تغییر Policy Failover نمی‌شود؛ چه بررسی؟ *(پاسخ: 9-6-م2)*
-
-**معیار تسلط:** رفع ۵ خرابی BGP با RCA و آزمون کوچک (≥ ۴ از ۵).
-
-**اشتباهات رایج:** Debug طولانی روی دستگاه Production.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| RCA | Root Cause Analysis | تحلیل علت ریشه‌ای | گزارش خرابی |
-| Last reset | BGP last reset | دلیل قطع | عیب‌یابی |
-
-| English sentence | ترجمه |
-|---|---|
-| Use show commands to prove the root cause. | با دستورهای show علت ریشه‌ای را ثابت کنید. |
-| Keep debug short and disable it afterwards. | Debug را کوتاه نگه دارید و بعد خاموش کنید. |
-
-#### کارت Lab — درس 9-6
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | ۵ خرابی BGP |
-| 2 | پیش‌نیاز | درس‌های ۹-۱ تا ۹-۴ |
-| 3 | توپولوژی | R1 ↔ ISP ↔ E2 |
-| 4 | تجهیزات | R1،E2،ISP |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | طبق درس‌های قبل |
-| 7 | وضعیت اولیه | Baseline BGP |
-| 8 | صورت مسئله | پنج خرابی را بسازید و رفع کنید |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | show ip bgp * |
-| 11 | سناریوی خرابی | Peer Established ولی مسیر در Route Table نیست |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | هر خرابی RCA |
-| 14 | معیار پذیرش | حداقل ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/rca-bgp.md` |
-| 16 | Cleanup و بازگردانی | بازگشت به Baseline |
+| Active | telnet 179 | ACL |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+### ۱۰) نکات امنیتی
 
----
+- Debug lab.
 
-<a id="ans-9"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- لایه‌ای.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Active یعنی؟ *(پاسخ: 9-6-ت1)*
+
+**ت2.** (ساده) PfxRcd=0؟ *(پاسخ: 9-6-ت2)*
+
+**ت3.** (متوسط) rib-failure؟ *(پاسخ: 9-6-ت3)*
+
+**ت4.** (متوسط) next-hop inaccessible؟ *(پاسخ: 9-6-ت4)*
+
+**ت5.** (سخت) دو عیب. *(پاسخ: 9-6-ت5)*
+
+**ت6.** (سخت، طراحی) چک‌لیست BGP. *(پاسخ: 9-6-ت6)*
+
+**Q1.** Quick quiz (English): Which command shows prefixes that BGP could not install in the RIB? *(پاسخ: 9-6-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| RIB | Routing Information Base | جدول مسیر |
+
+- *Troubleshoot BGP layer by layer.* ← BGP را لایه‌به‌لایه عیب‌یابی کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** آزمون BGP. **Evidence:** `03-ops/rca-bgp.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۹-۱ تا ۹-۵
 
 ## درس 9-7 — انتخاب بهترین مسیر BGP (کامل)، پایداری و امنیت Session
 
@@ -4816,131 +5156,107 @@ R1# clear ip bgp 192.0.2.1 soft in
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**9-1-ت1** — eBGP و iBGP چه تفاوتی دارند و AD هر کدام چند است؟
 
-eBGP بین دو AS (AD 20)؛ iBGP داخل یک AS (AD 200).
+### پاسخ‌های بازنویسی عمیق درس 9-1
 
-**9-1-ت2** — چرا Peer در Active می‌ماند؟
+**9-1-ت1** — Session Established و ۵ Prefix دریافت شده.
 
-Peer اتصال TCP را نمی‌تواند برقرار کند: مسیر، ACL، IP/ASN اشتباه.
+**9-1-ت2** — TCP برقرار نشده و تلاش دوباره می‌شود.
 
-**9-1-ت3** — پورت BGP؟
+**9-1-ت3** — کوچک‌تر: 90 ثانیه (Keepalive 30).
 
-TCP 179
+**9-1-ت4** — تا TCP از Loopback/آدرس درست ساخته شود و با Neighbor دیگر مطابق باشد.
 
-**9-1-م1** — چرا BGP برای فایروال مهم است؟
+**9-1-ت5** — Loss باعث Hold Timer Expired؛ رفع Loss/QoS/BFD.
 
-FortiGate در لبه‌ی دو ISP و Hub-and-Spoke با BGP مسیر می‌گیرد/می‌دهد.
+**9-1-ت6** — Timer کوتاه+BFD؛ آزمون لینک ناپایدار؛ Dampening.
 
-**9-1-م2** — سناریو: State = Idle (Admin)؛ چه می‌کنید؟
-
-Neighbor shutdown شده؛ `no neighbor ... shutdown` و بررسی Config.
-
-**9-2-ت1** — چرا `network` بدون Route کار نمی‌کند؟
-
-BGP فقط Prefixی را اعلام می‌کند که دقیقاً در Route Table موجود باشد.
-
-**9-2-ت2** — دستور اعلام Default؟
-
-`neighbor X default-originate`
-
-**9-2-ت3** — Router-ID چه فایده‌ای دارد؟
-
-شناسه‌ی پایدار Peer؛ جلوگیری از تغییر ناخواسته.
-
-**9-2-م1** — چرا همیشه Prefix-List روی eBGP می‌گذاریم؟
-
-تا Prefix ناخواسته اعلام/پذیرفته نشود (نشت مسیر).
-
-**9-2-م2** — سناریو: ISP مسیر نمی‌بیند؛ دو بررسی؟
-
-Route دقیق در جدول R1 و `show ip bgp neighbors ... advertised-routes`.
-
-**9-3-ت1** — چرا iBGP Full-mesh می‌خواهد؟
-
-مسیر iBGP به Peer iBGP دیگر بازپخش نمی‌شود.
-
-**9-3-ت2** — چرا Loopback Peering؟
-
-با خرابی یک لینک، Session از مسیر دیگر زنده می‌ماند.
-
-**9-3-ت3** — next-hop-self چه می‌کند؟
-
-Next-hop را به IP همان روتر تغییر می‌دهد.
-
-**9-3-م1** — چرا مسیر iBGP در Route Table نصب نمی‌شود؟
-
-Next-hop قابل‌دسترس نیست.
-
-**9-3-م2** — سناریو: Session iBGP Idle است؛ سه بررسی؟
-
-IGP Loopback، `update-source`، ASN/IP Neighbor.
-
-**9-4-ت1** — کدام صفت برای انتخاب ISP خروجی است؟
-
-Local Preference
-
-**9-4-ت2** — Prepend برای چیست؟
-
-تأثیر بر مسیر ورودی با طولانی‌کردن AS-Path
-
-**9-4-ت3** — کمتر بهتر کدام است: LocPrf یا MED؟
-
-MED؛ LocPrf بالاتر بهتر.
-
-**9-4-م1** — چرا LocPrf روی Weight ترجیح دارد در طراحی؟
-
-Weight محلی است و بین روترها پخش نمی‌شود؛ LocPrf در AS پخش می‌شود.
-
-**9-4-م2** — سناریو: بعد از route-map تغییری نیست؛ چرا؟
-
-soft reset انجام نشده.
-
-**9-5-ت1** — چرا Implicit deny مهم است؟
-
-هر چه permit نشده Drop می‌شود.
-
-**9-5-ت2** — نشت مسیر چیست؟
-
-اعلام ناخواسته‌ی Prefix دیگران؛ فیلتر جلویش را می‌گیرد.
-
-**9-5-ت3** — Community no-export؟
-
-مسیر خارج از AS بازپخش نشود.
-
-**9-5-م1** — چرا هر eBGP باید فیلتر داشته باشد؟
-
-تا اشتباه داخلی به اینترنت نرسد.
-
-**9-5-م2** — سناریو: Default از ISP نمی‌آید؛ علت محتمل؟
-
-Prefix-List ورودی Default را مجاز نکرده یا ISP default-originate ندارد.
-
-**9-6-ت1** — ترتیب عیب‌یابی BGP؟
-
-State، TCP، ASN/IP، Policy، جدول BGP، Route Table.
-
-**9-6-ت2** — Last reset چه می‌دهد؟
-
-دلیل آخرین قطع Session.
-
-**9-6-ت3** — چه زمانی debug مجاز است؟
-
-کوتاه، با احتیاط، و `undebug all` بعد از آن.
-
-**9-6-م1** — چرا مسیر BGP در Route Table نیست؟
-
-Next-hop ناقابل‌دسترس یا مسیر بهتر IGP.
-
-**9-6-م2** — سناریو: بعد از تغییر Policy Failover نمی‌شود؛ چه بررسی؟
-
-soft clear و `show ip bgp` برای Best.
+**9-1-Q1** — Active.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 9-2
 
-<a id="end3"></a>
+**9-2-ت1** — BGP فقط Prefixی را اعلام می‌کند که Route دقیق در RIB دارد.
 
+**9-2-ت2** — 20.
+
+**9-2-ت3** — update-source، ebgp-multihop و Route به Loopback Peer.
+
+**9-2-ت4** — نشت مسیرهای ناخواسته و Origin Incomplete؛ کنترل کم.
+
+**9-2-ت5** — RIB-failure؛ مسیر با AD بهتر از منبع دیگر در RIB است.
+
+**9-2-ت6** — ASN، Peer IP، Prefix-list، Max-prefix، Auth.
+
+**9-2-Q1** — Because there is no exactly matching route in the routing table.
+
+
+### پاسخ‌های بازنویسی عمیق درس 9-3
+
+**9-3-ت1** — Split-horizon: مسیر iBGP به iBGP Peer داده نمی‌شود.
+
+**9-3-ت2** — Next-hop را آدرس خود روتر قرار می‌دهد.
+
+**9-3-ت3** — 20×19/2 = 190.
+
+**9-3-ت4** — پایداری با وجود چند مسیر؛ نیاز IGP.
+
+**9-3-ت5** — next-hop-self یا IGP Reachability؛ ریست نرم.
+
+**9-3-ت6** — طرح.
+
+**9-3-Q1** — To preserve the original exit point information; hence the next hop must be reachable via the IGP.
+
+
+### پاسخ‌های بازنویسی عمیق درس 9-4
+
+**9-4-ت1** — Local-Pref (کل AS) یا Weight (محلی).
+
+**9-4-ت2** — AS_PATH را بلندتر نشان می‌دهد تا کم‌ترجیح شود.
+
+**9-4-ت3** — Prepend مسیرهای ارسالی را تغییر می‌دهد نه ترجیح خودمان برای دریافتی.
+
+**9-4-ت4** — فقط بین Pathهای همان AS همسایه.
+
+**9-4-ت5** — تقسیم Prefix، Prepend، Community، اندازه‌گیری.
+
+**9-4-ت6** — Local-Pref+Prefix-list+Prepend+Community.
+
+**9-4-Q1** — Local preference.
+
+
+### پاسخ‌های بازنویسی عمیق درس 9-5
+
+**9-5-ت1** — طول Prefix حداکثر 24.
+
+**9-5-ت2** — AS_PATH خالی؛ مسیرهای خودمان.
+
+**9-5-ت3** — اعلام مسیرهای یک ISP به ISP دیگر و تبدیل ما به Transit.
+
+**9-5-ت4** — محافظت جدول/حافظه در برابر اشتباه یا حمله.
+
+**9-5-ت5** — advertised-routes، filter-list ^$ out، soft out.
+
+**9-5-ت6** — Bogon in، Prefix out، Max-prefix، RPKI مفهومی.
+
+**9-5-Q1** — Routes with an empty AS path, i.e., locally originated routes.
+
+
+### پاسخ‌های بازنویسی عمیق درس 9-6
+
+**9-6-ت1** — TCP برقرار نشده.
+
+**9-6-ت2** — Prefix دریافتی نیست.
+
+**9-6-ت3** — مسیر در Table ولی در RIB نه.
+
+**9-6-ت4** — IGP/next-hop-self.
+
+**9-6-ت5** — جدا‌سازی.
+
+**9-6-ت6** — ۷ گام.
+
+**9-6-Q1** — show ip bgp rib-failure.
 
 ### پاسخ‌های درس‌های افزوده‌ی فصل 9 (۹-۰ و ۹-۷)
 

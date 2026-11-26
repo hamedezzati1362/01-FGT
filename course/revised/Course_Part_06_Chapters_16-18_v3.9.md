@@ -41,7 +41,7 @@
 
 <a id="ch16"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.7):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۶-۰، ۱۶-۷، ۱۸-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.9):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۶-۰، ۱۶-۷، ۱۸-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 16 — UTM: آنتی‌ویروس، IPS، Application Control، Web Filter و SSL Inspection
 
@@ -2449,130 +2449,132 @@ end
 
 <a id="l-17-6"></a>
 
-## درس 17-6 — عیب‌یابی Authentication و آزمون فصل
+## درس 17-6 — آزمون عملی هویت و عیب‌یابی Authentication: سه پرونده‌ی واقعی با شواهد، کلید و Rubric
 
-**فصل 17 - روز 6 · پیش‌نیاز: درس ۱۷-۵ · ۶ ساعت**
+**فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰ تا ۱۷-۵، ۱۷-۷، ۱۴-۷ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده) و CSR1000v؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-عیب‌یابی منظم: ارتباط، DNS، ساعت، DN، رمز، پورت.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۷-۵
+1. سه سناریوی خرابی Auth (LDAP، FSSO، RADIUS+MFA) را با روش فرضیه‌محور تشخیص و رفع کند.
+2. برای هر لایه (شبکه، DNS/ساعت، TLS، Bind، Search، گروه، نگاشت، Policy) شاهد جمع کند.
+3. RCA و Evidence Index بنویسد.
+4. آزمون مثبت/منفی دسترسی هویتی را اجرا کند.
+5. Rubric خودارزیابی را با صداقت (اجرا نشده/Unverified) تکمیل کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- چک‌لیست: ping/پورت، DNS، ساعت، DN، حساب سرویس، Secret.
-- ابزار: `diagnose test authserver`, `diagnose debug application fnbamd -1`.
-- سناریوها: LDAP DN غلط، RADIUS Secret، FSSO Agent.
-- آزمون: ۵ مورد.
+هویت زنجیره‌ای از حلقه‌هاست: کاربر → فایروال → سرور Auth → Directory → گروه → نگاشت IP→User → Policy. خرابی هر حلقه علامت یکسان («لاگین نمی‌شود» یا «دسترسی ندارم») می‌دهد. این آزمون مهارت جداسازی حلقه‌ی خراب را می‌سنجد.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کاربر IT با گروه AD به منابع خاص دسترسی دارد.
+#### ۱) روش
 
-### ۵) مثال سازمانی
-
-سازمان: Policy بر اساس گروه (Finance، IT) به‌جای IP.
-
-### ۶) تصویر و توپولوژی
-
-```text
-User -> FGT (Auth) -> AD/NPS ; Policy by group
+``` text
+symptom -> scope(one user / group / all) -> hypotheses by layer -> cheapest evidence -> test -> root cause -> fix -> verify positive+negative -> document
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+نقشه‌ی لایه‌ها: شبکه (ping/Sniffer 389/636/1812/8000) → DNS/ساعت → TLS (گواهی LDAPS) → Bind (حساب سرویس) → Search (cnid/dn) → گروه (DN/Nested) → FSSO/نگاشت → Policy (Source/ترتیب).
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۲) سناریوها
 
-#### روش گرافیکی (GUI)
+**S1 — LDAP:** کاربران Login نمی‌شوند. `diagnose test authserver ldap ...` ⇒ bind error 49 یا Can't contact. علت‌ها (تزریق): DN حساب سرویس غلط / رمز منقضی / پورت 636 بسته.
 
-1. Log & Report > Events (User).
-2. User Monitor.
-3. Test در GUI.
+**S2 — FSSO:** فقط کاربران Mac دیده نمی‌شوند. `diagnose debug authd fsso list` بدون آن‌ها. علت: NTLM/نبود Kerberos یا Group Filter.
 
-#### روش خط فرمان (CLI)
+**S3 — RADIUS+MFA:** VPN پس از رمز OTP می‌خواهد ولی Reject. علت: Shared Secret/Policy NPS/Timeout کوتاه.
 
-```text
+#### ۳) کلید پاسخ (خلاصه)
+
+| S | شواهد | علت | رفع | آزمون |
+|---|---|---|---|---|
+| S1 | authserver: bind failed؛ NPS/AD event | DN/رمز | DN دقیق از AD، رمز | authserver موفق + Login |
+| S2 | fsso list بدون Mac | NTLM/Group Filter | Collector/Captive یا Filter | کاربر در لیست + Policy |
+| S3 | NPS Event: policy not matched | گروه/Secret | Policy/Secret | OTP موفق، Reject برای گروه دیگر |
+
+#### ۴) Rubric (۱۰۰)
+
+رفع سه سناریو ۳۰؛ شواهد خام و لایه‌ای ۲۵؛ RCA ۲۰؛ آزمون مثبت/منفی ۱۵؛ صداقت ۱۰.
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**S1 (ساده):** bind error: DN حساب سرویس با `CN=Users` ولی کاربر در OU=ServiceAccounts؛ DN را از `Get-ADUser` بخوانید و اصلاح کنید؛ `authserver` ⇒ success.
+
+**S2 (متوسط):** Mac‌ها با NTLM به File Server وصل‌اند و Kerberos Ticket ندارند؛ Polling فقط Kerberos را می‌خواند. راه‌حل: Collector Agent/DC Agent یا Captive Portal برای Mac؛ آزمون: کاربر Mac در لیست.
+
+**S3 (سخت):** VPN: پس از OTP قطع؛ `Access-Reject`؛ NPS Event: «Network Policy not matched»؛ دلیل: گروه کاربر در شرط Policy نیست؛ رفع؛ آزمون منفی: کاربر خارج از گروه Reject؛ Timeout RADIUS 10 s برای OTP.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose test authserver ldap LDAP-AD <user> <password>
+diagnose debug authd fsso list
+diagnose test authserver radius RADIUS-NPS pap <user> <password>
 diagnose debug application fnbamd -1
 diagnose debug enable
-diagnose test authserver ldap LDAP-AD testuser <PASSWORD>
 diagnose debug disable
+diagnose debug reset
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- خروجی را با شناسه‌ی خطا بخوانید.
-- بازگشت: debug disable.
+- Evidence Index: برای هر سناریو شاهد قبل/بعد.
+- آزمون مثبت/منفی.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- سه خطای Auth را رفع کنید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Auth شکست |
-| شواهد/دستور | Debug: bind failed |
-| علت | رمز/DN |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** ابزار تست؟ *(پاسخ: 17-6-ت1)*
-
-**ت2.** Debug؟ *(پاسخ: 17-6-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا چک‌لیست؟ *(پاسخ: 17-6-م1)*
-
-**م2.** سناریو: فقط یک کاربر؛ چرا؟ *(پاسخ: 17-6-م2)*
-
-**معیار تسلط:** تنظیم Auth Server و تست با ابزار تشخیص.
-
-**اشتباهات رایج:** DN/Port/ساعت اشتباه.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| fnbamd | FortiGate authentication daemon | فرایند Auth | Debug |
-
-| English sentence | ترجمه |
-|---|---|
-| Use the test tools before reading debug output. | قبل از Debug از ابزار تست استفاده کنید. |
-
-#### کارت Lab — درس 17-6
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون Auth |
-| 2 | پیش‌نیاز | درس ۱۷-۵ |
-| 3 | توپولوژی | FGT + DC + NPS |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Auth آماده |
-| 8 | صورت مسئله | سه خطا |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | diagnose |
-| 11 | سناریوی خرابی | Auth شکست |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | RCA |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/rca-auth.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Auth شکست | fnbamd debug | لایه‌ی خراب را با جدول لایه‌ها بیابید |
+| Policy مطابق نمی‌شود | Debug Flow | گروه/نگاشت/ترتیب |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Debug رمز را آشکار می‌کند؛ پاک‌سازی.
+- Evidence بدون Secret.
 
-<a id="ans-17"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- روش فرضیه‌محور و لایه‌ای.
+- شواهد خام.
+- RCA و آزمون مثبت/منفی.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) bind error 49 یعنی چه؟ *(پاسخ: 17-6-ت1)*
+
+**ت2.** (ساده) چرا Debug را Reset می‌کنیم؟ *(پاسخ: 17-6-ت2)*
+
+**ت3.** (متوسط) S2: چرا Mac دیده نمی‌شود؟ *(پاسخ: 17-6-ت3)*
+
+**ت4.** (متوسط) S3: Reject با رمز درست؛ سه علت. *(پاسخ: 17-6-ت4)*
+
+**ت5.** (سخت) RCA کامل S1. *(پاسخ: 17-6-ت5)*
+
+**ت6.** (سخت، طراحی) چک‌لیست ۸ لایه‌ای Auth با آزمون هر لایه. *(پاسخ: 17-6-ت6)*
+
+**Q1.** Quick quiz (English): Which approach finds the failing layer fastest in an authentication problem? *(پاسخ: 17-6-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Bind | LDAP bind | ورود به Directory |
+| Group filter | FSSO group filter | فیلتر گروه‌ها |
+
+- *Test authentication independently of policies first.* ← ابتدا Authentication را جدا از Policy تست کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** آزمون Auth. **Evidence:** `03-ops/rca-auth.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۱۷-۰ تا ۱۷-۷
+- RFC 4511، RFC 2865
 
 ## درس 17-7 — عیب‌یابی Authentication بر اساس شواهد: از Bind تا Policy
 
@@ -2750,27 +2752,22 @@ Auth را در ۸ لایه تقسیم کنید؛ شاهد جمع کنید؛ یک
 
 **17-5-Q1** — Because guests are untrusted devices and could attack or scan internal systems.
 
-**17-6-ت1** — ابزار تست؟
 
-diagnose test authserver.
+### پاسخ‌های بازنویسی عمیق درس 17-6
 
-**17-6-ت2** — Debug؟
+**17-6-ت1** — اعتبارنامه‌ی نامعتبر: DN یا رمز حساب/کاربر اشتباه.
 
-fnbamd.
+**17-6-ت2** — بار CPU، حجم Log و افشای اطلاعات حساس.
 
-**17-6-م1** — چرا چک‌لیست؟
+**17-6-ت3** — NTLM؛ Polling فقط Kerberos را می‌بیند؛ یا Group Filter.
 
-ترتیب سریع.
+**17-6-ت4** — Policy NPS/گروه، Secret، Constraint روش احراز؛ شاهد: NPS Event.
 
-**17-6-م2** — سناریو: فقط یک کاربر؛ چرا؟
+**17-6-ت5** — علامت: Login شکست؛ شواهد: bind error؛ علت: DN حساب سرویس؛ رفع: DN دقیق؛ پیشگیری: ثبت DN و تست پس از تغییر OU.
 
-گروه/پسورد.
+**17-6-ت6** — شبکه، DNS/ساعت، TLS، Bind، Search، گروه، FSSO، Policy؛ برای هرکدام یک دستور/آزمون.
 
-
----
-
-<a id="ch18"></a>
-
+**17-6-Q1** — Testing each layer from the cheapest check upward and recording evidence at every step.
 
 ### پاسخ‌های درس افزوده‌ی 17-0 (فصل 17)
 
@@ -3473,189 +3470,222 @@ Log & Report → Events → VPN؛ Monitor → IPsec Monitor (Bring Up/Down)؛ VP
 
 <a id="l-18-4"></a>
 
-## درس 18-4 — MTU/MSS و Fragmentation در Tunnel
+## درس 18-4 — MTU/MSS و Fragmentation در Tunnel IPsec: محاسبه‌ی سربار، آزمون DF، PMTUD و تنظیم
 
-**فصل 18 - روز 4 · پیش‌نیاز: درس ۱۸-۲ · ۶ ساعت**
+**فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۲۸-۲ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده) و CSR1000v؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-Tunnel سربار اضافه می‌کند؛ MTU نادرست باعث «کار می‌کند ولی بزرگ‌ها نه» می‌شود.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۸-۲
+1. سربار ESP/UDP-encap را برای Cipherهای مختلف تخمین بزند و MTU/MSS را محاسبه کند.
+2. با ping DF و Capture MTU مؤثر را اندازه بگیرد.
+3. PMTUD و Black hole را توضیح و تشخیص دهد.
+4. MSS Clamp و `mtu-override` را تنظیم و اثرشان را اثبات کند.
+5. رفتار UDP/ICMP/Fragmentation و DF را در Tunnel تحلیل کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- سربار IPsec ≈ ۵۰–۷۰ بایت (تقریبی).
-- PMTUD و DF-bit.
-- کاهش MSS: `tcp-mss-sender`/policy.
-- ping با اندازه‌ی بزرگ و DF.
-- علامت: وب باز می‌شود ولی دانلود بزرگ قفل.
+کلاسیک‌ترین مشکل VPN: «ping کوچک OK، دانلود بزرگ قفل». علت MTU است. باید بتوانید **محاسبه، آزمون، رفع و اثبات** کنید.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو دفتر با Tunnel رمزشده.
+#### ۱) سربار
 
-### ۵) مثال سازمانی
-
-سازمان: شعبه به مرکز با IPsec و مسیر پشتیبان.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Site-A LAN -> FGT-A ==IPsec== FGT-B -> Site-B LAN
+``` text
+Outer IP header                20 B
+[UDP encap (NAT-T)]             8 B   (+ non-ESP marker 4 B in some cases)
+ESP header (SPI+Seq)            8 B
+IV (cipher dependent)       8-16 B    (AES-GCM: 8 B IV)
+ESP trailer (pad+len+next)  2+pad B
+ICV (auth tag)             16 B (GCM) / 12-32 B (HMAC-SHA)
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+مجموع تقریبی: AES-GCM بدون NAT-T حدود 50–56 B؛ با NAT-T حدود 58–66 B؛ CBC+SHA-256 تا 70+ B.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+``` text
+Effective MTU ~= link MTU - overhead      (1500 - 60 = 1440 typical)
+MSS = effective MTU - 40  (IP 20 + TCP 20) -> ~1400
+```
 
-#### روش گرافیکی (GUI)
+(اعداد تقریبی؛ با آزمون واقعی تأیید کنید.)
 
-1. Network > Interfaces > TO-SITE-B > MTU.
-2. Policy: CLI فقط برای MSS.
+#### ۲) آزمون
 
-#### روش خط فرمان (CLI)
+``` text
+Linux : ping -M do -s 1372 10.2.0.5       (1372+28 = 1400)
+Windows: ping -f -l 1372 10.2.0.5
+```
 
-```text
+اندازه را تا اولین موفقیت کم کنید؛ MTU مؤثر = اندازه + 28.
+
+#### ۳) PMTUD
+
+فرستنده بسته‌ی بزرگ با DF=1 می‌فرستد؛ روتر میانی که MTU کوچک‌تر دارد، ICMP «Fragmentation Needed (Type 3 Code 4)» برمی‌گرداند. اگر ICMP بلاک شود، فرستنده نمی‌فهمد ⇒ **Black hole** (قفل). رفع: اجازه‌ی ICMP 3/4، یا MSS Clamp که TCP را از ابتدا کوچک می‌کند.
+
+#### ۴) FortiGate
+
+``` text
 config system interface
-    edit "TO-SITE-B"
+    edit "TO-B"
         set mtu-override enable
         set mtu 1400
     next
 end
 config firewall policy
-    edit 20
+    edit 100
         set tcp-mss-sender 1360
         set tcp-mss-receiver 1360
     next
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+(`Unverified`.) فرگمنت‌شدن: `ip-fragmentation` در Phase1 (`Unverified`)؛ Fragmentation افت کارایی دارد.
 
-- `mtu 1400` نمونه.
-- `Unverified` روی Image.
-- راستی‌آزمایی: ping -f -l 1372.
-- بازگشت: غیرفعال‌کردن override.
+#### ۵) UDP و غیر TCP
 
-### ۸) تست عملکرد
+MSS Clamp فقط TCP را حل می‌کند. UDP بزرگ (DNS، VoIP، QUIC) به MTU/Fragmentation حساس است؛ راه: MTU Tunnel پایین‌تر، برنامه با اندازه‌ی کوچک، یا اجازه‌ی Fragmentation.
 
-- ping با اندازه‌های مختلف و ثبت نتیجه.
+### ۴) طراحی و تصمیم‌گیری
 
-### ۹) عیب‌یابی
-
-| بخش | شرح |
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | دانلود بزرگ قفل |
-| شواهد/دستور | ping -f بزرگ شکست |
-| علت | MTU |
-| رفع | کاهش MTU/MSS |
+| MSS Clamp | 1360 (یا محاسبه) |
+| MTU Tunnel | 1400 |
+| ICMP | Type 3/4 باز |
+| Fragmentation | اجتناب |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** ping DF 1472 شکست، 1372 موفق ⇒ MTU مؤثر 1400؛ MSS 1360.
 
-**ت1.** MSS؟ *(پاسخ: 18-4-ت1)*
+**متوسط (تحلیل):** دانلود 1 MB می‌ایستد؛ Capture: Retransmission بسته‌های 1500 B؛ هیچ ICMP 3/4. تحلیل: Black hole؛ رفع: MSS Clamp + اجازه‌ی ICMP؛ تأیید: دانلود کامل.
 
-**ت2.** DF؟ *(پاسخ: 18-4-ت2)*
+**سخت (چند پروتکل):** پس از Clamp، وب OK ولی DNS روی TCP/UDP بزرگ و VoIP مشکل دارند. تحلیل: UDP MSS ندارد؛ باید MTU Tunnel کمتر (1360) یا Fragmentation؛ اندازه‌گیری Loss با ping DF؛ تصمیم: MTU 1400 و آزمون VoIP؛ ثبت.
 
-### ۱۱) مرور و ارزیابی
+### ۶) پیاده‌سازی از مسیر GUI
 
-**م1.** چرا MSS کمک می‌کند؟ *(پاسخ: 18-4-م1)*
+1. Network → Interfaces → Tunnel → MTU.
+2. Policy → CLI برای MSS.
 
-**م2.** سناریو: ping کوچک OK بزرگ نه؛ علت؟ *(پاسخ: 18-4-م2)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-**معیار تسلط:** ساخت Tunnel، Route/Policy، اثبات با Ping و Diagnose.
+``` text
+config system interface
+    edit "TO-B"
+        set mtu-override enable
+        set mtu 1400
+    next
+end
+config firewall policy
+    edit 100
+        set tcp-mss-sender 1360
+        set tcp-mss-receiver 1360
+    next
+end
+```
 
-**اشتباهات رایج:** Proposal/Selector/Route.
+### ۸) Verification (اثبات صحت)
 
-### ۱۲) واژگان و English Corner
+- ping DF اندازه‌ها.
+- Capture: عدم Retransmission.
+- دانلود بزرگ و UDP بزرگ.
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| MTU | Maximum Transmission Unit | حداکثر اندازه‌ی بسته | Tunnel |
-| MSS | Maximum Segment Size | حداکثر قطعه‌ی TCP | Tunnel |
-| PMTUD | Path MTU Discovery | کشف MTU مسیر | Tunnel |
+### ۹) Troubleshooting
 
-| English sentence | ترجمه |
-|---|---|
-| Lower the MSS to avoid fragmentation. | MSS را برای جلوگیری از Fragmentation کاهش دهید. |
-
-#### کارت Lab — درس 18-4
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | MTU Tunnel |
-| 2 | پیش‌نیاز | درس ۱۸-۲ |
-| 3 | توپولوژی | FGT-A + FGT-B |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Tunnel |
-| 8 | صورت مسئله | MTU آزمایش |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping -f |
-| 11 | سناریوی خرابی | دانلود بزرگ قفل |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | جدول اندازه |
-| 14 | معیار پذیرش | نتیجه ثبت |
-| 15 | مستندات نهایی | `03-ops/mtu.md` |
-| 16 | Cleanup و بازگردانی | بازگشت MTU |
+| بزرگ قفل | ping DF | MTU/ICMP |
+| کند | Capture | Fragmentation |
+| فقط UDP | Capture | MTU Tunnel |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- ICMP را کورکورانه نبندید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- سربار تقریبی؛ آزمون واقعی.
+- MSS برای TCP؛ UDP نیاز MTU.
+- PMTUD نیاز ICMP.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) MSS از MTU چگونه محاسبه می‌شود؟ *(پاسخ: 18-4-ت1)*
+
+**ت2.** (ساده) PMTUD Black hole چیست؟ *(پاسخ: 18-4-ت2)*
+
+**ت3.** (متوسط) سربار ESP+UDP با GCM چقدر است؟ *(پاسخ: 18-4-ت3)*
+
+**ت4.** (متوسط) ping DF 1372 موفق/1400 شکست؛ MTU مؤثر؟ *(پاسخ: 18-4-ت4)*
+
+**ت5.** (سخت) چرا MSS Clamp برای UDP کافی نیست؟ *(پاسخ: 18-4-ت5)*
+
+**ت6.** (سخت، طراحی) استاندارد MTU/MSS سازمان. *(پاسخ: 18-4-ت6)*
+
+**Q1.** Quick quiz (English): Why do small pings succeed while large transfers hang when the path MTU is too small? *(پاسخ: 18-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| PMTUD | Path MTU Discovery | کشف MTU مسیر |
+| DF | Don’t Fragment bit | بیت عدم فرگمنت |
+| Black hole | PMTUD black hole | حفره‌ی سیاه PMTUD |
+
+- *Measure the effective MTU with DF-bit pings.* ← MTU مؤثر را با ping و DF-bit اندازه بگیرید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** MTU. **Evidence:** `03-ops/mtu.md`.
+
+### ۱۵) منابع
+
+- RFC 1191
+- RFC 4821
+- RFC 4303 (ESP)
 
 <a id="l-18-5"></a>
 
-## درس 18-5 — Tunnel با Cisco CSR و Dead Peer Detection
+## درس 18-5 — Interop FGT–CSR: IPsec IKEv2 route-based، نگاشت، Debug دوطرفه و آزمون Rekey
 
-**فصل 18 - روز 5 · پیش‌نیاز: درس ۱۸-۳ · ۶ ساعت**
+**فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۲۵-۰، ۲۵-۳ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده) و CSR1000v؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده». CSR دستورها `Unverified`.
 
-اتصال FGT به CSR1000v (IOS-XE). مفاهیم Interoperability.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۸-۳
+1. Tunnel IKEv2 FGT–CSR را با Proposal یکسان بسازد.
+2. معادل‌های دستور و پیام‌های خطا را نگاشت کند.
+3. ناهمسانی Lifetime/PFS/Selector را کشف و رفع کند.
+4. Rekey/DPD را آزمایش و گزارش Interop بنویسد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- CSR: crypto ikev2/ipsec profile.
-- هماهنگی Proposal/DH/Lifetime.
-- DPD برای تشخیص قطع.
-- Lifetime تفاوت دو سر.
-- تأیید با `show crypto ipsec sa` (CSR).
+Interop واقعی نیاز به «برگه‌ی پارامتر مشترک» و «Debug هم‌زمان» دارد (۲۵-۳). این درس ساخت پایه‌ی Tunnel است.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو دفتر با Tunnel رمزشده.
+#### ۱) برگه
 
-### ۵) مثال سازمانی
-
-سازمان: شعبه به مرکز با IPsec و مسیر پشتیبان.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Site-A LAN -> FGT-A ==IPsec== FGT-B -> Site-B LAN
+``` text
+IKEv2, AES-256-GCM, PRF SHA-256, DH 20, PFS group 20, lifetime P1 86400 / P2 3600, DPD on-idle
+Selectors any/any (route-based), PSK <PSK-LAB>, FGT 203.0.113.1  CSR 203.0.113.2, tunnel 10.255.0.0/30
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) CSR
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. FortiGate: VPN > IPsec Tunnels با Remote GW = CSR.
-
-#### روش خط فرمان (CLI)
-
-```text
-! CSR (IOS-XE) example, lab only
+``` text
+crypto ikev2 proposal PROP
+ encryption aes-gcm-256
+ prf sha256
+ group 20
+crypto ikev2 policy POL
+ proposal PROP
 crypto ikev2 keyring KR
  peer FGT
   address 203.0.113.1
@@ -3665,202 +3695,221 @@ crypto ikev2 profile PROF
  authentication local pre-share
  authentication remote pre-share
  keyring local KR
+crypto ipsec transform-set TS esp-gcm 256
+crypto ipsec profile IPS
+ set transform-set TS
+ set ikev2-profile PROF
+ set pfs group20
+ set security-association lifetime seconds 3600
+interface Tunnel0
+ ip address 10.255.0.2 255.255.255.252
+ ip mtu 1400
+ tunnel source GigabitEthernet1
+ tunnel destination 203.0.113.1
+ tunnel mode ipsec ipv4
+ tunnel protection ipsec profile IPS
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+#### ۳) FortiGate
 
-- CSR آزمایش‌نشده؛ `Unverified`.
-- راستی‌آزمایی: show crypto ikev2 sa.
-- بازگشت: حذف profile.
+``` text
+config vpn ipsec phase1-interface
+    edit "TO-CSR"
+        set interface "wan1"
+        set ike-version 2
+        set remote-gw 203.0.113.2
+        set proposal aes256gcm-prfsha256
+        set dhgrp 20
+        set psksecret <PSK-LAB>
+    next
+end
+config vpn ipsec phase2-interface
+    edit "TO-CSR-P2"
+        set phase1name "TO-CSR"
+        set proposal aes256gcm
+        set pfs enable
+        set dhgrp 20
+        set keylifeseconds 3600
+        set src-subnet 0.0.0.0 0.0.0.0
+        set dst-subnet 0.0.0.0 0.0.0.0
+    next
+end
+```
 
-### ۸) تست عملکرد
+#### ۴) نگاشت
 
-- Tunnel FGT-CSR بالا (اگر قابل‌انجام).
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Phase 2 mismatch با CSR |
-| شواهد/دستور | show crypto ipsec sa |
-| علت | Selector/Transform |
-| رفع | تطبیق |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** DPD؟ *(پاسخ: 18-5-ت1)*
-
-**ت2.** چرا Lifetime مهم؟ *(پاسخ: 18-5-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا CSR؟ *(پاسخ: 18-5-م1)*
-
-**م2.** سناریو: Tunnel هر ساعت قطع؛ علت؟ *(پاسخ: 18-5-م2)*
-
-**معیار تسلط:** ساخت Tunnel، Route/Policy، اثبات با Ping و Diagnose.
-
-**اشتباهات رایج:** Proposal/Selector/Route.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| DPD | Dead Peer Detection | تشخیص همتای مرده | IPsec |
-| CSR | CSR1000v | روتر مجازی Cisco | Lab |
-
-| English sentence | ترجمه |
-|---|---|
-| Match lifetimes on both vendors. | Lifetime را روی هر دو سازنده یکسان کنید. |
-
-#### کارت Lab — درس 18-5
-
-| # | فیلد | محتوا |
+| | CSR | FGT |
 |---|---|---|
-| 1 | عنوان و هدف | FGT-CSR |
-| 2 | پیش‌نیاز | درس ۱۸-۳ |
-| 3 | توپولوژی | FGT + CSR |
-| 4 | تجهیزات | FGT + CSR |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Tunnel |
-| 8 | صورت مسئله | Interop |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | show |
-| 11 | سناریوی خرابی | Phase 2 mismatch با CSR |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Up |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/fgt-csr.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| وضعیت | `show crypto ikev2 sa` | `diagnose vpn ike gateway list` |
+| Child | `show crypto ipsec sa` | `diagnose vpn tunnel list` |
+| Debug | `debug crypto ikev2` | `diagnose debug application ike -1` |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
----
+**ساده (حل‌شده):** Up؛ ping 10.255.0.1↔.2؛ counters.
+
+**متوسط (تحلیل):** Phase 2 شکست: PFS 19 روی CSR و 20 روی FGT؛ هم‌گروه‌کردن.
+
+**سخت (Rekey):** پس از ۶۰ دقیقه قطع؛ Lifetime CSR 3600 و FGT 43200 و PFS ناهمسان در Rekey؛ یکسان‌سازی؛ آزمون ۴ ساعت.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+show crypto ikev2 sa
+show crypto ipsec sa
+diagnose vpn ike gateway list
+diagnose vpn tunnel list
+```
+
+### ۸) Verification (اثبات صحت)
+
+- دو سر Up؛ Rekey پایدار.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Phase1 | Debug | Proposal/PSK |
+| Phase2 | Debug | PFS/Selector |
+| قطع دوره‌ای | Log | Lifetime |
+
+### ۱۰) نکات امنیتی
+
+- PSK قوی.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- برگه‌ی مشترک؛ Lifetime/PFS؛ Debug دو سر.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) معادل diagnose vpn tunnel list در CSR؟ *(پاسخ: 18-5-ت1)*
+
+**ت2.** (ساده) چرا Selector any/any؟ *(پاسخ: 18-5-ت2)*
+
+**ت3.** (متوسط) PFS ناهمسان چه نشانه‌ای دارد؟ *(پاسخ: 18-5-ت3)*
+
+**ت4.** (متوسط) چرا Lifetime ناهمسان خطرناک است؟ *(پاسخ: 18-5-ت4)*
+
+**ت5.** (سخت) Tunnel هر ساعت قطع؛ تحلیل. *(پاسخ: 18-5-ت5)*
+
+**ت6.** (سخت، طراحی) گزارش Interop. *(پاسخ: 18-5-ت6)*
+
+**Q1.** Quick quiz (English): What is the CSR equivalent of FortiGate "diagnose vpn ike gateway list"? *(پاسخ: 18-5-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Transform set | IPsec transform set | الگوریتم‌های ESP |
+
+- *Align lifetimes across vendors.* ← Lifetime را بین سازندگان هم‌سان کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** FGT–CSR. **Evidence:** `03-ops/fgt-csr.md`.
+
+### ۱۵) منابع
+
+- Cisco IKEv2 configuration guide
+- RFC 7296
 
 <a id="l-18-6"></a>
 
-## درس 18-6 — Gate G7 و آزمون فصل
+## درس 18-6 — Gate G7: آزمون عملی IPsec — صورت مسئله، کلید پاسخ و Rubric
 
-**فصل 18 - روز 6 · پیش‌نیاز: درس ۱۸-۴ · ۶ ساعت**
+**فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰ تا ۱۸-۵ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده) و CSR1000v؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-ارزیابی: Tunnel، Route/Policy، MTU، عیب Phase 2.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۸-۴
+1. G7: Tunnel، Route/Policy، MTU، عیب‌یابی و مستندسازی را با شواهد تحویل دهد.
+2. سه عیب (Selector/PFS، Policy، MTU) را رفع کند.
+3. Backup/Rollback را اثبات کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- G7: Tunnel بالا و ترافیک دوطرفه.
-- سناریوی عیب Phase 2 mismatch حل شود.
-- Backup پیکربندی.
-- RCA یک صفحه.
-- آزمون ۵ مورد.
+اثبات توانایی ساخت و عیب‌یابی IPsec. کلید پاسخ پس از تلاش.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو دفتر با Tunnel رمزشده.
+#### صورت مسئله
 
-### ۵) مثال سازمانی
+1. Tunnel S2S بین دو FGT با برگه‌ی پارامتر؛ Route/Policy دوطرفه.
+2. MTU/MSS آزمون‌شده.
+3. عیب‌ها (مربی): PFS Group ناهمسان؛ Policy یک‌طرفه؛ MTU 1500 بدون Clamp.
+4. Backup قبل/بعد؛ Rollback.
 
-سازمان: شعبه به مرکز با IPsec و مسیر پشتیبان.
+#### کلید
 
-### ۶) تصویر و توپولوژی
+- PFS: Debug INVALID_KE_PAYLOAD/NO_PROPOSAL؛ هم‌گروه‌کردن.
+- Policy: Bytes in=0؛ Debug Flow Denied؛ Policy مقابل.
+- MTU: ping DF؛ MSS 1360.
 
-```text
-Site-A LAN -> FGT-A ==IPsec== FGT-B -> Site-B LAN
-```
+#### Rubric
 
-### ۷) پیکربندی (GUI و CLI)
+ساخت ۲۵؛ عیب‌یابی ۳۰؛ MTU ۱۰؛ Policy/امنیت ۱۰؛ Evidence ۱۵؛ صداقت ۱۰.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### روش گرافیکی (GUI)
+**ساده:** Tunnel Up؛ ping.
 
-1. System > Config > Backup.
+**متوسط:** عیب PFS.
 
-#### روش خط فرمان (CLI)
+**سخت:** Policy/MTU و RCA.
 
-```text
-execute backup config tftp fgt-g7.conf 192.168.90.10
-```
+### ۸) Verification (اثبات صحت)
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+- Evidence G7.
 
-- `execute backup` آزمایش‌نشده؛ مسیر TFTP نمونه.
+### ۹) Troubleshooting
 
-### ۸) تست عملکرد
-
-- اجرای G7 و ثبت شاهد.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Phase 2 mismatch |
-| شواهد/دستور | Debug |
-| علت | Selector |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** G7 چیست؟ *(پاسخ: 18-6-ت1)*
-
-**ت2.** Backup؟ *(پاسخ: 18-6-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا RCA؟ *(پاسخ: 18-6-م1)*
-
-**م2.** سناریو: Selector یکطرفه؛ پیامد؟ *(پاسخ: 18-6-م2)*
-
-**معیار تسلط:** ساخت Tunnel، Route/Policy، اثبات با Ping و Diagnose.
-
-**اشتباهات رایج:** Proposal/Selector/Route.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| RCA | Root Cause Analysis | تحلیل ریشه | Ops |
-
-| English sentence | ترجمه |
-|---|---|
-| Document the root cause and the fix. | علت ریشه‌ای و راه‌حل را مستند کنید. |
-
-#### کارت Lab — درس 18-6
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون G7 |
-| 2 | پیش‌نیاز | درس ۱۸-۴ |
-| 3 | توپولوژی | FGT-A + FGT-B |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Tunnel |
-| 8 | صورت مسئله | G7 |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping |
-| 11 | سناریوی خرابی | Phase 2 mismatch |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | RCA |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/g7.md` |
-| 16 | Cleanup و بازگردانی | — |
+| ناقص | Rubric | کسری |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Secret پاک.
 
-<a id="ans-18"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- شواهد.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) وظایف G7؟ *(پاسخ: 18-6-ت1)*
+
+**ت2.** (ساده) چرا آزمون منفی؟ *(پاسخ: 18-6-ت2)*
+
+**ت3.** (متوسط) عیب PFS را از Debug چگونه می‌فهمید؟ *(پاسخ: 18-6-ت3)*
+
+**ت4.** (متوسط) Policy یک‌طرفه چه علامتی دارد؟ *(پاسخ: 18-6-ت4)*
+
+**ت5.** (سخت) RCA MTU. *(پاسخ: 18-6-ت5)*
+
+**ت6.** (سخت، طراحی) برنامه‌ی تکرار Gate پس از Patch. *(پاسخ: 18-6-ت6)*
+
+**Q1.** Quick quiz (English): What does Gate G7 prove? *(پاسخ: 18-6-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| G7 | Gate 7 | دروازه ۷ |
+
+- *Evidence is part of the grade.* ← شاهد جزء نمره است.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** G7. **Evidence:** `03-ops/g7.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۱۸-۰ تا ۱۸-۵
 
 ## پاسخ‌های فصل 18
 
@@ -3910,59 +3959,56 @@ execute backup config tftp fgt-g7.conf 192.168.90.10
 
 **18-3-Q1** — Authentication failure: wrong PSK, peer ID mismatch or invalid certificate.
 
-**18-4-ت1** — MSS؟
 
-حداکثر قطعه‌ی TCP.
+### پاسخ‌های بازنویسی عمیق درس 18-4
 
-**18-4-ت2** — DF؟
+**18-4-ت1** — MSS ≈ MTU − 40 (هدر IP و TCP).
 
-Don't Fragment.
+**18-4-ت2** — بسته‌ی بزرگ DF Drop می‌شود و ICMP Frag-Needed بلاک است؛ فرستنده اندازه را کم نمی‌کند.
 
-**18-4-م1** — چرا MSS کمک می‌کند؟
+**18-4-ت3** — حدود 58–66 بایت (IP 20، UDP 8، ESP 8، IV 8، trailer/pad، ICV 16).
 
-Fragmentation را نمی‌خواهد.
+**18-4-ت4** — 1372+28 = 1400.
 
-**18-4-م2** — سناریو: ping کوچک OK بزرگ نه؛ علت؟
+**18-4-ت5** — MSS مخصوص TCP است؛ UDP باید با MTU کم/اندازه‌ی برنامه/Fragmentation حل شود.
 
-MTU.
+**18-4-ت6** — MTU Tunnel 1400، MSS 1360، ICMP 3/4 باز، آزمون پس از هر تغییر.
 
-**18-5-ت1** — DPD؟
-
-Dead Peer Detection.
-
-**18-5-ت2** — چرا Lifetime مهم؟
-
-عدم تطابق قطع دوره‌ای.
-
-**18-5-م1** — چرا CSR؟
-
-Interop واقعی.
-
-**18-5-م2** — سناریو: Tunnel هر ساعت قطع؛ علت؟
-
-Lifetime ناهمسان.
-
-**18-6-ت1** — G7 چیست؟
-
-Tunnel+ترافیک+عیب.
-
-**18-6-ت2** — Backup؟
-
-execute backup.
-
-**18-6-م1** — چرا RCA؟
-
-یادگیری.
-
-**18-6-م2** — سناریو: Selector یکطرفه؛ پیامد؟
-
-فقط یک جهت.
+**18-4-Q1** — Small packets fit through the tunnel, but large DF packets are dropped without ICMP feedback.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 18-5
 
-<a id="end6"></a>
+**18-5-ت1** — show crypto ipsec sa.
 
+**18-5-ت2** — Route-based؛ Routing تعیین می‌کند ترافیک وارد Tunnel شود.
+
+**18-5-ت3** — Phase 2/Rekey شکست؛ INVALID_KE_PAYLOAD/NO_PROPOSAL.
+
+**18-5-ت4** — Rekey رفتار متفاوت دارد و ممکن است قطع/Flap شود.
+
+**18-5-ت5** — Lifetime/PFS؛ Log دو سر؛ یکسان‌سازی؛ آزمون.
+
+**18-5-ت6** — جدول پارامتر/نتیجه/نسخه.
+
+**18-5-Q1** — show crypto ikev2 sa.
+
+
+### پاسخ‌های بازنویسی عمیق درس 18-6
+
+**18-6-ت1** — ساخت، آزمون، سه عیب، Backup/Rollback.
+
+**18-6-ت2** — اثبات Least Privilege.
+
+**18-6-ت3** — INVALID_KE_PAYLOAD/NO_PROPOSAL_CHOSEN در Phase 2؛ مقایسه PFS دو سر.
+
+**18-6-ت4** — Bytes out>0 و in=0؛ Debug Flow Denied در سمت مقابل.
+
+**18-6-ت5** — ping DF، Retransmission، MSS 1360، دانلود موفق.
+
+**18-6-ت6** — Test Matrix دوره‌ای و Evidence.
+
+**18-6-Q1** — That you can build, break, troubleshoot and document an IPsec tunnel.
 
 ### پاسخ‌های درس افزوده‌ی 18-0 (فصل 18)
 

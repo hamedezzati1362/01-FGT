@@ -53,7 +53,7 @@
 ---
 <a id="ch1"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.7):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲-۰ (فصل ۲). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.9):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲-۰ (فصل ۲). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 1 — زیرساخت Lab، کشف وضع موجود و تغییر ایمن
 
@@ -3238,6 +3238,168 @@ The broadcast address ff:ff:ff:ff:ff:ff.
 
 <a id="l-3-1"></a>
 
+## درس 3-0 — Ethernet از پایه: فریم، Collision/Broadcast Domain، Duplex، الگوریتم یادگیری MAC و ارسال سوئیچ
+
+**فصل 3 · بازنویسی عمیق · پیش‌نیاز: فصل ۲ (OSI و Encapsulation) · ≈ 8 ساعت**
+
+> **وضعیت:** Cisco IOSv/IOSvL2 (vIOS 15.x)؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ برخی ویژگی‌ها روی vIOS `Unverified`.
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. ساختار فریم Ethernet II و 802.1Q را فیلد‌به‌فیلد توضیح دهد.
+2. CSMA/CD، Collision Domain و Broadcast Domain را تفسیر و تفاوت Hub/Bridge/Switch/Router را بگوید.
+3. Duplex/Speed و اثر ناسازگاری (Duplex mismatch) را تحلیل کند.
+4. الگوریتم Learning، Flooding، Forwarding و Filtering سوئیچ و Aging را گام‌به‌گام بنویسد.
+5. ظرفیت جدول MAC و حمله‌ی MAC flooding را بفهمد.
+6. مشکلات لایه‌ی ۱ و ۲ را با شمارنده‌های Interface کشف کند.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+سوئیچ جادو نیست؛ یک «جدول» و چند قاعده است. اگر قواعد Learning/Flooding را دقیق ندانید، رفتار VLAN، STP، Port Security و حمله‌ها را نمی‌فهمید. این درس پایه‌ی کل فصل ۳ و ۴ است.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) فریم Ethernet II
+
+``` text
+| Preamble 7 | SFD 1 | Dst MAC 6 | Src MAC 6 | [802.1Q tag 4] | EtherType 2 | Payload 46-1500 | FCS 4 |
+```
+
+- حداقل فریم 64 بایت (بدون Preamble)، حداکثر 1518 (1522 با Tag).
+- EtherType: 0x0800 IPv4، 0x86DD IPv6، 0x0806 ARP، 0x8100 VLAN Tag.
+- FCS (CRC32) خطای بیت را کشف می‌کند؛ فریم خراب Drop می‌شود (و در Counter `CRC` ثبت).
+
+#### ۲) CSMA/CD و Domainها
+
+در Ethernet نیمه‌دوطرفه (Half-duplex، Hub) چند ایستگاه یک رسانه را به اشتراک می‌گذارند؛ CSMA/CD: گوش بده، اگر آزاد بود بفرست، اگر Collision شد Backoff. در Full-duplex (سوئیچ مدرن) Collision وجود ندارد.
+
+| دستگاه | Collision Domain | Broadcast Domain |
+|---|---|---|
+| Hub | یکی برای همه | یکی |
+| Switch (بدون VLAN) | هر پورت جدا | یکی برای همه‌ی پورت‌ها |
+| Switch با VLAN | هر پورت جدا | هر VLAN جدا |
+| Router | هر Interface جدا | هر Interface جدا |
+
+#### ۳) Speed/Duplex و Mismatch
+
+Auto-negotiation دو سر را هماهنگ می‌کند. اگر یک سر Fixed Full و دیگری Auto، سر Auto روی Half می‌افتد: **Duplex mismatch** ⇒ Collision/Late Collision/CRC، کندی شدید ولی لینک Up. شاهد: `show interfaces` شمارنده‌های `late collision`, `CRC`, `runts`.
+
+#### ۴) الگوریتم سوئیچ
+
+``` text
+On frame arrival on port P in VLAN V:
+ 1 LEARN : table[V, SrcMAC] = (P, now)        (refresh aging timer)
+ 2 LOOKUP: dst unicast known?  yes -> FORWARD to table port (if != P)
+                              no  -> FLOOD to all ports in V except P
+ 3 dst broadcast/multicast (unknown) -> FLOOD in V
+ 4 dst on same port P -> FILTER (drop)
+Aging default 300 s (mac address-table aging-time)
+```
+
+#### ۵) ظرفیت و حمله
+
+جدول MAC (CAM) محدود است (هزاران تا صدها هزار). **MAC flooding:** مهاجم هزاران فریم با MAC جعلی می‌فرستد؛ جدول پر می‌شود؛ سوئیچ برای مقصدهای جدید Flood می‌کند (شنود). دفاع: Port Security (۴-۴)، محدودیت MAC.
+
+#### ۶) ابزارهای عیب‌یابی
+
+``` text
+show interfaces GigabitEthernet0/1       (duplex, speed, errors: CRC, runts, giants, collisions)
+show mac address-table dynamic
+show mac address-table count
+show mac address-table aging-time
+clear mac address-table dynamic
+```
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Duplex | Auto در هر دو سر یا صریح در هر دو |
+| Aging | 300 s پیش‌فرض؛ برای Mobility کمتر |
+| Port Security | روی پورت‌های دسترسی |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** PC1→PC2: اولین فریم Unicast: PC2 ناشناخته ⇒ Flood؛ PC2 پاسخ می‌دهد ⇒ Learn؛ فریم‌های بعدی مستقیم.
+
+**متوسط (تحلیل):** کاربری گزارش «لینک Up ولی بسیار کند». `show interfaces`: `late collision` و `CRC` بالا؛ یک سر auto و دیگری 100/full. رفع: هر دو auto یا هر دو صریح؛ شمارنده‌ها پاک و پایش.
+
+**سخت (امنیت):** سوئیچ در VLAN 10 شنود را نشان می‌دهد: ترافیک Unicast دیگران روی پورت مهاجم دیده می‌شود. شواهد: `show mac address-table count` نزدیک سقف و MACهای تصادفی. علت: MAC flooding. رفع: Port Security با maximum 2، `violation restrict/shutdown`، Alert. آزمون: ارسال MAC جعلی از Lab ⇒ پورت Err-disable.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+show interfaces GigabitEthernet0/1
+show mac address-table dynamic
+show mac address-table count
+mac address-table aging-time 300
+```
+
+### ۸) Verification (اثبات صحت)
+
+- شمارنده‌های خطا صفر/ثابت.
+- جدول MAC مطابق توپولوژی.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| کند با لینک Up | `show interfaces` (collision/CRC) | Duplex mismatch |
+| Flood زیاد | `show mac count` | MAC flooding/Aging کوتاه |
+| MAC جابه‌جا می‌شود | Log MACFLAP | Loop/دو مسیر |
+
+### ۱۰) نکات امنیتی
+
+- Port Security و محدودیت MAC.
+- Native VLAN/DTP را غیرفعال کنید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- فریم Ethernet: Dst/Src/Type/Payload/FCS.
+- Collision Domain به‌ازای پورت؛ Broadcast Domain به‌ازای VLAN.
+- Learn/Flood/Forward/Filter.
+- Duplex mismatch علت کندی.
+- MAC flooding و دفاع.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) حداقل و حداکثر اندازه‌ی فریم Ethernet؟ *(پاسخ: 3-0-ت1)*
+
+**ت2.** (ساده) سوئیچ برای مقصد ناشناخته چه می‌کند؟ *(پاسخ: 3-0-ت2)*
+
+**ت3.** (متوسط) چند Collision و Broadcast Domain دارد سوئیچ ۴۸ پورتی با ۳ VLAN؟ *(پاسخ: 3-0-ت3)*
+
+**ت4.** (متوسط) Duplex mismatch چه علائمی دارد؟ *(پاسخ: 3-0-ت4)*
+
+**ت5.** (سخت) MAC flooding را شرح و دفاع کنید. *(پاسخ: 3-0-ت5)*
+
+**ت6.** (سخت، طراحی) Aging را برای شبکه‌ی با Mobility زیاد تنظیم و دلیل بگویید. *(پاسخ: 3-0-ت6)*
+
+**Q1.** Quick quiz (English): What does a switch do with a frame whose destination MAC is not in its table? *(پاسخ: 3-0-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| CSMA/CD | Carrier Sense Multiple Access/Collision Detection | دسترسی چندگانه با تشخیص برخورد |
+| CAM | Content Addressable Memory | حافظه‌ی جدول MAC |
+| FCS | Frame Check Sequence | دنباله‌ی بررسی فریم |
+| Aging | MAC aging | پیرشدن ورودی |
+
+- *A switch learns source addresses and forwards by destination.* ← سوئیچ مبدأ را یاد می‌گیرد و بر اساس مقصد ارسال می‌کند.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Ethernet/MAC. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ethernet-mac.md`.
+
+### ۱۵) منابع
+
+- IEEE 802.3
+- IEEE 802.1Q
+- Cisco Catalyst switching guides
+
 ## درس ۳-۱ — سوییچ و جدول MAC
 
 **فصل ۳ - روز ۱ · پیش‌نیاز: فصل ۲ · ۶ ساعت**
@@ -4932,6 +5094,23 @@ Symptom, Scope, Hypothesis, Test, Fix and Verify.
 ---
 
 <a id="end1"></a>
+
+
+### پاسخ‌های درس افزوده‌ی 3-0 (فصل 3)
+
+**3-0-ت1** — حداقل 64 بایت، حداکثر 1518 بایت (1522 با 802.1Q).
+
+**3-0-ت2** — Flood به همه‌ی پورت‌های همان VLAN به‌جز ورودی.
+
+**3-0-ت3** — 48 Collision Domain (هر پورت)؛ 3 Broadcast Domain.
+
+**3-0-ت4** — لینک Up، کندی، late collision/CRC/runts.
+
+**3-0-ت5** — پر کردن CAM با MAC جعلی؛ سوئیچ Flood می‌کند؛ دفاع: Port Security max MAC، violation، Alert.
+
+**3-0-ت6** — Aging کمتر (مثلاً 60–120 s) تا MAC جابه‌جاشده زودتر پاک شود؛ هزینه: Flood بیشتر؛ بر اساس اندازه‌گیری.
+
+**3-0-Q1** — It floods the frame out of all ports in the same VLAN except the ingress port.
 
 # پایان بخش ۱ (فصل‌های ۱ تا ۳)
 

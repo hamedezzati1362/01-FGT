@@ -39,7 +39,7 @@
 
 <a id="ch19"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.7):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۰-۷، ۲۱-۷ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.9):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۰-۷، ۲۱-۷ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 19 — Hub-and-Spoke، OSPF/BGP روی FortiGate و Local Breakout
 
@@ -2416,52 +2416,82 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 <a id="l-21-1"></a>
 
-## درس 21-1 — Dual-ISP کلاسیک: Static Route و Link Monitor
+## درس 21-1 — Dual-ISP کلاسیک: Static Route، Distance/Priority، Link Monitor، NAT و تحلیل محدودیت‌ها
 
-**فصل 21 - روز 1 · پیش‌نیاز: فصل ۱۳ · ۶ ساعت**
+**فصل 21 · بازنویسی عمیق · پیش‌نیاز: ۵-۳ (Floating/IP SLA)، ۲۱-۷، ۱۳-۷ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده) و CSR1000v؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-قبل از SD-WAN روش ساده: دو Default Route با Distance/Priority.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۱۳
+1. Dual-ISP را با دو Default Route، Distance/Priority و Link Monitor پیاده کند.
+2. Failover و Failback را اندازه بگیرد و Session/NAT را تحلیل کند.
+3. محدودیت‌ها (فقط Up/Down، بدون SLA) را بگوید.
+4. Load-balancing ECMP و Policy Route را مقایسه کند.
+5. معیار مهاجرت به SD-WAN را بنویسد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Default Route با `distance` و `priority`.
-- Link Monitor/ping server.
-- Failover خودکار.
-- Session قدیمی روی ISP اول می‌ماند.
-- NAT هر WAN.
+قبل از SD-WAN، روش ساده‌ی Dual-ISP مفید است؛ ولی نمی‌بیند «کیفیت» لینک چطور است. باید بدانید دقیقاً چه می‌کند و کجا کم می‌آورد.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو اینترنت؛ یکی قطع شود دیگری کار کند.
+#### ۱) Distance و Priority
 
-### ۵) مثال سازمانی
+- Distance کمتر ⇒ Route ترجیحی در RIB.
+- Priority (در FortiOS) بین Routeهای هم‌Distance برای ECMP/ترجیح کنترل‌شده (`Unverified` در جزئیات).
+- هر دو Route با Distance برابر ⇒ ECMP (توزیع Flow).
 
-سازمان: SD-WAN با SLA برای VoIP.
-
-### ۶) تصویر و توپولوژی
-
-```text
-LAN -> FGT (WAN1 | WAN2)
+``` text
+Default via wan1  distance 10   (primary)
+Default via wan2  distance 20   (backup) -> inactive in RIB until primary route is removed
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) Link Monitor
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+Probe (ping/TCP/HTTP) به Server؛ شکست متوالی ⇒ Route آن Interface از RIB حذف ⇒ Backup فعال. پارامترها: `interval`, `failtime`, `recoverytime`, `server`.
 
-#### روش گرافیکی (GUI)
+#### ۳) NAT
 
-1. Network > Static Routes.
-2. System > Link Monitor.
+هر WAN SNAT جدا؛ Session روی WAN قبلی با Failover قفل می‌شود (۱۳-۷)؛ سرویس با IP ثابت مشکل دارد.
 
-#### روش خط فرمان (CLI)
+#### ۴) محدودیت‌ها
 
-```text
+- Up/Down؛ کیفیت (Latency/Loss/Jitter) دیده نمی‌شود.
+- Failback بدون SLA/Hold-down.
+- یک Probe Server = SPOF.
+- ECMP Hash نامتقارن و Stateful (۲۳-۱).
+
+#### ۵) معیار مهاجرت به SD-WAN
+
+نیاز به SLA/برنامه‌محور، چند لینک، Overlay، گزارش کیفیت.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Monitor | چند Server/Protocol |
+| NAT | Pool هر WAN |
+| Failback | Hold-down |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** قطع wan1 در Lab؛ پس از ≈ failtime×interval Route wan2؛ ping ادامه.
+
+**متوسط (تحلیل):** ISP قطع ولی Interface Up: بدون Link Monitor Route می‌ماند؛ با Monitor حذف. شاهد: `get router info routing-table all`.
+
+**سخت (طراحی):** ISP با Loss 30٪ ولی Probe Ping با Server نزدیک موفق: Link Monitor نمی‌بیند. راه: Probe چندگانه/HTTP، آستانه‌ی Loss (SD-WAN SLA)، یا Server دورتر؛ تصمیم مهاجرت به SD-WAN.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Network → Static Routes.
+2. System → Link Monitor.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 config router static
     edit 1
         set gateway 198.51.100.1
@@ -2477,82 +2507,70 @@ end
 config system link-monitor
     edit "LM-WAN1"
         set srcintf "wan1"
-        set server "8.8.8.8"
+        set server "8.8.8.8" "1.1.1.1"
+        set protocol ping
+        set interval 1000
+        set failtime 5
+        set recoverytime 10
     next
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `Unverified`.
-- Server نمونه؛ در Lab ایزوله ممکن نیست.
+- قطع wan1 و اندازه‌گیری.
+- routing-table قبل/بعد.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- قطع WAN1 و بررسی Failover.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Failover نمی‌شود |
-| شواهد/دستور | `get router info routing-table` |
-| علت | Link Monitor/Distance |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Distance؟ *(پاسخ: 21-1-ت1)*
-
-**ت2.** Link Monitor؟ *(پاسخ: 21-1-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Link Monitor؟ *(پاسخ: 21-1-م1)*
-
-**م2.** سناریو: ISP قطع ولی Route می‌ماند؛ علت؟ *(پاسخ: 21-1-م2)*
-
-**معیار تسلط:** ساخت Dual-ISP و SD-WAN.
-
-**اشتباهات رایج:** Health-check نادرست.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| ISP | Internet Service Provider | ارائه‌دهنده‌ی اینترنت | WAN |
-| Distance | Administrative distance | اولویت مسیر | Routing |
-
-| English sentence | ترجمه |
-|---|---|
-| Use a link monitor for reliable failover. | برای Failover مطمئن از Link Monitor استفاده کنید. |
-
-#### کارت Lab — درس 21-1
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Dual-ISP |
-| 2 | پیش‌نیاز | فصل ۱۳ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Failover |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping |
-| 11 | سناریوی خرابی | Failover نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Failover |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/dual-isp.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| Failover نشد | Routing table | Monitor/Distance |
+| Session قفل | session list | Clear |
+| Flap | Log | recoverytime |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Policy یکسان روی هر دو.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Distance/Priority + Monitor.
+- Up/Down فقط.
+- Session/NAT.
+- مهاجرت به SD-WAN برای SLA.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Distance کمتر یعنی؟ *(پاسخ: 21-1-ت1)*
+
+**ت2.** (ساده) Link Monitor چه می‌کند؟ *(پاسخ: 21-1-ت2)*
+
+**ت3.** (متوسط) چرا Probe با چند Server؟ *(پاسخ: 21-1-ت3)*
+
+**ت4.** (متوسط) Failover زمانی با interval 1 s و failtime 5؟ *(پاسخ: 21-1-ت4)*
+
+**ت5.** (سخت) Loss 30٪ را روش کلاسیک می‌بیند؟ *(پاسخ: 21-1-ت5)*
+
+**ت6.** (سخت، طراحی) معیار مهاجرت به SD-WAN. *(پاسخ: 21-1-ت6)*
+
+**Q1.** Quick quiz (English): What kind of failure can a plain link monitor not detect? *(پاسخ: 21-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| ECMP | Equal-Cost Multi-Path | چند مسیر هم‌هزینه |
+
+- *Use multiple probe servers.* ← از چند Server برای Probe استفاده کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Dual-ISP. **Evidence:** `03-ops/dual-isp.md`.
+
+### ۱۵) منابع
+
+- Fortinet Docs: Link health monitor، Static routes
 
 <a id="l-21-2"></a>
 
@@ -2840,246 +2858,242 @@ end
 
 <a id="l-21-4"></a>
 
-## درس 21-4 — Failover، Session و معماری ۳
+## درس 21-4 — Failover عملی، Session و NAT در Dual-ISP/SD-WAN: آزمون، Clear، IP ثابت و معماری ۳
 
-**فصل 21 - روز 4 · پیش‌نیاز: درس ۲۱-۲ · ۶ ساعت**
+**فصل 21 · بازنویسی عمیق · پیش‌نیاز: ۲۱-۱، ۲۱-۲، ۲۱-۳، ۱۳-۷ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده) و CSR1000v؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-رفتار Session هنگام Failover.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۱-۲
+1. رفتار Session/NAT هنگام Failover را پیش‌بینی و اندازه بگیرد.
+2. Clear فیلترشده و Timeout را درست به‌کار ببرد.
+3. سرویس‌های حساس به IP (بانک/Partner) را طراحی کند.
+4. Failback کنترل‌شده با Hold-down بسازد.
+5. معماری ۳ را مستند و آزمون کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Session روی ISP قدیمی می‌ماند.
-- `diagnose sys session clear` ملایم.
-- NAT/IP Pool.
-- معماری ۳ (Dual-ISP).
-- RCA.
+Failover ترافیک جدید را جابه‌جا می‌کند؛ Sessionهای موجود با SNAT قدیمی ممکن است قفل شوند و IP خروجی عوض می‌شود که برای Partnerهای Whitelist‌شده مشکل است.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو اینترنت؛ یکی قطع شود دیگری کار کند.
+#### ۱) رفتار Session
 
-### ۵) مثال سازمانی
+Session TCP روی WAN1 با IP1؛ پس از قطع WAN1 بسته‌های برگشتی نمی‌رسند. تا Timeout یا Clear قفل. ترافیک جدید از WAN2 با IP2.
 
-سازمان: SD-WAN با SLA برای VoIP.
+#### ۲) Clear فیلترشده
 
-### ۶) تصویر و توپولوژی
-
-```text
-LAN -> FGT (WAN1 | WAN2)
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Dashboard > Sessions.
-
-#### روش خط فرمان (CLI)
-
-```text
-diagnose sys session filter dst 8.8.8.8
+``` text
+diagnose sys session filter clear
+diagnose sys session filter dev <wan1-index>
 diagnose sys session list
+diagnose sys session clear
+diagnose sys session filter clear
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+(یا فیلتر بر `src`/`dst`.) در SD-WAN تنظیماتی برای پاک‌کردن Session هنگام تغییر مسیر هست (`Unverified`).
 
-- Clear فقط با احتیاط.
+#### ۳) سرویس‌های حساس به IP
 
-### ۸) تست عملکرد
+Whitelist Partner: IP خروجی ثابت می‌خواهد. راه‌ها: IP Pool مشترک از PI/BGP، یا Failover فقط برای ترافیک غیرحساس و Policy Route برای سرویس حساس روی ISP ثابت؛ یا هماهنگی Partner برای هر دو IP.
 
-- Failover و ثبت اثر.
+#### ۴) Failback کنترل‌شده
 
-### ۹) عیب‌یابی
+recoverytime بیشتر از failtime؛ Hold-down؛ شاید Failback دستی در ساعات کم‌ترافیک.
 
-| بخش | شرح |
-|---|---|
-| Symptom | Session قدیمی |
-| شواهد/دستور | session list |
-| علت | Persistent |
-| رفع | Clear |
+#### ۵) ماتریس آزمون
 
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Session پس از Failover؟ *(پاسخ: 21-4-ت1)*
-
-**ت2.** Clear؟ *(پاسخ: 21-4-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا احتیاط؟ *(پاسخ: 21-4-م1)*
-
-**م2.** سناریو: دانلود قطع؛ علت؟ *(پاسخ: 21-4-م2)*
-
-**معیار تسلط:** ساخت Dual-ISP و SD-WAN.
-
-**اشتباهات رایج:** Health-check نادرست.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Session | Session | جلسه | NAT |
-
-| English sentence | ترجمه |
-|---|---|
-| Clear sessions carefully. | Sessionها را با احتیاط پاک کنید. |
-
-#### کارت Lab — درس 21-4
-
-| # | فیلد | محتوا |
+| آزمون | انتظار | اندازه |
 |---|---|---|
-| 1 | عنوان و هدف | Failover |
-| 2 | پیش‌نیاز | درس ۲۱-۲ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Dual-ISP |
-| 8 | صورت مسئله | Failover |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | session |
-| 11 | سناریوی خرابی | Session قدیمی |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | ثبت |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `03-ops/failover.md` |
-| 16 | Cleanup و بازگردانی | — |
+| قطع WAN1 | Failover ≤ هدف | ping |
+| Session TCP طولانی | قفل/Clear | session list |
+| بازگشت WAN1 | Failback بدون Flap | Log |
+| سرویس Partner | IP صحیح/Re-login | Partner |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۴) طراحی و تصمیم‌گیری
 
----
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Session | Clear فیلترشده |
+| IP ثابت | Rule/Pool/BGP |
+| Failback | Hold-down |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** قطع wan1: ping 4 ثانیه قطع؛ دانلود قدیمی قفل؛ Clear فیلترشده؛ دانلود جدید OK.
+
+**متوسط (تحلیل):** پس از Failback کاربران قطع‌ووصل می‌شوند: Failback فوری با Session؛ راه: recoverytime بلند، Hold-down، یا ساعت‌محور.
+
+**سخت (IP ثابت):** بانک فقط IP ISP1 را می‌پذیرد؛ Failover ISP2 Login را می‌شکند. تصمیم: Policy Route/SD-WAN Rule برای IP بانک روی ISP1 (و در قطع ISP1 پذیرش Down) یا IP Pool مشترک با BGP؛ ثبت ریسک و RTO.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose sys session filter dev 3
+diagnose sys session list
+diagnose sys session clear
+diagnose sys session filter clear
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Matrix آزمون.
+- Log Failover/Failback.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| قفل | session list | Session قدیمی |
+| IP عوض | NAT | Pool |
+| Flap | Log | recoverytime |
+
+### ۱۰) نکات امنیتی
+
+- Clear بدون Filter ممنوع.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Failover ≠ Session ادامه.
+- Clear فیلترشده.
+- IP ثابت طراحی خاص.
+- Failback کنترل‌شده.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا دانلود پس از Failover قفل می‌شود؟ *(پاسخ: 21-4-ت1)*
+
+**ت2.** (ساده) Clear را چگونه فیلتر می‌کنید؟ *(پاسخ: 21-4-ت2)*
+
+**ت3.** (متوسط) چرا recoverytime > failtime؟ *(پاسخ: 21-4-ت3)*
+
+**ت4.** (متوسط) IP ثابت بانک؛ سه راه. *(پاسخ: 21-4-ت4)*
+
+**ت5.** (سخت) Matrix آزمون Failover را کامل کنید. *(پاسخ: 21-4-ت5)*
+
+**ت6.** (سخت، طراحی) معماری ۳. *(پاسخ: 21-4-ت6)*
+
+**Q1.** Quick quiz (English): Why can an ISP failover break connections to partners that whitelist your IP? *(پاسخ: 21-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Whitelist | IP allowlist | فهرست IPهای مجاز |
+| Hold-down | Hold-down timer | تأخیر بازگشت |
+
+- *Clear stale sessions with a filter.* ← Sessionهای کهنه را با Filter پاک کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Failover. **Evidence:** `03-ops/failover.md`.
+
+### ۱۵) منابع
+
+- درس ۱۳-۷
+- Fortinet Docs: SD-WAN
 
 <a id="l-21-5"></a>
 
-## درس 21-5 — Gate G8 و آزمون فصل
+## درس 21-5 — Gate G8: آزمون عملی Dual-ISP و SD-WAN — صورت مسئله، کلید پاسخ و Rubric
 
-**فصل 21 - روز 5 · پیش‌نیاز: درس ۲۱-۳ · ۶ ساعت**
+**فصل 21 · بازنویسی عمیق · پیش‌نیاز: ۲۱-۱ تا ۲۱-۷ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده) و CSR1000v؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-ارزیابی Dual-ISP/SD-WAN.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۱-۳
+1. G8: Zone/Member/Health-check/Rule/Failover/Failback را با شواهد تحویل دهد.
+2. عیب Health-check و Rule را رفع کند.
+3. RCA و Backup ارائه دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- G8: Failover+Rule+SLA.
-- Backup.
-- RCA.
-- Evidence.
-- آزمون.
+اثبات Dual-ISP/SD-WAN. کلید پاسخ پس از تلاش.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو اینترنت؛ یکی قطع شود دیگری کار کند.
+#### صورت مسئله
 
-### ۵) مثال سازمانی
+1. SD-WAN Zone با دو Member و HC دوسروره.
+2. Rule VoIP (sla) و Backup (load-balance).
+3. افت کیفیت ساختگی (Latency 150 ms با `tc`) و قطع لینک.
+4. عیب‌ها: Server HC نامعتبر؛ Rule عمومی بالا؛ Policy روی Interface به‌جای Zone.
+5. Backup/Rollback.
 
-سازمان: SD-WAN با SLA برای VoIP.
+#### کلید
 
-### ۶) تصویر و توپولوژی
+- HC Dead کاذب: Server/Protocol.
+- Rule Hit: ترتیب.
+- Policy روی Zone.
+- Failover/Failback با SLA.
 
-```text
-LAN -> FGT (WAN1 | WAN2)
-```
+#### Rubric
 
-### ۷) پیکربندی (GUI و CLI)
+ساخت ۲۵؛ آزمون ۳۰؛ عیب‌یابی ۲۰؛ Policy ۱۰؛ Evidence ۱۰؛ صداقت ۵.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### روش گرافیکی (GUI)
+**ساده:** Members Alive.
 
-1. System > Config > Backup.
+**متوسط:** VoIP به wan2.
 
-#### روش خط فرمان (CLI)
+**سخت:** عیب‌ها و RCA.
 
-```text
-execute backup config tftp fgt-g8.conf 192.168.90.10
-```
+### ۸) Verification (اثبات صحت)
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+- Evidence G8.
 
-- `Unverified`.
+### ۹) Troubleshooting
 
-### ۸) تست عملکرد
-
-- اجرای G8.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | SLA اشتباه |
-| شواهد/دستور | health-check |
-| علت | Server |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** G8؟ *(پاسخ: 21-5-ت1)*
-
-**ت2.** Backup؟ *(پاسخ: 21-5-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا شاهد؟ *(پاسخ: 21-5-م1)*
-
-**م2.** سناریو: Health-check Alive ولی کند؛ چه می‌کنید؟ *(پاسخ: 21-5-م2)*
-
-**معیار تسلط:** ساخت Dual-ISP و SD-WAN.
-
-**اشتباهات رایج:** Health-check نادرست.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| G8 | Gate 8 | دروازه‌ی ۸ | دوره |
-
-| English sentence | ترجمه |
-|---|---|
-| Record evidence for every gate. | برای هر Gate شاهد ثبت کنید. |
-
-#### کارت Lab — درس 21-5
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون G8 |
-| 2 | پیش‌نیاز | درس ۲۱-۳ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | SD-WAN |
-| 8 | صورت مسئله | G8 |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | تست |
-| 11 | سناریوی خرابی | SLA اشتباه |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | شاهد |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/g8.md` |
-| 16 | Cleanup و بازگردانی | — |
+| ناقص | Rubric | کسری |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Probe Local-out.
 
-<a id="ans-21"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- شواهد.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) وظایف G8؟ *(پاسخ: 21-5-ت1)*
+
+**ت2.** (ساده) افت کیفیت ساختگی را چگونه می‌سازید؟ *(پاسخ: 21-5-ت2)*
+
+**ت3.** (متوسط) Rule VoIP Hit ندارد؛ علت؟ *(پاسخ: 21-5-ت3)*
+
+**ت4.** (متوسط) HC Dead با اینترنت سالم؛ علت؟ *(پاسخ: 21-5-ت4)*
+
+**ت5.** (سخت) RCA Policy روی Interface. *(پاسخ: 21-5-ت5)*
+
+**ت6.** (سخت، طراحی) بهبود پس از آزمون. *(پاسخ: 21-5-ت6)*
+
+**Q1.** Quick quiz (English): What does G8 verify? *(پاسخ: 21-5-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| G8 | Gate 8 | دروازه ۸ |
+
+- *Record evidence for every gate.* ← برای هر Gate شاهد ثبت کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** G8. **Evidence:** `03-ops/g8.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۲۱-۲، ۲۱-۳، ۲۱-۷
 
 ## درس 21-7 — SD-WAN از درون: Health-check، SLA، استراتژی‌ها، Failover/Failback و تفاوت با Routing
 
@@ -3321,22 +3335,22 @@ get router info routing-table all
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**21-1-ت1** — Distance؟
 
-کوچک‌تر ترجیح.
+### پاسخ‌های بازنویسی عمیق درس 21-1
 
-**21-1-ت2** — Link Monitor؟
+**21-1-ت1** — Route ترجیحی.
 
-تشخیص قطع.
+**21-1-ت2** — با Probe کشف قطع ISP و حذف Route.
 
-**21-1-م1** — چرا Link Monitor؟
+**21-1-ت3** — تا خرابی Server با خرابی لینک اشتباه نشود.
 
-قطع ISP بدون قطع Link.
+**21-1-ت4** — ≈ 5 ثانیه (به‌علاوه‌ی Convergence).
 
-**21-1-م2** — سناریو: ISP قطع ولی Route می‌ماند؛ علت؟
+**21-1-ت5** — خیر؛ SLA/Loss Threshold در SD-WAN.
 
-نبود Monitor.
+**21-1-ت6** — SLA، چند لینک، Overlay، گزارش کیفیت.
 
+**21-1-Q1** — A degraded link with high loss or latency that still answers probes.
 
 ### پاسخ‌های بازنویسی درس 21-2
 
@@ -3363,43 +3377,39 @@ get router info routing-table all
 
 **21-3-Q1** — Traffic is handled by the implicit rule, which load-balances across members.
 
-**21-4-ت1** — Session پس از Failover؟
 
-می‌ماند.
+### پاسخ‌های بازنویسی عمیق درس 21-4
 
-**21-4-ت2** — Clear؟
+**21-4-ت1** — Session با SNAT/Interface قدیمی ادامه نمی‌یابد.
 
-با احتیاط.
+**21-4-ت2** — `filter dev/src/dst` سپس `clear`.
 
-**21-4-م1** — چرا احتیاط؟
+**21-4-ت3** — تا بازگشت زودهنگام به لینک ناپایدار رخ ندهد.
 
-قطع کاربران.
+**21-4-ت4** — Rule روی ISP ثابت، IP Pool/BGP، هماهنگی Partner.
 
-**21-4-م2** — سناریو: دانلود قطع؛ علت؟
+**21-4-ت5** — قطع/Session/بازگشت/Partner با اندازه‌گیری.
 
-Session.
+**21-4-ت6** — Dual-ISP SD-WAN HA با Rule/SLA و Clear.
 
-**21-5-ت1** — G8؟
-
-Failover+Rule.
-
-**21-5-ت2** — Backup؟
-
-execute backup.
-
-**21-5-م1** — چرا شاهد؟
-
-ادعای بدون آزمایش ممنوع.
-
-**21-5-م2** — سناریو: Health-check Alive ولی کند؛ چه می‌کنید؟
-
-SLA Latency.
+**21-4-Q1** — The outgoing source IP changes to the other ISP address.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 21-5
 
-<a id="end7"></a>
+**21-5-ت1** — Zone/HC/Rule/آزمون/عیب‌ها/Backup.
 
+**21-5-ت2** — با `tc netem` روی Lab برای Latency/Loss.
+
+**21-5-ت3** — Rule عمومی بالاتر Match می‌شود؛ ترتیب.
+
+**21-5-ت4** — Server/Protocol/Policy/Route Probe.
+
+**21-5-ت5** — Policy باید روی Zone؛ Failover Policy را از بین برده بود.
+
+**21-5-ت6** — Multi-server HC، Hysteresis، Alert.
+
+**21-5-Q1** — Failover, rule-based path selection and SLA behavior with evidence.
 
 ### پاسخ‌های درس افزوده‌ی 21-7 (فصل 21)
 

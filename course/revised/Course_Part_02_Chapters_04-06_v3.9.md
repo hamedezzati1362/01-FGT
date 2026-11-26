@@ -41,7 +41,7 @@
 
 <a id="ch4"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.7؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_02_Chapters_04-06.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۵-۰ و ۵-۷ (فصل ۵). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.9؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_02_Chapters_04-06.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۵-۰ و ۵-۷ (فصل ۵). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 4 — Switching II: STP، EtherChannel و امنیت L2
 
@@ -1628,6 +1628,157 @@ SWx# copy running-config flash:SWx-w4-final.cfg
 
 <a id="ans-4"></a>
 
+## درس 4-7 — STP در عمق: تایمرها، محاسبه‌ی Convergence، RSTP، Loop Guard/UDLD/Root Guard و عیب‌یابی
+
+**فصل 4 · بازنویسی عمیق · پیش‌نیاز: ۴-۱، ۴-۲، ۴-۶ · ≈ 8 ساعت**
+
+> **وضعیت:** Cisco IOSv/IOSvL2 (vIOS 15.x)؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ برخی ویژگی‌ها روی vIOS `Unverified`.
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. تایمرهای STP (Hello 2، Forward Delay 15، Max Age 20) و محاسبه‌ی Convergence 802.1D را انجام دهد.
+2. تفاوت 802.1D و RSTP (Proposal/Agreement، Edge، Alternate/Backup) را توضیح دهد.
+3. Root Guard، BPDU Guard، Loop Guard، UDLD را با سناریو انتخاب کند.
+4. STP را با دستورهای `show spanning-tree` عیب‌یابی کند.
+5. Root Placement و Priority را طراحی کند.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+حلقه‌ی لایه‌ی ۲ شبکه را در ثانیه‌ها می‌کشد (Broadcast Storm). STP حلقه را می‌شکند، ولی تایمرها و رفتار هنگام خرابی را باید بدانید وگرنه «۵۰ ثانیه قطعی» و «Root اشتباه» می‌بینید.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) تایمرها (802.1D)
+
+``` text
+Hello = 2 s (BPDU from root)   Forward Delay = 15 s   Max Age = 20 s
+Port states: Blocking -> Listening (15 s) -> Learning (15 s) -> Forwarding
+Convergence after direct link failure ~= 30 s (FwdDelay x 2)
+Convergence after indirect failure ~= MaxAge + 2 x FwdDelay = 20 + 30 = 50 s
+```
+
+#### ۲) RSTP (802.1w)
+
+حالت‌ها: Discarding، Learning، Forwarding. نقش‌ها: Root، Designated، Alternate، Backup. **Proposal/Agreement** بین دو سوئیچ، Forwarding را در کمتر از ۱ ثانیه برقرار می‌کند. **Edge Port** (PortFast) بلافاصله Forwarding. Convergence معمولاً < ۱–۲ ثانیه.
+
+#### ۳) محافظت‌ها
+
+| ابزار | کار | سناریو |
+|---|---|---|
+| Root Guard | پورت را اگر BPDU بهتر آمد Root-inconsistent می‌کند | جلوگیری از Root شدن سوئیچ غیرمجاز |
+| BPDU Guard | پورت Edge که BPDU دریافت کند Err-disable | سوئیچ/حلقه به پورت کاربر |
+| Loop Guard | پورت Non-designated که BPDU را از دست بدهد Forward نمی‌شود | لینک یک‌طرفه |
+| UDLD | لینک یک‌طرفه (Fiber) را کشف و پورت را می‌بندد | Fiber |
+| BPDU Filter | BPDU را فیلتر (خطرناک) | موارد خاص |
+
+#### ۴) طراحی Root
+
+Root را عمداً روی Core بگذارید: Priority 4096 (Primary) و 8192 (Secondary) با `spanning-tree vlan X root primary`. Root اتفاقی (Priority پیش‌فرض 32768+VLAN و کوچک‌ترین MAC) ممکن است قدیمی‌ترین سوئیچ Access باشد.
+
+#### ۵) عیب‌یابی
+
+``` text
+show spanning-tree vlan 10
+show spanning-tree root
+show spanning-tree interface Gi0/1 detail
+show spanning-tree inconsistentports
+debug spanning-tree events (lab only)
+```
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Root | Core با priority صریح |
+| Edge | PortFast + BPDU Guard |
+| Fiber | UDLD+Loop Guard |
+| STP mode | Rapid-PVST |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Root Primary روی Core با Priority 4096؛ `show spanning-tree root` Root مورد انتظار.
+
+**متوسط (محاسبه):** 802.1D: قطع کابل مستقیم روی Root Port ⇒ ≈ 30 s؛ قطع غیرمستقیم (سوئیچ میانی) ⇒ ≈ 50 s. با RSTP < 2 s.
+
+**سخت (سناریو):** کاربر سوئیچ کوچک وصل کرد؛ Root جابه‌جا شد و ترافیک مسیر عوض شد. علت: Root Guard نبود. رفع: Root Guard روی پورت‌های رو به پایین Core؛ BPDU Guard روی Access؛ Alert بر `ROOTGUARD`/`BPDUGUARD`. آزمون: اتصال سوئیچ تست ⇒ پورت inconsistent/err-disable.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+spanning-tree mode rapid-pvst
+spanning-tree vlan 1-4094 root primary
+interface range GigabitEthernet0/10 - 24
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+interface GigabitEthernet0/1
+ spanning-tree guard root
+spanning-tree loopguard default
+udld enable
+```
+
+### ۸) Verification (اثبات صحت)
+
+- `show spanning-tree root`.
+- آزمون Root Guard/BPDU Guard با سوئیچ تست.
+- اندازه‌گیری Convergence با ping.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Root اشتباه | `show spanning-tree root` | Priority |
+| Port err-disabled | Log | BPDU Guard/UDLD |
+| Convergence کند | mode | pvst به rapid-pvst |
+
+### ۱۰) نکات امنیتی
+
+- BPDU/Root Guard در مرز.
+- BPDU Filter با احتیاط.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- تایمرها و Convergence 30/50 s در 802.1D.
+- RSTP سریع.
+- Guardها هرکدام یک تهدید.
+- Root عمدی.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Hello/Forward Delay/Max Age پیش‌فرض؟ *(پاسخ: 4-7-ت1)*
+
+**ت2.** (ساده) PortFast کجا استفاده می‌شود؟ *(پاسخ: 4-7-ت2)*
+
+**ت3.** (متوسط) Convergence غیرمستقیم 802.1D؟ *(پاسخ: 4-7-ت3)*
+
+**ت4.** (متوسط) Root Guard و BPDU Guard فرقشان؟ *(پاسخ: 4-7-ت4)*
+
+**ت5.** (سخت) سوئیچ کاربر Root شد؛ تحلیل و رفع. *(پاسخ: 4-7-ت5)*
+
+**ت6.** (سخت، طراحی) استاندارد STP برای دانشگاه. *(پاسخ: 4-7-ت6)*
+
+**Q1.** Quick quiz (English): What does BPDU guard do when an edge port receives a BPDU? *(پاسخ: 4-7-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| BPDU | Bridge Protocol Data Unit | بسته‌ی STP |
+| UDLD | UniDirectional Link Detection | تشخیص لینک یک‌طرفه |
+| RSTP | Rapid Spanning Tree Protocol | STP سریع |
+
+- *Place the root bridge deliberately at the core.* ← Root Bridge را عمداً در Core قرار دهید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** STP عمیق. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/stp-deep.md`.
+
+### ۱۵) منابع
+
+- IEEE 802.1D/802.1w
+- Cisco Spanning Tree Protocol guides
+
 ## پاسخ‌های فصل 4
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -1899,6 +2050,23 @@ Because all traffic would flow through a low-capacity edge device instead of the
 ---
 
 <a id="ch5"></a>
+
+
+### پاسخ‌های درس افزوده‌ی 4-7 (فصل 4)
+
+**4-7-ت1** — 2 s، 15 s، 20 s.
+
+**4-7-ت2** — پورت‌های Edge (کاربر/سرور) تا بلافاصله Forwarding شوند.
+
+**4-7-ت3** — Max Age + 2×Forward Delay = 50 s.
+
+**4-7-ت4** — Root Guard Root شدن را در پورت مرزی جلو می‌گیرد؛ BPDU Guard پورت Edge را با دریافت BPDU می‌بندد.
+
+**4-7-ت5** — Root Guard نبود؛ Root Guard روی Core و BPDU Guard روی Access؛ آزمون.
+
+**4-7-ت6** — Rapid-PVST، Root Primary/Secondary، PortFast+BPDU Guard، Root Guard، UDLD روی Fiber.
+
+**4-7-Q1** — It places the port in err-disabled state to protect the spanning tree.
 
 # فصل 5 — Routing I: Static، Floating و OSPF
 
@@ -5614,6 +5782,181 @@ Fix     : bring a port up in the VLAN / allow it on a trunk
 
 <a id="ans-6"></a>
 
+## درس 6-7 — OSPF در عمق: LSAهای Type 1–5/7، LSDB، SPF، انواع Area، Virtual-link و Summarization/Filtering
+
+**فصل 6 · بازنویسی عمیق · پیش‌نیاز: ۵-۴، ۶-۱، ۶-۲ · ≈ 9 ساعت**
+
+> **وضعیت:** Cisco IOSv/IOSvL2 (vIOS 15.x)؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ برخی ویژگی‌ها روی vIOS `Unverified`.
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. انواع LSA (1، 2، 3، 4، 5، 7) و محتوا/دامنه‌ی هرکدام را توضیح دهد.
+2. LSDB و الگوریتم SPF را (Cost، Tree) بفهمد و مسیر را دستی محاسبه کند.
+3. Area typeها (Backbone، Standard، Stub، Totally Stubby، NSSA) و Virtual-link را با دلیل انتخاب کند.
+4. Summarization (ABR/ASBR) و Filtering را طراحی کند.
+5. LSDB را برای عیب‌یابی بخواند.
+6. Convergence و SPF throttle را تحلیل کند.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+OSPF را با «Neighbor Full» نمی‌توان فهمید؛ باید دانست چه چیزی در LSDB است و SPF چه می‌کند. تفاوت Router با DR/ABR/ASBR و اینکه LSA نوع ۳ چه کاری می‌کند برای طراحی چندناحیه‌ای حیاتی است.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) LSAها
+
+| Type | نام | تولیدکننده | دامنه | محتوا |
+|---|---|---|---|---|
+| 1 | Router | هر روتر | Area | لینک‌ها و Cost |
+| 2 | Network | DR | Area | روترهای متصل به Segment |
+| 3 | Summary | ABR | بین Area | Prefix مقصدهای Area دیگر |
+| 4 | ASBR Summary | ABR | بین Area | آدرس ASBR |
+| 5 | External | ASBR | کل (جز Stub) | مسیرهای خارجی |
+| 7 | NSSA External | ASBR در NSSA | Area | خارجی در NSSA؛ ABR به 5 تبدیل |
+
+نشانه‌ی Route: `O` (Intra-area)، `O IA` (Type 3)، `O E1/E2` (Type 5)، `O N1/N2` (Type 7).
+
+#### ۲) SPF
+
+هر روتر LSDB Area را دارد و با Dijkstra درخت کوتاه‌ترین مسیر از خودش می‌سازد.
+
+``` text
+Cost = reference-bandwidth / interface bandwidth     (default ref 100 Mbps; Gi -> 1 -> change ref!)
+E2 metric = external cost only; E1 = external + internal cost
+```
+
+`auto-cost reference-bandwidth 100000` (در همه‌ی روترها یکسان) برای لینک‌های Gigabit/10G ضروری است.
+
+#### ۳) Area typeها
+
+| نوع | LSA مجاز | مزیت |
+|---|---|---|
+| Backbone (0) | همه | مرکز |
+| Standard | 1,2,3,4,5 | عمومی |
+| Stub | بدون 5 (Default Route از ABR) | LSDB کوچک |
+| Totally Stubby | بدون 3،4،5 (فقط Default) | حداقل LSDB |
+| NSSA | بدون 5 ولی 7 | Stub با ASBR داخلی |
+
+#### ۴) Virtual-link
+
+Area بدون اتصال فیزیکی به Area 0 از طریق Virtual-link (در Transit Area) متصل می‌شود؛ **راه‌حل موقت** (پس از ادغام/مهاجرت)؛ طراحی دائمی نیست.
+
+#### ۵) Summarization و Filtering
+
+- **Inter-area:** `area X range 10.1.0.0 255.255.0.0` روی ABR.
+- **External:** `summary-address` روی ASBR.
+- Filtering: `area X filter-list prefix` (Type 3)، `distribute-list in` (محلی؛ LSDB را عوض نمی‌کند).
+
+#### ۶) عیب‌یابی LSDB
+
+``` text
+show ip ospf database
+show ip ospf database router self-originate
+show ip ospf database summary
+show ip ospf database external
+show ip ospf border-routers
+```
+
+#### ۷) Convergence
+
+SPF throttle (`timers throttle spf 50 200 5000`): تأخیر اولیه، Hold، حداکثر؛ LSA arrival throttle؛ BFD برای Detect.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Area type | Stub/Totally Stubby برای شعب بدون خروج خارجی |
+| Reference BW | بالا و یکسان |
+| Summary | در ABR |
+| Virtual-link | موقت |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Route `O IA 10.2.0.0/16` در R1 ⇒ از LSA Type 3 توسط ABR؛ Cost = Cost تا ABR + Cost Summary.
+
+**متوسط (محاسبه):** Gigabit و reference پیش‌فرض: Cost هر لینک 1 ⇒ OSPF بین 1G و 10G فرق نمی‌گذارد؛ با reference 100000 ⇒ 1G=100، 10G=10. آزمون: `show ip ospf interface` Cost.
+
+**سخت (طراحی):** شعب ۲۰۰ Prefix دارند و LSDB بزرگ است. طرح: Area هر منطقه، Totally Stubby برای شعب بدون ASBR، Summary در ABR، Default از ABR؛ ASBR در NSSA. نتیجه: LSDB شعب از ۲۰۰۰ به ≈ ۱۰ LSA. ریسک: Suboptimal routing؛ آزمون.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+router ospf 1
+ auto-cost reference-bandwidth 100000
+ area 10 stub no-summary
+ area 10 range 10.10.0.0 255.255.0.0
+ timers throttle spf 50 200 5000
+show ip ospf database
+show ip ospf database summary
+show ip route ospf
+```
+
+### ۸) Verification (اثبات صحت)
+
+- LSDB مطابق Area type.
+- Cost صحیح.
+- Summary در ABR.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Route Inter-area نیست | database summary | Stub/Filter/Range |
+| E2 مسیر غیربهینه | metric-type | E1/E2 |
+| LSDB بزرگ | database | Area/Summary |
+
+### ۱۰) نکات امنیتی
+
+- OSPF Authentication.
+- Filtering کنترل‌شده.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- LSA 1–5/7.
+- SPF/Cost/Reference BW.
+- Area types.
+- Virtual-link موقت.
+- Summary/Filter.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) LSA Type 3 را کدام روتر می‌سازد؟ *(پاسخ: 6-7-ت1)*
+
+**ت2.** (ساده) `O IA` یعنی چه؟ *(پاسخ: 6-7-ت2)*
+
+**ت3.** (متوسط) چرا reference-bandwidth باید تغییر کند؟ *(پاسخ: 6-7-ت3)*
+
+**ت4.** (متوسط) Stub و Totally Stubby؟ *(پاسخ: 6-7-ت4)*
+
+**ت5.** (سخت) LSDB شعب بزرگ؛ طرح. *(پاسخ: 6-7-ت5)*
+
+**ت6.** (سخت، طراحی) چه موقع Virtual-link و چرا موقت؟ *(پاسخ: 6-7-ت6)*
+
+**Q1.** Quick quiz (English): Which LSA type carries inter-area prefixes? *(پاسخ: 6-7-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| LSA | Link-State Advertisement | بسته‌ی وضعیت لینک |
+| LSDB | Link-State Database | پایگاه وضعیت لینک |
+| ASBR | Autonomous System Boundary Router | روتر مرز AS |
+| NSSA | Not-So-Stubby Area | Area نیمه‌Stub |
+
+- *Use stub areas to reduce the link-state database.* ← برای کاهش LSDB از Area Stub استفاده کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** OSPF عمیق. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ospf-deep.md`.
+
+### ۱۵) منابع
+
+- RFC 2328
+- RFC 3101 (NSSA)
+- Cisco OSPF design guide
+
 ## پاسخ‌های فصل 6
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -5855,6 +6198,23 @@ The exact source and destination of the failing traffic.
 ---
 
 <a id="end2"></a>
+
+
+### پاسخ‌های درس افزوده‌ی 6-7 (فصل 6)
+
+**6-7-ت1** — ABR؛ Prefixهای Area دیگر را خلاصه می‌دهد.
+
+**6-7-ت2** — مسیر Inter-area (Type 3).
+
+**6-7-ت3** — پیش‌فرض 100 Mbps باعث Cost برابر 1 برای ≥ 100 Mbps می‌شود.
+
+**6-7-ت4** — Stub بدون Type 5؛ Totally Stubby بدون Type 3/4/5 (فقط Default).
+
+**6-7-ت5** — Area منطقه‌ای، Totally Stubby، Summary، Default.
+
+**6-7-ت6** — Area بی‌اتصال به 0؛ ناپایدار/پیچیده؛ باید با طراحی Area اصلاح شود.
+
+**6-7-Q1** — Type 3 summary LSAs generated by area border routers.
 
 # پایان بخش ۲ (فصل‌های ۴ تا ۶)
 

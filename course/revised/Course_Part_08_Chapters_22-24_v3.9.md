@@ -36,7 +36,7 @@
 
 <a id="ch22"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.7):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۲-۰، ۲۴-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.9):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۲-۰، ۲۴-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 22 — High Availability: FGCP، Session Sync و Failover
 
@@ -255,124 +255,129 @@ diagnose sys ha history read
 
 - Fortinet Docs: [FGCP](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/62403/fgcp)، [Troubleshoot an HA formation](https://docs.fortinet.com/document/fortigate/7.4.0/administration-guide/946059/troubleshoot-an-ha-formation)، [Session pickup (7.6)](https://docs.fortinet.com/document/fortigate/7.6.0/administration-guide/955521/session-pickup) (برای مفهوم؛ تفاوت نسخه را بررسی کنید).
 
-## درس 22-1 — مفاهیم HA و FGCP
+## درس 22-1 — مفاهیم HA برای طراحی: SPOF، سطوح افزونگی، انتخاب مدل و تحلیل خرابی‌ها
 
-**فصل 22 - روز 1 · پیش‌نیاز: فصل ۲۱ · ۶ ساعت**
+**فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰، ۱۱-۷، ۵-۷ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ HA/VDOM Needs-License؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-قبل از پیکربندی: Active-Passive در برابر Active-Active و اجزای FGCP.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۲۱
+1. SPOF را در توپولوژی تشخیص دهد و ماتریس خرابی بسازد.
+2. HA، Redundancy، Load-balancing و DR را تفکیک کند.
+3. A-P و A-A و Session Pickup را برای نیاز مشخص انتخاب کند.
+4. هزینه/ریسک/محدودیت (لایسنس، Split-brain، Firmware) را بسنجد.
+5. دسترس‌پذیری را محاسبه کند (۹۹٫۹ و ...).
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Active-Passive: یک دستگاه ترافیک می‌برد.
-- Active-Active: بار تقسیم می‌شود (پیچیده‌تر).
-- FGCP: پروتکل HA فورتی‌نت.
-- Heartbeat: لینک اختصاصی همگام‌سازی.
-- Cluster ID و Group Name.
+HA یعنی «طراحی برای خرابی»، نه «دو دستگاه». باید بدانید HA چه خرابی‌هایی را پوشش می‌دهد و کدام را نه؛ و هزینه‌ی افزونگی چیست.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو دستگاه؛ یکی بمیرد دیگری ادامه دهد.
+#### ۱) ماتریس خرابی
 
-### ۵) مثال سازمانی
-
-سازمان: HA برای فایروال لبه بدون قطع بلندمدت.
-
-### ۶) تصویر و توپولوژی
-
-```text
-FGT-1 (Primary) <-HB-> FGT-2 (Secondary)
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. System > HA.
-
-#### روش خط فرمان (CLI)
-
-```text
-get system ha status
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- خواندنی.
-
-### ۸) تست عملکرد
-
-- نمودار HA را بکشید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | HA بالا نمی‌آید |
-| شواهد/دستور | `get system ha status` |
-| علت | Group/Password |
-| رفع | تطبیق |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Active-Passive؟ *(پاسخ: 22-1-ت1)*
-
-**ت2.** Heartbeat؟ *(پاسخ: 22-1-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Heartbeat اختصاصی؟ *(پاسخ: 22-1-م1)*
-
-**م2.** سناریو: Split-brain؛ علت؟ *(پاسخ: 22-1-م2)*
-
-**معیار تسلط:** ساخت HA و تست Failover.
-
-**اشتباهات رایج:** Heartbeat و Override.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| HA | High Availability | دسترس‌پذیری بالا | FGT |
-| FGCP | FortiGate Clustering Protocol | پروتکل HA | FGT |
-
-| English sentence | ترجمه |
-|---|---|
-| Use a dedicated heartbeat link. | از لینک Heartbeat اختصاصی استفاده کنید. |
-
-#### کارت Lab — درس 22-1
-
-| # | فیلد | محتوا |
+| خرابی | HA فایروال پوشش می‌دهد؟ | راه مکمل |
 |---|---|---|
-| 1 | عنوان و هدف | نقشه HA |
-| 2 | پیش‌نیاز | فصل ۲۱ |
-| 3 | توپولوژی | — |
-| 4 | تجهیزات | — |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | نمودار |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | HA بالا نمی‌آید |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | سند |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `02-design/ha-map.md` |
-| 16 | Cleanup و بازگردانی | — |
+| دستگاه/برق | بله | — |
+| لینک Interface | بله (Monitor) | LAG |
+| ISP/لینک بالادست | خیر | Dual-ISP/SD-WAN |
+| Config اشتباه | خیر (Sync می‌شود) | Change/Canary |
+| CVE مشترک | خیر | Patch/تنوع |
+| سایت | خیر | DR |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+#### ۲) دسترس‌پذیری
 
----
+``` text
+Availability = MTBF / (MTBF + MTTR)
+Serial (both needed): A = A1 x A2        Parallel (either): A = 1 - (1-A1)(1-A2)
+Example: single device 99.5%  -> HA pair parallel = 1 - 0.005^2 = 99.9975%
+Downtime/year at 99.9% = 8.76 h ; at 99.99% = 52.6 min
+```
+
+#### ۳) انتخاب مدل
+
+| نیاز | پاسخ |
+|---|---|
+| قطع کوتاه قابل‌قبول | A-P |
+| تداوم Session | A-P + Session Pickup |
+| بار UTM زیاد | A-A (محدودیت) |
+| سایت دوم | DR/Multi-site |
+
+#### ۴) هزینه/ریسک
+
+لایسنس دو دستگاه، پیچیدگی، آزمون دوره‌ای، Firmware یکسان، Split-brain، ارتقای کنترل‌شده.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| A-P/A-A | a-p مگر نیاز بار |
+| Pickup | حساس |
+| DR | سایت |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** ماتریس SPOF برای ISP، فایروال، سوئیچ، برق؛ اولویت.
+
+**متوسط (محاسبه):** دستگاه تکی 99.5٪؛ جفت HA ⇒ 1−0.005²=99.9975٪؛ Downtime سالانه ≈ ۲۲ دقیقه؛ ولی با ISP تکی 99.9٪ ⇒ سقف کل 99.9٪ (حلقه ضعیف).
+
+**سخت (قضاوت):** مدیر: «HA داریم پس قطع نداریم». چهار خرابی خارج از پوشش: ISP، Config خراب Sync‌شده، CVE مشترک/ارتقای هم‌زمان، قطع Heartbeat (Split-brain). طرح: Dual-ISP/SD-WAN، Change Canary، Patch مرحله‌ای، HB Redundant.
+
+### ۸) Verification (اثبات صحت)
+
+- ماتریس خرابی امضا‌شده.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Config خراب | HA status | Change/Rollback |
+
+### ۱۰) نکات امنیتی
+
+- HA آسیب‌پذیری را حل نمی‌کند.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- HA طراحی برای خرابی؛ حلقه‌ی ضعیف سقف را تعیین می‌کند.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) SPOF چیست؟ *(پاسخ: 22-1-ت1)*
+
+**ت2.** (ساده) HA ISP را پوشش می‌دهد؟ *(پاسخ: 22-1-ت2)*
+
+**ت3.** (متوسط) دستگاه 99.5٪ و جفت HA موازی؛ دسترس‌پذیری؟ *(پاسخ: 22-1-ت3)*
+
+**ت4.** (متوسط) چرا حلقه‌ی ضعیف سقف را تعیین می‌کند؟ *(پاسخ: 22-1-ت4)*
+
+**ت5.** (سخت) چهار خرابی خارج از HA. *(پاسخ: 22-1-ت5)*
+
+**ت6.** (سخت، طراحی) ماتریس خرابی برای سایت مرکزی. *(پاسخ: 22-1-ت6)*
+
+**Q1.** Quick quiz (English): Why does the weakest component limit overall availability in a serial chain? *(پاسخ: 22-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| SPOF | Single point of failure | نقطه‌ی شکست واحد |
+| MTBF | Mean time between failures | میانگین فاصله‌ی خرابی |
+| DR | Disaster recovery | بازیابی از فاجعه |
+
+- *HA is not a substitute for change control.* ← HA جایگزین کنترل تغییر نیست.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** نقشه HA. **Evidence:** `02-design/ha-map.md`.
+
+### ۱۵) منابع
+
+- [FGCP](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/62403/fgcp)
+- NIST SP 800-34
 
 <a id="l-22-2"></a>
 
@@ -588,267 +593,252 @@ Packet loss time ~= lost packets x ping interval
 
 <a id="l-22-4"></a>
 
-## درس 22-4 — عیب‌یابی HA و Upgrade
+## درس 22-4 — عیب‌یابی HA و ارتقای Cluster: روش، Out-of-sync، Flap، Split-brain، Upgrade Path و Rollback
 
-**فصل 22 - روز 4 · پیش‌نیاز: درس ۲۲-۲ · ۶ ساعت**
+**فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰، ۲۲-۲، ۲۲-۳، ۲۷-۴ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ HA/VDOM Needs-License؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-مشکلات رایج و ارتقای Cluster.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۲-۲
+1. مشکلات Cluster (Form نشدن، Out-of-sync، Flap، Split-brain) را با شواهد عیب‌یابی کند.
+2. ارتقای Cluster را با Upgrade Path، Backup، Pre/Post-check برنامه‌ریزی کند.
+3. Rollback را اجرا و اثبات کند.
+4. Log/History HA را بخواند.
+5. ریسک‌های ارتقا را مستند کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Split-brain.
-- Config Sync.
-- Upgrade یکی‌یکی.
-- Backup قبل از Upgrade.
-- Log.
+ارتقا و عیب‌یابی HA پرخطرترین عملیات‌اند. بدون Plan و Rollback، یک ارتقا می‌تواند هر دو عضو را از کار بیندازد.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو دستگاه؛ یکی بمیرد دیگری ادامه دهد.
+#### ۱) ابزارها
 
-### ۵) مثال سازمانی
-
-سازمان: HA برای فایروال لبه بدون قطع بلندمدت.
-
-### ۶) تصویر و توپولوژی
-
-```text
-FGT-1 (Primary) <-HB-> FGT-2 (Secondary)
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. System > Firmware.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
+get system ha status
+diagnose sys ha status
 diagnose sys ha checksum cluster
 diagnose sys ha history read
+diagnose sys ha dump-by group
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+#### ۲) مشکلات و علل
 
-- `Unverified`.
-
-### ۸) تست عملکرد
-
-- رفع Sync.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Checksum ناهمسان |
-| شواهد/دستور | `checksum cluster` |
-| علت | Config |
-| رفع | Sync |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Checksum؟ *(پاسخ: 22-4-ت1)*
-
-**ت2.** Upgrade؟ *(پاسخ: 22-4-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Backup؟ *(پاسخ: 22-4-م1)*
-
-**م2.** سناریو: Upgrade شکست؛ چه می‌کنید؟ *(پاسخ: 22-4-م2)*
-
-**معیار تسلط:** ساخت HA و تست Failover.
-
-**اشتباهات رایج:** Heartbeat و Override.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Checksum | HA checksum | تطبیق Config | HA |
-
-| English sentence | ترجمه |
-|---|---|
-| Back up before upgrading. | قبل از ارتقا Backup بگیرید. |
-
-#### کارت Lab — درس 22-4
-
-| # | فیلد | محتوا |
+| علامت | علت | رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Upgrade HA |
-| 2 | پیش‌نیاز | درس ۲۲-۲ |
-| 3 | توپولوژی | FGT-1+FGT-2 |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | HA |
-| 8 | صورت مسئله | Upgrade |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | status |
-| 11 | سناریوی خرابی | Checksum ناهمسان |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | موفق |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/ha-upgrade.md` |
-| 16 | Cleanup و بازگردانی | Rollback |
+| Form نمی‌شود | Group/Password/Mode/HB | تطبیق |
+| Out-of-sync | Firmware/Config/Checksum | Sync/ارتقا |
+| Flap | Monitor/لینک/Override | کابل/Hold |
+| Split-brain | HB قطع | HB Redundant |
+| Session قطع | Pickup | فعال‌سازی |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+#### ۳) Plan ارتقا
 
----
+``` text
+1 Release notes + Upgrade path (may require intermediate versions)
+2 Backups of both; export certs/licenses info
+3 Pre-check: cluster healthy, checksums equal, HB links ok, no pending alerts
+4 Upgrade (FGCP typically upgrades secondary, fails over, then upgrades former primary - per doc)
+5 Post-check: HA status, sync, sessions, VPN, services
+6 Rollback criteria and procedure (firmware + config)
+```
+
+#### ۴) Rollback
+
+Firmware قبلی + Config Backup؛ اگر ارتقای مرحله‌ای شکست: بازگشت عضو به نسخه‌ی قبل و Sync؛ تأیید.
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Out-of-sync: Firmware متفاوت؛ ارتقای عضو؛ checksum یکسان.
+
+**متوسط (تحلیل):** Flap: History: Monitor port2 down/up هر ۲ دقیقه؛ Interface Errors؛ کابل؛ رفع؛ پایدار.
+
+**سخت (ارتقا):** Upgrade Path نیاز به نسخه‌ی میانی داشت؛ ارتقای مستقیم Secondary را Sync نکرد؛ Rollback با Backup؛ Plan اصلاح با مرحله‌ی میانی؛ RCA و آزمون در Lab.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get system ha status
+diagnose sys ha checksum cluster
+diagnose sys ha history read
+execute backup config sftp pre-upgrade.conf 192.168.90.10 backup-user <PASSWORD>
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Pre/Post-check ثبت.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Out-of-sync | checksum | Firmware/Config |
+| Flap | history | Monitor/لینک |
+| Split-brain | ha status | HB |
+
+### ۱۰) نکات امنیتی
+
+- Change و Backup.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Plan + Backup + Check + Rollback.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) checksum cluster چیست؟ *(پاسخ: 22-4-ت1)*
+
+**ت2.** (ساده) چرا Upgrade Path؟ *(پاسخ: 22-4-ت2)*
+
+**ت3.** (متوسط) Pre-check چه چیزهایی؟ *(پاسخ: 22-4-ت3)*
+
+**ت4.** (متوسط) Flap؛ علل. *(پاسخ: 22-4-ت4)*
+
+**ت5.** (سخت) ارتقا شکست خورد؛ Rollback. *(پاسخ: 22-4-ت5)*
+
+**ت6.** (سخت، طراحی) Plan ارتقای Cluster. *(پاسخ: 22-4-ت6)*
+
+**Q1.** Quick quiz (English): What must be backed up before a cluster firmware upgrade? *(پاسخ: 22-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Upgrade path | Firmware upgrade path | مسیر ارتقا |
+
+- *Back up before upgrading.* ← قبل از ارتقا Backup بگیرید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Upgrade HA. **Evidence:** `03-ops/ha-upgrade.md`.
+
+### ۱۵) منابع
+
+- Fortinet Docs: FGCP، Firmware upgrade (7.0)
+- [Troubleshoot an HA formation](https://docs.fortinet.com/document/fortigate/7.4.0/administration-guide/946059/troubleshoot-an-ha-formation)
 
 <a id="l-22-5"></a>
 
-## درس 22-5 — آزمون فصل ۲۲
+## درس 22-5 — آزمون عملی HA: طراحی، Failover، Split-brain کنترل‌شده، Upgrade و RCA — صورت مسئله و Rubric
 
-**فصل 22 - روز 5 · پیش‌نیاز: درس ۲۲-۳ · ۶ ساعت**
+**فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰ تا ۲۲-۴ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ HA/VDOM Needs-License؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-ارزیابی.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۲-۳
+1. Cluster را بسازد و ۶ آزمون Failover را اندازه بگیرد.
+2. Split-brain را در Lab شبیه‌سازی و رفع کند.
+3. ارتقا/Rollback آزمایشی را اجرا کند.
+4. RCA و Evidence ارائه دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- HA A-P.
-- Failover.
-- Sync.
-- Backup.
-- آزمون.
+آزمون جامع HA (Lab، Needs-License).
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو دستگاه؛ یکی بمیرد دیگری ادامه دهد.
+#### صورت مسئله
 
-### ۵) مثال سازمانی
+1. HA A-P با HB Redundant و Monitor.
+2. ماتریس ۶ آزمون (۲۲-۳).
+3. Split-brain کنترل‌شده (قطع HBها) و بازیابی.
+4. ارتقا/Rollback.
+5. عیب (مربی): Heartbeat تنها یک لینک؛ Monitor اشتباه.
 
-سازمان: HA برای فایروال لبه بدون قطع بلندمدت.
+#### کلید
 
-### ۶) تصویر و توپولوژی
+- Failover ≈ ۳–۶ s (اندازه).
+- Split-brain: دو Primary؛ بازیابی با ریست یک عضو و Checksum.
+- پیشگیری: HB Redundant/Back-to-back.
 
-```text
-FGT-1 (Primary) <-HB-> FGT-2 (Secondary)
-```
+#### Rubric
 
-### ۷) پیکربندی (GUI و CLI)
+ساخت ۲۵؛ آزمون ۳۰؛ Split-brain ۱۵؛ ارتقا ۱۰؛ Evidence ۱۵؛ صداقت ۵.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### روش گرافیکی (GUI)
+**ساده:** Cluster Healthy.
 
-1. System > HA.
+**متوسط:** Failover.
 
-#### روش خط فرمان (CLI)
+**سخت:** Split-brain.
 
-```text
-get system ha status
-```
+### ۸) Verification (اثبات صحت)
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+- Evidence HA.
 
-- خواندنی.
+### ۹) Troubleshooting
 
-### ۸) تست عملکرد
-
-- اجرای سناریو.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Failover کند |
-| شواهد/دستور | ha status |
-| علت | Heartbeat |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** HA چیست؟ *(پاسخ: 22-5-ت1)*
-
-**ت2.** Sync؟ *(پاسخ: 22-5-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا تست؟ *(پاسخ: 22-5-م1)*
-
-**م2.** سناریو: Heartbeat قطع؛ پیامد؟ *(پاسخ: 22-5-م2)*
-
-**معیار تسلط:** ساخت HA و تست Failover.
-
-**اشتباهات رایج:** Heartbeat و Override.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Heartbeat | HA heartbeat | نبض HA | HA |
-
-| English sentence | ترجمه |
-|---|---|
-| Always test failover. | همیشه Failover را تست کنید. |
-
-#### کارت Lab — درس 22-5
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون HA |
-| 2 | پیش‌نیاز | درس ۲۲-۳ |
-| 3 | توپولوژی | FGT×2 |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | HA |
-| 8 | صورت مسئله | Failover |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping |
-| 11 | سناریوی خرابی | Failover کند |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | ثبت |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/ha-exam.md` |
-| 16 | Cleanup و بازگردانی | — |
+| ناقص | Rubric | کسری |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Lab فقط.
 
-<a id="ans-22"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- شواهد.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) وظایف آزمون؟ *(پاسخ: 22-5-ت1)*
+
+**ت2.** (ساده) چرا Split-brain فقط Lab؟ *(پاسخ: 22-5-ت2)*
+
+**ت3.** (متوسط) Failover را چگونه اندازه می‌گیرید؟ *(پاسخ: 22-5-ت3)*
+
+**ت4.** (متوسط) Monitor اشتباه چه می‌کند؟ *(پاسخ: 22-5-ت4)*
+
+**ت5.** (سخت) RCA Split-brain. *(پاسخ: 22-5-ت5)*
+
+**ت6.** (سخت، طراحی) بهبود. *(پاسخ: 22-5-ت6)*
+
+**Q1.** Quick quiz (English): How is split-brain best avoided? *(پاسخ: 22-5-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| HB | Heartbeat | نبض |
+
+- *Test every failure mode.* ← هر حالت خرابی را تست کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** آزمون HA. **Evidence:** `03-ops/ha-exam.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۲۲-۰ تا ۲۲-۴
 
 ## پاسخ‌های فصل 22
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**22-1-ت1** — Active-Passive؟
 
-یک فعال.
+### پاسخ‌های بازنویسی عمیق درس 22-1
 
-**22-1-ت2** — Heartbeat؟
+**22-1-ت1** — نقطه‌ی شکست واحد.
 
-لینک همگام‌سازی.
+**22-1-ت2** — خیر؛ SD-WAN/Dual-ISP.
 
-**22-1-م1** — چرا Heartbeat اختصاصی؟
+**22-1-ت3** — 1−0.005×0.005 = 99.9975٪.
 
-پایداری.
+**22-1-ت4** — دسترس‌پذیری سری ضرب می‌شود؛ ISP 99.9٪ کل را محدود می‌کند.
 
-**22-1-م2** — سناریو: Split-brain؛ علت؟
+**22-1-ت5** — ISP، Config خراب، CVE مشترک، Split-brain.
 
-قطع Heartbeat.
+**22-1-ت6** — جدول با ستون راه مکمل و RTO.
 
+**22-1-Q1** — Because serial availabilities multiply, so the lowest one dominates.
 
 ### پاسخ‌های بازنویسی درس 22-2
 
@@ -871,43 +861,39 @@ get system ha status
 
 **22-3-Q1** — Count lost replies multiplied by the ping interval.
 
-**22-4-ت1** — Checksum؟
 
-تطبیق Config.
+### پاسخ‌های بازنویسی عمیق درس 22-4
 
-**22-4-ت2** — Upgrade؟
+**22-4-ت1** — مقایسه‌ی Config اعضا.
 
-Backup اول.
+**22-4-ت2** — ممکن است ارتقای مستقیم پشتیبانی نشود و نسخه‌ی میانی لازم باشد.
 
-**22-4-م1** — چرا Backup؟
+**22-4-ت3** — Cluster سالم، Checksum یکسان، HB، Backup، Alert.
 
-بازگشت.
+**22-4-ت4** — Monitor/لینک/Override/HB.
 
-**22-4-م2** — سناریو: Upgrade شکست؛ چه می‌کنید؟
+**22-4-ت5** — Firmware+Config قبلی، Sync، تأیید.
 
-Rollback.
+**22-4-ت6** — مراحل ۱–۶ با زمان و مسئول.
 
-**22-5-ت1** — HA چیست؟
-
-دو دستگاه.
-
-**22-5-ت2** — Sync؟
-
-Config.
-
-**22-5-م1** — چرا تست؟
-
-اثبات.
-
-**22-5-م2** — سناریو: Heartbeat قطع؛ پیامد؟
-
-Split-brain.
+**22-4-Q1** — The configuration of both members and information about licenses and certificates.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 22-5
 
-<a id="ch23"></a>
+**22-5-ت1** — Cluster، Failover، Split-brain، Upgrade، Evidence.
 
+**22-5-ت2** — قطعی شدید و Session/آدرس تکراری در تولید.
+
+**22-5-ت3** — ping پیوسته؛ lost×interval.
+
+**22-5-ت4** — Failover بی‌دلیل یا نبود Failover هنگام خرابی لینک.
+
+**22-5-ت5** — HB قطع؛ دو Primary؛ ریست یک عضو؛ HB Redundant.
+
+**22-5-ت6** — HB اضافی، Alert، Pre-check.
+
+**22-5-Q1** — By using redundant, preferably back-to-back, heartbeat links.
 
 ### پاسخ‌های درس افزوده‌ی 22-0 (فصل 22)
 
@@ -1893,127 +1879,122 @@ end
 
 - Fortinet Docs: [Inter-VDOM routing](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/335646/inter-vdom-routing)، [Global and per-VDOM resources](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/538256/global-and-per-vdom-resources).
 
-## درس 24-1 — East-West و Segmentation
+## درس 24-1 — East-West و Segmentation: طراحی Zone، Trust Level، Flow Discovery و Policy Matrix
 
-**فصل 24 - روز 1 · پیش‌نیاز: فصل ۲۳ · ۶ ساعت**
+**فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۰، ۲۴-۰، ۱۲-۰ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ HA/VDOM Needs-License؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-ترافیک داخلی Data Center را هم باید کنترل کرد.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۲۳
+1. East-West را تحلیل و Zoneها/Trust Levelها را طراحی کند.
+2. Flow Discovery (Inventory جریان‌ها) را با Log/Learning انجام دهد.
+3. Policy Matrix داده‌محور بنویسد.
+4. Micro-segmentation را مفهومی بشناسد.
+5. Logging/Detection East-West را طراحی کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- North-South: ورود/خروج.
-- East-West: بین سرورها.
-- Zone: Web/App/DB.
-- Policy حداقلی.
-- Logging.
+بعد از نفوذ اولیه، مهاجم از طریق East-West حرکت می‌کند. Segmentation بدون «شناخت جریان‌ها» قطع سرویس می‌سازد؛ پس باید ابتدا جریان‌ها را کشف کرد.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-اتاق سرور با بخش‌های جدا.
+#### ۱) مراحل
 
-### ۵) مثال سازمانی
+1. Inventory: سرویس‌ها، پورت‌ها، وابستگی‌ها.
+2. Flow Discovery: Policy موقت Allow+Log (Learning) و جمع‌آوری ۲–۴ هفته.
+3. گروه‌بندی بر اساس نقش/حساسیت.
+4. Matrix حداقلی + Deny+Log.
+5. Cutover مرحله‌ای (Monitor→Enforce).
+6. بازبینی Hit Count.
 
-سازمان: Web/App/DB جدا با Policy حداقلی.
+#### ۲) Trust Level
 
-### ۶) تصویر و توپولوژی
+Management > DB > App > Web > Users > Guest؛ جهت ممنوع/مجاز و Inspection.
 
-```text
-Web -> App -> DB (only required ports)
+#### ۳) Matrix نمونه
+
+``` text
+WEB -> APP : 8080   APP -> DB : 1433   MGMT -> all : SSH/HTTPS (jump)
+WEB -> DB : none    USERS -> DB : none BACKUP -> DB : 1433 (restricted source/time)
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۴) Micro-segmentation
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+کنترل در سطح میزبان/VM (فایروال میزبان/SDN) برای Flowهای داخل یک Zone؛ فراتر از این Lab ولی هدف نهایی.
 
-#### روش گرافیکی (GUI)
+#### ۵) Detection
 
-1. Network > Interfaces > Zone.
+Deny بین Zoneهای داخلی، Scan داخلی، Flowهای جدید، حجم غیرعادی.
 
-#### روش خط فرمان (CLI)
+### ۴) طراحی و تصمیم‌گیری
 
-```text
-config system zone
-    edit "ZN-DB"
-        set interface "vlan30"
-    next
-end
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- `Unverified`.
-
-### ۸) تست عملکرد
-
-- طرح Zoneها.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | DB قابل دسترس از Web |
-| شواهد/دستور | policy lookup |
-| علت | Policy باز |
-| رفع | محدود |
+| Learning | قبل از Enforce |
+| Zone | نقش/حساسیت |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** Zoneهای WEB/APP/DB و Matrix.
 
-**ت1.** East-West؟ *(پاسخ: 24-1-ت1)*
+**متوسط (تحلیل):** Backup Server به همه دسترسی داشت: محدودسازی منبع/زمان؛ Zone جدا.
 
-**ت2.** Zone؟ *(پاسخ: 24-1-ت2)*
+**سخت (Learning):** Enforce روزِ اول باعث قطع ERP شد؛ Flow کشف‌نشده (Batch شبانه). راه: Learning ۴ هفته (شامل پایان ماه)، سپس Enforce مرحله‌ای.
 
-### ۱۱) مرور و ارزیابی
+### ۸) Verification (اثبات صحت)
 
-**م1.** چرا East-West؟ *(پاسخ: 24-1-م1)*
+- Matrix + آزمون منفی.
 
-**م2.** سناریو: Web به DB مستقیم؛ چه می‌کنید؟ *(پاسخ: 24-1-م2)*
+### ۹) Troubleshooting
 
-**معیار تسلط:** Segmentation و تست.
-
-**اشتباهات رایج:** any-any.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| East-West | East-West traffic | ترافیک داخلی | DC |
-
-| English sentence | ترجمه |
-|---|---|
-| Control east-west traffic. | ترافیک East-West را کنترل کنید. |
-
-#### کارت Lab — درس 24-1
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | طرح Zone |
-| 2 | پیش‌نیاز | فصل ۲۳ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Zone |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | DB قابل دسترس از Web |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | سند |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `02-design/dc-zones.md` |
-| 16 | Cleanup و بازگردانی | — |
+| سرویس قطع | Log Deny | Flow ناشناخته |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Least Privilege.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Inventory→Learning→Matrix→Enforce.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) East-West؟ *(پاسخ: 24-1-ت1)*
+
+**ت2.** (ساده) چرا Learning؟ *(پاسخ: 24-1-ت2)*
+
+**ت3.** (متوسط) چرا Backup محدود؟ *(پاسخ: 24-1-ت3)*
+
+**ت4.** (متوسط) چرا Learning شامل پایان ماه؟ *(پاسخ: 24-1-ت4)*
+
+**ت5.** (سخت) Enforce باعث قطع شد؛ تحلیل. *(پاسخ: 24-1-ت5)*
+
+**ت6.** (سخت، طراحی) برنامه‌ی Segmentation. *(پاسخ: 24-1-ت6)*
+
+**Q1.** Quick quiz (English): Why use a learning phase before enforcing segmentation? *(پاسخ: 24-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Micro-segmentation | Micro-segmentation | تقسیم ریز |
+| Hit count | Hit count | تعداد Match |
+
+- *Learn flows before blocking.* ← قبل از Block جریان‌ها را بشناسید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Zone. **Evidence:** `02-design/dc-zones.md`.
+
+### ۱۵) منابع
+
+- NIST SP 800-41
+- MITRE ATT&CK Lateral Movement
 
 <a id="l-24-2"></a>
 
@@ -2278,146 +2259,123 @@ end
 
 <a id="l-24-4"></a>
 
-## درس 24-4 — Logging و Gate G9
+## درس 24-4 — Logging Data Center و Gate G9: اثبات Isolation، آزمون منفی، Alert و مستندسازی
 
-**فصل 24 - روز 4 · پیش‌نیاز: درس ۲۴-۲ · ۶ ساعت**
+**فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۲۴-۰ تا ۲۴-۳، ۲۷-۰ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ HA/VDOM Needs-License؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-ثبت، تست Isolation و ارزیابی.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۴-۲
+1. Logging East-West را طراحی کند.
+2. G9 را اجرا کند و Isolation را با آزمون منفی ثابت کند.
+3. Alert بر Deny غیرعادی را بسازد.
+4. Evidence و RCA ارائه دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Log همه‌ی Deny.
-- تست Isolation.
-- Backup.
-- RCA.
-- آزمون G9.
+اثبات Segmentation = آزمون منفی + Log + Alert.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-اتاق سرور با بخش‌های جدا.
+#### وظایف G9
 
-### ۵) مثال سازمانی
+1. سه Zone + Policy.
+2. nmap منفی از هر Zone (فقط Lab).
+3. Log Deny و Alert نمونه.
+4. VDOM مفهومی/Lab (لایسنس).
+5. Evidence.
 
-سازمان: Web/App/DB جدا با Policy حداقلی.
+#### کلید
 
-### ۶) تصویر و توپولوژی
+- نتیجه‌ی nmap WEB→DB: filtered؛ APP→DB 1433 open.
+- Log: Deny policyid=0 برای اسکن.
+- Alert: >50 Deny از یک srcip به DB.
 
-```text
-Web -> App -> DB (only required ports)
-```
+#### Rubric
 
-### ۷) پیکربندی (GUI و CLI)
+Policy ۲۵؛ Isolation ۳۰؛ Log/Alert ۲۰؛ VDOM ۱۰؛ Evidence ۱۰؛ صداقت ۵.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### روش گرافیکی (GUI)
+**ساده:** Zoneها.
 
-1. Log & Report > Forward Traffic.
+**متوسط:** nmap.
 
-#### روش خط فرمان (CLI)
+**سخت:** Policy باز و رفع.
 
-```text
-execute backup config tftp fgt-g9.conf 192.168.90.10
-```
+### ۸) Verification (اثبات صحت)
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+- Evidence G9.
 
-- `Unverified`.
+### ۹) Troubleshooting
 
-### ۸) تست عملکرد
-
-- اجرای G9.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Isolation شکست |
-| شواهد/دستور | تست |
-| علت | Policy |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** G9؟ *(پاسخ: 24-4-ت1)*
-
-**ت2.** Backup؟ *(پاسخ: 24-4-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا تست؟ *(پاسخ: 24-4-م1)*
-
-**م2.** سناریو: Web به DB؛ شکست G9؟ *(پاسخ: 24-4-م2)*
-
-**معیار تسلط:** Segmentation و تست.
-
-**اشتباهات رایج:** any-any.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| G9 | Gate 9 | دروازه‌ی ۹ | دوره |
-
-| English sentence | ترجمه |
-|---|---|
-| Test isolation explicitly. | Isolation را صریحاً تست کنید. |
-
-#### کارت Lab — درس 24-4
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون G9 |
-| 2 | پیش‌نیاز | درس ۲۴-۲ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Zone |
-| 8 | صورت مسئله | G9 |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | تست |
-| 11 | سناریوی خرابی | Isolation شکست |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | شاهد |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/g9.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Isolation شکست | nmap | Policy |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- nmap فقط Lab.
 
-<a id="ans-24"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- آزمون منفی + Log.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) وظایف G9؟ *(پاسخ: 24-4-ت1)*
+
+**ت2.** (ساده) آزمون منفی چیست؟ *(پاسخ: 24-4-ت2)*
+
+**ت3.** (متوسط) Alert چه آستانه‌ای؟ *(پاسخ: 24-4-ت3)*
+
+**ت4.** (متوسط) nmap WEB→DB باز بود؛ رفع. *(پاسخ: 24-4-ت4)*
+
+**ت5.** (سخت) RCA Policy باز. *(پاسخ: 24-4-ت5)*
+
+**ت6.** (سخت، طراحی) بازبینی ماهانه. *(پاسخ: 24-4-ت6)*
+
+**Q1.** Quick quiz (English): How is isolation proven? *(پاسخ: 24-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| G9 | Gate 9 | دروازه ۹ |
+
+- *Prove isolation with evidence.* ← جداسازی را با شاهد ثابت کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** G9. **Evidence:** `03-ops/g9.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۲۴-۰ تا ۲۴-۳
 
 ## پاسخ‌های فصل 24
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**24-1-ت1** — East-West؟
 
-داخلی.
+### پاسخ‌های بازنویسی عمیق درس 24-1
 
-**24-1-ت2** — Zone؟
+**24-1-ت1** — ترافیک داخلی.
 
-گروه Interface.
+**24-1-ت2** — کشف Flowهای ناشناخته پیش از Block.
 
-**24-1-م1** — چرا East-West؟
+**24-1-ت3** — دسترسی گسترده ریسک حرکت جانبی.
 
-حرکت جانبی مهاجم.
+**24-1-ت4** — Jobهای دوره‌ای دیده شوند.
 
-**24-1-م2** — سناریو: Web به DB مستقیم؛ چه می‌کنید؟
+**24-1-ت5** — Flow ناشناخته؛ Log Deny؛ افزودن Rule و Monitor.
 
-Policy حداقلی.
+**24-1-ت6** — Inventory، Learning، Matrix، Cutover، بازبینی.
 
+**24-1-Q1** — To discover legitimate flows and avoid outages.
 
 ### پاسخ‌های بازنویسی درس 24-2
 
@@ -2440,27 +2398,22 @@ Policy حداقلی.
 
 **24-3-Q1** — Inside the config vdom / edit <name> context of that VDOM.
 
-**24-4-ت1** — G9؟
 
-سه Zone+Isolation.
+### پاسخ‌های بازنویسی عمیق درس 24-4
 
-**24-4-ت2** — Backup؟
+**24-4-ت1** — Zone/Policy، nmap، Log/Alert، VDOM، Evidence.
 
-execute backup.
+**24-4-ت2** — اتصالی که باید بلاک شود.
 
-**24-4-م1** — چرا تست؟
+**24-4-ت3** — >50 Deny از یک srcip به DB در ۵ دقیقه.
 
-اثبات.
+**24-4-ت4** — Policy گسترده؛ محدودسازی.
 
-**24-4-م2** — سناریو: Web به DB؛ شکست G9؟
+**24-4-ت5** — Any-Any موقت؛ حذف و آزمون.
 
-بله.
+**24-4-ت6** — Hit Count.
 
-
----
-
-<a id="end8"></a>
-
+**24-4-Q1** — By negative tests showing blocked connections plus deny logs.
 
 ### پاسخ‌های درس افزوده‌ی 24-0 (فصل 24)
 
