@@ -3227,154 +3227,167 @@ diagnose sniffer packet any "host 8.8.8.8 and port 443" 4 20 l
 
 ## درس 12-1 — معماری FortiGate، اولین بوت و تأیید نسخه
 
-**فصل 12 - روز 1 · پیش‌نیاز: فصل ۱۱ (G4) · ۶ ساعت**
+**فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۰، ۱۱-۳ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-FortiGate فایروال نسل جدید Fortinet با سیستم‌عامل FortiOS است. قبل از هر کار باید نسخه‌ی واقعی Image را بدانیم (چون قابلیت‌ها و دستورها به نسخه وابسته‌اند) و راه‌های دسترسی (Console، GUI، SSH) را بشناسیم.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-مبانی فایروال (فصل ۱۱)؛ Lab ایزوله و `vSwitch-FGT`؛ تأیید شما برای بوت اول.
+1. اجزای معماری (CPU/NPU، FortiOS، VDOM root، Management) را شرح دهد.
+2. مراحل اولین بوت (کنسول، IP پیش‌فرض، تغییر رمز) را اجرا کند.
+3. نسخه، سریال، لایسنس و HA را با `get system status` تأیید کند.
+4. تنظیمات پایه (hostname، timezone، DNS، NTP) را اعمال کند.
+5. تأیید کند نسخه‌ی روی دستگاه همان نسخه‌ی هدف دوره (7.0.3) است و در صورت مغایرت گزارش دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- FortiOS: سیستم‌عامل؛ **FortiGate-VM** نسخه‌ی مجازی (بدون ASIC سخت‌افزاری؛ کارایی پایین‌تر).
-- دو حالت بازرسی: **Flow-based** (پیش‌فرض؛ سریع) و **Proxy-based** (ژرف‌تر).
-- **VDOM** فایروال مجازی؛ در Lab فقط `root`.
-- ورودی‌ها: Console (Telnet از PNetLab)، GUI (HTTPS)، SSH. VM به‌طور معمول روی `port1` آدرس 192.168.1.99/24 می‌گیرد (`Unverified` در 7.0.3).
-- ورود اول: کاربر `admin` با رمز خالی؛ سیستم رمز جدید می‌خواهد.
-- ویژگی‌های وابسته به لایسنس (UTM/FortiGuard، HA، FortiManager) در Evaluation محدود/نامعلوم است.
+دستگاه جدید را از جعبه درمی‌آورید. پیش از هر Policy باید بدانید چه دستگاهی است، چه نسخه‌ای دارد و لایسنس دارد یا نه؛ چون ویژگی‌ها و دستورها به نسخه وابسته‌اند و «همان‌طور که در دوره نوشته شده» کار نمی‌کند اگر نسخه فرق کند.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-بوت FortiGate و دیدن نسخه، سریال و وضعیت لایسنس.
+#### ۱) معماری
 
-### ۵) مثال سازمانی
-
-سازمان قبل از هر ارتقا یا طراحی نسخه و لایسنس را ثبت می‌کند (Inventory).
-
-### ۶) تصویر و توپولوژی
-
-```text
-PC -> [mgmt net] -> FGT port1 (GUI/SSH)
-PNetLab console -> FGT console (telnet)
+``` text
+Console/GUI/SSH --> FortiOS (control plane: routing, policy, daemons)
+Traffic --> CPU (flow) and/or NPU/SPU (offload) --> interfaces
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+مدل‌های دارای NPU بخشی از ترافیک را Offload می‌کنند (درس ۱۲-۹). نسخه‌ی مجازی (VM) NPU ندارد و برای Lab مناسب است.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۲) اولین اتصال
 
-#### روش گرافیکی (GUI)
+| مورد | مقدار پیش‌فرض رایج |
+|---|---|
+| Admin | admin |
+| رمز | خالی (در اولین ورود الزام تغییر) |
+| IP مدیریت | 192.168.1.99/24 روی مدل‌های سخت‌افزاری (طبق مدل متفاوت) |
 
-1. در مرورگر `https://<IP-port1>` را باز کنید (هشدار Certificate را در Lab بپذیرید).
-2. با `admin` و رمز خالی وارد و رمز جدید (نمونه: Lab-Only-123) تعیین کنید.
-3. Dashboard > Status: ویجت System Information را بخوانید (Firmware، Serial، Uptime).
-4. System > Firmware: نسخه‌ی فعلی را ثبت کنید.
-5. بالا-راست: `>_` Console CLI را باز کنید و `get system status` را اجرا کنید.
+رمز را بلافاصله قوی کنید و در Inventory ننویسید (طبق قوانین پروژه).
 
-#### روش خط فرمان (CLI)
+#### ۳) تأیید نسخه
 
-```text
+``` text
+get system status
+```
+
+خروجی باید Version (مثلاً v7.0.3 build ...)، Serial، License Status، Hostname و Operation Mode را نشان دهد.
+
+#### ۴) تنظیمات پایه
+
+``` text
+config system global
+ set hostname FGT-EDGE-01
+ set timezone 26
+end
+config system dns
+ set primary 1.1.1.1
+ set secondary 8.8.8.8
+end
+config system ntp
+ set ntpsync enable
+ set type fortiguard
+end
+```
+
+کد منطقه‌ی زمانی عددی است و طبق CLI help (`set timezone ?`) باید انتخاب شود.
+
+#### ۵) نسخه‌ی هدف
+
+دوره روی 7.0.3 نوشته شده؛ اگر دستگاه نسخه‌ی دیگری دارد، هر درس را با Release Notes همان نسخه مقایسه کنید و تفاوت را ثبت کنید، نه اینکه دستور را کورکورانه بزنید.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| نام‌گذاری | سایت-نقش-شماره |
+| NTP | FortiGuard یا داخلی |
+| نسخه | نسخه‌ی پایدار و توصیه‌شده‌ی Fortinet برای مدل |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** `get system status` را می‌زنید؛ نسخه 7.0.3؛ License valid؛ hostname تغییر می‌کند.
+
+**متوسط (تحلیل):** پس از تغییر hostname، SSH قطع شد؟ خیر؛ ولی اگر `set timezone` اشتباه باشد لاگ‌ها ساعت غلط دارند؛ برای Correlation در SIEM مشکل می‌شود؛ پس NTP را بررسی کنید: `diagnose sys ntp status`.
+
+**سخت (مغایرت نسخه):** دستگاه v7.2 دارد ولی دوره 7.0.3؛ مراحل: ثبت نسخه، مقایسه Release Notes، علامت `Unverified` روی دستورهای مشکوک، و عدم Downgrade بدون Backup و تأیید.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. ورود به GUI از طریق IP مدیریت.
+2. Dashboard → System Information: نسخه و سریال.
+3. System → Settings: Hostname، Timezone، NTP.
+4. Network → DNS.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 get system status
 get system performance status
-get hardware status
-show full-configuration | grep -f hostname
+diagnose sys ntp status
+show system global | grep hostname
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `get system status`: Version، Build، Serial، License Status، Hostname، Operation Mode.
-- `get system performance status`: CPU/Memory/Sessions.
-- راستی‌آزمایی: نسخه‌ی چاپ‌شده را با «7.0.3» مقایسه و در Decision Log ثبت کنید.
-- بازگشت: ندارد (فقط مشاهده).
-- **هرگز** در Production `execute factoryreset` نزنید؛ بخش ۱۲-۶.
+- نسخه و Build ثبت شده.
+- License وضعیت صحیح.
+- NTP همگام.
 
-#### کارت قابلیت (۱۰ پرسش)
+### ۹) Troubleshooting
 
-| # | پرسش | پاسخ |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | مفهوم | فایروال نسل جدید با FortiOS |
-| 2 | مشکلی که حل می‌کند | کنترل ترافیک و امنیت لایه ۷ |
-| 3 | چه زمانی استفاده شود | لبه‌ی شبکه/بین Zoneها |
-| 4 | چه زمانی استفاده نشود | وقتی فقط L3 لازم است یا لایسنس/منابع نیست |
-| 5 | پیش‌نیازها | Lab ایزوله، Image |
-| 6 | وابستگی به Routing/Policy/NAT | به Routing/Policy/NAT برای عبور ترافیک |
-| 7 | پیاده‌سازی | Console/GUI/SSH |
-| 8 | راستی‌آزمایی | `get system status` |
-| 9 | عیب‌یابی | بررسی IP/allowaccess/Route |
-| 10 | خطاهای رایج | تکیه بر نسخه‌ی اسمی |
+| ورود ممکن نیست | کابل/IP/Admin access | کنسول؛ IP را بررسی |
+| NTP sync نمی‌شود | DNS/Route | DNS و مسیر اینترنت |
+| License invalid | FortiCare | ثبت/اتصال |
 
-### ۸) تست عملکرد
+### ۱۰) نکات امنیتی
 
-- `get system status` نسخه و `License Status` را نشان دهد؛ GUI در https://192.168.1.99 باز شود.
+- رمز قوی و تغییر پیش‌فرض.
+- مدیریت فقط روی Interface مدیریتی.
 
-### ۹) عیب‌یابی
+### ۱۱) جمع‌بندی مفهومی
 
-| بخش | شرح |
-|---|---|
-| Symptom | GUI باز نمی‌شود |
-| شواهد/دستور | Ping از PC ناموفق؛ `get system interface physical` روی کنسول: IP/وضعیت |
-| علت | IP/VLAN مدیریت یا allowaccess |
-| رفع | تنظیم آدرس port1 و `set allowaccess https ping ssh` |
+- اول شناخت دستگاه.
+- نسخه مرجع است.
+- Hostname/NTP/DNS پایه‌اند.
 
-### ۱۰) تمرین مستقل
+### ۱۲) تمرین و ارزیابی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ت1.** (ساده) کدام دستور نسخه را نشان می‌دهد؟ *(پاسخ: 12-1-ت1)*
 
-**ت1.** چرا اول نسخه را ثبت می‌کنیم؟ *(پاسخ: 12-1-ت1)*
+**ت2.** (ساده) چرا NTP مهم است؟ *(پاسخ: 12-1-ت2)*
 
-**ت2.** Flow-based و Proxy-based؟ *(پاسخ: 12-1-ت2)*
+**ت3.** (متوسط) چرا نسخه‌ی دستگاه باید با دوره تطبیق شود؟ *(پاسخ: 12-1-ت3)*
 
-**ت3.** VDOM چیست؟ *(پاسخ: 12-1-ت3)*
+**ت4.** (متوسط) رمز پیش‌فرض را چه کنیم؟ *(پاسخ: 12-1-ت4)*
 
-### ۱۱) مرور و ارزیابی
+**ت5.** (سخت) نسخه v7.2 است؛ چه می‌کنید؟ *(پاسخ: 12-1-ت5)*
 
-**م1.** چرا FortiGate-VM در Evaluation محدودیت دارد؟ *(پاسخ: 12-1-م1)*
+**ت6.** (سخت، طراحی) برگه‌ی اولین بوت. *(پاسخ: 12-1-ت6)*
 
-**م2.** سناریو: نسخه‌ی چاپ‌شده با 7.0.3 فرق دارد؛ چه می‌کنید؟ *(پاسخ: 12-1-م2)*
+**Q1.** Quick quiz (English): Which command displays the FortiOS version and serial number? *(پاسخ: 12-1-Q1)*
 
-**معیار تسلط:** بوت امن، ثبت نسخه و توضیح ورودی‌های مدیریت.
+### ۱۳) اصطلاحات و English Corner
 
-**اشتباهات رایج:** تکیه بر نسخه‌ی اسمی؛ بوت بدون Snapshot/Backup.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| FortiOS | Fortinet Operating System | سیستم‌عامل FortiGate | همه‌ی دستورها |
-| VDOM | Virtual Domain | فایروال مجازی | Multi-tenant |
-| Flow-based | Flow-based inspection | بازرسی جریانی | پیش‌فرض |
-
-| English sentence | ترجمه |
-|---|---|
-| Record the exact firmware version before any change. | قبل از هر تغییر نسخه‌ی دقیق Firmware را ثبت کنید. |
-| Flow-based inspection is faster than proxy-based. | بازرسی Flow-based سریع‌تر از Proxy-based است. |
-
-#### کارت Lab — درس 12-1
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | بوت اول و تأیید نسخه |
-| 2 | پیش‌نیاز | فصل ۱۱ (G4) |
-| 3 | توپولوژی | FGT با port1 به مدیریت |
-| 4 | تجهیزات | FortiGate-VM + PC |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | 192.168.1.99/24 (port1، `Unverified`) |
-| 7 | وضعیت اولیه | Image دست‌نخورده |
-| 8 | صورت مسئله | ثبت نسخه/سریال/لایسنس |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `get system status` |
-| 11 | سناریوی خرابی | GUI باز نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | نسخه ثبت‌شده |
-| 14 | معیار پذیرش | Snapshot قبل از بوت؛ نسخه در Decision Log |
-| 15 | مستندات نهایی | `phase0a/fortigate_eval_tracker.md` به‌روز |
-| 16 | Cleanup و بازگردانی | بازگرداندن Snapshot |
+| NPU | Network Processor Unit | پردازنده‌ی شبکه |
+| VDOM | Virtual Domain | دامنه‌ی مجازی |
+| NTP | Network Time Protocol | هماهنگ‌سازی زمان |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Always verify the firmware version first.* ← همیشه اول نسخه‌ی Firmware را تأیید کنید.
 
----
+### ۱۴) کارت Lab
+
+**کارت Lab:** اولین بوت (اجرا نشده). **Evidence:** `03-ops/fgt-asbuilt-1.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Getting started
+- FortiOS 7.0.3 Release Notes
 
 <a id="l-12-2"></a>
 
@@ -4729,25 +4742,22 @@ get system status
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**12-1-ت1** — چرا اول نسخه را ثبت می‌کنیم؟
 
-قابلیت‌ها و دستورها به نسخه بستگی دارد؛ ثبت مبنای عیب‌یابی و ارتقاست.
+### پاسخ‌های بازنویسی عمیق درس 12-1
 
-**12-1-ت2** — Flow-based و Proxy-based؟
+**12-1-ت1** — `get system status`؛ خروجی Version/Serial/License را دارد.
 
-Flow سریع و بدون بافر کامل؛ Proxy عمیق‌تر و کندتر.
+**12-1-ت2** — زمان صحیح برای Log، گواهی و Correlation در SIEM لازم است.
 
-**12-1-ت3** — VDOM چیست؟
+**12-1-ت3** — دستورها و رفتارها بین نسخه‌ها فرق دارند (مثلاً SD-WAN/SSL-VPN)؛ بدون تطبیق ممکن است دستور خطا بدهد یا رفتار متفاوت باشد.
 
-فایروال مجازی مستقل داخل یک دستگاه.
+**12-1-ت4** — فوراً قوی کنیم و در ریپو ذخیره نکنیم.
 
-**12-1-م1** — چرا FortiGate-VM در Evaluation محدودیت دارد؟
+**12-1-ت5** — ثبت، مقایسه با Release Notes، علامت Unverified، عدم Downgrade بدون Backup.
 
-لایسنس/Trial؛ بعضی قابلیت‌ها (UTM، HA) وابسته به Subscription هستند.
+**12-1-ت6** — نسخه، سریال، License، hostname، NTP، DNS، رمز، Backup اولیه.
 
-**12-1-م2** — سناریو: نسخه‌ی چاپ‌شده با 7.0.3 فرق دارد؛ چه می‌کنید؟
-
-نسخه‌ی واقعی را مبنا قرار دهید و دستورها را با Release Notes همان نسخه تطبیق دهید.
+**12-1-Q1** — get system status.
 
 **12-2-ت1** — Gateway هر VLAN روی چیست؟
 
