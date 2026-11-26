@@ -17672,86 +17672,159 @@ R1# clear ip bgp 192.0.2.1 soft in
 
 **9-1-ت1** — Session Established و ۵ Prefix دریافت شده.
 
+ستون آخر `show ip bgp summary` یا حالت (Idle/Active/...) را نشان می‌دهد یا اگر Session برقرار باشد، تعداد Prefix دریافتی را. عدد ۵ یعنی Session در حالت Established است و ۵ Prefix از این Neighbor دریافت و پذیرفته شده است. ستون Up/Down مدت برقراری را می‌گوید. اگر عدد ۰ بود Session بالاست ولی Prefixی دریافت نشده: به سراغ فیلتر ورودی یا اعلام‌نکردن Peer بروید (درس ۹-۶).
+
 **9-1-ت2** — TCP برقرار نشده و تلاش دوباره می‌شود.
+
+Active در BGP یعنی «روتر فعالانه در حال تلاش برای ساختن اتصال TCP به Peer است ولی موفق نشده». این حالت سالم نیست و نباید با «فعال و سالم» اشتباه شود. علل: Peer در دسترس نیست، پورت 179 بسته است، آدرس Neighbor یا update-source اشتباه است، یا ACL/Firewall. اولین بررسی: `ping`، `show ip route <peer>` و `telnet <peer> 179`.
 
 **9-1-ت3** — کوچک‌تر: 90 ثانیه (Keepalive 30).
 
+Hold Time نهایی کوچک‌ترین مقدار پیشنهادی دو سر است؛ پس بین ۱۸۰ و ۹۰، مقدار ۹۰ ثانیه اعمال می‌شود و Keepalive معمولاً یک‌سوم Hold یعنی ۳۰ ثانیه. نتیجه: اگر Peer ۹۰ ثانیه چیزی نفرستد Session با NOTIFICATION بسته می‌شود. هماهنگ‌کردن تایمر دو سر برای پیش‌بینی‌پذیری بهتر است.
+
+``` text
+Hold = min(180, 90) = 90 s ; Keepalive = 90 / 3 = 30 s
+```
+
 **9-1-ت4** — تا TCP از Loopback/آدرس درست ساخته شود و با Neighbor دیگر مطابق باشد.
+
+Session BGP روی TCP است و آدرس Source بسته را Neighbor با دستور neighbor خودش می‌شناسد. وقتی از Loopback Peer می‌کنید، باید `update-source Loopback0` بگذارید تا TCP از آدرس Loopback ساخته شود؛ وگرنه بسته با آدرس Interface خروجی می‌رود و Neighbor آن را به‌عنوان Peer ناشناخته رد می‌کند. در iBGP Loopback به‌همراه IGP پایداری را بالا می‌برد چون Session با خرابی یک لینک نمی‌افتد.
 
 **9-1-ت5** — Loss باعث Hold Timer Expired؛ رفع Loss/QoS/BFD.
 
+Session هر چند دقیقه می‌افتد و NOTIFICATION «Hold Timer Expired» می‌دهد: ۴۰٪ Loss باعث می‌شود چند Keepalive پشت‌سرهم گم شود و Hold (۱۸۰ ثانیه) تمام شود. رفع علت: کاهش Loss (کابل، QoS برای ترافیک کنترل)، یا BFD برای تشخیص سریع‌تر. تنظیم Timer کوتاه‌تر فقط سرعت تشخیص را زیاد می‌کند و ریسک Flap را هم؛ ریشه‌ی Loss باید رفع شود.
+
 **9-1-ت6** — Timer کوتاه+BFD؛ آزمون لینک ناپایدار؛ Dampening.
+
+Failover سریع BGP: Timer را کوتاه یا BFD (تشخیص زیر ثانیه) فعال می‌کنند. ریسک: لینک ناپایدار با هر Loss کوتاه Session را می‌اندازد و Flap پیاپی ایجاد می‌کند. راه کاهش: آزمون روی لینک ناپایدار، Dampening/Hold-down، و سنجش میزان Loss واقعی پیش از کاهش Timer. معیار: Failover < ۳ ثانیه بدون Flap در آزمون ۲۴ ساعته.
 
 **9-1-Q1** — Active.
 
+در حالت Active، TCP به Peer برقرار نشده و روتر دوباره تلاش می‌کند. بررسی اولیه: Reachability، پورت 179 و ACL.
 
 ### پاسخ‌های بازنویسی عمیق درس 9-2
 
 **9-2-ت1** — BGP فقط Prefixی را اعلام می‌کند که Route دقیق در RIB دارد.
 
+دستور `network` فقط Prefixی را اعلام می‌کند که در RIB با همان Mask دقیق وجود داشته باشد. اگر Route /16 داشته باشید و `network` برای /24 بنویسید، اعلام نمی‌شود. راه: Route Null0 دقیق برای Summary یا نوشتن Prefix واقعی. این رایج‌ترین علت «Prefix در BGP نیست» است.
+
 **9-2-ت2** — 20.
+
+Administrative Distance پیش‌فرض eBGP برابر ۲۰ است (iBGP ۲۰۰). یعنی در رقابت با OSPF (110) مسیر eBGP وارد RIB می‌شود. اگر Static با AD 1 همان Prefix را داشته باشد، BGP در RIB نمی‌نشیند و در `show ip bgp` با علامت r (RIB-failure) دیده می‌شود.
 
 **9-2-ت3** — update-source، ebgp-multihop و Route به Loopback Peer.
 
+برای eBGP با Loopback باید سه چیز باشد: `neighbor X update-source Loopback0` برای آدرس Source، `neighbor X ebgp-multihop 2` چون TTL پیش‌فرض eBGP برابر ۱ است و Loopback یک Hop بیشتر فاصله دارد، و Route Static/IGP به Loopback Peer. بدون هر یک Session بالا نمی‌آید.
+
 **9-2-ت4** — نشت مسیرهای ناخواسته و Origin Incomplete؛ کنترل کم.
+
+`redistribute connected/static` همه‌ی مسیرهای موجود را با Origin Incomplete وارد BGP می‌کند؛ ریسک: نشت مسیرهای ناخواسته (آدرس‌های داخلی یا لینک‌ها) به اینترنت و کنترل کم. ترجیح: `network` با Route-map/Prefix-list برای کنترل دقیق.
 
 **9-2-ت5** — RIB-failure؛ مسیر با AD بهتر از منبع دیگر در RIB است.
 
+`r` در `show ip bgp` یعنی RIB-failure: مسیر BGP معتبر است ولی مسیر بهتری با AD کمتر از منبع دیگر (مثلاً Static) در RIB نشسته؛ پس BGP نصب نمی‌شود. با `show ip bgp rib-failure` علت را ببینید و AD/Static را اصلاح کنید.
+
 **9-2-ت6** — ASN، Peer IP، Prefix-list، Max-prefix، Auth.
+
+برگه‌ی eBGP دو سازمان شامل: ASN هر دو، آدرس Peer، Prefixهای مجاز اعلام و دریافت (Prefix-list)، Max-prefix، Authentication (MD5)، TTL Security، تماس NOC و Timer/BFD. این برگه پیش از فعال‌سازی امضا می‌شود تا اشتباه کانفیگ ISP یا خودمان به Leak نرسد.
 
 **9-2-Q1** — Because there is no exactly matching route in the routing table.
 
+چون BGP فقط Prefixی را اعلام می‌کند که Route دقیقاً مطابق در RIB باشد؛ برای Summary باید Route Null0 با همان Mask ساخت.
 
 ### پاسخ‌های بازنویسی عمیق درس 9-3
 
 **9-3-ت1** — Split-horizon: مسیر iBGP به iBGP Peer داده نمی‌شود.
 
+قاعده‌ی Split-horizon در iBGP: مسیری که از یک iBGP Peer یاد گرفته شده به iBGP Peer دیگر داده نمی‌شود تا حلقه‌ی AS_PATH-بدون-تغییر ایجاد نشود (در iBGP AS_PATH تغییر نمی‌کند). نتیجه: همه‌ی روترهای iBGP باید Full-mesh باشند یا از Route Reflector استفاده شود.
+
 **9-3-ت2** — Next-hop را آدرس خود روتر قرار می‌دهد.
+
+`next-hop-self` Next-hop مسیرهایی را که به iBGP Peer می‌دهد آدرس خود روتر قرار می‌دهد. چون پیش‌فرض iBGP تغییر Next-hop نمی‌دهد و Next-hop خارجی (آدرس ISP) ممکن است در IGP نباشد، روتر داخلی آن را Inaccessible می‌بیند. با next-hop-self مسیر قابل‌استفاده می‌شود.
 
 **9-3-ت3** — 20×19/2 = 190.
 
+Full-mesh برای n روتر n(n−1)/2 Session دارد. برای ۲۰ روتر ۱۹۰ Session؛ مدیریت و CPU سخت می‌شود. راه: Route Reflector با تعداد Session تقریباً خطی (هر Client با RR).
+
+``` text
+Sessions = 20 x 19 / 2 = 190
+```
+
 **9-3-ت4** — پایداری با وجود چند مسیر؛ نیاز IGP.
+
+Peering iBGP با Loopback باعث می‌شود Session با خرابی یک لینک نیفتد (IGP مسیر جایگزین به Loopback می‌دهد) و Session مستقل از Interface فیزیکی باشد. پیش‌نیاز: IGP (OSPF) Reachability Loopback را بدهد و `update-source Loopback0`.
 
 **9-3-ت5** — next-hop-self یا IGP Reachability؛ ریست نرم.
 
+Next-hop inaccessible: مسیر BGP در Table است ولی Next-hop (خارجی) در RIB نیست. راه: `neighbor X next-hop-self` روی روتر مرزی یا Redistribute/Passive کردن شبکه‌ی لینک خارجی در IGP. پس از تغییر `clear ip bgp X soft` و تأیید `>` و Route در RIB.
+
 **9-3-ت6** — طرح.
+
+طرح Route Reflector دوتایی: RR1 و RR2 با Cluster-ID یکسان یا متفاوت (طبق طراحی)، Clientها با هر دو Session دارند؛ در خرابی RR1، RR2 جایگزین می‌شود. Session شمار حدود 2×n به‌جای n(n−1)/2. آزمون: قطع RR1 و دیدن Convergence و نبود حلقه.
 
 **9-3-Q1** — To preserve the original exit point information; hence the next hop must be reachable via the IGP.
 
+iBGP عمداً Next-hop را عوض نمی‌کند تا اطلاعات خروج اصلی حفظ شود؛ بنابراین Next-hop باید از طریق IGP قابل‌دسترس باشد.
 
 ### پاسخ‌های بازنویسی عمیق درس 9-4
 
 **9-4-ت1** — Local-Pref (کل AS) یا Weight (محلی).
 
+برای کنترل خروج: Local-Preference در کل AS (مقدار بزرگ‌تر بهتر) و Weight فقط محلی روی همان روتر (سیسکو). در طراحی دو ISP معمولاً Local-Pref 200 برای ISP ترجیحی ست می‌شود و `clear ip bgp soft in` اعمال می‌شود.
+
 **9-4-ت2** — AS_PATH را بلندتر نشان می‌دهد تا کم‌ترجیح شود.
+
+AS-Path Prepend شماره‌ی AS خودمان را چند بار به مسیرهای ارسالی اضافه می‌کند تا مسیر بلندتر و کم‌ترجیح دیده شود. برای تأثیر روی ورود ترافیک استفاده می‌شود؛ تضمینی نیست چون ISP می‌تواند Local-Pref خودش را اعمال کند.
 
 **9-4-ت3** — Prepend مسیرهای ارسالی را تغییر می‌دهد نه ترجیح خودمان برای دریافتی.
 
+Prepend روی ورودی برای کنترل خروج بی‌اثر است چون Prepend مسیرهای ارسالی را تغییر می‌دهد، نه ترجیح ما برای مسیرهای دریافتی. برای خروج باید Local-Pref/Weight روی مسیرهای دریافتی گذاشت.
+
 **9-4-ت4** — فقط بین Pathهای همان AS همسایه.
+
+MED فقط بین مسیرهای دریافتی از همان AS همسایه مقایسه می‌شود (پیش‌فرض)؛ بین دو AS مختلف مقایسه نمی‌شود مگر با `bgp always-compare-med`. کم‌تر بهتر است و برای پیشنهاد نقطه‌ی ورود به همسایه به‌کار می‌رود.
 
 **9-4-ت5** — تقسیم Prefix، Prepend، Community، اندازه‌گیری.
 
+برای تقسیم ورودی ۷۰/۳۰ بین دو ISP: Prefix را به دو نیمه تقسیم کنید و هر نیمه را با اولویت متفاوت اعلام کنید (نیمه‌ی بالا ترجیحاً از A، نیمه‌ی پایین از B)، Prepend برای مسیر پشتیبان، Community طبق مستند ISP و اندازه‌گیری ترافیک ورودی با Looking Glass/NetFlow. نتیجه تضمینی نیست؛ آزمون و تنظیم تکراری لازم است.
+
 **9-4-ت6** — Local-Pref+Prefix-list+Prepend+Community.
+
+Policy کامل دو ISP: Local-Pref 200 برای ISP-A (خروج)، Prefix-list خروجی فقط Prefixهای خودمان، Prepend 3× روی ISP-B برای ورودی، Community Action طبق ISP، Max-prefix و `soft` پس از هر تغییر. آزمون: traceroute خروجی و مشاهده‌ی ترافیک ورودی.
 
 **9-4-Q1** — Local preference.
 
+Local Preference ویژگی‌ای است که کل AS (iBGP) می‌بیند و مسیر خروج را تعیین می‌کند؛ Prepend فقط ورودی را تحت تأثیر می‌گذارد.
 
 ### پاسخ‌های بازنویسی عمیق درس 9-5
 
 **9-5-ت1** — طول Prefix حداکثر 24.
 
+در Prefix-list، `le 24` یعنی طول Prefix حداکثر ۲۴ (مثلاً 10.0.0.0/8 le 24 همه‌ی زیرمجموعه‌های تا /24)، و `ge` حداقل طول. این برای فیلتر Prefixهای خیلی طولانی (/25 تا /32) که نباید در اینترنت دیده شوند کاربرد دارد.
+
 **9-5-ت2** — AS_PATH خالی؛ مسیرهای خودمان.
+
+عبارت `^$` در AS-path access-list یعنی AS_PATH خالی؛ مسیرهایی که خودمان مبدأ آن‌ها هستیم. با `filter-list ... out` فقط Prefixهای خودمان اعلام می‌شود و از Transit شدن جلوگیری می‌کند.
 
 **9-5-ت3** — اعلام مسیرهای یک ISP به ISP دیگر و تبدیل ما به Transit.
 
+Route Leak یعنی مسیرهای یک ISP (مثلاً A) به ISP دیگر (B) اعلام شود و ما به‌ناخواسته Transit شویم؛ ترافیک اضافی و شکایت ISPها. جلوگیری: فیلتر خروجی با `^$` و Prefix-list، و فیلتر ورودی.
+
 **9-5-ت4** — محافظت جدول/حافظه در برابر اشتباه یا حمله.
+
+Max-prefix تعداد Prefixهای دریافتی از Neighbor را محدود می‌کند و در اشتباه/حمله (ارسال ۲۰۰ هزار Prefix) از پر شدن RIB و حافظه جلوگیری می‌کند؛ با هشدار در ۸۰٪ و قطع یا Warning-only. مقدار را از واقعیت ISP بگیرید.
 
 **9-5-ت5** — advertised-routes، filter-list ^$ out، soft out.
 
+کشف و رفع Leak: ۱) `show ip bgp neighbors X advertised-routes` Prefixهای اضافه را نشان می‌دهد. ۲) `filter-list ^$ out` و Prefix-list خروجی. ۳) `clear ip bgp X soft out`. ۴) آزمون: دوباره advertised-routes. ۵) اطلاع ISP.
+
 **9-5-ت6** — Bogon in، Prefix out، Max-prefix، RPKI مفهومی.
+
+استاندارد فیلتر ISP: ورودی Bogon و Prefixهای خصوصی/طولانی را رد کند و Max-prefix بگذارد؛ خروجی فقط Prefixهای خود. RPKI/ROA (اعتبارسنجی مبدأ) به‌عنوان لایه‌ی بعدی مفهومی. RFC 7454 مرجع بهترین رویه است.
 
 **9-5-Q1** — Routes with an empty AS path, i.e., locally originated routes.
 
+`^$` مسیرهای با AS_PATH خالی را تطبیق می‌دهد؛ یعنی مسیرهایی که خودمان مبدأ هستیم.
 
 ### پاسخ‌های بازنویسی عمیق درس 9-6
 
@@ -17759,6 +17832,8 @@ R1# clear ip bgp 192.0.2.1 soft in
 ### پاسخ‌های بازنویسی عمیق درس 9-6
 
 **9-6-ت1** — TCP برقرار نشده و تلاش دوباره می‌شود؛ ابتدا `telnet peer 179` و ACL/Reachability.
+
+Active یعنی TCP برقرار نشده و تلاش تکرار می‌شود؛ ابتدا `telnet peer 179` و بررسی ACL/Reachability.
 
 **9-6-ت2** — Session برقرار است ولی Prefixی دریافت نشده؛ فیلتر ورودی یا Peer اعلام نمی‌کند.
 
@@ -17769,6 +17844,8 @@ R1# clear ip bgp 192.0.2.1 soft in
 **9-6-ت5** — اول لایه‌ی پایین‌تر را رفع و آزمون کنید، بعد بالاتر؛ ثبت اثر هر تغییر.
 
 **9-6-ت6** — هفت گام، دستور هر گام، خروجی مورد انتظار، اقدام.
+
+چک‌لیست BGP: هفت گام (Session، TCP، Received، Policy، Best path، RIB، Forwarding) با دستور و خروجی مورد انتظار.
 
 **9-6-Q1** — show ip bgp rib-failure.
 
@@ -19391,13 +19468,19 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 **10-1-ت1** — ۲۰ و نوع E2 (برای BGP مقدار ۱).
 
+هنگام Redistribution به OSPF، مسیرها به‌صورت External Type 2 (E2) با Metric ثابت ۲۰ وارد می‌شوند (برای BGP مقدار ۱). یعنی هر روتر OSPF هزینه‌ی خارجی ۲۰ را می‌بیند و هزینه‌ی داخلی تا ASBR را جمع نمی‌کند. با `metric` و `metric-type 1` می‌توان مقدار و نوع را تغییر داد.
+
 **10-1-ت2** — Metric OSPF/BGP قابل تبدیل نیست؛ نبود Metric یعنی بی‌نهایت و مسیر منتقل نمی‌شود؛ باید دستی بدهید.
 
 **10-1-ت3** — E2 فقط Metric خارجی؛ E1 هزینه‌ی داخلی تا ASBR را هم جمع می‌کند.
 
 **10-1-ت4** — فقط مسیرهای classful منتقل می‌شوند؛ زیرشبکه‌ها نمی‌روند.
 
+بدون کلمه‌ی `subnets` در `redistribute ... ospf`، فقط مسیرهای classful (مثلاً /8، /16، /24 کلاس‌دار) وارد OSPF می‌شوند و زیرشبکه‌ها (مثل 172.16.5.0/24) ناپدید می‌شوند؛ این شایع‌ترین علت «مسیر Redistribute نمی‌رسد» است. رفع: افزودن `subnets` و آزمون با `show ip route ospf`.
+
 **10-1-ت5** — E1 برای انتخاب نزدیک‌ترین ASBR؛ آزمون با traceroute.
+
+با چند ASBR، E2 همه‌ی روترهای OSPF را با Metric برابر می‌بیند و ممکن است ترافیک به ASBR دورتر برود. E1 هزینه‌ی داخلی تا ASBR را هم جمع می‌کند و نزدیک‌ترین ASBR را ترجیح می‌دهد. آزمون: traceroute از دو نقطه‌ی مختلف و مقایسه‌ی ASBR انتخاب‌شده.
 
 **10-1-ت6** — فقط Prefixهای لازم با Prefix-list+Route-map، Seed صریح، E1 در صورت چند ASBR و آزمون منفی روی Prefix غیرمجاز.
 
@@ -19408,15 +19491,27 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 **10-2-ت1** — مسیری که به پروتکل دیگر رفته دوباره به مبدأ برگردد.
 
+Route Feedback یعنی مسیری که از دامنه‌ی A به B تزریق شده، توسط ASBR دوم دوباره به A برگردانده شود. نتیجه: مسیر با AD بهتر ممکن است مسیر اصلی را بازنویسی کند و حلقه یا مسیر زیربهینه بسازد. این در Redistribution دوطرفه با دو ASBR رایج است.
+
 **10-2-ت2** — مبدأ مسیر را علامت می‌زند تا بازگشت آن رد شود.
+
+Tag برچسب عددی روی مسیر است که مبدأ را مشخص می‌کند. با Route-map، مسیری که Tag دارد در جهت بازگشت رد می‌شود؛ مثلاً مسیرهای EIGRP→OSPF با Tag 100 و در جهت OSPF→EIGRP با `match tag 100` deny می‌شوند تا برنگردند.
 
 **10-2-ت3** — وگرنه ASBR بدون Route-map حلقه می‌سازد.
 
+اگر Route-map فقط روی یک ASBR باشد، ASBR دیگر بدون فیلتر مسیرها را برمی‌گرداند و حلقه ساخته می‌شود. پس همه‌ی ASBRها باید Route-map یکسان داشته باشند و پس از تغییر آزمون شوند.
+
 **10-2-ت4** — 110 و 170.
+
+AD مسیر خارجی OSPF برابر ۱۱۰ و EIGRP External برابر ۱۷۰ است. اگر مسیر از OSPF به EIGRP رفته و برگردد، رقابت AD ممکن است مسیر اصلی را بازنویسی کند؛ Tag این را از ریشه قطع می‌کند.
 
 **10-2-ت5** — Route-map فقط روی R-A؛ یکسان‌سازی و آزمون.
 
+پس از افزودن R-B حلقه شد چون Route-map فقط روی R-A بود. مراحل: ۱) `show route-map` روی R-B. ۲) یکسان‌سازی Tag و Route-map. ۳) آزمون: traceroute و `show ip route` برای مسیر مشکوک؛ ۴) قطع یک لینک و تأیید نبود حلقه.
+
 **10-2-ت6** — مبدأ، Tag، جهت، Route-map و مالک.
+
+برگه‌ی Tag سازمان: برای هر دامنه شناسه‌ی Tag (OSPF=100، EIGRP=200، BGP=300)، جهت Redistribution، Route-map مربوط، مالک و تاریخ بازبینی. این برگه از اشتباه هنگام اضافه‌شدن ASBR جدید جلوگیری می‌کند.
 
 **10-2-Q1** — To prevent routes from being re-redistributed back into their source domain, avoiding loops.
 
@@ -19425,15 +19520,27 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 **10-3-ت1** — Metric و AD برابر.
 
+شرط ECMP: چند مسیر با Metric و AD برابر به همان Prefix، و تعداد مسیرها ≤ `maximum-paths` (OSPF پیش‌فرض ۴). اگر Cost حتی یک واحد فرق کند ECMP نمی‌شود؛ برای تنظیم Cost یکسان `ip ospf cost` به‌کار می‌رود.
+
 **10-3-ت2** — هر جریان همیشه از یک مسیر.
+
+Per-flow یعنی هر جریان (مثلاً یک اتصال TCP) با Hash روی IP/پورت‌ها همیشه از یک مسیر می‌رود. مزیت: ترتیب بسته‌ها حفظ می‌شود و با دستگاه Stateful سازگار است؛ عیب: توزیع بار ممکن است ناهموار باشد.
 
 **10-3-ت3** — بسته‌ها نامرتب می‌رسند.
 
+Per-packet بسته‌ها را بین مسیرها می‌چرخاند و چون تأخیر مسیرها متفاوت است، بسته‌ها نامرتب می‌رسند؛ TCP آن را Loss فرض می‌کند و سرعت را پایین می‌آورد و فایروال Stateful ممکن است Session را بشکند. پس برای TCP بد است.
+
 **10-3-ت4** — ۴.
+
+مقدار پیش‌فرض `maximum-paths` در OSPF برابر ۴ مسیر است (قابل افزایش تا حد پلتفرم). اگر ۶ مسیر برابر داشته باشید فقط ۴ تا در RIB می‌آید.
 
 **10-3-ت5** — الگوریتم Hash با پورت؛ آزمون با چند جریان.
 
+توزیع ۹۰/۱۰ معمولاً نشانه‌ی Hash ناهموار (چند جریان بزرگ با Src/Dst ثابت) است. راه: الگوریتم Hash که پورت را هم لحاظ کند (`ip cef load-sharing algorithm include-ports`)، و آزمون با iperf چند جریان.
+
 **10-3-ت6** — Symmetric hash/Active-Standby.
+
+ECMP بین دو فایروال Stateful فقط با Symmetric Hash (هر دو جهت جریان از یک فایروال) یا طراحی Active-Standby/Session sync ایمن است. در غیر این صورت Asymmetric رخ می‌دهد (درس ۱۰-۶).
 
 **10-3-Q1** — It preserves packet order within a flow and works with stateful devices.
 
@@ -19445,15 +19552,27 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 **10-4-ت1** — بر اساس ACL (مبدأ، پروتکل، پورت) و نه فقط مقصد.
 
+PBR با ACL تصمیم می‌گیرد: مبدأ، مقصد، پروتکل و پورت. به‌خلاف مسیریابی عادی که فقط مقصد را می‌بیند. مثال: ترافیک 10.10.20.0/24 از ISP-A و بقیه از ISP-B.
+
 **10-4-ت2** — Interface ورودی ترافیک.
+
+PBR روی Interface ورودی ترافیک (`ip policy route-map`) اعمال می‌شود؛ نه روی خروجی. برای ترافیک خود روتر از `ip local policy` استفاده می‌شود.
 
 **10-4-ت3** — default فقط وقتی مسیر مشخص در RIB نباشد استفاده می‌شود.
 
+`set ip next-hop` حتی اگر مسیر مشخص در RIB باشد، Next-hop تعیین‌شده را ترجیح می‌دهد؛ `set ip default next-hop` فقط وقتی استفاده می‌شود که RIB مسیر مشخصی (غیر از Default) نداشته باشد.
+
 **10-4-ت4** — تا ترافیک غیرمطابق با مسیریابی عادی برود و Drop نشود.
+
+Sequence پایانی بدون Match و Set یعنی «مابقی ترافیک عادی». بدون آن، ترافیک غیرمطابق با Route-map (که deny ضمنی دارد) از PBR خارج و عادی مسیریابی می‌شود یا (بسته به پیاده‌سازی) Drop می‌شود؛ برای اطمینان همیشه یک `permit` پایانی بگذارید.
 
 **10-4-ت5** — IP SLA+Track، verify-availability، Next-hop دوم، آزمون قطع لینک.
 
+Failover PBR: `ip sla` با icmp-echo روی Next-hop، `track 1 ip sla 1 reachability`، و `set ip next-hop verify-availability X 10 track 1` به‌همراه Next-hop دوم. آزمون: قطع لینک ISP-A و دیدن اینکه ترافیک Finance به Next-hop دوم می‌رود (شمارنده‌ها و traceroute).
+
 **10-4-ت6** — ACL، Track، Failover، مستند و آزمون منفی؛ ریسک: Next-hop مرده.
+
+PBR دو ISP: ACL برای Finance، Route-map با Track و Next-hop دوم، Failover آزمون‌شده، مستند و آزمون منفی (ترافیک غیر Finance از مسیر عادی). ریسک اصلی: Next-hop مرده؛ جبران با Track.
 
 **10-4-Q1** — To stop using the next hop when it becomes unreachable.
 
@@ -19464,15 +19583,25 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 **10-5-ت1** — جدول مسیریابی مجازی مستقل روی همان روتر.
 
+VRF یک جدول مسیریابی مجازی مستقل روی همان روتر است: Interfaceها، Routeها و پروتکل‌ها در هر VRF جدا هستند؛ پس آدرس‌های تکراری (مثلاً دو مشتری با 192.168.1.0/24) مشکلی ندارند.
+
 **10-5-ت2** — چون Interface به جدول دیگری منتقل می‌شود و IP قبلی در جدول Global ثبت بوده.
 
 **10-5-ت3** — ping vrf NAME.
 
+ping بدون vrf در جدول Global اجرا می‌شود؛ برای تست داخل VRF `ping vrf CUST-A 192.168.1.2` و `traceroute vrf ...` لازم است. فراموشی این دستور شایع‌ترین «ping کار نمی‌کند» در VRF است.
+
 **10-5-ت4** — شناسه‌ی یکتا برای Prefix در VRF.
+
+RD (Route Distinguisher) مقدار یکتا (مثلاً 65000:1) است که Prefix را در VRF متمایز می‌کند تا در MPLS/BGP آدرس‌های تکراری با هم قاطی نشوند. در VRF-lite لازم نیست ولی استاندارد پیکربندی است.
 
 **10-5-ت5** — VRF جدا، فایروال Zone، NAT جدا، آزمون منفی.
 
+سه مشتری با اینترنت مشترک: سه VRF، Default هر VRF به Interface/Zone جدا در فایروال، NAT جدا برای هر مشتری، و آزمون منفی (مشتری A به B نرسد). ریسک: Leak ناخواسته از Static یا Redistribute.
+
 **10-5-ت6** — VRF+Zone+Policy+Log.
+
+جداسازی با فایروال: VRF مسیرها را جدا می‌کند و Zone/Policy فایروال تعیین می‌کند چه چیزی بین Zoneها عبور کند. فقط VRF امنیت کامل نیست؛ Policy و Log لازم است.
 
 **10-5-Q1** — Multiple isolated routing tables on one router without MPLS.
 
@@ -19483,15 +19612,27 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 **10-6-ت1** — رفت و برگشت از مسیر یا فایروال متفاوت.
 
+Asymmetric یعنی بسته‌ی رفت و برگشت یک جریان از مسیر یا فایروال متفاوت عبور کنند. در Stateless مشکلی نیست؛ در Stateful باعث Drop می‌شود.
+
 **10-6-ت2** — Session اولیه را ندیده.
+
+فایروال Stateful فقط وقتی بسته‌ی برگشت را می‌پذیرد که Session اولیه (SYN) را دیده باشد؛ در Asymmetric فایروال دوم SYN را ندیده و `no session matched` می‌دهد و Drop می‌کند.
 
 **10-6-ت3** — ECMP، دو ISP، Redistribution.
 
+سه علت رایج: ECMP/Per-packet بین فایروال‌ها، دو ISP با Policy ورودی/خروجی متفاوت (Local-pref و Prepend)، و Redistribution/Route-map ناهمگون. موارد دیگر: HA نادرست و NAT متفاوت.
+
 **10-6-ت4** — Capture دو سویه.
+
+با Capture هم‌زمان روی هر دو فایروال: FW1 فقط SYN و FW2 فقط SYN-ACK را می‌بیند؛ و traceroute از دو سر مسیر متفاوت نشان می‌دهد. این دو شاهد با هم Asymmetric را ثابت می‌کنند.
 
 **10-6-ت5** — Symmetric یا Session sync.
 
+راه سازمان: طراحی Symmetric (Local-pref/Weight/PBR تا هر دو جهت از یک فایروال) یا Cluster با Session sync. `asymroute` فقط موقت و ضعیف‌کننده‌ی امنیت است.
+
 **10-6-ت6** — Sync+Hash+آزمون.
+
+Active-Active با Session sync: فعال‌سازی session-pickup، آزمون قطع FW1 و ماندگاری Sessionها، و اندازه‌گیری Delay Sync. جایگزین ساده‌تر: Active-Standby. معیار: صفر قطع Session در Failover آزمایشی.
 
 **10-6-Q1** — They never saw the initial packet, so no session exists.
 
@@ -19503,17 +19644,31 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 **10-7-ت1** — رد‌یابی ساده و جلوگیری از NAT دوباره.
 
+NAT فقط روی Edge: Log و رد‌یابی ساده می‌شود، IP واقعی کاربر در Internal دیده می‌شود و NAT دوباره (Double NAT) مشکلات VPN/Port-forward نمی‌سازد.
+
 **10-7-ت2** — تعیین ISP خروجی در کل AS.
+
+Local-pref (مقدار بزرگ‌تر بهتر) در کل AS از طریق iBGP پخش می‌شود و ISP خروجی را برای همه‌ی روترها تعیین می‌کند؛ ابزار اصلی کنترل خروج.
 
 **10-7-ت3** — بدون آن ترافیک به Next-hop مرده می‌رود.
 
+بدون Track، PBR به Next-hop مرده ادامه می‌دهد و ترافیک بی‌صدا Drop می‌شود. Track/IP SLA Next-hop مرده را از Policy خارج می‌کند و Failover را ممکن می‌سازد.
+
 **10-7-ت4** — VRF جدا، Default مستقل، Policy فایروال، آزمون منفی.
+
+Guest در VRF جدا قرار می‌گیرد با Default مستقل به Interface فایروال؛ Policy فایروال فقط اینترنت را مجاز می‌کند و آزمون منفی (Guest→Servers) رد می‌شود و Log دارد.
 
 **10-7-ت5** — Capture، Local-pref/Prepend، آزمون.
 
+Asymmetric پس از لینک دوم: Capture روی هر دو فایروال، اصلاح Local-pref/Prepend یا PBR تا هر دو جهت از یک فایروال برود، و آزمون تکرار (Capture Symmetric).
+
 **10-7-ت6** — Local-pref، Prepend، PBR، Track، VRF.
 
+طرح سه‌ISP: Local-pref برای ترتیب خروج، Prepend برای ورود، PBR با Track برای ترافیک حساس، VRF برای مهمان و آزمون Failover هر ISP؛ مستندسازی ریسک و Rollback.
+
 **10-7-Q1** — IP SLA with a track object.
+
+IP SLA به‌همراه Track Object می‌تواند Next-hop مرده را از PBR کنار بگذارد.
 
 ### پاسخ‌های درس‌های افزوده‌ی فصل 10 (۱۰-۸ و ۱۰-۹)
 
@@ -20941,17 +21096,31 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 
 **11-2-ت1** — هر ترافیک که صریحاً مجاز نشده رد می‌شود.
 
+Default Deny یعنی هر ترافیکی که صراحتاً مجاز نشده رد می‌شود؛ پایه‌ی امنیت مبتنی بر «فهرست مجاز». در FortiGate Implicit Deny انتهای لیست است ولی Log ندارد؛ پس Deny صریح با Log هم بسازید تا Alert و ممیزی ممکن شود.
+
 **11-2-ت2** — حداقل دسترسی لازم برای انجام کار.
+
+Least Privilege یعنی هر کاربر/سیستم فقط حداقل دسترسی لازم برای کارش را دارد: مقصد، پورت و زمان مشخص به‌جای ALL. مثال: Users فقط HTTPS به SRV-APP نه به کل شبکه‌ی سرورها.
 
 **11-2-ت3** — برای اینکه هر مسیر مجاز مستند، قابل ممیزی و قابل آزمون باشد.
 
+ماتریس Zone-to-Zone نشان می‌دهد هر مسیر مجاز چیست؛ منبع Policyها، مرجع ممیزی و پایه‌ی آزمون مثبت/منفی است. بدون ماتریس Policyها ad-hoc می‌شوند و تعداد مسیرهای ناخواسته نامعلوم می‌ماند.
+
 **11-2-ت4** — First Match؛ اگر عام بالا باشد خاص هرگز اجرا نمی‌شود.
+
+چون First Match است: اولین Policy مطابق اعمال می‌شود. اگر Policy عام (مثلاً Users→all ALL) بالاتر باشد، Policyهای خاص هرگز اجرا نمی‌شوند؛ پس خاص بالا و عام پایین، و Deny صریح آخر.
 
 **11-2-ت5** — Log، استخراج مقاصد/سرویس‌ها، Policy خاص، غیرفعال‌سازی ALL، مشاهده، حذف.
 
+تنگ‌سازی Policy ALL: Log را روشن، ۱۴ تا ۳۰ روز جمع‌آوری، مقصد/سرویس‌های واقعی را استخراج، Policyهای خاص بساز و بالای ALL بگذار، ALL را غیرفعال و دو هفته مشاهده، سپس حذف با Backup و مستندسازی.
+
 **11-2-ت6** — جدول ماتریس + ۹ آزمون مثبت و ۱۶ منفی.
 
+ماتریس ۵ Zone: ۲۵ خانه که ۹ خانه مجاز (آزمون مثبت) و ۱۶ خانه ممنوع (آزمون منفی) است. برای هر خانه‌ی ممنوع باید Deny و Log دیده شود؛ این ۲۵ آزمون Evidence طراحی هستند.
+
 **11-2-Q1** — Any traffic not explicitly allowed is blocked.
+
+Default deny blocks everything not permitted. در عمل این یعنی هر سرویس جدید باید با Policy صریح و CHG وارد شود.
 
 ### پاسخ‌های بازنویسی عمیق درس 11-3
 
@@ -20960,17 +21129,31 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 
 **11-3-ت1** — قبل؛ پس Policy با VIP یا آدرس بعد DNAT مطابقت می‌کند.
 
+DNAT (VIP) قبل از Route و Policy انجام می‌شود؛ پس Policy باید با آدرس پس از DNAT یا شیء VIP نوشته شود نه آدرس عمومی. SNAT بعد از Policy اعمال می‌شود.
+
 **11-3-ت2** — ترافیک به مقصد خود فایروال.
+
+Local-in ترافیکی است که مقصدش خود فایروال است (Admin، BGP، IPsec، DNS). کنترل آن با Allowaccess روی Interface و Local-in policy است؛ Firewall Policy عادی آن را کنترل نمی‌کند.
 
 **11-3-ت3** — Policy مقصد را با شیء VIP تطبیق می‌دهد.
 
+Policy مقصد را با شیء VIP (که DNAT را تعریف می‌کند) تطبیق می‌دهد. اگر آدرس داخلی (10.30.0.10) را به‌جای VIP بنویسید، Policy تطبیق نمی‌کند و `Denied by forward policy check` می‌بینید.
+
 **11-3-ت4** — بررسی اینکه Route به Source از همان Interface ورودی است.
+
+RPF بررسی می‌کند Route به آدرس مبدأ از همان Interface ورودی است. اگر نیست (مثلاً Asymmetric یا Spoof) بسته Drop می‌شود: `reverse path check fail`. رفع: Route برگشت یا طراحی Symmetric.
 
 **11-3-ت5** — Debug flow، allowaccess، Local-in، Trusted host.
 
+Admin به https نمی‌رسد: Debug flow پیام `iprope_in_check() check failed` می‌دهد؛ بررسی allowaccess https روی Interface، Local-in policy و Trusted host؛ رفع و آزمون ورود.
+
 **11-3-ت6** — Transit، Local-in، Local-out، ابزار اثبات هر مرحله.
 
+نقشه‌ی Flow سازمان: Transit (Users→Internet)، Local-in (Admin/BGP/IPsec)، Local-out (NTP/FortiGuard/Syslog) و برای هر کدام ابزار اثبات: Debug flow، Sniffer، Session، Log.
+
 **11-3-Q1** — Before; policies match the translated destination.
+
+DNAT occurs before policy lookup; therefore policies must reference the VIP or translated destination.
 
 ### پاسخ‌های بازنویسی عمیق درس 11-4
 
@@ -20979,17 +21162,31 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 
 **11-4-ت1** — آدرس/پورت بسته را بازنویسی می‌کند.
 
+NAT آدرس و/یا پورت بسته را بازنویسی می‌کند (SNAT مبدأ، DNAT مقصد). NAT به‌تنهایی اجازه‌ی عبور نمی‌دهد؛ Policy تصمیم‌گیرنده است.
+
 **11-4-ت2** — ترجمه‌ی چند Host با یک IP با استفاده از پورت‌های مختلف.
+
+PAT چند Host داخلی را با یک IP عمومی ترجمه می‌کند و برای تمایز، پورت مبدأ را تغییر می‌دهد؛ ظرفیت تقریبی ۶۴ هزار پورت به‌ازای IP و مقصد.
 
 **11-4-ت3** — NAT اجازه نمی‌دهد؛ Policy لازم است.
 
+VIP فقط ترجمه‌ی مقصد را تعریف می‌کند؛ بدون Policy که اجازه‌ی عبور بدهد ترافیک Implicit Deny می‌شود. پس VIP + Policy (dst=VIP) هر دو لازم‌اند.
+
 **11-4-ت4** — دسترسی داخلی به IP عمومی سرور داخلی.
+
+Hairpin یعنی کاربر داخلی به IP عمومی سروری که داخل همان شبکه است وصل شود: بسته به فایروال می‌رسد و DNAT می‌شود ولی پاسخ سرور مستقیم به کاربر می‌رود و Session ناقص می‌ماند.
 
 **11-4-ت5** — Split DNS یا Hairpin NAT؛ آزمون.
 
+Hairpin را با Split DNS (DNS داخلی IP داخلی را بدهد، ترجیح) یا Hairpin NAT (SNAT برای این جریان) حل می‌کنند؛ آزمون: nslookup و باز شدن سایت از LAN.
+
 **11-4-ت6** — سه VIP، سه Policy، آزمون منفی.
 
+انتشار سه سرویس: سه VIP (با Port-forward حداقل)، سه Policy با dst=VIP و Service مشخص، Log All و آزمون منفی (پورت غیرمجاز رد شود).
+
 **11-4-Q1** — A VIP only translates addresses; a firewall policy must still permit the traffic.
+
+A VIP only translates addresses; a firewall policy is still needed to permit the traffic.
 
 ### پاسخ‌های بازنویسی عمیق درس 11-5
 
@@ -20998,18 +21195,39 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 
 **11-5-ت1** — 1460.
 
+MSS برای MTU 1500 برابر 1500−20−20=1460 است.
+
+``` text
+MSS = MTU - IP(20) - TCP(20) = 1460
+```
+
 **11-5-ت2** — Handshake ok، بسته‌ی بزرگ بی‌پاسخ.
+
+علامت Black-hole: Handshake و بسته‌های کوچک (ping معمولی) موفق؛ بسته‌ی بزرگ بی‌پاسخ و Retransmission. علت: بسته‌ی بزرگ با DF از لینک کوچک‌تر عبور نمی‌کند و ICMP Frag-needed بسته شده است.
 
 **11-5-ت3** — 1360.
 
+MSS برای MTU 1400: 1400−40=1360.
+
+``` text
+MSS = 1400 - 40 = 1360
+```
+
 **11-5-ت4** — PMTUD برای اطلاع از MTU مسیر.
+
+ICMP Fragmentation-needed (Type 3 Code 4) به فرستنده می‌گوید MTU مسیر کوچک‌تر است (PMTUD). اگر فایروال آن را ببندد، Black-hole می‌شود؛ پس این نوع ICMP را مجاز کنید.
 
 **11-5-ت5** — Timeout/Keepalive.
 
+SSH پس از ۵ دقیقه بیکاری قطع می‌شود چون Timeout Session کوتاه است؛ راه: افزایش `session-ttl` برای پورت 22 یا Keepalive در کلاینت، و آزمون ۳۰ دقیقه بیکاری.
+
 **11-5-ت6** — اندازه‌گیری PMTU، clamp، دانلود ۱۰۰MB.
+
+MSS روی IPsec: PMTU را با ping DF اندازه بگیرید (مثلاً 1400)، MSS=PMTU−40 با حاشیه (1360)، روی Policy تونل تنظیم و با دانلود ۱۰۰MB سه بار آزمون کنید.
 
 **11-5-Q1** — Large DF packets are dropped while ICMP fragmentation-needed messages are blocked.
 
+An MTU black hole happens when large DF packets are dropped while ICMP fragmentation-needed messages are blocked.
 
 ### پاسخ‌های بازنویسی عمیق درس 11-6
 
@@ -21018,17 +21236,31 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 
 **11-6-ت1** — Policy 99 در انتها با Log.
 
+Default Deny در Policy 99 در انتهای لیست با Log All قرار دارد؛ هر ترافیک مجازنشده Deny و ثبت می‌شود و برای Alert و ممیزی استفاده می‌شود.
+
 **11-6-ت2** — هیچ مسیری ندارد؛ ممنوع.
+
+DB از اینترنت هیچ مسیری ندارد: نه VIP، نه Policy؛ فقط APP→DB با Policy 60. آزمون منفی: اتصال از INET به SRV-DB رد و Log شود.
 
 **11-6-ت3** — Implicit Log ندارد؛ صریح برای Alert.
 
+Implicit Deny Log ندارد؛ Deny صریح با Log برای Alert و ممیزی لازم است (مثلاً تلاش DMZ→DB).
+
 **11-6-ت4** — فقط Policy 10، 40، 80.
+
+NAT فقط روی Policy 10 (SNAT کاربران)، 40 (DNAT/VIP وب) و 80 (SNAT خروج سرورها به Update) است؛ بقیه‌ی Policyها بدون NAT.
 
 **11-6-ت5** — هر خانه‌ی «-» ماتریس: INET→SRV/USR/MGT، DMZ→USR/MGT، SRV→DMZ/USR/MGT، USR→MGT، MGT→INET و ... با نتیجه‌ی deny.
 
+۱۶ آزمون منفی: هر خانه‌ی «-» ماتریس؛ مثلاً INET→SRV، INET→USR، INET→MGT، DMZ→USR، DMZ→MGT، SRV→DMZ، SRV→USR، SRV→MGT، USR→MGT، MGT→INET و ...؛ همه باید Deny و Log داشته باشند.
+
 **11-6-ت6** — SSO/MFA برای Admin، Segment بیشتر DMZ، WAF (Needs-License).
 
+بهبود طرح: SSO/MFA برای Admin، Segment بیشتر در DMZ، WAF برای وب (Needs-License)، Alert روی Deny بین لایه‌ها و بازبینی فصلی Policy.
+
 **11-6-Q1** — Attempt a direct connection from the DMZ to the database and confirm it is denied.
+
+A negative test: connect from the DMZ to the database and verify it is denied and logged.
 
 ### پاسخ‌های درس افزوده‌ی 11-0 (فصل 11)
 
@@ -22998,18 +23230,29 @@ show system interface port2
 
 **12-1-ت1** — `get system status`؛ خروجی Version/Serial/License را دارد.
 
+`get system status` نسخه (Version/Build)، Serial، License، Hostname و Operation Mode را نشان می‌دهد؛ اولین دستور برای تأیید نسخه‌ی دستگاه.
+
 **12-1-ت2** — زمان صحیح برای Log، گواهی و Correlation در SIEM لازم است.
+
+NTP زمان صحیح می‌دهد؛ Log، گواهی TLS و Correlation در SIEM به آن وابسته‌اند؛ اختلاف چند دقیقه ترتیب رویدادها را به‌هم می‌ریزد.
 
 **12-1-ت3** — دستورها و رفتارها بین نسخه‌ها فرق دارند (مثلاً SD-WAN/SSL-VPN)؛ بدون تطبیق ممکن است دستور خطا بدهد یا رفتار متفاوت باشد.
 
 **12-1-ت4** — فوراً قوی کنیم و در ریپو ذخیره نکنیم.
 
+رمز پیش‌فرض را فوراً به رمز قوی تغییر دهید و در ریپو/سند ذخیره نکنید؛ رمز در Vault و تغییر نام/غیرفعال‌سازی admin پیش‌فرض.
+
 **12-1-ت5** — ثبت، مقایسه با Release Notes، علامت Unverified، عدم Downgrade بدون Backup.
+
+نسخه‌ی v7.2 به‌جای 7.0.3: نسخه را ثبت، با Release Notes مقایسه، دستورهای مشکوک را `Unverified` علامت بزنید و بدون Backup و تأیید Downgrade نکنید.
 
 **12-1-ت6** — نسخه، سریال، License، hostname، NTP، DNS، رمز، Backup اولیه.
 
+برگه‌ی اولین بوت: نسخه، سریال، License، Hostname، NTP، DNS، رمز قوی، Backup اولیه و ثبت در Inventory.
+
 **12-1-Q1** — get system status.
 
+`get system status` shows the version, serial number and license state.
 
 ### پاسخ‌های بازنویسی عمیق درس 12-2
 
@@ -23017,100 +23260,175 @@ show system interface port2
 
 **12-2-ت2** — Interface منطقی با vlanid که روی یک پورت فیزیکی/Aggregate ساخته می‌شود تا چند شبکه‌ی جدا روی یک لینک Trunk داشته باشیم.
 
+VLAN Sub-interface یک Interface منطقی با vlanid است که روی پورت فیزیکی یا Aggregate ساخته می‌شود تا چند شبکه‌ی جدا روی یک لینک Trunk داشته باشیم.
+
 **12-2-ت3** — پنل مدیریت از اینترنت قابل Brute-force و سوءاستفاده از آسیب‌پذیری می‌شود؛ مدیریت باید فقط از شبکه‌ی Mgmt و با Trusted host باشد.
 
 **12-2-ت4** — Trunk نبودن پورت سوییچ، VLAN غیرمجاز، vlanid اشتباه؛ شاهد: ARP incomplete.
 
+لینک up ولی VLAN کار نمی‌کند: Trunk نبودن پورت سوییچ، VLAN غیرمجاز یا vlanid اشتباه؛ شاهد: ARP incomplete. رفع روی سوییچ و آزمون ping.
+
 **12-2-ت5** — حذف https/ssh از WAN، Mgmt جدا، Trusted host، Local-in policy، MFA، بررسی Log و آزمون nmap.
+
+حذف https/ssh از WAN، مدیریت فقط از Mgmt با Trusted host، Local-in policy، MFA، بررسی Log و آزمون nmap از اینترنت (پورت‌های 22/443 بسته).
 
 **12-2-ت6** — جدول: نام، IP، Role، allowaccess، VLAN، Zone؛ Mgmt فقط https/ssh با Trusted host.
 
+جدول Interfaceهای شعبه: نام، IP، Role، allowaccess، VLAN و Zone؛ Mgmt فقط https/ssh با Trusted host؛ WAN بدون مدیریت.
+
 **12-2-Q1** — allowaccess.
 
+`allowaccess` controls which management services are reachable on the interface.
 
 ### پاسخ‌های بازنویسی عمیق درس 12-3
 
 **12-3-ت1** — یک نقطه‌ی تعریف؛ تغییر آدرس در یک جا همه‌ی Policyها را به‌روز می‌کند و Policy خوانا می‌شود.
 
+Address Object یک نقطه‌ی تعریف است؛ تغییر آدرس سرور در یک جا همه‌ی Policyها را به‌روز می‌کند و Policy خواناتر می‌شود.
+
 **12-3-ت2** — ترافیک بین Interfaceهای همان Zone را بدون Policy رد می‌کند.
+
+`intrazone deny` ترافیک بین Interfaceهای همان Zone را بدون Policy صریح رد می‌کند؛ امن‌تر از allow.
 
 **12-3-ت3** — چون Zone جایگزین آن Interface‌ها در Policy است.
 
+Interface عضو Zone در Policy مستقیماً انتخاب نمی‌شود چون Zone جایگزین آن است؛ باید Zone را انتخاب کرد.
+
 **12-3-ت4** — وابستگی به DNS؛ اگر DNS خراب شود Policy کار نمی‌کند.
+
+Object FQDN به DNS وابسته است؛ اگر Resolver خراب شود Policy کار نمی‌کند؛ فقط جایی که DNS مطمئن است.
 
 **12-3-ت5** — Export، Where-used، تأیید مالک، Backup، حذف/ادغام، استاندارد نام.
 
+ممیزی ۲۰۰ Object: Export، Where-used، تأیید مالک، Backup، حذف/ادغام، اعمال استاندارد نام؛ معیار: صفر Object بی‌مالک.
+
 **12-3-ت6** — جدول پیشوندها، مالک، Comment، مثال.
+
+استاندارد نام‌گذاری: NET-/HOST-/SRV-/RNG-/FQDN-/TCP-/UDP-/GRP-/ZN- همراه Comment مالک و دلیل.
 
 **12-3-Q1** — Zones group interfaces with the same role so policies are shorter and easier to maintain.
 
+Zones group interfaces with the same role so policies stay short and easy to maintain.
 
 ### پاسخ‌های بازنویسی عمیق درس 12-4
 
 **12-4-ت1** — اعتبار منبع Route؛ کمتر بهتر؛ بین Routeهای مختلف به یک مقصد انتخاب می‌کند.
 
+Distance اعتبار منبع Route است (کمتر بهتر) و بین Routeهای مختلف به یک مقصد انتخاب می‌کند؛ Static پیش‌فرض ۱۰ در FortiOS.
+
 **12-4-ت2** — Priority بین Routeهای هم‌Distance تعیین‌کننده است.
+
+Priority بین Routeهای هم‌Distance به یک مقصد تعیین‌کننده است (کمتر ترجیح)؛ دو Default با Distance برابر و Priority متفاوت یعنی Primary/Backup.
 
 **12-4-ت3** — Gateway ممکن است زنده باشد ولی ISP قطع؛ Monitor به مقصد خارجی Route را غیرفعال می‌کند.
 
+Gateway ISP ممکن است زنده باشد ولی ISP قطع؛ Link-monitor به مقصد خارجی (مثل 8.8.8.8) Route را غیرفعال می‌کند و Failover می‌شود.
+
 **12-4-ت4** — قبل از جدول مسیر.
+
+Policy Route قبل از جدول مسیر اعمال می‌شود؛ پس مسیر «عجیب» اغلب از `diagnose firewall proute list` پیداست.
 
 **12-4-ت5** — RPF و Route برگشت؛ هماهنگی NAT/Route؛ آزمون.
 
+پس از Policy Route برخی Sessionها قطع می‌شوند: RPF و Route برگشت؛ NAT و Route باید هماهنگ باشند؛ آزمون Debug flow.
+
 **12-4-ت6** — Distance برابر، Priority 1/10، Link-monitor با failtime/recoverytime، آزمون قطع.
+
+دو ISP: Distance برابر، Priority 1/10، Link-monitor با failtime/recoverytime مناسب، آزمون قطع ISP و Failover.
 
 **12-4-Q1** — Priority.
 
+Priority breaks the tie between static routes with equal distance.
 
 ### پاسخ‌های بازنویسی عمیق درس 12-5
 
 **12-5-ت1** — کنترل دسترسی بر اساس نقش؛ هر مدیر فقط به اندازه‌ی نقشش دسترسی دارد.
 
+RBAC کنترل دسترسی نقش‌محور است: هر مدیر فقط به اندازه‌ی نقشش دسترسی دارد (Super، Network، ReadOnly).
+
 **12-5-ت2** — ورود Admin را به آدرس‌های مشخص محدود می‌کند.
+
+Trusted host ورود Admin را به آدرس‌های مشخص محدود می‌کند؛ حتی با رمز لورفته از بیرون نمی‌توان وارد شد.
 
 **12-5-ت3** — پس از چند تلاش ناموفق حساب/مبدأ را موقتاً قفل می‌کند و Brute-force را کند می‌کند.
 
+Lockout پس از چند تلاش ناموفق حساب یا مبدأ را موقتاً قفل می‌کند و Brute-force را کند می‌کند.
+
 **12-5-ت4** — دسترسی اضطراری وقتی MFA/SSO در دسترس نیست؛ با Alert و Rotate.
+
+Break-glass حساب اضطراری برای وقتی که MFA/SSO در دسترس نیست؛ رمز طولانی در گاوصندوق، Alert روی استفاده و Rotate پس از آن.
 
 **12-5-ت5** — Lockout، Local-in، Trusted host، Alert و Log.
 
+Brute-force از یک IP: Lockout، Local-in، Trusted host، Alert و بررسی Log؛ مدیریت را از WAN حذف کنید.
+
 **12-5-ت6** — طبق متن.
+
+سه سطح: Super (۲ نفر با MFA)، Network Admin (fwgrp/netgrp رایت)، ReadOnly (NOC)؛ Break-glass جدا.
 
 **12-5-Q1** — The source addresses from which an administrator may log in.
 
+A trusted host restricts the source addresses from which an administrator may log in.
 
 ### پاسخ‌های بازنویسی عمیق درس 12-6
 
 **12-6-ت1** — حاوی رمزها و کلیدهاست و افشا یعنی نفوذ.
 
+Backup حاوی رمزها و کلیدهاست؛ افشای آن یعنی نفوذ؛ باید رمزگذاری و محدود شود.
+
 **12-6-ت2** — ابزار Fortinet که مسیر نسخه‌های پشتیبانی‌شده را می‌دهد.
+
+Upgrade Path Tool ابزار Fortinet است که مسیر نسخه‌های پشتیبانی‌شده (و نسخه‌ی میانی) را می‌دهد.
 
 **12-6-ت3** — Backup، Release Notes، Known Issues، Window، Rollback، نسخه‌ی فعلی.
 
+پیش از Upgrade: Backup، Release Notes، Known Issues، Window، Rollback و نسخه‌ی فعلی/Path.
+
 **12-6-ت4** — تا سرویس با Failover حفظ شود.
+
+در HA ابتدا Secondary ارتقا می‌یابد تا با Failover سرویس حفظ شود و سپس Primary قبلی.
 
 **12-6-ت5** — کنسول، Partition قبلی، Restore، گزارش.
 
+Boot loop پس از Upgrade: کنسول، Boot از Partition قبلی، Restore Config در صورت نیاز و گزارش علت.
+
 **12-6-ت6** — هدف، Window، Path، Backup، Rollback، آزمون، تأیید.
+
+برنامه‌ی CHG Upgrade: هدف، Window، Path، Backup، Rollback، آزمون و تأیید.
 
 **12-6-Q1** — Because a failed upgrade can cause outage and you must restore service quickly.
 
+A failed upgrade can cause an outage, so a rollback must be planned in advance.
 
 ### پاسخ‌های بازنویسی عمیق درس 12-7
 
 **12-7-ت1** — کنسول و بازگرداندن allowaccess.
 
+قفل‌شدن مدیریت: از کنسول وارد شوید و allowaccess را بازگردانید (`set allowaccess https ssh ping`).
+
 **12-7-ت2** — لایه‌ی ۲ مشکل دارد.
+
+ARP incomplete یعنی لایه‌ی ۲ مشکل دارد (VLAN/Trunk/کابل)، نه Policy.
 
 **12-7-ت3** — Route با Distance کمتر برنده می‌شود.
 
+Route با Distance کمتر برنده می‌شود؛ پس Static اشتباه با Distance کوچک مسیر Default را می‌دزدد.
+
 **12-7-ت4** — تغییر از Mgmt جدا، Rollback/زمان‌بندی، کنسول آماده.
+
+پیشگیری: تغییر مدیریت از Mgmt جدا، Rollback/زمان‌بندی، کنسول آماده و Backup.
 
 **12-7-ت5** — ابتدا لایه‌ی پایین‌تر.
 
+دو عیب هم‌زمان: ابتدا لایه‌ی پایین‌تر (VLAN) و بعد Route؛ هر کدام جدا آزمون.
+
 **12-7-ت6** — Backup، Window، کنسول، آزمون، Rollback.
 
+Runbook تغییر Interface: Backup، Window، کنسول آماده، آزمون و Rollback.
+
 **12-7-Q1** — Log in via the console and restore the setting.
+
+Log in via the console and restore the management setting.
 
 ### پاسخ‌های درس افزوده‌ی 12-0 (فصل 12)
 
@@ -24669,13 +24987,21 @@ get system session-info statistics
 
 **13-3-ت2** — به شیء VIP.
 
+Policy باید به شیء VIP (نه آدرس داخلی) اشاره کند، چون DNAT قبل از Policy انجام می‌شود و Policy مقصد را با VIP تطبیق می‌دهد؛ اگر آدرس داخلی بنویسید `Denied by forward policy check` می‌بینید.
+
 **13-3-ت3** — فقط پورت‌های لازم را در معرض می‌گذارد.
+
+Port-forward فقط پورت‌های لازم (مثلاً 443) را در معرض می‌گذارد؛ در Static NAT یک‌به‌یک همه‌ی پورت‌های سرور از اینترنت قابل‌دسترس می‌شود که سطح حمله را بزرگ می‌کند.
 
 **13-3-ت4** — سرور و کاربر هم‌شبکه‌اند و پاسخ مستقیم می‌دهد و فایروال دور زده می‌شود.
 
 **13-3-ت5** — Policy، Route، ARP، Session، Log، آزمون منفی.
 
+VIP کار نمی‌کند: ۱) Policy با dst=VIP وجود دارد؟ ۲) Route سرور و Gateway آن به فایروال؟ ۳) ARP/IP عمومی روی WAN؟ ۴) Session و DNAT در `session list`. ۵) Log. ۶) آزمون منفی پورت دیگر.
+
 **13-3-ت6** — سه VIP جدا، Policy جدا، Zone DMZ، Log، آزمون منفی.
+
+انتشار سه سرویس: سه VIP جدا (هر کدام پورت خودش)، سه Policy با Service مشخص، سرورها در Zone DMZ، Log All و آزمون منفی (پورت غیرمجاز رد شود).
 
 **13-3-Q1** — Because DNAT happens before policy lookup and the policy matches the VIP.
 
@@ -24684,15 +25010,25 @@ get system session-info statistics
 
 **13-4-ت1** — TCP.
 
+proto=6 یعنی TCP (17 UDP و 1 ICMP). این فیلد در `session list` نوع پروتکل Session را نشان می‌دهد.
+
 **13-4-ت2** — تا Sessionهای دیگر قطع نشوند.
+
+`session clear` بدون فیلتر همه‌ی Sessionها را می‌بندد و قطعی سراسری می‌سازد؛ با فیلتر src/dst/port فقط Sessionهای مشخص پاک می‌شود.
 
 **13-4-ت3** — Session موجود تا انقضا باقی است؛ Session را با فیلتر پاک کنید.
 
 **13-4-ت4** — حدود ۳۶۰۰ ثانیه (طبق نسخه تأیید شود).
 
+Timeout پیش‌فرض TCP Established حدود ۳۶۰۰ ثانیه است، ولی مقدار دقیق بسته به نسخه فرق دارد؛ با `get system session-ttl` تأیید شود (`Unverified` تا Lab).
+
 **13-4-ت5** — timeout پورت 22 افزایش یا Keepalive.
 
+SSH Admin قطع می‌شود چون Timeout Session کوتاه است؛ راه: timeout پورت 22 را در `session-ttl` افزایش دهید یا Keepalive در کلاینت (`ServerAliveInterval`) تنظیم کنید.
+
 **13-4-ت6** — سرویس، پورت، timeout و دلیل.
+
+جدول Timeout سازمان: سرویس، پورت، Timeout و دلیل (مثلاً SSH Admin: 22: 7200: بیکاری طولانی)؛ همه‌ی تغییرات با CHG ثبت شود.
 
 **13-4-Q1** — Without a filter all sessions are cleared causing an outage.
 
@@ -24706,13 +25042,21 @@ get system session-info statistics
 
 **13-5-ت2** — با Reboot/Reset صفر می‌شود و استفاده‌ی فصلی را نمی‌بیند؛ باید با Log تاریخی و مالک تأیید شود.
 
+Hit Count با Reboot/Reset صفر می‌شود و استفاده‌ی فصلی (مثلاً پایان سال مالی) را نمی‌بیند؛ پس قبل از حذف با Log تاریخی ۱۲ ماهه و تأیید مالک بررسی شود.
+
 **13-5-ت3** — تا انقضا یا پاک‌سازی می‌ماند؛ برای قطع فوری Session را با فیلتر پاک کنید.
 
+پس از پایان Schedule، Sessionهای موجود تا انقضا باقی می‌مانند و فقط Sessionهای جدید رد می‌شوند؛ برای قطع فوری Session را با فیلتر پاک کنید.
+
 **13-5-ت4** — برای Rollback سریع اگر سرویس مخفی وابسته باشد.
+
+ابتدا غیرفعال و بعد حذف: اگر سرویس مخفی به Policy وابسته باشد، با فعال‌کردن دوباره Rollback سریع می‌شود؛ حذف نیازمند بازگرداندن از Backup است.
 
 **13-5-ت5** — Log ۱۴–۳۰ روز، استخراج مقصد/پورت، Policy خاص بالای ALL، غیرفعال‌سازی ALL، مشاهده، حذف؛ همراه Backup و Rollback.
 
 **13-5-ت6** — Export، تأیید مالک، Window با Backup، مشاهده/حذف؛ گزارش: ID، مالک، دلیل، Hit، ریسک، تصمیم.
+
+فرایند فصلی: Export Policy و Hit، تأیید مالک، Window با Backup، مشاهده و حذف؛ گزارش شامل ID، مالک، دلیل، Hit، ریسک و تصمیم است.
 
 **13-5-Q1** — Disabling allows quick rollback if an unknown dependency appears.
 
@@ -24721,15 +25065,27 @@ get system session-info statistics
 
 **13-6-ت1** — تعریف دقیق علامت.
 
+اولین گام تعریف دقیق علامت است: چه کسی، به چه سرویسی، از کجا، از کی و چه پیامی می‌بیند؛ سپس Route و بقیه‌ی گام‌ها.
+
 **13-6-ت2** — پاسخ برنگشته؛ SNAT/Route/سرور.
+
+no reply یعنی Session ساخته شده ولی پاسخ برنگشته: SNAT اشتباه، Route برگشت یا سرور پاسخ نمی‌دهد؛ با Sniffer دو سمت مشخص می‌شود.
 
 **13-6-ت3** — Route معکوس مبدأ از Interface ورودی نیست.
 
+RPF fail یعنی Route برگشت به مبدأ از همان Interface ورودی نیست؛ با `get router info routing-table details <src>` بررسی و Route/Asymmetric رفع شود.
+
 **13-6-ت4** — برای دانستن اثر هر تغییر.
+
+یک تغییر در هر بار تا بدانید کدام تغییر مشکل را حل کرد و ریشه‌ی اصلی پنهان نشود.
 
 **13-6-ت5** — اول یکی را رفع، آزمون، سپس دومی.
 
+دو عیب هم‌زمان: ابتدا یکی را رفع و آزمون کنید، بعد دومی؛ ثبت اثر هر تغییر در Evidence.
+
 **13-6-ت6** — Timeline، Impact، Cause، Fix، Prevention.
+
+قالب گزارش حادثه: Timeline، Impact، Cause، Fix و Prevention؛ هر بخش با شواهد.
 
 **13-6-Q1** — The policy lookup (iprope lookup).
 
@@ -25933,15 +26289,27 @@ diagnose debug reset
 
 **14-1-ت1** — چون اگر لینک/VLAN خراب باشد بالاتر هیچ‌چیز معنا ندارد و آزمایش بیهوده است.
 
+از لایه‌ی پایین‌تر شروع می‌کنیم چون اگر لینک/VLAN خراب باشد بالاتر هیچ‌چیز معنا ندارد؛ آزمون‌های بالاتر بی‌فایده و گمراه‌کننده می‌شود.
+
 **14-1-ت2** — تا حجم Capture و بار CPU کنترل شود و دستگاه پر نشود.
+
+count تعداد بسته‌ها را محدود می‌کند تا حجم Capture و CPU کنترل شود و دستگاه Production پر نشود؛ count=0 بی‌پایان و خطرناک است.
 
 **14-1-ت3** — لینک، VLAN، فیلتر اشتباه، یا Interface نادرست. با ARP و وضعیت لینک بررسی می‌شود.
 
+Sniffer ورودی خالی: لینک/VLAN، فیلتر اشتباه یا Interface نادرست؛ با `get system interface physical` و `diagnose ip arp list` بررسی می‌شود.
+
 **14-1-ت4** — Sniffer بسته‌ها را می‌بیند؛ Debug flow تصمیم FortiGate (Policy، Route، NAT) را نشان می‌دهد.
+
+Sniffer خودِ بسته‌ها را می‌بیند؛ Debug flow تصمیم FortiGate (Route، Policy، NAT، Drop) را نشان می‌دهد؛ هر دو مکمل‌اند.
 
 **14-1-ت5** — ping، debug flow، sniffer، تست DF با اندازه‌ی مختلف، PMTU، MSS-clamp، آزمون.
 
+برخی سایت‌ها باز می‌شوند: ping، Debug flow، Sniffer، تست DF با اندازه‌های مختلف، تعیین PMTU، MSS-clamp و آزمون دانلود بزرگ.
+
 **14-1-ت6** — جدول پرسش/ابزار/خروجی مورد انتظار/اقدام بعدی.
+
+چک‌لیست ده‌پرسشی: جدول پرسش، ابزار، خروجی مورد انتظار و اقدام بعدی؛ برای ثبت Evidence هر گام.
 
 **14-1-Q1** — Debug flow.
 
@@ -25953,15 +26321,27 @@ diagnose debug reset
 
 **14-2-ت1** — هدر بسته همراه نام Interface.
 
+verbosity 4 هدر بسته را همراه نام Interface نشان می‌دهد؛ برای دیدن اینکه بسته از کدام Interface آمده/رفته مناسب است.
+
 **14-2-ت2** — تعداد بسته‌ها تا توقف؛ برای کنترل حجم.
+
+count تعداد بسته تا توقف است؛ برای کنترل حجم و CPU استفاده می‌شود.
 
 **14-2-ت3** — مقصد/مسیر پاسخ نمی‌دهد؛ با Capture ورودی/خروجی محل را مشخص کنید.
 
+SYN بدون SYN-ACK یعنی مقصد یا مسیر پاسخ نمی‌دهد؛ Capture ورودی و خروجی محل را مشخص می‌کند.
+
 **14-2-ت4** — بسته‌ی Offload‌شده ممکن است در sniffer دیده نشود.
+
+بسته‌ی Offload‌شده روی NPU ممکن است در sniffer CPU دیده نشود؛ برای Lab Offload غیرفعال شود (`Unverified`).
 
 **14-2-ت5** — Capture چند Interface، مقایسه‌ی جهت‌ها و Interfaceها.
 
+Asymmetric: Sniffer روی چند Interface؛ SYN در یکی، SYN-ACK در دیگری؛ مقایسه‌ی جهت‌ها آن را ثابت می‌کند.
+
 **14-2-ت6** — فیلتر باریک، count، حذف pcap، ثبت زمان/Evidence.
+
+Capture امن: فیلتر باریک، count محدود، حذف pcap پس از تحلیل و ثبت زمان/Evidence بدون داده‌ی حساس.
 
 **14-2-Q1** — Verbosity 4.
 
@@ -25972,15 +26352,27 @@ diagnose debug reset
 
 **14-3-ت1** — ۲۰ بسته را Trace می‌کند و سپس متوقف می‌شود.
 
+`trace start 20` فقط ۲۰ بسته را Trace می‌کند و سپس متوقف می‌شود؛ برای محدود کردن بار.
+
 **14-3-ت2** — Policy 2 اجازه داد و NAT طبق همان اعمال شد.
+
+«Allowed by Policy-2» یعنی Policy 2 اجازه داد و NAT طبق همان Policy اعمال شد.
 
 **14-3-ت3** — Implicit Deny؛ هیچ Policyای مطابق نبود.
 
+policy 0 یعنی Implicit Deny؛ هیچ Policyای مطابق نبود؛ Interface/Zone، Src/Dst (بعد DNAT)، Service و Schedule را بررسی کنید.
+
 **14-3-ت4** — Route معکوس Source از Interface ورودی نیست.
+
+RPF fail یعنی Route معکوس مبدأ از Interface ورودی نیست؛ Route/Asymmetric را بررسی کنید.
 
 **14-3-ت5** — Route را اصلاح، Asymmetric را بررسی، آزمون Allowed.
 
+رفع RPF: Route را اصلاح کنید، Asymmetric را بررسی کنید و با Debug flow Allowed را تأیید کنید.
+
 **14-3-ت6** — فیلتر، زمان، خروجی، تفسیر، رفع، آزمون.
+
+الگوی ثبت Debug: فیلتر، زمان، خروجی، تفسیر، رفع و آزمون؛ بدون اطلاعات حساس.
 
 **14-3-Q1** — The route back to the source does not use the ingress interface.
 
@@ -25988,15 +26380,27 @@ diagnose debug reset
 
 **14-4-ت1** — همه‌ی مسیرها حتی غیرفعال.
 
+`routing-table database` همه‌ی مسیرها را (حتی غیرفعال) نشان می‌دهد؛ برای فهم اینکه چرا مسیر بهتر استفاده نمی‌شود.
+
 **14-4-ت2** — لایه‌ی ۲ پاسخ نمی‌دهد.
+
+ARP incomplete یعنی لایه‌ی ۲ پاسخ نمی‌دهد (کابل، VLAN، سوییچ).
 
 **14-4-ت3** — قبل.
 
+Policy Route قبل از جدول مسیر اعمال می‌شود؛ مسیر «عجیب» اغلب از آن است.
+
 **14-4-ت4** — Policy مطابق جریان.
+
+`iprope lookup` Policy مطابق جریان را نشان می‌دهد و شماره را برای Evidence می‌دهد.
 
 **14-4-ت5** — proute، routing-table، رفع.
 
+ترافیک از ISP اشتباه می‌رود: `proute list` و `routing-table`؛ حذف/اصلاح Policy Route و آزمون traceroute.
+
 **14-4-ت6** — Route، ARP، Lookup، Session با زمان.
+
+پرونده‌ی شواهد: خروجی Route، ARP، Lookup و Session همراه زمان.
 
 **14-4-Q1** — diagnose firewall proute list.
 
@@ -26008,15 +26412,27 @@ diagnose debug reset
 
 **14-5-ت1** — 1360.
 
+MSS برای MTU 1400 برابر 1360 است (MTU−40).
+
 **14-5-ت2** — Handshake و بسته‌ی کوچک ok؛ بزرگ بی‌پاسخ.
+
+Black-hole: Handshake و بسته‌ی کوچک ok؛ بسته‌ی بزرگ بی‌پاسخ و Retransmission.
 
 **14-5-ت3** — DNS/Resolver/Policy 53.
 
+ping IP ok ولی نام no: DNS/Resolver یا Policy پورت 53؛ با `nslookup` و Capture بررسی شود.
+
 **14-5-ت4** — PMTUD برای اطلاع از MTU مسیر.
+
+ICMP Frag-needed برای PMTUD لازم است؛ بستن آن Black-hole می‌سازد.
 
 **14-5-ت5** — PMTU، MSS-clamp، ICMP، آزمون.
 
+IPsec دانلود می‌ایستد: PMTU را اندازه بگیرید، MSS-clamp کنید، ICMP مجاز، آزمون دانلود بزرگ.
+
 **14-5-ت6** — دانلود ۱۰۰MB سه بار + DNS.
+
+آزمون پایدار: دانلود ۱۰۰MB سه بار و ۲۰ پرس‌وجوی DNS بدون خطا.
 
 **14-5-Q1** — Use the DF bit and vary the packet size until it passes.
 
@@ -26027,15 +26443,27 @@ diagnose debug reset
 
 **14-6-ت1** — Implicit Deny.
 
+policyid=0 یعنی Implicit Deny؛ Policy مطابق نبود.
+
 **14-6-ت2** — پاسخی دریافت نشده.
+
+rcvdbyte=0 یعنی هیچ پاسخی دریافت نشد؛ سرور/Route برگشت/ISP.
 
 **14-6-ت3** — Log Policy خاموش است.
 
+Log نیست چون `logtraffic` در Policy خاموش است؛ برای Policy مهم Log All.
+
 **14-6-ت4** — srcintf/dstintf/policy/NAT.
+
+Packet Walk از Log: srcintf، dstintf، policy، NAT و نتیجه.
 
 **14-6-ت5** — Deny، rcvdbyte=0، Drop بی‌Log.
 
+سه پرونده: Deny، rcvdbyte=0 و Drop بی‌Log؛ هر کدام Evidence Log+Flow+Sniffer.
+
 **14-6-ت6** — Log، Flow، علت، رفع، آزمون.
+
+الگوی گزارش: Log، Flow، علت، رفع و آزمون.
 
 **14-6-Q1** — The implicit deny policy.
 
@@ -27307,24 +27735,39 @@ get router info routing-table all
 
 **15-2-ت1** — Deny با Log.
 
+Policy 99 آخرین قاعده با Deny و Log است؛ Implicit Deny Log ندارد و برای Alert/ممیزی نیاز به Deny صریح است.
+
 **15-2-ت2** — DNAT.
+
+VIP ترجمه‌ی مقصد (DNAT) از IP عمومی به IP داخلی سرور را انجام می‌دهد؛ Policy باید به آن اشاره کند.
 
 **15-2-ت3** — سطح حمله.
 
+port1 (WAN) بدون Admin access تا مدیریت از اینترنت قابل‌دسترس نباشد و سطح حمله کم شود.
+
 **15-2-ت4** — SSH به VIP.
+
+آزمون منفی: SSH به VIP (پورت 22) باید رد شود و Log با policyid=99 ثبت شود.
 
 **15-2-ت5** — Policy، Route، Session.
 
+VIP جواب نمی‌دهد: Policy dst=VIP، Route داخلی سرور، Session و DNAT و Log را بررسی کنید.
+
 **15-2-ت6** — جدول.
+
+ماتریس Edge: Transit→WAN (SNAT)، WAN→DMZ (VIP)، DMZ→Transit (فقط App) و Deny صریح.
 
 **15-2-Q1** — An explicit deny with logging.
 
+An explicit deny with logging should end the Edge rule list.
 
 ### پاسخ‌های بازنویسی عمیق درس 15-3
 
 **15-3-ت1** — NAT دوباره Log و رد‌یابی را خراب می‌کند و Edge IP واقعی را نمی‌بیند؛ ترجمه یک‌بار روی Edge کافی است.
 
 **15-3-ت2** — به Edge از طریق Transit (10.255.0.1).
+
+Default Internal به Edge از طریق Transit (10.255.0.1) است.
 
 **15-3-ت3** — سرور آلوده نباید به C2 اینترنت وصل شود؛ فقط مقاصد Update و HTTPS لازم باز می‌ماند.
 
@@ -27351,6 +27794,8 @@ get router info routing-table all
 
 **15-4-ت6** — طبق جدول؛ Alert بر policyid=61.
 
+ماتریس سه‌لایه: Internet→Web 443، Web→App 8443، App→DB 1433، Web→DB ممنوع و Alert روی Deny Web→DB (policyid=61).
+
 **15-4-Q1** — To limit lateral movement and expose the database to fewer systems.
 
 
@@ -27358,7 +27803,11 @@ get router info routing-table all
 
 **15-5-ت1** — فقط روی Edge.
 
+NAT فقط روی Edge انجام می‌شود تا Log و Session ساده بماند.
+
 **15-5-ت2** — خیر؛ ترافیک فقط از Edge به DMZ می‌رود.
+
+در جریان Internet→Web فقط Edge دخیل است؛ Internal نقشی ندارد.
 
 **15-5-ت3** — پاسخ سرور مستقیم به کاربر می‌رود یا مسیر برگشت از فایروال دور می‌زند.
 
@@ -27367,6 +27816,8 @@ get router info routing-table all
 **15-5-ت5** — بسته به Edge نمی‌رسد؛ Transit/Route/ACL.
 
 **15-5-ت6** — قالب بالا.
+
+Runbook سه‌جریانی: برای هر جریان مسیر، Policyها، NAT و دستورهای اثبات.
 
 **15-5-Q1** — Use split DNS so the name resolves to the internal address.
 
@@ -28887,9 +29338,15 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-1-ت1** — بعد از Policy lookup و قبل از SNAT؛ فقط برای ترافیک Accept‌شده.
 
+Security Profile پس از Policy lookup و پیش از SNAT روی ترافیک Accept‌شده اعمال می‌شود؛ ترافیک Deny‌شده هرگز بازرسی نمی‌شود. پس بدون Policy مجاز، Profile اثری ندارد.
+
 **16-1-ت2** — File Filter، SSL Inspection، Static URL، DoS Policy، Custom IPS.
 
+زیرمجموعه‌ی Security Profile: File Filter، SSL Inspection، Static URL، DoS Policy و Custom IPS؛ هر کدام لایسنس یا شرط جدا دارد (Needs-License برای FortiGuard).
+
 **16-1-ت3** — باید به Policy وصل، لایسنس معتبر و رفتار با Log اثبات شود.
+
+برای ادعای «فعال است»: Profile به Policy وصل، لایسنس معتبر (`diagnose autoupdate versions`) و رفتار با Log (بلاک/اجازه) اثبات شود.
 
 **16-1-ت4** — برای هر ردیف: خروجی `fortiguard-service status`، `show firewall policy`، و Log آزمون؛ ردیف بدون شاهد «اجرا نشده».
 
@@ -28903,9 +29360,15 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-2-ت2** — Exempt مقصد را از بقیه‌ی بررسی‌های Web Filter معاف می‌کند.
 
+Exempt مقصد را از بقیه‌ی بررسی‌های Web Filter معاف می‌کند (مثلاً وب‌سایت بانک)؛ باید با دقت استفاده شود تا سوراخ امنیتی نسازد.
+
 **16-2-ت3** — مسیر URL داخل HTTPS رمزشده است؛ فقط با رمزگشایی (Deep) دیده می‌شود.
 
+در HTTPS مسیر URL رمزشده است و فقط با رمزگشایی (Deep Inspection) دیده می‌شود؛ بدون آن فقط SNI/دامنه قابل‌رؤیت است.
+
 **16-2-ت4** — DoH/DoT و IP مستقیم دور می‌زنند.
+
+DoH/DoT و دسترسی مستقیم با IP، Web Filter مبتنی بر DNS/نام را دور می‌زنند؛ باید DoH را کنترل و Application Control اعمال کرد.
 
 **16-2-ت5** — Profile وصل نیست؛ Policy دیگر بالاتر؛ HTTPS و نیاز مسیر؛ QUIC؛ DoH؛ Exempt. شاهد: Debug Flow، Log، Capture.
 
@@ -28918,11 +29381,17 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-3-ت1** — فایل تست استاندارد بی‌خطر که ضدویروس‌ها آن را ویروس تست می‌شناسند.
 
+فایل EICAR تست استاندارد بی‌خطر است که همه‌ی ضدویروس‌ها آن را ویروس شناسایی می‌کنند؛ برای آزمون AV بدون خطر.
+
 **16-3-ت2** — Zero-day، آرشیو رمزدار، HTTPS بدون Deep و فایل بزرگ‌تر از سقف.
+
+AV نمی‌بیند: Zero-day، آرشیو رمزدار، HTTPS بدون Deep Inspection و فایل بزرگ‌تر از سقف اسکن.
 
 **16-3-ت3** — Flow در جریان و سبک؛ Proxy فایل را کامل بازسازی می‌کند و دقیق‌تر ولی سنگین‌تر است.
 
 **16-3-ت4** — فایل بزرگ‌تر از سقف اسکن نمی‌شود و ممکن است عبور کند.
+
+فایل بزرگ‌تر از سقف اسکن (oversize) اسکن نمی‌شود و بسته به تنظیم ممکن است عبور کند؛ سقف را با ریسک تنظیم و Log کنید.
 
 **16-3-ت5** — File Filter برای آرشیو رمزدار، Sandbox (لایسنس)، محدودسازی منبع، آموزش کاربر و Monitor.
 
@@ -28934,6 +29403,8 @@ diagnose debug flow filter addr 192.168.10.5
 **16-4-ت1** — IPS بر اساس Signature حمله‌ی شناخته‌شده؛ DoS Policy بر اساس حجم/نرخ غیرعادی.
 
 **16-4-ت2** — بلاک اکسپلویت آسیب‌پذیری تا Patch سرور با Signature IPS.
+
+Virtual Patching: Signature IPS اکسپلویت آسیب‌پذیری را تا زمان Patch واقعی سرور مسدود می‌کند.
 
 **16-4-ت3** — از Baseline حجم عادی؛ آستانه کمی بالاتر از پیک عادی و آزمون با ترافیک واقعی.
 
@@ -28948,9 +29419,15 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-5-ت1** — Trust از قبل برقرار است و نصب دستی روی کلاینت‌ها کم می‌شود.
 
+CA سازمانی در دامنه توزیع می‌شود و Trust از قبل برقرار است؛ نصب دستی روی کلاینت‌ها کم می‌شود.
+
 **16-5-ت2** — Firefox Trust Store جدا دارد.
 
+Firefox Trust Store جدا از ویندوز دارد؛ CA باید جدا نصب یا از طریق Policy توزیع شود.
+
 **16-5-ت3** — به کلاینت گواهی ناموثق می‌دهد تا گواهی نامعتبر مقصد دیده شود.
+
+گواهی ناموثق به کلاینت داده می‌شود تا گواهی نامعتبر مقصد دیده شود و کاربر هشدار بگیرد؛ بدون آن مقصد مشکوک مخفی می‌ماند.
 
 **16-5-ت4** — `openssl s_client -connect host:443 -servername host` و مقایسه‌ی Issuer با CA فایروال.
 
@@ -28963,7 +29440,11 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-6-ت1** — تا اثر هر Profile جداگانه دیده شود.
 
+Profile را یکی‌یکی فعال کنید تا اثر هر کدام (CPU، Latency، Block) جدا دیده شود و علت مشکل معلوم باشد.
+
 **16-6-ت2** — بازرسی محتوایی در CPU/CP انجام می‌شود و Session کامل Offload نمی‌شود.
+
+بازرسی محتوایی در CPU/CP انجام می‌شود و Session کامل Offload نمی‌شود؛ بنابراین Throughput کم می‌شود.
 
 **16-6-ت3** — ستون‌ها: Profile، CPU، Throughput، Latency، FP؛ ردیف Baseline و هر Profile و ترکیب؛ شرایط یکسان.
 
@@ -28979,6 +29460,8 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-0-ت2** — نام سرور در ClientHello (SNI) که معمولاً رمزنشده است و گواهی.
 
+در TLS رمزنشده‌ی ClientHello نام سرور (SNI) و بعد گواهی دیده می‌شود؛ پایه‌ی Web Filter بدون رمزگشایی.
+
 **16-0-ت3** — فایروال برای کلاینت گواهی جایگزین صادر می‌کند؛ مرورگر فقط اگر CA آن را بپذیرد خطا نمی‌دهد.
 
 **16-0-ت4** — برنامه گواهی مشخصی را انتظار دارد؛ با Deep Inspection خطا می‌دهد؛ راه‌حل Exemption.
@@ -28989,6 +29472,8 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-0-م1** — Detection فقط Log می‌کند؛ Prevention ترافیک را مسدود می‌کند.
 
+Detection فقط Log می‌کند؛ Prevention ترافیک را مسدود می‌کند. شروع با Detection برای سنجش False Positive، بعد Prevention.
+
 **16-0-Q1** — Certificate inspection sees the certificate and SNI; deep inspection additionally sees the decrypted payload.
 
 
@@ -28996,11 +29481,19 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-7-ت1** — FP: بی‌خطر به‌اشتباه تهدید؛ FN: تهدید واقعی که دیده نشد.
 
+False Positive: ترافیک بی‌خطر به‌اشتباه تهدید؛ False Negative: تهدید واقعی که دیده نشد. هر دو هزینه دارند؛ تنظیم باید تعادل ایجاد کند.
+
 **16-7-ت2** — دامنه/SNI و اطلاعات گواهی.
+
+فقط دامنه/SNI و اطلاعات گواهی در دسترس است مگر Deep Inspection فعال باشد.
 
 **16-7-ت3** — DoH درخواست DNS را داخل HTTPS رمز می‌کند و فایروال Query را نمی‌بیند.
 
+DoH درخواست DNS را داخل HTTPS رمز می‌کند و فایروال Query را نمی‌بیند؛ لازم است DoH کنترل شود.
+
 **16-7-ت4** — IPS به بازرسی محتوا در CPU/CP نیاز دارد.
+
+IPS به بازرسی محتوا در CPU/CP نیاز دارد و Offload کامل Session ممکن نیست.
 
 **16-7-ت5** — فاز ۱ Monitor (معیار: جمع FP)، فاز ۲ تنظیم (معیار: FP زیر آستانه)، فاز ۳ Block سیگنچرهای با اطمینان بالا، فاز ۴ بازبینی ماهانه.
 
@@ -30226,13 +30719,21 @@ diagnose debug reset
 
 **17-1-ت1** — AD از SRV Record برای یافتن سرویس‌ها استفاده می‌کند.
 
+AD برای یافتن سرویس‌های دامنه (KDC، LDAP) از رکورد SRV در DNS استفاده می‌کند؛ DNS خراب یعنی دامنه خراب.
+
 **17-1-ت2** — حداقل دسترسی و ممیزی‌پذیری.
 
+حساب سرویس باید Least Privilege و ممیزی‌پذیر باشد تا افشای آن آسیب را محدود کند.
+
 **17-1-ت3** — DNS فایروال، `execute nslookup`، Route/Policy Local-out، Sniffer 53.
+
+DNS کار نمی‌کند: DNS فایروال، `execute nslookup`، Route/Policy Local-out و Sniffer روی 53.
 
 **17-1-ت4** — Corp/Users/Groups/ServiceAccounts؛ گروه‌های Finance/IT/Guest؛ Policy بر پایه‌ی گروه.
 
 **17-1-ت5** — Snapshot قبل از Forest، بعد از پایه، قبل از هر تغییر؛ آزمون Restore.
+
+Snapshot: قبل از ساخت Forest، پس از پایه و پیش از هر تغییر؛ و آزمون Restore برای اثبات.
 
 **17-1-Q1** — Because AD clients locate domain services through DNS SRV records.
 
@@ -30241,9 +30742,15 @@ diagnose debug reset
 
 **17-2-ت1** — ویژگی نام ورود در Directory (مثل sAMAccountName).
 
+Common Name Identifier (cnid) ویژگی نام ورود در Directory است (مثل sAMAccountName) که FortiGate با آن کاربر را می‌جوید.
+
 **17-2-ت2** — تا رمزها قابل شنود نباشند.
 
+LDAPS رمز و پرس‌وجو را رمز می‌کند؛ LDAP ساده می‌تواند رمزها را قابل شنود کند.
+
 **17-2-ت3** — dn/OU اشتباه یا cnid ناسازگار.
+
+user not found: dn/OU اشتباه یا cnid ناسازگار؛ با `diagnose test authserver ldap` بررسی کنید.
 
 **17-2-ت4** — DN گروه، Nested، نگاشت IP→User، ترتیب Policy؛ آزمون‌ها: authserver، AD، Debug Flow.
 
@@ -30256,11 +30763,19 @@ diagnose debug reset
 
 **17-3-ت1** — UDP 1812 و 1813.
 
+RADIUS Authentication روی UDP 1812 و Accounting روی 1813 (برخی پیاده‌سازی قدیمی 1645/1646).
+
 **17-3-ت2** — رمز مشترک Client/Server برای محافظت/اعتبارسنجی.
+
+Shared Secret رمز مشترک FortiGate و RADIUS است که بسته‌ها را اعتبارسنجی/محافظت می‌کند؛ عدم‌تطابق باعث Reject می‌شود.
 
 **17-3-ت3** — Policy NPS/گروه مجاز نیست.
 
+Access-Reject با رمز درست: Policy NPS/گروه مجاز نیست؛ شاهد در Event Log سرور NPS.
+
 **17-3-ت4** — Timeout کوتاه، Challenge پشتیبانی‌نشده، Secret، NPS Policy.
+
+Timeout کوتاه، Challenge پشتیبانی‌نشده، Secret و NPS Policy از علل ناموفق‌بودن MFA هستند.
 
 **17-3-ت5** — Admin remote auth=RADIUS، Challenge OTP، گروه Admin، Accounting، Fallback local admin.
 
@@ -30271,13 +30786,23 @@ diagnose debug reset
 
 **17-4-ت1** — Kerberos 4768/4769.
 
+FSSO Polling فقط رویدادهای Kerberos 4768/4769 را می‌خواند؛ ورود NTLM دیده نمی‌شود.
+
 **17-4-ت2** — Group Filter، NTLM، ساعت/Event Log.
+
+FSSO کاربر را نمی‌بیند: Group Filter، NTLM، ساعت و دسترسی به Event Log را بررسی کنید.
 
 **17-4-ت3** — چند کاربر با یک IP؛ نگاشت یک‌به‌یک ممکن نیست؛ TS Agent.
 
+چند کاربر با یک IP (Terminal Server) نگاشت یک‌به‌یک را ممکن نمی‌کند؛ از TS Agent استفاده کنید.
+
 **17-4-ت4** — Collector/DC Agent؛ Polling محدودیت‌های NTLM و بار دارد.
 
+Collector/DC Agent مدل جایگزین Polling است؛ Polling محدودیت NTLM و بار دارد.
+
 **17-4-ت5** — Login/Logout، تغییر IP، گروه جدید، NTLM، قطع Collector؛ هر کدام Evidence.
+
+آزمون FSSO: Login/Logout، تغییر IP، گروه جدید، NTLM و قطع Collector؛ برای هرکدام Evidence.
 
 **17-4-Q1** — Polling reads only Kerberos events, so NTLM logons are not captured.
 
@@ -30286,13 +30811,23 @@ diagnose debug reset
 
 **17-5-ت1** — صفحه‌ی ورود قبل از دسترسی.
 
+Captive Portal قبل از دسترسی صفحه‌ی ورود را نشان می‌دهد؛ برای Guest و BYOD.
+
 **17-5-ت2** — Redirect HTTPS و جلوگیری از عادت کاربر به هشدار.
+
+Redirect باید HTTPS باشد تا کاربر به هشدار گواهی عادت نکند و رمز در متن ساده نرود.
 
 **17-5-ت3** — Zone جدا، Policy حداقلی، حساب موقت، Log و Timeout.
 
+Guest Wi-Fi: Zone جدا، Policy حداقلی (فقط اینترنت)، حساب موقت، Log و Timeout.
+
 **17-5-ت4** — گواهی، Redirect، DNS، Policy.
 
+Captive Portal کار نمی‌کند: گواهی، Redirect، DNS و Policy را بررسی کنید.
+
 **17-5-ت5** — nmap از Guest به Users/Servers باید Filtered باشد.
+
+nmap از Guest به Users/Servers باید Filtered باشد؛ آزمون منفی جداسازی.
 
 **17-5-Q1** — Because guests are untrusted devices and could attack or scan internal systems.
 
@@ -30301,11 +30836,19 @@ diagnose debug reset
 
 **17-6-ت1** — اعتبارنامه‌ی نامعتبر: DN یا رمز حساب/کاربر اشتباه.
 
+اعتبارنامه‌ی نامعتبر: DN یا رمز حساب/کاربر اشتباه؛ Bind را تست کنید.
+
 **17-6-ت2** — بار CPU، حجم Log و افشای اطلاعات حساس.
+
+Debug بار CPU، حجم Log و افشای اطلاعات حساس دارد؛ محدود و موقتی.
 
 **17-6-ت3** — NTLM؛ Polling فقط Kerberos را می‌بیند؛ یا Group Filter.
 
+FSSO کاربر را نمی‌بیند: NTLM (Polling فقط Kerberos)، یا Group Filter.
+
 **17-6-ت4** — Policy NPS/گروه، Secret، Constraint روش احراز؛ شاهد: NPS Event.
+
+RADIUS Reject: Policy NPS/گروه، Secret و Constraint روش احراز؛ شاهد: NPS Event.
 
 **17-6-ت5** — علامت: Login شکست؛ شواهد: bind error؛ علت: DN حساب سرویس؛ رفع: DN دقیق؛ پیشگیری: ثبت DN و تست پس از تغییر OU.
 
@@ -30317,7 +30860,11 @@ diagnose debug reset
 
 **17-0-ت1** — Authentication (کیستی)، Authorization (چه می‌توانی)، Accounting (چه کردی).
 
+Authentication کیستی، Authorization چه می‌توانی و Accounting چه کردی؛ سه رکن AAA.
+
 **17-0-ت2** — LDAP 389؛ LDAPS 636.
+
+LDAP روی TCP 389 و LDAPS روی 636.
 
 **17-0-ت3** — Kerberos به Ticket با Timestamp وابسته است؛ اختلاف زمان زیاد باعث رد Ticket می‌شود.
 
@@ -30337,15 +30884,27 @@ diagnose debug reset
 
 **17-7-ت1** — اعتبار Bind نامعتبر.
 
+کد 49 LDAP یعنی اعتبار Bind نامعتبر؛ حساب سرویس/رمز را بررسی کنید.
+
 **17-7-ت2** — برای جدا کردن مشکل سرور از Policy.
+
+`diagnose test authserver` مشکل سرور را از مشکل Policy جدا می‌کند.
 
 **17-7-ت3** — گروه در Policy/عضویت.
 
+لاگین موفق ولی دسترسی نه: گروه در Policy یا عضویت گروه.
+
 **17-7-ت4** — Shared Secret/کاربر.
+
+RADIUS Reject: Shared Secret یا کاربر.
 
 **17-7-ت5** — رمز Bind؛ به‌روزرسانی؛ CHG.
 
+پس از تغییر رمز Bind همه رد می‌شوند: رمز را به‌روز کنید و CHG ثبت.
+
 **17-7-ت6** — ۶ گام.
+
+چک‌لیست شش‌گامی: Reachability، Bind، کاربر، رمز، گروه، Policy.
 
 **17-7-Q1** — Invalid credentials.
 
@@ -31675,13 +32234,21 @@ diagnose debug reset
 
 **18-1-ت1** — مدرن‌تر؛ پیام کمتر؛ پیش‌فرض 7.0 v1 است.
 
+IKEv2 مدرن‌تر است، پیام کمتر و ویژگی بهتر دارد؛ پیش‌فرض FortiOS 7.0 هنوز v1 است و باید صریح انتخاب شود.
+
 **18-1-ت2** — تا خطای شبکه با خطای IPsec اشتباه نشود.
 
+Reachability را جدا تست کنید تا خطای شبکه با خطای IPsec اشتباه نشود.
+
 **18-1-ت3** — NAT به Subnet یکتا یا Re-IP؛ ثبت در IP Plan.
+
+Overlap آدرس: NAT به Subnet یکتا یا Re-IP و ثبت در IP Plan.
 
 **18-1-ت4** — جدول ۱۸-۱ کامل شده با مقادیر و دلایل.
 
 **18-1-ت5** — IKE/Child SA، ping، TCP، MTU، Failover.
+
+آزمون: IKE/Child SA، ping، TCP، MTU و Failover.
 
 **18-1-Q1** — To ensure both peers use mirrored settings and to avoid trial and error.
 
@@ -31689,9 +32256,13 @@ diagnose debug reset
 
 **18-2-ت1** — Route به Tunnel، Policy دوطرفه و Selector سازگار.
 
+تونل Route-based نیاز به Route به Tunnel، Policy دوطرفه و Selector سازگار دارد.
+
 **18-2-ت2** — چون ترافیک در هر دو جهت باید اجازه داشته باشد و Stateful فقط جهت شروع را به Session می‌گذارد.
 
 **18-2-ت3** — IKE SA Established؛ Child SA با شمارنده‌ی Encrypt/Decrypt؛ ping/Log داده.
+
+Verify: IKE SA Established، Child SA با شمارنده‌ی Encrypt/Decrypt و ping/Log داده.
 
 **18-2-ت4** — Policy سمت مقابل، Route برگشت، NAT-T/UDP 4500، Selector. شاهد: tunnel list، Sniffer، Debug Flow.
 
@@ -31707,13 +32278,23 @@ diagnose debug reset
 
 **18-3-ت1** — الگوریتم و DH را توافق می‌کند.
 
+IKE_SA_INIT الگوریتم و DH را توافق می‌کند.
+
 **18-3-ت2** — Selector نامطابق.
+
+TS_UNACCEPTABLE یعنی Selector نامطابق.
 
 **18-3-ت3** — PSK/هویت.
 
+AUTHENTICATION_FAILED یعنی PSK یا هویت متفاوت.
+
 **18-3-ت4** — UDP 500/4500.
 
+Timeout: UDP 500/4500 را بررسی کنید.
+
 **18-3-ت5** — Sniffer و ACL.
+
+Timeout را با Sniffer و ACL دو سر رفع کنید.
 
 **18-3-ت6** — طبق متن.
 
@@ -31723,15 +32304,23 @@ diagnose debug reset
 
 **18-4-ت1** — MSS ≈ MTU − 40 (هدر IP و TCP).
 
+MSS ≈ MTU − 40 (هدر IP و TCP)؛ در تونل MTU مؤثر کمتر است.
+
 **18-4-ت2** — بسته‌ی بزرگ DF Drop می‌شود و ICMP Frag-Needed بلاک است؛ فرستنده اندازه را کم نمی‌کند.
 
 **18-4-ت3** — حدود 58–66 بایت (IP 20، UDP 8، ESP 8، IV 8، trailer/pad، ICV 16).
 
+سربار ESP حدود ۵۸ تا ۶۶ بایت (IP 20، UDP 8، ESP 8، IV 8، trailer/pad، ICV 16).
+
 **18-4-ت4** — 1372+28 = 1400.
+
+MTU مسیر = اندازه‌ی ping موفق + 28؛ 1372 + 28 = 1400.
 
 **18-4-ت5** — MSS مخصوص TCP است؛ UDP باید با MTU کم/اندازه‌ی برنامه/Fragmentation حل شود.
 
 **18-4-ت6** — MTU Tunnel 1400، MSS 1360، ICMP 3/4 باز، آزمون پس از هر تغییر.
+
+MTU تونل 1400، MSS 1360، ICMP 3/4 باز و آزمون پس از هر تغییر.
 
 **18-4-Q1** — Small packets fit through the tunnel, but large DF packets are dropped without ICMP feedback.
 
@@ -31740,13 +32329,23 @@ diagnose debug reset
 
 **18-5-ت1** — show crypto ipsec sa.
 
+`show crypto ipsec sa` در Cisco برای Child SA و شمارنده‌ها.
+
 **18-5-ت2** — Route-based؛ Routing تعیین می‌کند ترافیک وارد Tunnel شود.
+
+Route-based: Routing تعیین می‌کند ترافیک وارد Tunnel شود؛ برخلاف Policy-based.
 
 **18-5-ت3** — Phase 2/Rekey شکست؛ INVALID_KE_PAYLOAD/NO_PROPOSAL.
 
+Phase 2/Rekey شکست: INVALID_KE_PAYLOAD یا NO_PROPOSAL (PFS/DH).
+
 **18-5-ت4** — Rekey رفتار متفاوت دارد و ممکن است قطع/Flap شود.
 
+Rekey در سازنده‌ها رفتار متفاوت دارد و ممکن است Flap بدهد.
+
 **18-5-ت5** — Lifetime/PFS؛ Log دو سر؛ یکسان‌سازی؛ آزمون.
+
+Lifetime/PFS را در دو سر یکسان کنید و Log دو سر را مقایسه کنید.
 
 **18-5-ت6** — جدول پارامتر/نتیجه/نسخه.
 
@@ -31766,6 +32365,8 @@ diagnose debug reset
 
 **18-6-ت4** — تا CPU و حجم Log کنترل شود و فقط همان تونل دیده شود.
 
+Debug محدود به peer تا CPU و حجم Log کنترل شود.
+
 **18-6-ت5** — MSS = 1400 − 40 = 1360؛ با حاشیه 1350 تنظیم و با دانلود بزرگ آزمون می‌شود.
 
 **18-6-ت6** — فهرست خروجی‌ها: ike gateway، tunnel list، session، ping/TCP، Debug محدود، تصویر، زمان و نتیجه.
@@ -31776,11 +32377,17 @@ diagnose debug reset
 
 **18-0-ت1** — Phase 1 کانال کنترل امن (IKE SA)؛ Phase 2 SA داده (Child SA) و Selector.
 
+Phase 1 کانال کنترل امن (IKE SA) و Phase 2 SA داده (Child SA) با Selector.
+
 **18-0-ت2** — با هر Rekey کلید تازه با DH جدید می‌سازد تا افشای کلید قدیمی ترافیک گذشته را باز نکند.
 
 **18-0-ت3** — Selector باز + Routing + Policy؛ Routing پویا و مقیاس‌پذیری راحت.
 
+Route-based: Selector باز + Routing + Policy؛ مقیاس‌پذیر و مناسب Routing پویا.
+
 **18-0-ت4** — عبور از NAT با کپسوله‌کردن ESP در UDP؛ پورت UDP 4500.
+
+NAT-T ESP را در UDP 4500 کپسوله می‌کند تا از NAT عبور کند.
 
 **18-0-ت5** — ۱) Policy سمت مقابل؛ ۲) Route برگشت؛ ۳) NAT-T/UDP 4500؛ ۴) Selector. شاهد: tunnel list، Sniffer، Debug Flow سمت مقابل.
 
@@ -31789,6 +32396,8 @@ diagnose debug reset
 **18-0-ت7** — Selectorها آینه‌ی هم باشند؛ در Route-based از 0.0.0.0/0 استفاده یا Subnetهای دقیق هم‌سان؛ بررسی Debug IKE.
 
 **18-0-م1** — پیام دوره‌ای برای تشخیص مرگ Peer و پاک‌کردن SA.
+
+DPD پیام دوره‌ای برای تشخیص مرگ Peer و پاک‌کردن SA است.
 
 **18-0-Q1** — Because it gives forward secrecy: compromise of a long-term key does not expose past sessions.
 
@@ -33248,9 +33857,15 @@ diagnose debug flow trace start 10
 
 **19-4-ت1** — کاهش Latency (حذف یک Hop تا Hub) و کاهش بار پهنای باند Hub.
 
+Local Breakout تأخیر را کم می‌کند (حذف Hop تا Hub) و بار پهنای باند Hub را کاهش می‌دهد.
+
 **19-4-ت2** — Longest Prefix Match: Route 10.0.0.0/8 از Tunnel دقیق‌تر از 0.0.0.0/0 است.
 
+Longest Prefix Match: Route 10.0.0.0/8 از Tunnel دقیق‌تر از 0.0.0.0/0 است؛ پس ترافیک داخلی از Tunnel و بقیه محلی.
+
 **19-4-ت3** — Backhaul = 55 ms؛ Breakout ≈ 22 ms؛ کاهش ≈ 33 ms (60٪).
+
+Backhaul 55 ms در برابر Breakout 22 ms: کاهش ≈ 33 ms (حدود ۶۰٪).
 
 **19-4-ت4** — Distance کمتر برنده است؛ iBGP پیش‌فرض 200 و Static 10؛ پس Static محلی برنده است. اگر Distance را عوض کنید یا Default محلی نباشد، Backhaul می‌شود؛ کنترل با Distance/Priority.
 
@@ -33282,7 +33897,11 @@ diagnose debug flow trace start 10
 
 **19-6-ت1** — برای کاهش Route و جلوگیری از نشت ترافیک آدرس ناموجود به اینترنت.
 
+Summary Route تعداد Route را کم و نشت ترافیک آدرس ناموجود به اینترنت را کم می‌کند.
+
 **19-6-ت2** — شناسه، نیازمندی، آزمون، دستور/Capture، نتیجه، فایل/زمان.
+
+Evidence Index: شناسه، نیازمندی، آزمون، دستور/Capture، نتیجه، فایل و زمان.
 
 **19-6-ت3** — تقریباً 0.9 s Detect + ≈ 5 s Update + Install ≈ ۶ ثانیه؛ هدف < ۱۰ ثانیه برآورده می‌شود.
 
@@ -33298,7 +33917,11 @@ diagnose debug flow trace start 10
 
 **19-0-ت1** — 20×19/2 = 190 Tunnel.
 
+Full-mesh برای ۲۰ سایت ۱۹۰ Tunnel دارد (۲۰×۱۹/۲)؛ ADVPN/Hub-Spoke این را کم می‌کند.
+
 **19-0-ت2** — Overlay شبکه‌ی Tunnel روی ISP؛ Underlay خود ISP و لینک‌های فیزیکی.
+
+Overlay شبکه‌ی Tunnel روی ISP و Underlay خود ISP و لینک‌های فیزیکی است.
 
 **19-0-ت3** — مقیاس‌پذیری، Failover خودکار و کنترل Policy؛ اضافه‌کردن شعبه بدون تغییر دستی همه‌ی مسیرها.
 
@@ -34272,11 +34895,17 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 **20-2-ت1** — Source Interface Policyهای ترافیک کلاینت‌های SSL VPN است.
 
+Source Interface تعیین می‌کند SSL VPN روی کدام Interface گوش دهد (معمولاً WAN).
+
 **20-2-ت2** — CVEهای شناخته‌شده؛ سرویس اینترنتی؛ ریسک نفوذ.
+
+SSL VPN سرویس اینترنتی با CVEهای شناخته‌شده است؛ ریسک نفوذ دارد؛ پچ فوری و محدودکردن.
 
 **20-2-ت3** — Policy ssl.root→LAN، Route/Policy بازگشت، Split networks؛ Debug Flow، `ssl monitor`، Sniffer.
 
 **20-2-ت4** — Brute-force/Credential stuffing؛ با محدودیت تلاش و زمان Block.
+
+Brute-force/Credential stuffing: محدودیت تلاش و Block زمان‌دار و MFA.
 
 **20-2-ت5** — Patch/غیرفعال، محدودسازی Source، بررسی Log retrospective، چرخش اعتبارنامه‌ها، Alert و مهاجرت.
 
@@ -34291,13 +34920,21 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 **20-3-ت2** — IP، DNS و (در صورت تنظیم) Split networks.
 
+Mode Config IP، DNS و (در صورت تنظیم) Split networks را به کلاینت می‌دهد.
+
 **20-3-ت3** — همه یک رمز دارند؛ افشا = دسترسی همه؛ بدون هویت فردی و MFA.
 
+PSK گروهی: همه یک رمز دارند؛ افشا یعنی دسترسی همه، بدون هویت فردی و MFA.
+
 **20-3-ت4** — DNS در Mode Config، Suffix، nslookup با DNS داخلی، Sniffer 53.
+
+DNS در Mode Config، Suffix، `nslookup` با DNS داخلی و Sniffer 53 را بررسی کنید.
 
 **20-3-ت5** — ≈ ۸۰۰ IKE SA + ۸۰۰ Child SA؛ Lifetime را jitter دهید تا Rekey همزمان نشود؛ با Datasheet مدل مقایسه.
 
 **20-3-ت6** — IKEv2+EAP-RADIUS+OTP؛ Finance/IT Policy؛ DNS/Split؛ دو NPS؛ Log و Alert.
+
+طرح: IKEv2+EAP-RADIUS+OTP، Policy Finance/IT، DNS/Split، دو NPS، Log و Alert.
 
 **20-3-Q1** — Because each user is authenticated individually and a leaked shared key would expose all users.
 
@@ -34306,13 +34943,19 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 **20-4-ت1** — قفل موقت حساب/IP پس از تعداد مشخص تلاش ناموفق.
 
+Lockout قفل موقت حساب/IP پس از تعداد مشخص تلاش ناموفق است.
+
 **20-4-ت2** — نشانه‌ی احتمالی Brute-force موفق؛ مهاجم اکنون دسترسی دارد.
+
+ورود موفق پس از چند شکست یعنی Brute-force احتمالاً موفق شده؛ مهاجم اکنون دسترسی دارد.
 
 **20-4-ت3** — از Baseline رفتار عادی (تعداد ناموفق‌ها به‌ازای کاربر/IP) و ضریب ایمنی؛ آزمون FP.
 
 **20-4-ت4** — آیا از آن IP ورود موفقی بوده؛ کاربران/Sessionها؛ دسترسی‌ها؛ Log حرکت جانبی.
 
 **20-4-ت5** — Triage، Contain، Scope، Eradicate، Recover، PIR با Owner و زمان.
+
+پاسخ: Triage، Contain، Scope، Eradicate، Recover و PIR با Owner و زمان.
 
 **20-4-ت6** — ماهانه کاربران غیرفعال/گروه/Exception؛ فصلی آزمون MFA/Lockout و Patch؛ ثبت.
 
@@ -34326,7 +34969,11 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 **20-5-ت1** — رمز لو رفته بدون عامل دوم دسترسی نمی‌دهد.
 
+رمز لورفته بدون عامل دوم (MFA) دسترسی نمی‌دهد.
+
 **20-5-ت2** — فقط ترافیک شبکه‌ی سازمان از Tunnel می‌رود و بقیه مستقیم.
+
+Split Tunnel: فقط ترافیک شبکه‌ی سازمان از Tunnel می‌رود و بقیه مستقیم.
 
 **20-5-ت3** — Policy Lookup، گروه، dstaddr، Route/Tunnel IP.
 
@@ -34342,13 +34989,19 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 **20-7-ت1** — SSL VPN Tunnel mode حذف شد و با IPsec جایگزین شد.
 
+SSL VPN Tunnel mode حذف شد و با IPsec جایگزین شد (7.6.3).
+
 **20-7-ت2** — نام جدید SSL VPN Web mode (دسترسی مرورگری بدون کلاینت).
+
+نام جدید SSL VPN Web mode: دسترسی مرورگری بدون کلاینت.
 
 **20-7-ت3** — سرویس وب عمومی ندارد؛ سطح حمله‌ی IKE محدودتر است (و CVEهای SSL VPN متعدد بوده).
 
 **20-7-ت4** — ۱) فهرست کاربران؛ ۲) IPsec آزمایشی؛ ۳) Split-tunnel/DNS؛ ۴) MFA؛ ۵) آموزش؛ ۶) Backup؛ ۷) خاموش‌کردن SSL VPN؛ ۸) آزمون منفی. ریسک: قطعی کاربران، ناسازگاری کلاینت.
 
 **20-7-ت5** — کارمندان: IPsec+MFA؛ پیمانکار: Agentless/ZTNA به یک اپ؛ مهمان: بدون VPN.
+
+کارمندان: IPsec+MFA؛ پیمانکار: Agentless/ZTNA به یک اپ؛ مهمان: بدون VPN.
 
 **20-7-Q1** — Because the support status of a feature determines how long the design stays supported and secure.
 
@@ -35405,15 +36058,27 @@ get router info routing-table all
 
 **21-1-ت1** — Route ترجیحی.
 
+Static با Priority/Distance بهتر Route ترجیحی است.
+
 **21-1-ت2** — با Probe کشف قطع ISP و حذف Route.
+
+Probe (Link-monitor/Health-check) قطع ISP را کشف و Route را حذف می‌کند.
 
 **21-1-ت3** — تا خرابی Server با خرابی لینک اشتباه نشود.
 
+چند Server پایش شود تا خرابی یک Server با خرابی لینک اشتباه نشود.
+
 **21-1-ت4** — ≈ 5 ثانیه (به‌علاوه‌ی Convergence).
+
+زمان تشخیص تقریباً failtime × interval ≈ ۵ ثانیه به‌علاوه‌ی Convergence.
 
 **21-1-ت5** — خیر؛ SLA/Loss Threshold در SD-WAN.
 
+خیر؛ در SD-WAN SLA/Loss Threshold برای کیفیت وجود دارد.
+
 **21-1-ت6** — SLA، چند لینک، Overlay، گزارش کیفیت.
+
+طرح: SLA، چند لینک، Overlay و گزارش کیفیت.
 
 **21-1-Q1** — A degraded link with high loss or latency that still answers probes.
 
@@ -35422,6 +36087,8 @@ get router info routing-table all
 **21-2-ت1** — چون Interface عضو SD-WAN نباید مستقیم در Policy/Route/Object مرجع داشته باشد.
 
 **21-2-ت2** — روی Zone SD-WAN.
+
+Policy روی Zone SD-WAN نوشته می‌شود، نه Interface فیزیکی.
 
 **21-2-ت3** — Server/Protocol Probe، ICMP توسط ISP بلاک؛ Route/Source Probe؛ شاهد Sniffer؛ رفع: dns/http Probe.
 
@@ -35434,9 +36101,15 @@ get router info routing-table all
 
 **21-3-ت1** — بالا به پایین؛ اولین Rule مطابق.
 
+SD-WAN Rule از بالا به پایین و اولین Rule مطابق اعمال می‌شود.
+
 **21-3-ت2** — sla: اولین عضو دارای SLA؛ load-balance: توزیع بین همه‌ی اعضای دارای SLA.
 
+Mode sla اولین عضو دارای SLA؛ load-balance توزیع بین همه‌ی اعضای دارای SLA.
+
 **21-3-ت3** — Rule عمومی بالاتر Match می‌شود؛ ترتیب را اصلاح کنید.
+
+Rule عمومی بالاتر Match می‌شود؛ ترتیب را اصلاح کنید.
 
 **21-3-ت4** — VoIP: sla با Latency<80/Jitter<20؛ ERP: sla با ترجیح لینک پایدار؛ Backup: load-balance.
 
@@ -35447,15 +36120,27 @@ get router info routing-table all
 
 **21-4-ت1** — Session با SNAT/Interface قدیمی ادامه نمی‌یابد.
 
+با Failover، Session با SNAT/Interface قدیمی ادامه نمی‌یابد؛ باید Session پاک یا Pickup شود.
+
 **21-4-ت2** — `filter dev/src/dst` سپس `clear`.
+
+`diagnose sys session filter dev/src/dst` سپس `clear` برای پاک‌سازی انتخابی.
 
 **21-4-ت3** — تا بازگشت زودهنگام به لینک ناپایدار رخ ندهد.
 
+recoverytime/Hold برای جلوگیری از بازگشت زودهنگام به لینک ناپایدار.
+
 **21-4-ت4** — Rule روی ISP ثابت، IP Pool/BGP، هماهنگی Partner.
+
+Rule روی ISP ثابت، IP Pool/BGP و هماهنگی Partner برای IP مبدأ.
 
 **21-4-ت5** — قطع/Session/بازگشت/Partner با اندازه‌گیری.
 
+Evidence Failover: قطع، Session، بازگشت و Partner با اندازه‌گیری.
+
 **21-4-ت6** — Dual-ISP SD-WAN HA با Rule/SLA و Clear.
+
+طرح Dual-ISP SD-WAN HA با Rule/SLA و Clear.
 
 **21-4-Q1** — The outgoing source IP changes to the other ISP address.
 
@@ -35483,9 +36168,19 @@ get router info routing-table all
 
 **21-7-ت1** — سنجش کیفیت لینک (Latency/Jitter/Loss) و تشخیص Dead.
 
+Performance SLA سنجش کیفیت لینک (Latency/Jitter/Loss) و تشخیص Dead است.
+
 **21-7-ت2** — روی Zone SD-WAN.
 
+Rule SD-WAN روی ترافیک Zone SD-WAN اعمال می‌شود.
+
 **21-7-ت3** — Detect = 500 ms × 4 = 2 s؛ Recovery = 500 ms × 20 = 10 s.
+
+Detect = 500 ms × 4 = 2 s؛ Recovery = 500 ms × 20 = 10 s.
+
+``` text
+Detect = 500 ms x 4 = 2 s ; Recovery = 500 ms x 20 = 10 s
+```
 
 **21-7-ت4** — Lowest Cost (SLA): اولین عضو دارای SLA؛ Maximize Bandwidth: توزیع بین همه‌ی اعضای دارای SLA.
 
@@ -36599,15 +37294,31 @@ execute ha manage 1 admin
 
 **22-1-ت1** — نقطه‌ی شکست واحد.
 
+نقطه‌ی شکست واحد (SPOF) جزئی است که خرابی آن کل سرویس را قطع می‌کند؛ فایروال تکی SPOF کلاسیک است و HA آن را حذف می‌کند.
+
 **22-1-ت2** — خیر؛ SD-WAN/Dual-ISP.
+
+خیر؛ HA فایروال خرابی ISP را پوشش نمی‌دهد؛ برای آن Dual-ISP/SD-WAN لازم است.
 
 **22-1-ت3** — 1−0.005×0.005 = 99.9975٪.
 
+دو فایروال موازی با دسترس‌پذیری ۹۹٫۵٪ هر کدام: احتمال خرابی هم‌زمان 0.005×0.005=0.000025 ⇒ دسترس‌پذیری 99.9975٪ (با فرض استقلال).
+
+``` text
+A = 1 - (0.005 x 0.005) = 99.9975 %
+```
+
 **22-1-ت4** — دسترس‌پذیری سری ضرب می‌شود؛ ISP 99.9٪ کل را محدود می‌کند.
+
+در اجزای سری دسترس‌پذیری ضرب می‌شود؛ ISP با ۹۹٫۹٪ سقف کل سیستم را محدود می‌کند، هرقدر فایروال HA باشد.
 
 **22-1-ت5** — ISP، Config خراب، CVE مشترک، Split-brain.
 
+HA همه‌ی خرابی‌ها را حل نمی‌کند: خرابی ISP، Config خراب (همگام می‌شود!)، CVE مشترک بین دو دستگاه و Split-brain.
+
 **22-1-ت6** — جدول با ستون راه مکمل و RTO.
+
+جدول SPOF: هر جزء، ریسک، راه مکمل (HA، Dual-ISP، UPS) و RTO هدف.
 
 **22-1-Q1** — Because serial availabilities multiply, so the lowest one dominates.
 
@@ -36618,15 +37329,25 @@ execute ha manage 1 admin
 
 **22-2-ت1** — هم‌مدل، هم‌نسخه، لایسنس، Heartbeat، پورت‌های مشابه.
 
+پیش‌نیاز HA: هم‌مدل، هم‌نسخه (Build یکسان)، لایسنس، Heartbeat اختصاصی و پورت‌های مشابه.
+
 **22-2-ت2** — تا خرابی یک لینک Cluster را نشکند.
+
+دو لینک Heartbeat تا خرابی یک لینک Cluster را نشکند و Split-brain نشود.
 
 **22-2-ت3** — پس از بازگشت عضو قوی‌تر، Primary تغییر نمی‌کند و Flap نمی‌شود.
 
 **22-2-ت4** — Config اعضا یکی نیست؛ checksum متفاوت.
 
+Out-of-sync یعنی Config اعضا یکی نیست و checksum متفاوت است؛ با `diagnose sys ha checksum cluster` دیده می‌شود.
+
 **22-2-ت5** — نسخه، Group، Password، لایسنس، HB.
 
+عضو دوم Join نمی‌شود: نسخه، Group name، Password، لایسنس و Heartbeat را بررسی کنید.
+
 **22-2-ت6** — جدول بالا.
+
+برگه‌ی HA: Mode، Group، Password (Vault)، hbdev، Priority، monitor، override و session-pickup با دلیل.
 
 **22-2-Q1** — Because configuration is synchronized from the primary to the secondary.
 
@@ -36637,15 +37358,27 @@ execute ha manage 1 admin
 
 **22-3-ت1** — تعداد بسته‌ی گمشده × Interval.
 
+زمان قطع = تعداد بسته‌ی گمشده × فاصله‌ی ping؛ مثال ۱۲ بسته × ۰٫۲ ثانیه = ۲٫۴ ثانیه.
+
 **22-3-ت2** — همگام‌سازی Session.
+
+Session pickup Sessionهای TCP را بین اعضا همگام می‌کند تا پس از Failover ادامه یابند.
 
 **22-3-ت3** — برخی UTM/Proxy.
 
+Sessionهای مبتنی بر UTM/Proxy یا SSL Inspection ممکن است پس از Failover ریست شوند.
+
 **22-3-ت4** — جلوگیری از Flap.
+
+Failback کنترل‌شده از Flap و قطع‌های پیاپی جلوگیری می‌کند.
 
 **22-3-ت5** — Monitor/HB timers.
 
+Failover کند: Monitor، Heartbeat timers و Link Failed Threshold را بررسی کنید.
+
 **22-3-ت6** — ۵ آزمون.
+
+ماتریس ۵ آزمون: Reboot، قطع Monitor، قطع یک HB، قطع هر دو HB، Failback.
 
 **22-3-Q1** — Lost packets multiplied by the ping interval.
 
@@ -36656,15 +37389,27 @@ execute ha manage 1 admin
 
 **22-4-ت1** — دو عضو هر دو Primary شده‌اند.
 
+Split-brain یعنی هر دو عضو خود را Primary می‌دانند (HB قطع)؛ ARP/IP تکراری و قطعی ایجاد می‌کند.
+
 **22-4-ت2** — تاریخچه‌ی علل تغییر Primary.
+
+`diagnose sys ha history read` تاریخچه و علت تغییر Primary را نشان می‌دهد.
 
 **22-4-ت3** — تغییر روی Secondary یا HB.
 
+Out-of-sync معمولاً از تغییر مستقیم روی Secondary یا ضعف Heartbeat می‌آید.
+
 **22-4-ت4** — Secondary، Failover، Primary.
+
+ترتیب Upgrade: Secondary، Failover، سپس Primary قبلی؛ با checksum پس از هر مرحله.
 
 **22-4-ت5** — HB، Reboot، Re-sync.
 
+Split-brain رفع: HB را وصل، یک عضو را Reboot، Primary را تعیین و Re-sync کنید.
+
 **22-4-ت6** — Partition قبلی.
+
+Rollback Cluster: Boot از Partition قبلی هر دو یا Restore Config+Firmware.
 
 **22-4-Q1** — diagnose sys ha history read.
 
@@ -36678,6 +37423,8 @@ execute ha manage 1 admin
 **22-5-ت2** — پس از بازگشت عضو قوی‌تر، Primary فعلی را تغییر نمی‌دهد و از Flap جلوگیری می‌کند.
 
 **22-5-ت3** — تا خرابی یک لینک Cluster را Split نکند.
+
+دو لینک HB مستقل تا خرابی یک لینک Cluster را Split نکند.
 
 **22-5-ت4** — Sessionهای TCP را بین اعضا همگام می‌کند تا پس از Failover ادامه یابند.
 
@@ -36693,15 +37440,23 @@ execute ha manage 1 admin
 
 **22-0-ت2** — قطع Heartbeat با دو دستگاه زنده که هر دو Primary می‌شوند.
 
+Split-brain: HB قطع ولی هر دو دستگاه زنده‌اند و هر دو Primary می‌شوند.
+
 **22-0-ت3** — Failback خودکار نمی‌شود؛ عضو فعلی Primary می‌ماند.
 
+با override disable، Failback خودکار انجام نمی‌شود؛ عضو فعلی Primary می‌ماند.
+
 **22-0-ت4** — تا خرابی یک لینک باعث Split-brain نشود.
+
+دو لینک HB تا خرابی یک لینک Split-brain نسازد.
 
 **22-0-ت5** — Session Pickup خاموش است؛ فعال‌کردن آن (TCP) و بررسی محدودیت UDP/ICMP.
 
 **22-0-ت6** — HA از خرابی دستگاه، SD-WAN از خرابی/افت کیفیت ISP؛ هر دو لازم‌اند؛ Heartbeat جدا و Health-check مستقل.
 
 **22-0-م1** — بررسی هم‌خوانی Config بین اعضا.
+
+Checksum Cluster هم‌خوانی Config بین اعضا را بررسی می‌کند.
 
 **22-0-Q1** — Loss of heartbeat between members that are both still running, so each assumes the primary role.
 
@@ -37477,7 +38232,11 @@ diagnose firewall proute list
 
 **23-3-ت1** — Log و عیب‌یابی ساده می‌ماند و آدرس واقعی حفظ می‌شود.
 
+NAT فقط روی Edge: Log و عیب‌یابی ساده می‌ماند و IP واقعی کاربر در Internal حفظ می‌شود.
+
 **23-3-ت2** — دامنه‌ی اثر یک خطا/خرابی.
+
+Blast radius دامنه‌ی اثر یک خطا یا خرابی است؛ جداسازی آن را کم می‌کند.
 
 **23-3-ت3** — Canary ابتدا روی یک دستگاه؛ اگر سالم بود ادامه؛ تغییر هم‌زمان خطا را همه‌جا ایجاد می‌کند.
 
@@ -37497,15 +38256,27 @@ diagnose firewall proute list
 
 **23-4-ت1** — تا هر Session روی یک فایروال بماند.
 
+Source-based تا هر Session روی یک فایروال بماند و Asymmetric نشود.
+
 **23-4-ت2** — تشخیص سریع خرابی مسیر.
+
+BFD خرابی مسیر را در حد ثانیه (یا کمتر) تشخیص می‌دهد؛ OSPF به‌تنهایی کندتر است.
 
 **23-4-ت3** — Sync نیست.
 
+پس از Failover Sessionها ریست می‌شوند چون فایروال‌ها Cluster نیستند و Session sync ندارند.
+
 **23-4-ت4** — لیست مجاز مقصد.
+
+SNAT دوم با IP متفاوت ریسک دارد: لیست مجاز مقصد باید هر دو IP را بپذیرد.
 
 **23-4-ت5** — فیلتر Host روی هر دو.
 
+Capture دو سمتی: Host فیلتر روی هر دو فایروال و مقایسه‌ی جهت‌ها.
+
 **23-4-ت6** — جدول.
+
+طرح سه‌فایروالی: جدول نقش، مسیر، Failover و آزمون Asymmetric.
 
 **23-4-Q1** — By capturing on both firewalls and showing each sees only one direction.
 
@@ -37513,9 +38284,13 @@ diagnose firewall proute list
 
 **23-0-ت1** — رفت و برگشت یک ارتباط از دو مسیر/دستگاه متفاوت.
 
+Asymmetric: رفت و برگشت یک ارتباط از دو مسیر/دستگاه متفاوت.
+
 **23-0-ت2** — چون برگشتی بدون Session مطابق Handshake نیست (و/یا RPF fail) و رد می‌شود.
 
 **23-0-ت3** — پیام reverse path check fail, drop.
+
+پیام Debug flow: `reverse path check fail, drop` در ترافیک نامتقارن.
 
 **23-0-ت4** — طراحی متقارن (کم‌ریسک)، Policy Route/SNAT (سریع ولی Log مبهم)، Session Sync/HA (حفظ Session ولی پیچیده)، asymroute (امنیت کم).
 
@@ -38377,15 +39152,27 @@ execute log display
 
 **24-1-ت1** — ترافیک بین سرورهای داخلی.
 
+East-West ترافیک بین سرورهای داخلی است و فایروال لبه آن را نمی‌بیند.
+
 **24-1-ت2** — تا Policy روی جریان واقعی باشد.
+
+Flow Discovery تا Policy روی جریان واقعی نوشته شود نه حدس.
 
 **24-1-ت3** — جلوگیری از قطع سرویس ناشناخته.
 
+Rollout مرحله‌ای از قطع سرویس ناشناخته (مثل Backup شبانه) جلوگیری می‌کند.
+
 **24-1-ت4** — مسیر ممنوع طراحی.
+
+WEB→DB در Log مسیر ممنوع طراحی بود و باید بررسی/مسدود شود.
 
 **24-1-ت5** — Log طولانی‌تر و مالک.
 
+Backup شبانه قطع شد: Log طولانی‌تر (۳۰ روز) و مشورت مالک برای مسیرهای کم‌تکرار.
+
 **24-1-ت6** — جدول.
+
+ماتریس DC: Internet→WEB 443، WEB→APP 8443، APP→DB 1433، MGMT→SSH و بقیه Deny.
 
 **24-1-Q1** — Because attackers move laterally between servers once inside.
 
@@ -38396,15 +39183,27 @@ execute log display
 
 **24-2-ت1** — Least privilege.
 
+Address Object در سطح Host تا Least privilege رعایت شود.
+
 **24-2-ت2** — Log و Alert.
+
+Deny صریح برای Log و Alert لازم است؛ Implicit Deny Log ندارد.
 
 **24-2-ت3** — WEB→DB.
 
+آزمون منفی WEB→DB: telnet 1433 رد و در Log Deny دیده شود.
+
 **24-2-ت4** — Policy مطابق.
+
+`iprope lookup` Policy مطابق جریان را نشان می‌دهد.
 
 **24-2-ت5** — تلاش‌های ممنوع؛ بررسی.
 
+Hit Count ۱۲ برای Deny یعنی ۱۲ تلاش ممنوع؛ Source را بررسی و مستند کنید.
+
 **24-2-ت6** — طبق متن.
+
+Policyهای ۵۰ (WEB→APP)، ۶۰ (APP→DB) و ۶۱ (Deny WEB→DB) با Log All.
 
 **24-2-Q1** — To grant only the minimum necessary access.
 
@@ -38415,15 +39214,27 @@ execute log display
 
 **24-3-ت1** — فایروال مجازی مستقل.
 
+VDOM فایروال مجازی مستقل است (Routing، Policy، Admin، منابع جدا).
+
 **24-3-ت2** — لینک منطقی بین دو VDOM.
+
+Inter-VDOM Link لینک منطقی بین دو VDOM بدون پورت فیزیکی است.
 
 **24-3-ت3** — جلوگیری از مصرف همه‌ی منابع.
 
+Resource Limit تا یک VDOM همه‌ی Sessionها و منابع را نخورد.
+
 **24-3-ت4** — VDOM سرویس‌های سیستمی.
+
+Management VDOM VDOM سرویس‌های سیستمی (DNS، FortiGuard) است؛ معمولاً root.
 
 **24-3-ت5** — IP، Route، Policy دو جهت.
 
+ping بین VDOM ندارد: IP دو سر vlk، Route هر VDOM و Policy دو جهت را بررسی کنید.
+
 **24-3-ت6** — DMZ/INT.
+
+دو VDOM (DMZ و INT) با vlk و Policy دو جهت و Resource Limit.
 
 **24-3-Q1** — To route traffic between two virtual domains.
 
@@ -38434,15 +39245,27 @@ execute log display
 
 **24-4-ت1** — Implicit Deny Log ندارد.
 
+Implicit Deny Log ندارد؛ پس Deny صریح با Log لازم است.
+
 **24-4-ت2** — آزمون منفی و Log Deny.
+
+Isolation با آزمون منفی و Log Deny اثبات می‌شود.
 
 **24-4-ت3** — تعداد Deny بین WEB و DB در بازه.
 
+شرط Alert: تعداد Deny بین WEB و DB در یک بازه (مثلاً ≥۵ در ۵ دقیقه).
+
 **24-4-ت4** — Syslog/FortiAnalyzer.
+
+Log متمرکز در Syslog یا FortiAnalyzer ذخیره می‌شود.
 
 **24-4-ت5** — Deny صریح با Log.
 
+Log ناقص: Deny صریح با Log اضافه کنید.
+
 **24-4-ت6** — ۷ آزمون.
+
+ماتریس آزمون DC: ۷ آزمون مثبت/منفی با Log.
 
 **24-4-Q1** — Because isolation is proven by showing that forbidden traffic is denied and logged.
 
@@ -38450,11 +39273,19 @@ execute log display
 
 **24-0-ت1** — فایروال مجازی مستقل با Routing/Policy/Admin/منابع جدا.
 
+VDOM فایروال مجازی مستقل با Routing/Policy/Admin/منابع جدا.
+
 **24-0-ت2** — اتصال دو VDOM بدون پورت فیزیکی.
+
+Inter-VDOM Link اتصال دو VDOM بدون پورت فیزیکی.
 
 **24-0-ت3** — تا یک VDOM همه‌ی منابع (Session و ...) را نخورد.
 
+Resource Limit تا یک VDOM همه‌ی منابع را مصرف نکند.
+
 **24-0-ت4** — Zone در یک Routing/Policy مشترک؛ VDOM جدا و با Link ارتباط.
+
+Zone در یک Routing/Policy مشترک است؛ VDOM جدا و با Link ارتباط می‌گیرد.
 
 **24-0-ت5** — دو VDOM با Routing جدا (Overlap مجاز)، NAT و اینترنت در root، بدون ارتباط مشتری‌ها، DNS مشترک با Policy.
 
@@ -39390,15 +40221,27 @@ show crypto ipsec sa
 
 **25-1-ت1** — get router info routing-table all.
 
+معادل `show ip route`: `get router info routing-table all`.
+
 **25-1-ت2** — Firewall Policy.
+
+ACL در FortiGate: Firewall Policy.
 
 **25-1-ت3** — Cisco دستی؛ Fortinet خودکار.
 
+Cisco Config را دستی ذخیره می‌کند؛ FortiOS تغییرات را خودکار ذخیره می‌کند.
+
 **25-1-ت4** — Fortinet Stateful.
+
+FortiGate Stateful است و برگشت ترافیک را خودکار می‌پذیرد؛ ACL ساده Stateless.
 
 **25-1-ت5** — Object، Policy، Log.
 
+ACL را به Policy ببرید: Object، Policy، Log و آزمون Lookup.
+
 **25-1-ت6** — جدول.
+
+برگه‌ی تطبیق: ستون مفهوم، Cisco، FortiGate و نکته‌ی تفاوت.
 
 **25-1-Q1** — A firewall policy.
 
@@ -39407,6 +40250,8 @@ show crypto ipsec sa
 **25-2-ت1** — معمولاً MTU متفاوت؛ DBD بزرگ‌تر از MTU همتا کنار گذاشته می‌شود.
 
 **25-2-ت2** — eBGP = 20 و OSPF = 110؛ پس BGP برنده است.
+
+eBGP با AD 20 بر OSPF با 110 برنده می‌شود.
 
 **25-2-ت3** — CSR: `show ip ospf neighbor`؛ FGT: `get router info ospf neighbor`.
 
@@ -39426,15 +40271,27 @@ show crypto ipsec sa
 
 **25-3-ت1** — DH، Selector، Lifetime.
 
+Mismatch رایج: DH، Selector و Lifetime.
+
 **25-3-ت2** — تطبیق خطوط Debug.
+
+NTP تا خطوط Debug دو سازنده قابل‌تطبیق باشند.
 
 **25-3-ت3** — Lifetime نامتقارن.
 
+Rekey قطع: Lifetime نامتقارن؛ یکسان کنید.
+
 **25-3-ت4** — تشخیص همتای مرده.
+
+DPD همتای مرده را تشخیص می‌دهد و SA را پاک می‌کند.
 
 **25-3-ت5** — interval/retry دو سر.
 
+DPD کند: interval/retry را در دو سر هماهنگ کنید.
+
 **25-3-ت6** — جدول.
+
+Test Plan شش آزمون: Establish، ping، Rekey، DPD، MTU/MSS، Failover.
 
 **25-3-Q1** — To match corresponding events across both logs.
 
@@ -39445,15 +40302,27 @@ show crypto ipsec sa
 
 **25-4-ت1** — ACL crypto.
 
+Selector در Cisco ACL crypto است.
+
 **25-4-ت2** — ۲۰۴۸ بیت MODP.
+
+DH گروه 14 همان MODP 2048 بیت است.
 
 **25-4-ت3** — Selector/PFS/Transform.
 
+P1 up و P2 down: Selector، PFS یا Transform Set.
+
 **25-4-ت4** — هر دو سمت.
+
+Debug را در هر دو سمت هم‌زمان بگیرید.
 
 **25-4-ت5** — Lifetime.
 
+Rekey Flap: Lifetime را یکسان کنید.
+
 **25-4-ت6** — طبق جدول.
+
+جدول معادل Proposal، Auth، Selector، P2، PFS و Lifetime برای FGT و CSR.
 
 **25-4-Q1** — Because mismatched selectors prevent phase 2 from negotiating.
 
@@ -39461,7 +40330,11 @@ show crypto ipsec sa
 
 **25-0-ت1** — get router info routing-table all.
 
+`show ip route` ↔ `get router info routing-table all`.
+
 **25-0-ت2** — اغلب MTU Mismatch بین دو سر.
+
+اغلب MTU Mismatch بین دو سر (مثلاً در OSPF) علت گیرکردن است.
 
 **25-0-ت3** — IKEv2، AES-256-GCM، SHA-256، DH 20 (یا ≥ 14)، PFS روشن با همان Group، Lifetime یکسان، DPD، MTU/MSS مشترک، Authentication PSK/Cert.
 
@@ -40276,9 +41149,17 @@ Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ �
 
 **26-2-ت1** — TCP؛ از دست رفتن Log کمتر و برای Extended Logging لازم است.
 
+Syslog روی TCP تضمین تحویل بهتر دارد و برای Extended Logging لازم است.
+
 **26-2-ت2** — مبدأ یکتا و قابل‌کنترل برای ACL/مسیر و شناسایی دستگاه در سرور.
 
 **26-2-ت3** — ≈ 3.6 GB/روز؛ ×90 ≈ 324 GB؛ با فشرده‌سازی 10:1 ≈ 32 GB.
+
+حجم Log ≈ 3.6 GB/روز؛ ۹۰ روز ≈ 324 GB؛ با فشرده‌سازی ۱۰:۱ ≈ 32 GB.
+
+``` text
+3.6 GB x 90 = 324 GB ; 324 / 10 = 32.4 GB
+```
 
 **26-2-ت4** — `execute ping` با source-ip، Sniffer روی Interface خروجی FGT، tcpdump روی سرور و بررسی Firewall سرور.
 
@@ -40293,11 +41174,17 @@ Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ �
 
 **26-3-ت1** — چون نمی‌دانیم فایل کامل/سازگار است و RTO واقعی چقدر است.
 
+Backup را باید Restore کرد تا مطمئن شویم فایل کامل است و RTO واقعی معلوم شود.
+
 **26-3-ت2** — تفاوت پیکربندی واقعی دستگاه با نسخه‌ی مرجع در Git.
+
+Drift یعنی تفاوت Config واقعی دستگاه با نسخه‌ی مرجع در Git.
 
 **26-3-ت3** — `password`، `psksecret`، `secret`، `passwd`، گواهی/کلید خصوصی و توکن API.
 
 **26-3-ت4** — نقطه‌ی بازگشت مشخص برای Rollback و مقایسه.
+
+Revision/Tag نقطه‌ی بازگشت مشخص برای Rollback و مقایسه است.
 
 **26-3-ت5** — حذف از تاریخچه، چرخش همه‌ی اعتبارنامه‌ها، بازبینی دسترسی، Pre-commit scan، PIR؛ فرض افشا.
 
@@ -40313,15 +41200,27 @@ Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ �
 
 **26-4-ت1** — دامنه‌ی مدیریتی جدا.
 
+ADOM دامنه‌ی مدیریتی جدا برای گروهی از دستگاه‌ها است.
+
 **26-4-ت2** — Rollback.
+
+Revision امکان Rollback می‌دهد.
 
 **26-4-ت3** — نمایش تغییرات پیش از اعمال.
 
+Install Preview تغییرات را پیش از اعمال نشان می‌دهد.
+
 **26-4-ت4** — دسترسی به همه‌ی دستگاه‌ها.
+
+مرکز مدیریت هدف جذاب است چون دسترسی به همه‌ی دستگاه‌ها دارد.
 
 **26-4-ت5** — Revision قبلی.
 
+Install قطع کرد: به Revision قبلی برگردید و Install مجدد.
+
 **26-4-ت6** — جدول.
+
+RBAC چهارسطحی: Super، Network، ReadOnly، Auditor با مثال دسترسی.
 
 **26-4-Q1** — To review the changes that will be applied and avoid unintended impact.
 
@@ -40329,9 +41228,13 @@ Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ �
 
 **26-0-ت1** — FMG پیکربندی/Policy مرکزی؛ FAZ جمع‌آوری و تحلیل Log.
 
+FMG پیکربندی/Policy مرکزی؛ FAZ جمع‌آوری و تحلیل Log.
+
 **26-0-ت2** — دامنه‌ی مدیریتی مجزا برای دستگاه‌ها/مدیران با Policy Package و Object خودش.
 
 **26-0-ت3** — تا تأثیر نصب پیش از اعمال دیده شود و خطای گسترده رخ ندهد.
+
+Install Preview تا اثر نصب پیش از اعمال دیده شود.
 
 **26-0-ت4** — Syslog مرکزی (rsyslog)، Backup روزانه به Git/SFTP بدون Secret، SNMPv3 + Zabbix، Ansible/API خواندنی، ثبت Change با Diff.
 
@@ -41422,11 +42325,15 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 
 **27-1-ت1** — Traffic، Event و Security/UTM.
 
+سه نوع Log: Traffic، Event و Security/UTM.
+
 **27-1-ت2** — all همه‌ی Sessionها را ثبت می‌کند؛ utm فقط Sessionهایی را که رویداد UTM دارند.
 
 **27-1-ت3** — 12M×450B = 5.4 GB/روز؛ ×180 ≈ 972 GB؛ با 20٪ حاشیه ≈ 1.17 TB؛ فشرده‌سازی کاهش می‌دهد.
 
 **27-1-ت4** — برای کشف Scan/حمله و عیب‌یابی Policy.
+
+Log Deny برای کشف Scan/حمله و عیب‌یابی Policy.
 
 **27-1-ت5** — Allow عمومی utm، Allow حیاتی all، Deny همیشه، Alert روی Deny مدیریتی و Bytes غیرعادی، Syslog مرکزی.
 
@@ -41439,11 +42346,17 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 
 **27-2-ت1** — احراز و رمزنگاری؛ v2c Community را متن آشکار می‌فرستد.
 
+SNMPv3 احراز و رمزنگاری دارد؛ v2c Community را متن آشکار می‌فرستد.
+
 **27-2-ت2** — تفاوت آستانه‌ی ورود و خروج Alert برای جلوگیری از نوسان.
+
+Hysteresis: تفاوت آستانه‌ی ورود و خروج Alert برای جلوگیری از نوسان.
 
 **27-2-ت3** — آستانه از Baseline با ضریب، Maintenance window، Trigger مدت‌دار (10m).
 
 **27-2-ت4** — Alert وابسته را وقتی وابستگی اصلی Down است سرکوب می‌کند.
+
+Dependency suppression Alert وابسته را وقتی وابستگی اصلی Down است سرکوب می‌کند.
 
 **27-2-ت5** — Dependency، Alert مرکزی سایت، Flap با بررسی متوالی، Escalation؛ هدف ≤ ۳ Alert.
 
@@ -41460,6 +42373,8 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 
 **27-3-ت3** — Trusthost، Token لغو/منقضی، API user غیرفعال.
 
+API Token: Trusthost، لغو/انقضا و غیرفعال‌کردن API user.
+
 **27-3-ت4** — Diff تغییرات را بدون اعمال نشان می‌دهد و خطای گسترده را قبل از وقوع کشف می‌کند.
 
 **27-3-ت5** — نبود بررسی وجود؛ GET نام، مقایسه، PUT/POST شرطی؛ تست دو بار اجرا؛ پاک‌سازی تکراری‌ها با Backup.
@@ -41475,11 +42390,15 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 
 **27-4-ت2** — کاهش خطر Session رهاشده.
 
+Idle timeout خطر Session رهاشده را کم می‌کند.
+
 **27-4-ت3** — گواهی/کلید/PSK یا لایسنس جداگانه بازیابی نشده؛ باید در Runbook باشد.
 
 **27-4-ت4** — زمان از شروع Restore تا سرویس‌های حیاتی تأییدشده؛ در Lab با زمان‌سنج.
 
 **27-4-ت5** — جدول بالا؛ هر کنترل یک آزمون منفی.
+
+چک‌لیست Hardening با آزمون منفی برای هر کنترل.
 
 **27-4-ت6** — اتوماسیون Restore، Runbook مرحله‌ای، Secrets از Vault، آزمون فصلی.
 
@@ -41493,21 +42412,35 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 
 **27-5-ت1** — احراز هویت و رمزگذاری.
 
+SNMPv3 احراز هویت و رمزگذاری دارد.
+
 **27-5-ت2** — تأیید صحت.
+
+Hash Backup صحت فایل را تأیید می‌کند.
 
 **27-5-ت3** — Sniffer، Route، Policy، سرور.
 
+Log نمی‌رسد: Sniffer، Route، Policy و سرور.
+
 **27-5-ت4** — لازم برای پاسخ SNMP.
+
+allowaccess snmp برای پاسخ SNMP لازم است.
 
 **27-5-ت5** — Backup، خراب، Restore، مقایسه.
 
+Restore آزمایشی: Backup، خرابی عمدی، Restore و مقایسه.
+
 **27-5-ت6** — ۷ مورد.
+
+چک‌لیست G10: Log، SNMP، Alert، Hardening، Backup، Restore، Evidence.
 
 **27-5-Q1** — Because they contain passwords and keys.
 
 ### پاسخ‌های درس افزوده‌ی 27-0 (فصل 27)
 
 **27-0-ت1** — Traffic، Event، UTM/Security.
+
+سه نوع Log: Traffic، Event، UTM.
 
 **27-0-ت2** — تا انحراف را با مرجع عادی تشخیص دهیم و آستانه‌ی معنادار بگذاریم.
 
@@ -41521,6 +42454,8 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 ### پاسخ‌های درس افزوده‌ی 27-7 (فصل 27)
 
 **27-7-ت1** — رمز و داده را بدون رمزنگاری می‌فرستند و قابل شنودند.
+
+Telnet/HTTP/SNMPv1-2c رمز و داده را بدون رمزنگاری می‌فرستند و قابل شنودند.
 
 **27-7-ت2** — در Lab هم‌نسخه Restore، مقایسه Interface/Policy/Route، اندازه‌گیری RTO و ثبت.
 
@@ -42541,11 +43476,19 @@ tls.alert_message
 
 **28-1-ت1** — تا مشخص شود بسته کجا ناپدید می‌شود: قبل یا بعد از فایروال.
 
+Capture چند نقطه‌ای تا معلوم شود بسته قبل یا بعد از فایروال ناپدید می‌شود.
+
 **28-1-ت2** — هدر IP به‌علاوه‌ی نام Interface.
+
+verbosity 4: هدر IP و نام Interface.
 
 **28-1-ت3** — `tcp[tcpflags] & (tcp-syn|tcp-rst) != 0`.
 
+فیلتر `tcp[tcpflags] & (tcp-syn|tcp-rst) != 0` فقط SYN و RST را می‌گیرد.
+
 **28-1-ت4** — بسته هم روی Interface ورودی و هم خروجی ثبت می‌شود.
+
+Capture روی Interface ورودی و خروجی نشان می‌دهد بسته از فایروال عبور کرده یا نه.
 
 **28-1-ت5** — Offload؛ Capture روی نقطه‌ی بیرونی یا غیرفعال موقت Offload در Window؛ تأیید.
 
@@ -42558,15 +43501,31 @@ tls.alert_message
 
 **28-2-ت1** — پورت مقصد بسته یا سرویس پاسخ‌گو نیست.
 
+RST پس از SYN: پورت مقصد بسته یا سرویس پاسخ‌گو نیست.
+
 **28-2-ت2** — گیرنده بافر پر دارد و فرستنده باید متوقف شود؛ معمولاً مشکل برنامه است.
 
 **28-2-ت3** — 64 KB/0.1 s ≈ 640 KB/s ≈ 5.2 Mbit/s.
 
+سرعت ≈ 64 KB / 0.1 s = 640 KB/s ≈ 5.2 Mbit/s؛ RTT بالا پنجره‌ی کوچک را محدود می‌کند.
+
+``` text
+64 KB / 0.1 s = 640 KB/s ~ 5.2 Mbit/s
+```
+
 **28-2-ت4** — 100 Mbit/s × 0.08 s = 8 Mbit = 1 MB.
+
+BDP = 100 Mbit/s × 0.08 s = 8 Mbit = 1 MB؛ پنجره‌ی TCP باید حداقل ۱ MB باشد.
+
+``` text
+BDP = 100 Mbit/s x 0.08 s = 8 Mbit = 1 MB
+```
 
 **28-2-ت5** — ping DF اندازه‌ها برای MTU؛ Interface Errors/Loss برای لینک؛ MSS Clamp و رفع لینک؛ اندازه‌گیری مجدد.
 
 **28-2-ت6** — سؤال، نقطه، Filter، الگوها، محاسبات، علت، رفع، تأیید.
+
+گزارش تحلیل PCAP: سؤال، نقطه‌ی Capture، Filter، الگوها، محاسبات، علت، رفع و تأیید.
 
 **28-2-Q1** — Throughput is limited to the window size divided by the round-trip time.
 
@@ -42575,7 +43534,11 @@ tls.alert_message
 
 **28-3-ت1** — نام سرور در ClientHello که معمولاً رمزنشده است.
 
+SNI نام سرور در ClientHello است و معمولاً رمزنشده.
+
 **28-3-ت2** — چون پس از ServerHello رمز می‌شود.
+
+پس از ServerHello بقیه‌ی Handshake رمز می‌شود.
 
 **28-3-ت3** — کلاینت CA صادرکننده را نمی‌شناسد؛ معمولاً CA فایروال نصب نیست.
 
@@ -42583,7 +43546,11 @@ tls.alert_message
 
 **28-3-ت5** — Exemption آن مقصد؛ مستندسازی؛ آزمون منفی سایر مقصدها.
 
+Exemption محدود برای آن مقصد، مستندسازی و آزمون منفی سایر مقصدها.
+
 **28-3-ت6** — بلاک QUIC، پایش ECH، Exemption محدود، بازبینی.
+
+بلاک QUIC، پایش ECH، Exemption محدود و بازبینی دوره‌ای.
 
 **28-3-Q1** — openssl s_client combined with openssl x509 -noout -issuer.
 
@@ -42594,11 +43561,17 @@ tls.alert_message
 
 **28-4-ت2** — بار CPU و Log زیاد و خطر اطلاعات حساس.
 
+Debug بار CPU و Log زیاد و ریسک اطلاعات حساس دارد.
+
 **28-4-ت3** — احتمال×اثر÷هزینه‌ی آزمون؛ ارزان و محتمل اول.
+
+اولویت فرضیه: احتمال × اثر ÷ هزینه‌ی آزمون؛ ارزان و محتمل اول.
 
 **28-4-ت4** — Policy مقابل، Route برگشت، NAT-T/ESP، Selector؛ Debug Flow مقابل مشخص می‌کند.
 
 **28-4-ت5** — شواهد مستقل برای هر علت، رفع یکی و اندازه‌گیری، سپس دیگری.
+
+چندعلتی: شواهد مستقل برای هر علت؛ رفع یکی و اندازه‌گیری؛ سپس دیگری.
 
 **28-4-ت6** — قالب یکسان، دسته‌بندی، جستجو، نسخه‌دار، بازبینی فصلی، پیوند به Runbook.
 
@@ -42612,15 +43585,27 @@ tls.alert_message
 
 **28-5-ت1** — مقصد/مسیر پاسخ نمی‌دهد.
 
+SYN بدون SYN-ACK: مقصد/مسیر پاسخ نمی‌دهد.
+
 **28-5-ت2** — Fragmentation needed.
+
+ICMP نوع 3 کد 4 یعنی Fragmentation needed.
 
 **28-5-ت3** — MTU/Loss.
 
+Retransmission بزرگ: MTU یا Loss.
+
 **28-5-ت4** — گواهی ناشناخته.
+
+TLS alert certificate_unknown یعنی گواهی ناشناخته.
 
 **28-5-ت5** — CA یا Exempt.
 
+Case 3: CA مورد اعتماد کلاینت یا Exempt در SSL Inspection.
+
 **28-5-ت6** — frames، finding، fix، verify.
+
+قالب Evidence: frames، finding، fix و verify.
 
 **28-5-Q1** — tcp.analysis.retransmission.
 
@@ -43350,13 +44335,19 @@ execute log display
 
 **29-1-ت2** — تا انحراف از رفتار عادی تشخیص داده شود و FP کم شود.
 
+Baseline تا انحراف از رفتار عادی تشخیص داده شود و False Positive کم شود.
+
 **29-1-ت3** — مقداری بیش از میانگین به‌علاوه‌ی سه برابر انحراف معیار Alert می‌دهد (تقریباً رویداد نادر).
 
 **29-1-ت4** — تا استثنا فراموش و به حفره تبدیل نشود؛ بازبینی دوره‌ای.
 
+استثنا باید تاریخ پایان داشته باشد تا فراموش و حفره نشود؛ بازبینی دوره‌ای.
+
 **29-1-ت5** — ناموفق مکرر + ورود موفق + خروجی بالا ⇒ احتمال نفوذ؛ Severity بحرانی؛ Contain/Scope/RCA.
 
 **29-1-ت6** — جدول بالا بسط داده شود.
+
+چک‌لیست تشخیص: منبع Log، قانون، آستانه، مالک و اقدام.
 
 **29-1-Q1** — Because attackers can change IPs and hashes easily but their behaviors change much less.
 
@@ -43368,6 +44359,8 @@ execute log display
 **29-2-ت2** — کوتاه‌مدت جلوگیری فوری (Block/Quarantine)؛ بلندمدت رفع ریشه‌ای (بازسازی/Patch/چرخش).
 
 **29-2-ت3** — Session قبلی باقی است؛ باید Clear فیلترشده انجام شود.
+
+Session قبلی باقی است؛ Clear فیلترشده انجام شود.
 
 **29-2-ت4** — حساب‌های موجود روی سرور، سرویس‌ها، Tokenها و Credentialهایی که سرور به آن‌ها دسترسی داشت.
 
@@ -43382,15 +44375,21 @@ execute log display
 
 **29-3-ت1** — پایان پشتیبانی و Patch امنیتی محصول.
 
+EoL پایان پشتیبانی و Patch امنیتی محصول است.
+
 **29-3-ت2** — آسیب‌پذیری قابل‌دسترس از اینترنت سریع‌تر و گسترده‌تر سوءاستفاده می‌شود.
 
 **29-3-ت3** — Compensating Controls: Source Restriction، غیرفعال ویژگی، IPS، Segmentation، پایش.
 
 **29-3-ت4** — فاصله‌ی انتشار Advisory تا اعمال Patch.
 
+Exposure window فاصله‌ی انتشار Advisory تا اعمال Patch است.
+
 **29-3-ت5** — اولویت بر Exposure، Canary، HA یکی‌یکی، Backup/Rollback، Verification، هدف Time-to-patch.
 
 **29-3-ت6** — Coverage، Time-to-patch، تعداد EoL، Exception فعال، Trend.
+
+شاخص‌ها: Coverage، Time-to-patch، تعداد EoL، Exception فعال و Trend.
 
 **29-3-Q1** — Internet exposure, available exploits and high asset criticality.
 
@@ -43402,15 +44401,27 @@ execute log display
 
 **29-4-ت1** — زمان تا کشف.
 
+MTTD زمان تا کشف است.
+
 **29-4-ت2** — جلوگیری از گسترش.
+
+Containment جلوگیری از گسترش حادثه است.
 
 **29-4-ت3** — Block و غیرفعال حساب.
 
+اولین اقدام: Block مهاجم و غیرفعال‌کردن حساب‌ها.
+
 **29-4-ت4** — SSH WAN و رمز.
+
+ریشه: SSH روی WAN و رمز ضعیف.
 
 **29-4-ت5** — قالب.
 
+PIR با قالب: Summary، Impact، Timeline، Root cause، Actions.
+
 **29-4-ت6** — حذف SSH WAN، MFA، Alert.
+
+اقدام پیشگیرانه: حذف SSH از WAN، MFA، Alert.
 
 **29-4-Q1** — The mean time between the start of an incident and its detection.
 
@@ -44143,13 +45154,19 @@ get system session-ttl
 
 **30-1-ت2** — تا قوانین مرده/پرریسک منتقل نشوند.
 
+قوانین مرده/پرریسک نباید منتقل شوند؛ ابتدا پاک‌سازی.
+
 **30-1-ت3** — ASA بین سطوح امنیت پیش‌فرض اجازه می‌دهد؛ FortiGate Implicit deny.
 
 **30-1-ت4** — IP داخلی (post-DNAT) چون DNAT قبل از Policy انجام می‌شود.
 
+Policy با IP داخلی (post-DNAT) چون DNAT قبل از Policy انجام می‌شود.
+
 **30-1-ت5** — VIP/Policy NAT/IP Pool، Policy با آدرس درست، Test Matrix، بررسی Hairpin/ALG.
 
 **30-1-ت6** — ستون‌ها: مبدأ، مقصد، Policy، NAT، Gap، Test؛ ۱۰ سطر.
+
+جدول نگاشت: مبدأ، مقصد، Policy، NAT، Gap و Test؛ ۱۰ سطر نمونه.
 
 **30-1-Q1** — Because the two platforms process traffic differently, so identical text can behave differently.
 
@@ -44158,15 +45175,25 @@ get system session-ttl
 
 **30-2-ت1** — چک‌لیست تصمیم پیش از شروع؛ یک «No» ⇒ لغو.
 
+Go/No-Go چک‌لیست تصمیم پیش از شروع است؛ یک «No» یعنی لغو.
+
 **30-2-ت2** — شرط از پیش تعریف‌شده که بازگشت را الزامی می‌کند.
+
+Rollback trigger شرط از پیش تعریف‌شده است که بازگشت را الزامی می‌کند.
 
 **30-2-ت3** — اگر مسیر اصلی قطع شود امکان بازگرداندن/مدیریت دستگاه باشد.
 
+Out-of-band دسترسی مستقل از مسیر اصلی تا اگر قطع شد بتوان دستگاه را مدیریت/برگرداند.
+
 **30-2-ت4** — Test Matrix، Log/Session، Monitoring، آزمون مثبت/منفی.
+
+Post-check: Test Matrix، Log/Session، Monitoring و آزمون مثبت/منفی.
 
 **30-2-ت5** — اگر حیاتی: Rollback؛ وگرنه رفع محدود و ادامه؛ ثبت دلیل/زمان.
 
 **30-2-ت6** — طبق قالب؛ با زمان‌بندی و مسئولان.
+
+Plan T-7d تا T+1d با زمان‌بندی و مسئول.
 
 **30-2-Q1** — So the decision is made objectively before pressure and emotions affect judgment.
 
@@ -44178,15 +45205,27 @@ get system session-ttl
 
 **30-3-ت1** — برای مقایسه.
 
+Baseline برای مقایسه‌ی قبل/بعد.
+
 **30-3-ت2** — حد قابل‌قبول Session.
+
+±۱۰٪ حد قابل‌قبول Session.
 
 **30-3-ت3** — Mapping اشتباه.
 
+Policy hit صفر معمولاً Mapping اشتباه است.
+
 **30-3-ت4** — قابل‌قبول/بحرانی.
+
+اختلاف‌ها: قابل‌قبول یا بحرانی.
 
 **30-3-ت5** — Rollback و RCA.
 
+No-Go: Rollback و RCA.
+
 **30-3-ت6** — جدول.
+
+Test Matrix: آزمون، قبل، بعد و معیار.
 
 **30-3-Q1** — To compare the state before and after the change with numbers.
 
@@ -44197,21 +45236,35 @@ get system session-ttl
 
 **30-4-ت1** — برای مقایسه‌ی قبل/بعد.
 
+Baseline برای مقایسه‌ی قبل/بعد.
+
 **30-4-ت2** — طبق زمان و معیار از پیش تعیین‌شده.
+
+Rollback طبق زمان و معیار از پیش تعیین‌شده.
 
 **30-4-ت3** — Proposal پیش‌فرض متفاوت.
 
+IPsec down پس از Cutover: Proposal پیش‌فرض نسخه‌ی جدید تغییر کرده.
+
 **30-4-ت4** — Timeout/Offload.
+
+Session کمتر: Timeout یا Offload.
 
 **30-4-ت5** — در Lab: بازگرداندن کابل/IP و Test Matrix.
 
+Rollback آزمایشی در Lab: بازگرداندن کابل/IP و اجرای Test Matrix.
+
 **30-4-ت6** — طبق متن.
+
+Plan T-7d تا T+1d با Checkpoint.
 
 **30-4-Q1** — To be sure the old state can be restored within the change window.
 
 ### پاسخ‌های درس افزوده‌ی 30-0 (فصل 30)
 
 **30-0-ت1** — Discovery، Design، Build، Test، Cutover، Stabilize.
+
+مراحل Migration: Discovery، Design، Build، Test، Cutover، Stabilize.
 
 **30-0-ت2** — تا قوانین مرده/تکراری/Any-Any منتقل نشوند و پیچیدگی/ریسک کم شود.
 
@@ -45377,15 +46430,31 @@ Improvement: run T-12/T-15 in lab; verify commands
 
 **31-1-ت1** — Failover شعبه A کمتر از ۱۰ ثانیه با آزمون ping پیوسته.
 
+Failover شعبه کمتر از ۱۰ ثانیه با آزمون ping پیوسته.
+
 **31-1-ت2** — ثبت تصمیم معماری با زمینه، گزینه‌ها، تصمیم و پیامدها.
+
+ADR ثبت تصمیم معماری با زمینه، گزینه‌ها، تصمیم و پیامدها است.
 
 **31-1-ت3** — 8.76 ساعت.
 
+۹۹٫۹٪ در سال ≈ ۸٫۷۶ ساعت قطع مجاز.
+
+``` text
+(1 - 0.999) x 8760 h = 8.76 h
+```
+
 **31-1-ت4** — تا موفقیت قابل‌اندازه‌گیری باشد و بحث بعدی کم شود.
+
+معیار پذیرش عددی تا موفقیت قابل‌اندازه‌گیری و بحث بعدی کم شود.
 
 **31-1-ت5** — سطح‌بندی دسترس‌پذیری، ADR، پذیرش ریسک مستند.
 
+سطح‌بندی دسترس‌پذیری، ADR و پذیرش ریسک مستند.
+
 **31-1-ت6** — ساختار بالا با محتوای هر بخش.
+
+ساختار سند طراحی: نیازمندی، HLD، LLD، آزمون، ریسک.
 
 **31-1-Q1** — So that success is measurable and can be verified objectively later.
 
@@ -45397,15 +46466,27 @@ Improvement: run T-12/T-15 in lab; verify commands
 
 **31-2-ت1** — HLD ساختار؛ LLD مقادیر دقیق.
 
+HLD ساختار؛ LLD مقادیر دقیق.
+
 **31-2-ت2** — برای ردیابی و ممیزی.
+
+ردیف Policy نیازمندی دارد برای ردیابی و ممیزی.
 
 **31-2-ت3** — تغییر Pool.
 
+Overlap Pool VPN با Servers: Pool را تغییر دهید.
+
 **31-2-ت4** — Edge.
+
+NAT فقط روی Edge.
 
 **31-2-ت5** — SD-WAN و Capture.
 
+Asymmetric در LLD: SD-WAN و Capture.
+
 **31-2-ت6** — جدول.
+
+LLD Internal: جدول Interface، Route و Policy.
 
 **31-2-Q1** — For traceability and audit.
 
@@ -45415,13 +46496,21 @@ Improvement: run T-12/T-15 in lab; verify commands
 
 **31-3-ت2** — نقطه‌ی بازگشت با Backup و Tag.
 
+Snapshot/Backup با Tag نقطه‌ی بازگشت است.
+
 **31-3-ت3** — Guest به Internal باید Block باشد.
 
+Guest به Internal باید Block باشد؛ آزمون منفی.
+
 **31-3-ت4** — ≤ ۱۵ دقیقه؛ باید زمان‌سنجی شود.
+
+Rollback ≤ ۱۵ دقیقه و باید زمان‌سنجی شود.
 
 **31-3-ت5** — شواهد مستقل: ping DF برای MTU؛ زمان Failover برای Timer؛ رفع و اندازه‌گیری جدا.
 
 **31-3-ت6** — جدول بالا با مسئول و زمان.
+
+برنامه‌ی Build با مسئول و زمان.
 
 **31-3-Q1** — So a failure can be attributed to the stage just built instead of an unknown layer.
 
@@ -45433,15 +46522,27 @@ Improvement: run T-12/T-15 in lab; verify commands
 
 **31-4-ت1** — فهرست شاهدها با شناسه، فایل، زمان و نتیجه.
 
+Evidence Index فهرست شاهدها با شناسه، فایل، زمان و نتیجه است.
+
 **31-4-ت2** — صادقانه ثبت.
+
+آزمون اجرانشده صادقانه ثبت شود.
 
 **31-4-ت3** — با Gap و تاریخ.
 
+Sign-off مشروط: با Gap و تاریخ.
+
 **31-4-ت4** — Health-check.
+
+F2 (Failover کند): Health-check را به Server خارجی تغییر دهید.
 
 **31-4-ت5** — پذیرفته‌ی مشروط.
 
+دو آزمون اجرانشده: پذیرفته‌ی مشروط.
+
 **31-4-ت6** — جدول.
+
+Evidence Index: جدول شناسه، آزمون، فایل، زمان، نتیجه، وضعیت.
 
 **31-4-Q1** — Acceptance with documented gaps that must be closed later.
 
@@ -45452,15 +46553,27 @@ Improvement: run T-12/T-15 in lab; verify commands
 
 **31-5-ت1** — مجموعه‌ی گام‌های مستند برای وضعیت مشخص.
 
+Runbook گام‌های مستند برای وضعیت مشخص است.
+
 **31-5-ت2** — برای کاهش خطا.
+
+هر گام یک اقدام تا خطا کم شود.
 
 **31-5-ت3** — نقص‌های مبهم آشکار می‌شود.
 
+همکار ناآشنا نقص‌های مبهم را آشکار می‌کند.
+
 **31-5-ت4** — As-Built، LLD، Runbook، دسترسی.
+
+Handover: As-Built، LLD، Runbook و دسترسی.
 
 **31-5-ت5** — قالب بالا.
 
+Runbook Failover ISP: ۸ گام با خروجی مورد انتظار.
+
 **31-5-ت6** — فصلی و پس از حادثه.
+
+نگهداری: بازبینی فصلی و پس از حادثه.
 
 **31-5-Q1** — To reveal ambiguous or missing steps.
 
@@ -45471,15 +46584,27 @@ Improvement: run T-12/T-15 in lab; verify commands
 
 **31-6-ت1** — مسئله، HLD، LLD، آزمون، Gap، جمع‌بندی.
 
+ساختار ارائه: مسئله، HLD، LLD، آزمون، Gap، جمع‌بندی.
+
 **31-6-ت2** — ۷۵ با حداقل ۲۰ در Evidence.
+
+نمره‌ی قبولی ۷۵ با حداقل ۲۰ در Evidence.
 
 **31-6-ت3** — فهرست Unverified و آزمون اجرانشده.
 
+پاسخ به «چه چیزی ثابت نکرده‌اید؟»: فهرست Unverified و آزمون اجرانشده.
+
 **31-6-ت4** — نمره با دلیل.
+
+خودارزیابی: نمره با دلیل برای هر معیار.
 
 **31-6-ت5** — خارج از طراحی؛ ریسک؛ پیشنهاد.
 
+«اگر دو ISP قطع شود؟»: خارج از طراحی؛ ریسک؛ پیشنهاد (LTE).
+
 **31-6-ت6** — اقدام، مالک، تاریخ.
+
+برنامه‌ی بهبود: اقدام، مالک، تاریخ.
 
 **31-6-Q1** — Because claiming unverified results undermines trust and can cause real outages.
 
@@ -45494,11 +46619,19 @@ Improvement: run T-12/T-15 in lab; verify commands
 
 **31-0-ت3** — مثلاً R-02: DMZ→DB ممنوع با ۱۰ آزمون منفی Deny و Log.
 
+مثلاً R-02: DMZ→DB ممنوع با ۱۰ آزمون منفی Deny و Log.
+
 **31-0-ت4** — «طراحی‌شده/اجرا نشده»، نه «موفق».
+
+آزمون‌های اجرانشده «طراحی‌شده/اجرا نشده» ثبت می‌شوند نه «موفق».
 
 **31-0-ت5** — اهمیت×ریسک؛ «باید»ها اول؛ Evidence هفتگی.
 
+۱۲ نیازمندی در ۴ هفته: اهمیت×ریسک؛ «باید»ها اول؛ Evidence هفتگی.
+
 **31-0-ت6** — جدول بالا با امتیاز و شواهد.
+
+Rubric خودارزیابی: معیار، امتیاز، شاهد.
 
 **31-0-Q1** — Because without a test and evidence the requirement is only an unverified claim.
 
@@ -46536,15 +47669,27 @@ execute ping-options df-bit yes
 
 **32-1-ت1** — سلامت، Alert، Backup، Log غیرعادی.
 
+روزانه: سلامت، Alert، Backup و Log غیرعادی.
+
 **32-1-ت2** — Backup و بررسی‌های قبل.
+
+Pre-check: Backup و بررسی‌های قبل از تغییر.
 
 **32-1-ت3** — Rollback، ثبت علت و درس.
 
+CHG ناموفق: Rollback، ثبت علت و درس.
+
 **32-1-ت4** — کم‌ترافیک با تیم آماده.
+
+Window: زمان کم‌ترافیک با تیم آماده.
 
 **32-1-ت5** — ترتیب Policy؛ Rollback؛ CHG جدید.
 
+Post-check Lookup=61: ترتیب Policy؛ Rollback و CHG جدید.
+
 **32-1-ت6** — قالب بالا.
+
+قالب CHG: عنوان، مالک، دلیل، ریسک، Window، Pre/Post-check، Rollback.
 
 **32-1-Q1** — That the change works as intended and nothing else broke.
 
@@ -46555,15 +47700,27 @@ execute ping-options df-bit yes
 
 **32-2-ت1** — تصمیم‌گیر و هماهنگ‌کننده.
 
+Incident Commander تصمیم‌گیر و هماهنگ‌کننده است.
+
 **32-2-ت2** — زمان تا کشف.
+
+MTTD زمان تا کشف است.
 
 **32-2-ت3** — اطمینان مدیریت و کاهش تماس‌ها.
 
+Status دوره‌ای اطمینان مدیریت را می‌دهد و تماس‌ها را کم می‌کند.
+
 **32-2-ت4** — ثبت Timeline.
+
+Scribe Timeline را ثبت می‌کند.
 
 **32-2-ت5** — قالب.
 
+PIR: Summary، Impact، Timeline، Root cause، Actions.
+
 **32-2-ت6** — سناریو و نقش‌ها.
+
+Game Day: سناریو، نقش‌ها و Timeline.
 
 **32-2-Q1** — To avoid confusion and ensure decisions, actions and records are handled.
 
@@ -46574,15 +47731,27 @@ execute ping-options df-bit yes
 
 **32-3-ت1** — وضعیت پیش از تغییر.
 
+Baseline وضعیت پیش از تغییر است.
+
 **32-3-ت2** — نقطه‌ی تصمیم.
+
+Checkpoint نقطه‌ی تصمیم ادامه/توقف است.
 
 **32-3-ت3** — برای تصمیم به‌موقع.
 
+Rollback زمان‌دار برای تصمیم به‌موقع.
+
 **32-3-ت4** — حدود ±۱۰٪.
+
+Session count حدود ±۱۰٪.
 
 **32-3-ت5** — Debug سریع؛ Rollback اگر در زمان.
 
+IPsec بعد Upgrade down: Debug سریع؛ Rollback اگر در زمان.
+
 **32-3-ت6** — جدول.
+
+Plan T-7d تا T+1d: جدول زمان و کار.
 
 **32-3-Q1** — To avoid delaying the decision and extending the outage.
 
@@ -46593,15 +47762,27 @@ execute ping-options df-bit yes
 
 **32-4-ت1** — مستقل و با شاهد.
 
+سطح ۳: مستقل و با شاهد.
+
 **32-4-ت2** — تفاوت سطح فعلی با هدف.
+
+شکاف تفاوت سطح فعلی با هدف است.
 
 **32-4-ت3** — شاهد عملی نیست.
 
+Lab اجرا نشده شاهد عملی نمی‌دهد و سطح را کم می‌کند.
+
 **32-4-ت4** — پروژه، Evidence، Runbook، PIR.
+
+Portfolio: پروژه، Evidence، Runbook، PIR.
 
 **32-4-ت5** — Capstone I، Runbook، برچسب صادقانه.
 
+Portfolio Firewall Engineer: Capstone I، Runbook و برچسب صادقانه.
+
 **32-4-ت6** — Lab، شاهد، زمان.
+
+برنامه‌ی پر کردن شکاف: Lab، شاهد، زمان.
 
 **32-4-Q1** — It shows real skill level and guides focused improvement.
 
@@ -46612,15 +47793,27 @@ execute ping-options df-bit yes
 
 **32-5-ت1** — تا یادگیری به عمل تبدیل شود.
 
+برنامه‌ی ۶ ماهه تا یادگیری به عمل تبدیل شود.
+
 **32-5-ت2** — اندازه‌گیری‌پذیر.
+
+معیار موفقیت اندازه‌گیری‌پذیر.
 
 **32-5-ت3** — هدف شغلی.
 
+اولویت Lab: هدف شغلی.
+
 **32-5-ت4** — Read-only و Pilot.
+
+Automation امن: Read-only و Pilot.
 
 **32-5-ت5** — کاهش دامنه.
 
+برنامه شکست خورد: دامنه را کم کنید.
+
 **32-5-ت6** — جدول.
+
+برنامه‌ی ۶ ماهه: ماه، هدف، Evidence.
 
 **32-5-Q1** — To verify real progress rather than assumed progress.
 
@@ -46631,15 +47824,27 @@ execute ping-options df-bit yes
 
 **32-6-ت1** — Health-check روی Gateway.
 
+علت ۱: Health-check روی Gateway.
+
 **32-6-ت2** — dst=IP داخلی.
+
+علت ۳: Policy با dst=IP داخلی نه VIP.
 
 **32-6-ت3** — لایه‌ی پایین‌تر اول.
 
+ترتیب رفع: لایه‌ی پایین‌تر اول.
+
 **32-6-ت4** — PMTU−40.
+
+MSS = PMTU − 40.
 
 **32-6-ت5** — سه مرحله با Rollback.
 
+CHG سه مرحله با Rollback.
+
 **32-6-ت6** — ریشه، شاخص، اقدام.
+
+PIR: ریشه، شاخص، اقدام.
 
 **32-6-Q1** — To know which change solved which problem.
 
@@ -46650,15 +47855,27 @@ execute ping-options df-bit yes
 
 **32-0-ت1** — تغییر کم‌ریسک و از پیش تأییدشده.
 
+Standard Change تغییر کم‌ریسک و از پیش تأییدشده است.
+
 **32-0-ت2** — میانگین زمان بازیابی.
+
+MTTR میانگین زمان بازیابی است.
 
 **32-0-ت3** — ۹۴٪.
 
+Change Success Rate = ۴۷/۵۰ = ۹۴٪.
+
 **32-0-ت4** — هیئت تأیید تغییرات پرریسک.
+
+CAB هیئت تأیید تغییرات پرریسک است.
 
 **32-0-ت5** — ثبت، تأیید Owner، اجرا، Verify، ثبت رسمی.
 
+Emergency Change: ثبت، تأیید Owner، اجرا، Verify، ثبت رسمی.
+
 **32-0-ت6** — ثبت، ارزیابی، تأیید، اجرا، Verify، Close.
+
+فرایند Change: ثبت، ارزیابی، تأیید، اجرا، Verify، Close.
 
 **32-0-Q1** — An urgent change to restore service that is documented and reviewed afterwards.
 
