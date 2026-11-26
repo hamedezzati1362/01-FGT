@@ -600,100 +600,175 @@ FGT: diagnose vpn ike gateway list ; diagnose vpn tunnel list
 
 <a id="l-25-4"></a>
 
-## درس 25-4 — آزمون معماری ۶ (FGT+CSR): صورت مسئله، کلید پاسخ و Rubric
+## درس 25-4 — آزمون معماری ۶ (FGT+CSR): IPsec چندسازنده، مقایسه‌ی Debug و جدول مغایرت — کلید پاسخ و Rubric
 
-**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۰ تا ۲۵-۳ · ≈ 8 ساعت**
+**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۱ تا ۲۵-۳ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 و CSR1000v 17.03.02 (IOS-XE)؛ بوت‌نشده؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. اتصال FGT–CSR با Routing و IPsec را با شواهد تحویل دهد.
-2. سه عیب تزریق‌شده (MTU، Proposal، Redistribution) را رفع کند.
-3. Failover و Backup هر دو سازنده را انجام دهد.
-4. گزارش Interop و RCA ارائه دهد.
+1. تونل IKEv2 بین FortiGate و Cisco CSR1000v را طراحی کند.
+2. پارامترهای معادل (Proposal، DH، PFS، Lifetime، Selector) را جدول‌بندی کند.
+3. Debug هر دو سمت را مقایسه و Mismatch را بیابد.
+4. سه خرابی تزریق‌شده را رفع کند.
+5. گزارش و Rubric تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون جامع چندسازنده با شواهد. کلید پاسخ پس از تلاش.
+در دنیای واقعی طرف مقابل تونل همیشه Fortinet نیست. اشتباه رایج: فرض اینکه «همه IPsec هستند». ولی نام پارامترها، پیش‌فرض‌ها و Selector (Cisco با ACL، Fortinet با Subnet) متفاوت است. این آزمون مهارت مقایسه‌ی دو CLI را می‌سنجد.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-HQ: CSR؛ شعبه: FGT؛ دو لینک (WAN1/WAN2). نیاز: OSPF داخلی، eBGP لبه، IPsec IKEv2 روی هر دو لینک، Failover < ۱۰ ثانیه، Backup هر دو.
+FGT (198.51.100.2، LAN 10.10.0.0/16) و CSR1000v (203.0.113.2، LAN 10.20.0.0/16). IKEv2، AES-256، SHA-256، DH 14، PFS DH 14، Lifetime P1 86400، P2 3600.
 
-عیب‌ها: ۱) MTU Tunnel ناهمسان؛ ۲) PFS Group متفاوت؛ ۳) Redistribution بدون Tag.
+#### ۲) جدول معادل
 
-#### کلید پاسخ (خلاصه)
+| مفهوم | FortiGate | Cisco CSR |
+|---|---|---|
+| Proposal P1 | `set proposal aes256-sha256` | `crypto ikev2 proposal P1 ; encryption aes-cbc-256 ; integrity sha256 ; group 14` |
+| Auth | `psksecret` | `crypto ikev2 keyring` |
+| Selector | `src-subnet/dst-subnet` | ACL (`access-list` crypto) |
+| P2 | `phase2-interface` | `crypto ipsec transform-set esp-aes 256 esp-sha256-hmac` |
+| PFS | `set pfs enable` | `set pfs group14` |
+| Lifetime | `keylife` | `lifetime` |
 
-- OSPF Exstart ← MTU؛ IPsec Phase2 ← PFS؛ Flap ← Tag.
-- Failover با BFD/Local-pref؛ اندازه‌گیری ≈ ۶ ثانیه.
-- Backup: `copy running-config` و `execute backup config`.
+#### ۳) CSR نمونه
 
-#### Rubric
+``` text
+crypto ikev2 proposal P1
+ encryption aes-cbc-256
+ integrity sha256
+ group 14
+crypto ikev2 policy POL1
+ proposal P1
+crypto ikev2 keyring KR
+ peer FGT
+  address 198.51.100.2
+  pre-shared-key <FROM-VAULT>
+crypto ikev2 profile PROF
+ match identity remote address 198.51.100.2 255.255.255.255
+ authentication remote pre-share
+ authentication local pre-share
+ keyring local KR
+crypto ipsec transform-set TS esp-aes 256 esp-sha256-hmac
+ mode tunnel
+ip access-list extended VPN-ACL
+ permit ip 10.20.0.0 0.0.255.255 10.10.0.0 0.0.255.255
+crypto map CM 10 ipsec-isakmp
+ set peer 198.51.100.2
+ set transform-set TS
+ set pfs group14
+ set ikev2-profile PROF
+ match address VPN-ACL
+interface GigabitEthernet1
+ crypto map CM
+```
 
-اتصال ۲۵؛ عیب‌یابی ۳۰؛ Failover ۱۵؛ Backup ۱۰؛ گزارش/Evidence ۱۵؛ صداقت ۵.
+(`Unverified` در IOS-XE 17.03؛ نام دستورها را با help بررسی.)
+
+#### ۴) خرابی‌ها و کلید
+
+**A:** DH گروه 14 در FGT و 5 در CSR (پیش‌فرض). شاهد CSR: `debug crypto ikev2` NO_PROPOSAL؛ FGT: `no proposal chosen`. رفع: `group 14`.
+
+**B:** Selector نامتقارن: ACL /24 و FGT /16. شاهد: P2 down. رفع: ACL و Selector یکسان.
+
+**C:** Lifetime متفاوت؛ rekey با Flap کوتاه. رفع: یکسان یا Lifetime کوچک‌تر ابتکار.
+
+#### ۵) Verification
+
+``` text
+FGT: diagnose vpn ike gateway list ; diagnose vpn tunnel list
+CSR: show crypto ikev2 sa ; show crypto ipsec sa
+```
+
+#### ۶) Rubric
+
+طراحی جدول ۲۰، پیکربندی ۲۵، تشخیص ۳ خرابی ۳۰، Verify دوطرفه ۱۵، Evidence و صداقت ۱۰. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| IKE | v2 |
+| Selector | آینه‌ی دقیق |
+| مقایسه Debug | هر دو سمت همزمان |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Up و Route‌ها.
+**ساده (حل‌شده):** جدول معادل: Proposal FGT=aes256-sha256؛ CSR=aes-cbc-256+sha256+group14؛ برابر.
 
-**متوسط:** سه عیب رفع.
+**متوسط (خرابی A):** DH متفاوت: FGT group14، CSR پیش‌فرض group5. شاهد در هر دو سمت NO_PROPOSAL. با `group 14` تونل up و `show crypto ikev2 sa` READY.
 
-**سخت:** Failover و گزارش.
+**سخت (Selector):** P1 up ولی ping نه. مراحل: ۱) `diagnose vpn tunnel list` SA صفر. ۲) CSR: `show crypto ipsec sa` بدون SA. ۳) ACL /24 ≠ /16. ۴) یکسان‌سازی. ۵) ping ok. درس: Selector باید آینه‌ی دقیق باشد.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose vpn ike gateway list
+diagnose vpn tunnel list
+show crypto ikev2 sa
+show crypto ipsec sa
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence A6.
+- P1 و P2 در هر دو سمت up.
+- ping بین LANها.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Failover کند | Timer | BFD |
+| NO_PROPOSAL | DH/Proposal | group |
+| P2 down | Selector/ACL | آینه‌ی دقیق |
 
 ### ۱۰) نکات امنیتی
 
-- Secret پاک.
+- PSK در Vault.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- آزمون با شواهد.
+- جدول معادل.
+- Selector آینه.
+- Debug دو سمت.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) سه عیب آزمون؟ *(پاسخ: 25-4-ت1)*
+**ت1.** (ساده) Selector در Cisco چیست؟ *(پاسخ: 25-4-ت1)*
 
-**ت2.** (ساده) Backup هر دو سازنده چگونه؟ *(پاسخ: 25-4-ت2)*
+**ت2.** (ساده) DH گروه 14 یعنی؟ *(پاسخ: 25-4-ت2)*
 
-**ت3.** (متوسط) چگونه Failover < ۱۰ s را اثبات می‌کنید؟ *(پاسخ: 25-4-ت3)*
+**ت3.** (متوسط) P1 up و P2 down؛ علت؟ *(پاسخ: 25-4-ت3)*
 
-**ت4.** (متوسط) عیب PFS را از Debug چگونه می‌فهمید؟ *(پاسخ: 25-4-ت4)*
+**ت4.** (متوسط) Debug کجا؟ *(پاسخ: 25-4-ت4)*
 
-**ت5.** (سخت) RCA برای Flap Redistribution. *(پاسخ: 25-4-ت5)*
+**ت5.** (سخت) rekey Flap. *(پاسخ: 25-4-ت5)*
 
-**ت6.** (سخت، طراحی) برنامه‌ی بهبود. *(پاسخ: 25-4-ت6)*
+**ت6.** (سخت، طراحی) جدول معادل. *(پاسخ: 25-4-ت6)*
 
-**Q1.** Quick quiz (English): What artifacts must be backed up in a multi-vendor design? *(پاسخ: 25-4-Q1)*
+**Q1.** Quick quiz (English): Why must crypto ACL and FortiGate selectors mirror each other? *(پاسخ: 25-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| A6 | Architecture 6 | معماری ۶ |
+| DH | Diffie-Hellman | تبادل کلید |
 
-- *Back up both vendors.* ← از هر دو سازنده Backup بگیرید.
+- *Compare both sides debug output.* ← خروجی Debug دو سمت را مقایسه کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** A6. **Evidence:** `03-ops/a6.md`.
+**کارت Lab:** معماری ۶ (اجرا نشده). **Evidence:** `03-ops/arch6.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۵-۱ تا ۲۵-۳
+- Cisco IOS-XE IKEv2 guide
+- Fortinet FortiOS 7.0 Administration Guide: IPsec
 
 ## پاسخ‌های فصل 25
 
@@ -751,19 +826,22 @@ HQ: CSR؛ شعبه: FGT؛ دو لینک (WAN1/WAN2). نیاز: OSPF داخلی،
 
 ### پاسخ‌های بازنویسی عمیق درس 25-4
 
-**25-4-ت1** — MTU ناهمسان، PFS Group متفاوت، Redistribution بدون Tag.
 
-**25-4-ت2** — CSR: copy running-config tftp/scp؛ FGT: execute backup config tftp/sftp.
+### پاسخ‌های بازنویسی عمیق درس 25-4
 
-**25-4-ت3** — قطع لینک و ping پیوسته؛ شمارش بسته‌ها × فاصله؛ ثبت.
+**25-4-ت1** — ACL crypto.
 
-**25-4-ت4** — `INVALID_KE_PAYLOAD`/`NO_PROPOSAL_CHOSEN` در Phase 2؛ مقایسه‌ی PFS Group دو سر.
+**25-4-ت2** — ۲۰۴۸ بیت MODP.
 
-**25-4-ت5** — علامت: Flap Prefix؛ شواهد: Path/Route؛ علت: Loop بدون Tag؛ رفع: Tag؛ پیشگیری: استاندارد Route-map.
+**25-4-ت3** — Selector/PFS/Transform.
 
-**25-4-ت6** — برگه‌ی پارامتر مشترک، استاندارد MTU، قالب Redistribution با Tag، BFD، آزمون دوره‌ای.
+**25-4-ت4** — هر دو سمت.
 
-**25-4-Q1** — Configurations of both vendors, including routing and VPN settings, stored without secrets in version control.
+**25-4-ت5** — Lifetime.
+
+**25-4-ت6** — طبق جدول.
+
+**25-4-Q1** — Because mismatched selectors prevent phase 2 from negotiating.
 
 ### پاسخ‌های درس افزوده‌ی 25-0 (فصل 25)
 
@@ -2429,105 +2507,161 @@ execute backup config sftp hardening-test.conf 192.168.90.10 backup-user <PASSWO
 
 <a id="l-27-5"></a>
 
-## درس 27-5 — Gate G10: آزمون عملی Logging، Monitoring، Hardening و Backup — صورت مسئله، کلید و Rubric
+## درس 27-5 — Gate G10: آزمون عملی Logging، Monitoring، Hardening و Backup — کلید پاسخ کامل و Rubric
 
-**فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰ تا ۲۷-۷ · ≈ 8 ساعت**
+**فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۱ تا ۲۷-۴ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ Log/Syslog از مستند 7.0؛ SNMPv3 و REST API روی 7.0.3 `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Syslog مرکزی، Baseline/Trigger، Hardening و Backup/Restore را با شواهد تحویل دهد.
-2. سه عیب (Log نمی‌رسد، Alert کاذب، Restore ناقص) را رفع کند.
-3. Detection یک رویداد (Login ناموفق مکرر) را از Log تا Alert نشان دهد.
-4. Evidence و RCA ارائه دهد.
+1. Syslog/FortiAnalyzer، SNMPv3 و Alert را پیکربندی و Verify کند.
+2. Hardening مدیریتی را چک‌لیست و Evidence کند.
+3. Backup/Restore را اجرا و Hash ثبت کند.
+4. سه خرابی (Log نمی‌رسد، SNMP، Backup) را رفع کند.
+5. گزارش و Rubric تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون جامع عملیات. کلید پاسخ پس از تلاش.
+نظارت بدون Log و Hardening بدون Backup نصفه است. G10 چهار پایه‌ی عملیات را با هم می‌سنجد: دیدن (Log)، شنیدن (Monitoring)، سخت‌کردن (Hardening) و بازگشت (Backup).
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-1. Syslog reliable از FGT به rsyslog؛ فایل روزانه.
-2. Baseline ۷ روز (شبیه‌سازی) و ۶ Trigger با Hysteresis.
-3. Hardening: ۱۰ کنترل با آزمون منفی.
-4. Backup→Sanitize→Git→Restore در Lab، RTO.
-5. Detection: ۲۰ Login ناموفق ⇒ Alert.
+FortiGate Edge باید: Syslog به 10.99.0.20؛ SNMPv3 به NMS؛ Alert روی ورود ناموفق Admin؛ Hardening طبق چک‌لیست؛ Backup روزانه و آزمون Restore.
 
-عیب‌ها (مربی): Route Syslog اشتباه؛ Trigger CPU بدون Baseline؛ Restore بدون گواهی.
+#### ۲) پیکربندی مرجع
 
-#### کلید (خلاصه)
+``` text
+config log syslogd setting
+ set status enable
+ set server 10.99.0.20
+ set port 514
+end
+config system snmp sysinfo
+ set status enable
+end
+config system snmp user
+ edit "nms"
+  set security-level auth-priv
+  set auth-proto sha256
+  set priv-proto aes256
+  set auth-pwd <FROM-VAULT>
+  set priv-pwd <FROM-VAULT>
+ next
+end
+config system global
+ set admintimeout 10
+ set admin-lockout-threshold 3
+end
+```
 
-- عیب ۱: `execute ping` از source-ip و Sniffer؛ رفع Route.
-- عیب ۲: آستانه=Baseline×1.3 و Maintenance window.
-- عیب ۳: Runbook Secrets/گواهی.
-- Detection: Alert بر 20 ناموفق/5m؛ Block مشروط.
+(`Unverified`؛ نام پارامترهای SNMPv3 با CLI help تأیید شود.)
 
-#### Rubric (۱۰۰)
+#### ۳) خرابی‌ها و کلید
 
-Log ۲۰؛ Monitoring ۲۵؛ Hardening ۲۰؛ Backup/Restore ۲۰؛ Detection/RCA ۵؛ صداقت ۱۰.
+**A: Log نمی‌رسد.** شاهد: Sniffer روی port مدیریت: UDP 514 خارج می‌شود ولی سرور نمی‌گیرد؛ Firewall سرور یا Route. رفع: Policy/Route و `source-ip`.
+
+**B: SNMP Timeout.** شاهد: `snmpwalk` timeout؛ علت: `allowaccess snmp` روی Interface نیست یا Host مجاز نیست. رفع.
+
+**C: Backup ناقص.** فایل ۰ بایت؛ علت: TFTP سرور/Route. رفع و Hash.
+
+#### ۴) چک‌لیست Hardening
+
+MFA، Trusted host، TLS 1.2+، Telnet/HTTP off، Timeout/Lockout، Backup رمزگذاری، Log خارجی.
+
+#### ۵) آزمون
+
+``` text
+execute log filter category 1
+execute log display
+snmpwalk -v3 -l authPriv -u nms <fgt-ip>
+execute backup config tftp f.conf 10.99.0.5
+sha256sum f.conf
+```
+
+#### ۶) Rubric
+
+Logging ۲۰، Monitoring ۲۰، Hardening ۲۰، Backup/Restore ۲۰، تشخیص ۳ خرابی و Evidence ۲۰. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| SNMP | v3 authPriv |
+| Backup | رمزگذاری و Hash |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Syslog و فایل.
+**ساده (حل‌شده):** Syslog: Event ورود Admin در سرور دیده می‌شود با زمان صحیح (NTP).
 
-**متوسط:** Trigger و Hardening.
+**متوسط (SNMP):** snmpwalk Timeout. مراحل: ۱) `show system interface mgmt` allowaccess بدون snmp. ۲) افزودن snmp و Host مجاز. ۳) snmpwalk موفق. پاسخ: allowaccess و Host.
 
-**سخت:** Restore و RCA.
+**سخت (Restore):** Restore در Lab: Backup گرفته؛ Config عمدی خراب؛ Restore؛ بوت؛ مقایسه Policy count و Hash اولیه. معیار: همه‌ی Policyها و Routeها بازگردانده؛ زمان Restore ثبت. ریسک: Backup حاوی رمز؛ رمزگذاری.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+execute log filter category 1
+execute log display
+execute backup config tftp f.conf 10.99.0.5
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence G10: جدول دستور/خروجی/نتیجه.
+- Log در سرور.
+- SNMP پاسخ.
+- Backup و Hash.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Alert نیامد | Syslog/Trigger | مسیر/آستانه |
+| Log نمی‌رسد | Sniffer | Route/Policy |
+| SNMP timeout | allowaccess | snmp |
 
 ### ۱۰) نکات امنیتی
 
-- Secret در Evidence نیست.
+- رمزها در Vault.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- آزمون عملیات = Log + Monitoring + Hardening + Restore + Detection.
+- Log+Monitoring+Hardening+Backup.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) شواهد لازم برای Log مرکزی؟ *(پاسخ: 27-5-ت1)*
+**ت1.** (ساده) چرا SNMPv3؟ *(پاسخ: 27-5-ت1)*
 
-**ت2.** (ساده) چرا Trigger باید Baseline داشته باشد؟ *(پاسخ: 27-5-ت2)*
+**ت2.** (ساده) چرا Hash Backup؟ *(پاسخ: 27-5-ت2)*
 
-**ت3.** (متوسط) عیب Route Syslog را چگونه کشف می‌کنید؟ *(پاسخ: 27-5-ت3)*
+**ت3.** (متوسط) Log نمی‌رسد؛ مراحل. *(پاسخ: 27-5-ت3)*
 
-**ت4.** (متوسط) RTO را چگونه گزارش می‌کنید؟ *(پاسخ: 27-5-ت4)*
+**ت4.** (متوسط) allowaccess snmp؟ *(پاسخ: 27-5-ت4)*
 
-**ت5.** (سخت) Detection Brute-force از Log تا Alert را شرح دهید. *(پاسخ: 27-5-ت5)*
+**ت5.** (سخت) Restore آزمایشی. *(پاسخ: 27-5-ت5)*
 
-**ت6.** (سخت، طراحی) برنامه‌ی بهبود پس از آزمون. *(پاسخ: 27-5-ت6)*
+**ت6.** (سخت، طراحی) چک‌لیست G10. *(پاسخ: 27-5-ت6)*
 
-**Q1.** Quick quiz (English): What evidence proves central logging works? *(پاسخ: 27-5-Q1)*
+**Q1.** Quick quiz (English): Why should backups be encrypted? *(پاسخ: 27-5-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| G10 | Gate 10 | دروازه ۱۰ |
+| NMS | Network Management System | سامانه‌ی مدیریت |
 
-- *Collect evidence for every gate.* ← برای هر Gate شاهد جمع کنید.
+- *Test the restore, not only the backup.* ← Restore را هم آزمون کنید نه فقط Backup.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** G10. **Evidence:** `03-ops/g10.md`.
+**کارت Lab:** G10 (اجرا نشده). **Evidence:** `03-ops/g10.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۷-۰ تا ۲۷-۷
+- Fortinet FortiOS 7.0 Administration Guide: Logging; SNMP; Backup
 
 ## درس 27-7 — Hardening، Backup/Restore و API: امن‌سازی مدیریتی و بازیابی قابل‌اثبات
 
@@ -2719,19 +2853,22 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 
 ### پاسخ‌های بازنویسی عمیق درس 27-5
 
-**27-5-ت1** — فایل Log روزانه روی سرور با رویداد آزمایشی و tcpdump TCP 514.
 
-**27-5-ت2** — تا آستانه با رفتار عادی تنظیم شود و Alert کاذب کم شود.
+### پاسخ‌های بازنویسی عمیق درس 27-5
 
-**27-5-ت3** — `execute ping` با source-ip، Sniffer روی Interface خروجی، tcpdump سرور.
+**27-5-ت1** — احراز هویت و رمزگذاری.
 
-**27-5-ت4** — زمان‌بندی مراحل Restore و Verification؛ مقایسه با هدف؛ Gap.
+**27-5-ت2** — تأیید صحت.
 
-**27-5-ت5** — Event Login failed در Syslog؛ Parser؛ Trigger 20/5m؛ Alert؛ Playbook Block؛ ثبت.
+**27-5-ت3** — Sniffer، Route، Policy، سرور.
 
-**27-5-ت6** — Alert Dependency، HA Syslog، Restore خودکار، Drift report.
+**27-5-ت4** — لازم برای پاسخ SNMP.
 
-**27-5-Q1** — A log file on the server containing a test event, plus a packet capture of the syslog session.
+**27-5-ت5** — Backup، خراب، Restore، مقایسه.
+
+**27-5-ت6** — ۷ مورد.
+
+**27-5-Q1** — Because they contain passwords and keys.
 
 ### پاسخ‌های درس افزوده‌ی 27-0 (فصل 27)
 

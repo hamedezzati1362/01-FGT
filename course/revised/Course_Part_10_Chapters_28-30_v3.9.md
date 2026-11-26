@@ -789,102 +789,142 @@ get system performance status
 
 <a id="l-28-5"></a>
 
-## درس 28-5 — آزمون عملی فصل ۲۸: تحلیل سه PCAP و RCA — صورت مسئله، کلید و Rubric
+## درس 28-5 — آزمون عملی فصل ۲۸: تحلیل سه PCAP و RCA — صورت مسئله، کلید پاسخ و Rubric
 
-**فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۱ تا ۲۸-۴ · ≈ 8 ساعت**
+**فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۱ تا ۲۸-۴، ۱۴-۲ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. سه PCAP را تحلیل و علت هرکدام را با شواهد بیان کند.
-2. RCA و رفع/پیشگیری بنویسد.
-3. محاسبات کمی (RTT، Retrans، BDP) را انجام دهد.
-4. گزارش آزمون را در قالب TS Block تحویل دهد.
+1. سه PCAP را با Display Filter تحلیل کند.
+2. الگوهای SYN-بی‌پاسخ، Retransmission/MTU و DNS/TLS شکست را تشخیص دهد.
+3. برای هر PCAP RCA بنویسد.
+4. رفع پیشنهادی و آزمون تأیید را بنویسد.
+5. Evidence با شماره‌ی بسته ثبت کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون عملی با سه پرونده. کلید پاسخ پس از تلاش.
+PCAP بی‌طرف‌ترین شاهد است. دو مهندس بر سر علت بحث می‌کنند؛ یک فایل PCAP حکم می‌دهد. ولی تنها وقتی که بدانید چه را در آن ببینید. این آزمون سه الگوی کلاسیک را می‌سنجد.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-PCAP-1: دانلود بزرگ روی Tunnel که می‌ایستد.
-PCAP-2: برنامه‌ی دسکتاپ فقط پشت فایروال خطای TLS می‌دهد.
-PCAP-3: اتصال وب به یک سرور ناموفق؛ سرور از جای دیگری پاسخ می‌دهد.
+سه فایل: `case1.pcap` (سایت باز نمی‌شود)، `case2.pcap` (دانلود می‌ایستد)، `case3.pcap` (HTTPS خطا). برای هرکدام: الگو، علت، رفع، آزمون.
 
-برای هر PCAP: الگو، محاسبه، علت، رفع، تأیید، پیشگیری.
+#### ۲) فیلترهای پایه
 
-#### کلید پاسخ
+``` text
+tcp.flags.syn==1 && tcp.flags.ack==0
+tcp.analysis.retransmission
+tcp.flags.reset==1
+icmp.type==3 && icmp.code==4
+dns.flags.rcode != 0
+tls.alert_message
+```
 
-- PCAP-1: Retransmission بسته‌های ≥ 1400 B؛ نبود ICMP 3/4؛ MTU/PMTUD Black hole؛ رفع MSS Clamp و ICMP.
-- PCAP-2: Alert unknown_ca/Issuer فایروال؛ CA در Store برنامه نیست یا Pinning؛ رفع: نصب CA/Exemption.
-- PCAP-3: SYN در یک Interface و SYN/ACK در دیگری؛ Asymmetric؛ رفع Route/Policy Route.
+#### ۳) کلید
 
-#### Rubric
+**Case 1:** ۵ بسته SYN از کلاینت با Retransmit (۱، ۳، ۷ ثانیه) و هیچ SYN-ACK. علت: مقصد/Firewall سرور SYN را نمی‌پذیرد یا مسیر برگشت. رفع: بررسی Policy/Route/سرور؛ Capture در مقصد.
 
-تحلیل ۳۰؛ محاسبات ۱۵؛ RCA ۲۵؛ رفع/پیشگیری ۱۵؛ قالب/صداقت ۱۵.
+**Case 2:** Handshake و چند بسته‌ی کوچک ok؛ بسته‌ی بزرگ (1514 بایت) Retransmit مکرر؛ ICMP نوع 3 کد 4 در جهت مخالف یا غایب. علت: MTU مسیر کمتر. رفع: MSS-clamp/اجازه‌ی ICMP.
+
+**Case 3:** TLS Handshake: ClientHello سپس Alert (fatal) `certificate_unknown` یا `handshake_failure`. علت: گواهی نامعتبر/Inspection/SNI. رفع: گواهی CA مورد اعتماد کلاینت، یا Exempt در SSL Inspection.
+
+#### ۴) قالب Evidence
+
+``` text
+case: 2
+frames: 41-58 (large segments retransmitted), 60 (ICMP 3/4)
+finding: PMTU 1400 ; MSS 1460
+fix: tcp-mss 1360 ; allow ICMP frag-needed
+verify: download 100MB x3 without retransmission
+```
+
+#### ۵) Rubric
+
+الگوی هر Case ۱۵×۳، RCA ۲۰، رفع و آزمون ۱۵، Evidence با شماره‌ی بسته ۱۵، صداقت ۵. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| فیلتر | دقیق |
+| ثبت | شماره بسته |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**PCAP-1:** MTU/PMTUD.
+**ساده (حل‌شده):** Case 1: فقط SYN. نتیجه: پاسخی نیامده؛ مسیر/سرور.
 
-**PCAP-2:** CA/Pinning.
+**متوسط (Case 2):** بسته‌ی ۱۵۱۴ بایتی با DF Retransmit؛ بسته‌های ≤ ۱۴۰۰ می‌رسد؛ PMTU≈1400؛ رفع MSS 1360؛ آزمون دانلود.
 
-**PCAP-3:** Asymmetric.
+**سخت (Case 3):** TLS Alert certificate_unknown پس از ServerHello/Certificate. مراحل: ۱) Certificate در frame 12؛ Issuer ناشناخته. ۲) علت: SSL Inspection با CA داخلی که روی کلاینت نصب نیست. ۳) رفع: نصب CA یا Exempt. ۴) آزمون: Handshake کامل.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+tcp.flags.syn==1 && tcp.flags.ack==0
+tcp.analysis.retransmission
+tls.alert_message
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- گزارش سه TS Block.
+- شماره بسته‌ها در Evidence.
+- آزمون پس از رفع.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| تحلیل ناقص | Rubric | کسری |
+| SYN بی‌پاسخ | مقصد/Firewall | Capture دو سمت |
+| بزرگ می‌ایستد | MTU | MSS |
+| TLS alert | گواهی | CA/Exempt |
 
 ### ۱۰) نکات امنیتی
 
-- PCAP امن.
+- PCAP حاوی داده‌ی حساس است.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- سه پرونده با RCA.
+- سه الگو.
+- Evidence با شماره بسته.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) PCAP-1: کدام الگو MTU را نشان می‌دهد؟ *(پاسخ: 28-5-ت1)*
+**ت1.** (ساده) SYN بدون SYN-ACK؟ *(پاسخ: 28-5-ت1)*
 
-**ت2.** (ساده) PCAP-2: Issuer چه می‌گوید؟ *(پاسخ: 28-5-ت2)*
+**ت2.** (ساده) ICMP 3/4؟ *(پاسخ: 28-5-ت2)*
 
-**ت3.** (متوسط) PCAP-3: چگونه Asymmetric را ثابت می‌کنید؟ *(پاسخ: 28-5-ت3)*
+**ت3.** (متوسط) Retransmission بزرگ؟ *(پاسخ: 28-5-ت3)*
 
-**ت4.** (متوسط) محاسبه کنید: Window 128 KB، RTT 50 ms؛ حد Throughput. *(پاسخ: 28-5-ت4)*
+**ت4.** (متوسط) TLS alert certificate_unknown؟ *(پاسخ: 28-5-ت4)*
 
-**ت5.** (سخت) RCA کامل برای PCAP-1. *(پاسخ: 28-5-ت5)*
+**ت5.** (سخت) Case 3 را رفع کنید. *(پاسخ: 28-5-ت5)*
 
-**ت6.** (سخت، طراحی) برنامه‌ی پیشگیری برای هر سه پرونده. *(پاسخ: 28-5-ت6)*
+**ت6.** (سخت، طراحی) قالب Evidence. *(پاسخ: 28-5-ت6)*
 
-**Q1.** Quick quiz (English): What distinguishes an MTU problem in a capture? *(پاسخ: 28-5-Q1)*
+**Q1.** Quick quiz (English): Which wireshark filter finds retransmissions? *(پاسخ: 28-5-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| RCA | Root Cause Analysis | تحلیل علت ریشه‌ای |
+| PCAP | Packet capture | فایل Capture |
 
-- *Attach evidence to every conclusion.* ← هر نتیجه شاهد داشته باشد.
+- *Cite frame numbers as evidence.* ← شماره‌ی فریم‌ها را به‌عنوان Evidence ذکر کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** آزمون TS. **Evidence:** `03-ops/ts-exam.md`.
+**کارت Lab:** آزمون PCAP (اجرا نشده). **Evidence:** `03-ops/pcap-rca.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۸-۱ تا ۲۸-۴
+- Wireshark User Guide
+- RFC 1191
 
 ## پاسخ‌های فصل 28
 
@@ -961,19 +1001,22 @@ PCAP-3: اتصال وب به یک سرور ناموفق؛ سرور از جای �
 
 ### پاسخ‌های بازنویسی عمیق درس 28-5
 
-**28-5-ت1** — Retransmission بسته‌های بزرگ و نبود ICMP Frag Needed.
 
-**28-5-ت2** — اگر Issuer فایروال باشد Deep Inspection فعال است؛ خطا یعنی CA در Store برنامه نیست یا Pinning.
+### پاسخ‌های بازنویسی عمیق درس 28-5
 
-**28-5-ت3** — SYN در یک Interface/فایروال و SYN/ACK در دیگری؛ session فقط یکجا.
+**28-5-ت1** — مقصد/مسیر پاسخ نمی‌دهد.
 
-**28-5-ت4** — 128 KB/0.05 s ≈ 2.56 MB/s ≈ 20.5 Mbit/s.
+**28-5-ت2** — Fragmentation needed.
 
-**28-5-ت5** — علامت: دانلود می‌ایستد؛ شواهد: Retrans بسته‌های بزرگ، بدون ICMP؛ علت: MTU Tunnel+PMTUD Black hole؛ رفع: MSS Clamp 1360 و ICMP؛ تأیید: دانلود کامل؛ پیشگیری: استاندارد MTU.
+**28-5-ت3** — MTU/Loss.
 
-**28-5-ت6** — MTU استاندارد/ICMP، CA مدیریت‌شده و Exemption لیست، Route متقارن و Alert RPF.
+**28-5-ت4** — گواهی ناشناخته.
 
-**28-5-Q1** — Large packets are retransmitted while smaller packets pass, often without ICMP fragmentation-needed messages.
+**28-5-ت5** — CA یا Exempt.
+
+**28-5-ت6** — frames، finding، fix، verify.
+
+**28-5-Q1** — tcp.analysis.retransmission.
 
 ### پاسخ‌های درس افزوده‌ی 28-0 (فصل 28)
 
@@ -1554,111 +1597,141 @@ execute backup config sftp pre-patch.conf 192.168.90.10 backup-user <PASSWORD>
 
 <a id="l-29-4"></a>
 
-## درس 29-4 — گزارش حادثه (PIR) و آزمون عملی Blue Team: سناریوی چندمرحله‌ای با Rubric
+## درس 29-4 — گزارش حادثه (PIR) و آزمون عملی Blue Team: سناریوی چندمرحله‌ای با کلید و Rubric
 
-**فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰ تا ۲۹-۳ · ≈ 8 ساعت**
+**فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۱ تا ۲۹-۳ · ≈ 12 ساعت**
 
-> **وضعیت:** مفهومی؛ فقط Lab ایزوله و مجاز؛ FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. سناریوی چندمرحله‌ای (Scan→Brute-force→ورود→حرکت جانبی) را Detect و Contain کند.
-2. PIR بدون سرزنش با Timeline و اقدام‌های قابل‌پیگیری بنویسد.
-3. معیارهای MTTD/MTTR و کیفیت Detection را ارزیابی کند.
-4. Playbookها را بر پایه‌ی درس‌آموخته به‌روز کند.
+1. یک حادثه‌ی چندمرحله‌ای (Brute-force → دسترسی → حرکت جانبی) را از Log بازسازی کند.
+2. Timeline، Containment، Eradication و Recovery را بنویسد.
+3. MTTD/MTTR را محاسبه کند.
+4. PIR بی‌ملامت (Blameless) با اقدام پیشگیرانه بنویسد.
+5. آزمون را با Rubric تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون عملی بر پایه‌ی سناریوی مجاز در Lab. کلید پاسخ پس از تلاش.
+حادثه‌ی واقعی هیچ‌وقت با برچسب «حمله‌ی چندمرحله‌ای» نمی‌آید. چند هشدار پراکنده می‌آید و مهندس باید آن‌ها را به یک داستان وصل کند. PIR (Post-Incident Review) آموختن از آن داستان است، نه تقصیر.
 
 ### ۳) توضیح عمیق فنی
 
-#### سناریو (Lab مجاز)
+#### ۱) سناریو
 
-۱) Scan از Attacker-Lab؛ ۲) ۲۰ Login ناموفق VPN؛ ۳) ورود موفق؛ ۴) تلاش دسترسی DMZ→DB (Deny).
+ساعت 02:10 Alert: ۴۰ ورود ناموفق SSH به FGT از IP 192.0.2.77. 02:14 ورود موفق admin. 02:20 تغییر Policy و ایجاد حساب `svc-tmp`. 02:35 اتصال از FGT به 10.20.0.10:445 (Scan). 03:05 SOC متوجه می‌شود.
 
-#### وظایف
+#### ۲) Timeline
 
-Detect، Triage، Contain (Block+Clear+Lock)، Scope، RCA، PIR، بهبود Detection.
+| ساعت | رویداد | منبع |
+|---|---|---|
+| 02:10 | Brute-force SSH | Event log |
+| 02:14 | ورود موفق | Event log |
+| 02:20 | ساخت `svc-tmp` | Config change log |
+| 02:35 | Scan داخلی | Forward traffic |
+| 03:05 | کشف | SOC |
 
-#### قالب PIR
+MTTD = 03:05 − 02:10 = 55 دقیقه.
+
+#### ۳) پاسخ
+
+**Containment:** Block IP با Local-in، غیرفعال کردن admin و `svc-tmp`، جدا کردن Mgmt، کنسول. **Eradication:** حذف حساب‌ها، تغییر رمزها/کلیدها، بررسی Config Diff با Backup، پچ. **Recovery:** Restore Config پاک، Monitoring تشدید.
+
+#### ۴) ریشه
+
+SSH روی WAN باز و بدون MFA/Trusted host؛ رمز ضعیف.
+
+#### ۵) اقدام پیشگیرانه
+
+حذف SSH از WAN، MFA، Trusted host، Alert بر Brute-force، بازبینی Config روزانه (Diff)، آموزش.
+
+#### ۶) PIR (قالب)
 
 ``` text
-Summary / Impact / Timeline (UTC) / Detection / Containment / Root cause
-What went well / What went poorly / Actions (owner, date) / Metrics (MTTD, MTTR)
+Summary / Impact / Timeline / Root cause / What went well / What failed / Actions (owner, due) / Lessons
 ```
 
-#### کلید (خلاصه)
+#### ۷) Rubric
 
-- Detect: Alert Scan، Brute-force، Correlation ورود موفق.
-- Contain: Block IP، Lock کاربر، پایان Session؛ Evidence قبلی.
-- RCA: نبود MFA/Rate limit؛ Local-in.
-- Actions: MFA، Alert Correlation، Segmentation DMZ→DB.
+Timeline ۲۰، Containment/Eradication ۲۰، ریشه ۲۰، اقدام ۲۰، PIR و MTTD/MTTR ۱۵، صداقت ۵. قبولی ۷۵.
 
-#### Rubric (۱۰۰)
+### ۴) طراحی و تصمیم‌گیری
 
-Detection ۲۵؛ مهار ۲۵؛ RCA ۲۰؛ PIR ۲۰؛ صداقت ۱۰.
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Containment | اول جلوگیری |
+| PIR | Blameless |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Timeline.
+**ساده (حل‌شده):** MTTD = 03:05 − 02:10 = ۵۵ دقیقه؛ MTTR (تا Containment 03:25) = ۷۵ دقیقه از شروع.
 
-**متوسط:** مهار و Scope.
+**متوسط (Containment):** اول IP مهاجم را Block و Admin/svc-tmp را غیرفعال؛ سپس Config را با Backup مقایسه؛ برای جلوگیری از حذف شواهد Log را ذخیره.
 
-**سخت:** PIR و اقدام‌ها.
+**سخت (PIR):** نوشتن PIR کامل: خلاصه، اثر (دسترسی به Config، Scan داخلی بدون نفوذ به سرور)، Timeline، ریشه (SSH WAN + رمز ضعیف)، موفق (Alert دریافت شد)، شکست (۵۵ دقیقه تأخیر)، اقدام‌ها با مالک و تاریخ.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+execute log filter category 1
+execute log display
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- PIR تکمیل.
+- Timeline با Log.
+- اقدام‌ها مالک دارند.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Detection دیر | Metrics | آستانه |
+| Timeline ناقص | Log | NTP/Log متمرکز |
 
 ### ۱۰) نکات امنیتی
 
-- Lab.
+- شواهد را حفظ کنید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- PIR بدون سرزنش.
+- از Alert به داستان.
+- Containment.
+- Blameless PIR.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) PIR شامل چه بخش‌هایی است؟ *(پاسخ: 29-4-ت1)*
+**ت1.** (ساده) MTTD چیست؟ *(پاسخ: 29-4-ت1)*
 
-**ت2.** (ساده) Blameless یعنی چه؟ *(پاسخ: 29-4-ت2)*
+**ت2.** (ساده) Containment؟ *(پاسخ: 29-4-ت2)*
 
-**ت3.** (متوسط) MTTD و MTTR را در سناریو چگونه محاسبه می‌کنید؟ *(پاسخ: 29-4-ت3)*
+**ت3.** (متوسط) اولین اقدام؟ *(پاسخ: 29-4-ت3)*
 
-**ت4.** (متوسط) چرا Correlation ورود موفق مهم است؟ *(پاسخ: 29-4-ت4)*
+**ت4.** (متوسط) ریشه؟ *(پاسخ: 29-4-ت4)*
 
-**ت5.** (سخت) سه اقدام پیشگیرانه از PIR. *(پاسخ: 29-4-ت5)*
+**ت5.** (سخت) PIR بنویسید. *(پاسخ: 29-4-ت5)*
 
-**ت6.** (سخت، طراحی) به‌روزرسانی Playbook پس از درس‌آموخته. *(پاسخ: 29-4-ت6)*
+**ت6.** (سخت، طراحی) اقدام پیشگیرانه. *(پاسخ: 29-4-ت6)*
 
-**Q1.** Quick quiz (English): Which metrics summarize detection and response performance? *(پاسخ: 29-4-Q1)*
+**Q1.** Quick quiz (English): What does MTTD measure? *(پاسخ: 29-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| PIR | Post-incident review | بازبینی پس از حادثه |
+| PIR | Post-Incident Review | بازبینی پس از حادثه |
+| MTTD | Mean Time To Detect | میانگین زمان کشف |
 
-- *Write a blameless post-incident review.* ← PIR بدون سرزنش بنویسید.
+- *A blameless review focuses on process, not people.* ← بازبینی بی‌ملامت روی فرایند است نه افراد.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Incident. **Evidence:** `03-ops/incident.md`.
+**کارت Lab:** آزمون Blue Team (اجرا نشده). **Evidence:** `03-ops/pir-29.md`.
 
 ### ۱۵) منابع
 
-- NIST SP 800-61
-- Google SRE Book (Postmortem culture)
+- NIST SP 800-61 Rev.2
 
 ## پاسخ‌های فصل 29
 
@@ -1718,19 +1791,22 @@ Detection ۲۵؛ مهار ۲۵؛ RCA ۲۰؛ PIR ۲۰؛ صداقت ۱۰.
 
 ### پاسخ‌های بازنویسی عمیق درس 29-4
 
-**29-4-ت1** — خلاصه، اثر، Timeline، Detection، مهار، علت، خوب/بد، اقدام و Metrics.
 
-**29-4-ت2** — تمرکز بر فرایند و سیستم نه سرزنش افراد.
+### پاسخ‌های بازنویسی عمیق درس 29-4
 
-**29-4-ت3** — MTTD = زمان کشف − شروع حمله؛ MTTR = زمان بازیابی/بسته‌شدن − زمان کشف.
+**29-4-ت1** — زمان تا کشف.
 
-**29-4-ت4** — نشان می‌دهد Brute-force موفق بوده و اولویت را بالا می‌برد.
+**29-4-ت2** — جلوگیری از گسترش.
 
-**29-4-ت5** — MFA الزامی، Alert Correlation، Segmentation DMZ→DB و Local-in.
+**29-4-ت3** — Block و غیرفعال حساب.
 
-**29-4-ت6** — افزودن گام Evidence، آستانه‌ی جدید، مسئول‌ها، آزمون دوره‌ای.
+**29-4-ت4** — SSH WAN و رمز.
 
-**29-4-Q1** — Mean time to detect and mean time to restore (MTTD and MTTR).
+**29-4-ت5** — قالب.
+
+**29-4-ت6** — حذف SSH WAN، MFA، Alert.
+
+**29-4-Q1** — The mean time between the start of an incident and its detection.
 
 ### پاسخ‌های درس افزوده‌ی 29-0 (فصل 29)
 

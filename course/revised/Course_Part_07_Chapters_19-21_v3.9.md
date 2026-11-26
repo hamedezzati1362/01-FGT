@@ -2085,108 +2085,190 @@ execute log display
 
 <a id="l-20-5"></a>
 
-## درس 20-5 — آزمون عملی دسترسی راه‌دور: صورت مسئله، کلید پاسخ و Rubric
+## درس 20-5 — آزمون عملی دسترسی راه‌دور: SSL-VPN/IPsec Dial-up، MFA و Split Tunnel — صورت مسئله، کلید کامل و Rubric
 
-**فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۲۰-۱ تا ۲۰-۴، ۲۰-۷ · ≈ 8 ساعت**
+**فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۲۰-۱ تا ۲۰-۴ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده». SSL VPN فقط در Lab ایزوله (CVE).
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. IPsec Dial-up با MFA را بسازد، آزمون کند و Detection بگذارد.
-2. سه عیب (DNS، Policy، Certificate) را رفع کند.
-3. حمله‌ی Brute-force آزمایشی (Lab مجاز) را کشف و به آن پاسخ دهد.
-4. طرح مهاجرت از SSL VPN را بنویسد.
+1. دسترسی راه‌دور (Portal یا Tunnel) را با گروه کاربری، MFA و Policy حداقلی طراحی کند.
+2. Split Tunnel در برابر Full Tunnel را با ریسک‌ها انتخاب و پیکربندی کند.
+3. سه خرابی (Authentication، Policy/Route، DNS/Split) را با شاهد رفع کند.
+4. آزمون منفی (کاربر غیرمجاز، سرویس غیرمجاز) را اجرا کند.
+5. گزارش و Rubric تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون عملی جامع: ساخت، تزریق عیب، Detection، پاسخ و مستندسازی. کلید پاسخ پس از تلاش خودتان.
+دورکاری یعنی در اصلی‌ترین ورودی شبکه را برای کاربران رها کرده‌اید. اگر رمز یک کاربر لو برود و MFA نباشد، مهاجم مستقیم در شبکه‌ی داخلی است. این آزمون سنجش می‌کند بتوانید دسترسی راه‌دور را هم کاربردی و هم امن بسازید و وقتی «وصل نمی‌شود» گفتند، علت را با شاهد پیدا کنید.
+
+نکته‌ی نسخه: SSL-VPN حالت Tunnel در FortiOS 7.0.3 وجود دارد ولی در 7.6.3 حذف شده است؛ برای طراحی جدید IPsec Dial-up (IKEv2) توصیه می‌شود. Needs-License برای FortiToken و FortiClient EMS.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-1. IPsec Dial-up IKEv2 با EAP-RADIUS+OTP برای گروه IT.
-2. Split tunnel برای 10.0.0.0/8 و DNS داخلی.
-3. Lockout، Source Restriction و Alert.
-4. عیب‌ها (توسط مربی): DNS Mode Config حذف؛ Policy Dialup→LAN با Source اشتباه؛ گواهی سرور منقضی.
-5. شبیه‌سازی Brute-force (Lab): ۲۰ رمز غلط.
-6. طرح مهاجرت SSL VPN→IPsec (مفهومی، ۸ مرحله).
+۱۲۰ کاربر دورکار. گروه‌ها: GRP-FIN (دسترسی فقط به 10.20.0.10:443 و 10.20.0.11:445)، GRP-IT (SSH به Mgmt). الزام: MFA، لاگ همه‌ی اتصال‌ها، Split Tunnel برای اینترنت عمومی، DNS داخلی برای دامنه‌ی corp.local.
 
-#### کلید پاسخ (خلاصه)
+#### ۲) طراحی
 
-- عیب DNS: nslookup داخلی شکست؛ رفع: `ipv4-dns-server1`.
-- عیب Policy: Debug Flow Denied؛ Source=Group.
-- عیب گواهی: Debug IKE AUTH_FAILED/Alert؛ تمدید/ایجاد گواهی.
-- Detection: Alert بر ۲۰ ناموفق؛ Block IP؛ بررسی عدم ورود موفق.
+| مورد | تصمیم |
+|---|---|
+| نوع | SSL-VPN Tunnel (7.0.3) یا IPsec Dial-up |
+| احراز هویت | LDAP/AD + FortiToken |
+| Tunnel IP Pool | 10.212.134.0/24 |
+| Split Tunnel | بله، فقط 10.20.0.0/16 و 10.99.0.0/24 |
+| DNS | 10.20.0.2 |
+| Policy | یک Policy برای هر گروه با مقصد حداقلی |
 
-#### Rubric
+``` text
+config vpn ssl settings
+ set servercert "Fortinet_Factory"
+ set tunnel-ip-pools "SSLVPN_TUNNEL_ADDR1"
+ set tunnel-ipv6-pools "SSLVPN_TUNNEL_IPv6_ADDR1"
+ set dns-server1 10.20.0.2
+ set port 10443
+ set source-interface "port1"
+ set default-portal "tunnel-access"
+end
+config firewall policy
+ edit 80
+  set name "SSLVPN-FIN"
+  set srcintf "ssl.root"
+  set dstintf "port3"
+  set srcaddr "all"
+  set dstaddr "SRV-FIN-WEB" "SRV-FIN-SMB"
+  set groups "GRP-FIN"
+  set action accept
+  set schedule "always"
+  set service "HTTPS" "SMB"
+  set logtraffic all
+ next
+end
+```
 
-ساخت ۲۵؛ عیب‌یابی ۳۰؛ Detection/پاسخ ۲۰؛ مهاجرت ۱۰؛ Evidence/صداقت ۱۵.
+(گواهی Factory برای Production نامناسب است؛ گواهی معتبر. پارامترها `Unverified`؛ در 7.0.3 با CLI help تأیید شود.)
+
+#### ۳) خرابی‌ها و کلید
+
+**A: Authentication.** کاربر «Login failed». شاهد: Event Log: `ssl-login-fail` با reason. علل: LDAP Bind، رمز، عضویت گروه، یا FortiToken. رفع: `diagnose test authserver ldap AD user pass` (Unverified) و اصلاح گروه.
+
+**B: Policy/Route.** وصل می‌شود ولی به 10.20.0.10 نمی‌رسد. شاهد: Debug flow `no matching policy`/Denied. علت: Policy فاقد گروه یا dst نادرست. رفع: Policy.
+
+**C: DNS/Split.** با IP می‌رسد و با نام نه. علت: DNS Server به کلاینت نمی‌رسد یا Split-DNS. رفع: `set dns-server1` و Policy UDP 53 به DNS.
+
+**آزمون منفی:** کاربر GRP-FIN به SSH Mgmt وصل نمی‌شود؛ Log deny با policyid.
+
+#### ۴) Verification
+
+``` text
+get vpn ssl monitor
+diagnose debug application sslvpn -1
+diagnose debug enable
+diagnose firewall iprope lookup 10.212.134.5 40000 10.20.0.10 443 tcp ssl.root
+```
+
+#### ۵) Rubric
+
+طراحی ۱۵، پیکربندی ۲۵، تشخیص سه خرابی ۳۰، آزمون منفی ۱۵، Evidence و صداقت ۱۵. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| SSL-VPN یا IPsec Dial-up | طراحی جدید: IPsec |
+| Split Tunnel | با EDR |
+| MFA | اجباری |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** اتصال موفق با MFA.
+**ساده (حل‌شده):** کاربر FIN با MFA وصل می‌شود؛ `get vpn ssl monitor` نشان می‌دهد Tunnel IP 10.212.134.5؛ HTTPS به 10.20.0.10 باز می‌شود.
 
-**متوسط:** رفع DNS و Policy.
+**متوسط (خرابی B):** وصل است ولی به سرور نمی‌رسد. مراحل: ۱) Lookup برای 10.212.134.5→10.20.0.10:443 ⇒ policy 0. ۲) Policy گروه GRP-FIN نیست یا dstaddr اشتباه. ۳) تصحیح. ۴) آزمون: Allowed و Hit افزایش. پاسخ: Policy ناقص.
 
-**سخت:** کشف Brute-force، پاسخ و PIR.
+**سخت (Split Tunnel و نشت):** کاربر می‌گوید «اینترنت کند شد». بررسی: Full Tunnel فعال بود و ترافیک اینترنت از فایروال می‌رفت. راه: Split Tunnel با Routing Address 10.20.0.0/16؛ ریسک: ترافیک اینترنت کاربر محافظت نمی‌شود؛ جبران: FortiClient/EDR (Needs-License) و DNS امن. آزمون: traceroute به 8.8.8.8 از کلاینت مستقیم؛ به 10.20.0.10 از Tunnel.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. VPN → SSL-VPN Settings: Port، Cert، Tunnel pool، DNS.
+2. VPN → SSL-VPN Portals: Split Tunneling و Routing Address.
+3. User & Device: LDAP و FortiToken و گروه.
+4. Policy: Source ssl.root و Group.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get vpn ssl monitor
+diagnose debug application sslvpn -1
+diagnose debug enable
+diagnose debug disable
+diagnose firewall iprope lookup 10.212.134.5 40000 10.20.0.10 443 tcp ssl.root
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence Index RA؛ آزمون‌های مثبت/منفی.
+- ورود با MFA موفق.
+- دسترسی فقط به مقاصد مجاز.
+- Log هر اتصال.
+- آزمون منفی رد.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Alert نیامد | Syslog | آستانه/مسیر |
-| MFA پذیرفته نشد | NPS Log | Secret/Policy |
+| Login failed | Event log/LDAP | Bind/گروه/Token |
+| به سرور نمی‌رسد | Lookup | Policy گروه |
+| با نام نمی‌رسد | DNS | dns-server |
+| کند | Full tunnel | Split |
 
 ### ۱۰) نکات امنیتی
 
-- حمله فقط در Lab مجاز.
-- Secret در Evidence نیست.
+- MFA.
+- گواهی معتبر.
+- Least privilege.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- آزمون = ساخت + عیب + Detection + پاسخ + مهاجرت.
+- گروه+MFA+Policy حداقلی.
+- Split Tunnel با EDR.
+- آزمون منفی.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) چه مدارکی برای آزمون لازم است؟ *(پاسخ: 20-5-ت1)*
+**ت1.** (ساده) چرا MFA؟ *(پاسخ: 20-5-ت1)*
 
-**ت2.** (ساده) چرا شبیه‌سازی حمله فقط در Lab؟ *(پاسخ: 20-5-ت2)*
+**ت2.** (ساده) Split Tunnel چیست؟ *(پاسخ: 20-5-ت2)*
 
-**ت3.** (متوسط) عیب DNS را چگونه کشف و رفع می‌کنید؟ *(پاسخ: 20-5-ت3)*
+**ت3.** (متوسط) وصل است ولی به سرور نمی‌رسد؛ مراحل. *(پاسخ: 20-5-ت3)*
 
-**ت4.** (متوسط) عیب Policy: Source اشتباه؛ شواهد و رفع. *(پاسخ: 20-5-ت4)*
+**ت4.** (متوسط) چرا گواهی Factory مناسب نیست؟ *(پاسخ: 20-5-ت4)*
 
-**ت5.** (سخت) پس از ۲۰ رمز غلط، آیا ورود موفقی بود؟ چگونه ثابت می‌کنید؟ *(پاسخ: 20-5-ت5)*
+**ت5.** (سخت) Split Tunnel ریسک و جبران. *(پاسخ: 20-5-ت5)*
 
-**ت6.** (سخت، طراحی) مهاجرت SSL VPN→IPsec در ۸ مرحله. *(پاسخ: 20-5-ت6)*
+**ت6.** (سخت، طراحی) دو گروه با دسترسی متفاوت. *(پاسخ: 20-5-ت6)*
 
-**Q1.** Quick quiz (English): Why must an attack simulation be run only in an authorized lab? *(پاسخ: 20-5-Q1)*
+**Q1.** Quick quiz (English): Why is MFA recommended for remote access VPN? *(پاسخ: 20-5-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| RA | Remote Access | دسترسی راه‌دور |
-| PIR | Post-incident review | بازبینی پس از حادثه |
+| MFA | Multi-Factor Authentication | احراز چندعاملی |
+| EDR | Endpoint Detection and Response | تشخیص و پاسخ نقطه‌ی پایانی |
 
-- *Run attack simulations only in an authorized lab.* ← شبیه‌سازی حمله را فقط در Lab مجاز اجرا کنید.
+- *Remote access must use multi-factor authentication.* ← دسترسی راه‌دور باید از MFA استفاده کند.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** آزمون RA. **Evidence:** `03-ops/rca-ra.md`.
+**کارت Lab:** آزمون دسترسی راه‌دور (اجرا نشده). **Evidence:** `03-ops/g-remote.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۰-۱ تا ۲۰-۴
-- NIST SP 800-61
+- Fortinet FortiOS 7.0 Administration Guide: SSL VPN; IPsec dial-up
+- FortiOS 7.0 SSL VPN guide
 
 ## درس 20-7 — SSL VPN در برابر IPsec Remote Access: وضعیت نسخه‌ها، ریسک و مهاجرت
 
@@ -2371,19 +2453,22 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 ### پاسخ‌های بازنویسی عمیق درس 20-5
 
-**20-5-ت1** — Evidence Index با دستور/خروجی/زمان برای هر نیاز، PIR و طرح مهاجرت.
 
-**20-5-ت2** — چون حمله‌ی واقعی بدون مجوز غیرقانونی است و می‌تواند سرویس تولید را مختل کند.
+### پاسخ‌های بازنویسی عمیق درس 20-5
 
-**20-5-ت3** — اتصال برقرار و ping به IP موفق ولی نام شکست؛ nslookup با DNS داخلی؛ رفع: DNS در Mode Config؛ تأیید resolve.
+**20-5-ت1** — رمز لو رفته بدون عامل دوم دسترسی نمی‌دهد.
 
-**20-5-ت4** — Debug Flow: Denied policy 0 یا Policy اشتباه؛ تغییر Source به گروه صحیح؛ آزمون مثبت/منفی.
+**20-5-ت2** — فقط ترافیک شبکه‌ی سازمان از Tunnel می‌رود و بقیه مستقیم.
 
-**20-5-ت5** — Log Event: ورود موفق همان کاربر/IP پس از ناموفق‌ها؛ در نبود آن «نفوذ دیده نشد»؛ Session Monitor؛ ثبت.
+**20-5-ت3** — Policy Lookup، گروه، dstaddr، Route/Tunnel IP.
 
-**20-5-ت6** — فهرست کاربران/Portal، IPsec آزمایشی، Split/DNS، MFA، آموزش، Backup، خاموش SSL VPN، آزمون منفی (پورت SSL VPN بسته).
+**20-5-ت4** — عمومی/نامعتبر و هشدار مرورگر و ریسک MITM.
 
-**20-5-Q1** — Because unauthorized attacks are illegal and may disrupt production services.
+**20-5-ت5** — ترافیک اینترنت بی‌حفاظت؛ EDR/DNS امن/FortiClient.
+
+**20-5-ت6** — دو Policy، دو گروه، مقاصد حداقلی، آزمون منفی متقابل.
+
+**20-5-Q1** — Because stolen passwords alone would not allow access without the second factor.
 
 ### پاسخ‌های درس افزوده‌ی 20-7 (فصل 20)
 

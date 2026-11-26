@@ -1579,116 +1579,143 @@ Policy drift check: diff(config firewall policy FW1, FW2) after each change wind
 
 <a id="l-23-4"></a>
 
-## درس 23-4 — آزمون معماری ۵: چندفایروالی و Asymmetric — صورت مسئله، کلید پاسخ و Rubric
+## درس 23-4 — آزمون معماری ۵: چندفایروالی و مسیر نامتقارن — صورت مسئله، کلید پاسخ و Rubric
 
-**فصل 23 · بازنویسی عمیق · پیش‌نیاز: ۲۳-۰ تا ۲۳-۳ · ≈ 8 ساعت**
+**فصل 23 · بازنویسی عمیق · پیش‌نیاز: ۲۳-۱ تا ۲۳-۳، ۱۰-۶ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. توپولوژی دو‌فایروالی با مسیر نامتقارن را بسازد و Drop را بازتولید کند.
-2. با Sniffer/Debug Flow/Session علت را اثبات کند.
-3. دو راه‌حل (Policy Route و متقارن‌سازی) را پیاده و مقایسه کند.
-4. RCA و Evidence را تحویل دهد.
+1. معماری سه‌فایروالی (Edge، Internal، DR) را با جدول مسیر طراحی کند.
+2. Asymmetric را تشخیص و با Capture دو سمتی اثبات کند.
+3. راه‌حل‌ها (Symmetric design، Session sync، PBR) را مقایسه و انتخاب کند.
+4. Failover بین فایروال‌ها را آزمون کند.
+5. گزارش و Rubric تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون عملی با تمرکز بر شواهد؛ کلید پاسخ پس از تلاش.
+با رشد سازمان یک مسیر دوم و فایروال دوم اضافه می‌شود. اگر مسیرها طراحی نشوند، بسته‌ی رفت از فایروال ۱ می‌رود و پاسخ از ۲ برمی‌گردد و Stateful آن را Drop می‌کند. معماری ۵ همین مسئله را در مقیاس چندفایروالی می‌سنجد.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-دو فایروال FW-A و FW-B با دو ISP؛ کلاینت 10.1.4.10 و سرور 203.0.113.80. مسیر برگشت به‌صورت عمدی نامتقارن (Route Upstream).
+سایت اصلی دو فایروال (FW1، FW2) پشت دو ISP؛ سایت DR یک فایروال. شبکه‌ی داخلی 10.0.0.0/8 با OSPF. نیاز: خروج اینترنت از FW1 (ISP-A) و FW2 (ISP-B)؛ هر Session باید Symmetric باشد؛ خرابی یک فایروال بدون قطع طولانی.
 
-1. بازتولید: اتصال TCP 443 ناموفق.
-2. اثبات علت: Sniffer دو فایروال، `session list`، Debug Flow.
-3. رفع: ابتدا Policy Route؛ سپس طراحی متقارن (Route برگشت).
-4. آزمون: ۲۰ اتصال موفق؛ آزمون منفی RPF.
-5. گزارش: RCA و Evidence Index.
+#### ۲) طراحی مرجع
 
-#### کلید پاسخ (خلاصه)
+| مسئله | تصمیم |
+|---|---|
+| تقسیم ترافیک | بر اساس Source: Users→FW1، Servers→FW2 (PBR/Policy Route) |
+| Return Path | NAT مبدأ در هر فایروال با IP خودش؛ برگشت خودکار از همان |
+| Failover | OSPF Default از هر دو با Cost متفاوت؛ BFD |
+| Asymmetric | آزمون Capture؛ Session sync فقط برای HA جفت |
 
-- Sniffer: A دارد SYN، B دارد SYN/ACK؛ session فقط در A.
-- Debug Flow B: reverse path check fail.
-- رفع ۱: Policy Route/SNAT؛ ریسک: Log مبهم.
-- رفع ۲ (ترجیحی): Route برگشت متقارن.
-- نتیجه: ۲۰/۲۰؛ آزمون منفی: بسته‌ی جعلی با Source نامعتبر Drop.
+``` text
+FW1 default originate cost 10 ; FW2 default originate cost 20
+Users 10.10.0.0/16 -> FW1 (PBR) ; Servers 10.20.0.0/16 -> FW2 (PBR)
+```
 
-#### Rubric
+#### ۳) خرابی‌ها و کلید
 
-بازتولید ۱۵؛ اثبات علت ۳۰؛ رفع و آزمون ۳۰؛ RCA/Evidence ۱۵؛ صداقت ۱۰.
+**A:** برخی Sessionها قطع. شاهد: Capture FW1 فقط SYN؛ FW2 فقط SYN-ACK. علت: Hash ECMP بین دو Default. رفع: PBR و Cost.
+
+**B:** پس از Failover FW1 همه‌ی Sessionها ریست. علت: Session sync نیست (فایروال‌ها Cluster نیستند). پذیرش: ریست قابل‌قبول؛ برای حساس‌ها FGCP A-P.
+
+**C:** ترافیک DR از مسیر اصلی می‌رود. علت: Cost OSPF. رفع: Policy Route و Cost.
+
+#### ۴) آزمون
+
+``` text
+diagnose sniffer packet any 'host 10.10.0.5 and tcp port 443' 4 20 l   (on FW1 and FW2)
+diagnose sys session list
+get router info routing-table all
+```
+
+#### ۵) Rubric
+
+طراحی ۲۰، جدول مسیر ۲۰، تشخیص ۳۰، Failover ۱۵، گزارش و صداقت ۱۵. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| تقسیم | Source-based |
+| Failover | BFD+OSPF |
+| Session sync | فقط جفت HA |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** بازتولید Drop.
+**ساده (حل‌شده):** Users از FW1: Session در FW1 با SNAT IP-A؛ برگشت همان؛ FW2 Session ندارد.
 
-**متوسط:** اثبات با سه شاهد.
+**متوسط (Asymmetric):** Capture: FW1 SYN، FW2 SYN-ACK. رفع: PBR Users→FW1 و OSPF Cost؛ Capture بعدی روی FW1 هر دو جهت.
 
-**سخت:** دو راه‌حل و مقایسه.
+**سخت (Failover):** FW1 خاموش: Users باید به FW2 بروند. مراحل: BFD تشخیص ۳ ثانیه؛ OSPF Default از FW2؛ Sessionهای فعال ریست؛ Sessionهای جدید از FW2؛ معیار: بازگشت سرویس < 10 ثانیه. ریسک: SNAT IP-B؛ لیست‌های مجاز مقصد باید IP-B را هم بپذیرند.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
-diagnose sniffer packet any "host 203.0.113.80 and port 443" 4 20 l
+get router info routing-table all
 diagnose sys session list
-diagnose debug flow filter addr 203.0.113.80
-diagnose debug flow trace start 20
+diagnose firewall proute list
 ```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence Index A5؛ ۲۰ اتصال؛ آزمون منفی.
+- Capture Symmetric.
+- Failover < 10 s.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| اثبات ناقص | Sniffer یک‌طرفه | دو نقطه |
-| رفع ناپایدار | Session | Clear/Hash |
+| Session قطع | Capture | PBR |
+| DR از مسیر اصلی | Cost | Policy Route |
 
 ### ۱۰) نکات امنیتی
 
-- آزمون فقط Lab.
+- SNAT دو IP را در لیست مجاز ثبت کنید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- آزمون: بازتولید، اثبات، رفع، RCA.
+- Symmetric با طراحی.
+- Failover BFD.
+- Capture اثبات.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) سه شاهد اثبات Asymmetric؟ *(پاسخ: 23-4-ت1)*
+**ت1.** (ساده) چرا Source-based؟ *(پاسخ: 23-4-ت1)*
 
-**ت2.** (ساده) چرا آزمون منفی RPF لازم است؟ *(پاسخ: 23-4-ت2)*
+**ت2.** (ساده) BFD چه می‌کند؟ *(پاسخ: 23-4-ت2)*
 
-**ت3.** (متوسط) مقایسه‌ی Policy Route و Route متقارن. *(پاسخ: 23-4-ت3)*
+**ت3.** (متوسط) علت قطع Session پس از Failover؟ *(پاسخ: 23-4-ت3)*
 
-**ت4.** (متوسط) چرا ۲۰ اتصال و نه ۱؟ *(پاسخ: 23-4-ت4)*
+**ت4.** (متوسط) SNAT دوم چه ریسکی دارد؟ *(پاسخ: 23-4-ت4)*
 
-**ت5.** (سخت) RCA را بنویسید. *(پاسخ: 23-4-ت5)*
+**ت5.** (سخت) Capture دو سمتی. *(پاسخ: 23-4-ت5)*
 
-**ت6.** (سخت، طراحی) برنامه‌ی پیشگیری از تکرار. *(پاسخ: 23-4-ت6)*
+**ت6.** (سخت، طراحی) سه‌فایروالی. *(پاسخ: 23-4-ت6)*
 
-**Q1.** Quick quiz (English): Which command output proves that only one firewall owns the session? *(پاسخ: 23-4-Q1)*
+**Q1.** Quick quiz (English): How can you prove asymmetric routing with captures? *(پاسخ: 23-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| A5 | Architecture 5 | معماری ۵ |
+| BFD | Bidirectional Forwarding Detection | تشخیص دوطرفه |
 
-- *Verify the fix with captures and a session list.* ← رفع را با Capture و session list تأیید کنید.
+- *Keep each session on one firewall.* ← هر Session را روی یک فایروال نگه دارید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** A5. **Evidence:** `03-ops/a5.md`.
+**کارت Lab:** معماری ۵ (اجرا نشده). **Evidence:** `03-ops/arch5.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۳-۱ تا ۲۳-۳
+- Fortinet FortiOS 7.0 Administration Guide: Routing; Session
 
 ## پاسخ‌های فصل 23
 
@@ -1748,19 +1775,22 @@ diagnose debug flow trace start 20
 
 ### پاسخ‌های بازنویسی عمیق درس 23-4
 
-**23-4-ت1** — Sniffer دو فایروال (SYN در یکی/SYN-ACK در دیگری)، session list فقط در یکی، Debug Flow RPF/Policy 0.
 
-**23-4-ت2** — تا نشان دهد بررسی ضدجعل هنوز فعال است و رفع آن را خنثی نکرده.
+### پاسخ‌های بازنویسی عمیق درس 23-4
 
-**23-4-ت3** — Policy Route سریع ولی بدهی (Log، پیچیدگی)؛ Route متقارن ریشه‌ای و ترجیحی.
+**23-4-ت1** — تا هر Session روی یک فایروال بماند.
 
-**23-4-ت4** — تا Hash/تصادفی بودن Asymmetric دیده شود؛ نتیجه‌ی ۲۰/۲۰ اطمینان می‌دهد.
+**23-4-ت2** — تشخیص سریع خرابی مسیر.
 
-**23-4-ت5** — علامت: TCP 443 ناموفق؛ شواهد: Sniffer/session/Debug؛ علت: Route برگشت Upstream به ISP2؛ رفع: Route/Policy Route؛ پیشگیری: چک‌لیست Route برگشت.
+**23-4-ت3** — Sync نیست.
 
-**23-4-ت6** — طراحی Route متقارن، Test Matrix دوره‌ای، Alert بر RPF Drop، Change Canary.
+**23-4-ت4** — لیست مجاز مقصد.
 
-**23-4-Q1** — The session list shows the session only on the firewall that saw the first packet.
+**23-4-ت5** — فیلتر Host روی هر دو.
+
+**23-4-ت6** — جدول.
+
+**23-4-Q1** — By capturing on both firewalls and showing each sees only one direction.
 
 ### پاسخ‌های درس افزوده‌ی 23-0 (فصل 23)
 
