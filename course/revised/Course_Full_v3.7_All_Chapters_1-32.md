@@ -53,7 +53,7 @@
 ---
 <a id="ch1"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.6):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲-۰ (فصل ۲). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.7):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲-۰ (فصل ۲). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 1 — زیرساخت Lab، کشف وضع موجود و تغییر ایمن
 
@@ -5144,7 +5144,7 @@ Symptom, Scope, Hypothesis, Test, Fix and Verify.
 
 <a id="ch4"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.6؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_02_Chapters_04-06.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۵-۰ و ۵-۷ (فصل ۵). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.7؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_02_Chapters_04-06.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۵-۰ و ۵-۷ (فصل ۵). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 4 — Switching II: STP، EtherChannel و امنیت L2
 
@@ -11077,7 +11077,7 @@ Lab A و سوییچ‌ها؛ OSPF؛ آماده‌بودن Image CSR/IOSv برا�
 
 <a id="ch7"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.6؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_03_Chapters_07-09.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۹-۰ و ۹-۷ (فصل ۹). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.7؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_03_Chapters_07-09.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۹-۰ و ۹-۷ (فصل ۹). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 7 — IP Services: DHCP، DNS، NTP، NAT، ACL، Syslog و QoS
 
@@ -16141,7 +16141,7 @@ BGP عملی روی دو vIOS؛ آماده‌بودن Image دوم برای ISP-
 
 > **نسخه‌ی اصلاح‌شده (v3.1، دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_04_Chapters_10-12.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۱۰-۸ و ۱۰-۹ (فصل ۱۰). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
 
-> **نسخه‌ی اصلاح‌شده (v3.6):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۰-۸، ۱۰-۹، ۱۱-۰، ۱۱-۷، ۱۲-۰، ۱۲-۸، ۱۲-۹ (دسته‌های B و A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.7):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۰-۸، ۱۰-۹، ۱۱-۰، ۱۱-۷، ۱۲-۰، ۱۲-۸، ۱۲-۹ (دسته‌های B و A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 10 — Redistribution، ECMP، PBR، VRF-lite و Asymmetric Routing
 
@@ -20991,7 +20991,7 @@ Console + بازگرداندن Route.
 
 <a id="ch13"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.6):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۳-۷، ۱۴-۷ (دسته A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.7):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۳-۷، ۱۴-۷ (دسته A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 13 — FortiGate II: Policy، Session، NAT، VIP، IP Pool و Central NAT (تک‌فایروالی کامل)
 
@@ -24739,7 +24739,7 @@ Lab معماری ۲ ساخته و Backup؛ لایسنس UTM (Needs-License) بر
 
 <a id="ch16"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.6):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۶-۰، ۱۶-۷، ۱۸-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.7):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۶-۰، ۱۶-۷، ۱۸-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 16 — UTM: آنتی‌ویروس، IPS، Application Control، Web Filter و SSL Inspection
 
@@ -28797,7 +28797,7 @@ Tunnel S2S پایدار و Backup؛ آشنایی با OSPF/BGP؛ برنامه‌
 
 <a id="ch19"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.6):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۰-۷، ۲۱-۷ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.7):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۰-۷، ۲۱-۷ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 19 — Hub-and-Spoke، OSPF/BGP روی FortiGate و Local Breakout
 
@@ -32289,7 +32289,7 @@ Dual-ISP پایدار؛ آشنایی با HA؛ لایسنس HA بررسی.
 
 <a id="ch22"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.6):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۲-۰، ۲۴-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.7):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۲-۰، ۲۴-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 22 — High Availability: FGCP، Session Sync و Failover
 
@@ -34843,7 +34843,7 @@ Backup همه‌ی Gateها؛ آشنایی با FortiManager/Analyzer (لایس�
 
 <a id="ch25"></a>
 
-> **نسخه v3.6:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.7:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 25 — Multi-Vendor: FortiGate در کنار Cisco CSR (معماری ۶)
 
@@ -35729,566 +35729,695 @@ end
 
 - Fortinet Docs: [Device Manager](https://docs.fortinet.com/document/fortimanager/7.0.0/administration-guide/478145/device-manager)، [Add FortiAnalyzer](https://docs.fortinet.com/document/fortimanager/7.0.0/administration-guide/654379/add-fortianalyzer)، [Installing policy packages](https://docs.fortinet.com/document/fortimanager/7.0.7/administration-guide/153046/installing-policy-packages-and-device-settings)، [config log syslogd setting](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/456620/config-log-syslogd-setting).
 
-## درس 26-1 — مفهوم FMG/FAZ و لایسنس
+## درس 26-1 — FMG و FAZ: نقش‌ها، معماری، ADOM، لایسنس و تصمیم «ابزار یا جایگزین» با تحلیل هزینه و ریسک
 
-**فصل 26 - روز 1 · پیش‌نیاز: فصل ۲۵ · ۶ ساعت**
+**فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۰، ۲۲-۰، ۲۷-۰ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 / FortiManager-FortiAnalyzer 7.0 (Needs-License؛ بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-نقش هر یک و محدودیت لایسنس.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۲۵
+1. نقش FortiManager (پیکربندی) و FortiAnalyzer (Log/Report) را از نظر معماری و جریان داده تفکیک کند.
+2. ADOM، Policy Package، Device Manager، Install و Revision را توضیح دهد.
+3. محدودیت‌های مستند (تداخل Log Forwarding با FAZ features، یک FAZ برای هر ADOM) را بگوید.
+4. برای سازمان‌های با اندازه‌ی مختلف تصمیم «FMG/FAZ یا جایگزین» را با معیار کمی بگیرد.
+5. ریسک مرکزی‌سازی (SPOF، هدف حمله) و کنترل آن را بنویسد.
+6. سند تصمیم معماری (ADR) تولید کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- FMG: Policy Package و Device Manager.
-- FAZ: Log/Report.
-- VM License.
-- Evaluation محدود.
-- طراحی بدون ابزار.
+وقتی تعداد فایروال‌ها از چند دستگاه بیشتر می‌شود، مدیریت دستی خطا، ناهمگونی و بی‌Audit می‌سازد. دو محصول مکمل وجود دارد: **FortiManager (FMG)** پیکربندی/Policy را مرکزی نگه می‌دارد و **FortiAnalyzer (FAZ)** Logها را جمع، نگه‌داری و تحلیل می‌کند. ولی این‌ها لایسنس و منابع می‌خواهند؛ و مرکزی‌سازی خود یک هدف حمله و نقطه‌ی شکست است. تصمیم «ابزار یا جایگزین» باید کمی و ریسک‌محور باشد.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-مدیریت ده فایروال از یک نقطه.
+#### ۱) جریان داده و نقش‌ها
 
-### ۵) مثال سازمانی
-
-سازمان: FMG برای Policy و FAZ برای Log.
-
-### ۶) تصویر و توپولوژی
-
-```text
-FGT×N -> FMG/FAZ
+``` text
+FortiGate x N  --(FGFM: config/policy install)-->  FortiManager (FMG)
+FortiGate x N  --(logs: OFTP/syslog)------------>  FortiAnalyzer (FAZ)
+FMG <--> FAZ   (FMG can manage FAZ; ADOM-aligned)
+Admins -> FMG (RBAC, ADOM scoped) ; Analysts -> FAZ (reports, event handlers)
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) مفاهیم FMG (طبق مستند 7.0)
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+- **Device Manager:** ثبت دستگاه/گروه، وضعیت Sync، تنظیمات مختص دستگاه.
+- **ADOM:** دامنه‌ی مدیریتی؛ جداسازی دستگاه‌ها/مدیران/Policy (چندمستأجر یا نسخه‌ی FortiOS).
+- **Policy Package:** Policy/Object قابل‌نصب روی یک یا چند دستگاه؛ Install Wizard: انتخاب Package، هدف و زمان‌بندی اختیاری؛ **Install Preview** تغییرات را قبل از اعمال نشان می‌دهد.
+- **Revision History:** نسخه‌ی تنظیمات؛ Revert.
+- **Template/Provisioning:** Interface/Routing/SD-WAN Template.
 
-#### روش گرافیکی (GUI)
+#### ۳) محدودیت‌ها (از مستند)
 
-1. Security Fabric > Fabric Connectors.
+- با ADOM فعال، **هر ADOM یک FAZ** را می‌پذیرد و نام ADOM باید در دو سو یکی باشد.
+- هنگام فعال بودن ویژگی‌های FAZ روی FMG، **Log Forwarding/Fetching/Aggregation پشتیبانی نمی‌شود**؛ افزودن FAZ، ویژگی‌های FAZ را خودکار فعال می‌کند و قابل‌غیرفعال‌شدن نیست.
+- ظرفیت دستگاه/لایسنس VM باید با مستند و قرارداد بررسی شود (`Unverified`).
 
-#### روش خط فرمان (CLI)
+#### ۴) تصمیم کمی
 
-```text
+``` text
+Operational cost of manual mgmt ~= N firewalls x changes per month x minutes per change x error rate x incident cost
+Tool cost = license + hosting + admin time
+```
+
+معیارها: تعداد دستگاه، فراوانی تغییر، تنوع Policy، الزام انطباق/Audit، مهارت تیم، بودجه.
+
+| وضعیت | پیشنهاد |
+|---|---|
+| ≤ ۳ فایروال، تغییر کم | Backup + Git + Syslog |
+| ۴ تا ۱۰، Policy مشابه | Ansible/API + Git؛ FMG اختیاری |
+| > ۱۰ یا چندمستأجر | FMG |
+| الزام Log/گزارش انطباق | FAZ یا SIEM |
+
+#### ۵) ریسک مرکزی‌سازی
+
+FMG/FAZ هدف ارزشمند (دسترسی به همه‌ی فایروال‌ها) و SPOF مدیریتی‌اند. کنترل: شبکه‌ی مدیریت جدا، HA/Backup، MFA، RBAC، Patch، Audit تغییرات، و برنامه‌ی «مدیریت بدون FMG» (Break-glass).
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| FMG لازم است؟ | بر اساس تعداد دستگاه/تغییر/چندمستأجر/Audit |
+| ADOM | مشتری/نسخه؛ نه صرفاً جغرافیا |
+| FAZ یا Syslog | الزام گزارش و ظرفیت Log |
+| Break-glass | دسترسی مستقیم اضطراری |
+| HA | برای FMG/FAZ تولید |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** سازمان با ۳ فایروال: نیاز اصلی Backup، Log و ثبت تغییر؛ تصمیم: rsyslog + Git + Backup روزانه؛ FMG توجیه ندارد. ثبت ADR با دلیل.
+
+**متوسط (تحلیل):** ۱۲ فایروال با ۲۰ تغییر Policy در ماه؛ خطای دستی ۳٪. تحلیل: ۲۴۰ تغییر/سال × ۳٪ ≈ ۷ خطا/سال؛ هر خطا ۲ ساعت قطع/رفع. FMG با Install Preview و Revert خطا را کم می‌کند؛ هزینه‌ی لایسنس را با هزینه‌ی ساعت‌های رفع مقایسه کنید. تصمیم: FMG یا Ansible+Git با Review.
+
+**سخت (معماری):** چهار مشتری مجزا با ۳۰ فایروال؛ الزام جداسازی مدیریتی و گزارش جدا. تحلیل: ADOM به ازای هر مشتری؛ هر ADOM یک FAZ (طبق مستند)؛ RBAC سطح ADOM؛ Policy Package پایه + Override؛ ریسک: FMG نقطه‌ی مرکزی؛ HA، Backup، شبکه‌ی OOB، MFA؛ Break-glass روی هر فایروال. معیار موفقیت: آزمون Revert و Install Preview در Lab.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. FMG: Device Manager → Add Device/Group.
+2. FMG: Policy & Objects → Policy Package → Install Wizard (Preview).
+3. FMG: System Settings → Administrators/ADOMs.
+4. FGT: Security Fabric → Fabric Connectors / System → Central Management.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+config system central-management
+    set type fortimanager
+    set fmg "192.168.90.30"
+end
 get system central-management
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `Unverified`.
+- ADR امضا‌شده.
+- در Lab: افزودن یک FGT، Install Preview، Revert.
+- برنامه‌ی Break-glass.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- جدول مقایسه با جایگزین.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | FMG در دسترس نیست |
-| شواهد/دستور | — |
-| علت | لایسنس |
-| رفع | جایگزین |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** FMG؟ *(پاسخ: 26-1-ت1)*
-
-**ت2.** FAZ؟ *(پاسخ: 26-1-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا جایگزین؟ *(پاسخ: 26-1-م1)*
-
-**م2.** سناریو: بدون FAZ؛ Log کجا؟ *(پاسخ: 26-1-م2)*
-
-**معیار تسلط:** مفهوم و جایگزین.
-
-**اشتباهات رایج:** لایسنس.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| FMG | FortiManager | مدیریت مرکزی | Fortinet |
-| FAZ | FortiAnalyzer | تحلیل Log | Fortinet |
-
-| English sentence | ترجمه |
-|---|---|
-| Plan a fallback when licenses are missing. | وقتی لایسنس نیست جایگزین برنامه‌ریزی کنید. |
-
-#### کارت Lab — درس 26-1
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | مقایسه |
-| 2 | پیش‌نیاز | فصل ۲۵ |
-| 3 | توپولوژی | — |
-| 4 | تجهیزات | — |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | جدول |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | FMG در دسترس نیست |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | سند |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `02-design/fmg-faz.md` |
-| 16 | Cleanup و بازگردانی | — |
+| دستگاه Out-of-sync | Device Manager وضعیت | Install/Retrieve Config |
+| FAZ اضافه نمی‌شود | نام ADOM/نسخه | هم‌نام‌کردن ADOM؛ سازگاری نسخه |
+| Log Forwarding کار نمی‌کند | تنظیمات FMG | تداخل با FAZ features (مستند) |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- شبکه‌ی OOB، MFA، RBAC، Audit.
+- Backup رمزشده و HA.
+- Patch فوری.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- FMG = پیکربندی؛ FAZ = Log.
+- ADOM، Policy Package، Install Preview، Revision.
+- محدودیت‌های مستند را بشناسید.
+- تصمیم بر پایه‌ی هزینه/ریسک.
+- مرکزی‌سازی = ریسک جدید.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) تفاوت FMG و FAZ؟ *(پاسخ: 26-1-ت1)*
+
+**ت2.** (ساده) ADOM چه کاری می‌کند؟ *(پاسخ: 26-1-ت2)*
+
+**ت3.** (متوسط) چرا Install Preview لازم است؟ *(پاسخ: 26-1-ت3)*
+
+**ت4.** (متوسط) دو محدودیت مستند FMG/FAZ؟ *(پاسخ: 26-1-ت4)*
+
+**ت5.** (سخت) ۱۲ فایروال و ۲۰ تغییر در ماه با ۳٪ خطا؛ هزینه‌ی خطا چقدر است و تصمیم؟ *(پاسخ: 26-1-ت5)*
+
+**ت6.** (سخت، طراحی) معماری برای ۴ مشتری ۳۰ فایروال. *(پاسخ: 26-1-ت6)*
+
+**Q1.** Quick quiz (English): Why is a central manager both a benefit and a risk? *(پاسخ: 26-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| FMG | FortiManager | مدیریت مرکزی |
+| FAZ | FortiAnalyzer | تحلیل Log |
+| ADOM | Administrative Domain | دامنه‌ی مدیریتی |
+| Break-glass | Break-glass access | دسترسی اضطراری |
+
+- *Preview changes before installing a policy package.* ← قبل از نصب Policy Package تغییرات را پیش‌نمایش کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** سند تصمیم FMG/FAZ. **وضعیت:** طراحی (Needs-License). **Evidence:** `02-design/fmg-faz.md`.
+
+### ۱۵) منابع
+
+- [Device Manager](https://docs.fortinet.com/document/fortimanager/7.0.0/administration-guide/478145/device-manager)
+- [Add FortiAnalyzer](https://docs.fortinet.com/document/fortimanager/7.0.0/administration-guide/654379/add-fortianalyzer)
+- [Installing policy packages](https://docs.fortinet.com/document/fortimanager/7.0.7/administration-guide/153046/installing-policy-packages-and-device-settings)
 
 <a id="l-26-2"></a>
 
-## درس 26-2 — Syslog مرکزی (جایگزین FAZ)
+## درس 26-2 — Syslog مرکزی (جایگزین FAZ): FortiGate → rsyslog با TCP/TLS، قالب، Parse، Retention و آزمون
 
-**فصل 26 - روز 2 · پیش‌نیاز: درس ۲۶-۰ · ۶ ساعت**
+**فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۰، ۲۶-۱، ۲۷-۰ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 / FortiManager-FortiAnalyzer 7.0 (Needs-License؛ بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-ارسال Log به rsyslog.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۶-۰
+1. Syslog reliable را روی FortiGate و rsyslog پیکربندی و آزمون کند.
+2. قالب (default/CSV/CEF/RFC5424)، Facility و `source-ip` را انتخاب کند.
+3. Parse فیلدهای Log (key=value) و ساخت فایل‌های ساختارمند را انجام دهد.
+4. Retention، چرخش، فضا و دسترسی را برنامه‌ریزی کند.
+5. از دست رفتن Log (UDP، قطع TCP) را تشخیص و مدیریت کند.
+6. Logهای حیاتی (Deny، Event، VPN) را مرتب و Alert بسازد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- `config log syslogd setting`.
-- rsyslog روی Linux.
-- فیلتر.
-- Retention.
-- تأیید دریافت.
+FAZ همه‌چیز نیست؛ برای Audit، Correlation و نگهداری Log، یک Syslog مرکزی خوب (rsyslog/Elastic/Zabbix) کافی و ارزان است. ولی «Syslog خوب» یعنی: انتقال مطمئن، قالب پایدار، زمان همگام، نگهداری مشخص و دسترسی کنترل‌شده.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-مدیریت ده فایروال از یک نقطه.
+#### ۱) پیکربندی FortiGate (طبق CLI Reference 7.0)
 
-### ۵) مثال سازمانی
-
-سازمان: FMG برای Policy و FAZ برای Log.
-
-### ۶) تصویر و توپولوژی
-
-```text
-FGT×N -> FMG/FAZ
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Log & Report > Log Settings > Syslog.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
 config log syslogd setting
     set status enable
     set server "192.168.90.20"
+    set mode reliable
     set port 514
+    set facility local7
+    set source-ip 192.168.90.1
+    set format rfc5424
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+- `mode`: udp / reliable / legacy-reliable؛ **reliable** برای Extended Logging لازم است (مستند Log Message Reference).
+- `format`: default، csv، cef، rfc5424.
+- `source-ip`: برای مسیر/ACL و یکتایی مبدأ.
+- TLS (در صورت پشتیبانی نسخه): `enc-algorithm` و گواهی (`Unverified`).
 
-- `Unverified`.
-- UDP 514.
+#### ۲) rsyslog (سرور)
 
-### ۸) تست عملکرد
+``` text
+module(load="imtcp")
+input(type="imtcp" port="514")
+template(name="FGT" type="string" string="/var/log/fgt/%fromhost-ip%/%$YEAR%-%$MONTH%-%$DAY%.log")
+if $fromhost-ip startswith '192.168.90.' then ?FGT
+& stop
+```
 
-- دریافت Log در rsyslog.
+چرخش: `logrotate` روزانه، فشرده‌سازی، حذف پس از N روز.
 
-### ۹) عیب‌یابی
+#### ۳) Parse
 
-| بخش | شرح |
+Logهای FortiOS به‌صورت `key=value` هستند:
+
+``` text
+date=2026-11-26 time=19:20:01 devname="FGT-A" type="traffic" subtype="forward" srcip=10.1.4.10 dstip=203.0.113.80 dstport=443 action="deny" policyid=0 service="HTTPS"
+```
+
+با `grep`/`awk` یا Logstash/Fluent Bit به JSON تبدیل و فیلدها را ایندکس کنید (`srcip`, `dstip`, `action`, `policyid`).
+
+#### ۴) اطمینان
+
+UDP ممکن است Log از دست بدهد؛ TCP reliable؛ **صف محلی** در FortiGate هنگام قطع سرور محدود است؛ پس سرور Syslog باید HA/Monitor داشته باشد. پایش «آخرین Log دریافتی» برای هر دستگاه Alert بدهد.
+
+#### ۵) ظرفیت
+
+``` text
+Daily volume ~= events/day x avg bytes/event    e.g. 8M x 450 B = 3.6 GB/day
+Storage = daily volume x retention days x compression factor
+```
+
+مثال: ۳٫۶ GB × ۱۸۰ روز = ۶۴۸ GB؛ با فشرده‌سازی ۱۰:۱ ≈ ۶۵ GB.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | Log نمی‌رسد |
-| شواهد/دستور | tcpdump |
-| علت | Port/Firewall |
-| رفع | اصلاح |
+| UDP یا TCP | TCP reliable (+TLS در صورت پشتیبانی) |
+| قالب | RFC5424/CEF برای ابزار |
+| Retention | محاسبه‌ی حجم×روز |
+| HA | دو مقصد/سرور |
+| زمان | NTP |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** Log Event «admin login» از FGT در `/var/log/fgt/192.168.90.1/…log` دیده می‌شود؛ `tcpdump -i eth0 port 514` TCP.
 
-**ت1.** Syslog؟ *(پاسخ: 26-2-ت1)*
+**متوسط (تحلیل):** Log نمی‌رسد: بررسی به ترتیب: Route/Local-out به 192.168.90.20؛ Firewall سرور TCP 514؛ `mode`/`port`؛ `source-ip`؛ `diagnose log test`. شواهد: Sniffer روی Interface خروجی FGT و tcpdump سرور. نمونه علت: Policy Local-out/ACL.
 
-**ت2.** Port؟ *(پاسخ: 26-2-ت2)*
+**سخت (از دست رفتن Log):** پس از قطع ۱۰ دقیقه‌ای سرور، Logهای آن بازه موجود نیست. تحلیل: صف محلی محدود؛ UDP؛ حل: reliable + سرور HA یا دو Syslog؛ Alert «بدون Log ۲ دقیقه»؛ برای رویدادهای حیاتی ذخیره‌ی محلی روی دیسک FGT با Retention. طراحی: دو مقصد (Primary/Secondary) و آزمون قطع.
 
-### ۱۱) مرور و ارزیابی
+### ۶) پیاده‌سازی از مسیر GUI
 
-**م1.** چرا مرکزی؟ *(پاسخ: 26-2-م1)*
+1. Log & Report → Log Settings → Remote Logging and Archiving → Send Logs to Syslog.
+2. Log & Report → Forward Traffic/Events برای بررسی.
 
-**م2.** سناریو: Log ناقص؛ علت؟ *(پاسخ: 26-2-م2)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-**معیار تسلط:** مفهوم و جایگزین.
+``` text
+config log syslogd setting
+    set status enable
+    set server "192.168.90.20"
+    set mode reliable
+    set port 514
+    set format rfc5424
+end
+diagnose log test
+execute ping-options source 192.168.90.1
+execute ping 192.168.90.20
+```
 
-**اشتباهات رایج:** لایسنس.
+### ۸) Verification (اثبات صحت)
 
-### ۱۲) واژگان و English Corner
+- `tcpdump` روی سرور: TCP 514 از FGT.
+- فایل Log روزانه با رویداد آزمایشی.
+- Alert «بدون Log».
+- آزمون قطع/وصل سرور و اندازه‌گیری Loss.
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Syslog | Syslog | پروتکل Log | Linux |
+### ۹) Troubleshooting
 
-| English sentence | ترجمه |
-|---|---|
-| Centralize logs for analysis. | برای تحلیل Log را مرکزی کنید. |
-
-#### کارت Lab — درس 26-2
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Syslog |
-| 2 | پیش‌نیاز | درس ۲۶-۰ |
-| 3 | توپولوژی | FGT+Linux |
-| 4 | تجهیزات | FGT+Linux |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | 192.168.90.20 |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Syslog |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | tail |
-| 11 | سناریوی خرابی | Log نمی‌رسد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Log رسید |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/syslog.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| Log نمی‌رسد | Sniffer/tcpdump | Route/Firewall/mode/port |
+| Log ناقص | شمارش | UDP/قطع |
+| فیلدها Parse نمی‌شوند | فرمت | format/Parser |
+| دیسک پر | df | Retention/Rotate |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- TLS/شبکه‌ی مدیریت.
+- دسترسی خواندنی Log محدود.
+- Log تغییرناپذیر برای حادثه.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- reliable + قالب پایدار.
+- Parse key=value.
+- Retention محاسبه‌شده.
+- Alert «بدون Log».
+- HA برای Syslog.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا `mode reliable`؟ *(پاسخ: 26-2-ت1)*
+
+**ت2.** (ساده) `source-ip` چه کمکی می‌کند؟ *(پاسخ: 26-2-ت2)*
+
+**ت3.** (متوسط) حجم 8M رویداد در روز با 450 B و Retention 90 روز چقدر است؟ *(پاسخ: 26-2-ت3)*
+
+**ت4.** (متوسط) Log نمی‌رسد؛ سه آزمون به ترتیب. *(پاسخ: 26-2-ت4)*
+
+**ت5.** (سخت) قطع ۱۰ دقیقه‌ای سرور Logهای آن بازه را از بین برد؛ راه‌حل. *(پاسخ: 26-2-ت5)*
+
+**ت6.** (سخت، طراحی) معماری Log برای ۱۰ فایروال با ۱۸۰ روز Retention. *(پاسخ: 26-2-ت6)*
+
+**Q1.** Quick quiz (English): Why is UDP syslog unsuitable for critical firewall logs? *(پاسخ: 26-2-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| rsyslog | rsyslog | سرویس Syslog لینوکس |
+| RFC5424 | Syslog protocol format | قالب استاندارد Syslog |
+| CEF | Common Event Format | قالب رویداد مشترک |
+
+- *Alert when a device stops sending logs.* ← وقتی دستگاه Log نمی‌فرستد هشدار بدهید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Syslog. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/syslog.md`.
+
+### ۱۵) منابع
+
+- [config log syslogd setting](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/456620/config-log-syslogd-setting)
+- RFC 5424
+- rsyslog documentation
 
 <a id="l-26-3"></a>
 
-## درس 26-3 — Backup خودکار و Config Management
+## درس 26-3 — Backup خودکار و مدیریت Config با Git: Sanitize، Diff، Audit، Restore و Drift
 
-**فصل 26 - روز 3 · پیش‌نیاز: درس ۲۶-۱ · ۶ ساعت**
+**فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۰، ۲۷-۷ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 / FortiManager-FortiAnalyzer 7.0 (Needs-License؛ بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-جایگزین FMG: Backup/Git.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۶-۱
+1. Backup دوره‌ای و ایمن (SFTP/SCP) را طراحی و اجرا کند.
+2. Sanitizer برای حذف Secret بنویسد و آزمون کند.
+3. Git (commit، diff، tag، branch) را برای Config به‌کار ببرد.
+4. Drift بین نسخه‌ی مرجع و دستگاه را کشف کند.
+5. Restore را در Lab اثبات و RTO را ثبت کند.
+6. Audit تغییرات (چه کسی/چه زمانی/چرا) را پیاده کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Backup دوره‌ای (TFTP/SCP).
-- Git برای Config.
-- مقایسه Diff.
-- Rotation.
-- بدون Secret در Git.
+Config مرجع حقیقت دستگاه است. سه خطای رایج: (۱) Backup نداریم، (۲) Backup داریم ولی Restore نشده، (۳) Backup در Git با Secret ذخیره شده. روش درست: Backup خودکار → Sanitize → Git → Diff/Audit → آزمون Restore.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-مدیریت ده فایروال از یک نقطه.
+#### ۱) جریان
 
-### ۵) مثال سازمانی
-
-سازمان: FMG برای Policy و FAZ برای Log.
-
-### ۶) تصویر و توپولوژی
-
-```text
-FGT×N -> FMG/FAZ
+``` text
+FGT --(execute backup config sftp)--> backup server (restricted)
+  -> sanitize (remove/tokenize secrets) -> git commit (author=system, message=ticket)
+  -> diff vs previous -> alert on unexpected change
+  -> periodic restore test in lab (same firmware)
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) Backup از FortiGate
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. System > Config > Backup.
-
-#### روش خط فرمان (CLI)
-
-```text
-execute backup config tftp fgt-daily.conf 192.168.90.10
+``` text
+execute backup config sftp fgt-A-daily.conf 192.168.90.10 backup-user <PASSWORD>
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+(روش دقیق و رمز: کاربر محدود، کلید SSH در صورت پشتیبانی؛ `Unverified`.) Backup شامل Hash/رمزهای رمزشده است؛ **حساس** حساب کنید.
 
-- `Unverified`.
-- Secretها را پاک کنید.
+#### ۳) Sanitize
 
-### ۸) تست عملکرد
+الگوها: `set password ENC ...`، `set psksecret ENC ...`، `set secret ...`، گواهی/کلید خصوصی. استراتژی: جایگزینی با `<REDACTED>` در نسخه‌ی Git، و نگهداری نسخه‌ی کامل رمزشده جداگانه (Vault).
 
-- Backup شبانه.
+``` text
+sed -E 's/(set (password|psksecret|secret|passwd) ).*/\1<REDACTED>/' fgt.conf > fgt.sanitized.conf
+```
 
-### ۹) عیب‌یابی
+#### ۴) Git
 
-| بخش | شرح |
+- Branch/Tag: `daily/YYYY-MM-DD`، Tag قبل از Change.
+- Diff روزانه: تغییرات ناشناس ⇒ Alert.
+- Pre-commit hook: اسکن Secret (جلوگیری از Commit).
+
+#### ۵) Drift
+
+Drift = تفاوت بین Config مرجع (Git) و دستگاه. Diff خودکار و اعلان؛ دلیل: تغییر مستقیم روی دستگاه بدون Ticket.
+
+#### ۶) Restore و RTO
+
+آزمون: Lab هم‌نسخه، Restore، مقایسه (`show full-configuration`)، اندازه‌گیری RTO. نسخه‌ی Firmware باید یکسان/سازگار باشد.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | Backup ناقص |
-| شواهد/دستور | فایل |
-| علت | Permission |
-| رفع | اصلاح |
+| مقصد Backup | سرور محدود+رمزنگاری |
+| Secret | Sanitize + Vault |
+| Retention | روزانه ۳۰، هفتگی ۱۲، ماهانه ۱۲ |
+| Restore test | فصلی |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** Backup شبانه با cron؛ Sanitize؛ `git commit`؛ `git log --stat` تغییرات.
 
-**ت1.** Diff؟ *(پاسخ: 26-3-ت1)*
+**متوسط (تحلیل):** Diff نشان می‌دهد Policy جدید ساعت ۲ بامداد اضافه شده بدون Ticket. بررسی: Log Event Admin؛ کاربر؛ مستند؛ در صورت نامجاز: Revert و تحقیق. درس: Audit و Alert Drift.
 
-**ت2.** Secret؟ *(پاسخ: 26-3-ت2)*
+**سخت (حادثه‌ی Secret):** Backup خام با PSK به مخزن Commit شد. اقدام: (۱) حذف از تاریخچه (git filter-repo/BFG) و Force-push با تأیید، (۲) چرخش همه‌ی رمزها/PSKها/توکن‌ها، (۳) بازبینی دسترسی به مخزن، (۴) افزودن Pre-commit و اسکن Secret، (۵) PIR. توجه: حذف از تاریخچه کافی نیست؛ فرض کنید افشا شده است ⇒ چرخش اعتبارنامه‌ها اجباری.
 
-### ۱۱) مرور و ارزیابی
+### ۷) پیاده‌سازی از مسیر CLI
 
-**م1.** چرا Git؟ *(پاسخ: 26-3-م1)*
+``` text
+execute backup config sftp fgt-A-daily.conf 192.168.90.10 backup-user <PASSWORD>
+# on backup server (shell)
+sed -E 's/(set (password|psksecret|secret|passwd) ).*/\1<REDACTED>/' fgt-A-daily.conf > fgt-A.sanitized.conf
+git add -A && git commit -m "fgt-A daily backup"
+git diff HEAD~1 -- fgt-A.sanitized.conf
+```
 
-**م2.** سناریو: رمز در Git؛ چه؟ *(پاسخ: 26-3-م2)*
+### ۸) Verification (اثبات صحت)
 
-**معیار تسلط:** مفهوم و جایگزین.
+- Diff روزانه تولید و بررسی.
+- Restore در Lab و RTO ثبت.
+- Pre-commit Secret scan آزمایشی (باید Block کند).
 
-**اشتباهات رایج:** لایسنس.
+### ۹) Troubleshooting
 
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Diff | Diff | تفاوت | Ops |
-
-| English sentence | ترجمه |
-|---|---|
-| Never commit secrets. | هرگز Secret را Commit نکنید. |
-
-#### کارت Lab — درس 26-3
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Backup |
-| 2 | پیش‌نیاز | درس ۲۶-۱ |
-| 3 | توپولوژی | FGT+Linux |
-| 4 | تجهیزات | FGT+Linux |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Backup |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | diff |
-| 11 | سناریوی خرابی | Backup ناقص |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | تفاوت |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/backup.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Backup خالی | لاگ/مجوز | دسترسی/مسیر |
+| Diff نویزی | Diff | Sanitize/ترتیب |
+| Restore ناسازگار | نسخه | Firmware برابر |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Secret هرگز در Git عمومی.
+- Backup رمزشده و دسترسی محدود.
+- چرخش رمز پس از افشا.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Backup خودکار + Sanitize + Git + Diff.
+- Drift و Audit.
+- Restore اثبات‌شده.
+- افشای Secret = چرخش رمز.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا Backup بدون Restore کافی نیست؟ *(پاسخ: 26-3-ت1)*
+
+**ت2.** (ساده) Drift یعنی چه؟ *(پاسخ: 26-3-ت2)*
+
+**ت3.** (متوسط) Sanitizer باید چه الگوهایی را پاک کند؟ *(پاسخ: 26-3-ت3)*
+
+**ت4.** (متوسط) چرا Tag قبل از Change؟ *(پاسخ: 26-3-ت4)*
+
+**ت5.** (سخت) Secret در Git Commit شد؛ مراحل اقدام. *(پاسخ: 26-3-ت5)*
+
+**ت6.** (سخت، طراحی) برنامه‌ی Backup/Restore با RTO هدف ۳۰ دقیقه. *(پاسخ: 26-3-ت6)*
+
+**Q1.** Quick quiz (English): Why is removing a secret from Git history not enough after it was committed? *(پاسخ: 26-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Drift | Configuration drift | انحراف پیکربندی |
+| Sanitize | Sanitize config | پاک‌سازی Secret |
+| RTO | Recovery Time Objective | زمان هدف بازیابی |
+
+- *Never commit secrets to a repository.* ← هرگز Secret را در مخزن Commit نکنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Backup/Git. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/backup.md`.
+
+### ۱۵) منابع
+
+- Git documentation
+- NIST SP 800-53 CM-2/CM-3
+- Fortinet Docs: Backup and restore (7.0)
 
 <a id="l-26-4"></a>
 
-## درس 26-4 — طراحی معماری ۹ و آزمون
+## درس 26-4 — طراحی معماری ۹ (مدیریت مرکزی و عملیات): RBAC، Change، Audit و آزمون با Rubric
 
-**فصل 26 - روز 4 · پیش‌نیاز: درس ۲۶-۲ · ۶ ساعت**
+**فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۱ تا ۲۶-۳ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 / FortiManager-FortiAnalyzer 7.0 (Needs-License؛ بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-طراحی مدیریت مرکزی.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۶-۲
+1. معماری مدیریت مرکزی (FMG یا جایگزین) را از نیازمندی تا طرح اجرایی تولید کند.
+2. RBAC (Super، Operator، Auditor، Read-only) و Separation of Duties را بنویسد.
+3. فرایند Change/Approval/Audit را با ابزار انتخابی هماهنگ کند.
+4. ریسک‌ها، Break-glass و DR را طراحی کند.
+5. طرح را ارائه و با Rubric ارزیابی کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- طراحی FMG/FAZ.
-- جایگزین.
-- RBAC.
-- Audit.
-- آزمون.
+آزمون طراحی معماری ۹: «چه ابزار، با چه نقش‌ها، چه فرایند و چه شواهد». کلید پاسخ پس از تلاش.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-مدیریت ده فایروال از یک نقطه.
+#### صورت مسئله
 
-### ۵) مثال سازمانی
+شرکت: HQ + ۱۲ شعبه، ۱۵ FortiGate، دو تیم (شبکه، امنیت)، Audit فصلی، بودجه محدود. نیازمندی‌ها:
+- R1: Policy یکسان و Audit تغییر.
+- R2: Log ۱۸۰ روزه و Alert.
+- R3: Backup/Restore و DR.
+- R4: جداسازی نقش‌ها.
+- R5: ریسک مرکزی‌سازی مدیریت.
 
-سازمان: FMG برای Policy و FAZ برای Log.
+#### خروجی‌ها
 
-### ۶) تصویر و توپولوژی
+ADR ابزار، نمودار، جدول RBAC، فرایند Change، برنامه‌ی Audit، Break-glass، آزمون Restore.
 
-```text
-FGT×N -> FMG/FAZ
-```
+#### کلید پاسخ (خلاصه‌ی مورد انتظار)
 
-### ۷) پیکربندی (GUI و CLI)
+- ابزار: FMG برای Policy مرکزی (۱۵ دستگاه) + Syslog/SIEM برای Log یا FAZ؛ جایگزین: Ansible+Git+rsyslog؛ تصمیم با هزینه/ریسک.
+- RBAC: Super (۲ نفر، MFA)، Operator (Policy در ADOM)، Auditor (Read-only)، Network (Interface/Routing).
+- Change: Ticket→Review→Install Preview→Window→Post-check→Close.
+- Audit: Revision diff ماهانه، Drift، Admin log.
+- Break-glass: حساب محلی با رمز Vault و MFA فیزیکی.
+- DR: HA/Backup رمزشده، آزمون فصلی.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### Rubric (۱۰۰)
 
-#### روش گرافیکی (GUI)
+ADR/تصمیم ۲۰؛ RBAC ۲۰؛ Change/Audit ۲۰؛ ریسک/DR ۲۰؛ شواهد ۱۰؛ صداقت (لایسنس/Unverified) ۱۰.
 
-1. System > Administrators.
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### روش خط فرمان (CLI)
+**ساده:** جدول RBAC چهارنقشه.
 
-```text
-get system admin
-```
+**متوسط:** فرایند Change با Preview.
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+**سخت:** ریسک مرکزی‌سازی و Break-glass.
 
-- خواندنی.
+### ۸) Verification (اثبات صحت)
 
-### ۸) تست عملکرد
+- سند A9.
+- آزمون Revert/Restore در Lab (در صورت لایسنس).
 
-- طرح A9.
+### ۹) Troubleshooting
 
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | دسترسی زیاد |
-| شواهد/دستور | admin list |
-| علت | Profile |
-| رفع | محدود |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** RBAC؟ *(پاسخ: 26-4-ت1)*
-
-**ت2.** Audit؟ *(پاسخ: 26-4-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا RBAC؟ *(پاسخ: 26-4-م1)*
-
-**م2.** سناریو: همه Admin؛ چه؟ *(پاسخ: 26-4-م2)*
-
-**معیار تسلط:** مفهوم و جایگزین.
-
-**اشتباهات رایج:** لایسنس.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| RBAC | Role-Based Access Control | دسترسی نقش‌محور | امنیت |
-
-| English sentence | ترجمه |
-|---|---|
-| Use role-based access. | از دسترسی نقش‌محور استفاده کنید. |
-
-#### کارت Lab — درس 26-4
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون A9 |
-| 2 | پیش‌نیاز | درس ۲۶-۲ |
-| 3 | توپولوژی | — |
-| 4 | تجهیزات | — |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | طراحی |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | دسترسی زیاد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | سند |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `02-design/a9.md` |
-| 16 | Cleanup و بازگردانی | — |
+| دسترسی بیش‌ازحد | RBAC | Least privilege |
+| Audit ناقص | Revision | Diff/Log |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- MFA Admin؛ Break-glass در Vault؛ OOB.
 
-<a id="ans-26"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- معماری = ابزار + نقش + فرایند + شواهد.
+- Separation of Duties.
+- ریسک مرکزی‌سازی را بپذیرید و کنترل کنید.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Separation of Duties چیست؟ *(پاسخ: 26-4-ت1)*
+
+**ت2.** (ساده) Break-glass برای چیست؟ *(پاسخ: 26-4-ت2)*
+
+**ت3.** (متوسط) چرا Auditor باید Read-only باشد؟ *(پاسخ: 26-4-ت3)*
+
+**ت4.** (متوسط) مراحل Change با FMG؟ *(پاسخ: 26-4-ت4)*
+
+**ت5.** (سخت) ریسک‌های مرکزی‌سازی را با کنترل‌ها بنویسید. *(پاسخ: 26-4-ت5)*
+
+**ت6.** (سخت، طراحی) طرح کامل برای ۱۵ فایروال. *(پاسخ: 26-4-ت6)*
+
+**Q1.** Quick quiz (English): Why is a break-glass account required in a centrally managed environment? *(پاسخ: 26-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| A9 | Architecture 9 | معماری ۹ |
+| SoD | Separation of Duties | تفکیک وظایف |
+| ADR | Architecture Decision Record | ثبت تصمیم معماری |
+
+- *Design central management with least privilege and audit trails.* ← مدیریت مرکزی را با حداقل دسترسی و ردپای Audit طراحی کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** A9. **وضعیت:** طراحی. **Evidence:** `02-design/a9.md`.
+
+### ۱۵) منابع
+
+- NIST SP 800-53 (AC، AU، CM)
+- درس‌های ۲۶-۱ تا ۲۶-۳
 
 ## پاسخ‌های فصل 26
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**26-1-ت1** — FMG؟
 
-مدیریت مرکزی.
+### پاسخ‌های بازنویسی عمیق درس 26-1
 
-**26-1-ت2** — FAZ؟
+**26-1-ت1** — FMG پیکربندی و Policy را مرکزی مدیریت و روی دستگاه‌ها Install می‌کند؛ FAZ Log را جمع و تحلیل و گزارش می‌دهد.
 
-Log.
+**26-1-ت2** — دستگاه‌ها، مدیران و Policyها را در دامنه‌های مدیریتی جدا نگه می‌دارد (مشتری/نسخه).
 
-**26-1-م1** — چرا جایگزین؟
+**26-1-ت3** — تا دیفِ تغییرات قبل از اعمال دیده شود و خطای گسترده روی چند دستگاه رخ ندهد.
 
-لایسنس.
+**26-1-ت4** — هر ADOM یک FAZ؛ و هنگام فعال بودن ویژگی‌های FAZ روی FMG، Log Forwarding/Fetching/Aggregation پشتیبانی نمی‌شود.
 
-**26-1-م2** — سناریو: بدون FAZ؛ Log کجا؟
+**26-1-ت5** — ۲۴۰ تغییر × ۳٪ ≈ ۷ خطا/سال؛ هر خطا مثلاً ۲ ساعت ⇒ ۱۴ ساعت قطع/رفع + اثر کسب‌وکار؛ با لایسنس/میزبانی FMG مقایسه کنید؛ اگر اثر کسب‌وکار بالا است FMG یا Ansible+Review توجیه دارد.
 
-rsyslog.
+**26-1-ت6** — ADOM برای هر مشتری؛ FAZ برای هر ADOM؛ RBAC؛ Policy Package پایه+Override؛ HA/Backup/OOB/MFA؛ Break-glass؛ آزمون Revert.
 
-**26-2-ت1** — Syslog؟
-
-ارسال Log.
-
-**26-2-ت2** — Port؟
-
-514.
-
-**26-2-م1** — چرا مرکزی؟
-
-تحلیل.
-
-**26-2-م2** — سناریو: Log ناقص؛ علت؟
-
-UDP loss.
-
-**26-3-ت1** — Diff؟
-
-تفاوت Config.
-
-**26-3-ت2** — Secret؟
-
-حذف.
-
-**26-3-م1** — چرا Git؟
-
-تاریخچه.
-
-**26-3-م2** — سناریو: رمز در Git؛ چه؟
-
-حذف و چرخش.
-
-**26-4-ت1** — RBAC؟
-
-نقش.
-
-**26-4-ت2** — Audit؟
-
-ثبت.
-
-**26-4-م1** — چرا RBAC؟
-
-حداقل دسترسی.
-
-**26-4-م2** — سناریو: همه Admin؛ چه؟
-
-Profile.
+**26-1-Q1** — It simplifies consistent management but becomes a high-value target and single point of failure.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 26-2
 
-<a id="ch27"></a>
+**26-2-ت1** — TCP؛ از دست رفتن Log کمتر و برای Extended Logging لازم است.
 
+**26-2-ت2** — مبدأ یکتا و قابل‌کنترل برای ACL/مسیر و شناسایی دستگاه در سرور.
+
+**26-2-ت3** — ≈ 3.6 GB/روز؛ ×90 ≈ 324 GB؛ با فشرده‌سازی 10:1 ≈ 32 GB.
+
+**26-2-ت4** — `execute ping` با source-ip، Sniffer روی Interface خروجی FGT، tcpdump روی سرور و بررسی Firewall سرور.
+
+**26-2-ت5** — reliable، دو مقصد/سرور HA، Alert بدون Log، ذخیره‌ی محلی Retention برای رویدادهای حیاتی، آزمون قطع.
+
+**26-2-ت6** — TCP reliable به دو سرور، rsyslog+Parser، ایندکس، حجم و فضا محاسبه، چرخش، Alert Loss، دسترسی RBAC.
+
+**26-2-Q1** — Because UDP does not guarantee delivery, so events can be lost during network or server problems.
+
+
+### پاسخ‌های بازنویسی عمیق درس 26-3
+
+**26-3-ت1** — چون نمی‌دانیم فایل کامل/سازگار است و RTO واقعی چقدر است.
+
+**26-3-ت2** — تفاوت پیکربندی واقعی دستگاه با نسخه‌ی مرجع در Git.
+
+**26-3-ت3** — `password`، `psksecret`، `secret`، `passwd`، گواهی/کلید خصوصی و توکن API.
+
+**26-3-ت4** — نقطه‌ی بازگشت مشخص برای Rollback و مقایسه.
+
+**26-3-ت5** — حذف از تاریخچه، چرخش همه‌ی اعتبارنامه‌ها، بازبینی دسترسی، Pre-commit scan، PIR؛ فرض افشا.
+
+**26-3-ت6** — Backup روزانه، Lab هم‌نسخه، Runbook Restore، آزمون فصلی، اندازه‌گیری RTO و اصلاح.
+
+**26-3-Q1** — Because it may already have been copied or exposed, so credentials must be rotated.
+
+
+### پاسخ‌های بازنویسی عمیق درس 26-4
+
+**26-4-ت1** — تفکیک نقش‌ها تا یک نفر هم درخواست‌دهنده و هم تأییدکننده/Auditor نباشد.
+
+**26-4-ت2** — دسترسی اضطراری وقتی ابزار مرکزی در دسترس نیست؛ با کنترل و Audit شدید.
+
+**26-4-ت3** — تا بتواند Audit کند بدون امکان تغییر و محو شواهد.
+
+**26-4-ت4** — Ticket، Review، Install Preview، Window، Install، Post-check، Close.
+
+**26-4-ت5** — هدف حمله/SPOF: OOB، MFA، RBAC، HA/Backup، Patch، Break-glass؛ خطای گسترده: Preview/Canary/Revert.
+
+**26-4-ت6** — ADR، RBAC جدول، Change/Audit، Log (FAZ/Syslog)، Backup/DR، آزمون‌ها و ریسک.
+
+**26-4-Q1** — So devices can still be managed if the central manager or its authentication is unavailable.
 
 ### پاسخ‌های درس افزوده‌ی 26-0 (فصل 26)
 
@@ -36447,619 +36576,765 @@ diagnose sys top 2 20
 
 - Fortinet Docs: [Sample logs by log type](https://docs.fortinet.com/document/fortigate/7.0.5/administration-guide/986892/sample-logs-by-log-type)، [config log syslogd setting](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/456620/config-log-syslogd-setting)؛ NIST SP 800-92 — Guide to Log Management.
 
-## درس 27-1 — Logging و Log Settings
+## درس 27-1 — Logging در FortiGate: انواع Log، سطح ثبت، Policy Logging، ذخیره‌ی محلی و طراحی حجم/Retention
 
-**فصل 27 - روز 1 · پیش‌نیاز: فصل ۲۶ · ۶ ساعت**
+**فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰، ۲۶-۲، ۱۴-۷ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ Log/Syslog از مستند 7.0؛ SNMPv3 و REST API روی 7.0.3 `Unverified`؛ Lab «اجرا نشده».
 
-چه چیزی Log شود و کجا.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۲۶
+1. Log انواع Traffic، Event و UTM و فیلدهای مهم هر کدام را بشناسد.
+2. `logtraffic` (all/utm/disable) و Policy Logging را با هدف انتخاب کند.
+3. Log Settings (Disk/Memory/FortiAnalyzer/Syslog) و رفتار هنگام پر شدن را بفهمد.
+4. حجم و Retention را محاسبه و طراحی کند.
+5. Log را برای عیب‌یابی و Detection فیلتر و تفسیر کند.
+6. Log Deny/Implicit deny و Local traffic را مدیریت کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Traffic/Event/UTM Log.
-- Disk/Memory.
-- Syslog.
-- Retention.
-- Privacy.
+Log سه کاربرد دارد: **عیب‌یابی** (چرا بسته Drop شد؟)، **امنیت** (چه حمله‌ای دیدیم؟)، **انطباق/Audit** (چه کسی چه کرد؟). «همه چیز را Log کن» هم حجم عظیم و هم نویز می‌سازد؛ «هیچ چیز» هم کورشدن. باید بر اساس هدف تصمیم گرفت.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کنترل سلامت فایروال.
+#### ۱) انواع Log (طبق مستند 7.0)
 
-### ۵) مثال سازمانی
+| نوع | محتوا | کاربرد |
+|---|---|---|
+| Traffic (forward/local) | Session: src/dst/port/action/policy | جریان، حادثه |
+| Event | Admin، System، VPN، HA، Router، User | Audit/تغییر |
+| Security (UTM) | virus، webfilter، dns، app-ctrl، ips، DLP | تهدید |
 
-سازمان: مانیتورینگ و Hardening استاندارد.
+طبق مستند نمونه‌ی Log: Log امنیتی نیاز دارد Policy دارای UTM باشد و `logtraffic` روی `utm` یا `all`.
 
-### ۶) تصویر و توپولوژی
+#### ۲) سطوح `logtraffic`
 
-```text
-FGT -> SNMP/Syslog -> Zabbix
+- `all`: همه‌ی Sessionها (Start/End) — حجم زیاد.
+- `utm`: فقط Sessionهای دارای رویداد UTM.
+- `disable`: هیچ.
+
+تصمیم: Policyهای Allow مهم (سرور حیاتی، مدیریت) `all`؛ Allow عمومی کاربران `utm`؛ Deny: Log فعال؛ Implicit deny (Policy 0) با تنظیم جدا Log (`Unverified`).
+
+#### ۳) فیلدهای کلیدی
+
+``` text
+date time devname type subtype level srcip srcintf dstip dstintf srcport dstport proto service action policyid sentbyte rcvdbyte duration
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+`action`: accept/deny/close/timeout؛ `policyid`: همبستگی با Policy؛ `sentbyte/rcvdbyte`: Exfiltration.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۴) مقصدها و رفتار پر شدن
 
-#### روش گرافیکی (GUI)
+Memory (کم، غیرپایدار)، Disk (محدود؛ Overwrite قدیمی‌ها)، FortiAnalyzer/Syslog (مرکزی). **ذخیره‌ی محلی را مرجع نگیرید.** رفتار دیسک پر: Overwrite/توقف؛ هشدار.
 
-1. Log & Report > Log Settings.
+#### ۵) حجم و Retention
 
-#### روش خط فرمان (CLI)
+``` text
+Daily volume = events/day x avg record size
+Retention storage = Daily volume x days x 1.2 (headroom)
+```
 
-```text
+مثال: ۵ میلیون Session × ۰٫۵ KB = ۲٫۵ GB/روز؛ ۹۰ روز = ۲۷۰ GB (+۲۰٪ = ۳۲۴ GB).
+
+#### ۶) خواندن Log برای عیب‌یابی
+
+``` text
+execute log filter category 0          (traffic)
+execute log filter field srcip 10.1.4.10
+execute log filter field dstport 443
+execute log display
+```
+
+(نام زیردستورها `Unverified`؛ GUI: Log & Report → Forward Traffic با فیلتر.)
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| logtraffic | بر اساس هدف: حیاتی all، عمومی utm، Deny فعال |
+| مقصد | Syslog مرکزی؛ Local کوتاه |
+| Retention | محاسبه و انطباق |
+| NTP | اجباری |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** کاربر به `10.20.30.7:1433` نمی‌رسد؛ Log Forward Traffic: `action=deny policyid=0` ⇒ Implicit deny؛ علت: Policy نیست. رفع: Policy؛ تأیید با Log `accept policyid=31`.
+
+**متوسط (محاسبه):** ۱۲ میلیون Session/روز، ۴۵۰ بایت/Session؛ Retention ۱۸۰ روز ⇒ ۵٫۴ GB/روز، ≈ ۹۷۲ GB؛ با فشرده‌سازی ۸:۱ ≈ ۱۲۱ GB؛ تصمیم: Syslog مرکزی و Local فقط ۷ روز.
+
+**سخت (تحلیل):** Log پر از نویز Allow وب است و حادثه‌ی نفوذ کشف نشد. تحلیل: `logtraffic all` روی Policy کاربران؛ تصمیم: `utm` برای Allow عمومی و `all` برای مدیریت/سرور؛ Deny همیشه؛ Correlation: `policyid`/`srcip`/Bytes؛ Alert روی Deny پورت‌های مدیریتی و حجم خروجی غیرعادی. نتیجه: Log کم‌حجم‌تر و معنادارتر.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Log & Report → Log Settings: Local logging، Disk، Remote.
+2. Policy & Objects → Firewall Policy → Logging Options (Log Allowed Traffic: All/Security Events).
+3. Log & Report → Forward Traffic / Events / AntiVirus / Web Filter.
+4. Dashboard → Log widgets.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+config firewall policy
+    edit 31
+        set logtraffic all
+    next
+end
 config log setting
     set local-in-allow enable
+    set local-in-deny-broadcast enable
 end
+execute log filter category 0
+execute log filter field policyid 31
+execute log display
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `Unverified`.
+- Log رویداد آزمایشی Allow/Deny.
+- حجم Log هفتگی اندازه‌گیری.
+- Retention محاسبه‌شده با مقدار واقعی.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- تنظیم Log.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Disk پر |
-| شواهد/دستور | get log |
-| علت | Retention |
-| رفع | تنظیم |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Traffic Log؟ *(پاسخ: 27-1-ت1)*
-
-**ت2.** Retention؟ *(پاسخ: 27-1-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Retention؟ *(پاسخ: 27-1-م1)*
-
-**م2.** سناریو: Log قدیمی نیست؛ علت؟ *(پاسخ: 27-1-م2)*
-
-**معیار تسلط:** Monitoring و Hardening.
-
-**اشتباهات رایج:** پیش‌فرض ناامن.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Log | Log | ثبت | FGT |
-
-| English sentence | ترجمه |
-|---|---|
-| Set a log retention policy. | سیاست نگهداری Log تعیین کنید. |
-
-#### کارت Lab — درس 27-1
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Log |
-| 2 | پیش‌نیاز | فصل ۲۶ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Log |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | Disk پر |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | تنظیم |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/log.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Log امنیتی نیست | Policy: utm-status/logtraffic | فعال‌سازی Profile و logtraffic |
+| Disk پر | Dashboard | Retention/Syslog |
+| Log زیاد | حجم | logtraffic all روی Allow عمومی |
+| زمان اشتباه | Log timestamp | NTP |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Log حاوی IP/User است؛ دسترسی و رمزنگاری انتقال.
+- Log را محو/حذف نکنید؛ Immutable.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- سه نوع Log و سه سطح logtraffic.
+- طراحی بر اساس هدف.
+- حجم=رویداد×اندازه×روز.
+- Local مرجع نیست.
+- NTP برای Correlation.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) سه نوع Log در FortiOS؟ *(پاسخ: 27-1-ت1)*
+
+**ت2.** (ساده) تفاوت `logtraffic all` و `utm`؟ *(پاسخ: 27-1-ت2)*
+
+**ت3.** (متوسط) محاسبه کنید: 12M Session، 450 B، 180 روز. *(پاسخ: 27-1-ت3)*
+
+**ت4.** (متوسط) چرا Deny باید Log شود؟ *(پاسخ: 27-1-ت4)*
+
+**ت5.** (سخت) نویز Log مانع کشف نفوذ شد؛ طرح اصلاح. *(پاسخ: 27-1-ت5)*
+
+**ت6.** (سخت، طراحی) استاندارد Logging سازمان را در ۸ بند بنویسید. *(پاسخ: 27-1-ت6)*
+
+**Q1.** Quick quiz (English): Why should the local firewall log not be the only copy of the logs? *(پاسخ: 27-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Forward traffic | Forward traffic log | Log ترافیک عبوری |
+| Implicit deny | Implicit deny policy | رد ضمنی |
+| Retention | Log retention | مدت نگهداری |
+
+- *Log denied traffic to detect scans.* ← Deny را برای کشف Scan Log کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Logging. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/log.md`.
+
+### ۱۵) منابع
+
+- [Sample logs by log type](https://docs.fortinet.com/document/fortigate/7.0.5/administration-guide/986892/sample-logs-by-log-type)
+- [Log message fields](https://docs.fortinet.com/document/fortigate/7.0.0/fortios-log-message-reference/357866/log-message-fields)
+- NIST SP 800-92
 
 <a id="l-27-2"></a>
 
-## درس 27-2 — SNMP و مانیتورینگ Zabbix
+## درس 27-2 — مانیتورینگ با SNMP و Zabbix: معیارها، Template، Trigger، Baseline و کاهش Alert نویزی
 
-**فصل 27 - روز 2 · پیش‌نیاز: درس ۲۷-۰ · ۶ ساعت**
+**فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰، ۲۷-۱ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ Log/Syslog از مستند 7.0؛ SNMPv3 و REST API روی 7.0.3 `Unverified`؛ Lab «اجرا نشده».
 
-پایش CPU/Memory/Interface.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۷-۰
+1. SNMPv3 را (در صورت پشتیبانی) ایمن فعال و Source را محدود کند.
+2. Host/Template در Zabbix بسازد و معیارهای کلیدی FortiGate را بگیرد.
+3. Trigger بر پایه‌ی Baseline و Hysteresis بنویسد.
+4. Alert نویزی و Flapping را کاهش دهد.
+5. Dashboard عملیاتی و SLA بسازد.
+6. مانیتورینگ HA/VPN/Interface/Session را پوشش دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- SNMPv3 ترجیح.
-- Community v2c فقط Lab.
-- Zabbix Template.
-- Trigger.
-- Dashboard.
+مانیتورینگ بدون آستانه‌ی معنادار فقط نمودار است. سه خطای رایج: SNMPv2c با Community ضعیف و باز، Triggerهای ثابت بدون Baseline، و Alertهای بی‌شمار که تیم را «کور» می‌کنند (Alert fatigue). هدف: **کم‌تر ولی دقیق‌تر**.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کنترل سلامت فایروال.
+#### ۱) SNMP
 
-### ۵) مثال سازمانی
+- **v2c:** Community متن آشکار؛ فقط Lab/شبکه‌ی مدیریت؛ Source محدود.
+- **v3:** `authPriv` (احراز + رمزنگاری)؛ کاربر جدا. روش دقیق فیلدها در 7.0.3 `Unverified`.
+- فعال‌سازی روی Interface مدیریتی (`allowaccess snmp`) و محدودسازی Host مجاز.
 
-سازمان: مانیتورینگ و Hardening استاندارد.
+#### ۲) معیارها (نمونه OID/موضوع)
 
-### ۶) تصویر و توپولوژی
+| معیار | موضوع | کاربرد |
+|---|---|---|
+| CPU/Memory | سلامت | ظرفیت |
+| Session count/CPS | بار | Exhaustion |
+| Interface in/out/error | لینک | کابل/ظرفیت |
+| HA status/Sync | دسترس‌پذیری | Failover |
+| VPN tunnel up/down | سرویس | قطع Tunnel |
+| Disk/Log | Log | از دست‌رفتن Log |
 
-```text
-FGT -> SNMP/Syslog -> Zabbix
+#### ۳) Trigger هوشمند
+
+``` text
+CPU high:     avg(5m) > baseline_p95 x 1.3  for 10m   (not instant spike)
+Interface err: delta(errors,10m) > 100  and  rate rising
+Session:      > 80% of max for 5m
+Tunnel down:  last(status)=down for 2 consecutive checks (avoid flap)
+Hysteresis:   recover when value < 0.9 x threshold
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۴) کاهش نویز
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+Dependency (اگر Tunnel Down، Alert سرویس‌های پشت آن را سرکوب کن)، Maintenance window، گروه‌بندی، شدت (Warning/High)، Escalation. معیار کیفیت Alert: درصد Alertهایی که اقدام لازم داشتند (Actionable rate).
 
-#### روش گرافیکی (GUI)
+#### ۵) SLA/Dashboard
 
-1. System > SNMP.
+Availability = uptime/total؛ نمودار روند CPU/Session، وضعیت Tunnelها، HA، Top Interface.
 
-#### روش خط فرمان (CLI)
+### ۴) طراحی و تصمیم‌گیری
 
-```text
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| SNMP نسخه | v3 در تولید |
+| Trigger | Baseline + Hysteresis |
+| Dependency | برای کاهش Storm |
+| Escalation | سطوح |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Host FGT با Template SNMP؛ `snmpwalk` پاسخ؛ نمودار CPU/Interface در Zabbix.
+
+**متوسط (تحلیل):** Trigger CPU>80٪ هر شب ساعت ۲ (Backup/Scan) Alert می‌دهد. تحلیل: الگوی عادی (Baseline)؛ راه: آستانه با ضریب Baseline و Maintenance window؛ نتیجه: Alert کاذب ≈ صفر.
+
+**سخت (طراحی):** ۱۰ فایروال، ۴۰ Tunnel؛ Alert Storm هنگام قطع ISP (۴۰ Alert). طراحی: Dependency (ISP down → سرکوب Tunnel/Session Alerts)، یک Alert مرکزی «ISP down site X» با Escalation، Trigger Flap با ۲ بررسی متوالی، و Dashboard سایت. معیار: ≤ ۳ Alert برای یک قطع.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. System → SNMP: SNMPv3 users/Communities (Source Hosts).
+2. Network → Interfaces → Administrative Access: SNMP روی Interface مدیریت.
+3. Zabbix: Configuration → Hosts → Templates → Triggers.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 config system snmp sysinfo
     set status enable
+    set description "FGT-A"
 end
-config system snmp user
-    edit "mon"
-        set security-level auth-priv
+config system interface
+    edit "mgmt"
+        set allowaccess ping https ssh snmp
     next
 end
+# from monitoring server
+snmpwalk -v3 -l authPriv -u <USER> -a SHA -A <AUTHPASS> -x AES -X <PRIVPASS> 192.168.90.1 1.3.6.1.2.1.1
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `Unverified`.
-- v2c ناامن.
+- snmpwalk موفق؛ داده در Zabbix.
+- Trigger آزمایشی (افزایش مصنوعی CPU در Lab).
+- Dependency: Alert Storm آزمون‌شده.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- Zabbix Host.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | SNMP timeout |
-| شواهد/دستور | snmpwalk |
-| علت | ACL |
-| رفع | allowaccess |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** SNMPv3؟ *(پاسخ: 27-2-ت1)*
-
-**ت2.** Template؟ *(پاسخ: 27-2-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا v3؟ *(پاسخ: 27-2-م1)*
-
-**م2.** سناریو: v2c باز؛ چه؟ *(پاسخ: 27-2-م2)*
-
-**معیار تسلط:** Monitoring و Hardening.
-
-**اشتباهات رایج:** پیش‌فرض ناامن.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| SNMP | Simple Network Management Protocol | مانیتورینگ | Ops |
-
-| English sentence | ترجمه |
-|---|---|
-| Prefer SNMPv3. | SNMPv3 را ترجیح دهید. |
-
-#### کارت Lab — درس 27-2
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | SNMP |
-| 2 | پیش‌نیاز | درس ۲۷-۰ |
-| 3 | توپولوژی | FGT+Zabbix |
-| 4 | تجهیزات | FGT+Zabbix |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | SNMP |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | snmpwalk |
-| 11 | سناریوی خرابی | SNMP timeout |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | داده |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/snmp.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| SNMP timeout | Firewall/allowaccess/Source | ACL/Interface |
+| Alert نویزی | Trigger | Baseline/Hysteresis |
+| داده ناقص | Template/OID | Template صحیح |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- v3 با Source محدود؛ v2c Community ساده ممنوع.
+- شبکه‌ی مدیریت.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- SNMPv3 + Source.
+- Trigger بر Baseline با Hysteresis.
+- Dependency و Maintenance window.
+- Actionable rate.
+- Dashboard/SLA.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا v3 بهتر از v2c است؟ *(پاسخ: 27-2-ت1)*
+
+**ت2.** (ساده) Hysteresis چیست؟ *(پاسخ: 27-2-ت2)*
+
+**ت3.** (متوسط) CPU>80٪ هر شب Alert می‌دهد؛ چگونه کاهش می‌دهید؟ *(پاسخ: 27-2-ت3)*
+
+**ت4.** (متوسط) Dependency در Zabbix چه می‌کند؟ *(پاسخ: 27-2-ت4)*
+
+**ت5.** (سخت) Alert Storm هنگام قطع ISP؛ طرح. *(پاسخ: 27-2-ت5)*
+
+**ت6.** (سخت، طراحی) ۶ Trigger کلیدی FortiGate با آستانه و دلیل. *(پاسخ: 27-2-ت6)*
+
+**Q1.** Quick quiz (English): What is alert fatigue and how can it be reduced? *(پاسخ: 27-2-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Baseline | Performance baseline | مرجع عادی |
+| Hysteresis | Hysteresis | تأخیر برگشت |
+| Actionable rate | Actionable alert rate | نسبت Alertهای نیازمند اقدام |
+
+- *Prefer SNMPv3 and restrict polling sources.* ← SNMPv3 را ترجیح دهید و منابع Poll را محدود کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** SNMP/Zabbix. **وضعیت:** اجرا نشده (`Unverified` برای v3). **Evidence:** `03-ops/snmp.md`.
+
+### ۱۵) منابع
+
+- Zabbix documentation (SNMP templates)
+- Fortinet Docs: SNMP (7.0)
+- NIST SP 800-137 (Continuous monitoring)
 
 <a id="l-27-3"></a>
 
-## درس 27-3 — REST API و Automation
+## درس 27-3 — REST API و Automation امن: احراز هویت، Trusted Host، GET/PUT، Idempotency، Rollback و آزمون
 
-**فصل 27 - روز 3 · پیش‌نیاز: درس ۲۷-۱ · ۶ ساعت**
+**فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۱، ۲۶-۳، ۲۷-۷ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ Log/Syslog از مستند 7.0؛ SNMPv3 و REST API روی 7.0.3 `Unverified`؛ Lab «اجرا نشده». مسیر دقیق Token/Endpoint 7.0.3 `Unverified`.
 
-خودکارسازی با API Token.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۷-۱
+1. اصول API امن (Token، Least Privilege، Trusted Host، TLS) را اجرا کند.
+2. فراخوانی‌های GET برای مانیتورینگ و PUT/POST برای تغییر کنترل‌شده بنویسد.
+3. Idempotency، Dry-run، Backup و Rollback را در Script اعمال کند.
+4. خطاهای HTTP (401/403/404/424) را تفسیر کند.
+5. Log/Audit تماس‌های API را بسازد.
+6. ریسک‌های Automation (تغییر گسترده، Token لو رفته) را مهار کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- API Admin با Token.
-- Trusthost.
-- GET وضعیت.
-- Postman/curl.
-- Token را ذخیره نکنید.
+Automation سرعت و تکرارپذیری می‌دهد و خطا را هم سریع و گسترده تکثیر می‌کند. اصل: **اول خواندن، بعد تغییر؛ هر تغییر با Backup و Rollback؛ هر Token با حداقل دسترسی و منبع محدود.**
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کنترل سلامت فایروال.
+#### ۱) اصول امنیتی
 
-### ۵) مثال سازمانی
-
-سازمان: مانیتورینگ و Hardening استاندارد.
-
-### ۶) تصویر و توپولوژی
-
-```text
-FGT -> SNMP/Syslog -> Zabbix
+``` text
+1 Dedicated API admin, minimal accprofile (read-only for monitoring)
+2 Trusted hosts: only the automation server IP
+3 HTTPS with valid cert (verify TLS; avoid -k in production)
+4 Token stored in a secret manager, never in repo/logs
+5 Rotate tokens; revoke on staff change
+6 Log every call (who/what/when)
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) الگوی فراخوانی (نمونه؛ مسیر دقیق `Unverified`)
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. System > Administrators > REST API Admin.
-
-#### روش خط فرمان (CLI)
-
-```text
-curl -k -H "Authorization: Bearer <API-TOKEN>" https://192.168.90.1/api/v2/monitor/system/status
+``` text
+GET  https://fgt/api/v2/monitor/system/status
+GET  https://fgt/api/v2/cmdb/firewall/policy
+PUT  https://fgt/api/v2/cmdb/firewall/policy/31     (change)
+Header: Authorization: Bearer <API-TOKEN>
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+#### ۳) Idempotency و Dry-run
 
-- Token نمونه؛ `Unverified`.
+Script باید «وضعیت مطلوب» را بیان کند، نه «دنباله‌ی دستور». قبل از تغییر: بخوان، مقایسه کن، فقط اگر تفاوت بود اعمال کن. Dry-run: فقط Diff چاپ شود.
 
-### ۸) تست عملکرد
+``` text
+desired = {policy 31: service HTTPS, action accept}
+current = GET policy 31
+if current != desired: backup(current); PUT desired; verify(GET); else: no-op
+```
 
-- GET وضعیت.
+#### ۴) خطاها
 
-### ۹) عیب‌یابی
+401 (Token/Trusthost)، 403 (Profile کم)، 404 (Object)، 424 (وابستگی/Reference)، 500. هرگز خطا را نادیده نگیرید؛ در Script Stop.
 
-| بخش | شرح |
+#### ۵) ریسک و کنترل
+
+تغییر گسترده با یک Script اشتباه: Canary (۱ دستگاه)، Review کد، Change، Rollback خودکار، Rate limit، Scope محدود.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | 401 |
-| شواهد/دستور | curl |
-| علت | Token/Trusthost |
-| رفع | اصلاح |
+| Read-only یا Write | Monitoring فقط Read |
+| Canary | یک دستگاه ابتدا |
+| Rollback | Backup+Revert |
+| TLS | تأیید گواهی |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** GET وضعیت سیستم با Token؛ خروجی JSON: version، hostname؛ ثبت در Log.
 
-**ت1.** Token؟ *(پاسخ: 27-3-ت1)*
+**متوسط (تحلیل):** 401 با Token درست: Trusthost IP سرور را شامل نمی‌شود؛ رفع: افزودن IP. یا Token لغو شده.
 
-**ت2.** Trusthost؟ *(پاسخ: 27-3-ت2)*
+**سخت (Idempotency):** Script هر اجرا یک Address جدید می‌ساخت و ۵۰ Object تکراری شد. تحلیل: عدم بررسی وجود؛ اصلاح: GET نام، مقایسه، PUT یا POST شرطی؛ تست دو بار اجرا ⇒ بدون تغییر؛ Dry-run و Backup قبل از تغییر.
 
-### ۱۱) مرور و ارزیابی
+### ۶) پیاده‌سازی از مسیر GUI
 
-**م1.** چرا Trusthost؟ *(پاسخ: 27-3-م1)*
+1. System → Administrators → Create New → REST API Admin (Profile، Trusted Hosts، توکن).
+2. Log & Report → Events → System برای Audit.
 
-**م2.** سناریو: 401؛ علت؟ *(پاسخ: 27-3-م2)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-**معیار تسلط:** Monitoring و Hardening.
+``` text
+config system api-user
+    edit "monitor-api"
+        set accprofile "readonly-api"
+        config trusthost
+            edit 1
+                set ipv4-trusthost 192.168.90.50 255.255.255.255
+            next
+        end
+    next
+end
+# from automation host (secrets from environment)
+curl --cacert fgt-ca.pem -H "Authorization: Bearer $FGT_TOKEN" https://192.168.90.1/api/v2/monitor/system/status
+```
 
-**اشتباهات رایج:** پیش‌فرض ناامن.
+### ۸) Verification (اثبات صحت)
 
-### ۱۲) واژگان و English Corner
+- GET موفق و JSON.
+- آزمون 401 با IP غیرمجاز (منفی).
+- اجرای دو‌بارهٔ Script بدون تغییر (Idempotent).
+- Log تماس‌ها.
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| API | Application Programming Interface | رابط برنامه‌نویسی | Automation |
+### ۹) Troubleshooting
 
-| English sentence | ترجمه |
-|---|---|
-| Restrict API tokens by trusted host. | Token API را با Trusthost محدود کنید. |
-
-#### کارت Lab — درس 27-3
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | API |
-| 2 | پیش‌نیاز | درس ۲۷-۱ |
-| 3 | توپولوژی | FGT+Linux |
-| 4 | تجهیزات | FGT+Linux |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | API |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | curl |
-| 11 | سناریوی خرابی | 401 |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | JSON |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/api.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| 401 | Trusthost/Token | تنظیم |
+| 403 | Profile | accprofile |
+| 424 | Reference | وابستگی |
+| Script تغییر زیاد | Dry-run | Scope/Canary |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Token در Vault؛ TLS verify.
+- Least privilege؛ Trusthost.
+- Review و Canary.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- اول بخوان بعد تغییر.
+- Idempotent + Dry-run + Backup.
+- Least privilege و Trusthost.
+- Canary و Rollback.
+- Audit تماس‌ها.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا Trusthost برای API؟ *(پاسخ: 27-3-ت1)*
+
+**ت2.** (ساده) Idempotent یعنی چه؟ *(پاسخ: 27-3-ت2)*
+
+**ت3.** (متوسط) 401 با Token درست؛ علل؟ *(پاسخ: 27-3-ت3)*
+
+**ت4.** (متوسط) Dry-run چه فایده‌ای دارد؟ *(پاسخ: 27-3-ت4)*
+
+**ت5.** (سخت) Script ۵۰ Object تکراری ساخت؛ تحلیل و اصلاح. *(پاسخ: 27-3-ت5)*
+
+**ت6.** (سخت، طراحی) طرح امن Automation برای مانیتورینگ و تغییر Policy. *(پاسخ: 27-3-ت6)*
+
+**Q1.** Quick quiz (English): Why should automation scripts support a dry-run mode? *(پاسخ: 27-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| API | Application Programming Interface | رابط برنامه‌نویسی |
+| Idempotent | Idempotent operation | عملیات تکرارپذیر بدون اثر اضافه |
+| Canary | Canary deployment | اعمال آزمایشی روی بخش کوچک |
+
+- *Never store API tokens in a repository.* ← هرگز توکن API را در مخزن ذخیره نکنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** API. **وضعیت:** اجرا نشده/Unverified. **Evidence:** `03-ops/api.md`.
+
+### ۱۵) منابع
+
+- Fortinet Docs: REST API / API user (7.0)
+- OWASP API Security Top 10
 
 <a id="l-27-4"></a>
 
-## درس 27-4 — Hardening و Backup/Restore
+## درس 27-4 — Hardening مدیریتی عملی و Backup/Restore: اجرای چک‌لیست، آزمون منفی و اثبات بازیابی
 
-**فصل 27 - روز 4 · پیش‌نیاز: درس ۲۷-۲ · ۶ ساعت**
+**فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۷، ۱۲-۸، ۲۶-۳ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ Log/Syslog از مستند 7.0؛ SNMPv3 و REST API روی 7.0.3 `Unverified`؛ Lab «اجرا نشده».
 
-تنظیمات ایمن و بازیابی.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۷-۲
+1. چک‌لیست Hardening را با دستور/GUI اجرا و برای هر مورد شاهد ثبت کند.
+2. آزمون‌های منفی (دسترسی غیرمجاز) را اجرا کند.
+3. Restore را در Lab اثبات و RTO ثبت کند.
+4. Audit/Change را با Hardening هماهنگ کند.
+5. انحراف (Drift) از استاندارد را بسنجد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Admin فقط Mgmt.
-- Timeout، Lockout.
-- غیرفعال HTTP/Telnet.
-- Backup و تست Restore.
-- Patch.
+Hardening بدون آزمون «تنظیمات تزئینی» است. هر کنترل باید با یک آزمون منفی ثابت شود: «از IP غیرمجاز ورود نمی‌شود»، «Telnet بسته است»، «بعد از ۳ تلاش قفل می‌شود».
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کنترل سلامت فایروال.
+#### ۱) چک‌لیست با آزمون
 
-### ۵) مثال سازمانی
+| کنترل | تنظیم | آزمون منفی |
+|---|---|---|
+| Admin حداقلی/Trusthost | `trusthost` | ورود از IP دیگر رد شود |
+| Telnet/HTTP | `allowaccess` بدون telnet/http | `nc` به 23/80 رد |
+| HTTPS/SSH | TLS/Cipher مناسب | اسکن Cipher ضعیف نداشته باشد |
+| MFA | RADIUS/Token | ورود با رمز تنها رد |
+| Lockout | `admin-lockout-*` | ۴ رمز غلط ⇒ قفل |
+| Timeout | `admintimeout` | بعد از 10 دقیقه Logout |
+| Local-in | Policy | پورت مدیریتی از WAN بسته (nmap) |
+| NTP | امن | زمان درست |
+| Patch | نسخه | مقایسه با PSIRT |
+| Log | Event Admin | تغییر تستی ثبت شود |
 
-سازمان: مانیتورینگ و Hardening استاندارد.
+#### ۲) آزمون‌ها (نمونه)
 
-### ۶) تصویر و توپولوژی
-
-```text
-FGT -> SNMP/Syslog -> Zabbix
+``` text
+nmap -Pn -p 22,23,80,443,8443 203.0.113.1      # from outside: expect filtered/closed
+ssh admin@192.168.90.1 (from non-trusted IP)    # expect refusal
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۳) Restore
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+``` text
+1 Backup (encrypted) 2 Lab FGT same firmware 3 Restore 4 Compare interfaces/policies/routes
+5 Measure RTO 6 Document gaps (certs/keys/licenses)
+```
 
-#### روش گرافیکی (GUI)
+نکته: گواهی/کلید خصوصی/لایسنس/FortiGuard معمولاً جداگانه بازیابی می‌شوند.
 
-1. System > Settings.
+#### ۴) Drift از استاندارد
 
-#### روش خط فرمان (CLI)
+اسکریپت مقایسه‌ی Config با «Baseline Hardening» (الگوهای مجاز) و گزارش انحراف ماهانه.
 
-```text
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| آزمون منفی | برای هر کنترل |
+| Restore test | فصلی |
+| Baseline Hardening | نسخه‌دار |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** nmap از بیرون: 443/22 بسته؛ ورود از IP غیرمجاز رد؛ Log رد ثبت شد.
+
+**متوسط (تحلیل):** Lockout کار نمی‌کند: تنظیم روی Global ولی کاربر API/Local متفاوت؛ بررسی `admin-lockout-threshold`؛ آزمون تکرار؛ ثبت.
+
+**سخت (Restore ناقص):** Restore موفق ولی VPN کار نمی‌کند: گواهی/کلید و PSK بازیابی نشد؛ سند Gap: «Secrets جدا»؛ اصلاح Runbook: بازیابی گواهی/لایسنس. RTO واقعی ۴۵ دقیقه (هدف ۳۰) ⇒ اتوماسیون گام‌ها.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 config system global
     set admintimeout 10
-    set admin-https-redirect enable
+    set admin-lockout-threshold 3
+    set admin-lockout-duration 300
 end
-execute backup config tftp fgt-g10.conf 192.168.90.10
+config system interface
+    edit "port1"
+        set allowaccess ping
+    next
+end
+execute backup config sftp hardening-test.conf 192.168.90.10 backup-user <PASSWORD>
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `Unverified`.
+- جدول کنترل→آزمون→نتیجه.
+- Restore و RTO ثبت.
+- Drift report.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- Backup و Restore آزمایشی.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Restore شکست |
-| شواهد/دستور | execute restore |
-| علت | نسخه |
-| رفع | تطبیق |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Hardening؟ *(پاسخ: 27-4-ت1)*
-
-**ت2.** Restore؟ *(پاسخ: 27-4-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا تست Restore؟ *(پاسخ: 27-4-م1)*
-
-**م2.** سناریو: Telnet باز؛ چه؟ *(پاسخ: 27-4-م2)*
-
-**معیار تسلط:** Monitoring و Hardening.
-
-**اشتباهات رایج:** پیش‌فرض ناامن.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Hardening | Hardening | ایمن‌سازی | امنیت |
-
-| English sentence | ترجمه |
-|---|---|
-| Test your restores. | Restore را تست کنید. |
-
-#### کارت Lab — درس 27-4
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Hardening |
-| 2 | پیش‌نیاز | درس ۲۷-۲ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Hardening |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | Restore شکست |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | چک‌لیست |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/hardening.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Lockout نه | تنظیم | Global/Per-user |
+| Restore ناقص | VPN/Cert | Secrets جدا |
+| Port باز | nmap | Local-in/allowaccess |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- آزمون فقط از IP مجاز/Lab.
+- Evidence بدون Secret.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- هر کنترل = تنظیم + آزمون منفی.
+- Restore شامل Secrets/لایسنس.
+- Drift ماهانه.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) آزمون منفی چیست؟ *(پاسخ: 27-4-ت1)*
+
+**ت2.** (ساده) چرا `admintimeout`؟ *(پاسخ: 27-4-ت2)*
+
+**ت3.** (متوسط) پس از Restore VPN کار نمی‌کند؛ چرا؟ *(پاسخ: 27-4-ت3)*
+
+**ت4.** (متوسط) چگونه RTO را اندازه می‌گیرید؟ *(پاسخ: 27-4-ت4)*
+
+**ت5.** (سخت) ۱۰ کنترل Hardening با آزمون منفی بنویسید. *(پاسخ: 27-4-ت5)*
+
+**ت6.** (سخت، طراحی) برنامه‌ی کاهش RTO از ۴۵ به ۳۰ دقیقه. *(پاسخ: 27-4-ت6)*
+
+**Q1.** Quick quiz (English): Why must every hardening control be accompanied by a negative test? *(پاسخ: 27-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| RTO | Recovery Time Objective | زمان هدف بازیابی |
+| Negative test | Negative test | آزمون ممنوعیت |
+
+- *Prove each control with a negative test.* ← هر کنترل را با آزمون منفی ثابت کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Hardening. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/hardening.md`.
+
+### ۱۵) منابع
+
+- CIS FortiGate Benchmark
+- NIST SP 800-53
+- Fortinet: Hardening your FortiOS
 
 <a id="l-27-5"></a>
 
-## درس 27-5 — Gate G10 و آزمون
+## درس 27-5 — Gate G10: آزمون عملی Logging، Monitoring، Hardening و Backup — صورت مسئله، کلید و Rubric
 
-**فصل 27 - روز 5 · پیش‌نیاز: درس ۲۷-۳ · ۶ ساعت**
+**فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰ تا ۲۷-۷ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ Log/Syslog از مستند 7.0؛ SNMPv3 و REST API روی 7.0.3 `Unverified`؛ Lab «اجرا نشده».
 
-ارزیابی.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۷-۳
+1. Syslog مرکزی، Baseline/Trigger، Hardening و Backup/Restore را با شواهد تحویل دهد.
+2. سه عیب (Log نمی‌رسد، Alert کاذب، Restore ناقص) را رفع کند.
+3. Detection یک رویداد (Login ناموفق مکرر) را از Log تا Alert نشان دهد.
+4. Evidence و RCA ارائه دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- مانیتورینگ.
-- Log.
-- Hardening.
-- Backup.
-- آزمون.
+آزمون جامع عملیات. کلید پاسخ پس از تلاش.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کنترل سلامت فایروال.
+#### صورت مسئله
 
-### ۵) مثال سازمانی
+1. Syslog reliable از FGT به rsyslog؛ فایل روزانه.
+2. Baseline ۷ روز (شبیه‌سازی) و ۶ Trigger با Hysteresis.
+3. Hardening: ۱۰ کنترل با آزمون منفی.
+4. Backup→Sanitize→Git→Restore در Lab، RTO.
+5. Detection: ۲۰ Login ناموفق ⇒ Alert.
 
-سازمان: مانیتورینگ و Hardening استاندارد.
+عیب‌ها (مربی): Route Syslog اشتباه؛ Trigger CPU بدون Baseline؛ Restore بدون گواهی.
 
-### ۶) تصویر و توپولوژی
+#### کلید (خلاصه)
 
-```text
-FGT -> SNMP/Syslog -> Zabbix
-```
+- عیب ۱: `execute ping` از source-ip و Sniffer؛ رفع Route.
+- عیب ۲: آستانه=Baseline×1.3 و Maintenance window.
+- عیب ۳: Runbook Secrets/گواهی.
+- Detection: Alert بر 20 ناموفق/5m؛ Block مشروط.
 
-### ۷) پیکربندی (GUI و CLI)
+#### Rubric (۱۰۰)
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+Log ۲۰؛ Monitoring ۲۵؛ Hardening ۲۰؛ Backup/Restore ۲۰؛ Detection/RCA ۵؛ صداقت ۱۰.
 
-#### روش گرافیکی (GUI)
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-1. Dashboard.
+**ساده:** Syslog و فایل.
 
-#### روش خط فرمان (CLI)
+**متوسط:** Trigger و Hardening.
 
-```text
-get system status
-```
+**سخت:** Restore و RCA.
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- خواندنی.
+- Evidence G10: جدول دستور/خروجی/نتیجه.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- اجرای G10.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | G10 ناقص |
-| شواهد/دستور | چک‌لیست |
-| علت | مورد جاافتاده |
-| رفع | تکمیل |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** G10؟ *(پاسخ: 27-5-ت1)*
-
-**ت2.** شاهد؟ *(پاسخ: 27-5-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا شاهد؟ *(پاسخ: 27-5-م1)*
-
-**م2.** سناریو: بدون Backup؛ G10؟ *(پاسخ: 27-5-م2)*
-
-**معیار تسلط:** Monitoring و Hardening.
-
-**اشتباهات رایج:** پیش‌فرض ناامن.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| G10 | Gate 10 | دروازه‌ی ۱۰ | دوره |
-
-| English sentence | ترجمه |
-|---|---|
-| Collect evidence for every gate. | برای هر Gate شاهد جمع کنید. |
-
-#### کارت Lab — درس 27-5
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون G10 |
-| 2 | پیش‌نیاز | درس ۲۷-۳ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | G10 |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | تست |
-| 11 | سناریوی خرابی | G10 ناقص |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | شاهد |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/g10.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Alert نیامد | Syslog/Trigger | مسیر/آستانه |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Secret در Evidence نیست.
 
-<a id="ans-27"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- آزمون عملیات = Log + Monitoring + Hardening + Restore + Detection.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) شواهد لازم برای Log مرکزی؟ *(پاسخ: 27-5-ت1)*
+
+**ت2.** (ساده) چرا Trigger باید Baseline داشته باشد؟ *(پاسخ: 27-5-ت2)*
+
+**ت3.** (متوسط) عیب Route Syslog را چگونه کشف می‌کنید؟ *(پاسخ: 27-5-ت3)*
+
+**ت4.** (متوسط) RTO را چگونه گزارش می‌کنید؟ *(پاسخ: 27-5-ت4)*
+
+**ت5.** (سخت) Detection Brute-force از Log تا Alert را شرح دهید. *(پاسخ: 27-5-ت5)*
+
+**ت6.** (سخت، طراحی) برنامه‌ی بهبود پس از آزمون. *(پاسخ: 27-5-ت6)*
+
+**Q1.** Quick quiz (English): What evidence proves central logging works? *(پاسخ: 27-5-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| G10 | Gate 10 | دروازه ۱۰ |
+
+- *Collect evidence for every gate.* ← برای هر Gate شاهد جمع کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** G10. **Evidence:** `03-ops/g10.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۲۷-۰ تا ۲۷-۷
 
 ## درس 27-7 — Hardening، Backup/Restore و API: امن‌سازی مدیریتی و بازیابی قابل‌اثبات
 
@@ -37180,91 +37455,90 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**27-1-ت1** — Traffic Log؟
 
-ترافیک.
+### پاسخ‌های بازنویسی عمیق درس 27-1
 
-**27-1-ت2** — Retention؟
+**27-1-ت1** — Traffic، Event و Security/UTM.
 
-نگهداری.
+**27-1-ت2** — all همه‌ی Sessionها را ثبت می‌کند؛ utm فقط Sessionهایی را که رویداد UTM دارند.
 
-**27-1-م1** — چرا Retention؟
+**27-1-ت3** — 12M×450B = 5.4 GB/روز؛ ×180 ≈ 972 GB؛ با 20٪ حاشیه ≈ 1.17 TB؛ فشرده‌سازی کاهش می‌دهد.
 
-فضا.
+**27-1-ت4** — برای کشف Scan/حمله و عیب‌یابی Policy.
 
-**27-1-م2** — سناریو: Log قدیمی نیست؛ علت؟
+**27-1-ت5** — Allow عمومی utm، Allow حیاتی all، Deny همیشه، Alert روی Deny مدیریتی و Bytes غیرعادی، Syslog مرکزی.
 
-Rotation.
+**27-1-ت6** — انواع، سطح، مقصد، قالب، Retention، NTP، دسترسی، Alert/بازبینی.
 
-**27-2-ت1** — SNMPv3؟
-
-امن.
-
-**27-2-ت2** — Template؟
-
-قالب.
-
-**27-2-م1** — چرا v3؟
-
-رمز.
-
-**27-2-م2** — سناریو: v2c باز؛ چه؟
-
-v3/ACL.
-
-**27-3-ت1** — Token؟
-
-کلید.
-
-**27-3-ت2** — Trusthost؟
-
-محدود IP.
-
-**27-3-م1** — چرا Trusthost؟
-
-سطح حمله.
-
-**27-3-م2** — سناریو: 401؛ علت؟
-
-Trusthost.
-
-**27-4-ت1** — Hardening؟
-
-ایمن‌سازی.
-
-**27-4-ت2** — Restore؟
-
-تست.
-
-**27-4-م1** — چرا تست Restore؟
-
-Backup بی‌تست بی‌اعتبار.
-
-**27-4-م2** — سناریو: Telnet باز؛ چه؟
-
-غیرفعال.
-
-**27-5-ت1** — G10؟
-
-مانیتورینگ+Log+Hardening+Backup.
-
-**27-5-ت2** — شاهد؟
-
-لازم.
-
-**27-5-م1** — چرا شاهد؟
-
-اثبات.
-
-**27-5-م2** — سناریو: بدون Backup؛ G10؟
-
-شکست.
+**27-1-Q1** — Because local storage is limited and may be overwritten or lost during an incident.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 27-2
 
-<a id="end9"></a>
+**27-2-ت1** — احراز و رمزنگاری؛ v2c Community را متن آشکار می‌فرستد.
 
+**27-2-ت2** — تفاوت آستانه‌ی ورود و خروج Alert برای جلوگیری از نوسان.
+
+**27-2-ت3** — آستانه از Baseline با ضریب، Maintenance window، Trigger مدت‌دار (10m).
+
+**27-2-ت4** — Alert وابسته را وقتی وابستگی اصلی Down است سرکوب می‌کند.
+
+**27-2-ت5** — Dependency، Alert مرکزی سایت، Flap با بررسی متوالی، Escalation؛ هدف ≤ ۳ Alert.
+
+**27-2-ت6** — CPU، Memory، Session، Interface error، Tunnel down، HA؛ هر کدام با Baseline/Hysteresis.
+
+**27-2-Q1** — Excessive low-value alerts cause operators to ignore them; baselines, dependencies and hysteresis reduce them.
+
+
+### پاسخ‌های بازنویسی عمیق درس 27-3
+
+**27-3-ت1** — تا Token فقط از IP مجاز قابل‌استفاده باشد و سرقت Token کم‌اثر شود.
+
+**27-3-ت2** — اجرای مکرر همان نتیجه را بدهد، بدون ایجاد تغییر یا Object تکراری.
+
+**27-3-ت3** — Trusthost، Token لغو/منقضی، API user غیرفعال.
+
+**27-3-ت4** — Diff تغییرات را بدون اعمال نشان می‌دهد و خطای گسترده را قبل از وقوع کشف می‌کند.
+
+**27-3-ت5** — نبود بررسی وجود؛ GET نام، مقایسه، PUT/POST شرطی؛ تست دو بار اجرا؛ پاک‌سازی تکراری‌ها با Backup.
+
+**27-3-ت6** — حساب Read-only برای مانیتورینگ؛ حساب Write جدا با Canary؛ Trusthost، Vault، TLS، Review، Backup/Rollback، Audit.
+
+**27-3-Q1** — To show the planned changes without applying them and catch mistakes before they spread.
+
+
+### پاسخ‌های بازنویسی عمیق درس 27-4
+
+**27-4-ت1** — آزمونی که باید شکست بخورد تا اثبات شود دسترسی غیرمجاز بسته است.
+
+**27-4-ت2** — کاهش خطر Session رهاشده.
+
+**27-4-ت3** — گواهی/کلید/PSK یا لایسنس جداگانه بازیابی نشده؛ باید در Runbook باشد.
+
+**27-4-ت4** — زمان از شروع Restore تا سرویس‌های حیاتی تأییدشده؛ در Lab با زمان‌سنج.
+
+**27-4-ت5** — جدول بالا؛ هر کنترل یک آزمون منفی.
+
+**27-4-ت6** — اتوماسیون Restore، Runbook مرحله‌ای، Secrets از Vault، آزمون فصلی.
+
+**27-4-Q1** — Because only a failed unauthorized attempt proves the control actually works.
+
+
+### پاسخ‌های بازنویسی عمیق درس 27-5
+
+**27-5-ت1** — فایل Log روزانه روی سرور با رویداد آزمایشی و tcpdump TCP 514.
+
+**27-5-ت2** — تا آستانه با رفتار عادی تنظیم شود و Alert کاذب کم شود.
+
+**27-5-ت3** — `execute ping` با source-ip، Sniffer روی Interface خروجی، tcpdump سرور.
+
+**27-5-ت4** — زمان‌بندی مراحل Restore و Verification؛ مقایسه با هدف؛ Gap.
+
+**27-5-ت5** — Event Login failed در Syslog؛ Parser؛ Trigger 20/5m؛ Alert؛ Playbook Block؛ ثبت.
+
+**27-5-ت6** — Alert Dependency، HA Syslog، Restore خودکار، Drift report.
+
+**27-5-Q1** — A log file on the server containing a test event, plus a packet capture of the syslog session.
 
 ### پاسخ‌های درس افزوده‌ی 27-0 (فصل 27)
 
@@ -37403,7 +37677,7 @@ Backup همه‌ی Gateها؛ Wireshark/Sniffer مسلط.
 
 <a id="ch28"></a>
 
-> **نسخه v3.6:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.7:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 28 — Packet Analysis و بلوک‌های عیب‌یابی
 
@@ -37535,705 +37809,812 @@ tls.alert_message
 
 - Wireshark User's Guide (TCP analysis)؛ RFC 1191 (PMTUD)، RFC 9293 (TCP)، RFC 792 (ICMP).
 
-## درس 28-1 — Sniffer و Capture درست
+## درس 28-1 — Capture درست: انتخاب نقطه، Filter، Sniffer FortiGate، PCAP، Offload و ملاحظات امنیت/قانون
 
-**فصل 28 - روز 1 · پیش‌نیاز: فصل ۲۷ · ۶ ساعت**
+**فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۰، ۱۴-۷، ۱۲-۹ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-گرفتن بسته در FGT و Wireshark.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۲۷
+1. از روی سؤال عیب‌یابی نقطه‌ی Capture (دو‌نقطه‌ای، قبل/بعد از NAT) را انتخاب کند.
+2. Filter دقیق BPF و محدودیت حجم/زمان بنویسد.
+3. Sniffer FortiGate (verbose، count، timestamp) را بخواند و به PCAP تبدیل کند.
+4. تأثیر Offload/Interface مجازی را بر کامل بودن Capture بداند.
+5. محدودیت‌های امنیتی/قانونی PCAP را رعایت کند.
+6. Capture را در Wireshark با Display filter تحلیل اولیه کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Sniffer verbose 4/6.
-- Filter دقیق.
-- ذخیره و تحلیل در Wireshark.
-- PCAP بدون داده‌ی حساس.
-- تعداد محدود.
+Capture حقیقت میدانی است، ولی Capture بد (Filter باز، نقطه‌ی اشتباه، بدون زمان) مدت‌ها را هدر می‌دهد. اول سؤال، بعد نقطه، بعد Filter. و فراموش نکنید PCAP داده‌ی حساس (رمز، توکن، داده‌ی کاربر) دارد.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دیدن بسته‌ها مثل فیلم کند.
+#### ۱) از سؤال به نقطه
 
-### ۵) مثال سازمانی
+| سؤال | نقطه‌ها |
+|---|---|
+| بسته به فایروال می‌رسد؟ | Interface ورودی فایروال (یا SPAN بالاتر) |
+| فایروال آن را عبور می‌دهد؟ | ورودی و خروجی همان فایروال |
+| NAT چه کرد؟ | ورودی (آدرس اصلی) و خروجی (ترجمه‌شده) |
+| سرور پاسخ می‌دهد؟ | روی سرور |
+| مسیر برگشت متقارن است؟ | هر دو مسیر/فایروال |
 
-سازمان: RCA با Capture.
+#### ۲) Sniffer FortiGate
 
-### ۶) تصویر و توپولوژی
-
-```text
-Client -> FGT -> Server (capture at each point)
+``` text
+diagnose sniffer packet <interface|any> "<BPF filter>" <verbose> <count> <timestamp>
+diagnose sniffer packet port2 "host 10.1.4.10 and tcp port 443" 4 100 l
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+- verbose: 1 هدر، 3 هدر+Hex، 4 هدر+Interface، 6 هدر+Hex+Interface+Ethernet (طبق مستند Fortinet؛ `Unverified` برای تفاوت‌ها).
+- count: تعداد بسته؛ 0 تا Ctrl+C (خطرناک).
+- `l` (local timestamp).
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+برای PCAP: خروجی verbose 3/6 را به فایل ذخیره و با ابزار تبدیل (fgt2eth.pl) به PCAP برسانید؛ یا Packet Capture GUI (Network → Diagnostics → Packet Capture) که مستقیماً PCAP می‌دهد.
 
-#### روش گرافیکی (GUI)
+#### ۳) Filter (BPF)
 
-1. Network > Packet Capture.
-
-#### روش خط فرمان (CLI)
-
-```text
-diagnose sniffer packet any "host 192.168.10.5 and port 443" 4 50 l
+``` text
+host 10.1.4.10
+net 10.1.0.0/16
+tcp port 443
+udp port 53
+icmp
+"host 10.1.4.10 and not port 22"
+"tcp[tcpflags] & (tcp-syn|tcp-rst) != 0"     # SYN or RST only
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+#### ۴) Offload و محدودیت‌ها
 
-- `Unverified`.
+ترافیک Offloadشده (NPU) ممکن است در Sniffer دیده نشود/ناقص باشد (۱۲-۹). روی FortiGate-VM معمولاً NPU نیست. Capture روی Interface `any` ممکن است بسته را دو بار نشان دهد (ورود و خروج).
 
-### ۸) تست عملکرد
+#### ۵) امنیت و قانون
 
-- یک Capture بگیرید.
+PCAP شامل داده‌ی کاربران است: مجوز، حداقل زمان/حجم، ذخیره‌ی رمزشده، حذف پس از کار، عدم انتشار. TLS بدون Deep رمز می‌ماند ولی Header/SNI دیده می‌شود.
 
-### ۹) عیب‌یابی
+#### ۶) Wireshark
 
-| بخش | شرح |
+Display filter: `ip.addr==10.1.4.10`، `tcp.analysis.retransmission`، `tls.handshake.type==1`، `dns`. Statistics → Conversations/IO Graph/TCP Stream Graphs.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | Capture خالی |
-| شواهد/دستور | Filter |
-| علت | Interface |
-| رفع | اصلاح |
+| نقطه‌ی Capture | دو‌نقطه‌ای |
+| Filter | باریک؛ Count محدود |
+| PCAP | موقت و رمزشده |
+| Offload | آگاهی |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** Capture ping کلاینت↔سرور روی port2: `ip.addr` و `icmp`؛ Echo request/reply با زمان؛ RTT.
 
-**ت1.** Verbose؟ *(پاسخ: 28-1-ت1)*
+**متوسط (تحلیل):** وب باز نمی‌شود: Capture دو‌نقطه‌ای: روی port2 SYN دیده می‌شود؛ روی port1 نه. نتیجه: بسته داخل فایروال Drop شده (Policy/Route)؛ ادامه با Debug Flow. بدون Capture دوم فقط حدس بود.
 
-**ت2.** Filter؟ *(پاسخ: 28-1-ت2)*
+**سخت (Offload/NAT):** Debug/Sniffer هیچ بسته‌ای نمی‌بیند ولی ترافیک جاری است: Offload. اقدام کنترل‌شده در Lab/Window: غیرفعال موقت Offload (در مدل‌های NPU) یا Capture روی نقطه‌ی بیرونی (سوئیچ/SPAN)؛ ثبت. همچنین NAT: ورودی src=10.1.4.10، خروجی src=203.0.113.10؛ تطبیق Flow با پورت مبدأ.
 
-### ۱۱) مرور و ارزیابی
+### ۶) پیاده‌سازی از مسیر GUI
 
-**م1.** چرا Filter؟ *(پاسخ: 28-1-م1)*
+1. Network → Diagnostics → Packet Capture: Interface، Filter، Packet count → Start → Download PCAP.
+2. Wireshark: File → Open.
 
-**م2.** سناریو: Capture خالی؛ علت؟ *(پاسخ: 28-1-م2)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-**معیار تسلط:** Capture و تحلیل.
+``` text
+diagnose sniffer packet port2 "host 10.1.4.10 and tcp port 443" 6 200 l
+diagnose sniffer packet any "host 10.1.4.10 and port 53" 4 50 l
+```
 
-**اشتباهات رایج:** Filter باز.
+### ۸) Verification (اثبات صحت)
 
-### ۱۲) واژگان و English Corner
+- PCAP قابل‌خواندن در Wireshark.
+- مقایسه دو نقطه با Filter یکسان.
+- حذف PCAP پس از کار.
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| PCAP | Packet capture | فایل بسته | Wireshark |
+### ۹) Troubleshooting
 
-| English sentence | ترجمه |
-|---|---|
-| Use narrow capture filters. | از Filter باریک استفاده کنید. |
-
-#### کارت Lab — درس 28-1
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Capture |
-| 2 | پیش‌نیاز | فصل ۲۷ |
-| 3 | توپولوژی | FGT+Client |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Capture |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | sniffer |
-| 11 | سناریوی خرابی | Capture خالی |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | فایل |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/capture.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Capture خالی | Filter/Interface | Offload/Filter اشتباه |
+| بسته‌ی تکراری | `any` | ورود+خروج |
+| Timestamp نامعتبر | NTP | NTP |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- PCAP حساس؛ مجوز و حذف.
+- عدم Capture بدون اجازه.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- سؤال→نقطه→Filter.
+- دو‌نقطه‌ای برای پیدا کردن محل Drop.
+- Offload و NAT را در نظر بگیرید.
+- امنیت PCAP.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا Capture دو‌نقطه‌ای؟ *(پاسخ: 28-1-ت1)*
+
+**ت2.** (ساده) verbose 4 چه نشان می‌دهد؟ *(پاسخ: 28-1-ت2)*
+
+**ت3.** (متوسط) Filter برای فقط SYN/RST؟ *(پاسخ: 28-1-ت3)*
+
+**ت4.** (متوسط) چرا `any` بسته‌ی تکراری نشان می‌دهد؟ *(پاسخ: 28-1-ت4)*
+
+**ت5.** (سخت) Sniffer بسته‌ای نمی‌بیند ولی ترافیک می‌رود؛ تحلیل. *(پاسخ: 28-1-ت5)*
+
+**ت6.** (سخت، طراحی) روش‌نامه‌ی Capture امن برای یک حادثه. *(پاسخ: 28-1-ت6)*
+
+**Q1.** Quick quiz (English): Why should captures be taken at two points around the firewall? *(پاسخ: 28-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| BPF | Berkeley Packet Filter | زبان Filter بسته |
+| PCAP | Packet capture file | فایل Capture |
+| SPAN | Switched Port Analyzer | آینه‌ی پورت |
+
+- *Use narrow capture filters.* ← از Filter باریک استفاده کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Capture. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/capture.md`.
+
+### ۱۵) منابع
+
+- Wireshark User Guide
+- Fortinet Docs: Packet capture / diagnose sniffer (7.0)
+- tcpdump/pcap-filter manual
 
 <a id="l-28-2"></a>
 
-## درس 28-2 — TCP Handshake، Retransmission و DNS
+## درس 28-2 — تحلیل TCP و DNS در Capture: Handshake، Window، Retransmission، RTT، RST و الگوهای خرابی
 
-**فصل 28 - روز 2 · پیش‌نیاز: درس ۲۸-۰ · ۶ ساعت**
+**فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۰، ۲۸-۱، ۲-۰ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-نشانه‌های رایج در بسته.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۸-۰
+1. فازهای TCP و فیلدهای مهم (Seq/Ack، Window، Flags، Options) را بخواند.
+2. RTT، Retransmission rate، Zero Window، Dup ACK و RST را تفسیر کند.
+3. DNS Query/Response (rcode، TTL، Latency) را تحلیل کند.
+4. الگو را به علت (Drop، MTU، Congestion، برنامه) نگاشت کند.
+5. با Wireshark Graphs محاسبات کمی انجام دهد.
+6. گزارش تحلیل با شواهد بنویسد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- SYN/SYN-ACK/ACK.
-- Retransmission=تلفات.
-- RST.
-- DNS Query/Response.
-- Latency.
+هر الگوی بسته یک «امضای خرابی» است. مهندس باید از روی الگو به علت برسد: «SYN بدون پاسخ» با «SYN→RST» و «Retransmission» سه علت متفاوت دارند.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دیدن بسته‌ها مثل فیلم کند.
+#### ۱) Handshake و RTT
 
-### ۵) مثال سازمانی
-
-سازمان: RCA با Capture.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Client -> FGT -> Server (capture at each point)
+``` text
+t0 SYN ->           t1 <- SYN/ACK           t2 ACK ->
+RTT_client_side = t2 - t0 (as seen at client)  ;  RTT_server_side = t1 - t0 (as seen at server)
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+در Capture روی فایروال: فاصله‌ی SYN تا SYN/ACK = RTT سمت سرور؛ SYN/ACK تا ACK = RTT سمت کلاینت (تقریباً).
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۲) نقشه‌ی الگو→علت
 
-#### روش گرافیکی (GUI)
-
-1. Wireshark: Statistics.
-
-#### روش خط فرمان (CLI)
-
-```text
-diagnose sniffer packet any "port 53" 4 20 l
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- `Unverified`.
-
-### ۸) تست عملکرد
-
-- تحلیل Handshake.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | SYN بی‌پاسخ |
-| شواهد/دستور | capture |
-| علت | Drop |
-| رفع | Policy |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** RST؟ *(پاسخ: 28-2-ت1)*
-
-**ت2.** Retransmission؟ *(پاسخ: 28-2-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا SYN بی‌پاسخ؟ *(پاسخ: 28-2-م1)*
-
-**م2.** سناریو: RST فوری؛ علت؟ *(پاسخ: 28-2-م2)*
-
-**معیار تسلط:** Capture و تحلیل.
-
-**اشتباهات رایج:** Filter باز.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| RST | TCP Reset | ریست اتصال | TCP |
-
-| English sentence | ترجمه |
-|---|---|
-| A SYN without a reply suggests a drop. | SYN بی‌پاسخ نشانه‌ی Drop است. |
-
-#### کارت Lab — درس 28-2
-
-| # | فیلد | محتوا |
+| الگو | معنی | علت‌های رایج |
 |---|---|---|
-| 1 | عنوان و هدف | TCP |
-| 2 | پیش‌نیاز | درس ۲۸-۰ |
-| 3 | توپولوژی | FGT+Client |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Handshake |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | capture |
-| 11 | سناریوی خرابی | SYN بی‌پاسخ |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | تحلیل |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/tcp.md` |
-| 16 | Cleanup و بازگردانی | — |
+| SYN بدون SYN/ACK | اتصال برقرار نمی‌شود | Policy/Route، پورت فیلتر، Asymmetric |
+| SYN→RST | پورت بسته | سرویس خاموش |
+| Retransmission | بسته‌ی گم‌شده | تلفات، MTU، Congestion |
+| Dup ACK ×3 | Fast retransmit | Loss/Reordering |
+| Zero Window | گیرنده پر | برنامه‌ی کند |
+| RST وسط جلسه | قطع | فایروال/IPS/برنامه |
+| ICMP 3/4 | Frag Needed | MTU |
+| TCP Window Scale ناسازگار | Throughput کم | میانی دستکاری |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+``` text
+Retransmission rate = retransmitted segments / total segments
+Throughput limit ~= Window / RTT     (e.g. 64 KB / 100 ms = 5.2 Mbit/s)
+```
 
----
+#### ۳) محدودیت Throughput (BDP)
+
+``` text
+BDP = bandwidth x RTT   (bytes in flight needed)
+Example: 100 Mbit/s x 80 ms = 1 MB window needed; with 64 KB window -> ~6.5 Mbit/s
+```
+
+#### ۴) DNS
+
+- Query بدون Response: UDP Drop/سرور.
+- `rcode`: 0 OK، 2 SERVFAIL، 3 NXDOMAIN.
+- Latency: زمان Query→Response.
+- TTL و Cache؛ بزرگ‌بودن پاسخ و Fallback به TCP (EDNS0/MTU).
+
+#### ۵) Filterهای Wireshark
+
+``` text
+tcp.analysis.retransmission  tcp.analysis.duplicate_ack  tcp.analysis.zero_window
+tcp.flags.reset==1  icmp.type==3 and icmp.code==4
+dns.flags.rcode != 0   dns.time > 0.2
+```
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Throughput | محاسبه‌ی BDP |
+| DNS | Cache/Resolver |
+| Capture | Filter+دو نقطه |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Capture: SYN، SYN/ACK، ACK؛ RTT ≈ 22 ms؛ اتصال سالم.
+
+**متوسط (محاسبه):** دانلود روی لینک 100 Mbps با RTT 80 ms فقط 6 Mbps. Window 64 KB ⇒ حد = 64KB/0.08 s ≈ 6.5 Mbit/s. علت: Window Scaling خاموش/دستکاری. رفع: فعال‌سازی Window Scale/بررسی میانی.
+
+**سخت (چندعلتی):** دانلود VPN: Retransmission 3٪ و ICMP Frag Needed نیامده. تحلیل: PMTUD Black hole + Loss واقعی لینک؛ جدا‌سازی: ping DF اندازه‌ها (MTU)؛ Interface Errors (Loss)؛ رفع: MSS Clamp و رفع خطای لینک؛ اندازه‌گیری Retrans قبل/بعد.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Wireshark: Statistics → TCP Stream Graphs (Time-Sequence، Throughput، RTT).
+2. Statistics → Conversations/IO Graph.
+3. Analyze → Expert Information.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose sniffer packet any "host 10.1.4.10 and tcp" 4 300 l
+```
+
+### ۸) Verification (اثبات صحت)
+
+- جدول RTT/Retrans/Window.
+- نمودار Time-Sequence.
+- مقایسه‌ی قبل/بعد رفع.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| SYN بی‌پاسخ | Capture | Policy/Route |
+| Retransmission | Interface errors | Loss/MTU |
+| کند با Window کم | Window scale | Scaling/BDP |
+| DNS کند | dns.time | Resolver |
+
+### ۱۰) نکات امنیتی
+
+- PCAP حساس.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- الگو→علت.
+- RTT و BDP محاسبه می‌شود.
+- Retrans rate شاخص کیفیت.
+- DNS rcode/Latency.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) SYN→RST یعنی چه؟ *(پاسخ: 28-2-ت1)*
+
+**ت2.** (ساده) Zero Window چیست؟ *(پاسخ: 28-2-ت2)*
+
+**ت3.** (متوسط) Window 64 KB و RTT 100 ms: حد Throughput؟ *(پاسخ: 28-2-ت3)*
+
+**ت4.** (متوسط) BDP برای 100 Mbps و 80 ms؟ *(پاسخ: 28-2-ت4)*
+
+**ت5.** (سخت) Retrans 3٪ + MTU مشکوک؛ جداسازی دو علت. *(پاسخ: 28-2-ت5)*
+
+**ت6.** (سخت، طراحی) گزارش تحلیل Capture را با ساختار بنویسید. *(پاسخ: 28-2-ت6)*
+
+**Q1.** Quick quiz (English): How does window size limit TCP throughput? *(پاسخ: 28-2-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| BDP | Bandwidth-delay product | حاصل‌ضرب پهنای باند و تأخیر |
+| RTT | Round-trip time | زمان رفت و برگشت |
+| Window scaling | TCP window scaling | مقیاس Window |
+
+- *Patterns in packets point to specific causes.* ← الگوها در بسته‌ها به علت‌های مشخص اشاره می‌کنند.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** TCP. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/tcp.md`.
+
+### ۱۵) منابع
+
+- RFC 9293
+- RFC 7323 (Window Scale)
+- Wireshark docs
 
 <a id="l-28-3"></a>
 
-## درس 28-3 — TLS و Certificate در Capture
+## درس 28-3 — TLS در Capture: Handshake، SNI، Certificate، Alert، TLS 1.3 و اثر Inspection
 
-**فصل 28 - روز 3 · پیش‌نیاز: درس ۲۸-۱ · ۶ ساعت**
+**فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۰، ۱۶-۰، ۱۶-۵ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-Handshake TLS و خطاها.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۸-۱
+1. Handshake TLS 1.2/1.3 را در Capture بخواند.
+2. SNI، Cipher، Certificate chain و Alertها را تفسیر کند.
+3. اثر Deep Inspection را در Capture (Issuer) اثبات کند.
+4. QUIC/ECH و محدودیت دید را بشناسد.
+5. مشکلات Pinning/CA/Cipher را عیب‌یابی کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- ClientHello/ServerHello.
-- SNI.
-- Certificate.
-- Alert.
-- Inspection اثر.
+TLS اکثر ترافیک را می‌پوشاند؛ ولی Handshake اطلاعات زیادی (SNI، نسخه، Cipher، گاهی گواهی) آشکار می‌کند. Capture TLS به شما می‌گوید «کجا شکست خورد» و «چه کسی دخالت کرد».
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دیدن بسته‌ها مثل فیلم کند.
+#### ۱) Handshake
 
-### ۵) مثال سازمانی
-
-سازمان: RCA با Capture.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Client -> FGT -> Server (capture at each point)
+``` text
+TLS 1.2: ClientHello(SNI,versions,ciphers) -> ServerHello, Certificate, ServerKeyExchange -> ClientKeyExchange, Finished
+TLS 1.3: ClientHello(SNI, key_share) -> ServerHello(key_share) + {EncryptedExtensions, Certificate, Finished} encrypted
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+در 1.3 گواهی رمز است؛ فقط SNI/ClientHello دیده می‌شود (مگر ECH).
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۲) Alertها
 
-#### روش گرافیکی (GUI)
-
-1. Wireshark: tls filter.
-
-#### روش خط فرمان (CLI)
-
-```text
-diagnose sniffer packet any "port 443" 4 20 l
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- `Unverified`.
-
-### ۸) تست عملکرد
-
-- دیدن SNI.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | TLS Alert |
-| شواهد/دستور | capture |
-| علت | Cert |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** SNI؟ *(پاسخ: 28-3-ت1)*
-
-**ت2.** Alert؟ *(پاسخ: 28-3-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا SNI؟ *(پاسخ: 28-3-م1)*
-
-**م2.** سناریو: Alert؛ علت؟ *(پاسخ: 28-3-م2)*
-
-**معیار تسلط:** Capture و تحلیل.
-
-**اشتباهات رایج:** Filter باز.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| TLS | Transport Layer Security | رمزنگاری انتقال | Security |
-
-| English sentence | ترجمه |
-|---|---|
-| SNI is visible in the ClientHello. | SNI در ClientHello دیده می‌شود. |
-
-#### کارت Lab — درس 28-3
-
-| # | فیلد | محتوا |
+| Alert | معنی | علت |
 |---|---|---|
-| 1 | عنوان و هدف | TLS |
-| 2 | پیش‌نیاز | درس ۲۸-۱ |
-| 3 | توپولوژی | FGT+Client |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | TLS |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | capture |
-| 11 | سناریوی خرابی | TLS Alert |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | SNI |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/tls.md` |
-| 16 | Cleanup و بازگردانی | — |
+| unknown_ca | CA ناشناخته | CA فایروال نصب نیست |
+| bad_certificate | گواهی بد | Pinning/نام |
+| certificate_expired | منقضی | تاریخ |
+| handshake_failure | Cipher/نسخه | ناسازگاری |
+| protocol_version | نسخه | قدیمی |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+#### ۳) اثبات Inspection
 
----
+``` text
+openssl s_client -connect example.com:443 -servername example.com 2>/dev/null | openssl x509 -noout -issuer
+```
+
+Issuer = CA فایروال ⇒ Deep Inspection فعال؛ Issuer = CA عمومی ⇒ بدون رمزگشایی.
+
+#### ۴) QUIC و ECH
+
+QUIC (UDP 443) با TLS 1.3؛ Deep Inspection سخت؛ سیاست بلاک QUIC. ECH SNI را رمز می‌کند؛ Web Filter بر پایه‌ی SNI کور می‌شود (آینده).
+
+#### ۵) فیلترها
+
+``` text
+tls.handshake.type == 1            # ClientHello
+tls.handshake.extensions_server_name
+tls.alert_message
+tls.handshake.certificate
+quic
+```
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| QUIC | بلاک تا TCP/TLS |
+| Pinning | Exemption |
+| Cipher | حداقل TLS 1.2 |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** ClientHello با SNI=example.com؛ ServerHello TLS1.3؛ Application Data.
+
+**متوسط (تحلیل):** Alert `unknown_ca` فقط برای یک برنامه: CA فایروال در Trust Store آن برنامه نیست (Java/Firefox)؛ رفع: نصب CA یا Exemption.
+
+**سخت (طراحی):** پس از فعال‌کردن Deep Inspection، برنامه‌ی بانکی Alert می‌دهد (Pinning). تحلیل: گواهی ارائه‌شده با Pin مطابق نیست؛ راه: Exemption آن FQDN/Category؛ ثبت؛ آزمون منفی: سایر سایت‌ها هنوز Inspect می‌شوند (Issuer).
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Wireshark: Filter tls؛ Statistics → Protocol Hierarchy.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+openssl s_client -connect example.com:443 -servername example.com
+diagnose sniffer packet any "host 10.1.4.10 and tcp port 443" 4 100 l
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Issuer مقایسه.
+- SNI در ClientHello.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| unknown_ca | Alert | CA/Store |
+| handshake_failure | Cipher/نسخه | سازگاری |
+| QUIC دور می‌زند | UDP 443 | بلاک |
+
+### ۱۰) نکات امنیتی
+
+- PCAP؛ Exemption مستند.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- TLS1.3 گواهی رمز.
+- Alertها علت را می‌گویند.
+- Issuer اثبات Inspection.
+- QUIC/ECH محدودیت دید.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) SNI چیست و کجا دیده می‌شود؟ *(پاسخ: 28-3-ت1)*
+
+**ت2.** (ساده) چرا در TLS 1.3 گواهی دیده نمی‌شود؟ *(پاسخ: 28-3-ت2)*
+
+**ت3.** (متوسط) unknown_ca چه می‌گوید؟ *(پاسخ: 28-3-ت3)*
+
+**ت4.** (متوسط) چگونه Inspection را اثبات می‌کنید؟ *(پاسخ: 28-3-ت4)*
+
+**ت5.** (سخت) برنامه‌ی Pinned خطا می‌دهد؛ تصمیم. *(پاسخ: 28-3-ت5)*
+
+**ت6.** (سخت، طراحی) سیاست QUIC/ECH سازمان. *(پاسخ: 28-3-ت6)*
+
+**Q1.** Quick quiz (English): Which command-line tool can show the issuer of the certificate presented through a firewall? *(پاسخ: 28-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| ECH | Encrypted Client Hello | رمزکردن ClientHello |
+| Pinning | Certificate pinning | پین‌کردن گواهی |
+| QUIC | QUIC transport | انتقال روی UDP |
+
+- *The certificate issuer reveals whether inspection is active.* ← Issuer گواهی نشان می‌دهد Inspection فعال است یا نه.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** TLS. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/tls.md`.
+
+### ۱۵) منابع
+
+- RFC 8446
+- RFC 6066
+- Wireshark TLS docs
 
 <a id="l-28-4"></a>
 
-## درس 28-4 — ده‌پرسش عیب‌یابی و بلوک TS
+## درس 28-4 — ده‌پرسش عیب‌یابی و بلوک‌های TS: چارچوب، سه پرونده‌ی کامل و کتابخانه‌ی TS
 
-**فصل 28 - روز 4 · پیش‌نیاز: درس ۲۸-۲ · ۶ ساعت**
+**فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۷، ۲۸-۱ تا ۲۸-۳ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-چارچوب تکرارپذیر.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۸-۲
+1. چارچوب ده‌پرسش را برای هر مشکل اجرا کند.
+2. بلوک TS با فرضیه‌های رتبه‌بندی‌شده و شواهد بنویسد.
+3. سه پرونده‌ی کامل (VPN، HTTPS کند، MTU) را حل و RCA کند.
+4. کتابخانه‌ی TS قابل‌استفاده‌ی مجدد بسازد.
+5. مقایسه‌ی شواهد و رد فرضیه را تمرین کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- چه تغییر کرد؟
-- کجا؟
-- کدام لایه؟
-- مسیر؟
-- Policy؟
-- NAT؟
-- Session؟
-- Log؟
-- Capture؟
-- RCA؟
+چارچوب ثابت سرعت و کیفیت می‌دهد. بلوک TS = «دانش تیم» به شکل قابل‌تکرار.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دیدن بسته‌ها مثل فیلم کند.
+#### ۱) ده پرسش
 
-### ۵) مثال سازمانی
+1 چه تغییر کرد؟ 2 چه کسی/چه سرویسی؟ 3 از کی؟ 4 کدام لایه؟ 5 بسته به فایروال می‌رسد؟ 6 Route؟ 7 Policy؟ 8 NAT/Session؟ 9 Profile/Inspection؟ 10 بسته خارج می‌شود و برمی‌گردد؟
 
-سازمان: RCA با Capture.
+#### ۲) قالب TS
 
-### ۶) تصویر و توپولوژی
-
-```text
-Client -> FGT -> Server (capture at each point)
+``` text
+ID / Date / Owner
+Symptom: ...   Scope: who/what/since   Last change: ...
+Evidence log: (time, command, output snippet)
+Hypotheses ranked: H1 (likelihood, cheap test) ...
+Tests & results -> accepted/rejected
+Root cause
+Fix + verification (positive and negative)
+Prevention + owner/date
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۳) رتبه‌بندی فرضیه
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+``` text
+Priority ~= likelihood x impact / test cost
+```
 
-#### روش گرافیکی (GUI)
+اول فرضیه‌های محتمل و ارزان (ping/Policy/Route) بعد گران (Capture عمیق).
 
-1. Log & Report.
+#### ۴) پرونده‌ها
 
-#### روش خط فرمان (CLI)
+**پرونده A: VPN Up ولی ترافیک نه.** شواهد: Bytes out>0، in=0؛ Debug Flow سمت مقابل Denied policy 0. علت: Policy سمت مقابل. رفع: Policy؛ آزمون مثبت/منفی؛ پیشگیری: چک‌لیست دوطرفه.
 
-```text
-diagnose debug flow filter addr 192.168.20.11
-diagnose debug flow trace start 5
+**پرونده B: HTTPS کند.** شواهد: CPU 85٪، `sys top` ipsengine؛ TLS Handshake طولانی. علت: IPS+Deep روی همه. رفع: Sensor انتخابی؛ Baseline بعد.
+
+**پرونده C: بزرگ‌ها قفل.** شواهد: ping DF 1372 شکست؛ Retrans؛ نبود ICMP 3/4. علت: MTU/PMTUD. رفع: MSS Clamp 1360 و ICMP؛ تأیید.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| قالب TS | یکسان برای تیم |
+| کتابخانه | نسخه‌دار |
+| بازبینی | فصلی |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** پرونده A با بلوک TS کامل؛ زمان رفع ۱۲ دقیقه.
+
+**متوسط (تحلیل):** پرونده B: دو علت هم‌زمان: Profile و Interface errors؛ جدا‌سازی با شواهد؛ رفع جداگانه و اندازه‌گیری.
+
+**سخت (چندلایه):** پرونده C همراه با Asymmetric جزئی (۵٪ Flow). بلوک TS: H1 MTU (آزمون ping DF)، H2 Asymmetric (Sniffer)؛ هر دو تأیید؛ رفع دو علت؛ پیشگیری: استاندارد MTU و Route متقارن.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose debug flow filter addr 10.1.4.10
+diagnose debug flow trace start 20
 diagnose debug enable
 diagnose debug disable
 diagnose debug reset
+get system performance status
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `Unverified`.
-- Disable debug.
+- سه TS Block کامل با Evidence.
+- کتابخانه‌ی TS.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- حل سه سناریو.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | RCA ناقص |
-| شواهد/دستور | — |
-| علت | سؤال جاافتاده |
-| رفع | تکمیل |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** ده‌پرسش؟ *(پاسخ: 28-4-ت1)*
-
-**ت2.** Debug flow؟ *(پاسخ: 28-4-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا چارچوب؟ *(پاسخ: 28-4-م1)*
-
-**م2.** سناریو: بدون Log؛ چه؟ *(پاسخ: 28-4-م2)*
-
-**معیار تسلط:** Capture و تحلیل.
-
-**اشتباهات رایج:** Filter باز.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| TS | Troubleshooting | عیب‌یابی | Ops |
-
-| English sentence | ترجمه |
-|---|---|
-| Use a repeatable troubleshooting framework. | از چارچوب عیب‌یابی تکرارپذیر استفاده کنید. |
-
-#### کارت Lab — درس 28-4
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | TS Block |
-| 2 | پیش‌نیاز | درس ۲۸-۲ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | ده‌پرسش |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | debug |
-| 11 | سناریوی خرابی | RCA ناقص |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | RCA |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/ts.md` |
-| 16 | Cleanup و بازگردانی | — |
+| فرضیه ثابت نمی‌شود | آزمون | رد/بعدی |
+| دو علت | شواهد جدا | رفع جدا |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Debug را Disable کنید.
+- Evidence بدون Secret.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- ده پرسش + TS Block.
+- رتبه‌بندی فرضیه.
+- چندعلتی را جدا کنید.
+- کتابخانه‌ی دانش.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) ده پرسش را فهرست کنید. *(پاسخ: 28-4-ت1)*
+
+**ت2.** (ساده) چرا Debug را Disable می‌کنیم؟ *(پاسخ: 28-4-ت2)*
+
+**ت3.** (متوسط) فرضیه‌ها را چگونه رتبه می‌دهید؟ *(پاسخ: 28-4-ت3)*
+
+**ت4.** (متوسط) پرونده A: Bytes in=0؛ علت‌های ممکن؟ *(پاسخ: 28-4-ت4)*
+
+**ت5.** (سخت) پرونده با دو علت هم‌زمان؛ روش جداسازی. *(پاسخ: 28-4-ت5)*
+
+**ت6.** (سخت، طراحی) ساختار کتابخانه‌ی TS برای تیم. *(پاسخ: 28-4-ت6)*
+
+**Q1.** Quick quiz (English): Why rank hypotheses by likelihood and test cost? *(پاسخ: 28-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| TS block | Troubleshooting block | قالب عیب‌یابی |
+| Hypothesis | Hypothesis | فرضیه |
+
+- *Keep an evidence log for every incident.* ← برای هر حادثه Evidence Log نگه دارید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** TS. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ts.md`.
+
+### ۱۵) منابع
+
+- درس ۱۴-۷
+- ITIL Problem Management
 
 <a id="l-28-5"></a>
 
-## درس 28-5 — آزمون فصل ۲۸
+## درس 28-5 — آزمون عملی فصل ۲۸: تحلیل سه PCAP و RCA — صورت مسئله، کلید و Rubric
 
-**فصل 28 - روز 5 · پیش‌نیاز: درس ۲۸-۳ · ۶ ساعت**
+**فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۱ تا ۲۸-۴ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-ارزیابی.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۸-۳
+1. سه PCAP را تحلیل و علت هرکدام را با شواهد بیان کند.
+2. RCA و رفع/پیشگیری بنویسد.
+3. محاسبات کمی (RTT، Retrans، BDP) را انجام دهد.
+4. گزارش آزمون را در قالب TS Block تحویل دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Capture.
-- TCP.
-- TLS.
-- TS.
-- آزمون.
+آزمون عملی با سه پرونده. کلید پاسخ پس از تلاش.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دیدن بسته‌ها مثل فیلم کند.
+#### صورت مسئله
 
-### ۵) مثال سازمانی
+PCAP-1: دانلود بزرگ روی Tunnel که می‌ایستد.
+PCAP-2: برنامه‌ی دسکتاپ فقط پشت فایروال خطای TLS می‌دهد.
+PCAP-3: اتصال وب به یک سرور ناموفق؛ سرور از جای دیگری پاسخ می‌دهد.
 
-سازمان: RCA با Capture.
+برای هر PCAP: الگو، محاسبه، علت، رفع، تأیید، پیشگیری.
 
-### ۶) تصویر و توپولوژی
+#### کلید پاسخ
 
-```text
-Client -> FGT -> Server (capture at each point)
-```
+- PCAP-1: Retransmission بسته‌های ≥ 1400 B؛ نبود ICMP 3/4؛ MTU/PMTUD Black hole؛ رفع MSS Clamp و ICMP.
+- PCAP-2: Alert unknown_ca/Issuer فایروال؛ CA در Store برنامه نیست یا Pinning؛ رفع: نصب CA/Exemption.
+- PCAP-3: SYN در یک Interface و SYN/ACK در دیگری؛ Asymmetric؛ رفع Route/Policy Route.
 
-### ۷) پیکربندی (GUI و CLI)
+#### Rubric
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+تحلیل ۳۰؛ محاسبات ۱۵؛ RCA ۲۵؛ رفع/پیشگیری ۱۵؛ قالب/صداقت ۱۵.
 
-#### روش گرافیکی (GUI)
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-1. Packet Capture.
+**PCAP-1:** MTU/PMTUD.
 
-#### روش خط فرمان (CLI)
+**PCAP-2:** CA/Pinning.
 
-```text
-diagnose sniffer packet any "icmp" 4 10 l
-```
+**PCAP-3:** Asymmetric.
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `Unverified`.
+- گزارش سه TS Block.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- حل آزمون.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | تحلیل غلط |
-| شواهد/دستور | — |
-| علت | — |
-| رفع | — |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Capture؟ *(پاسخ: 28-5-ت1)*
-
-**ت2.** RCA؟ *(پاسخ: 28-5-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا شاهد؟ *(پاسخ: 28-5-م1)*
-
-**م2.** سناریو: بدون Capture؛ چه؟ *(پاسخ: 28-5-م2)*
-
-**معیار تسلط:** Capture و تحلیل.
-
-**اشتباهات رایج:** Filter باز.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| RCA | Root Cause Analysis | علت ریشه‌ای | Ops |
-
-| English sentence | ترجمه |
-|---|---|
-| Always attach evidence. | همیشه شاهد پیوست کنید. |
-
-#### کارت Lab — درس 28-5
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون TS |
-| 2 | پیش‌نیاز | درس ۲۸-۳ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | آزمون |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | capture |
-| 11 | سناریوی خرابی | تحلیل غلط |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | سند |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/ts-exam.md` |
-| 16 | Cleanup و بازگردانی | — |
+| تحلیل ناقص | Rubric | کسری |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- PCAP امن.
 
-<a id="ans-28"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- سه پرونده با RCA.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) PCAP-1: کدام الگو MTU را نشان می‌دهد؟ *(پاسخ: 28-5-ت1)*
+
+**ت2.** (ساده) PCAP-2: Issuer چه می‌گوید؟ *(پاسخ: 28-5-ت2)*
+
+**ت3.** (متوسط) PCAP-3: چگونه Asymmetric را ثابت می‌کنید؟ *(پاسخ: 28-5-ت3)*
+
+**ت4.** (متوسط) محاسبه کنید: Window 128 KB، RTT 50 ms؛ حد Throughput. *(پاسخ: 28-5-ت4)*
+
+**ت5.** (سخت) RCA کامل برای PCAP-1. *(پاسخ: 28-5-ت5)*
+
+**ت6.** (سخت، طراحی) برنامه‌ی پیشگیری برای هر سه پرونده. *(پاسخ: 28-5-ت6)*
+
+**Q1.** Quick quiz (English): What distinguishes an MTU problem in a capture? *(پاسخ: 28-5-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| RCA | Root Cause Analysis | تحلیل علت ریشه‌ای |
+
+- *Attach evidence to every conclusion.* ← هر نتیجه شاهد داشته باشد.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** آزمون TS. **Evidence:** `03-ops/ts-exam.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۲۸-۱ تا ۲۸-۴
 
 ## پاسخ‌های فصل 28
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**28-1-ت1** — Verbose؟
 
-سطح جزئیات.
+### پاسخ‌های بازنویسی عمیق درس 28-1
 
-**28-1-ت2** — Filter؟
+**28-1-ت1** — تا مشخص شود بسته کجا ناپدید می‌شود: قبل یا بعد از فایروال.
 
-محدودسازی.
+**28-1-ت2** — هدر IP به‌علاوه‌ی نام Interface.
 
-**28-1-م1** — چرا Filter؟
+**28-1-ت3** — `tcp[tcpflags] & (tcp-syn|tcp-rst) != 0`.
 
-حجم.
+**28-1-ت4** — بسته هم روی Interface ورودی و هم خروجی ثبت می‌شود.
 
-**28-1-م2** — سناریو: Capture خالی؛ علت؟
+**28-1-ت5** — Offload؛ Capture روی نقطه‌ی بیرونی یا غیرفعال موقت Offload در Window؛ تأیید.
 
-Interface.
+**28-1-ت6** — مجوز، Filter حداقلی، زمان/حجم، رمزنگاری، Chain of custody، حذف.
 
-**28-2-ت1** — RST؟
-
-ریست.
-
-**28-2-ت2** — Retransmission؟
-
-تلفات.
-
-**28-2-م1** — چرا SYN بی‌پاسخ؟
-
-Drop.
-
-**28-2-م2** — سناریو: RST فوری؛ علت؟
-
-پورت بسته.
-
-**28-3-ت1** — SNI؟
-
-نام سرور.
-
-**28-3-ت2** — Alert؟
-
-خطا.
-
-**28-3-م1** — چرا SNI؟
-
-فیلتر.
-
-**28-3-م2** — سناریو: Alert؛ علت؟
-
-Cert.
-
-**28-4-ت1** — ده‌پرسش؟
-
-چارچوب.
-
-**28-4-ت2** — Debug flow؟
-
-مسیر بسته.
-
-**28-4-م1** — چرا چارچوب؟
-
-تکرارپذیری.
-
-**28-4-م2** — سناریو: بدون Log؛ چه؟
-
-Capture.
-
-**28-5-ت1** — Capture؟
-
-بسته.
-
-**28-5-ت2** — RCA؟
-
-ریشه.
-
-**28-5-م1** — چرا شاهد؟
-
-اثبات.
-
-**28-5-م2** — سناریو: بدون Capture؛ چه؟
-
-Log.
+**28-1-Q1** — To locate where the packet disappears relative to the firewall.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 28-2
 
-<a id="ch29"></a>
+**28-2-ت1** — پورت مقصد بسته یا سرویس پاسخ‌گو نیست.
 
+**28-2-ت2** — گیرنده بافر پر دارد و فرستنده باید متوقف شود؛ معمولاً مشکل برنامه است.
+
+**28-2-ت3** — 64 KB/0.1 s ≈ 640 KB/s ≈ 5.2 Mbit/s.
+
+**28-2-ت4** — 100 Mbit/s × 0.08 s = 8 Mbit = 1 MB.
+
+**28-2-ت5** — ping DF اندازه‌ها برای MTU؛ Interface Errors/Loss برای لینک؛ MSS Clamp و رفع لینک؛ اندازه‌گیری مجدد.
+
+**28-2-ت6** — سؤال، نقطه، Filter، الگوها، محاسبات، علت، رفع، تأیید.
+
+**28-2-Q1** — Throughput is limited to the window size divided by the round-trip time.
+
+
+### پاسخ‌های بازنویسی عمیق درس 28-3
+
+**28-3-ت1** — نام سرور در ClientHello که معمولاً رمزنشده است.
+
+**28-3-ت2** — چون پس از ServerHello رمز می‌شود.
+
+**28-3-ت3** — کلاینت CA صادرکننده را نمی‌شناسد؛ معمولاً CA فایروال نصب نیست.
+
+**28-3-ت4** — Issuer گواهی با `openssl s_client` از پشت فایروال برابر CA فایروال است.
+
+**28-3-ت5** — Exemption آن مقصد؛ مستندسازی؛ آزمون منفی سایر مقصدها.
+
+**28-3-ت6** — بلاک QUIC، پایش ECH، Exemption محدود، بازبینی.
+
+**28-3-Q1** — openssl s_client combined with openssl x509 -noout -issuer.
+
+
+### پاسخ‌های بازنویسی عمیق درس 28-4
+
+**28-4-ت1** — چه تغییر کرد، چه کسی، از کی، لایه، رسیدن بسته، Route، Policy، NAT/Session، Profile، خروج/برگشت.
+
+**28-4-ت2** — بار CPU و Log زیاد و خطر اطلاعات حساس.
+
+**28-4-ت3** — احتمال×اثر÷هزینه‌ی آزمون؛ ارزان و محتمل اول.
+
+**28-4-ت4** — Policy مقابل، Route برگشت، NAT-T/ESP، Selector؛ Debug Flow مقابل مشخص می‌کند.
+
+**28-4-ت5** — شواهد مستقل برای هر علت، رفع یکی و اندازه‌گیری، سپس دیگری.
+
+**28-4-ت6** — قالب یکسان، دسته‌بندی، جستجو، نسخه‌دار، بازبینی فصلی، پیوند به Runbook.
+
+**28-4-Q1** — To find the cause faster by testing likely and cheap hypotheses first.
+
+
+### پاسخ‌های بازنویسی عمیق درس 28-5
+
+**28-5-ت1** — Retransmission بسته‌های بزرگ و نبود ICMP Frag Needed.
+
+**28-5-ت2** — اگر Issuer فایروال باشد Deep Inspection فعال است؛ خطا یعنی CA در Store برنامه نیست یا Pinning.
+
+**28-5-ت3** — SYN در یک Interface/فایروال و SYN/ACK در دیگری؛ session فقط یکجا.
+
+**28-5-ت4** — 128 KB/0.05 s ≈ 2.56 MB/s ≈ 20.5 Mbit/s.
+
+**28-5-ت5** — علامت: دانلود می‌ایستد؛ شواهد: Retrans بسته‌های بزرگ، بدون ICMP؛ علت: MTU Tunnel+PMTUD Black hole؛ رفع: MSS Clamp 1360 و ICMP؛ تأیید: دانلود کامل؛ پیشگیری: استاندارد MTU.
+
+**28-5-ت6** — MTU استاندارد/ICMP، CA مدیریت‌شده و Exemption لیست، Route متقارن و Alert RPF.
+
+**28-5-Q1** — Large packets are retransmitted while smaller packets pass, often without ICMP fragmentation-needed messages.
 
 ### پاسخ‌های درس افزوده‌ی 28-0 (فصل 28)
 
@@ -38379,565 +38760,618 @@ end
 
 - NIST SP 800-61 Rev.2 — Computer Security Incident Handling Guide؛ MITRE ATT&CK.
 
-## درس 29-1 — Detection: Log و IOC ساده
+## درس 29-1 — Detection عملی: از Log فایروال به IOC/TTP، Baseline، آستانه، Correlation و Alert
 
-**فصل 29 - روز 1 · پیش‌نیاز: فصل ۲۸ · ۶ ساعت**
+**فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰، ۲۷-۰، ۲۷-۱، ۲۸-۲ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** مفهومی؛ فقط Lab ایزوله و مجاز؛ FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-چگونه حمله را ببینیم.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۲۸
+1. از Log فایروال Detectionهای Scan، Brute-force، Exfiltration، حرکت جانبی و DNS مشکوک بسازد.
+2. Baseline و آستانه (آماری و قاعده‌محور) را با FP/FN بسنجد.
+3. Correlation چندمنبعی (Traffic+Event+DNS) را انجام دهد.
+4. Alert را با Severity، Owner و Runbook مستند کند.
+5. Detection را با سناریوی مجاز در Lab آزمایش و تنظیم کند.
+6. Coverage را با ATT&CK مفهومی نگاشت کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Log Deny زیاد.
-- Port Scan.
-- Login ناموفق.
-- IOC ساده.
-- Baseline.
+Detection بدون Baseline پر از نویز است و بدون Correlation کور. هدف: Alertهای کم، دقیق و قابل‌اقدام. IOC (آدرس/Hash) زودگذر است؛ **رفتار (TTP)** پایدارتر است: اسکن، Brute-force، حرکت جانبی، خروج داده.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-نگهبان شبکه باید ببیند و پاسخ دهد.
+#### ۱) Detection از Log
 
-### ۵) مثال سازمانی
+| رفتار | داده | منطق | آستانه‌ی اولیه |
+|---|---|---|---|
+| Port scan | Traffic: deny | یک srcip به N پورت/مقصد | > 100 پورت در ۲ دقیقه |
+| Brute-force | Event: login failed | تعداد ناموفق | > 10 در ۵ دقیقه |
+| ورود موفق پس از ناموفق | Event | ترکیب | ≥ 5 ناموفق سپس موفق |
+| Exfiltration | Traffic: sentbyte | حجم خروجی | > Baseline + 3σ/روز |
+| حرکت جانبی | Traffic: deny/allow بین Zone | دسترسی غیرعادی داخلی | هر Deny DMZ→DB |
+| DNS مشکوک | DNS Log | دامنه‌ی نویزی/طول بلند/Rate بالا | Rate/entropy |
 
-سازمان: SOC کوچک با Log و Playbook.
+#### ۲) Baseline و آماری
 
-### ۶) تصویر و توپولوژی
-
-```text
-FGT/Log -> Detection -> Response
+``` text
+Alert if x > mean + 3 x stddev   (per host or per hour of day)
+FP rate = false alarms / alerts ; Precision = TP/(TP+FP)
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+الگوی زمانی (ساعت/روز کاری) را در Baseline لحاظ کنید.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۳) Correlation
 
-#### روش گرافیکی (GUI)
+یک Alert قوی‌تر: «Deny مکرر از IP X» + «ورود موفق همان IP» + «حجم خروجی بالا». Join بر پایه‌ی `srcip`، `user`، زمان.
 
-1. Log & Report > Forward Traffic.
+#### ۴) Alert حرفه‌ای
 
-#### روش خط فرمان (CLI)
+``` text
+Name / Severity / Data source / Logic / Threshold / Owner / Runbook link / FP notes / Tuning date
+```
 
-```text
+#### ۵) آزمون در Lab
+
+سناریوی مجاز: nmap محدود از Attacker-Lab؛ ۲۰ ورود ناموفق؛ انتقال فایل بزرگ؛ بررسی Alert و FP.
+
+#### ۶) نگاشت ATT&CK
+
+Scan→Discovery (TA0007)، Brute force→Credential Access (TA0006)، Lateral→Lateral Movement (TA0008)، Exfil→Exfiltration (TA0010).
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| آستانه | Baseline |
+| Correlation | چندمنبعی |
+| Exclusion | مستند+زمان‌دار |
+| Runbook | برای هر Alert |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Alert Scan: `srcip=198.51.100.7` Deny روی ۴۰۰ پورت در ۲ دقیقه؛ Block؛ بررسی Allow موفق (هیچ).
+
+**متوسط (تحلیل):** Scanner داخلی مجاز FP می‌دهد: Exclusion بر پایه‌ی srcip و زمان؛ ثبت تاریخ بازبینی؛ نسبت FP از ۴۰٪ به ۵٪.
+
+**سخت (Correlation):** ورود موفق VPN پس از ۱۲۰ ناموفق، سپس ۴۰۰ MB خروجی به IP ناشناس در ۱۰ دقیقه. Correlation سه رویداد ⇒ Severity بحرانی. اقدام: Contain، Scope، RCA. معیار: بدون Correlation سه Alert مجزا با اولویت پایین می‌ماند.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 execute log filter category 0
+execute log filter field action deny
+execute log filter field srcip 198.51.100.7
 execute log display
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `Unverified`.
+- Alert آزمایشی (سناریوی مجاز).
+- FP rate اندازه‌گیری.
+- ماتریس ATT&CK.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- شناسایی Scan.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Alert کاذب |
-| شواهد/دستور | Log |
-| علت | Threshold |
-| رفع | تنظیم |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** IOC؟ *(پاسخ: 29-1-ت1)*
-
-**ت2.** Baseline؟ *(پاسخ: 29-1-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Baseline؟ *(پاسخ: 29-1-م1)*
-
-**م2.** سناریو: Scan؛ چه؟ *(پاسخ: 29-1-م2)*
-
-**معیار تسلط:** Detection و Patch.
-
-**اشتباهات رایج:** بدون Playbook.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| IOC | Indicator of Compromise | نشانه‌ی نفوذ | SOC |
-
-| English sentence | ترجمه |
-|---|---|
-| Know your baseline. | وضعیت عادی را بشناسید. |
-
-#### کارت Lab — درس 29-1
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Detection |
-| 2 | پیش‌نیاز | فصل ۲۸ |
-| 3 | توپولوژی | FGT+Attacker-Lab |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Scan |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | nmap |
-| 11 | سناریوی خرابی | Alert کاذب |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Log |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/detect.md` |
-| 16 | Cleanup و بازگردانی | — |
+| FP زیاد | Log | Exclusion/آستانه |
+| FN | Coverage | Detection جدید |
+| Alert نمی‌رسد | Syslog | مسیر |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- آزمون فقط Lab مجاز.
+- Exclusion مستند.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- رفتار بر IOC ارجحیت دارد.
+- Baseline و آماری.
+- Correlation.
+- Alert با Owner/Runbook.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) IOC و TTP چه فرقی دارند؟ *(پاسخ: 29-1-ت1)*
+
+**ت2.** (ساده) چرا Baseline لازم است؟ *(پاسخ: 29-1-ت2)*
+
+**ت3.** (متوسط) آستانه‌ی mean+3σ یعنی چه؟ *(پاسخ: 29-1-ت3)*
+
+**ت4.** (متوسط) چرا Exclusion باید زمان‌دار باشد؟ *(پاسخ: 29-1-ت4)*
+
+**ت5.** (سخت) سه رویداد را Correlate و Severity بدهید. *(پاسخ: 29-1-ت5)*
+
+**ت6.** (سخت، طراحی) ۵ Detection با داده/منطق/آستانه/Runbook. *(پاسخ: 29-1-ت6)*
+
+**Q1.** Quick quiz (English): Why are behavior-based detections more durable than indicator-based ones? *(پاسخ: 29-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| TTP | Tactics, Techniques and Procedures | رفتار مهاجم |
+| FP | False positive | هشدار کاذب |
+| ATT&CK | MITRE ATT&CK | ماتریس تکنیک‌های مهاجم |
+
+- *Know your baseline.* ← وضعیت عادی را بشناسید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Detection. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/detect.md`.
+
+### ۱۵) منابع
+
+- NIST SP 800-61
+- MITRE ATT&CK
+- NIST SP 800-92
 
 <a id="l-29-2"></a>
 
-## درس 29-2 — Response و Playbook
+## درس 29-2 — Response و Playbook: مهار، Evidence، ریشه‌کنی، بازیابی و ارتباطات با مثال‌های اجرایی
 
-**فصل 29 - روز 2 · پیش‌نیاز: درس ۲۹-۰ · ۶ ساعت**
+**فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰، ۲۹-۱، ۱۳-۷ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** مفهومی؛ فقط Lab ایزوله و مجاز؛ FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-پاسخ گام‌به‌گام.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۹-۰
+1. Playbook برای سه سناریو (Scan، Compromise سرور، حساب VPN لو رفته) بنویسد.
+2. مهار با فایروال (Block، Quarantine، Session) را بدون تخریب Evidence اجرا کند.
+3. ریشه‌کنی و بازیابی را با آزمون تأیید کند.
+4. ارتباطات و Escalation را مستند کند.
+5. تفاوت مهار کوتاه‌مدت/بلندمدت را بگوید.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Contain.
-- Eradicate.
-- Recover.
-- Lessons.
-- Playbook.
+در حادثه فشار زیاد است؛ Playbook یعنی از قبل تصمیم‌گیری. اشتباه رایج: مهار فوری که شواهد را پاک می‌کند، یا مهار ناقص که مهاجم را آگاه می‌کند.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-نگهبان شبکه باید ببیند و پاسخ دهد.
+#### ۱) قالب Playbook
 
-### ۵) مثال سازمانی
-
-سازمان: SOC کوچک با Log و Playbook.
-
-### ۶) تصویر و توپولوژی
-
-```text
-FGT/Log -> Detection -> Response
+``` text
+Trigger / Severity / Owner / Approvals
+1 Triage: scope? asset? success? data?
+2 Evidence preservation (what/where/how)
+3 Containment: short-term, long-term
+4 Eradication  5 Recovery + verification  6 Communication  7 Lessons learned
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) مهار با فایروال
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+- **Block IP:** Address + Deny Policy بالاتر از همه (Policy ID/موقت با تاریخ انقضا).
+- **Quarantine:** قرنطینه‌ی میزبان (Policy/VLAN/Quarantine).
+- **قطع Session:** `diagnose sys session clear` با Filter (۱۳-۷).
+- **قطع VPN User:** غیرفعال کاربر + پایان Session.
+- **Evidence پیش از مهار:** ذخیره‌ی Log/Session/Capture (مهار ممکن است Session را از بین ببرد).
 
-#### روش گرافیکی (GUI)
+#### ۳) سناریوها
 
-1. Policy & Objects > Addresses.
+**۱) Scan خارجی:** Block IP؛ بررسی Allowهای موفق؛ Hardening Local-in.
+**۲) سرور DMZ Compromise:** ایزوله (Quarantine)، Evidence، بررسی مسیرها (Log DMZ→Internal)، بازسازی از Image، چرخش Credential.
+**۳) حساب VPN لو رفته:** قفل حساب، پایان Session، بررسی دسترسی‌های کاربر، Reset+MFA، Detection تکراری.
 
-#### روش خط فرمان (CLI)
+#### ۴) بازیابی و تأیید
 
-```text
+بازگشت به سرویس با Monitoring تشدیدشده، آزمون مثبت/منفی، حذف Ruleهای موقت، بازبینی Log ۷ روز.
+
+#### ۵) ارتباطات
+
+Timeline، اثر، وضعیت، اقدام بعدی، مسئول؛ ارتباط به مدیریت/حقوقی (در صورت نیاز)؛ ثبت.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Block موقت | با انقضا و Owner |
+| Evidence | قبل از مهار |
+| Escalation | سطوح |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Block IP اسکنر: Address `BLOCK-198.51.100.7` و Policy Deny بالا؛ تست: ping/nc از IP مسدود (Lab) رد؛ Log.
+
+**متوسط (تحلیل):** Block اعمال شد ولی Session قبلی مهاجم فعال است: `session list` با Filter؛ Clear؛ تأیید قطع؛ درس: Block+Clear.
+
+**سخت (Compromise سرور):** سرور DMZ با Webshell. Playbook: Evidence (Disk image/Log/Capture)، Quarantine، Scope (Traffic Log DMZ→Internal)، تعیین Credentialهای لمس‌شده، بازسازی، چرخش، Hardening (WAF/IPS)، PIR. اگر مهار قبل از Evidence انجام شود تحلیل ریشه ناقص می‌شود.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 config firewall address
-    edit "BLOCK-IP"
-        set subnet 198.51.100.50 255.255.255.255
+    edit "BLOCK-198.51.100.7"
+        set subnet 198.51.100.7 255.255.255.255
     next
 end
+diagnose sys session filter src 198.51.100.7
+diagnose sys session list
+diagnose sys session clear
+diagnose sys session filter clear
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `Unverified`.
+- آزمون Block (Lab).
+- Evidence ذخیره‌شده.
+- PIR.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- Block IP.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Block کار نمی‌کند |
-| شواهد/دستور | Policy |
-| علت | ترتیب |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Contain؟ *(پاسخ: 29-2-ت1)*
-
-**ت2.** Playbook؟ *(پاسخ: 29-2-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Playbook؟ *(پاسخ: 29-2-م1)*
-
-**م2.** سناریو: IP مشکوک؛ چه؟ *(پاسخ: 29-2-م2)*
-
-**معیار تسلط:** Detection و Patch.
-
-**اشتباهات رایج:** بدون Playbook.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Playbook | Incident playbook | دستورالعمل پاسخ | SOC |
-
-| English sentence | ترجمه |
-|---|---|
-| Write a playbook before incidents. | قبل از حادثه Playbook بنویسید. |
-
-#### کارت Lab — درس 29-2
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Response |
-| 2 | پیش‌نیاز | درس ۲۹-۰ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Detect |
-| 8 | صورت مسئله | Block |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping |
-| 11 | سناریوی خرابی | Block کار نمی‌کند |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Drop |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/response.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| Block بی‌اثر | ترتیب Policy | بالا ببرید |
+| مهاجم برگشت | Credential | چرخش |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Evidence اول؛ Rule موقت حذف شود.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Playbook قالب‌مند.
+- Evidence پیش از مهار.
+- Block+Clear.
+- بازیابی با تأیید.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا Evidence قبل از مهار؟ *(پاسخ: 29-2-ت1)*
+
+**ت2.** (ساده) تفاوت مهار کوتاه‌مدت و بلندمدت؟ *(پاسخ: 29-2-ت2)*
+
+**ت3.** (متوسط) Block شد ولی مهاجم هنوز متصل است؛ چرا؟ *(پاسخ: 29-2-ت3)*
+
+**ت4.** (متوسط) پس از Compromise چه Credentialهایی چرخش یابند؟ *(پاسخ: 29-2-ت4)*
+
+**ت5.** (سخت) Playbook Compromise سرور DMZ را ۷ مرحله‌ای بنویسید. *(پاسخ: 29-2-ت5)*
+
+**ت6.** (سخت، طراحی) سه Playbook اولویت‌دار برای سازمان شما. *(پاسخ: 29-2-ت6)*
+
+**Q1.** Quick quiz (English): Why combine blocking an IP with clearing its existing sessions? *(پاسخ: 29-2-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Quarantine | Host quarantine | قرنطینه‌ی میزبان |
+| Scoping | Incident scoping | تعیین دامنه‌ی حادثه |
+
+- *Preserve evidence before containment.* ← پیش از مهار Evidence را حفظ کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Response. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/response.md`.
+
+### ۱۵) منابع
+
+- NIST SP 800-61 Rev.2
+- SANS Incident Handler Handbook
 
 <a id="l-29-3"></a>
 
-## درس 29-3 — Lifecycle، Patch و Vulnerability
+## درس 29-3 — Lifecycle، Patch و Vulnerability Management: Inventory، EoL، PSIRT/CVE، اولویت‌بندی و Rollback
 
-**فصل 29 - روز 3 · پیش‌نیاز: درس ۲۹-۱ · ۶ ساعت**
+**فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۴، ۲۹-۰ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** مفهومی؛ فقط Lab ایزوله و مجاز؛ FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-مدیریت چرخه‌ی عمر.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۹-۱
+1. Inventory دارایی (مدل، نسخه، لایسنس، EoL) را نگه دارد.
+2. CVE را با Exposure/Exploitability/Impact اولویت‌بندی کند.
+3. Plan Patch با Lab، Window، Rollback و Verification بنویسد.
+4. Compensating Controls را وقتی Patch ممکن نیست طراحی کند.
+5. Metrics (Time-to-patch، Coverage) را اندازه بگیرد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- End-of-Life.
-- Patch.
-- Advisory.
-- CVE رایج (7.0.x).
-- Backup/Rollback.
+نسخه‌ی 7.0.3 قدیمی است و CVEهای شناخته‌شده دارد (مثل CVE-2022-40684، CVE-2022-42475، CVE-2023-27997 که در مستند پروژه ذکر شده‌اند). مدیریت آسیب‌پذیری یعنی «بدانید چه دارید، چه آسیب‌پذیر است، چه زمانی و چگونه امن می‌شود».
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-نگهبان شبکه باید ببیند و پاسخ دهد.
+#### ۱) Inventory
 
-### ۵) مثال سازمانی
-
-سازمان: SOC کوچک با Log و Playbook.
-
-### ۶) تصویر و توپولوژی
-
-```text
-FGT/Log -> Detection -> Response
+``` text
+Device | Model | Serial | FortiOS | Role | Exposure(internet?) | License end | EoL/EoS | Owner
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) اولویت‌بندی
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+``` text
+Priority ~= Severity(CVSS) x Exposure x Exploit availability x Asset criticality
+```
 
-#### روش گرافیکی (GUI)
+مثال: CVE بحرانی روی SSL VPN اینترنتی با Exploit فعال ⇒ فوری (۲۴ تا ۷۲ ساعت). CVE روی سرویس داخلی غیرقابل‌دسترس ⇒ برنامه‌ریزی‌شده.
 
-1. System > Firmware.
+#### ۳) چرخه
 
-#### روش خط فرمان (CLI)
+PSIRT/CVE Feed → ارزیابی تأثیر روی نسخه/ویژگی → تصمیم (Patch/Workaround/Accept) → Lab → Window → Rollback آماده → Verification → ثبت.
 
-```text
+#### ۴) Compensating Controls
+
+وقتی Patch فوراً ممکن نیست: محدودسازی Source، غیرفعال‌کردن ویژگی (SSL VPN)، IPS Signature، Segmentation، پایش اضافه، WAF/Reverse proxy.
+
+#### ۵) EoL/EoS
+
+برنامه‌ی ارتقا قبل از پایان پشتیبانی؛ نسخه‌ی هدف و مسیر ارتقا (Upgrade Path) را از مستند Fortinet بگیرید.
+
+#### ۶) Metrics
+
+``` text
+Time-to-patch (critical) = patch date - advisory date
+Coverage = patched devices / total devices
+```
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| اولویت | Exposure×Exploit×Criticality |
+| Compensating | وقتی Patch نیست |
+| Canary | برای ناوگان بزرگ |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** جدول Inventory ۳ دستگاه؛ نسخه‌ها؛ فهرست CVE مرتبط؛ اولویت.
+
+**متوسط (تحلیل):** CVE بحرانی SSL VPN و دستگاه اینترنتی: فوری. اقدام: Lab Patch، Window، Backup، Rollback؛ اگر ۷۲ ساعت ممکن نبود: غیرفعال SSL VPN/Source Restriction موقت.
+
+**سخت (طراحی):** ۲۰ دستگاه، ۲ شب Window در ماه، Upgrade Path چندمرحله‌ای. طرح: دسته‌بندی بر اساس Exposure؛ اینترنتی‌ها اول؛ Canary؛ HA یکی‌یکی؛ Verification و Rollback؛ Time-to-patch هدف ۷ روز برای بحرانی.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 get system status
-execute backup config tftp pre-patch.conf 192.168.90.10
+execute backup config sftp pre-patch.conf 192.168.90.10 backup-user <PASSWORD>
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `Unverified`.
+- Inventory کامل.
+- Plan Patch.
+- Metrics ثبت.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- برنامه‌ی Patch.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Patch شکست |
-| شواهد/دستور | Backup |
-| علت | — |
-| رفع | Rollback |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** EoL؟ *(پاسخ: 29-3-ت1)*
-
-**ت2.** Rollback؟ *(پاسخ: 29-3-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Backup؟ *(پاسخ: 29-3-م1)*
-
-**م2.** سناریو: 7.0.3 EoL؛ چه؟ *(پاسخ: 29-3-م2)*
-
-**معیار تسلط:** Detection و Patch.
-
-**اشتباهات رایج:** بدون Playbook.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| EoL | End of Life | پایان عمر | Lifecycle |
-
-| English sentence | ترجمه |
-|---|---|
-| Track end-of-life dates. | تاریخ پایان عمر را پیگیری کنید. |
-
-#### کارت Lab — درس 29-3
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Patch |
-| 2 | پیش‌نیاز | درس ۲۹-۱ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Patch |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | status |
-| 11 | سناریوی خرابی | Patch شکست |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | نسخه |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/patch.md` |
-| 16 | Cleanup و بازگردانی | Rollback |
+| Patch شکست | Pre/Post-check | Rollback |
+| ناسازگاری ویژگی | Release notes | برنامه |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Patch سریع برای اینترنتی؛ Backup قبل.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Inventory→ارزیابی→Patch→Rollback.
+- اولویت ریسک‌محور.
+- Compensating Controls.
+- Metrics.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) EoL یعنی چه؟ *(پاسخ: 29-3-ت1)*
+
+**ت2.** (ساده) چرا Exposure در اولویت وزن بالا دارد؟ *(پاسخ: 29-3-ت2)*
+
+**ت3.** (متوسط) Patch ممکن نیست؛ چه می‌کنید؟ *(پاسخ: 29-3-ت3)*
+
+**ت4.** (متوسط) Time-to-patch چیست؟ *(پاسخ: 29-3-ت4)*
+
+**ت5.** (سخت) طرح Patch ۲۰ دستگاه با ۲ Window ماهانه. *(پاسخ: 29-3-ت5)*
+
+**ت6.** (سخت، طراحی) داشبورد Metrics آسیب‌پذیری. *(پاسخ: 29-3-ت6)*
+
+**Q1.** Quick quiz (English): Which factors raise the urgency of patching a vulnerability? *(پاسخ: 29-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| PSIRT | Product Security Incident Response Team | تیم امنیت محصول |
+| CVSS | Common Vulnerability Scoring System | سامانه‌ی امتیاز آسیب‌پذیری |
+| EoL | End of Life | پایان عمر |
+
+- *Track end-of-life dates and plan upgrades early.* ← تاریخ پایان عمر را پیگیری و ارتقا را زود برنامه‌ریزی کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Patch. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/patch.md`.
+
+### ۱۵) منابع
+
+- FortiGuard PSIRT
+- NIST SP 800-40 Rev.4
+- FIRST CVSS
 
 <a id="l-29-4"></a>
 
-## درس 29-4 — Incident Report و آزمون
+## درس 29-4 — گزارش حادثه (PIR) و آزمون عملی Blue Team: سناریوی چندمرحله‌ای با Rubric
 
-**فصل 29 - روز 4 · پیش‌نیاز: درس ۲۹-۲ · ۶ ساعت**
+**فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰ تا ۲۹-۳ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** مفهومی؛ فقط Lab ایزوله و مجاز؛ FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-گزارش حادثه.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۹-۲
+1. سناریوی چندمرحله‌ای (Scan→Brute-force→ورود→حرکت جانبی) را Detect و Contain کند.
+2. PIR بدون سرزنش با Timeline و اقدام‌های قابل‌پیگیری بنویسد.
+3. معیارهای MTTD/MTTR و کیفیت Detection را ارزیابی کند.
+4. Playbookها را بر پایه‌ی درس‌آموخته به‌روز کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Timeline.
-- Impact.
-- RCA.
-- Action.
-- آزمون.
+آزمون عملی بر پایه‌ی سناریوی مجاز در Lab. کلید پاسخ پس از تلاش.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-نگهبان شبکه باید ببیند و پاسخ دهد.
+#### سناریو (Lab مجاز)
 
-### ۵) مثال سازمانی
+۱) Scan از Attacker-Lab؛ ۲) ۲۰ Login ناموفق VPN؛ ۳) ورود موفق؛ ۴) تلاش دسترسی DMZ→DB (Deny).
 
-سازمان: SOC کوچک با Log و Playbook.
+#### وظایف
 
-### ۶) تصویر و توپولوژی
+Detect، Triage، Contain (Block+Clear+Lock)، Scope، RCA، PIR، بهبود Detection.
 
-```text
-FGT/Log -> Detection -> Response
+#### قالب PIR
+
+``` text
+Summary / Impact / Timeline (UTC) / Detection / Containment / Root cause
+What went well / What went poorly / Actions (owner, date) / Metrics (MTTD, MTTR)
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### کلید (خلاصه)
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+- Detect: Alert Scan، Brute-force، Correlation ورود موفق.
+- Contain: Block IP، Lock کاربر، پایان Session؛ Evidence قبلی.
+- RCA: نبود MFA/Rate limit؛ Local-in.
+- Actions: MFA، Alert Correlation، Segmentation DMZ→DB.
 
-#### روش گرافیکی (GUI)
+#### Rubric (۱۰۰)
 
-1. Log & Report.
+Detection ۲۵؛ مهار ۲۵؛ RCA ۲۰؛ PIR ۲۰؛ صداقت ۱۰.
 
-#### روش خط فرمان (CLI)
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-```text
-get system status
-```
+**ساده:** Timeline.
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+**متوسط:** مهار و Scope.
 
-- خواندنی.
+**سخت:** PIR و اقدام‌ها.
 
-### ۸) تست عملکرد
+### ۸) Verification (اثبات صحت)
 
-- گزارش یک‌صفحه‌ای.
+- PIR تکمیل.
 
-### ۹) عیب‌یابی
+### ۹) Troubleshooting
 
-| بخش | شرح |
-|---|---|
-| Symptom | گزارش ناقص |
-| شواهد/دستور | — |
-| علت | — |
-| رفع | تکمیل |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Timeline؟ *(پاسخ: 29-4-ت1)*
-
-**ت2.** Impact؟ *(پاسخ: 29-4-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا گزارش؟ *(پاسخ: 29-4-م1)*
-
-**م2.** سناریو: بدون Timeline؛ مشکل؟ *(پاسخ: 29-4-م2)*
-
-**معیار تسلط:** Detection و Patch.
-
-**اشتباهات رایج:** بدون Playbook.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Timeline | Incident timeline | خط زمان | SOC |
-
-| English sentence | ترجمه |
-|---|---|
-| Write a blameless incident report. | گزارش حادثه را بدون سرزنش بنویسید. |
-
-#### کارت Lab — درس 29-4
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | گزارش |
-| 2 | پیش‌نیاز | درس ۲۹-۲ |
-| 3 | توپولوژی | — |
-| 4 | تجهیزات | — |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | گزارش |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | گزارش ناقص |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | سند |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/incident.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Detection دیر | Metrics | آستانه |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Lab.
 
-<a id="ans-29"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- PIR بدون سرزنش.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) PIR شامل چه بخش‌هایی است؟ *(پاسخ: 29-4-ت1)*
+
+**ت2.** (ساده) Blameless یعنی چه؟ *(پاسخ: 29-4-ت2)*
+
+**ت3.** (متوسط) MTTD و MTTR را در سناریو چگونه محاسبه می‌کنید؟ *(پاسخ: 29-4-ت3)*
+
+**ت4.** (متوسط) چرا Correlation ورود موفق مهم است؟ *(پاسخ: 29-4-ت4)*
+
+**ت5.** (سخت) سه اقدام پیشگیرانه از PIR. *(پاسخ: 29-4-ت5)*
+
+**ت6.** (سخت، طراحی) به‌روزرسانی Playbook پس از درس‌آموخته. *(پاسخ: 29-4-ت6)*
+
+**Q1.** Quick quiz (English): Which metrics summarize detection and response performance? *(پاسخ: 29-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| PIR | Post-incident review | بازبینی پس از حادثه |
+
+- *Write a blameless post-incident review.* ← PIR بدون سرزنش بنویسید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Incident. **Evidence:** `03-ops/incident.md`.
+
+### ۱۵) منابع
+
+- NIST SP 800-61
+- Google SRE Book (Postmortem culture)
 
 ## پاسخ‌های فصل 29
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**29-1-ت1** — IOC؟
 
-نشانه‌ی نفوذ.
+### پاسخ‌های بازنویسی عمیق درس 29-1
 
-**29-1-ت2** — Baseline؟
+**29-1-ت1** — IOC نشانه‌ی مشخص و زودگذر (IP/Hash)؛ TTP رفتار و روش مهاجم و پایدارتر.
 
-وضعیت عادی.
+**29-1-ت2** — تا انحراف از رفتار عادی تشخیص داده شود و FP کم شود.
 
-**29-1-م1** — چرا Baseline؟
+**29-1-ت3** — مقداری بیش از میانگین به‌علاوه‌ی سه برابر انحراف معیار Alert می‌دهد (تقریباً رویداد نادر).
 
-تشخیص انحراف.
+**29-1-ت4** — تا استثنا فراموش و به حفره تبدیل نشود؛ بازبینی دوره‌ای.
 
-**29-1-م2** — سناریو: Scan؛ چه؟
+**29-1-ت5** — ناموفق مکرر + ورود موفق + خروجی بالا ⇒ احتمال نفوذ؛ Severity بحرانی؛ Contain/Scope/RCA.
 
-Block+Log.
+**29-1-ت6** — جدول بالا بسط داده شود.
 
-**29-2-ت1** — Contain؟
-
-مهار.
-
-**29-2-ت2** — Playbook؟
-
-دستورالعمل.
-
-**29-2-م1** — چرا Playbook؟
-
-سرعت.
-
-**29-2-م2** — سناریو: IP مشکوک؛ چه؟
-
-Block.
-
-**29-3-ت1** — EoL؟
-
-پایان پشتیبانی.
-
-**29-3-ت2** — Rollback؟
-
-بازگشت.
-
-**29-3-م1** — چرا Backup؟
-
-بازگشت.
-
-**29-3-م2** — سناریو: 7.0.3 EoL؛ چه؟
-
-ارتقا.
-
-**29-4-ت1** — Timeline؟
-
-زمان‌بندی.
-
-**29-4-ت2** — Impact؟
-
-اثر.
-
-**29-4-م1** — چرا گزارش؟
-
-یادگیری.
-
-**29-4-م2** — سناریو: بدون Timeline؛ مشکل؟
-
-RCA ناقص.
+**29-1-Q1** — Because attackers can change IPs and hashes easily but their behaviors change much less.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 29-2
 
-<a id="ch30"></a>
+**29-2-ت1** — مهار ممکن است Session/حافظه/Log را تغییر دهد و تحلیل را ناقص کند.
 
+**29-2-ت2** — کوتاه‌مدت جلوگیری فوری (Block/Quarantine)؛ بلندمدت رفع ریشه‌ای (بازسازی/Patch/چرخش).
+
+**29-2-ت3** — Session قبلی باقی است؛ باید Clear فیلترشده انجام شود.
+
+**29-2-ت4** — حساب‌های موجود روی سرور، سرویس‌ها، Tokenها و Credentialهایی که سرور به آن‌ها دسترسی داشت.
+
+**29-2-ت5** — Triage، Evidence، Quarantine، Scope، Eradicate/Rebuild، Recover/Verify، PIR با Owner/زمان.
+
+**29-2-ت6** — Scan/Brute-force، سرور Compromise، حساب لو رفته؛ هرکدام Trigger/Approvals/دستور.
+
+**29-2-Q1** — Because a block applies to new connections while existing sessions may continue.
+
+
+### پاسخ‌های بازنویسی عمیق درس 29-3
+
+**29-3-ت1** — پایان پشتیبانی و Patch امنیتی محصول.
+
+**29-3-ت2** — آسیب‌پذیری قابل‌دسترس از اینترنت سریع‌تر و گسترده‌تر سوءاستفاده می‌شود.
+
+**29-3-ت3** — Compensating Controls: Source Restriction، غیرفعال ویژگی، IPS، Segmentation، پایش.
+
+**29-3-ت4** — فاصله‌ی انتشار Advisory تا اعمال Patch.
+
+**29-3-ت5** — اولویت بر Exposure، Canary، HA یکی‌یکی، Backup/Rollback، Verification، هدف Time-to-patch.
+
+**29-3-ت6** — Coverage، Time-to-patch، تعداد EoL، Exception فعال، Trend.
+
+**29-3-Q1** — Internet exposure, available exploits and high asset criticality.
+
+
+### پاسخ‌های بازنویسی عمیق درس 29-4
+
+**29-4-ت1** — خلاصه، اثر، Timeline، Detection، مهار، علت، خوب/بد، اقدام و Metrics.
+
+**29-4-ت2** — تمرکز بر فرایند و سیستم نه سرزنش افراد.
+
+**29-4-ت3** — MTTD = زمان کشف − شروع حمله؛ MTTR = زمان بازیابی/بسته‌شدن − زمان کشف.
+
+**29-4-ت4** — نشان می‌دهد Brute-force موفق بوده و اولویت را بالا می‌برد.
+
+**29-4-ت5** — MFA الزامی، Alert Correlation، Segmentation DMZ→DB و Local-in.
+
+**29-4-ت6** — افزودن گام Evidence، آستانه‌ی جدید، مسئول‌ها، آزمون دوره‌ای.
+
+**29-4-Q1** — Mean time to detect and mean time to restore (MTTD and MTTR).
 
 ### پاسخ‌های درس افزوده‌ی 29-0 (فصل 29)
 
@@ -39080,560 +39514,598 @@ RCA ناقص.
 
 - NIST SP 800-41 Rev.1؛ ITIL 4 (Change Enablement)؛ Fortinet FortiConverter (مرجع رسمی؛ لایسنس/نسخه را بررسی کنید).
 
-## درس 30-1 — Inventory و Mapping
+## درس 30-1 — Migration: Inventory، Rule Hygiene و نگاشت دقیق Object/NAT/Policy/VPN به FortiGate
 
-**فصل 30 - روز 1 · پیش‌نیاز: فصل ۲۹ · ۶ ساعت**
+**فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰، ۲۵-۱، ۱۳-۱ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** روش‌شناسی مستقل از برند؛ نگاشت ASA→FortiGate مفهومی/`Unverified`؛ فقط Lab/Change مجاز؛ FortiOS 7.0.3 (بوت‌نشده).
 
-ثبت وضعیت فعلی و نگاشت.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۲۹
+1. Inventory کامل از دستگاه مبدأ (Interface، Route، NAT، ACL، VPN، User، Log) تهیه کند.
+2. Rule Hygiene (Hit Count، Shadow، Duplicate، Any-Any) را انجام دهد.
+3. نگاشت مفهومی Object/Service/ACL/NAT/VPN به FortiGate را بنویسد و تفاوت مدل را تحلیل کند.
+4. ریسک‌های رفتاری (ترتیب NAT/ACL، Implicit rules، Inspection) را فهرست کند.
+5. Mapping Table و Gap List بسازد.
+6. نیازمندی‌های ابزار خودکار (FortiConverter) و محدودیت‌ها را بداند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Interface، Route، NAT، Policy.
-- Object Mapping.
-- حذف Ruleهای مرده.
-- Hit Count.
-- سند.
+مهاجرت موفق یعنی **برابری رفتاری**، نه برابری متن Config. «کپی» خطرناک است چون مدل پردازش فرق دارد: در ASA سطح امنیت و ACL و NAT ترتیب خاص دارند؛ در FortiGate Policy و Session و NAT در Policy/Central NAT. پیش‌شرط: بدانید دقیقاً چه دارید.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-جابجایی خانه با لیست.
+#### ۱) Inventory (منابع)
 
-### ۵) مثال سازمانی
-
-سازمان: جایگزینی فایروال قدیمی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Old FW -> New FGT (Cutover)
+``` text
+show running-config            show access-list (hit counts) show nat detail
+show route                     show vpn-sessiondb / crypto maps
+show conn count                show xlate count    logs (90 days)
+user/group, certificates, DHCP/DNS/AAA, routing protocols, SNMP/NTP/Syslog
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) Rule Hygiene
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Policy & Objects.
-
-#### روش خط فرمان (CLI)
-
-```text
-show running-config
-get system interface
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- خواندنی.
-
-### ۸) تست عملکرد
-
-- Inventory.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Rule جاافتاده |
-| شواهد/دستور | diff |
-| علت | Mapping |
-| رفع | تکمیل |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Mapping؟ *(پاسخ: 30-1-ت1)*
-
-**ت2.** Hit count؟ *(پاسخ: 30-1-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا حذف Rule مرده؟ *(پاسخ: 30-1-م1)*
-
-**م2.** سناریو: Rule ناشناخته؛ چه؟ *(پاسخ: 30-1-م2)*
-
-**معیار تسلط:** Plan مهاجرت.
-
-**اشتباهات رایج:** بدون Rollback.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Hit count | Hit count | تعداد استفاده | FW |
-
-| English sentence | ترجمه |
-|---|---|
-| Remove dead rules before migrating. | قبل از مهاجرت Ruleهای مرده را حذف کنید. |
-
-#### کارت Lab — درس 30-1
-
-| # | فیلد | محتوا |
+| مورد | تشخیص | اقدام |
 |---|---|---|
-| 1 | عنوان و هدف | Inventory |
-| 2 | پیش‌نیاز | فصل ۲۹ |
-| 3 | توپولوژی | Old+FGT |
-| 4 | تجهیزات | — |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | Inventory |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | Rule جاافتاده |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | سند |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `02-design/mig-inventory.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Rule بدون Hit (90 روز) | Hit count = 0 | حذف/بایگانی |
+| Shadow | Rule بالاتر همه را می‌گیرد | حذف |
+| Duplicate/Overlap | Object/Rule هم‌پوشان | ادغام |
+| Any-Any | مبدأ/مقصد/سرویس any | محدودسازی |
+| Object بی‌استفاده | بدون مرجع | حذف |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+#### ۳) نگاشت مفهومی
 
----
+| مبدأ (ASA) | FortiGate |
+|---|---|
+| nameif + security-level | Interface/Zone + Policy صریح (Implicit deny) |
+| object network/service/group | Address/Service/Group |
+| access-list + access-group | Firewall Policy (srcintf/dstintf) |
+| NAT (object/twice) | Policy NAT/VIP/IP Pool/Central NAT |
+| route/dynamic routing | Static/OSPF/BGP |
+| crypto map/tunnel-group | IPsec Phase1/2 Route-based |
+| MPF inspect | Session Helper/ALG/Profile |
+| AAA/LDAP | User/LDAP/RADIUS |
+
+#### ۴) تفاوت‌های رفتاری حیاتی
+
+- **Implicit rules:** ASA ترافیک از امنیت بالا به پایین را پیش‌فرض اجازه می‌دهد؛ FortiGate هیچ‌چیز (Implicit deny).
+- **ترتیب NAT:** ASA NAT را پیش از ACL (با Real IP در ACL پس از 8.3)؛ FortiGate DNAT قبل از Policy و SNAT بعد.
+- **Interface:** `nameif` به Zone/Interface؛ چند Interface یک Zone.
+- **Inspection:** پیش‌فرض‌ها متفاوت (ALG).
+
+#### ۵) Mapping Table
+
+``` text
+Source object -> Target object | Rule ID -> Policy ID | NAT entry -> Policy/VIP | Gap | Test case
+```
+
+#### ۶) ابزار خودکار
+
+FortiConverter (لایسنس/سرویس) Config را تبدیل می‌کند ولی **خروجی باید بازبینی و آزمون شود** (`Unverified` برای قابلیت‌ها).
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| ابزار خودکار یا دستی | Hygiene دستی + ابزار برای حجم؛ بازبینی اجباری |
+| Zone | نگاشت security-level به Zone |
+| Implicit rules | صریح‌سازی |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** ۲۴۰ Rule: ۱۱۰ صفر-Hit حذف؛ ۱۳۰ باقی؛ Mapping Table ۱۳۰ سطری.
+
+**متوسط (تحلیل):** در ASA ترافیک Inside→DMZ بدون Rule مجاز بود (security-level)؛ در FGT بدون Policy Block می‌شود. نتیجه: «قطع پس از Cutover». پیشگیری: استخراج رفتار ضمنی به Policy صریح و آزمون.
+
+**سخت (NAT):** Twice-NAT با ترتیب خاص و Object با Real/Mapped Address. نگاشت به FGT: VIP + Policy با مقصد post-DNAT + IP Pool؛ خطای رایج: Policy با IP عمومی به‌جای داخلی. آزمون: Debug Flow و Test Matrix. ریسک: Hairpin NAT و ALG.
+
+### ۸) Verification (اثبات صحت)
+
+- Mapping Table کامل و Gap List.
+- Hit Count ۹۰ روز.
+- Test Cases قبل از Build.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Rule ناشناخته | Hit/Log | Owner |
+| NAT نگاشت نمی‌شود | Test | VIP/Pool |
+| Implicit rule | تست | Policy صریح |
+
+### ۱۰) نکات امنیتی
+
+- Secret/رمز منتقل نشود.
+- Any-Any را منتقل نکنید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- برابری رفتاری هدف است.
+- Hygiene قبل از نگاشت.
+- Implicit rules را صریح کنید.
+- Mapping/Gap Table.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Hit Count چیست؟ *(پاسخ: 30-1-ت1)*
+
+**ت2.** (ساده) چرا Hygiene قبل از مهاجرت؟ *(پاسخ: 30-1-ت2)*
+
+**ت3.** (متوسط) تفاوت Implicit در ASA و FortiGate؟ *(پاسخ: 30-1-ت3)*
+
+**ت4.** (متوسط) Policy VIP باید مقصد را چه بگذارد؟ *(پاسخ: 30-1-ت4)*
+
+**ت5.** (سخت) Twice-NAT را به FGT نگاشت کنید. *(پاسخ: 30-1-ت5)*
+
+**ت6.** (سخت، طراحی) Mapping Table و Gap List برای ۱۰ Rule نمونه. *(پاسخ: 30-1-ت6)*
+
+**Q1.** Quick quiz (English): Why is behavioral equivalence the goal rather than configuration equivalence? *(پاسخ: 30-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Hit count | Rule hit count | تعداد Match |
+| Shadowed rule | Shadowed rule | Rule پنهان‌شده |
+| security-level | ASA security level | سطح امنیت ASA |
+
+- *Remove dead rules before migrating.* ← قبل از مهاجرت Ruleهای مرده را حذف کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Inventory/Mapping. **وضعیت:** اجرا نشده. **Evidence:** `02-design/mig-inventory.md`.
+
+### ۱۵) منابع
+
+- NIST SP 800-41
+- Fortinet FortiConverter documentation
+- Cisco ASA 9.x NAT reference
 
 <a id="l-30-2"></a>
 
-## درس 30-2 — Plan، Cutover و Rollback
+## درس 30-2 — Plan، Cutover و Rollback: برنامه‌ی تغییر، معیار Go/No-Go، Trigger و ارتباطات
 
-**فصل 30 - روز 2 · پیش‌نیاز: درس ۳۰-۰ · ۶ ساعت**
+**فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰، ۳۰-۱، ۳۲-۰ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** روش‌شناسی مستقل از برند؛ نگاشت ASA→FortiGate مفهومی/`Unverified`؛ فقط Lab/Change مجاز؛ FortiOS 7.0.3 (بوت‌نشده).
 
-برنامه‌ی تغییر ده‌مرحله‌ای.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۳۰-۰
+1. Plan Cutover ده‌مرحله‌ای را با زمان‌بندی دقیقه‌ای بنویسد.
+2. معیار Go/No-Go و Rollback Trigger را تعریف کند.
+3. Pre-check/Post-check و آزمون مثبت/منفی را بنویسد.
+4. ارتباطات و Escalation را برنامه‌ریزی کند.
+5. Cutover را در Lab اجرا و Rollback را آزمایش کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Change Window.
-- Pre-check.
-- Cutover.
-- Post-check.
-- Rollback.
+Cutover لحظه‌ی خطر است. Plan باید طوری باشد که یک مهندس دیگر هم بتواند اجرا کند؛ و تصمیم Rollback پیش از شروع مشخص باشد تا زیر فشار تصمیم احساسی نگیرید.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-جابجایی خانه با لیست.
+#### ۱) اجزای Plan
 
-### ۵) مثال سازمانی
-
-سازمان: جایگزینی فایروال قدیمی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Old FW -> New FGT (Cutover)
+``` text
+Scope / Window / Team roles (executor, verifier, comms, approver)
+Pre-checks: backups both, access (OOB), license, firmware, test matrix ready
+Go/No-Go checklist (T-60 min)
+Steps with timing: T+0 ... (each step: action, expected result, verification)
+Post-checks: test matrix, Log/Session, monitoring
+Rollback: trigger criteria, steps, time to complete
+Communication: start, milestones, completion, escalation
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) Go/No-Go
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+همه‌ی Pre-checkها OK؛ OOB کار می‌کند؛ Backup تأیید؛ تیم کامل؛ شرایط (بدون Freeze). یک «No» ⇒ لغو.
 
-#### روش گرافیکی (GUI)
+#### ۳) Rollback Trigger (نمونه)
 
-1. System > Config.
+- سرویس حیاتی X پس از ۳۰ دقیقه برنگشت.
+- ≥ ۲ آزمون مثبت حیاتی شکست.
+- مشکل ناشناخته‌ی امنیتی.
+Rollback باید زمان‌بندی داشته باشد (مثلاً ۱۵ دقیقه) و در Lab آزمایش شده باشد.
 
-#### روش خط فرمان (CLI)
+#### ۴) مراحل نمونه
 
-```text
-execute backup config tftp pre-cutover.conf 192.168.90.10
+``` text
+T-60 Go/No-Go     T-30 final backups     T+0 announce
+T+5 move gateway/route to new FGT        T+10 pre-defined smoke tests
+T+20 full test matrix                    T+35 decision: continue / rollback
+T+45 monitor + comms                     T+60 close window or hypercare
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+#### ۵) Hypercare
 
-- `Unverified`.
+۷ تا ۱۴ روز پایش تشدیدشده؛ Log؛ تماس سریع؛ نگه‌داشتن دستگاه قدیمی آماده تا N روز.
 
-### ۸) تست عملکرد
+### ۴) طراحی و تصمیم‌گیری
 
-- Plan.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | Cutover شکست |
-| شواهد/دستور | Post-check |
-| علت | — |
-| رفع | Rollback |
+| Window | کم‌ترافیک |
+| Trigger | پیش‌تعریف |
+| OOB | اجباری |
+| Hypercare | ۷–۱۴ روز |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** Plan یک‌صفحه‌ای با ۱۰ مرحله و Rollback.
 
-**ت1.** Rollback؟ *(پاسخ: 30-2-ت1)*
+**متوسط (تحلیل):** در T+20 فقط ۲ از ۱۰ آزمون شکست می‌خورد: تصمیم بر پایه‌ی Trigger: اگر سرویس حیاتی نیست ادامه با رفع؛ اگر حیاتی ⇒ Rollback. ثبت تصمیم و دلیل.
 
-**ت2.** Pre-check؟ *(پاسخ: 30-2-ت2)*
+**سخت (ریسک):** Cutover ساعت ۲ بامداد؛ دسترسی OOB قطع می‌شود. شواهد: ممنوعیت Cutover بدون OOB. طرح: Console Server/مسیر دوم؛ Go/No-Go شامل تست OOB. اگر مشکل پس از شروع: Rollback با دسترسی فیزیکی. درس: Pre-check OOB اجباری.
 
-### ۱۱) مرور و ارزیابی
+### ۷) پیاده‌سازی از مسیر CLI
 
-**م1.** چرا Rollback؟ *(پاسخ: 30-2-م1)*
-
-**م2.** سناریو: بعد از Cutover قطع؛ چه؟ *(پاسخ: 30-2-م2)*
-
-**معیار تسلط:** Plan مهاجرت.
-
-**اشتباهات رایج:** بدون Rollback.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Cutover | Cutover | سوئیچ نهایی | Migration |
-
-| English sentence | ترجمه |
-|---|---|
-| Always have a rollback plan. | همیشه Rollback Plan داشته باشید. |
-
-#### کارت Lab — درس 30-2
-
-| # | فیلد | محتوا |
-|---|---|---|
-| 1 | عنوان و هدف | Plan |
-| 2 | پیش‌نیاز | درس ۳۰-۰ |
-| 3 | توپولوژی | Old+FGT |
-| 4 | تجهیزات | — |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | Plan |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | Cutover شکست |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | سند |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `02-design/mig-plan.md` |
-| 16 | Cleanup و بازگردانی | — |
-
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
-
----
-
-<a id="l-30-3"></a>
-
-## درس 30-3 — تست پیش/پس و Evidence
-
-**فصل 30 - روز 3 · پیش‌نیاز: درس ۳۰-۱ · ۶ ساعت**
-
-### ۱) معرفی درس
-
-اثبات صحت.
-
-### ۲) پیش‌نیازها
-
-درس ۳۰-۱
-
-### ۳) توضیح مفهومی
-
-- Test Matrix.
-- ping/traceroute/app.
-- مقایسه Session.
-- Evidence.
-- RCA.
-
-### ۴) مثال ساده
-
-جابجایی خانه با لیست.
-
-### ۵) مثال سازمانی
-
-سازمان: جایگزینی فایروال قدیمی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Old FW -> New FGT (Cutover)
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Dashboard.
-
-#### روش خط فرمان (CLI)
-
-```text
-diagnose sys session list
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- `Unverified`.
-
-### ۸) تست عملکرد
-
-- Test Matrix.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | تفاوت رفتار |
-| شواهد/دستور | Matrix |
-| علت | NAT |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Matrix؟ *(پاسخ: 30-3-ت1)*
-
-**ت2.** Evidence؟ *(پاسخ: 30-3-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Matrix؟ *(پاسخ: 30-3-م1)*
-
-**م2.** سناریو: یک اپ کار نمی‌کند؛ چه؟ *(پاسخ: 30-3-م2)*
-
-**معیار تسلط:** Plan مهاجرت.
-
-**اشتباهات رایج:** بدون Rollback.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Matrix | Test matrix | جدول تست | Ops |
-
-| English sentence | ترجمه |
-|---|---|
-| Compare before and after. | قبل و بعد را مقایسه کنید. |
-
-#### کارت Lab — درس 30-3
-
-| # | فیلد | محتوا |
-|---|---|---|
-| 1 | عنوان و هدف | Test Matrix |
-| 2 | پیش‌نیاز | درس ۳۰-۱ |
-| 3 | توپولوژی | Old+FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Matrix |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping |
-| 11 | سناریوی خرابی | تفاوت رفتار |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | جدول |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/mig-test.md` |
-| 16 | Cleanup و بازگردانی | — |
-
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
-
----
-
-<a id="l-30-4"></a>
-
-## درس 30-4 — Gate G11 و آزمون
-
-**فصل 30 - روز 4 · پیش‌نیاز: درس ۳۰-۲ · ۶ ساعت**
-
-### ۱) معرفی درس
-
-ارزیابی.
-
-### ۲) پیش‌نیازها
-
-درس ۳۰-۲
-
-### ۳) توضیح مفهومی
-
-- Plan.
-- Rollback.
-- Evidence.
-- RCA.
-- آزمون.
-
-### ۴) مثال ساده
-
-جابجایی خانه با لیست.
-
-### ۵) مثال سازمانی
-
-سازمان: جایگزینی فایروال قدیمی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Old FW -> New FGT (Cutover)
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Dashboard.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
+execute backup config sftp pre-cutover.conf 192.168.90.10 backup-user <PASSWORD>
 get system status
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- خواندنی.
+- Plan بازبینی‌شده.
+- Rollback آزمایش‌شده در Lab.
+- Go/No-Go امضا.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- اجرای G11.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | G11 ناقص |
-| شواهد/دستور | — |
-| علت | Rollback ندارد |
-| رفع | تکمیل |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** G11؟ *(پاسخ: 30-4-ت1)*
-
-**ت2.** Rollback؟ *(پاسخ: 30-4-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا شاهد؟ *(پاسخ: 30-4-م1)*
-
-**م2.** سناریو: بدون Rollback؛ G11؟ *(پاسخ: 30-4-م2)*
-
-**معیار تسلط:** Plan مهاجرت.
-
-**اشتباهات رایج:** بدون Rollback.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| G11 | Gate 11 | دروازه‌ی ۱۱ | دوره |
-
-| English sentence | ترجمه |
-|---|---|
-| A plan without rollback is incomplete. | Plan بدون Rollback ناقص است. |
-
-#### کارت Lab — درس 30-4
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون G11 |
-| 2 | پیش‌نیاز | درس ۳۰-۲ |
-| 3 | توپولوژی | — |
-| 4 | تجهیزات | — |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | G11 |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | G11 ناقص |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | شاهد |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/g11.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Cutover شکست | Post-check | Rollback |
+| OOB نیست | تست | لغو |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Change رسمی و Rollback.
 
-<a id="ans-30"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- Plan + Go/No-Go + Trigger + Rollback.
+- OOB و Backup الزامی.
+- Hypercare.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Go/No-Go چیست؟ *(پاسخ: 30-2-ت1)*
+
+**ت2.** (ساده) Rollback Trigger چیست؟ *(پاسخ: 30-2-ت2)*
+
+**ت3.** (متوسط) چرا OOB لازم است؟ *(پاسخ: 30-2-ت3)*
+
+**ت4.** (متوسط) چه چیزی در Post-check؟ *(پاسخ: 30-2-ت4)*
+
+**ت5.** (سخت) ۲ آزمون از ۱۰ شکست خورد؛ تصمیم و ثبت. *(پاسخ: 30-2-ت5)*
+
+**ت6.** (سخت، طراحی) Plan ده‌مرحله‌ای برای Cutover فایروال لبه. *(پاسخ: 30-2-ت6)*
+
+**Q1.** Quick quiz (English): Why must rollback criteria be defined before the change? *(پاسخ: 30-2-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| OOB | Out-of-band management | مدیریت خارج از مسیر داده |
+| Hypercare | Hypercare | پایش ویژه پس از تغییر |
+
+- *Always have a tested rollback plan.* ← همیشه Rollback Plan آزمون‌شده داشته باشید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Plan. **وضعیت:** اجرا نشده. **Evidence:** `02-design/mig-plan.md`.
+
+### ۱۵) منابع
+
+- ITIL 4 Change Enablement
+- Google SRE Book (Release engineering)
+
+<a id="l-30-3"></a>
+
+## درس 30-3 — تست پیش/پس Migration و Evidence: Test Matrix، مقایسه‌ی Session/Log، RCA اختلاف‌ها
+
+**فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰ تا ۳۰-۲، ۲۸-۰ · ≈ 8 ساعت**
+
+> **وضعیت:** روش‌شناسی مستقل از برند؛ نگاشت ASA→FortiGate مفهومی/`Unverified`؛ فقط Lab/Change مجاز؛ FortiOS 7.0.3 (بوت‌نشده).
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. Test Matrix جامع (مثبت/منفی/عملکرد/Failover) بنویسد.
+2. قبل و بعد را با داده (Session، NAT، Log، Latency) مقایسه کند.
+3. اختلاف‌ها را RCA و رفع کند.
+4. Evidence را بسته‌بندی و Sign-off بگیرد.
+5. Hypercare Metrics را پیگیری کند.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+برابری رفتاری باید اثبات شود، نه فرض. Test Matrix + مقایسه‌ی داده + رفع اختلاف = اثبات.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) ساختار Test Matrix
+
+| ID | سرویس | مبدأ | مقصد | انتظار | قبل (مرجع) | بعد | وضعیت |
+|---|---|---|---|---|---|---|---|
+| T1 | وب | Users | Internet | OK | ✓ | ✓ | Pass |
+| T2 | ERP | Users | SRV | OK | ✓ | ✓ | Pass |
+| T3 | ممنوع | Guest | SRV | Block | ✓ | ✓ | Pass |
+| T4 | VPN | Branch | HQ | OK | ✓ | ✓ | Pass |
+| T5 | NAT/IP ثابت | SRV | Partner | IP صحیح | ✓ | ✗ | Fail |
+
+#### ۲) مقایسه‌ی داده
+
+- Session count و CPS قبل/بعد (ظرفیت).
+- NAT: IP مبدأ دیده‌شده توسط Partner.
+- Log: توزیع Policy/Deny غیرعادی.
+- Latency/Throughput.
+
+#### ۳) RCA اختلاف
+
+``` text
+T5 fail: Partner sees new IP -> cause: SNAT pool differs -> fix: IP Pool = old public IP -> verify T5
+```
+
+#### ۴) Evidence و Sign-off
+
+بسته‌ی Evidence: Matrix، Log، Capture، Config نهایی (Sanitized)، امضا مالکان سرویس.
+
+#### ۵) Hypercare Metrics
+
+Ticket مرتبط، Deny غیرعادی، CPU/Session، شکایت کاربران؛ آستانه‌ی خروج از Hypercare.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Matrix | مثبت/منفی/Performance/Failover |
+| Sign-off | مالک سرویس |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Matrix ۱۰ سطری؛ همه Pass؛ Evidence.
+
+**متوسط (تحلیل):** T5 Fail: Partner IP جدید می‌بیند؛ RCA: IP Pool؛ رفع؛ Pass؛ ثبت.
+
+**سخت (ظرفیت):** پس از Cutover CPU 85٪ (قبلاً 40٪): UTM روی همه. تحلیل: Profile پیش‌فرض/Deep؛ رفع: Profile انتخابی؛ مقایسه‌ی Baseline؛ Hypercare. درس: Test Matrix باید Performance هم داشته باشد.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose sys session stat
+get system performance status
+diagnose sys session list
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Matrix کامل.
+- مقایسه‌ی قبل/بعد.
+- Sign-off.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Fail | RCA | NAT/Policy |
+| Performance | CPU | Profile |
+
+### ۱۰) نکات امنیتی
+
+- Evidence بدون Secret.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- اثبات برابری رفتاری.
+- مقایسه‌ی داده.
+- RCA اختلاف.
+- Sign-off.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا Matrix؟ *(پاسخ: 30-3-ت1)*
+
+**ت2.** (ساده) چرا Performance در Matrix؟ *(پاسخ: 30-3-ت2)*
+
+**ت3.** (متوسط) T5 Fail: Partner IP جدید می‌بیند؛ تحلیل. *(پاسخ: 30-3-ت3)*
+
+**ت4.** (متوسط) Sign-off از چه کسی؟ *(پاسخ: 30-3-ت4)*
+
+**ت5.** (سخت) CPU از 40٪ به 85٪ رسید؛ تحلیل. *(پاسخ: 30-3-ت5)*
+
+**ت6.** (سخت، طراحی) Matrix ۱۵ سطری برای سازمان. *(پاسخ: 30-3-ت6)*
+
+**Q1.** Quick quiz (English): What does a before/after test matrix demonstrate? *(پاسخ: 30-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Sign-off | Sign-off | تأیید نهایی |
+
+- *Compare before and after with data.* ← قبل و بعد را با داده مقایسه کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Matrix. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/mig-test.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۳۰-۰ تا ۳۰-۲
+
+<a id="l-30-4"></a>
+
+## درس 30-4 — Gate G11: آزمون عملی Migration — صورت مسئله، کلید و Rubric
+
+**فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰ تا ۳۰-۳ · ≈ 8 ساعت**
+
+> **وضعیت:** روش‌شناسی مستقل از برند؛ نگاشت ASA→FortiGate مفهومی/`Unverified`؛ فقط Lab/Change مجاز؛ FortiOS 7.0.3 (بوت‌نشده).
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. Inventory/Hygiene، Plan/Rollback، Cutover Lab و Test Matrix را تحویل دهد.
+2. یک اختلاف تزریق‌شده (NAT/Implicit rule) را RCA و رفع کند.
+3. Rollback را در Lab آزمایش کند.
+4. Evidence و Sign-off ارائه دهد.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+آزمون عملی جامع مهاجرت.
+
+### ۳) توضیح عمیق فنی
+
+#### صورت مسئله
+
+مبدأ: فایروال قدیمی با ۲۰۰ Rule و NAT. هدف: FortiGate. دو اختلاف تزریق‌شده: (۱) Implicit rule؛ (۲) IP Pool.
+
+#### کلید
+
+- Hygiene: حذف Rule صفر-Hit؛ Mapping.
+- Implicit: Policy صریح؛ آزمون.
+- Pool: IP قبلی.
+- Rollback آزمایش‌شده ≤ ۱۵ دقیقه.
+
+#### Rubric
+
+Inventory/Hygiene ۲۰؛ Plan/Rollback ۲۵؛ Cutover و Matrix ۳۰؛ RCA ۱۵؛ صداقت ۱۰.
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده:** Inventory.
+
+**متوسط:** Cutover Lab.
+
+**سخت:** RCA و Rollback.
+
+### ۸) Verification (اثبات صحت)
+
+- Evidence G11.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| ناقص | Rubric | کسری |
+
+### ۱۰) نکات امنیتی
+
+- Lab.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- شواهد.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) وظایف G11؟ *(پاسخ: 30-4-ت1)*
+
+**ت2.** (ساده) چرا Rollback آزمایش می‌شود؟ *(پاسخ: 30-4-ت2)*
+
+**ت3.** (متوسط) اختلاف Implicit rule چگونه کشف می‌شود؟ *(پاسخ: 30-4-ت3)*
+
+**ت4.** (متوسط) رفع IP Pool؟ *(پاسخ: 30-4-ت4)*
+
+**ت5.** (سخت) RCA کامل یک اختلاف. *(پاسخ: 30-4-ت5)*
+
+**ت6.** (سخت، طراحی) بهبود پس از آزمون. *(پاسخ: 30-4-ت6)*
+
+**Q1.** Quick quiz (English): What must a G11 submission include? *(پاسخ: 30-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| G11 | Gate 11 | دروازه ۱۱ |
+
+- *A plan without rollback is incomplete.* ← Plan بدون Rollback ناقص است.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** G11. **Evidence:** `03-ops/g11.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۳۰-۰ تا ۳۰-۳
 
 ## پاسخ‌های فصل 30
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**30-1-ت1** — Mapping؟
 
-نگاشت.
+### پاسخ‌های بازنویسی عمیق درس 30-1
 
-**30-1-ت2** — Hit count؟
+**30-1-ت1** — تعداد دفعات Match یک Rule؛ برای شناسایی Ruleهای استفاده‌نشده.
 
-استفاده.
+**30-1-ت2** — تا قوانین مرده/پرریسک منتقل نشوند.
 
-**30-1-م1** — چرا حذف Rule مرده؟
+**30-1-ت3** — ASA بین سطوح امنیت پیش‌فرض اجازه می‌دهد؛ FortiGate Implicit deny.
 
-سادگی.
+**30-1-ت4** — IP داخلی (post-DNAT) چون DNAT قبل از Policy انجام می‌شود.
 
-**30-1-م2** — سناریو: Rule ناشناخته؛ چه؟
+**30-1-ت5** — VIP/Policy NAT/IP Pool، Policy با آدرس درست، Test Matrix، بررسی Hairpin/ALG.
 
-Hit count.
+**30-1-ت6** — ستون‌ها: مبدأ، مقصد، Policy، NAT، Gap، Test؛ ۱۰ سطر.
 
-**30-2-ت1** — Rollback؟
-
-بازگشت.
-
-**30-2-ت2** — Pre-check؟
-
-پیش‌تست.
-
-**30-2-م1** — چرا Rollback؟
-
-ایمنی.
-
-**30-2-م2** — سناریو: بعد از Cutover قطع؛ چه؟
-
-Rollback.
-
-**30-3-ت1** — Matrix؟
-
-جدول تست.
-
-**30-3-ت2** — Evidence؟
-
-شاهد.
-
-**30-3-م1** — چرا Matrix؟
-
-کامل.
-
-**30-3-م2** — سناریو: یک اپ کار نمی‌کند؛ چه؟
-
-NAT/Policy.
-
-**30-4-ت1** — G11؟
-
-Plan+Rollback+Evidence.
-
-**30-4-ت2** — Rollback؟
-
-لازم.
-
-**30-4-م1** — چرا شاهد؟
-
-اثبات.
-
-**30-4-م2** — سناریو: بدون Rollback؛ G11؟
-
-شکست.
+**30-1-Q1** — Because the two platforms process traffic differently, so identical text can behave differently.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 30-2
 
-<a id="end10"></a>
+**30-2-ت1** — چک‌لیست تصمیم پیش از شروع؛ یک «No» ⇒ لغو.
 
+**30-2-ت2** — شرط از پیش تعریف‌شده که بازگشت را الزامی می‌کند.
+
+**30-2-ت3** — اگر مسیر اصلی قطع شود امکان بازگرداندن/مدیریت دستگاه باشد.
+
+**30-2-ت4** — Test Matrix، Log/Session، Monitoring، آزمون مثبت/منفی.
+
+**30-2-ت5** — اگر حیاتی: Rollback؛ وگرنه رفع محدود و ادامه؛ ثبت دلیل/زمان.
+
+**30-2-ت6** — طبق قالب؛ با زمان‌بندی و مسئولان.
+
+**30-2-Q1** — So the decision is made objectively before pressure and emotions affect judgment.
+
+
+### پاسخ‌های بازنویسی عمیق درس 30-3
+
+**30-3-ت1** — تا آزمون‌ها سیستماتیک و قابل‌ردیابی باشند.
+
+**30-3-ت2** — تا ظرفیت و افت کارایی پس از مهاجرت دیده شود.
+
+**30-3-ت3** — SNAT/Pool متفاوت؛ IP Pool مطابق IP قبلی؛ آزمون مجدد.
+
+**30-3-ت4** — مالک سرویس/کسب‌وکار و مسئول امنیت.
+
+**30-3-ت5** — Profile UTM/Deep؛ Sensor انتخابی؛ Baseline؛ Hypercare.
+
+**30-3-ت6** — سرویس‌ها/ممنوعات/VPN/NAT/Performance/Failover.
+
+**30-3-Q1** — That service behavior and security controls are equivalent after the migration.
+
+
+### پاسخ‌های بازنویسی عمیق درس 30-4
+
+**30-4-ت1** — Inventory/Hygiene، Plan/Rollback، Cutover Lab، Matrix، RCA.
+
+**30-4-ت2** — تا اطمینان باشد در شرایط واقعی کار می‌کند.
+
+**30-4-ت3** — Test Matrix: ترافیکی که در مبدأ بود و در مقصد Block است؛ Debug Flow Policy 0.
+
+**30-4-ت4** — Pool مطابق IP قبلی؛ آزمون مجدد T5.
+
+**30-4-ت5** — علامت، شواهد، علت (Implicit/NAT)، رفع، تأیید، پیشگیری.
+
+**30-4-ت6** — استخراج Implicit rules، قالب Mapping، Test Matrix استاندارد.
+
+**30-4-Q1** — Inventory, a plan with tested rollback, cutover evidence and a before/after matrix with root-cause analysis of differences.
 
 ### پاسخ‌های درس افزوده‌ی 30-0 (فصل 30)
 
@@ -39758,7 +40230,7 @@ Plan+Rollback+Evidence.
 
 <a id="ch31"></a>
 
-> **نسخه v3.6:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.7:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 31 — Capstone I و II: طراحی و پیاده‌سازی شبکه‌ی سازمانی
 
