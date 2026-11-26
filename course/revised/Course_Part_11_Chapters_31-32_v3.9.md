@@ -60,100 +60,151 @@
 
 ## درس 31-0 — Capstone: روش طراحی، معیار پذیرش و ارزیابی قابل‌اندازه‌گیری
 
-**فصل ۳۱ · درس افزوده (پیش‌درس ۳۱-۱) · پیش‌نیاز: همه‌ی Gateها · ≈ ۴ ساعت**
+**فصل 31 · بازنویسی عمیق · پیش‌نیاز: فصل ۱ تا ۳۰ · ≈ 11 ساعت**
 
-> **وضعیت:** قالب ارزیابی؛ بدون شاهد واقعی «اجرا نشده».
+> **وضعیت:** پروژه‌ی Capstone روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ همه‌ی دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
-دانشجو بتواند پروژه‌ی جامع را از **نیازمندی** تا **تحویل** با معیار پذیرش قابل‌اندازه‌گیری، ریسک‌ها و Evidence انجام دهد و کار خود را با **Rubric** ارزیابی کند.
+در پایان این درس باید بتوانید:
 
-### ۲) مفهوم پایه
+1. نیازمندی‌های کسب‌وکار را به نیازمندی فنی قابل‌اندازه‌گیری تبدیل کند.
+2. مراحل پروژه (Requirements، HLD، LLD، Build، Test، Handover) را با خروجی هر مرحله بشناسد.
+3. معیار پذیرش (Acceptance Criteria) SMART بنویسد.
+4. ماتریس ردیابی نیازمندی ← طراحی ← آزمون را بسازد.
+5. ریسک‌ها و محدودیت‌های Lab (اجرا نشده) را صادقانه ثبت کند.
+6. Rubric ارزیابی Capstone را بفهمد.
 
-Capstone یادگیری جدید نیست؛ **اثبات تسلط** است. مهندس را با «چه ساختی» نمی‌سنجند، با «ثابت کن کار می‌کند، امن است، قابل‌عیب‌یابی است و می‌شود تحویل داد».
+### ۲) مفهوم پایه: چیست و چرا؟
+
+تا اینجا هر فصل یک مهارت بود. Capstone یعنی «حالا یک سازمان کوچک را از صفر طراحی کن و ثابت کن کار می‌کند». تفاوت مهندس با کسی که فقط دستور بلد است، همین است: او می‌پرسد «چه چیزی را باید ثابت کنم؟» پیش از اینکه اولین دستور را بزند.
+
+در این درس روش را یاد می‌گیرید، نه فقط موضوع را: چطور نیاز مبهم («اینترنت پایدار می‌خواهیم») به معیار اندازه‌گیری‌شده («Failover زیر ۱۰ ثانیه، ۹۹٫۹٪ در ماه») تبدیل می‌شود و چطور هر معیار به یک آزمون و یک Evidence وصل می‌شود.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۳-۱) نیازمندی‌ها
+#### ۱) مراحل پروژه
 
-- عملکردی: سرویس‌ها، کاربران، مکان‌ها.
-- غیرعملکردی: دسترس‌پذیری (RTO/RPO)، Performance، امنیت، انطباق.
-- محدودیت‌ها: بودجه، لایسنس، زمان، تجهیزات Lab.
-
-``` text
-Availability % = (uptime / total time) x 100
-Allowed downtime per year (99.9%) = 8.76 hours
-```
-
-#### ۳-۲) معیار پذیرش (SMART)
-
-هر نیاز → معیار قابل‌آزمایش: «کاربر Finance فقط به SRV-FIN:443 دسترسی دارد؛ آزمون مثبت/منفی؛ Evidence = Log + Capture».
-
-#### ۳-۳) ماتریس ردیابی
-
-``` text
-Requirement -> Design element -> Config object -> Test case -> Evidence
-```
-
-#### ۳-۴) Rubric ارزیابی (۱۰۰ امتیاز)
-
-| معیار | وزن | سطح عالی |
+| مرحله | خروجی | ابزار |
 |---|---|---|
-| طراحی و IP Plan | 15 | بدون Overlap، توضیح تصمیم‌ها |
-| Routing/Segmentation | 15 | Failover و Zone درست |
-| Policy/Security | 20 | Least Privilege، UTM مناسب |
-| VPN/SD-WAN/HA | 15 | رفتار خرابی اثبات‌شده |
-| Troubleshooting | 15 | RCA با شواهد |
-| مستندسازی/Runbook | 10 | تکرارپذیر |
-| صداقت (Unverified/اجرا نشده) | 10 | هیچ ادعای بدون شاهد |
+| Requirements | فهرست نیازمندی (R-01...) | مصاحبه، جدول |
+| HLD | نمودار، Zoneها، IP Plan | draw.io، جدول |
+| LLD | Interface/Route/Policy/VPN دقیق | جدول، Config |
+| Build | Config و Runbook | CLI/GUI |
+| Test | آزمون و Evidence | ماتریس آزمون |
+| Handover | As-Built، Runbook، آموزش | سند |
 
-#### ۳-۵) ریسک و سناریوهای خرابی
+#### ۲) نیاز به معیار (SMART)
 
-برای هر جزء: «اگر خراب شود؟» (ISP، فایروال، Tunnel، DC، DNS). تست حداقل ۳ خرابی با Evidence.
+| نیاز مبهم | نیازمندی SMART | معیار پذیرش |
+|---|---|---|
+| اینترنت پایدار | R-01: Failover ISP < 10 s | آزمون قطع ISP-A: بسته‌ی گمشده × 0.2 s < 10 |
+| امنیت DMZ | R-02: DMZ→DB ممنوع | ۱۰ آزمون منفی همه Deny و Log |
+| دورکاری امن | R-03: MFA برای ۱۰۰٪ کاربران | آزمون ورود بدون OTP رد |
+| قابل‌نگهداری | R-04: Backup روزانه + Restore آزمون‌شده | فایل + Hash + Restore در Lab |
 
-### ۴) مثال حل‌شده
+#### ۳) ماتریس ردیابی
 
-**نیاز:** شعبه‌ی جدید با دسترسی به ERP؛ 99.9٪. معیار: Tunnel + Failover < 30 s؛ ERP فقط 443؛ Guest ایزوله. ماتریس: Req-3 (Failover) → Dual-ISP SD-WAN → config sdwan → Test: قطع WAN1 → Evidence: ping + Log SLA. نمره‌دهی: Rubric.
+``` text
+R-01 -> HLD §3.2 (Dual-ISP SD-WAN) -> LLD table SDWAN -> Test T-05 -> Evidence E-05
+R-02 -> HLD §4.1 (DMZ zone) -> LLD Policy 61 -> Test T-09..T-18 -> Evidence E-09..E-18
+```
 
-**مثال سخت:** طراحی تضاد دارد: Backhaul (UTM مرکزی) در برابر Breakout (Latency). تصمیم با ADR (Architecture Decision Record): گزینه‌ها، معیار، انتخاب، ریسک.
+هر نیازمندی بدون آزمون «ادعا» است و هر آزمون بدون نیازمندی «کار اضافه».
 
-### ۵) GUI و CLI
+#### ۴) صداقت در Lab
 
-برای هر آزمون، هر دو مسیر (GUI و CLI) مستند؛ Evidence با خروجی خام.
+چون Labها اجرا نشده‌اند، هر آزمون در گزارش یکی از وضعیت‌ها را دارد: **طراحی‌شده**، **اجرا نشده**، **اجراشده با شاهد**. ادعای «موفق» بدون Evidence ممنوع است.
 
-### ۶) نکات امنیتی
+#### ۵) ریسک‌ها
 
-- Secret در تحویل پاک شود.
-- هر استثنای امنیتی با تاریخ بازبینی.
+| ریسک | احتمال | اثر | کاهش |
+|---|---|---|---|
+| ناسازگاری Image/لایسنس | متوسط | بالا | Probe پیش از Build |
+| زمان ناکافی | بالا | متوسط | اولویت‌بندی R-01..R-04 |
+| دستور Unverified | بالا | متوسط | تأیید در Lab پیش از ادعا |
 
-### ۷) جمع‌بندی
+#### ۶) Rubric کلی Capstone
 
-- نیاز → معیار → ماتریس ردیابی → آزمون → Evidence.
-- Rubric شفاف؛ صداقت بخشی از نمره.
+نیازمندی و ردیابی ۱۵، طراحی HLD/LLD ۲۵، پیاده‌سازی/Config ۱۵، آزمون و Evidence ۲۵، Runbook و Handover ۱۰، صداقت ۱۰.
 
-### ۸) تمرین و ارزیابی
+### ۴) طراحی و تصمیم‌گیری
 
-**ت1.** (ساده) 99.9٪ چقدر Downtime سالانه می‌دهد؟ *(پاسخ: 31-0-ت1)*
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| شروع | نیازمندی نه دستور |
+| ردیابی | هر R به T و E |
 
-**ت2.** (متوسط) ماتریس ردیابی چیست؟ *(پاسخ: 31-0-ت2)*
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ت3.** (سخت) برای ۵ نیاز، معیار پذیرش و Evidence بنویسید. *(پاسخ: 31-0-ت3)*
+**ساده (حل‌شده):** نیاز «اینترنت پایدار» ⇒ R-01 Failover < 10 s؛ معیار: آزمون قطع ISP با Ping 200 ms و شمارش بسته.
 
-**Q1.** Quick quiz (English): What is an acceptance criterion? *(پاسخ: 31-0-Q1)*
+**متوسط (ماتریس):** برای R-03 (MFA) جدول ردیابی بنویسید: HLD §5 دسترسی راه‌دور؛ LLD Policy گروه‌ها و FortiToken؛ Test T-12 ورود بدون OTP رد؛ Evidence E-12 Log و تصویر.
 
-### ۹) اصطلاحات و English Corner
+**سخت (ریسک و اولویت):** زمان ۴ هفته است و ۱۲ نیازمندی داریم. مراحل: ۱) اهمیت×ریسک. ۲) R-01..R-04 «باید» و بقیه «بهتر است». ۳) برنامه‌ی هفتگی. ۴) هر هفته Evidence. معیار پذیرش: همه‌ی «باید»ها آزمون شده، بقیه در گزارش با وضعیت صادقانه.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+! no CLI: process lesson; commands appear in LLD (lesson 31-2)
+```
+
+### ۸) Verification (اثبات صحت)
+
+- ماتریس ردیابی کامل.
+- معیارها قابل‌اندازه‌گیری.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| معیار مبهم | SMART نیست | عدد و روش اندازه‌گیری |
+| آزمون بی‌نیاز | ردیابی | حذف یا نیازمندی |
+
+### ۱۰) نکات امنیتی
+
+- اطلاعات حساس در Evidence نرود.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- نیاز → معیار → آزمون → Evidence.
+- ردیابی.
+- صداقت.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) SMART یعنی چه؟ *(پاسخ: 31-0-ت1)*
+
+**ت2.** (ساده) چرا ماتریس ردیابی؟ *(پاسخ: 31-0-ت2)*
+
+**ت3.** (متوسط) «امنیت خوب» را به معیار تبدیل کنید. *(پاسخ: 31-0-ت3)*
+
+**ت4.** (متوسط) وضعیت آزمون‌های اجرانشده؟ *(پاسخ: 31-0-ت4)*
+
+**ت5.** (سخت) ۱۲ نیازمندی در ۴ هفته؛ اولویت‌بندی. *(پاسخ: 31-0-ت5)*
+
+**ت6.** (سخت، طراحی) Rubric خودارزیابی. *(پاسخ: 31-0-ت6)*
+
+**Q1.** Quick quiz (English): Why must each requirement have a test and evidence? *(پاسخ: 31-0-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| ADR | Architecture Decision Record | ثبت تصمیم معماری |
-| RTO/RPO | Recovery Time/Point Objective | هدف زمان/نقطه‌ی بازیابی |
-| Rubric | Rubric | ماتریس ارزیابی |
+| HLD | High-Level Design | طراحی سطح بالا |
+| LLD | Low-Level Design | طراحی تفصیلی |
+| SMART | SMART criteria | معیار هوشمند |
 
-- *Every requirement needs a testable acceptance criterion.* ← هر نیاز معیار پذیرش قابل‌آزمایش می‌خواهد.
+- *Every requirement must be traceable to a test.* ← هر نیازمندی باید به یک آزمون قابل‌ردیابی باشد.
 
-### ۱۰) منابع
+### ۱۴) کارت Lab
 
-- ISO/IEC/IEEE 29148 (Requirements)؛ Google SRE Book (SLO/Availability)؛ ADR (M. Nygard).
+**کارت Lab:** نیازمندی و ردیابی (اجرا نشده). **Evidence:** `02-design/capstone-requirements.md`.
+
+### ۱۵) منابع
+
+- درس‌های فصل ۱ تا ۳۰
+- ISO/IEC/IEEE 29148
 
 ## درس 31-1 — Capstone I: نیازمندی‌ها و سند طراحی سطح بالا (HLD) — با نمونه‌ی کامل
 
@@ -292,113 +343,151 @@ Consequences: need UTM at branch; central logging required; review quarterly
 
 ## درس 31-2 — Capstone I: طراحی تفصیلی (LLD) — جدول Interface/Route/Policy/VPN و ماتریس ردیابی
 
-**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۱ · ≈ 8 ساعت**
+**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰، ۳۱-۱ · ≈ 11 ساعت**
 
-> **وضعیت:** پروژه‌ی Capstone (HQ + ۳ شعبه)؛ FortiOS 7.0.3 و Cisco (بوت‌نشده)؛ بدون شاهد واقعی «اجرا نشده»؛ دستورها `Unverified`.
+> **وضعیت:** پروژه‌ی Capstone روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ همه‌ی دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. LLD قابل‌اجرا (جداول Interface، Route، Policy، VPN، HA/SD-WAN، Object) بنویسد.
-2. Test Plan با آزمون‌های مثبت/منفی/عملکرد/Failover بنویسد.
-3. ماتریس ردیابی Req→Design→Config→Test→Evidence بسازد.
-4. خروجی را با مهندس دیگر بازبینی (Peer Review) کند.
+1. LLD کامل (آدرس‌دهی، Interface، Route، Policy، VPN، SD-WAN، Logging) را در جداول بنویسد.
+2. هر ردیف را به نیازمندی وصل کند.
+3. Configهای نمونه را بدون رمز تولید کند.
+4. LLD را برای بازبینی همکار آماده کند.
+5. ناسازگاری‌ها (Overlap، Asymmetric) را بیابد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-LLD باید طوری باشد که مهندس دیگری بتواند فقط با آن بسازد، بدون حدس.
+HLD می‌گوید «چه»؛ LLD می‌گوید «دقیقاً چطور»: کدام IP روی کدام Interface، کدام Policy با کدام Service. اگر LLD دقیق باشد، Build مکانیکی است و اگر مبهم باشد، هر مهندس چیزی متفاوت می‌سازد. این درس LLD نمونه‌ی Capstone را کامل می‌چیند.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) جدول Interface (نمونه)
+#### ۱) آدرس‌دهی
 
-| دستگاه | Interface | Zone | IP | نقش |
-|---|---|---|---|---|
-| FGT-HQ1 | port1 | WAN1 | 203.0.113.1/29 | ISP1 |
-| FGT-HQ1 | port2 | LAN | 10.0.0.1/24 | Users |
-| FGT-HQ1 | port3 | HA-HB | — | Heartbeat |
-| FGT-A | wan1 | WAN | 198.51.100.2/30 | ISP1 |
-| FGT-A | lan | LAN | 10.1.4.1/24 | Branch A |
+| شبکه | آدرس | استفاده |
+|---|---|---|
+| WAN-A | 198.51.100.0/30 | ISP-A |
+| WAN-B | 203.0.113.0/30 | ISP-B |
+| Transit Edge–Int | 10.255.0.0/30 | .1 Edge، .2 Internal |
+| DMZ | 10.30.0.0/24 | وب |
+| Users | 10.10.0.0/24 | کاربران |
+| Servers | 10.20.0.0/24 | App/DB |
+| Mgmt | 10.99.0.0/24 | مدیریت |
+| VPN pool | 10.212.134.0/24 | دورکاری |
 
-#### ۲) Policy Matrix (نمونه)
+#### ۲) Interfaceها (Edge)
+
+| Interface | IP | Role | allowaccess |
+|---|---|---|---|
+| port1 | 198.51.100.2/30 | wan | - |
+| port4 | 203.0.113.2/30 | wan | - |
+| port2 | 10.255.0.1/30 | lan | ping |
+| port3 | 10.30.0.1/24 | dmz | ping |
+| mgmt | 10.99.0.1/24 | lan | https ssh |
+
+#### ۳) Route
+
+| مقصد | Next-hop | Interface | توضیح |
+|---|---|---|---|
+| 0.0.0.0/0 | SD-WAN | virtual-wan-link | ISP-A/B |
+| 10.10.0.0/24 | 10.255.0.2 | port2 | Users |
+| 10.20.0.0/24 | 10.255.0.2 | port2 | Servers |
+
+#### ۴) Policy (Edge)
+
+| ID | از | به | Src | Dst | Service | NAT | Log | نیازمندی |
+|---|---|---|---|---|---|---|---|---|
+| 1 | port2 | SD-WAN | NET-INTERNAL | all | HTTP/S/DNS | بله | Sec | R-01 |
+| 2 | SD-WAN | DMZ | all | VIP-WEB | HTTPS | DNAT | All | R-05 |
+| 3 | DMZ | port2 | SRV-WEB | SRV-APP | TCP-8443 | - | All | R-02 |
+| 99 | any | any | all | all | ALL | - | All | R-02 |
+
+#### ۵) VPN
+
+Site-to-Site IKEv2 AES256-SHA256 DH14 PFS؛ Dial-up با MFA (R-03).
+
+#### ۶) Logging
+
+Syslog 10.99.0.20؛ Retention ۹۰ روز؛ Alert: Deny WEB→DB.
+
+#### ۷) بازبینی LLD
+
+چک‌لیست: Overlap نیست؛ هر Interface Role و allowaccess دارد؛ هر Policy نیازمندی دارد؛ NAT فقط Edge؛ هیچ رمزی در سند.
+
+#### ۸) Config نمونه
 
 ``` text
-Users->Internet : HTTP/HTTPS/DNS accept + UTM + log
-Users->ERP      : TCP 443 to 10.0.20.10 accept + log
-BranchA->ERP    : via IPsec TO-HUB accept + log
-Guest->Internet : HTTP/HTTPS/DNS only, no internal
-any->any        : deny + log
-```
-
-#### ۳) VPN/Routing
-
-IKEv2 AES-GCM-256، DH20، PFS؛ iBGP RR در Hub؛ Local-pref Hub1 200/Hub2 100؛ Prefix-list؛ MTU 1400/MSS 1360؛ BFD 300×3.
-
-#### ۴) Test Plan
-
-| ID | Req | آزمون | نوع | معیار |
-|---|---|---|---|---|
-| T1 | R1 | TCP 443 A→ERP | مثبت | Latency < 40 ms |
-| T2 | R3 | nmap Guest→Internal | منفی | filtered |
-| T3 | R2 | قطع Hub1 | Failover | < 10 s |
-| T4 | R4 | VPN بدون OTP | منفی | Reject |
-| T5 | R6 | Restore Lab | RTO | ≤ 30 min |
-
-#### ۵) ماتریس ردیابی
-
-``` text
-R1 -> HLD §5 overlay -> FGT-A tunnel+policy 120 -> T1 -> evidence E-01
+config system interface
+ edit "port3"
+  set ip 10.30.0.1 255.255.255.0
+  set allowaccess ping
+  set role dmz
+ next
+end
 ```
 
 ### ۴) طراحی و تصمیم‌گیری
 
 | سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| سطح جزئیات | قابل‌اجرا |
-| Review | Peer |
+| NAT | فقط Edge |
+| VPN pool | بدون Overlap |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** جدول Interface برای ۲ دستگاه.
+**ساده (حل‌شده):** ردیف Policy 3: DMZ→Internal فقط TCP 8443؛ نیازمندی R-02؛ Log All؛ آزمون T-10.
 
-**متوسط (تحلیل):** Review: Policy بدون Log و Matrix با any؛ اصلاح؛ ثبت.
+**متوسط (Overlap):** VPN pool 10.20.0.0/24 با Servers هم‌پوشانی دارد. شاهد: ماتریس آدرس. رفع: Pool 10.212.134.0/24. درس: LLD را با جدول آدرس بازبینی کنید.
 
-**سخت (کامل):** LLD کامل HQ+۳ شعبه با ۵ جدول و Test Plan؛ Peer Review؛ ردیابی ۶ نیاز.
+**سخت (ناسازگاری Asymmetric):** طراحی دو مسیر Default بدون SD-WAN باعث Asymmetric. مراحل: ۱) ماتریس Route را با Policy تطبیق. ۲) Failover با SD-WAN Zone. ۳) آزمون Capture. معیار: Symmetric و Failover<10s.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+config system interface
+ edit "port3"
+  set ip 10.30.0.1 255.255.255.0
+ next
+end
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- LLD بازبینی‌شده.
+- بازبینی همکار.
+- هر ردیف نیازمندی دارد.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| ناقص | Review | تکمیل |
+| Overlap | جدول آدرس | تغییر Pool |
 
 ### ۱۰) نکات امنیتی
 
-- Least privilege.
+- بدون رمز در LLD.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- LLD جداول+Test Plan+ردیابی.
+- LLD دقیق.
+- ردیابی.
+- بازبینی همکار.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) LLD چیست؟ *(پاسخ: 31-2-ت1)*
+**ت1.** (ساده) LLD چه تفاوتی با HLD؟ *(پاسخ: 31-2-ت1)*
 
-**ت2.** (ساده) ماتریس ردیابی چه چیزهایی را وصل می‌کند؟ *(پاسخ: 31-2-ت2)*
+**ت2.** (ساده) چرا ردیف Policy نیازمندی دارد؟ *(پاسخ: 31-2-ت2)*
 
-**ت3.** (متوسط) چرا Test Plan در LLD؟ *(پاسخ: 31-2-ت3)*
+**ت3.** (متوسط) Overlap pool VPN؟ *(پاسخ: 31-2-ت3)*
 
-**ت4.** (متوسط) چرا Peer Review؟ *(پاسخ: 31-2-ت4)*
+**ت4.** (متوسط) NAT کجا؟ *(پاسخ: 31-2-ت4)*
 
-**ت5.** (سخت) Policy Matrix برای ۵ جریان بنویسید. *(پاسخ: 31-2-ت5)*
+**ت5.** (سخت) Asymmetric در LLD. *(پاسخ: 31-2-ت5)*
 
-**ت6.** (سخت، طراحی) LLD کامل پروژه. *(پاسخ: 31-2-ت6)*
+**ت6.** (سخت، طراحی) LLD Internal. *(پاسخ: 31-2-ت6)*
 
-**Q1.** Quick quiz (English): What is the purpose of a traceability matrix? *(پاسخ: 31-2-Q1)*
+**Q1.** Quick quiz (English): Why should every policy row reference a requirement? *(پاسخ: 31-2-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
@@ -406,15 +495,15 @@ R1 -> HLD §5 overlay -> FGT-A tunnel+policy 120 -> T1 -> evidence E-01
 |---|---|---|
 | LLD | Low-Level Design | طراحی تفصیلی |
 
-- *Write the test plan together with the design.* ← Test Plan را همراه طراحی بنویسید.
+- *The LLD must contain exact values.* ← LLD باید مقادیر دقیق داشته باشد.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** LLD. **Evidence:** `02-design/capstone-lld.md`.
+**کارت Lab:** LLD (اجرا نشده). **Evidence:** `02-design/capstone-lld.md`.
 
 ### ۱۵) منابع
 
-- ISO/IEC/IEEE 29148
+- درس‌های ۱۵-۱ تا ۱۵-۶، ۲۱-۱
 
 <a id="l-31-3"></a>
 
@@ -576,327 +665,411 @@ git add -A && git commit -m "S3 firewall done" && git tag s3
 
 ## درس 31-4 — Capstone II: آزمون کامل، Evidence Index نمونه‌ی پر، تحلیل سه خرابی و Sign-off
 
-**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۳ · ≈ 8 ساعت**
+**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰ تا ۳۱-۳ · ≈ 11 ساعت**
 
-> **وضعیت:** پروژه‌ی Capstone (HQ + ۳ شعبه)؛ FortiOS 7.0.3 و Cisco (بوت‌نشده)؛ بدون شاهد واقعی «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** پروژه‌ی Capstone روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ همه‌ی دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Test Plan را کامل اجرا و Evidence Index (≥ ۲۰ ردیف) بسازد.
-2. سه خرابی (ISP، Tunnel/Hub، فایروال HQ) را زمان‌سنجی و تحلیل کند.
-3. انحراف از معیار را RCA و اصلاح کند.
-4. Sign-off با مالکان نیاز بگیرد.
-5. محدودیت‌ها و «اجرا نشده»ها را صریح اعلام کند.
+1. ماتریس آزمون کامل (مثبت/منفی/خرابی) را اجرا و Evidence Index را پر کند.
+2. سه خرابی تزریق‌شده را تحلیل و RCA کند.
+3. معیار Sign-off و صورت‌جلسه را بنویسد.
+4. وضعیت آزمون‌ها را صادقانه گزارش کند.
+5. Gap و اقدام باقی‌مانده را ثبت کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-Evidence Index قلب ارزیابی است: هر ادعا به یک آزمون و یک خروجی خام وصل است. اگر ردیفی خالی است، یعنی آن ادعا هنوز تأییدنشده است.
+آزمون بدون Evidence هنگام بازرسی بی‌ارزش است. در این درس ماتریس آزمون را می‌چینید، یک Evidence Index نمونه را می‌پرید و Sign-off را شبیه مشتری واقعی می‌نویسید.
 
 ### ۳) توضیح عمیق فنی
 
-#### Evidence Index (نمونه‌ی پر)
+#### ۱) ماتریس آزمون
+
+| # | نیازمندی | آزمون | روش | معیار |
+|---|---|---|---|---|
+| T-01 | R-05 | Internet→VIP HTTPS | curl | 200 OK |
+| T-05 | R-01 | قطع ISP-A | Ping 200 ms | قطع < 10 s |
+| T-09 | R-02 | WEB→DB 1433 | telnet | Timeout، Log deny |
+| T-12 | R-03 | VPN بدون OTP | کلاینت | رد |
+| T-15 | R-04 | Restore | Lab | Policy count برابر |
+
+#### ۲) Evidence Index (نمونه‌ی پر)
+
+| E | آزمون | فایل | زمان | نتیجه | وضعیت |
+|---|---|---|---|---|---|
+| E-01 | T-01 | e01_curl.txt | 10:05 | 200 | اجراشده با شاهد |
+| E-05 | T-05 | e05_ping.txt | 10:30 | قطع 2.4 s | اجراشده با شاهد |
+| E-09 | T-09 | e09_log.txt | 10:50 | deny policyid 61 | اجراشده با شاهد |
+| E-12 | T-12 | - | - | - | اجرا نشده |
+| E-15 | T-15 | - | - | - | اجرا نشده |
+
+#### ۳) سه خرابی
+
+**F1:** VIP کار نمی‌کند (Policy dst اشتباه). **F2:** Failover ۱۲ ثانیه (Health-check روی Gateway). **F3:** MTU تونل. برای هرکدام: شاهد، علت، رفع، آزمون.
+
+#### ۴) Sign-off
 
 ``` text
-ID    Req Test                           Command/Capture                     Result      P/F  File     Time
-E-01  R1  Branch A -> ERP TCP 443        curl -w "%{time_connect}" ...       31 ms       P    e01.txt  19:30
-E-02  R3  Guest -> Internal (negative)   nmap -Pn -p 1-1024 10.0.20.10       filtered    P    e02.txt  19:34
-E-03  R2  Cut Hub1 (continuous ping)     ping -i 0.2 + timestamps            lost 31 pk  P    e03.txt  19:42   (6.2 s)
-E-04  R4  VPN login without OTP          FortiClient attempt                 rejected    P    e04.png  19:50
-E-05  R5  Syslog 180d / alert test       tail + alert screenshot             received    P    e05.txt  19:55
-E-06  R6  Restore in lab                 execute restore ... stopwatch       27 min      P    e06.txt  20:20
-E-07  R2  Cut ISP1 at Branch A           SD-WAN health-check + ping          8.4 s       P    e07.txt  20:31
-E-08  R2  HQ FW1 power-off               ha status + ping                    4.1 s       P    e08.txt  20:40
+Project: Capstone I
+Date: ...
+Accepted: R-01, R-02, R-05 (evidence E-01, E-05, E-09)
+Not accepted / deferred: R-03 (E-12 not executed), R-04 (E-15 not executed)
+Known risks: commands Unverified until lab run
+Signed: ___ (owner)  ___ (engineer)
 ```
 
-#### سه خرابی
+#### ۵) Gap
 
-| خرابی | زمان | Session | اثر | Log |
-|---|---|---|---|---|
-| ISP1 شعبه A | 8.4 s | TCP قدیمی قفل ⇒ Clear | ERP | SLA event |
-| Hub1 | 6.2 s | iBGP Reconverge | Spoke-to-Spoke | BGP reset |
-| FW1 HQ | 4.1 s | Pickup TCP | ERP | HA event |
+آنچه اجرا نشده با دلیل و برنامه‌ی تکمیل.
 
-#### انحراف و RCA
+### ۴) طراحی و تصمیم‌گیری
 
-اگر E-03 = 14 s (>10 s): علت BGP Hold 180؛ BFD 300×3 و MRAI؛ تکرار؛ ثبت دو آزمون.
-
-#### Sign-off
-
-مالک نیاز (ERP)، امنیت، شبکه؛ امضا با تاریخ.
-
-#### محدودیت‌ها
-
-فهرست آنچه اجرا نشده (مثلاً HA چون Needs-License)؛ آن ردیف‌ها «اجرا نشده» و Pass نیستند.
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| وضعیت | اجراشده با شاهد/اجرا نشده |
+| Sign-off | مشروط اگر Gap |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** E-01..E-08 همه Pass.
+**ساده (حل‌شده):** E-05: Ping 200 ms، ۱۲ بسته گمشده = 2٫4 s؛ معیار < 10 s ⇒ قبول.
 
-**متوسط (تحلیل):** E-03 = 14 s: علت Hold؛ BFD؛ E-03b = 6.2 s.
+**متوسط (F2):** Failover ۱۲ ثانیه: Health-check روی Gateway؛ تغییر به 8.8.8.8؛ اندازه‌گیری ۴ ثانیه؛ E-05 به‌روز.
 
-**سخت (جامع):** تفکیک «Pass» با شاهد از «اجرا نشده»؛ ۲ ردیف HA اجرا نشده (لایسنس)؛ گزارش صادقانه و ریسک باقی‌مانده.
+**سخت (Sign-off با Gap):** دو آزمون اجرا نشده؛ تصمیم: «پذیرفته‌ی مشروط» با فهرست Gap و تاریخ؛ نه «کامل». درس: Sign-off صادقانه از اعتبار می‌سازد.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Index کامل؛ Sign-off.
+- Evidence Index.
+- Sign-off.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| شاهد ناقص | Index | تکمیل |
+| Evidence ناقص | Index | تکمیل |
 
 ### ۱۰) نکات امنیتی
 
-- Secret.
+- Evidence بدون رمز.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- شاهد و RCA و Sign-off.
+- ماتریس+Index+Sign-off.
+- صداقت.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Evidence Index چه ستون‌هایی دارد؟ *(پاسخ: 31-4-ت1)*
+**ت1.** (ساده) Evidence Index چیست؟ *(پاسخ: 31-4-ت1)*
 
-**ت2.** (ساده) ردیف بدون خروجی چه وضعیتی دارد؟ *(پاسخ: 31-4-ت2)*
+**ت2.** (ساده) وضعیت اجرا نشده؟ *(پاسخ: 31-4-ت2)*
 
-**ت3.** (متوسط) E-03=14 s؛ اقدام؟ *(پاسخ: 31-4-ت3)*
+**ت3.** (متوسط) Sign-off مشروط؟ *(پاسخ: 31-4-ت3)*
 
-**ت4.** (متوسط) چرا Sign-off؟ *(پاسخ: 31-4-ت4)*
+**ت4.** (متوسط) F2؟ *(پاسخ: 31-4-ت4)*
 
-**ت5.** (سخت) HA اجرا نشده؛ چگونه گزارش می‌کنید؟ *(پاسخ: 31-4-ت5)*
+**ت5.** (سخت) دو آزمون اجرا نشده. *(پاسخ: 31-4-ت5)*
 
-**ت6.** (سخت، طراحی) Index ۲۰ ردیفی برای پروژه. *(پاسخ: 31-4-ت6)*
+**ت6.** (سخت، طراحی) Evidence Index. *(پاسخ: 31-4-ت6)*
 
-**Q1.** Quick quiz (English): What status should an untested requirement receive in the evidence index? *(پاسخ: 31-4-Q1)*
+**Q1.** Quick quiz (English): What does a conditional sign-off mean? *(پاسخ: 31-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Sign-off | Acceptance sign-off | تأیید پذیرش |
+| Sign-off | Acceptance sign-off | تأیید نهایی |
 
-- *Report untested items as not executed.* ← موارد آزمون‌نشده را «اجرا نشده» گزارش کنید.
+- *Record untested items honestly.* ← موارد آزمون‌نشده را صادقانه ثبت کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Evidence. **Evidence:** `03-ops/capstone-evidence.md`.
+**کارت Lab:** آزمون Capstone (اجرا نشده). **Evidence:** `03-ops/capstone-evidence.md`.
 
 ### ۱۵) منابع
 
-- درس ۳۱-۰
+- درس‌های فصل ۲۱ و ۳۰
 
 <a id="l-31-5"></a>
 
 ## درس 31-5 — Capstone II: Runbook کامل نمونه، Handover و آزمون Runbook توسط همکار
 
-**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۴ · ≈ 8 ساعت**
+**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۴ · ≈ 11 ساعت**
 
-> **وضعیت:** پروژه‌ی Capstone (HQ + ۳ شعبه)؛ FortiOS 7.0.3 و Cisco (بوت‌نشده)؛ بدون شاهد واقعی «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** پروژه‌ی Capstone روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ همه‌ی دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Runbook ۳ سرویس (VPN شعبه، فایروال HQ/HA، Log/Backup) با قالب کامل بنویسد.
-2. جلسه‌ی Handover را برنامه‌ریزی و اجرا کند.
-3. Runbook را با «آزمون همکار» اعتبارسنجی کند.
-4. Escalation و تماس‌ها را مشخص کند.
+1. Runbook عملیاتی (روزانه، حادثه، تغییر) را با قالب استاندارد بنویسد.
+2. Handover را با مستندات و آموزش انجام دهد.
+3. Runbook را توسط همکار آزمون کند و بازخورد بگیرد.
+4. وضعیت مستندات را به‌روز نگه دارد.
+5. Runbook را برای شرایط استرس ساده کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-Runbook خوب یعنی کسی که طراح نبوده بتواند عیب را در ساعت ۳ بامداد رفع کند. معیار کیفیت: «آزمون همکار».
+ساعت ۳ شب مهندس شب‌کار با Alert «Failover رخ داد» روبه‌رو می‌شود. اگر Runbook ندارد، تصمیم می‌گیرد؛ اگر دارد، قدم‌ها را دنبال می‌کند. Runbook خوب برای «آدم خسته در ساعت ۳ شب» نوشته می‌شود.
 
 ### ۳) توضیح عمیق فنی
 
-#### Runbook نمونه: VPN شعبه A
+#### ۱) قالب Runbook
 
 ``` text
-SERVICE: Branch-A VPN to Hub (TO-HUB1/TO-HUB2)
-Owner: net-team   On-call: +98-xxx   Escalation: L1 net-ops -> L2 senior -> vendor TAC
-HEALTHY: IKE SA established; tunnel counters rising; BGP Established; latency <40 ms to ERP
-VERIFY:
-  get router info bgp summary
-  diagnose vpn tunnel list
-  execute ping 10.0.20.10
-COMMON FAILURES:
-  Symptom                     Check                         Fix
-  Tunnel down                 diagnose vpn ike gateway list ISP/NAT-T/PSK -> see TS-VPN-01
-  Up but no traffic           debug flow, policy            policy both ways -> TS-VPN-02
-  Large transfers hang        ping DF 1372                  MSS clamp 1360 -> TS-VPN-03
-ROLLBACK: restore tag s4 (git) ; expected 10 min
-BACKUP/RESTORE: nightly sftp; restore procedure RB-02
-CHANGE: CHG ticket required; window Tue 22:00
+Title / Owner / Last review
+Trigger: what alert or symptom
+Impact: who is affected
+Steps (numbered, one action each, with expected output)
+Verification: how to confirm fixed
+Escalation: who, when, how
+Rollback
 ```
 
-#### آزمون همکار
+#### ۲) نمونه: «Failover ISP»
 
-دریافت‌کننده یک عیب تزریق‌شده (مثلاً Policy حذف‌شده) را فقط با Runbook رفع می‌کند؛ زمان و نقطه‌های مبهم ثبت می‌شود؛ Runbook اصلاح می‌شود.
+1. Alert دریافت: SD-WAN Member port1 Dead.
+2. بررسی: `diagnose sys sdwan member` ⇒ port1 dead؟ انتظار: dead.
+3. بررسی لینک: `get system interface physical` port1 up؟
+4. اگر لینک up و Dead: Health-check: `diagnose sys sdwan health-check` loss.
+5. تماس با ISP-A (شماره، Circuit ID).
+6. Verify: ترافیک از port4؛ Ping.
+7. Escalate: اگر > 30 دقیقه مدیر شبکه.
+8. Failback: پس از 30 دقیقه پایداری A به‌صورت خودکار؛ بررسی.
 
-#### Handover (۹۰ دقیقه)
+#### ۳) Handover
 
-۱۰ دقیقه معماری، ۲۰ Runbook، ۳۰ Demo دو عیب، ۲۰ آزمون همکار، ۱۰ پرسش‌وپاسخ.
+- As-Built، LLD، Runbook، Inventory، Evidence Index.
+- جلسه‌ی ۲ ساعته با مرور و Q&A.
+- دسترسی‌ها و Vault.
+
+#### ۴) آزمون Runbook
+
+یک همکار که پروژه را نمی‌شناسد Runbook را روی سناریو اجرا می‌کند؛ هر جا گیر کرد = نقص Runbook.
+
+#### ۵) نگهداری
+
+بازبینی فصلی؛ پس از هر حادثه به‌روزرسانی.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Runbook | یک اقدام در هر گام |
+| آزمون | همکار ناآشنا |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Runbook VPN بالا.
+**ساده (حل‌شده):** Runbook Failover: ۸ گام با خروجی مورد انتظار؛ همکار در ۱۲ دقیقه تمام کرد.
 
-**متوسط (تحلیل):** همکار گام «Policy دوطرفه» را نفهمید؛ اصلاح با دستور دقیق و خروجی انتظار.
+**متوسط (نقص):** همکار در گام ۴ گیر کرد: دستور `health-check` نبود. اصلاح و آزمون دوباره.
 
-**سخت (سه سرویس):** Runbookهای VPN، HA، Log/Backup با لینک TS؛ آزمون همکار: ۳ عیب، زمان رفع ۸/۱۲/۱۵ دقیقه؛ بازخورد و نسخه‌ی ۲.
+**سخت (Handover):** تحویل به تیم NOC: ۲ ساعت جلسه، Runbookها، دسترسی Read-only؛ ارزیابی: ۳ سناریو را موفق اجرا کردند؛ Gap: Restore نیاز به آموزش بیشتر.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose sys sdwan member
+diagnose sys sdwan health-check
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Runbook آزمون‌شده.
+- Runbook اجراشده توسط همکار.
+- Handover مستند.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| ناقص | آزمون همکار | تکمیل |
+| همکار گیر کرد | گام مبهم | بازنویسی |
 
 ### ۱۰) نکات امنیتی
 
-- Secret در Runbook نیست.
+- Runbook بدون رمز.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- Runbook = قابل‌انتقال و آزمون‌شده.
+- Runbook برای ساعت ۳ شب.
+- Handover.
+- آزمون Runbook.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Healthy state چرا؟ *(پاسخ: 31-5-ت1)*
+**ت1.** (ساده) Runbook چیست؟ *(پاسخ: 31-5-ت1)*
 
-**ت2.** (ساده) Escalation؟ *(پاسخ: 31-5-ت2)*
+**ت2.** (ساده) چرا هر گام یک اقدام؟ *(پاسخ: 31-5-ت2)*
 
-**ت3.** (متوسط) آزمون همکار چیست؟ *(پاسخ: 31-5-ت3)*
+**ت3.** (متوسط) چرا همکار ناآشنا؟ *(پاسخ: 31-5-ت3)*
 
-**ت4.** (متوسط) چه چیزی Runbook را بد می‌کند؟ *(پاسخ: 31-5-ت4)*
+**ت4.** (متوسط) محتوای Handover؟ *(پاسخ: 31-5-ت4)*
 
-**ت5.** (سخت) Runbook HA را بنویسید. *(پاسخ: 31-5-ت5)*
+**ت5.** (سخت) Runbook Failover ISP بنویسید. *(پاسخ: 31-5-ت5)*
 
-**ت6.** (سخت، طراحی) برنامه‌ی Handover. *(پاسخ: 31-5-ت6)*
+**ت6.** (سخت، طراحی) برنامه‌ی نگهداری Runbook. *(پاسخ: 31-5-ت6)*
 
-**Q1.** Quick quiz (English): How do you validate that a runbook is usable? *(پاسخ: 31-5-Q1)*
+**Q1.** Quick quiz (English): Why should a runbook be tested by someone who did not write it? *(پاسخ: 31-5-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Runbook | Operational runbook | دستور عملیاتی |
+| Runbook | Operational runbook | راهنمای عملیاتی |
 
-- *Hand over a tested runbook.* ← Runbook آزمون‌شده را تحویل دهید.
+- *Write runbooks for tired people at 3 AM.* ← Runbook را برای آدم خسته‌ی ساعت ۳ شب بنویسید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Runbook. **Evidence:** `03-ops/capstone-runbook.md`.
+**کارت Lab:** Runbook (اجرا نشده). **Evidence:** `03-ops/capstone-runbook.md`.
 
 ### ۱۵) منابع
 
-- Google SRE Book
+- درس‌های ۲۷-۱، ۳۱-۴
 
 <a id="l-31-6"></a>
 
 ## درس 31-6 — ارزیابی Capstone I و II: ارائه، Q&A، سؤال‌های دفاع و Rubric تفصیلی
 
-**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۱ تا ۳۱-۵ · ≈ 8 ساعت**
+**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰ تا ۳۱-۵ · ≈ 11 ساعت**
 
-> **وضعیت:** پروژه‌ی Capstone (HQ + ۳ شعبه)؛ FortiOS 7.0.3 و Cisco (بوت‌نشده)؛ بدون شاهد واقعی «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** پروژه‌ی Capstone روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ همه‌ی دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. ارائه‌ی ۱۵ دقیقه‌ای ساختارمند انجام دهد.
-2. سؤال‌های دفاع (طراحی، ریسک، شاهد، محدودیت) را پاسخ دهد.
-3. Rubric تفصیلی را خودارزیابی کند.
-4. برنامه‌ی بهبود از بازخورد بنویسد.
+1. ارائه‌ی ۱۵ دقیقه‌ای (مسئله، طراحی، آزمون، Gap) را آماده کند.
+2. به سؤال‌های دفاع پاسخ قابل‌اثبات بدهد.
+3. خود را با Rubric تفصیلی نمره‌دهی کند.
+4. نقاط ضعف را صادقانه بپذیرد و برنامه‌ی بهبود بنویسد.
+5. بازخورد را به اقدام تبدیل کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-ارزیابی نهایی بخش اول؛ هدف سنجش فهم، شاهد و صداقت است.
+در ممیزی واقعی کسی دستور شما را نمی‌خواند؛ از شما می‌پرسد «چرا؟ چطور ثابت می‌کنید؟». این درس شما را برای همین مرحله آماده می‌کند.
 
 ### ۳) توضیح عمیق فنی
 
-#### ساختار ارائه
+#### ۱) ساختار ارائه (۱۵ دقیقه)
 
-نیاز/معیار (۲) → معماری (۳) → ADR (۲) → ساخت/Evidence (۳) → خرابی/RCA (۳) → محدودیت‌ها و «اجرا نشده» (۱) → درس‌آموخته (۱).
+1. مسئله و نیازمندی‌ها (۲ دقیقه). 2. HLD (۳). 3. LLD و تصمیم‌های کلیدی (۳). 4. آزمون و Evidence (۴). 5. Gap و ریسک (۲). 6. جمع‌بندی (۱).
 
-#### Rubric تفصیلی (۱۰۰)
+#### ۲) سؤال‌های دفاع و پاسخ نمونه
 
-| معیار | وزن | عالی | ضعیف |
-|---|---|---|---|
-| طراحی/ADR | 15 | تصمیم با معیار و ریسک | بدون دلیل |
-| Routing/Segmentation | 15 | Failover/Zone اثبات‌شده | فقط پیکربندی |
-| Policy/Security | 20 | Least privilege + منفی | any-any |
-| VPN/SD-WAN/HA | 15 | زمان‌سنجی | ادعا |
-| Troubleshooting | 15 | RCA با شاهد | حدس |
-| مستندات | 10 | Runbook آزمون‌شده | ناقص |
-| صداقت | 10 | «اجرا نشده» صریح | ادعای بی‌شاهد |
+| سؤال | پاسخ قابل‌اثبات |
+|---|---|
+| چرا NAT فقط Edge؟ | رد‌یابی، جلوگیری از NAT دوباره؛ Evidence Session دو فایروال |
+| چرا DMZ→DB ممنوع؟ | محدود کردن حرکت جانبی؛ آزمون منفی T-09 و Log |
+| Failover را چطور اندازه گرفتید؟ | Ping 200 ms و شمارش بسته؛ E-05 |
+| چه چیزی را ثابت نکرده‌اید؟ | دستورهای Unverified و T-12/T-15؛ در Gap |
+| اگر ISP-A و B هم‌زمان قطع شوند؟ | خارج از طراحی؛ ریسک پذیرفته؛ پیشنهاد: LTE (هزینه) |
 
-#### سؤال‌های دفاع
+#### ۳) Rubric تفصیلی (۱۰۰)
 
-۱) چرا Breakout فقط برای SaaS؟ ۲) اگر Hub1 آسیب‌پذیر شود؟ ۳) کدام ادعا شاهد ندارد؟ ۴) هزینه‌ی HA در برابر ریسک؟ ۵) اگر ISP1 و ISP2 هم‌زمان قطع شوند؟
+| معیار | امتیاز | توضیح |
+|---|---|---|
+| نیازمندی/ردیابی | 15 | SMART و ماتریس |
+| طراحی | 25 | HLD/LLD صحیح و بدون Overlap |
+| پیاده‌سازی | 15 | Config بدون رمز |
+| آزمون و Evidence | 25 | مثبت/منفی/خرابی |
+| Runbook/Handover | 10 | آزمون توسط همکار |
+| دفاع و ارائه | 5 | روشن و صادق |
+| صداقت | 5 | Unverified و Gap |
+
+قبولی ۷۵ با حداقل ۲۰ در Evidence.
+
+#### ۴) خودارزیابی نمونه
+
+``` text
+Requirements 13/15 ; Design 22/25 ; Build 10/15 ; Test 15/25 (2 tests not run)
+Runbook 8/10 ; Defense 4/5 ; Honesty 5/5  => 77/100 (conditional)
+Improvement: run T-12/T-15 in lab; verify commands
+```
+
+#### ۵) بازخورد به اقدام
+
+هر بازخورد = اقدام با مالک و تاریخ.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| ارائه | ۱۵ دقیقه |
+| دفاع | با Evidence |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** ارائه ۱۰ دقیقه.
+**ساده (حل‌شده):** پاسخ به «چرا NAT فقط Edge؟» با Evidence Session دو فایروال.
 
-**متوسط:** پاسخ به ۳ سؤال.
+**متوسط (خودارزیابی):** آزمون ۱۵/۲۵ چون ۲ آزمون اجرا نشده؛ نمره‌ی کل ۷۷؛ پذیرفته‌ی مشروط.
 
-**سخت:** دفاع از ADR با ریسک.
+**سخت (پرسش غیرمنتظره):** «اگر دو ISP قطع شود؟» پاسخ صادقانه: خارج از طراحی؛ ریسک؛ پیشنهاد LTE با هزینه؛ تصمیم مالک.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+! no CLI: evaluation lesson
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- نمره.
+- Rubric نمره‌دهی شده.
+- اقدام‌های بهبود.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| کسری | Rubric | برنامه‌ی بهبود |
+| پاسخ بدون Evidence | ادعا | ارجاع به E |
 
 ### ۱۰) نکات امنیتی
 
-- Secret.
+- در ارائه رمز نشان ندهید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- ارائه، دفاع، صداقت.
+- ارائه ساختاریافته.
+- دفاع با Evidence.
+- صداقت.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) بخش‌های ارائه؟ *(پاسخ: 31-6-ت1)*
+**ت1.** (ساده) ساختار ارائه؟ *(پاسخ: 31-6-ت1)*
 
-**ت2.** (ساده) چرا صداقت وزن دارد؟ *(پاسخ: 31-6-ت2)*
+**ت2.** (ساده) نمره‌ی قبولی؟ *(پاسخ: 31-6-ت2)*
 
-**ت3.** (متوسط) پاسخ به «اگر Hub1 آسیب‌پذیر شود؟» *(پاسخ: 31-6-ت3)*
+**ت3.** (متوسط) پاسخ به «چه چیزی ثابت نکرده‌اید؟» *(پاسخ: 31-6-ت3)*
 
-**ت4.** (متوسط) پاسخ به «اگر هر دو ISP قطع شوند؟» *(پاسخ: 31-6-ت4)*
+**ت4.** (متوسط) خودارزیابی؟ *(پاسخ: 31-6-ت4)*
 
-**ت5.** (سخت) کدام ادعاها شاهد ندارند؟ *(پاسخ: 31-6-ت5)*
+**ت5.** (سخت) «اگر دو ISP قطع شود؟» *(پاسخ: 31-6-ت5)*
 
-**ت6.** (سخت، طراحی) برنامه‌ی بهبود از Rubric. *(پاسخ: 31-6-ت6)*
+**ت6.** (سخت، طراحی) برنامه‌ی بهبود. *(پاسخ: 31-6-ت6)*
 
-**Q1.** Quick quiz (English): What is the purpose of the defense questions? *(پاسخ: 31-6-Q1)*
+**Q1.** Quick quiz (English): Why is honesty about unverified items part of the rubric? *(پاسخ: 31-6-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Rubric | Scoring rubric | ماتریس ارزیابی |
+| Q&A | Questions and Answers | پرسش و پاسخ |
 
-- *Be honest about what is not verified.* ← درباره‌ی آنچه تأیید نشده صادق باشید.
+- *Back every claim with evidence.* ← هر ادعا را با شاهد پشتیبانی کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** ارزیابی. **Evidence:** `03-ops/capstone-eval.md`.
+**کارت Lab:** ارزیابی Capstone (اجرا نشده). **Evidence:** `03-ops/capstone-eval.md`.
 
 ### ۱۵) منابع
 
-- درس ۳۱-۰
+- درس‌های ۳۱-۰ تا ۳۱-۵
 
 ## پاسخ‌های فصل 31
 
@@ -922,20 +1095,22 @@ CHANGE: CHG ticket required; window Tue 22:00
 
 ### پاسخ‌های بازنویسی عمیق درس 31-2
 
-**31-2-ت1** — طراحی تفصیلی قابل‌اجرا.
 
-**31-2-ت2** — نیاز، طراحی، Config، آزمون، Evidence.
+### پاسخ‌های بازنویسی عمیق درس 31-2
 
-**31-2-ت3** — تا ساخت با آزمون هم‌راستا باشد.
+**31-2-ت1** — HLD ساختار؛ LLD مقادیر دقیق.
 
-**31-2-ت4** — کشف ابهام و خطا پیش از ساخت.
+**31-2-ت2** — برای ردیابی و ممیزی.
 
-**31-2-ت5** — طبق نمونه با Log و Deny پایانی.
+**31-2-ت3** — تغییر Pool.
 
-**31-2-ت6** — جداول Interface/Route/Policy/VPN/Test.
+**31-2-ت4** — Edge.
 
-**31-2-Q1** — To show that every requirement is designed, built, tested and evidenced.
+**31-2-ت5** — SD-WAN و Capture.
 
+**31-2-ت6** — جدول.
+
+**31-2-Q1** — For traceability and audit.
 
 ### پاسخ‌های بازنویسی عمیق درس 31-3
 
@@ -956,63 +1131,79 @@ CHANGE: CHG ticket required; window Tue 22:00
 
 ### پاسخ‌های بازنویسی عمیق درس 31-4
 
-**31-4-ت1** — ID، Req، Test، دستور، نتیجه، Pass/Fail، فایل، زمان.
 
-**31-4-ت2** — تأییدنشده/اجرا نشده.
+### پاسخ‌های بازنویسی عمیق درس 31-4
 
-**31-4-ت3** — RCA (BGP Hold)، BFD، تکرار و ثبت.
+**31-4-ت1** — فهرست شاهدها با شناسه، فایل، زمان و نتیجه.
 
-**31-4-ت4** — تا مالکان نیاز پذیرش را تأیید کنند.
+**31-4-ت2** — صادقانه ثبت.
 
-**31-4-ت5** — صریحاً «اجرا نشده (لایسنس)»، نه Pass؛ ریسک باقی‌مانده و برنامه.
+**31-4-ت3** — با Gap و تاریخ.
 
-**31-4-ت6** — طبق نمونه.
+**31-4-ت4** — Health-check.
 
-**31-4-Q1** — Not executed/unverified, never pass.
+**31-4-ت5** — پذیرفته‌ی مشروط.
+
+**31-4-ت6** — جدول.
+
+**31-4-Q1** — Acceptance with documented gaps that must be closed later.
+
+### پاسخ‌های بازنویسی عمیق درس 31-5
 
 
 ### پاسخ‌های بازنویسی عمیق درس 31-5
 
-**31-5-ت1** — تعریف حالت عادی برای مقایسه.
+**31-5-ت1** — مجموعه‌ی گام‌های مستند برای وضعیت مشخص.
 
-**31-5-ت2** — مسیر ارجاع.
+**31-5-ت2** — برای کاهش خطا.
 
-**31-5-ت3** — حل عیب تزریق‌شده فقط با Runbook.
+**31-5-ت3** — نقص‌های مبهم آشکار می‌شود.
 
-**31-5-ت4** — گام مبهم، بدون خروجی انتظار، Secret.
+**31-5-ت4** — As-Built، LLD، Runbook، دسترسی.
 
-**31-5-ت5** — Healthy/Verify/Failures/Rollback/Escalation.
+**31-5-ت5** — قالب بالا.
 
-**31-5-ت6** — ۹۰ دقیقه.
+**31-5-ت6** — فصلی و پس از حادثه.
 
-**31-5-Q1** — By having someone else resolve an injected fault using only the runbook.
+**31-5-Q1** — To reveal ambiguous or missing steps.
+
+### پاسخ‌های بازنویسی عمیق درس 31-6
 
 
 ### پاسخ‌های بازنویسی عمیق درس 31-6
 
-**31-6-ت1** — نیاز، معماری، ADR، ساخت/Evidence، خرابی/RCA، محدودیت، درس‌آموخته.
+**31-6-ت1** — مسئله، HLD، LLD، آزمون، Gap، جمع‌بندی.
 
-**31-6-ت2** — ادعای بی‌شاهد خطرناک است.
+**31-6-ت2** — ۷۵ با حداقل ۲۰ در Evidence.
 
-**31-6-ت3** — Patch/Source Restriction/Hub دوم/Segmentation/Detection.
+**31-6-ت3** — فهرست Unverified و آزمون اجرانشده.
 
-**31-6-ت4** — Failover به Backhaul/LTE (در صورت وجود)، هشدار، پذیرش ریسک.
+**31-6-ت4** — نمره با دلیل.
 
-**31-6-ت5** — Labهای اجرا نشده/HA/Unverified.
+**31-6-ت5** — خارج از طراحی؛ ریسک؛ پیشنهاد.
 
-**31-6-ت6** — معیارهای ضعیف→اقدام→مسئول→تاریخ.
+**31-6-ت6** — اقدام، مالک، تاریخ.
 
-**31-6-Q1** — To verify understanding, risk awareness and honesty about what is proven.
+**31-6-Q1** — Because claiming unverified results undermines trust and can cause real outages.
 
 ### پاسخ‌های درس افزوده‌ی 31-0 (فصل 31)
 
-**31-0-ت1** — ۸٫۷۶ ساعت در سال.
 
-**31-0-ت2** — جدولی که هر نیاز را به عنصر طراحی، Config، آزمون و Evidence وصل می‌کند.
+### پاسخ‌های بازنویسی عمیق درس 31-0
 
-**31-0-ت3** — مثال: Finance→SRV-FIN:443 (Evidence: Log+Capture)؛ Guest ایزوله (nmap)؛ Failover<30s (ping+Log SLA)؛ Backup (Restore)؛ MFA (Login test).
+**31-0-ت1** — Specific, Measurable, Achievable, Relevant, Time-bound؛ مشخص، قابل‌اندازه‌گیری، شدنی، مرتبط، زمان‌دار.
 
-**31-0-Q1** — A testable condition that must be met for a requirement to be considered satisfied.
+**31-0-ت2** — تا هر نیازمندی آزمون و Evidence داشته باشد و هیچ آزمون بی‌هدف نماند.
+
+**31-0-ت3** — مثلاً R-02: DMZ→DB ممنوع با ۱۰ آزمون منفی Deny و Log.
+
+**31-0-ت4** — «طراحی‌شده/اجرا نشده»، نه «موفق».
+
+**31-0-ت5** — اهمیت×ریسک؛ «باید»ها اول؛ Evidence هفتگی.
+
+**31-0-ت6** — جدول بالا با امتیاز و شواهد.
+
+**31-0-Q1** — Because without a test and evidence the requirement is only an unverified claim.
 
 # فصل 32 — Capstone III و IV: عملیات، حادثه و ارزیابی نهایی
 
