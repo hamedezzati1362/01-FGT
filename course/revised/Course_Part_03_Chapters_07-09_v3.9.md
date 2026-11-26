@@ -4803,94 +4803,125 @@ show ip bgp neighbors 192.0.2.1 advertised-routes
 
 <a id="l-9-6"></a>
 
-## درس 9-6 — عیب‌یابی BGP و آزمون فصل ۹: پرونده‌های واقعی، روش، کلید و Rubric
+## درس 9-6 — عیب‌یابی BGP و آزمون فصل ۹: روش لایه‌ای، پنج پرونده‌ی کامل، کلید و Rubric
 
-**فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۰ تا ۹-۵، ۹-۷ · ≈ 8 ساعت**
+**فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۰ تا ۹-۵، ۹-۷ · ≈ 12 ساعت**
 
-> **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ برخی ویژگی‌ها روی vIOS `Unverified`.
+> **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ دستورهای vIOS `Unverified` تا اجرای Lab.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. روش عیب‌یابی BGP (Session→Table→Policy→RIB→Forwarding) را اجرا کند.
-2. پنج پرونده‌ی رایج را حل و RCA کند.
-3. آزمون عملی فصل ۹ را با Rubric تحویل دهد.
+1. روش عیب‌یابی BGP (Session، Reachability، Prefix، Policy، RIB، Forwarding) را مرحله‌به‌مرحله اجرا کند.
+2. پنج پرونده‌ی رایج را با دستور، شاهد، علت و رفع حل کند.
+3. هر رفع را با آزمون مثبت و منفی تأیید کند.
+4. RCA و گزارش کوتاه برای هر پرونده بنویسد.
+5. آزمون عملی فصل ۹ را با Rubric تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-عیب‌یابی BGP لایه‌ای است: اول Session، بعد Prefix دریافتی/ارسالی، بعد Best Path/Policy، بعد RIB و ارسال.
+BGP دیر یاد گرفته می‌شود ولی زود خراب می‌شود: یک Prefix گم می‌شود و کل سازمان می‌پرسد «چرا اینترنت کند است؟». عیب‌یاب خوب حدس نمی‌زند؛ از پایین به بالا می‌رود: آیا TCP برقرار است؟ Session Established است؟ Prefix دریافت شد؟ Policy چه کرد؟ در RIB نشست؟ بسته ارسال می‌شود؟ هر پاسخ «نه» محل خرابی را نشان می‌دهد.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) روش
+#### ۱) روش هفت‌گامی
 
 ``` text
-1 Session: show ip bgp summary (state, PfxRcd)  2 Reachability/TCP 179
-3 Advertised/Received routes  4 Best path & attributes (show ip bgp prefix)
-5 RIB install (rib-failure?) 6 Forwarding (CEF/traceroute) 7 Policy (route-map/prefix-list)
+1 Session  : show ip bgp summary          (state / PfxRcd / Up-Down)
+2 Reach/TCP: ping, telnet <peer> 179, ACL/firewall
+3 Received : show ip bgp neighbors X received-routes (needs soft-reconfig) / show ip bgp
+4 Policy   : route-map / prefix-list / filter-list in/out
+5 Best path: show ip bgp <prefix>  (attributes, next-hop, valid/best)
+6 RIB      : show ip route <prefix> ; show ip bgp rib-failure
+7 Forward  : traceroute, CEF, return path
 ```
 
-#### ۲) پرونده‌ها
+#### ۲) پرونده ۱: Active
 
-1. **Active:** ACL TCP 179؛ `telnet X 179`.
-2. **Established، PfxRcd=0:** Filter ورودی/Peer اعلام نمی‌کند.
-3. **Prefix در Table ولی نه RIB:** `rib-failure` / AD.
-4. **Next-hop inaccessible:** next-hop-self/IGP.
-5. **مسیر اشتباه Best:** Local-pref/Weight؛ `show ip bgp prefix`.
+``` text
+R1# show ip bgp summary
+10.0.13.3  4 65003  0 0 0 0 0 never Active
+```
 
-#### ۳) آزمون عملی
+شاهد: `telnet 10.0.13.3 179` شکست. علت: ACL روی R3 پورت 179 را می‌بندد. رفع: permit tcp host 10.0.13.1 host 10.0.13.3 eq 179. آزمون: Established.
 
-سه عیب تزریق‌شده؛ برای هرکدام: شواهد، علت، رفع، آزمون. Rubric: کشف ۳۰، رفع ۳۰، شواهد ۲۰، آزمون منفی ۱۰، صداقت ۱۰.
+#### ۳) پرونده ۲: Established ولی PfxRcd=0
+
+شاهد: `show ip bgp neighbors X advertised-routes` در طرف مقابل خالی. علت: Prefix-list خروجی طرف مقابل یا `network` بدون Route دقیق. رفع: Route Null0 دقیق. آزمون: PfxRcd>0.
+
+#### ۴) پرونده ۳: در BGP Table ولی نه در RIB
+
+شاهد: `show ip bgp rib-failure`. علت: مسیر Static با AD کمتر. رفع: حذف Static یا `distance bgp`. آزمون: `show ip route bgp`.
+
+#### ۵) پرونده ۴: Next-hop inaccessible
+
+شاهد: `show ip bgp 10.20.0.0` : `inaccessible`. علت: iBGP و Next-hop خارجی در IGP نیست. رفع: `next-hop-self`. آزمون: `>` و RIB.
+
+#### ۶) پرونده ۵: Best Path اشتباه
+
+شاهد: `show ip bgp 198.51.100.0/24` Local-pref/Weight. علت: Weight روی Neighbor اشتباه. رفع: اصلاح Route-map و `clear ip bgp X soft in`. آزمون: traceroute.
+
+#### ۷) آزمون عملی
+
+سه عیب تزریق‌شده؛ برای هرکدام: شواهد، علت، رفع، آزمون منفی. Rubric: کشف ۳۰، رفع ۳۰، شواهد ۲۰، آزمون منفی ۱۰، صداقت ۱۰.
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Active با ACL.
+**ساده (حل‌شده):** Active: `telnet 10.0.13.3 179` شکست؛ ACL R3؛ رفع؛ Established؛ PfxRcd=2.
 
-**متوسط (تحلیل):** PfxRcd=0: Prefix-list in.
+**متوسط (PfxRcd=0):** R1 Established با R2 و PfxRcd=0. مراحل: ۱) `advertised-routes` در R2 خالی. ۲) `show ip route 10.20.0.0` فقط /24؛ network /16. ۳) افزودن Null0 /16. ۴) PfxRcd=1. درس: network دقیق.
 
-**سخت (چندعلتی):** دو عیب هم‌زمان؛ جدا‌سازی.
+**سخت (دو عیب):** Prefix 10.20.0.0/16 در R1 با `r` (RIB-failure) و Next-hop inaccessible روی R3. مراحل: ۱) rib-failure: Static AD1. ۲) حذف Static. ۳) R3 next-hop-self روی R1. ۴) آزمون ping از R3. درس: یک رفع، یک آزمون.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
 show ip bgp summary
-show ip bgp neighbors X received-routes
-show ip bgp prefix
+show ip bgp neighbors 10.0.12.2 advertised-routes
+show ip bgp 10.20.0.0/16
 show ip bgp rib-failure
+show ip route bgp
+traceroute 10.20.0.1
 ```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence آزمون.
+- Evidence هر گام.
+- آزمون منفی.
+- RCA.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
 | Active | telnet 179 | ACL |
+| PfxRcd=0 | advertised-routes | Prefix-list/network |
+| rib-failure | AD | Static |
 
 ### ۱۰) نکات امنیتی
 
-- Debug lab.
+- debug ip bgp فقط Lab.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- لایه‌ای.
+- روش هفت‌گامی.
+- Active/PfxRcd/RIB/Next-hop/Best Path.
+- یک رفع، یک آزمون.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Active یعنی؟ *(پاسخ: 9-6-ت1)*
+**ت1.** (ساده) Active یعنی چه و اولین بررسی؟ *(پاسخ: 9-6-ت1)*
 
-**ت2.** (ساده) PfxRcd=0؟ *(پاسخ: 9-6-ت2)*
+**ت2.** (ساده) PfxRcd=0 یعنی چه؟ *(پاسخ: 9-6-ت2)*
 
-**ت3.** (متوسط) rib-failure؟ *(پاسخ: 9-6-ت3)*
+**ت3.** (متوسط) rib-failure چیست و رفعش؟ *(پاسخ: 9-6-ت3)*
 
-**ت4.** (متوسط) next-hop inaccessible؟ *(پاسخ: 9-6-ت4)*
+**ت4.** (متوسط) Next-hop inaccessible در iBGP؟ *(پاسخ: 9-6-ت4)*
 
-**ت5.** (سخت) دو عیب. *(پاسخ: 9-6-ت5)*
+**ت5.** (سخت) دو عیب هم‌زمان را چگونه جدا می‌کنید؟ *(پاسخ: 9-6-ت5)*
 
-**ت6.** (سخت، طراحی) چک‌لیست BGP. *(پاسخ: 9-6-ت6)*
+**ت6.** (سخت، طراحی) چک‌لیست یک‌صفحه‌ای BGP. *(پاسخ: 9-6-ت6)*
 
 **Q1.** Quick quiz (English): Which command shows prefixes that BGP could not install in the RIB? *(پاسخ: 9-6-Q1)*
 
@@ -4904,11 +4935,12 @@ show ip bgp rib-failure
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** آزمون BGP. **Evidence:** `03-ops/rca-bgp.md`.
+**کارت Lab:** آزمون BGP (اجرا نشده). **Evidence:** `03-ops/rca-bgp.md`.
 
 ### ۱۵) منابع
 
 - درس‌های ۹-۱ تا ۹-۵
+- Cisco BGP troubleshooting guide
 
 ## درس 9-7 — انتخاب بهترین مسیر BGP (کامل)، پایداری و امنیت Session
 
@@ -5244,17 +5276,20 @@ R1# clear ip bgp 192.0.2.1 soft in
 
 ### پاسخ‌های بازنویسی عمیق درس 9-6
 
-**9-6-ت1** — TCP برقرار نشده.
 
-**9-6-ت2** — Prefix دریافتی نیست.
+### پاسخ‌های بازنویسی عمیق درس 9-6
 
-**9-6-ت3** — مسیر در Table ولی در RIB نه.
+**9-6-ت1** — TCP برقرار نشده و تلاش دوباره می‌شود؛ ابتدا `telnet peer 179` و ACL/Reachability.
 
-**9-6-ت4** — IGP/next-hop-self.
+**9-6-ت2** — Session برقرار است ولی Prefixی دریافت نشده؛ فیلتر ورودی یا Peer اعلام نمی‌کند.
 
-**9-6-ت5** — جدا‌سازی.
+**9-6-ت3** — مسیر BGP در Table است ولی مسیر بهتر (AD کمتر) در RIB نشسته؛ رفع با حذف/تنظیم AD.
 
-**9-6-ت6** — ۷ گام.
+**9-6-ت4** — Next-hop خارجی در IGP نیست؛ `next-hop-self` یا Redistribute شبکه‌ی لینک.
+
+**9-6-ت5** — اول لایه‌ی پایین‌تر را رفع و آزمون کنید، بعد بالاتر؛ ثبت اثر هر تغییر.
+
+**9-6-ت6** — هفت گام، دستور هر گام، خروجی مورد انتظار، اقدام.
 
 **9-6-Q1** — show ip bgp rib-failure.
 

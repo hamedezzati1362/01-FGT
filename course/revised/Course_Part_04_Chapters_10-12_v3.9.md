@@ -994,7 +994,7 @@ show ip route 10.20.0.5
 
 <a id="l-10-7"></a>
 
-## درس 10-7 — طراحی مسیر برای چندفایروالی و آزمون فصل ۱۰ (پروژه‌ی جامع)
+## درس 10-7 — طراحی مسیر چندفایروالی و آزمون جامع فصل ۱۰: پروژه‌ی حل‌شده‌ی کامل
 
 **فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۱۰-۱ تا ۱۰-۶ · ≈ 12 ساعت**
 
@@ -1004,104 +1004,139 @@ show ip route 10.20.0.5
 
 در پایان این درس باید بتوانید:
 
-1. طرح مسیر برای Edge و Internal را با BGP/OSPF/Static تدوین کند.
-2. Redistribution، ECMP، PBR و VRF را در طرح ترکیب کند.
-3. خطرات (Asymmetric، Loop، Black-hole) و آزمون منفی را بنویسد.
-4. آزمون فصل ۱۰ را با Evidence و Rubric تحویل دهد.
-5. طرح را برای ممیز مستند کند.
+1. طرح مسیر سازمان دوفایروالی با دو ISP را با BGP/OSPF/Static کامل بنویسد.
+2. هر تصمیم (Redistribution، ECMP، PBR، VRF، NAT) را توجیه کند.
+3. پیکربندی نمونه‌ی هر گره را تهیه کند.
+4. آزمون پنج‌گانه‌ی مثبت/منفی را با شواهد اجرا کند.
+5. ریسک‌ها و Rollback را مستند کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-سازمانی دو فایروال دارد (Edge و Internal)، دو ISP، یک دامنه‌ی OSPF داخلی و می‌خواهد ترافیک مالی از ISP-A و بقیه از ISP-B برود. طراحی مسیر قبل از Policy است: اگر مسیر اشتباه باشد، Policy درست هم کمکی نمی‌کند.
+این درس نتیجه‌ی فصل ۱۰ است: به‌جای مفاهیم جدا، یک پروژه‌ی کامل را از نیازمندی تا آزمون پیش می‌بریم. نیازمندی: دو ISP، ترافیک مالی از ISP-A با Failover، بقیه از ISP-B، شبکه‌ی مهمان جدا، و بدون مسیر نامتقارن روی فایروال‌های Stateful.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) طرح
+#### ۱) نیازمندی
+
+1. اینترنت پایدار با دو ISP.
+2. Finance (10.10.20.0/24) ترجیحاً ISP-A، Failover به B.
+3. مهمان (192.168.50.0/24) فقط اینترنت؛ بدون دسترسی داخلی.
+4. NAT فقط روی Edge.
+5. بدون Asymmetric.
+
+#### ۲) طرح
 
 ``` text
-ISP-A ---- BGP ---- [EDGE FW pair] ---- Core (OSPF) ---- [INTERNAL FW] ---- Servers
-ISP-B ---- BGP ----/
+ISP-A ---BGP---+                         +--- Internal FW --- Servers
+               +-- EDGE FW (HA) -- Core(OSPF) --- Users
+ISP-B ---BGP---+                         +--- VRF GUEST --- Guest
 ```
 
-- Edge: BGP با دو ISP؛ Local-pref خروج؛ Prepend ورودی.
-- Core: OSPF؛ Default Originate از Edge.
-- Internal: Static یا OSPF Passive.
-- PBR: Finance از ISP-A با Track.
-- VRF: شبکه‌ی مهمان جدا.
-- ECMP: فقط بین جفت HA/لینک‌های یکسان.
+#### ۳) پیکربندی نمونه Edge
 
-#### ۲) جدول تصمیم
+``` text
+router bgp 65010
+ neighbor 192.0.2.1 remote-as 65100
+ neighbor 192.0.2.1 route-map FROM-A in
+ neighbor 192.0.2.5 remote-as 65200
+ neighbor 192.0.2.5 route-map FROM-B in
+ neighbor 192.0.2.5 route-map TO-B out
+route-map FROM-A permit 10
+ set local-preference 200
+route-map FROM-B permit 10
+ set local-preference 100
+route-map TO-B permit 10
+ set as-path prepend 65010 65010
+router ospf 1
+ default-information originate always
+```
 
-| موضوع | تصمیم | دلیل |
+#### ۴) PBR و Track روی Core
+
+``` text
+route-map PBR-FIN permit 10
+ match ip address FINANCE
+ set ip next-hop verify-availability 192.0.2.1 10 track 1
+```
+
+#### ۵) VRF مهمان
+
+``` text
+ip vrf GUEST
+interface Gi0/5
+ ip vrf forwarding GUEST
+ ip address 192.168.50.1 255.255.255.0
+ip route vrf GUEST 0.0.0.0 0.0.0.0 10.255.9.2
+```
+
+#### ۶) آزمون پنج‌گانه
+
+| # | آزمون | انتظار |
 |---|---|---|
-| Redistribution | یک‌طرفه BGP→OSPF Default فقط | جلوگیری از Feedback |
-| NAT | فقط Edge | رد‌یابی ساده |
-| Asymmetric | Local-pref+Prepend | Stateful |
+| 1 | traceroute Users→8.8.8.8 | از ISP-B (Local-pref پایین‌تر برای عادی؟ طبق طرح) |
+| 2 | Finance→8.8.8.8 | از ISP-A |
+| 3 | قطع ISP-A | Finance به B؛ Failover<15s |
+| 4 | Guest→Servers | رد |
+| 5 | Capture دو سمت | بدون Asymmetric |
 
-#### ۳) آزمون
+#### ۷) ریسک
 
-``` text
-1 traceroute from each zone
-2 fail ISP-A: Finance fails over via Track
-3 fail one Edge member
-4 negative: Guest VRF cannot reach Servers
-5 check asymmetric: capture both firewalls
-```
-
-#### ۴) Rubric
-
-طرح ۳۰، آزمون ۳۰، ریسک ۲۰، مستند ۲۰.
+Next-hop مرده در PBR (Track)؛ Leak بین VRF؛ Prepend بی‌اثر؛ Rollback: Config قبلی.
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** ورودی: طرح Edge+Internal. پاسخ: جدول تصمیم و نمودار.
+**ساده (حل‌شده):** Users→Internet: Local-pref 200 برای A و Policy؛ نتیجه traceroute.
 
-**متوسط (تحلیل):** ECMP + Stateful: Hash رفت و برگشت متفاوت. پاسخ: ECMP فقط بین HA و Session sync یا Symmetric Hash.
+**متوسط (Failover):** قطع ISP-A: Track پایین؛ Next-hop دوم؛ شمارنده‌ها؛ مدت Failover اندازه‌گیری شد (۱۲ ثانیه).
 
-**سخت (طراحی):** VRF+PBR+HA کامل؛ آزمون ۵‌گانه؛ ریسک و رفع.
+**سخت (Asymmetric):** پس از افزودن لینک دوم Capture نشان داد SYN از FW1 و SYN-ACK از FW2؛ رفع: Local-pref/Prepend و Policy؛ آزمون تکرار: Symmetric.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
-show ip route
 show ip bgp summary
-traceroute 8.8.8.8
+show route-map PBR-FIN
+show ip route vrf GUEST
+traceroute 8.8.8.8 source 10.10.20.5
 ```
 
 ### ۸) Verification (اثبات صحت)
 
-- آزمون ۵‌گانه.
+- آزمون پنج‌گانه.
+- Evidence.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Failover کند | Timer | BFD |
+| Failover کند | Track interval | BFD/کاهش interval |
+| Guest به داخل می‌رسد | Leak | حذف Static |
 
 ### ۱۰) نکات امنیتی
 
-- Least privilege.
+- VRF+Policy فایروال.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- مسیر طراحی‌شده.
-- آزمون منفی.
+- پروژه‌ی کامل.
+- آزمون مثبت/منفی.
+- ریسک و Rollback.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) چرا ECMP فقط بین HA؟ *(پاسخ: 10-7-ت1)*
+**ت1.** (ساده) چرا NAT فقط Edge؟ *(پاسخ: 10-7-ت1)*
 
-**ت2.** (ساده) Default کجاست؟ *(پاسخ: 10-7-ت2)*
+**ت2.** (ساده) نقش Local-pref؟ *(پاسخ: 10-7-ت2)*
 
-**ت3.** (متوسط) آزمون پنجگانه؟ *(پاسخ: 10-7-ت3)*
+**ت3.** (متوسط) چرا Track در PBR؟ *(پاسخ: 10-7-ت3)*
 
-**ت4.** (متوسط) PBR کجا؟ *(پاسخ: 10-7-ت4)*
+**ت4.** (متوسط) Guest را چگونه جدا کردید؟ *(پاسخ: 10-7-ت4)*
 
-**ت5.** (سخت) ریسک. *(پاسخ: 10-7-ت5)*
+**ت5.** (سخت) Asymmetric پس از لینک دوم؛ تحلیل. *(پاسخ: 10-7-ت5)*
 
-**ت6.** (سخت، طراحی) طرح کامل. *(پاسخ: 10-7-ت6)*
+**ت6.** (سخت، طراحی) طرح را برای سه ISP گسترش دهید. *(پاسخ: 10-7-ت6)*
 
-**Q1.** Quick quiz (English): Which design principle avoids asymmetric flows with stateful firewalls? *(پاسخ: 10-7-Q1)*
+**Q1.** Quick quiz (English): Which tool ensures PBR stops using a dead next hop? *(پاسخ: 10-7-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
@@ -1109,11 +1144,11 @@ traceroute 8.8.8.8
 |---|---|---|
 | HA | High Availability | دسترس‌پذیری بالا |
 
-- *Design routes before policies.* ← قبل از Policy مسیر را طراحی کنید.
+- *Test negative cases as well as positive ones.* ← علاوه بر مثبت، حالت‌های منفی را هم آزمون کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** طرح چندفایروالی (اجرا نشده). **Evidence:** `03-ops/multi-fw.md`.
+**کارت Lab:** پروژه‌ی فصل ۱۰ (اجرا نشده). **Evidence:** `03-ops/multi-fw.md`.
 
 ### ۱۵) منابع
 
@@ -1573,19 +1608,22 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 ### پاسخ‌های بازنویسی عمیق درس 10-7
 
-**10-7-ت1** — Session sync و Symmetric.
 
-**10-7-ت2** — Edge.
+### پاسخ‌های بازنویسی عمیق درس 10-7
 
-**10-7-ت3** — Zone، ISP-A، Member، Guest منفی، Asym.
+**10-7-ت1** — رد‌یابی ساده و جلوگیری از NAT دوباره.
 
-**10-7-ت4** — Core با Track.
+**10-7-ت2** — تعیین ISP خروجی در کل AS.
 
-**10-7-ت5** — Asymmetric و Next-hop مرده.
+**10-7-ت3** — بدون آن ترافیک به Next-hop مرده می‌رود.
 
-**10-7-ت6** — VRF+PBR+HA.
+**10-7-ت4** — VRF جدا، Default مستقل، Policy فایروال، آزمون منفی.
 
-**10-7-Q1** — Ensure both directions of a flow traverse the same firewall.
+**10-7-ت5** — Capture، Local-pref/Prepend، آزمون.
+
+**10-7-ت6** — Local-pref، Prepend، PBR، Track، VRF.
+
+**10-7-Q1** — IP SLA with a track object.
 
 ### پاسخ‌های درس‌های افزوده‌ی فصل 10 (۱۰-۸ و ۱۰-۹)
 
@@ -2659,85 +2697,111 @@ get system session-ttl
 
 <a id="l-11-6"></a>
 
-## درس 11-6 — کارگاه طراحی Policy، ۱۰ پرسش مسیر بسته و آزمون G4
+## درس 11-6 — کارگاه طراحی Policy، ۱۰ پرسش مسیر بسته و آزمون G4: پروژه‌ی حل‌شده‌ی کامل
 
 **فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۰ تا ۱۱-۷ · ≈ 12 ساعت**
 
-> **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. ماتریس Zone و ۱۰ Policy بنویسد.
-2. ۱۰ پرسش مسیر بسته را پاسخ دهد.
-3. آزمون مثبت/منفی بنویسد.
-4. Gate G4 را با Rubric تحویل دهد.
-5. طراحی را ارزیابی و بهبود دهد.
+1. ماتریس Zone و ۱۰ Policy کامل بنویسد.
+2. ۱۰ پرسش مسیر بسته را با دستور و شاهد پاسخ دهد.
+3. ۹ آزمون مثبت و ۱۶ آزمون منفی را طراحی کند.
+4. Gate G4 را با Evidence و Rubric تحویل دهد.
+5. طراحی را بازبینی و ضعف‌ها را بیابد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-این کارگاه فصل ۱۱ را به یک طراحی واقعی تبدیل می‌کند. شرکت کوچکی را فرض کنید: اینترنت، DMZ با وب‌سرور، سرورهای داخلی، کاربران و شبکه‌ی مدیریت.
+این کارگاه آخرین مرحله‌ی فصل ۱۱ است: به‌جای جمله‌های کلی، یک شرکت کوچک را از صفر تا آزمون طراحی می‌کنید. هدف این است که وقتی ممیز پرسید «چرا DB از اینترنت دیده نمی‌شود؟» با Policy، Log و آزمون جواب بدهید.
 
 ### ۳) توضیح عمیق فنی
 
 #### ۱) سناریو
 
 ``` text
-Internet - [FW] - DMZ (web 10.30.0.10)
-                - Servers (app 10.20.0.10, db 10.20.0.20)
-                - Users 10.10.0.0/24
-                - Mgmt 10.99.0.0/24
+Internet - [FW] - DMZ  10.30.0.0/24 (web 10.30.0.10)
+                - SRV  10.20.0.0/24 (app 10.20.0.10, db 10.20.0.20)
+                - USR  10.10.0.0/24
+                - MGT  10.99.0.0/24
 ```
 
-#### ۲) ۱۰ پرسش مسیر بسته
+#### ۲) ماتریس
 
-1. مسیر Users→Internet کدام Policy و NAT دارد؟
-2. VIP وب چیست و Policy چه مقصدی دارد؟
-3. چرا DB مستقیم از Internet ممنوع است؟
-4. Admin از کجا به فایروال و سرورها می‌رسد؟
-5. Default Deny کجاست و Log دارد؟
-6. Logها به کجا می‌روند؟
-7. NAT کجا انجام می‌شود؟
-8. اگر MTU تونل 1400 باشد MSS چقدر؟
-9. Asymmetric چه علامتی دارد؟
-10. آزمون منفی برای DMZ→DB چیست؟
+``` text
+from\to  INET        DMZ       SRV         USR   MGT
+INET      -           443 (VIP) -           -     -
+DMZ       Updates     -         app 8443    -     -
+SRV       Updates     -         -           -     -
+USR       HTTP/S,DNS  HTTPS     app 443     -     -
+MGT       -           SSH       SSH         SSH   -
+```
 
-#### ۳) تحویل
+#### ۳) ده Policy
 
-ماتریس، ۱۰ Policy، پاسخ ۱۰ پرسش، جدول آزمون (۹ مثبت/۱۶ منفی)، Evidence؛ Rubric: ماتریس ۲۰، Policy ۲۵، پاسخ ۲۵، آزمون ۲۰، صداقت ۱۰.
+| ID | از | به | Src | Dst | Service | NAT |
+|---|---|---|---|---|---|---|
+| 10 | USR | INET | NET-USERS | all | HTTP/HTTPS/DNS | SNAT |
+| 20 | USR | DMZ | NET-USERS | SRV-WEB | HTTPS | - |
+| 30 | USR | SRV | NET-USERS | SRV-APP | TCP-443 | - |
+| 40 | INET | DMZ | all | VIP-WEB | HTTPS | DNAT |
+| 50 | DMZ | SRV | SRV-WEB | SRV-APP | TCP-8443 | - |
+| 60 | SRV | SRV | SRV-APP | SRV-DB | MS-SQL | - |
+| 70 | MGT | DMZ,SRV,USR | HOST-ADMIN | GRP-ALL | SSH | - |
+| 80 | DMZ,SRV | INET | GRP-DMZ-SRV | UPDATE-SITES | HTTPS | SNAT |
+| 90 | DMZ | SRV | all | SRV-DB | ALL | Deny+log |
+| 99 | any | any | all | all | ALL | Deny+log |
+
+#### ۴) پاسخ ۱۰ پرسش
+
+1. Users→Internet: Policy 10، SNAT. 2. VIP-WEB-443→10.30.0.10، Policy 40 dst=VIP. 3. DB: بدون مسیر از INET؛ فقط 60. 4. Admin: Policy 70 فقط MGT. 5. Default Deny: Policy 99 با Log. 6. Log: FortiAnalyzer/Syslog. 7. NAT: فقط Policy 10، 40، 80. 8. MTU 1400 ⇒ MSS 1360. 9. Asymmetric: Session «no session matched» و Capture دو سمت. 10. آزمون منفی DMZ→DB: Policy 90.
+
+#### ۵) آزمون‌ها
+
+۹ مثبت: 10، 20، 30، 40، 50، 60، 70، 80 و VIP. ۱۶ منفی: هر خانه‌ی «-» (مثلاً INET→SRV، DMZ→USR، SRV→DMZ، USR→MGT...).
+
+#### ۶) Rubric
+
+ماتریس ۲۰، Policy ۲۵، پاسخ ۲۵، آزمون ۲۰، صداقت ۱۰.
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** پاسخ پرسش ۱: Policy 10 (Users→Internet، HTTP/HTTPS/DNS، SNAT)؛ Session act=snat.
+**ساده (حل‌شده):** پرسش ۱: کاربر 10.10.0.5 به 203.0.113.10:443 ⇒ Policy 10، SNAT 198.51.100.2؛ `session list` act=snat.
 
-**متوسط (تحلیل):** پرسش ۳: DB فقط از App؛ از اینترنت هیچ مسیری؛ Policy Deny صریح و VIP فقط برای 443 وب.
+**متوسط (تحلیل):** پرسش ۳: اگر Policy 90 حذف شود، Implicit Deny هنوز DMZ→DB را رد می‌کند ولی بدون Log؛ پس Deny صریح برای Alert لازم است.
 
-**سخت (آزمون منفی):** DMZ→DB: Policy 61 Deny با Log؛ آزمون telnet 1433 از وب؛ انتظار: Timeout و Log policyid=61؛ ثبت Evidence.
+**سخت (آزمون منفی):** DMZ→DB: `telnet 10.20.0.20 1433` از وب؛ انتظار Timeout؛ Log: policyid=90 action=deny؛ Alert؛ Evidence ثبت.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
-! see lessons 11-2 and 11-4 for the policies
+diagnose firewall iprope lookup 10.30.0.10 40000 10.20.0.20 1433 tcp port3
+execute log filter field policyid 90
+execute log display
 ```
 
 ### ۸) Verification (اثبات صحت)
 
-- G4.
+- G4: ۹ مثبت و ۱۶ منفی با Evidence.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
 | Policy گشاد | Log | تنگ‌سازی |
+| VIP کار نمی‌کند | Policy dst | VIP object |
 
 ### ۱۰) نکات امنیتی
 
-- Default Deny.
+- Default Deny با Log.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- طراحی کامل.
+- طراحی از ماتریس.
+- آزمون مثبت/منفی.
+- Evidence.
 
 ### ۱۲) تمرین و ارزیابی
 
@@ -2745,13 +2809,13 @@ Internet - [FW] - DMZ (web 10.30.0.10)
 
 **ت2.** (ساده) DB از Internet؟ *(پاسخ: 11-6-ت2)*
 
-**ت3.** (متوسط) Admin از کجا؟ *(پاسخ: 11-6-ت3)*
+**ت3.** (متوسط) چرا Deny صریح با وجود Implicit Deny؟ *(پاسخ: 11-6-ت3)*
 
-**ت4.** (متوسط) Log کجا؟ *(پاسخ: 11-6-ت4)*
+**ت4.** (متوسط) NAT کجا؟ *(پاسخ: 11-6-ت4)*
 
-**ت5.** (سخت) آزمون منفی برای هر خانه. *(پاسخ: 11-6-ت5)*
+**ت5.** (سخت) ۱۶ آزمون منفی را فهرست کنید. *(پاسخ: 11-6-ت5)*
 
-**ت6.** (سخت، طراحی) طرح کامل. *(پاسخ: 11-6-ت6)*
+**ت6.** (سخت، طراحی) بهبود طرح. *(پاسخ: 11-6-ت6)*
 
 **Q1.** Quick quiz (English): Name one negative test for a DMZ policy. *(پاسخ: 11-6-Q1)*
 
@@ -2765,11 +2829,12 @@ Internet - [FW] - DMZ (web 10.30.0.10)
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** کارگاه Policy (اجرا نشده). **Evidence:** `03-ops/g4.md`.
+**کارت Lab:** کارگاه Policy G4 (اجرا نشده). **Evidence:** `03-ops/g4.md`.
 
 ### ۱۵) منابع
 
 - درس‌های فصل ۱۱
+- Fortinet FortiOS 7.0 Administration Guide: Firewall policies
 
 ## درس 11-7 — Stateful Inspection از درون: State Table، TCP State و Timeout
 
@@ -3058,17 +3123,20 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 
 ### پاسخ‌های بازنویسی عمیق درس 11-6
 
-**11-6-ت1** — آخر لیست با Log.
 
-**11-6-ت2** — ممنوع.
+### پاسخ‌های بازنویسی عمیق درس 11-6
 
-**11-6-ت3** — فقط Mgmt با Trusted host.
+**11-6-ت1** — Policy 99 در انتها با Log.
 
-**11-6-ت4** — Syslog/FortiAnalyzer.
+**11-6-ت2** — هیچ مسیری ندارد؛ ممنوع.
 
-**11-6-ت5** — ۱۶ آزمون منفی و Evidence.
+**11-6-ت3** — Implicit Log ندارد؛ صریح برای Alert.
 
-**11-6-ت6** — ماتریس+Policy+آزمون.
+**11-6-ت4** — فقط Policy 10، 40، 80.
+
+**11-6-ت5** — هر خانه‌ی «-» ماتریس: INET→SRV/USR/MGT، DMZ→USR/MGT، SRV→DMZ/USR/MGT، USR→MGT، MGT→INET و ... با نتیجه‌ی deny.
+
+**11-6-ت6** — SSO/MFA برای Admin، Segment بیشتر DMZ، WAF (Needs-License).
 
 **11-6-Q1** — Attempt a direct connection from the DMZ to the database and confirm it is denied.
 
@@ -4926,154 +4994,110 @@ diagnose npu fastpath status
 
 <a id="l-12-7"></a>
 
-## درس 12-7 — آزمون پایان فصل ۱۲ و تحلیل خطا (مدیریت قفل‌شده)
+## درس 12-7 — آزمون پایان فصل ۱۲ و تحلیل خطا: مدیریت قفل‌شده، Route اشتباه و Interface
 
-**فصل 12 - روز 7 · پیش‌نیاز: درس‌های ۱۲-۱ تا ۱۲-۵ · ۶ ساعت**
+**فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۰ تا ۱۲-۶ · ≈ 12 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-ساخت Baseline کامل FortiGate و عیب‌یابی خطایی که شایع است: قفل‌شدن از GUI. این درس ارزیابی فصل است.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس‌های ۱۲-۱ تا ۱۲-۵.
+1. سه پرونده‌ی خرابی (مدیریت، Route، Interface) را با روش ثابت حل کند.
+2. Evidence خروجی دستورها را ثبت کند.
+3. RCA و اقدام پیشگیرانه بنویسد.
+4. آزمون عملی فصل ۱۲ را با Rubric تحویل دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Baseline: Interface/VLAN، Zone/Object، Default/Static، Admin امن، بکاپ.
-- سناریوی خرابی: Trusted Host اشتباه، allowaccess بسته، Route Default حذف‌شده.
-- روش: Console ← `show` ← اصلاح ← بکاپ.
-- مستندسازی As-Built FortiGate (جدول Interface/Zone/Object/Route/Admin).
+«بعد از تغییر Interface نمی‌توانم وارد فایروال شوم.» اگر مدیریت را روی همان Interface تغییر داده باشید، قفل شده‌اید. این آزمون سه خطای واقعی را تمرین می‌کند: قفل‌شدن، Route اشتباه و ناسازگاری VLAN.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-ساخت Baseline و ثبت As-Built.
+#### ۱) پرونده ۱: مدیریت قفل‌شده
 
-### ۵) مثال سازمانی
+علامت: بعد از `unset allowaccess` روی port2 دیگر GUI/SSH باز نمی‌شود. شاهد: ping بله، https نه. رفع: کنسول: `config system interface / edit port2 / set allowaccess https ssh ping`. پیشگیری: `execute ... ` Safe-mode/زمان‌بندی Rollback (`config system global / set cfg-save revert`؛ `Unverified`).
 
-سازمان: Baseline استاندارد برای هر FortiGate جدید.
+#### ۲) پرونده ۲: Route اشتباه
 
-### ۶) تصویر و توپولوژی
+علامت: اینترنت قطع است ولی ping به Gateway ok. شاهد: `get router info routing-table details 8.8.8.8` به port2. علت: Static با Distance کمتر. رفع: اصلاح Distance/حذف. آزمون: traceroute.
 
-```text
-Baseline: Interfaces + Zones + Objects + Routes + Admin + Backup
+#### ۳) پرونده ۳: VLAN
+
+علامت: VLAN20 up ولی ping نه. شاهد: ARP incomplete. علت: Trunk سوییچ. رفع: Trunk allowed 20. آزمون.
+
+#### ۴) تحویل
+
+برای هر پرونده: Evidence، علت، رفع، آزمون، پیشگیری. Rubric: کشف ۳۰، رفع ۳۰، Evidence ۲۰، پیشگیری ۱۰، صداقت ۱۰.
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** پرونده ۱: ورود از کنسول، allowaccess بازگردانی؛ GUI باز می‌شود.
+
+**متوسط (تحلیل):** پرونده ۲: Route 0.0.0.0 به port2 با distance 5؛ حذف؛ Default ISP برمی‌گردد.
+
+**سخت (هم‌زمان):** دو عیب: Route و VLAN. ابتدا VLAN (لایه‌ی ۲) سپس Route؛ هر کدام آزمون جدا.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get router info routing-table details 8.8.8.8
+diagnose ip arp list
+show system interface port2
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+### ۸) Verification (اثبات صحت)
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+- Evidence سه پرونده.
 
-#### روش گرافیکی (GUI)
+### ۹) Troubleshooting
 
-1. Network > Interfaces: همه‌ی Interfaceها را مرور.
-2. Policy & Objects > Addresses و Zones را مرور.
-3. Network > Static Routes؛ System > Administrators.
-4. Admin menu > Configuration > Backup برای نسخه‌ی As-Built.
-5. Dashboard > Status برای ثبت نسخه.
-
-#### روش خط فرمان (CLI)
-
-```text
-! as-built collection
-show system interface
-show system zone
-show firewall address
-show router static
-show system admin
-get system status
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- خروجی هر دستور در As-Built ثبت می‌شود (بدون رمز/Hash در Git).
-- معیار: ≥ ۴ از ۵ مورد آزمون.
-
-#### کارت قابلیت (۱۰ پرسش)
-
-| # | پرسش | پاسخ |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | مفهوم | Baseline |
-| 2 | مشکلی که حل می‌کند | پایه‌ی هر پروژه |
-| 3 | چه زمانی استفاده شود | همیشه |
-| 4 | چه زمانی استفاده نشود | بدون بکاپ |
-| 5 | پیش‌نیازها | تکمیل درس‌های قبل |
-| 6 | وابستگی به Routing/Policy/NAT | — |
-| 7 | پیاده‌سازی | GUI+CLI |
-| 8 | راستی‌آزمایی | get/show |
-| 9 | عیب‌یابی | بیرون‌ماندن |
-| 10 | خطاهای رایج | رمز در فایل |
+| مدیریت قفل | کنسول | allowaccess |
 
-### ۸) تست عملکرد
+### ۱۰) نکات امنیتی
 
-- آزمون: ۵ مورد (Interface/VLAN، Zone/Object، Route، Admin، Backup/Restore).
+- تغییر Interface مدیریت فقط با کنسول/Rollback.
 
-### ۹) عیب‌یابی
+### ۱۱) جمع‌بندی مفهومی
 
-| بخش | شرح |
-|---|---|
-| Symptom | از GUI بیرون ماندم |
-| شواهد/دستور | HTTPS رد می‌شود؛ ping OK |
-| علت | allowaccess/Trusted host |
-| رفع | Console و اصلاح |
+- از کنسول.
+- Route/ARP.
+- پیشگیری.
 
-### ۱۰) تمرین مستقل
+### ۱۲) تمرین و ارزیابی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ت1.** (ساده) راه نجات مدیریت قفل؟ *(پاسخ: 12-7-ت1)*
 
-**ت1.** Baseline چیست؟ *(پاسخ: 12-7-ت1)*
+**ت2.** (ساده) ARP incomplete یعنی؟ *(پاسخ: 12-7-ت2)*
 
-**ت2.** As-Built چیست؟ *(پاسخ: 12-7-ت2)*
+**ت3.** (متوسط) چرا Distance مهم است؟ *(پاسخ: 12-7-ت3)*
 
-**ت3.** اولین گام وقتی GUI قفل است؟ *(پاسخ: 12-7-ت3)*
+**ت4.** (متوسط) پیشگیری از قفل‌شدن؟ *(پاسخ: 12-7-ت4)*
 
-### ۱۱) مرور و ارزیابی
+**ت5.** (سخت) دو عیب همزمان؟ *(پاسخ: 12-7-ت5)*
 
-**م1.** چرا As-Built بدون رمز؟ *(پاسخ: 12-7-م1)*
+**ت6.** (سخت، طراحی) Runbook تغییر Interface. *(پاسخ: 12-7-ت6)*
 
-**م2.** سناریو: Default حذف شد؛ چه می‌کنید؟ *(پاسخ: 12-7-م2)*
+**Q1.** Quick quiz (English): How can you regain management access after a bad allowaccess change? *(پاسخ: 12-7-Q1)*
 
-**معیار تسلط:** Baseline + As-Built + رفع یک قفل مدیریت.
+### ۱۳) اصطلاحات و English Corner
 
-**اشتباهات رایج:** As-Built ناقص؛ رمز در فایل.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| As-Built | As-built documentation | مستند وضعیت نهایی | تحویل |
-| Baseline | Configuration baseline | پیکربندی مرجع | استاندارد |
-
-| English sentence | ترجمه |
-|---|---|
-| Document the final configuration as-built. | پیکربندی نهایی را به‌صورت As-Built مستند کنید. |
-| Use the console when remote access is lost. | وقتی دسترسی از راه دور از دست رفت از Console استفاده کنید. |
-
-#### کارت Lab — درس 12-7
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | Baseline FortiGate (G-FGT1) |
-| 2 | پیش‌نیاز | درس‌های ۱۲-۱ تا ۱۲-۵ |
-| 3 | توپولوژی | FGT + Core + PC |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | طبق درس‌های قبل |
-| 7 | وضعیت اولیه | FGT تازه |
-| 8 | صورت مسئله | Baseline کامل |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | show … |
-| 11 | سناریوی خرابی | از GUI بیرون ماندم |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | As-Built |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/fgt-asbuilt-1.md` |
-| 16 | Cleanup و بازگردانی | Snapshot/Restore |
+| ARP | Address Resolution Protocol | تبدیل IP به MAC |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Keep console access ready before risky changes.* ← پیش از تغییر پرریسک کنسول را آماده نگه دارید.
 
----
+### ۱۴) کارت Lab
 
-<a id="ans-12"></a>
+**کارت Lab:** آزمون فصل ۱۲ (اجرا نشده). **Evidence:** `03-ops/fgt-asbuilt-1.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Interfaces; Routing
 
 ## پاسخ‌های فصل 12
 
@@ -5181,31 +5205,22 @@ get system status
 
 **12-6-Q1** — Because a failed upgrade can cause outage and you must restore service quickly.
 
-**12-7-ت1** — Baseline چیست؟
 
-پیکربندی استاندارد اولیه.
+### پاسخ‌های بازنویسی عمیق درس 12-7
 
-**12-7-ت2** — As-Built چیست؟
+**12-7-ت1** — کنسول و بازگرداندن allowaccess.
 
-مستند وضعیت ساخته‌شده.
+**12-7-ت2** — لایه‌ی ۲ مشکل دارد.
 
-**12-7-ت3** — اولین گام وقتی GUI قفل است؟
+**12-7-ت3** — Route با Distance کمتر برنده می‌شود.
 
-Console.
+**12-7-ت4** — تغییر از Mgmt جدا، Rollback/زمان‌بندی، کنسول آماده.
 
-**12-7-م1** — چرا As-Built بدون رمز؟
+**12-7-ت5** — ابتدا لایه‌ی پایین‌تر.
 
-امنیت و اشتراک‌پذیری.
+**12-7-ت6** — Backup، Window، کنسول، آزمون، Rollback.
 
-**12-7-م2** — سناریو: Default حذف شد؛ چه می‌کنید؟
-
-Console + بازگرداندن Route.
-
-
----
-
-<a id="end4"></a>
-
+**12-7-Q1** — Log in via the console and restore the setting.
 
 ### پاسخ‌های درس افزوده‌ی 12-0 (فصل 12)
 

@@ -1690,7 +1690,7 @@ diagnose debug reset
 
 <a id="l-14-2"></a>
 
-## درس 14-2 — Packet Sniffer در CLI/GUI و تحلیل با Wireshark
+## درس 14-2 — Packet Sniffer در CLI و GUI و تحلیل pcap با Wireshark: از فیلتر تا نتیجه‌گیری
 
 **فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۱ · ≈ 10 ساعت**
 
@@ -1700,15 +1700,16 @@ diagnose debug reset
 
 در پایان این درس باید بتوانید:
 
-1. دستور sniffer را با verbosity و فیلتر BPF بنویسد.
-2. Capture را در GUI بگیرد و دانلود کند.
-3. خروجی verbosity 6 را به pcap تبدیل کند.
-4. در Wireshark Handshake، Retransmission، RST و ICMP را بخواند.
-5. محدودیت Offload و ایمنی را بداند.
+1. دستور sniffer را با verbosity، count و فیلتر BPF بنویسد.
+2. Capture را در GUI بگیرد و pcap را دانلود کند.
+3. خروجی را در Wireshark با Display Filter تحلیل کند.
+4. الگوهای SYN بدون SYN-ACK، RST، Retransmission و ICMP Frag-needed را بشناسد.
+5. اثر Offload و ایمنی Capture را بداند.
+6. از Capture به نتیجه‌ی قابل‌دفاع برسد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-Sniffer شاهد عینی است: بحث «بسته رسید/نرسید» را با یک خط جواب می‌دهد. ولی اگر فیلتر را غلط بنویسید یا Offload را در نظر نگیرید، چیزی نمی‌بینید و نتیجه‌ی غلط می‌گیرید.
+دو نفر درباره‌ی اینکه «بسته رسید یا نرسید» بحث می‌کنند. Sniffer حکم می‌دهد: یا بسته روی Interface دیده می‌شود یا نمی‌شود. ولی اگر فیلتر را غلط بنویسید، «هیچ‌چیز دیده نمی‌شود» و نتیجه‌ی غلط می‌گیرید. مهارت واقعی این است که فیلتر درست بنویسید و خروجی را درست بخوانید.
 
 ### ۳) توضیح عمیق فنی
 
@@ -1722,13 +1723,13 @@ diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 20 l
 | Verbosity | محتوا |
 |---|---|
 | 1 | هدر کوتاه |
-| 3 | هدر + payload hex |
+| 3 | هدر + payload (hex) |
 | 4 | هدر + نام Interface |
-| 6 | هدر+payload+Ethernet و قابل تبدیل به pcap |
+| 6 | هدر + payload + Ethernet (برای تبدیل به pcap) |
 
-`any` همه‌ی Interfaceها؛ `l` زمان محلی.
+`any` همه‌ی Interfaceها؛ `l` زمان محلی؛ `0` count یعنی بی‌پایان (خطرناک).
 
-#### ۲) فیلتر
+#### ۲) فیلترهای BPF
 
 ``` text
 'host 10.10.0.5'
@@ -1736,50 +1737,60 @@ diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 20 l
 'tcp and port 443'
 'icmp'
 'host 10.10.0.5 and not port 22'
+'src host 10.10.0.5 and dst port 53 and udp'
 ```
 
 #### ۳) GUI
 
-Network → Diagnostics → Packet Capture: Interface، Filter، Count؛ دانلود pcap.
+Network → Diagnostics → Packet Capture: Interface، Filter، Count → Start → Download pcap. مزیت: فایل مستقیم برای Wireshark.
 
-#### ۴) تبدیل verbosity 6
-
-خروجی را در فایل ذخیره و با اسکریپت `fgt2eth.pl` (ابزار عمومی Fortinet/اجتماع؛ `Unverified` در محیط شما) به pcap تبدیل کنید، یا مستقیماً از GUI pcap بگیرید.
-
-#### ۵) خواندن در Wireshark
+#### ۴) تحلیل در Wireshark
 
 ``` text
-tcp.flags.syn==1 and tcp.flags.ack==0       SYN only
-tcp.analysis.retransmission                   retransmissions
-tcp.flags.reset==1                            resets
-icmp.type==3 and icmp.code==4                 frag needed
+tcp.flags.syn==1 and tcp.flags.ack==0     SYN only
+tcp.analysis.retransmission               retransmissions
+tcp.flags.reset==1                        resets
+icmp.type==3 and icmp.code==4             frag needed
+dns.flags.rcode != 0                      DNS errors
 ```
 
-الگوها: SYN بدون SYN-ACK ⇒ مقصد/مسیر؛ SYN-ACK ولی ACK نیامده ⇒ Asymmetric؛ RST ⇒ پورت بسته/Policy سرور.
+الگوها:
 
-#### ۶) Offload
+| الگو | معنی |
+|---|---|
+| SYN بدون SYN-ACK | مقصد/مسیر/Policy مقصد |
+| SYN-ACK ولی ACK نیامد | Asymmetric/Drop در مسیر |
+| RST بلافاصله | پورت بسته یا Policy |
+| Retransmission فراوان | Loss یا MTU |
+| ICMP 3/4 | MTU مسیر |
 
-بسته‌های Offload‌شده به NPU ممکن است در sniffer دیده نشوند؛ برای Lab با Policy مربوطه `auto-asic-offload disable` (Unverified). در Production با احتیاط.
+#### ۵) Offload
+
+بسته‌های Offload‌شده روی NPU ممکن است در sniffer کامل دیده نشوند. در Lab: `config firewall policy / edit N / set auto-asic-offload disable`. در Production با احتیاط (`Unverified`).
+
+#### ۶) ایمنی
+
+Capture حاوی داده‌ی حساس است؛ فیلتر باریک، count محدود، pcap را پس از تحلیل امن حذف کنید.
 
 ### ۴) طراحی و تصمیم‌گیری
 
 | سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| verbosity | 4 برای عمومی؛ 6 برای pcap |
+| verbosity | 4 عمومی؛ 6 برای pcap |
 | فیلتر | دقیق و محدود |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Sniffer 20 بسته: SYN از 10.10.0.5 و SYN-ACK برگشتی ⇒ مسیر سالم.
+**ساده (حل‌شده):** sniffer روی port2 با فیلتر host و tcp port 443: SYN، SYN-ACK، ACK ⇒ Handshake کامل ⇒ مسیر سالم.
 
-**متوسط (تحلیل):** SYN بارها ارسال و SYN-ACK نیامد: Sniffer خروجی SYN را می‌بیند؛ مقصد پاسخ نمی‌دهد؛ تیم سرور.
+**متوسط (SYN بی‌پاسخ):** Sniffer port1: SYN خارج می‌شود بارها (retransmit) و SYN-ACK نیست. مراحل: ۱) Sniffer ورودی port2 SYN را می‌بیند. ۲) Policy/Session ok. ۳) مقصد جواب نمی‌دهد. نتیجه: مشکل بیرون از فایروال (سرور/ISP). Evidence: دو Capture با زمان.
 
-**سخت (Asymmetric):** Sniffer ورودی `port2`: SYN؛ Sniffer `port3`: SYN-ACK؛ ولی در `port1` ACK نیست ⇒ ترافیک برگشت از Interface دیگر و RPF/Session؛ رفع Route.
+**سخت (Asymmetric):** SYN در port2، SYN-ACK در port3، ACK ندارد. مراحل: ۱) Sniffer any با نام Interface (verbosity 4). ۲) ترافیک برگشت از Interface دیگر. ۳) RPF/Route برگشت. رفع Route؛ آزمون: Handshake کامل روی یک Interface.
 
 ### ۶) پیاده‌سازی از مسیر GUI
 
-1. Network → Diagnostics → Packet Capture → New.
-2. Interface/Filter/Count؛ Start؛ Download.
+1. Network → Diagnostics → Packet Capture → Create New.
+2. Interface، Filter، Count را بنویسید؛ Start؛ Download.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
@@ -1790,14 +1801,14 @@ diagnose sniffer packet port2 'icmp' 6 10 l
 
 ### ۸) Verification (اثبات صحت)
 
-- بسته‌ها با Timestamp.
 - Handshake کامل.
+- Timestamp و Interface.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| چیزی دیده نمی‌شود | فیلتر/Interface | any |
+| چیزی دیده نمی‌شود | فیلتر/Interface | any و فیلتر ساده |
 | بسته ناقص | Offload | auto-asic-offload (Lab) |
 
 ### ۱۰) نکات امنیتی
@@ -1806,8 +1817,9 @@ diagnose sniffer packet port2 'icmp' 6 10 l
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- Sniffer شاهد.
+- Sniffer شاهد عینی.
 - فیلتر دقیق.
+- Wireshark Filters.
 - Offload.
 
 ### ۱۲) تمرین و ارزیابی
@@ -1818,19 +1830,20 @@ diagnose sniffer packet port2 'icmp' 6 10 l
 
 **ت3.** (متوسط) SYN بدون SYN-ACK یعنی؟ *(پاسخ: 14-2-ت3)*
 
-**ت4.** (متوسط) چرا Offload مهم است؟ *(پاسخ: 14-2-ت4)*
+**ت4.** (متوسط) چرا Offload اثر دارد؟ *(پاسخ: 14-2-ت4)*
 
 **ت5.** (سخت) Asymmetric را با Sniffer ثابت کنید. *(پاسخ: 14-2-ت5)*
 
 **ت6.** (سخت، طراحی) روش Capture امن. *(پاسخ: 14-2-ت6)*
 
-**Q1.** Quick quiz (English): Which verbosity includes the interface name? *(پاسخ: 14-2-Q1)*
+**Q1.** Quick quiz (English): Which sniffer verbosity includes the interface name? *(پاسخ: 14-2-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
 | BPF | Berkeley Packet Filter | فیلتر بسته |
+| pcap | Packet capture file | فایل Capture |
 
 - *Capture with a narrow filter.* ← با فیلتر محدود Capture کنید.
 
@@ -1845,7 +1858,7 @@ diagnose sniffer packet port2 'icmp' 6 10 l
 
 <a id="l-14-3"></a>
 
-## درس 14-3 — Debug Flow: خواندن تصمیم فایروال خط به خط
+## درس 14-3 — Debug Flow: خواندن تصمیم فایروال خط‌به‌خط با مثال‌های Allowed، Denied و RPF
 
 **فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۱، ۱۴-۲ · ≈ 10 ساعت**
 
@@ -1855,15 +1868,16 @@ diagnose sniffer packet port2 'icmp' 6 10 l
 
 در پایان این درس باید بتوانید:
 
-1. فیلتر Debug flow را بسازد.
+1. فیلتر Debug flow را بسازد و ایمن اجرا و خاموش کند.
 2. خروجی را (Route، Policy، NAT، Drop) خط‌به‌خط تفسیر کند.
-3. پیام‌های رایج (no matching policy، reverse path check fail، denied by forward policy check) را بشناسد.
-4. Debug را امن اجرا و خاموش کند.
-5. با Lookup و Session تأیید کند.
+3. پیام‌های رایج (no matching policy، reverse path check fail، iprope_in_check) را بشناسد.
+4. با Lookup و Session نتیجه را تأیید کند.
+5. از Debug flow به رفع قابل‌اثبات برسد.
+6. Evidence را ثبت کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-Debug flow مثل فیلم «چرا فایروال تصمیم گرفت» است: می‌گوید بسته آمد، مسیر پیدا شد یا نه، Policy کدام بود، NAT چه شد. اگر بتوانید آن را بخوانید، ۸۰٪ پرونده‌ها در ده دقیقه حل می‌شوند.
+Debug flow «فیلم تصمیم‌گیری فایروال» است: بسته آمد، Session ساخته شد، Route پیدا شد، Policy انتخاب شد، NAT اعمال شد یا بسته Drop شد و دلیلش چه بود. اگر خواندنش را بلد باشید، بیشتر پرونده‌ها در چند دقیقه حل می‌شوند؛ اگر نه، خروجی فقط انبوهی متن است.
 
 ### ۳) توضیح عمیق فنی
 
@@ -1877,43 +1891,64 @@ diagnose debug flow filter port 443
 diagnose debug flow show function-name enable
 diagnose debug flow trace start 20
 diagnose debug enable
-...
+... test ...
 diagnose debug disable
 diagnose debug reset
 ```
 
-در FortiOS 7.0 برای مدل‌های NP4/NP6 قبلاً Offload را غیرفعال کنید (طبق مستند Fortinet).
+برای مدل‌های NPU طبق مستند، Offload باید غیرفعال باشد وگرنه بسته‌ها دیده نمی‌شوند.
 
-#### ۲) خروجی نمونه
+#### ۲) خروجی Allowed
 
 ``` text
-id=20085 trace_id=1 func=print_pkt_detail line=5777 msg="vd-root:0 received a packet(proto=6, 10.10.0.5:40000->203.0.113.10:443) from port2. flag [S], seq ..."
-id=20085 trace_id=1 func=init_ip_session_common msg="allocate a new session-00001234"
-id=20085 trace_id=1 func=vf_ip_route_input_common msg="find a route: flag=00000000 gw-198.51.100.1 via port1"
-id=20085 trace_id=1 func=fw_forward_handler msg="Allowed by Policy-2: SNAT"
-id=20085 trace_id=1 func=__ip_session_run_tuple msg="SNAT 10.10.0.5->198.51.100.2:40000"
+msg="vd-root received a packet(proto=6, 10.10.0.5:40000->203.0.113.10:443) from port2. flag [S]"
+msg="allocate a new session-00001234"
+msg="find a route: flag=00000000 gw-198.51.100.1 via port1"
+msg="Allowed by Policy-2: SNAT"
+msg="SNAT 10.10.0.5->198.51.100.2:40000"
 ```
 
 | خط | معنی |
 |---|---|
-| received a packet | ورود بسته |
-| allocate a new session | شروع Session |
-| find a route | Route و Interface خروجی |
+| received a packet | ورود و Interface |
+| allocate a new session | Session |
+| find a route | Interface خروجی/Gateway |
 | Allowed by Policy-2 | Policy و NAT |
-| SNAT | ترجمه |
 
-#### ۳) پیام‌های Drop
+#### ۳) خروجی Denied
 
-| پیام | معنی | رفع |
-|---|---|---|
-| `no session matched` | بسته میانه‌ی Session بدون SYN | Asymmetric/Timeout |
-| `Denied by forward policy check (policy 0)` | Implicit Deny | Policy بسازید |
-| `reverse path check fail, drop` | RPF | Route |
-| `iprope_in_check() check failed` | Local-in | Local-in policy/Admin access |
+``` text
+msg="Denied by forward policy check (policy 0)"
+```
 
-#### ۴) ایمنی
+policy 0 = Implicit Deny: Policy مطابق نیست. بررسی: Interface/Zone، Source/Destination (بعد DNAT)، Service، Schedule.
 
-Debug سنگین است؛ `trace start 20` تعداد را محدود می‌کند؛ همیشه خاموش و `reset`.
+#### ۴) RPF
+
+``` text
+msg="reverse path check fail, drop"
+```
+
+Route برگشت Source از Interface ورودی نیست. رفع: Route یا طراحی Asymmetric.
+
+#### ۵) Local-in
+
+``` text
+msg="iprope_in_check() check failed on policy 0, drop"
+```
+
+ترافیک به خود فایروال: allowaccess/Local-in.
+
+#### ۶) تأیید
+
+``` text
+diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
+diagnose sys session list
+```
+
+#### ۷) ایمنی
+
+Debug سنگین است؛ `trace start 20` تعداد بسته را محدود می‌کند و همیشه `disable` و `reset`.
 
 ### ۴) طراحی و تصمیم‌گیری
 
@@ -1924,11 +1959,11 @@ Debug سنگین است؛ `trace start 20` تعداد را محدود می‌ک�
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** خط «Allowed by Policy-2: SNAT» یعنی Policy 2 و NAT؛ مسیر سالم.
+**ساده (حل‌شده):** خط «Allowed by Policy-2: SNAT» یعنی Policy 2 اجازه داد و SNAT شد؛ مسیر port1.
 
-**متوسط (Deny):** `Denied by forward policy check (policy 0)`: Policy مطابق نیست؛ Lookup؛ Policy بسازید یا اصلاح Interface/Zone.
+**متوسط (Denied):** `Denied by forward policy check (policy 0)`: Source 10.10.0.5 از port2، مقصد 203.0.113.10:22. Service SSH در Policy 2 نیست. رفع: Policy جدا یا اصلاح Service؛ آزمون: Allowed.
 
-**سخت (RPF):** `reverse path check fail`: مبدأ 10.30.0.5 از port4 آمده ولی Route به 10.30.0.0 از port3؛ رفع Route یا Asymmetric design؛ آزمون: Debug flow بعدی Allowed.
+**سخت (RPF):** `reverse path check fail`: مبدأ 10.30.0.5 از port4 آمد ولی Route 10.30.0.0/24 از port3. مراحل: ۱) `get router info routing-table details 10.30.0.5`. ۲) اصلاح Route/Distance. ۳) آزمون: Allowed. درس: RPF با Asymmetric.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
@@ -1944,17 +1979,16 @@ diagnose debug reset
 
 ### ۸) Verification (اثبات صحت)
 
-- خط Allowed/Denied.
-- Policy-ID.
+- Allowed/Denied و Policy-ID.
 - پس از رفع، Allowed.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| خروجی خالی | فیلتر/Offload | فیلتر؛ offload |
+| خروجی خالی | فیلتر/Offload | فیلتر؛ Offload |
 | no session matched | Handshake | Asymmetric |
-| RPF fail | Route | Route |
+| RPF fail | Route | Route برگشت |
 
 ### ۱۰) نکات امنیتی
 
@@ -1963,18 +1997,19 @@ diagnose debug reset
 ### ۱۱) جمع‌بندی مفهومی
 
 - Debug flow=تصمیم.
-- پیام‌های Drop.
+- policy 0=Implicit Deny.
+- RPF.
 - فیلتر و شمارنده.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) trace start 20؟ *(پاسخ: 14-3-ت1)*
+**ت1.** (ساده) trace start 20 چه می‌کند؟ *(پاسخ: 14-3-ت1)*
 
-**ت2.** (ساده) Allowed by Policy-2؟ *(پاسخ: 14-3-ت2)*
+**ت2.** (ساده) Allowed by Policy-2 یعنی؟ *(پاسخ: 14-3-ت2)*
 
 **ت3.** (متوسط) policy 0 یعنی؟ *(پاسخ: 14-3-ت3)*
 
-**ت4.** (متوسط) RPF fail؟ *(پاسخ: 14-3-ت4)*
+**ت4.** (متوسط) RPF fail چیست؟ *(پاسخ: 14-3-ت4)*
 
 **ت5.** (سخت) RPF را رفع کنید. *(پاسخ: 14-3-ت5)*
 
@@ -1997,7 +2032,7 @@ diagnose debug reset
 ### ۱۵) منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Debug flow
-- FortiOS 7.0 Troubleshooting: packet flow
+- FortiOS 7.0 Troubleshooting guide
 
 <a id="l-14-4"></a>
 
@@ -2164,9 +2199,9 @@ diagnose sys session list
 
 <a id="l-14-5"></a>
 
-## درس 14-5 — MTU/MSS، DNS و مشکلات TCP/UDP: عیب‌یابی «نیمه‌کارکرده»
+## درس 14-5 — MTU/MSS، DNS و مشکلات TCP/UDP: عیب‌یابی «نیمه‌کارکرده» با محاسبه و آزمون پایدار
 
-**فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۵، ۱۴-۱ · ≈ 10 ساعت**
+**فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۵، ۱۴-۱، ۱۴-۲ · ≈ 10 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
@@ -2174,15 +2209,15 @@ diagnose sys session list
 
 در پایان این درس باید بتوانید:
 
-1. PMTU را با ping و DF اندازه بگیرد.
-2. MSS-clamp را روی Policy/Interface تنظیم و آزمون کند.
-3. DNS را (Resolver، Forwarder، TCP/UDP 53) عیب‌یابی کند.
-4. علائم Black-hole، Retransmission و RST را بخواند.
+1. PMTU را با ping و DF با جست‌وجوی دودویی اندازه بگیرد.
+2. MSS-clamp را محاسبه و روی Policy/Tunnel اعمال کند.
+3. DNS (Resolver، Forwarder، TCP/UDP 53، EDNS) را عیب‌یابی کند.
+4. علائم Black-hole، Retransmission و RST را در Capture بخواند.
 5. رفع را با آزمون پایدار تأیید کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-خراب‌ترین گزارش‌ها «گاهی کار می‌کند» است. صفحه‌ی ساده باز می‌شود ولی ورود به پورتال تا لود شدن می‌ماند؛ یا ping کار می‌کند و دانلود فایل می‌ایستد. اینها معمولاً MTU یا DNS هستند، نه Policy.
+بدترین گزارش «بعضی وقت‌ها کار می‌کند» است. صفحه‌ی ساده باز می‌شود ولی ورود به پورتال تا لود شدن می‌ماند؛ ping کار می‌کند و دانلود می‌ایستد؛ نام کار نمی‌کند ولی IP می‌کند. اینها اغلب MTU یا DNS هستند.
 
 ### ۳) توضیح عمیق فنی
 
@@ -2191,80 +2226,89 @@ diagnose sys session list
 ``` text
 execute ping-options df-bit yes
 execute ping-options data-size 1472
-execute ping 203.0.113.10
+execute ping 203.0.113.10        -> fail
 execute ping-options data-size 1372
-execute ping 203.0.113.10
+execute ping 203.0.113.10        -> ok
+execute ping-options data-size 1422
+...
 ```
 
-1472+28=1500. اگر 1472 جواب ندهد و 1372 بدهد، PMTU بین 1400 و 1500؛ با جست‌وجوی دودویی دقیق کنید.
+جست‌وجوی دودویی بین موفق و ناموفق؛ PMTU = اندازه‌ی موفق + 28.
+
+``` text
+Example: success at 1400 -> PMTU = 1428
+MSS = PMTU - 40 = 1388 ; use 1380 for margin
+```
 
 #### ۲) MSS-clamp
 
 ``` text
 config firewall policy
  edit 2
-  set tcp-mss-sender 1360
-  set tcp-mss-receiver 1360
+  set tcp-mss-sender 1380
+  set tcp-mss-receiver 1380
  next
 end
 ```
 
-(برای IPsec: روی Policy یا Phase1 `tcp-mss`؛ `Unverified`.)
-
-``` text
-MSS = PMTU - 40 = 1400 - 40 = 1360
-```
+(`Unverified` روی 7.0.3.) برای IPsec روی Phase/Interface تونل هم MSS تنظیم کنید.
 
 #### ۳) DNS
 
-- UDP/TCP 53؛ پاسخ بزرگ (DNSSEC) نیاز به TCP/EDNS.
-- FortiGate می‌تواند DNS Server داخلی باشد (`config system dns-server`).
-- تست: `execute ping www.example.com`، `diagnose test application dnsproxy 3` (Unverified).
-- علائم: ping به IP کار می‌کند، به نام نه.
+- UDP/TCP 53؛ پاسخ بزرگ نیاز به TCP/EDNS.
+- FortiGate می‌تواند Forwarder/DNS Server باشد.
+- علامت: ping IP ok، ping name نه.
 
-#### ۴) نشانه‌ها در Capture
+``` text
+execute ping www.example.com
+diagnose test application dnsproxy 3
+```
 
-- بسته‌های بزرگ بی‌پاسخ و Retransmission ⇒ MTU.
-- DNS Query بدون Response ⇒ Policy/Resolver.
+#### ۴) الگوها در Capture
+
+- بسته‌ی بزرگ بی‌پاسخ + Retransmission ⇒ MTU.
+- Query بدون Response ⇒ Policy 53/Resolver.
 - RST ⇒ سرور/Policy.
 
 #### ۵) آزمون پایدار
 
-دانلود ۱۰۰ MB، صفحه‌ی HTTPS بزرگ، چند DNS Query؛ ۳ بار تکرار.
+دانلود ۱۰۰ MB، صفحه‌ی HTTPS بزرگ، ۲۰ DNS Query؛ ۳ بار تکرار.
 
 ### ۴) طراحی و تصمیم‌گیری
 
 | سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| MSS | PMTU-40 |
-| ICMP | Frag-needed را مجاز کنید |
+| MSS | PMTU−40 با حاشیه |
+| ICMP | Frag-needed مجاز |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** PMTU=1400 ⇒ MSS=1360.
+**ساده (حل‌شده):** PMTU=1428 ⇒ MSS=1388؛ clamp 1380.
 
-**متوسط (تحلیل):** ping IP ok، name no: DNS؛ Policy Port 53 نیست؛ رفع و آزمون.
+**متوسط (DNS):** ping IP ok، name no. مراحل: ۱) Policy پورت 53 به Resolver نیست. ۲) افزودن UDP/TCP 53. ۳) آزمون nslookup. نتیجه: نام کار می‌کند.
 
-**سخت (IPsec):** تونل MTU 1438؛ دانلود می‌ایستد؛ ICMP frag-needed بسته؛ رفع: MSS-clamp 1350 و اجازه‌ی ICMP؛ آزمون ۱۰۰ MB.
+**سخت (IPsec):** تونل MTU 1438؛ دانلود می‌ایستد؛ ICMP frag-needed بسته. مراحل: ۱) ping DF: 1372 ok، 1422 fail ⇒ PMTU 1400. ۲) MSS 1360 روی Policy تونل. ۳) باز کردن ICMP 3/4. ۴) آزمون ۱۰۰MB. معیار: بدون Retransmission.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
 execute ping-options df-bit yes
-execute ping-options data-size 1472
+execute ping-options data-size 1372
 execute ping 203.0.113.10
+execute ping www.example.com
 ```
 
 ### ۸) Verification (اثبات صحت)
 
 - دانلود بزرگ.
 - DNS جواب.
+- Retransmission کم.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| فقط بزرگ | DF ping | MSS |
+| فقط بزرگ | DF ping | MSS/MTU |
 | نام کار نمی‌کند | DNS | Policy 53 |
 
 ### ۱۰) نکات امنیتی
@@ -2273,9 +2317,10 @@ execute ping 203.0.113.10
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- PMTU.
-- MSS-clamp.
+- PMTU باینری.
+- MSS−40.
 - DNS.
+- آزمون پایدار.
 
 ### ۱۲) تمرین و ارزیابی
 
@@ -2283,9 +2328,9 @@ execute ping 203.0.113.10
 
 **ت2.** (ساده) علامت Black-hole؟ *(پاسخ: 14-5-ت2)*
 
-**ت3.** (متوسط) DNS کار نمی‌کند ولی ping IP بله؛ علت؟ *(پاسخ: 14-5-ت3)*
+**ت3.** (متوسط) ping IP ok ولی نام no؟ *(پاسخ: 14-5-ت3)*
 
-**ت4.** (متوسط) چرا ICMP لازم؟ *(پاسخ: 14-5-ت4)*
+**ت4.** (متوسط) چرا ICMP لازم است؟ *(پاسخ: 14-5-ت4)*
 
 **ت5.** (سخت) IPsec دانلود می‌ایستد. *(پاسخ: 14-5-ت5)*
 
@@ -2299,7 +2344,7 @@ execute ping 203.0.113.10
 |---|---|---|
 | MSS | Maximum Segment Size | حداکثر قطعه |
 
-- *Lower the MSS on tunnels.* ← MSS را روی تونل کم کنید.
+- *Lower the MSS on tunnels.* ← MSS را روی تونل‌ها کاهش دهید.
 
 ### ۱۴) کارت Lab
 
@@ -2312,9 +2357,9 @@ execute ping 203.0.113.10
 
 <a id="l-14-6"></a>
 
-## درس 14-6 — تحلیل Log، Packet Walk و آزمون عملی فصل ۱۴
+## درس 14-6 — تحلیل Log، Packet Walk و آزمون عملی فصل ۱۴: سه پرونده‌ی کامل
 
-**فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۱ تا ۱۴-۵ · ≈ 10 ساعت**
+**فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۱ تا ۱۴-۵ · ≈ 12 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
@@ -2322,56 +2367,67 @@ execute ping 203.0.113.10
 
 در پایان این درس باید بتوانید:
 
-1. Log ترافیک را (action، policyid، srcip، dstip، service) بخواند.
+1. Log ترافیک را (action، policyid، srcip، dstip، service، byte) بخواند.
 2. با فیلتر Log علت Deny را بیابد.
-3. Packet Walk کامل بنویسد.
-4. آزمون عملی فصل ۱۴ را با Rubric تحویل دهد.
+3. Packet Walk کامل را از Log و Flow بسازد.
+4. سه پرونده را حل و RCA کند.
+5. آزمون عملی فصل ۱۴ را با Rubric تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-Log حافظه‌ی بلندمدت است: Debug لحظه است، Log گذشته را می‌گوید. «ساعت ۹ دیروز چرا قطع شد؟» فقط با Log جواب داده می‌شود.
+Debug لحظه است؛ Log حافظه‌ی بلندمدت است. «ساعت ۹ دیروز چرا قطع شد؟» فقط با Log جواب داده می‌شود. این درس خواندن Log را به عیب‌یابی کامل تبدیل می‌کند.
 
 ### ۳) توضیح عمیق فنی
 
 #### ۱) خواندن Log
 
 ``` text
-date=2026-11-26 time=10:05:11 logid="0000000013" type="traffic" subtype="forward" level="notice" srcip=10.10.0.5 srcport=40000 srcintf="port2" dstip=203.0.113.10 dstport=443 dstintf="port1" policyid=2 action="accept" service="HTTPS" sentbyte=5320 rcvdbyte=48200
+date=2026-11-26 time=10:05:11 type="traffic" subtype="forward" level="notice" srcip=10.10.0.5 srcport=40000 srcintf="port2" dstip=203.0.113.10 dstport=443 dstintf="port1" policyid=2 action="accept" service="HTTPS" sentbyte=5320 rcvdbyte=48200
 ```
 
-فیلدها: policyid=2، action=accept، service، بایت‌ها. action=deny و policyid=0 یعنی Implicit Deny.
+policyid=0 و action=deny ⇒ Implicit Deny. rcvdbyte=0 ⇒ پاسخی نیامده.
 
 #### ۲) فیلتر
 
 ``` text
 execute log filter category 0
 execute log filter field srcip 10.10.0.5
+execute log filter field action deny
 execute log display
 ```
 
 GUI: Log & Report → Forward Traffic → Filter.
 
-#### ۳) Packet Walk
+#### ۳) پرونده ۱: Deny
+
+Log: action=deny policyid=0 dstport=22. علت: SSH در Policy نیست. رفع: Policy مجزا برای مقاصد لازم. آزمون: accept.
+
+#### ۴) پرونده ۲: Accept با rcvdbyte=0
+
+Log: accept، sentbyte>0، rcvdbyte=0. علت: سرور پاسخ نمی‌دهد یا Route برگشت. شاهد: Sniffer دو سمت. رفع: Route/سرور.
+
+#### ۵) پرونده ۳: Drop بی‌Log
+
+ترافیک رد می‌شود ولی Log ندارد: Implicit Deny. رفع: Deny صریح با Log.
+
+#### ۶) Packet Walk از Log
 
 ``` text
-1 Client 10.10.0.5 -> DNS -> 203.0.113.10
-2 Ingress port2, RPF ok
-3 Route default -> port1
-4 Policy 2 accept, SNAT 198.51.100.2
-5 Egress; server replies; session reply matched
+Log: srcintf=port2 -> dstintf=port1, policy 2, SNAT
+Walk: ingress port2 -> route port1 -> policy 2 -> SNAT -> egress
 ```
 
-#### ۴) آزمون عملی
+#### ۷) آزمون
 
-سه پرونده؛ برای هرکدام Log، Flow، علت، رفع و آزمون. Rubric: Log ۲۰، تحلیل ۳۰، رفع ۲۰، Evidence ۱۵، صداقت ۱۵.
+سه پرونده، Evidence: Log+Flow+Sniffer، علت، رفع، آزمون. Rubric: Log ۲۰، تحلیل ۳۰، رفع ۲۰، Evidence ۱۵، صداقت ۱۵.
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Log action=accept policyid=2.
+**ساده (حل‌شده):** Log accept policyid=2؛ Walk مطابق.
 
-**متوسط (تحلیل):** Deny با policyid=0: Implicit Deny؛ Policy اضافه.
+**متوسط (تحلیل):** Deny با policyid=0 و dstport=22 ⇒ Implicit Deny؛ Policy SSH برای Admin؛ آزمون accept.
 
-**سخت (Packet Walk):** Walk کامل سازمان.
+**سخت (rcvdbyte=0):** Accept ولی rcvdbyte=0: Sniffer port1 خروج SYN، بدون SYN-ACK؛ سرور خاموش؛ تیم سرور؛ ثبت RCA.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
@@ -2389,7 +2445,7 @@ execute log display
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Log نیست | logtraffic | Policy Log |
+| Log نیست | logtraffic | Policy Log All |
 
 ### ۱۰) نکات امنیتی
 
@@ -2398,19 +2454,21 @@ execute log display
 ### ۱۱) جمع‌بندی مفهومی
 
 - Log=گذشته.
-- Packet Walk.
+- policyid=0.
+- rcvdbyte=0.
+- Walk.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) policyid=0؟ *(پاسخ: 14-6-ت1)*
+**ت1.** (ساده) policyid=0 یعنی؟ *(پاسخ: 14-6-ت1)*
 
-**ت2.** (ساده) action=deny؟ *(پاسخ: 14-6-ت2)*
+**ت2.** (ساده) rcvdbyte=0 یعنی؟ *(پاسخ: 14-6-ت2)*
 
 **ت3.** (متوسط) چرا Log نیست؟ *(پاسخ: 14-6-ت3)*
 
-**ت4.** (متوسط) Packet Walk؟ *(پاسخ: 14-6-ت4)*
+**ت4.** (متوسط) Packet Walk را از Log بسازید. *(پاسخ: 14-6-ت4)*
 
-**ت5.** (سخت) سه پرونده. *(پاسخ: 14-6-ت5)*
+**ت5.** (سخت) سه پرونده را حل کنید. *(پاسخ: 14-6-ت5)*
 
 **ت6.** (سخت، طراحی) الگوی گزارش. *(پاسخ: 14-6-ت6)*
 
@@ -2426,7 +2484,7 @@ execute log display
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** G (اجرا نشده). **Evidence:** `03-ops/walk-arch2.md`.
+**کارت Lab:** آزمون ۱۴ (اجرا نشده). **Evidence:** `03-ops/walk-arch2.md`.
 
 ### ۱۵) منابع
 
@@ -2646,37 +2704,41 @@ diagnose debug reset
 
 ### پاسخ‌های بازنویسی عمیق درس 14-2
 
-**14-2-ت1** — هدر به همراه نام Interface.
 
-**14-2-ت2** — تعداد بسته‌ها تا توقف.
+### پاسخ‌های بازنویسی عمیق درس 14-2
 
-**14-2-ت3** — مقصد یا مسیر پاسخ نمی‌دهد.
+**14-2-ت1** — هدر بسته همراه نام Interface.
 
-**14-2-ت4** — ممکن است بسته در sniffer دیده نشود.
+**14-2-ت2** — تعداد بسته‌ها تا توقف؛ برای کنترل حجم.
 
-**14-2-ت5** — Capture چند Interface و مقایسه‌ی جهت‌ها.
+**14-2-ت3** — مقصد/مسیر پاسخ نمی‌دهد؛ با Capture ورودی/خروجی محل را مشخص کنید.
 
-**14-2-ت6** — فیلتر، تعداد، حذف pcap.
+**14-2-ت4** — بسته‌ی Offload‌شده ممکن است در sniffer دیده نشود.
+
+**14-2-ت5** — Capture چند Interface، مقایسه‌ی جهت‌ها و Interfaceها.
+
+**14-2-ت6** — فیلتر باریک، count، حذف pcap، ثبت زمان/Evidence.
 
 **14-2-Q1** — Verbosity 4.
+
+### پاسخ‌های بازنویسی عمیق درس 14-3
 
 
 ### پاسخ‌های بازنویسی عمیق درس 14-3
 
-**14-3-ت1** — ۲۰ بسته را Trace می‌کند.
+**14-3-ت1** — ۲۰ بسته را Trace می‌کند و سپس متوقف می‌شود.
 
-**14-3-ت2** — Policy 2 اجازه داد.
+**14-3-ت2** — Policy 2 اجازه داد و NAT طبق همان اعمال شد.
 
-**14-3-ت3** — Implicit Deny.
+**14-3-ت3** — Implicit Deny؛ هیچ Policyای مطابق نبود.
 
-**14-3-ت4** — Route معکوس نامعتبر.
+**14-3-ت4** — Route معکوس Source از Interface ورودی نیست.
 
-**14-3-ت5** — Route را اصلاح؛ Asymmetric؛ آزمون.
+**14-3-ت5** — Route را اصلاح، Asymmetric را بررسی، آزمون Allowed.
 
-**14-3-ت6** — فیلتر، زمان، خروجی، تفسیر، رفع.
+**14-3-ت6** — فیلتر، زمان، خروجی، تفسیر، رفع، آزمون.
 
 **14-3-Q1** — The route back to the source does not use the ingress interface.
-
 
 ### پاسخ‌های بازنویسی عمیق درس 14-4
 
@@ -2697,34 +2759,39 @@ diagnose debug reset
 
 ### پاسخ‌های بازنویسی عمیق درس 14-5
 
+
+### پاسخ‌های بازنویسی عمیق درس 14-5
+
 **14-5-ت1** — 1360.
 
-**14-5-ت2** — بسته بزرگ بی‌پاسخ.
+**14-5-ت2** — Handshake و بسته‌ی کوچک ok؛ بزرگ بی‌پاسخ.
 
-**14-5-ت3** — Resolver/Policy 53.
+**14-5-ت3** — DNS/Resolver/Policy 53.
 
-**14-5-ت4** — PMTUD.
+**14-5-ت4** — PMTUD برای اطلاع از MTU مسیر.
 
-**14-5-ت5** — MSS-clamp و ICMP.
+**14-5-ت5** — PMTU، MSS-clamp، ICMP، آزمون.
 
-**14-5-ت6** — دانلود ۱۰۰MB سه بار.
+**14-5-ت6** — دانلود ۱۰۰MB سه بار + DNS.
 
-**14-5-Q1** — Use the DF bit and vary packet size until it passes.
+**14-5-Q1** — Use the DF bit and vary the packet size until it passes.
+
+### پاسخ‌های بازنویسی عمیق درس 14-6
 
 
 ### پاسخ‌های بازنویسی عمیق درس 14-6
 
 **14-6-ت1** — Implicit Deny.
 
-**14-6-ت2** — رد شد.
+**14-6-ت2** — پاسخی دریافت نشده.
 
-**14-6-ت3** — Log Policy خاموش.
+**14-6-ت3** — Log Policy خاموش است.
 
-**14-6-ت4** — مراحل بسته.
+**14-6-ت4** — srcintf/dstintf/policy/NAT.
 
-**14-6-ت5** — Log+Flow.
+**14-6-ت5** — Deny، rcvdbyte=0، Drop بی‌Log.
 
-**14-6-ت6** — Log، علت، رفع.
+**14-6-ت6** — Log، Flow، علت، رفع، آزمون.
 
 **14-6-Q1** — The implicit deny policy.
 
