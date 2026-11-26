@@ -4023,11 +4023,15 @@ R1# show ip ospf neighbor
 
 **5-1-ت1** — ۱ (ساده): L و C چه فرقی دارند؟
 
+در جدول مسیر، C (Connected) خود شبکه‌ی متصل به Interface است (مثلاً 10.0.12.0/30) و L (Local) آدرس خود Interface روتر روی آن شبکه با Prefix /32 (مثلاً 10.0.12.1/32). L باعث می‌شود بسته‌ی مقصد خود روتر به CPU برسد. در عیب‌یابی، دیدن C بدون L یعنی Interface آدرس ندارد/Down است؛ و در IOS قدیمی L نمایش داده نمی‌شد.
+
 ``` text
 C = the connected network (prefix); L = the local router address on it (/32).
 ```
 
 **5-1-ت2** — ۲ (ساده): AD برای Static و OSPF؟
+
+AD (Administrative Distance) اعتبار منبع Route است: Connected 0، Static 1، eBGP 20، EIGRP 90، OSPF 110، RIP 120، iBGP 200. کمتر بهتر. وقتی یک Prefix یکسان از دو منبع رسید، منبع با AD کمتر وارد RIB می‌شود؛ پس Static (1) بر OSPF (110) می‌چربد. از همین رو Floating Static با AD 200 فقط وقتی فعال می‌شود که مسیر اصلی برود.
 
 ``` text
 Static 1, OSPF 110
@@ -4035,11 +4039,19 @@ Static 1, OSPF 110
 
 **5-1-ت3** — ۳ (متوسط): بسته به 10.1.1.77؛ Routeهای /8، /16 و /0 موجودند. کدام؟
 
+روتر همیشه بر اساس طولانی‌ترین Prefix مطابق (Longest Prefix Match) تصمیم می‌گیرد. 10.1.1.77 با هر سه مسیر مطابق است ولی /16 (10.1.0.0/16) از /8 و /0 دقیق‌تر است؛ پس /16 انتخاب می‌شود. اگر /24 مطابق هم بود، آن برنده بود. AD یا Metric در این مرحله نقشی ندارد.
+
+``` text
+10.1.1.77 matches: 10.0.0.0/8 , 10.1.0.0/16 , 0.0.0.0/0  -> longest = /16
+```
+
 ``` text
 /16 (longest matching prefix among those that match).
 ```
 
 **5-1-ت4** — ۴ (متوسط): آیا Metric یک Route در OSPF با RIP قابل مقایسه است؟
+
+خیر؛ هر پروتکل Metric خودش را دارد (OSPF: Cost پهنای باند، RIP: تعداد Hop، EIGRP: ترکیب پهنای باند/تأخیر) و واحدها قابل مقایسه نیستند. بین منابع مختلف، AD تصمیم می‌گیرد؛ Metric فقط بین مسیرهای همان پروتکل برای همان Prefix معنی دارد.
 
 ``` text
 No. Different protocols use different metrics; AD decides between sources.
@@ -4047,23 +4059,37 @@ No. Different protocols use different metrics; AD decides between sources.
 
 **5-1-ت5** — ۵ (سخت): Static 10.0.0.0/8 و OSPF 10.0.23.0/30 هر دو موجود؛ بسته به 10.0.23.5 از کجا می‌رود؟
 
+ابتدا Longest Prefix Match: مقصد 10.0.23.5 با /8 و /30 مطابق است ولی /30 دقیق‌تر است، پس مسیر OSPF انتخاب می‌شود. AD فقط وقتی به‌کار می‌آید که دو مسیر دقیقاً همان Prefix را داشته باشند. این خطا شایع است: «Static دارم ولی ترافیک از OSPF می‌رود» ⇒ طول Prefix را نگاه کنید.
+
 ``` text
 Via the OSPF route: /30 is the longest prefix. AD is only used for identical prefixes.
 ```
 
 **5-1-م1** — اولین چیزی که روتر برای انتخاب Route نگاه می‌کند؟
 
+قاعده‌ی اول در Forwarding طول Prefix است (Longest Prefix Match): هرچه Prefix طولانی‌تر باشد، مسیر دقیق‌تر و برنده است. بعد از انتخاب Prefix، اگر چند منبع برای همان Prefix باشد AD، و بعد Metric تصمیم می‌گیرند.
+
 طول Prefix (Longest Prefix Match).
 
 **5-1-م2** — AD برای چیست؟
+
+AD برای انتخاب بین منابع مختلف یک Prefix یکسان است. مثال: 192.168.5.0/24 هم با OSPF (110) و هم با Static (1) آمده؛ Static وارد جدول می‌شود. AD ابزار کنترل «اعتماد» است و در Floating Static و Redistribution هم برای جلوگیری از حلقه به‌کار می‌رود.
 
 انتخاب بین منابع مختلف Route برای یک Prefix یکسان.
 
 **5-1-Q1** — Quick quiz (answer in English): Which is compared first: administrative distance or prefix length?
 
+پاسخ انگلیسی در پایین آمده است؛ ترتیب تصمیم: Prefix length، سپس AD، سپس Metric. اشتباه رایج این است که AD را قبل از طول Prefix فرض کنند.
+
 Prefix length (longest match) is compared first; AD only breaks ties between equal prefixes.
 
 **5-2-ت1** — ۱ (ساده): Static برای شبکه‌ی 172.16.5.0/24 با Next-hop 10.0.0.2
+
+Static Route شبکه‌ی مقصد، Mask و Next-hop را می‌گیرد. دستور بلوک زیر است؛ آدرس 10.0.0.2 باید از طریق یک Interface متصل در دسترس باشد وگرنه Route در جدول نصب نمی‌شود. برای تأیید: `show ip route static` و ping از Source مربوط. فراموش نکنید که روتر مقصد هم باید Route برگشت داشته باشد.
+
+``` text
+ip route 172.16.5.0 255.255.255.0 10.0.0.2
+```
 
 ``` text
 ip route 172.16.5.0 255.255.255.0 10.0.0.2
@@ -4071,11 +4097,19 @@ ip route 172.16.5.0 255.255.255.0 10.0.0.2
 
 **5-2-ت2** — ۲ (ساده): چرا روی اترنت Next-hop می‌نویسیم؟
 
+روی Ethernet Route با فقط Interface خروجی باعث می‌شود روتر برای هر مقصد ARP بفرستد و به Proxy ARP طرف مقابل وابسته شود؛ جدول ARP بزرگ و رفتار غیرقطعی می‌شود. Next-hop مشخص مسیر را قطعی می‌کند و فقط برای همان Next-hop ARP لازم است. برای لینک‌های Serial/Point-to-point Interface-only ایرادی ندارد.
+
 ``` text
 Interface-only routes make the router ARP for every destination; next-hop is deterministic.
 ```
 
 **5-2-ت3** — ۳ (متوسط): Summary چهار شبکه‌ی 10.2.4.0/24 تا 10.2.7.0/24؟
+
+چهار شبکه‌ی /24 پیاپی از 10.2.4.0 تا 10.2.7.0 را با ۲ بیت (۴ بلوک) خلاصه می‌کنیم: Prefix 22 و شروع 10.2.4.0. بررسی: بلوک /22 در octet سوم اندازه‌ی ۴ دارد و 4 مضرب ۴ است ⇒ 10.2.4.0/22 تا 10.2.7.255.
+
+``` text
+10.2.4.0/24 .. 10.2.7.0/24 -> 10.2.4.0/22
+```
 
 ``` text
 Third octet 4..7 -> block 4 -> 10.2.4.0/22
@@ -4083,11 +4117,15 @@ Third octet 4..7 -> block 4 -> 10.2.4.0/22
 
 **5-2-ت4** — ۴ (متوسط): ping یک‌طرفه شکست می‌خورد؛ علت؟
 
+اگر ping از A به B موفق نیست ولی مسیر رفت درست است، تقریباً همیشه Route برگشت در یکی از Hopها یا در مقصد وجود ندارد. بررسی: `show ip route` در B/Gateway برای Source A، Debug محدود، Capture. رفع: Route برگشت یا Default روی مقصد. درس: Static دوطرفه است.
+
 ``` text
 Missing return route on one of the hops.
 ```
 
 **5-2-ت5** — ۵ (سخت): چرا Route به Null0 با AD 200؟
+
+Route به Null0 با AD بالا (مثلاً 200) برای Summary است: ترافیک مقصدهای نامعتبر داخل Summary را دور می‌ریزد (جلوگیری از حلقه/Black-hole بالادستی) ولی چون AD بالاست، هر مسیر واقعی (دقیق‌تر یا AD کمتر) را بازنویسی نمی‌کند. مثال: Static 10.2.0.0/16 Null0 200 و OSPF 10.2.4.0/24 ⇒ ترافیک به 10.2.4.x از OSPF می‌رود.
 
 ``` text
 To drop unmatched traffic inside a summary without overriding real (more specific or lower AD) routes.
@@ -4095,17 +4133,25 @@ To drop unmatched traffic inside a summary without overriding real (more specifi
 
 **5-2-م1** — Static Route کی مناسب است؟
 
+Static برای شبکه‌ی کوچک، لینک‌های ثابت و Default به ISP مناسب است: ساده، قابل پیش‌بینی، بدون ترافیک کنترل. در شبکه‌ی بزرگ مدیریت دستی Static خطا و دشوار می‌شود؛ آنجا Dynamic (OSPF/BGP) بهتر است. ترکیب رایج: Static Default به ISP و OSPF داخلی.
+
 شبکه‌ی کوچک یا لینک‌های ثابت مثل Default به ISP.
 
 **5-2-م2** — چرا مسیر برگشت مهم است؟
+
+ارتباط شبکه‌ای دوطرفه است: بسته‌ی رفت و پاسخ برگشت هر دو باید مسیر داشته باشند. اگر Route برگشت نباشد، مقصد پاسخ را به جایی (یا هیچ‌جا) می‌فرستد و کلاینت فقط Timeout می‌بیند. بنابراین هنگام طراحی Static هر دو سمت را بنویسید و هر دو را آزمون کنید.
 
 ارتباط دوطرفه است؛ بدون Route برگشت پاسخ نمی‌رسد.
 
 **5-2-Q1** — Quick quiz (answer in English): Why do we avoid exit-interface-only static routes on Ethernet?
 
+پاسخ انگلیسی در پایین آمده است. نکته‌ی عملی: با Interface-only، روتر هر آدرس مقصد را مستقیماً روی همان Ethernet فرض می‌کند و برای آن ARP می‌فرستد؛ اگر Proxy ARP نباشد، پاسخ نمی‌آید.
+
 The router must ARP for every destination, relying on proxy ARP.
 
 **5-3-ت1** — ۱ (ساده): AD پیش‌فرض Static و Floating معمول؟
+
+AD پیش‌فرض Static برابر ۱ است. Floating Static با AD بزرگ‌تر از مسیر اصلی (معمولاً ۲۰۰) تنظیم می‌شود تا فقط وقتی مسیر اصلی از جدول حذف شد، نصب شود. مثال: `ip route 0.0.0.0 0.0.0.0 203.0.113.9 200` برای ISP پشتیبان.
 
 ``` text
 Static default AD = 1; floating backup typically 200 (any value higher than the primary).
@@ -4113,11 +4159,15 @@ Static default AD = 1; floating backup typically 200 (any value higher than the 
 
 **5-3-ت2** — ۲ (ساده): چرا 0.0.0.0 0.0.0.0 همه‌ی مقاصد را می‌پوشاند؟
 
+Prefix /0 با هر آدرسی مطابق است؛ چون کوتاه‌ترین Prefix است فقط وقتی استفاده می‌شود که هیچ مسیر طولانی‌تری مطابق نباشد: «آخرین راه». برای همین Default Route امن است و جایگزین مسیرهای دقیق نمی‌شود.
+
 ``` text
 Prefix length 0 matches every address; it is only used when nothing longer matches.
 ```
 
 **5-3-ت3** — ۳ (متوسط): چرا Floating به‌تنهایی کافی نیست؟
+
+Floating Static فقط وقتی فعال می‌شود که Route اصلی از جدول حذف شود. اما Static به وضعیت Interface محلی وابسته است: اگر لینک به مودم up است ولی ISP قطع است، Route اصلی در جدول می‌ماند و Floating فعال نمی‌شود. برای تشخیص سلامت واقعی باید IP SLA و Track به کار رود.
 
 ``` text
 The static route stays installed while the interface is up, even if the ISP is dead.
@@ -4125,11 +4175,23 @@ The static route stays installed while the interface is up, even if the ISP is d
 
 **5-3-ت4** — ۴ (متوسط): دستور Route وابسته به Track؟
 
+با Track، Route فقط وقتی نصب می‌ماند که شیء Track Up باشد. دستور بلوک زیر را همراه IP SLA (icmp-echo) و `track 1 ip sla 1 reachability` می‌نویسید. Failover: SLA شکست ⇒ Track Down ⇒ Route حذف ⇒ Floating فعال.
+
+``` text
+ip sla 1
+ icmp-echo 203.0.113.1
+ip sla schedule 1 life forever start-time now
+track 1 ip sla 1 reachability
+ip route 0.0.0.0 0.0.0.0 203.0.113.1 track 1
+```
+
 ``` text
 ip route 0.0.0.0 0.0.0.0 203.0.113.1 track 1
 ```
 
 **5-3-ت5** — ۵ (سخت): چه چیزی را باید پروب کنیم؟
+
+باید Next-hop و ترجیحاً مقصدی فراتر از آن (آدرس پایدار در اینترنت یا شبکه‌ی ISP) را Probe کنیم؛ اگر فقط Next-hop (مودم/روتر ISP) را بزنیم، قطعی بالادست دیده نمی‌شود. چند Probe و Track ترکیبی (boolean OR) خطای کاذب را کم می‌کند.
 
 ``` text
 The next-hop and ideally something beyond it (a reliable remote address) to detect upstream failure.
@@ -4137,17 +4199,25 @@ The next-hop and ideally something beyond it (a reliable remote address) to dete
 
 **5-3-م1** — Floating Static چیست؟
 
+Floating Static مسیر پشتیبان با AD بالاتر است که فقط وقتی مسیر اصلی (AD کمتر) از جدول حذف شود نصب می‌شود. استفاده: ISP دوم، لینک پشتیبان. محدودیت: به تنهایی از قطعی «بالادست» خبر ندارد؛ نیاز به Track.
+
 Route پشتیبان با AD بالاتر که فقط با حذف Route اصلی فعال می‌شود.
 
 **5-3-م2** — IP SLA برای چیست؟
+
+IP SLA سلامت واقعی مسیر را (با ICMP، TCP، HTTP) می‌سنجد و نتیجه را به Track می‌دهد. Failover بر پایه‌ی SLA دقیق‌تر از وضعیت Interface است. هشدار: Probe زیاد/شدید بار تولید می‌کند؛ Interval معقول (۵ تا ۱۰ ثانیه) بگذارید.
 
 سنجش سلامت واقعی مسیر تا Failover درست انجام شود.
 
 **5-3-Q1** — Quick quiz (answer in English): Why can a static route stay in the table even if the ISP is down?
 
+پاسخ انگلیسی در پایین آمده است. نکته‌ی عملی: وضعیت Interface فقط لینک محلی را نشان می‌دهد؛ برای تشخیص قطعی ISP باید Probe انتها-به-انتها (IP SLA) داشته باشید.
+
 Because it depends on the local interface state, not on end-to-end reachability.
 
 **5-4-ت1** — ۱ (ساده): سه مرحله‌ی کار OSPF؟
+
+سه مرحله‌ی کار OSPF: ۱) یافتن همسایه‌ها با Hello و ساخت Adjacency، ۲) تبادل LSAها تا همه‌ی روترهای Area LSDB یکسان داشته باشند، ۳) اجرای الگوریتم SPF (Dijkstra) روی LSDB برای ساخت درخت کوتاه‌ترین مسیر و نصب بهترین Routeها در RIB. هر مرحله‌ی خراب نشانه‌ی خاصی دارد: Init/2-Way (همسایه)، ExStart/Exchange (تبادل)، Full ولی بدون Route (SPF/Filter).
 
 ``` text
 1) discover neighbors 2) exchange LSAs to build the same LSDB 3) run SPF to compute best paths
@@ -4155,11 +4225,19 @@ Because it depends on the local interface state, not on end-to-end reachability.
 
 **5-4-ت2** — ۲ (ساده): Hello/Dead پیش‌فرض اترنت؟
 
+روی Ethernet (Broadcast) Hello هر ۱۰ ثانیه و Dead برابر ۴۰ ثانیه (۴ برابر Hello) است. این مقادیر باید در دو سر لینک یکسان باشند وگرنه Adjacency ساخته نمی‌شود. برای P2P/NBMA مقادیر پیش‌فرض متفاوت است (NBMA 30/120).
+
 ``` text
 10 s / 40 s
 ```
 
 **5-4-ت3** — ۳ (متوسط): Cost لینک 1 Gbps با Reference 100 Mbps؟
+
+Cost = Reference Bandwidth تقسیم بر Bandwidth لینک؛ با Reference پیش‌فرض ۱۰۰ Mbps و لینک ۱ Gbps حاصل ۰٫۱ است که به ۱ گرد می‌شود؛ پس Gigabit و Fast Ethernet هر دو Cost=۱ می‌گیرند. مشکل: OSPF سرعت‌ها را تشخیص نمی‌دهد؛ راه: `auto-cost reference-bandwidth` یکسان روی همه‌ی روترها.
+
+``` text
+Cost = 100 / 1000 = 0.1 -> 1
+```
 
 ``` text
 100 / 1000 = 0.1 -> rounded up to 1
@@ -4167,11 +4245,19 @@ Because it depends on the local interface state, not on end-to-end reachability.
 
 **5-4-ت4** — ۴ (متوسط): Cost لینک 100 Mbps با Reference 10000؟
 
+Cost برابر Reference تقسیم بر Bandwidth: ده‌هزار Mbps تقسیم بر ۱۰۰ Mbps می‌شود ۱۰۰. اینجا Reference بالا (10 Gbps) تنظیم شده و لینک ۱۰۰ Mbps هزینه‌ی ۱۰۰ و لینک ۱ Gbps هزینه‌ی ۱۰ می‌گیرد؛ تفاوت سرعت‌ها دیده می‌شود.
+
+``` text
+Cost = 10000 / 100 = 100
+```
+
 ``` text
 10000 / 100 = 100
 ```
 
 **5-4-ت5** — ۵ (سخت): دو روتر در Init مانده‌اند؛ علت‌های محتمل؟
+
+Init یعنی روتر Hello همسایه را دریافت کرده ولی همسایه Hello ما (با نام ما) را ندیده: ارتباط یک‌طرفه. علل: ACL که OSPF (IP 89/Multicast 224.0.0.5) را می‌بندد، عدم‌تطابق Hello/Dead، Subnet/Mask متفاوت، Area متفاوت، Authentication ناسازگار، Interface اشتباه در OSPF یا Passive. بررسی: `show ip ospf interface` و `debug ip ospf hello` (فقط Lab).
 
 ``` text
 Hello not received on one side: ACL blocking, hello/dead mismatch, subnet/mask mismatch, wrong interface in OSPF.
@@ -4179,17 +4265,29 @@ Hello not received on one side: ACL blocking, hello/dead mismatch, subnet/mask m
 
 **5-4-م1** — OSPF چه نوع پروتکلی است؟
 
+OSPF پروتکل Link-State است: هر روتر LSDB کامل Area را می‌سازد (نقشه‌ی شبکه) و خودش با SPF بهترین مسیرها را می‌سازد؛ برخلاف RIP که فقط «شنیده» را می‌پذیرد. مزیت: همگرایی سریع و بدون حلقه؛ هزینه: CPU/حافظه و پیچیدگی طراحی (Area).
+
 Link-State؛ هر روتر نقشه‌ی کامل Area را دارد.
 
 **5-4-م2** — Hello و Dead چیست؟
+
+Hello بسته‌ی دوره‌ای برای معرفی و کشف همسایه است؛ Dead مدت انتظار برای دریافت Hello است: اگر در این بازه Hello نیاید همسایه مرده اعلام و Adjacency قطع می‌شود. کوتاه‌کردن Timer همگرایی را سریع‌تر می‌کند ولی ریسک Flap دارد؛ BFD گزینه‌ی بهتر است.
 
 Hello برای معرفی دوره‌ای؛ Dead زمان انتظار قبل از اعلام قطع همسایه.
 
 **5-4-Q1** — Quick quiz (answer in English): What are the three steps of OSPF operation?
 
+پاسخ انگلیسی در پایین آمده است؛ برای عیب‌یابی: مشکل Adjacency در مرحله‌ی اول، مشکل Database در مرحله‌ی دوم و مشکل Route در مرحله‌ی سوم دیده می‌شود.
+
 Form neighbor adjacencies, exchange LSAs to build the LSDB, and run SPF to calculate best paths.
 
 **5-5-ت1** — ۱ (ساده): Wildcard برای /27؟
+
+Wildcard Mask معکوس Subnet Mask است. برای /27، Mask برابر 255.255.255.224 است و Wildcard برابر 0.0.0.31 (۳۲ آدرس). از آن در `network 10.1.1.0 0.0.0.31 area 0` استفاده می‌کنید.
+
+``` text
+Wildcard = 255.255.255.255 - 255.255.255.224 = 0.0.0.31
+```
 
 ``` text
 255.255.255.255 - 255.255.255.224 = 0.0.0.31
@@ -4197,11 +4295,19 @@ Form neighbor adjacencies, exchange LSAs to build the LSDB, and run SPF to calcu
 
 **5-5-ت2** — ۲ (ساده): چرا Loopback را passive می‌کنیم؟
 
+Interface Loopback همسایه ندارد ولی شبکه‌ی آن باید اعلام شود (Router ID، مدیریت). `passive-interface Loopback0` Hello نمی‌فرستد ولی Prefix را اعلام می‌کند. روی Interfaceهای کاربر هم Passive می‌گذارند تا Adjacency ناخواسته (امنیت) ساخته نشود.
+
 ``` text
 It does not need to form neighbors but its network must be advertised.
 ```
 
 **5-5-ت3** — ۳ (متوسط): Cost 21 در R1 برای شبکه‌ی R3 را توضیح بده
+
+Cost کل مسیر مجموع Costهای Interfaceهای خروجی است: دو لینک ۱۰ تایی (R1→R2 و R2→R3) و Cost ۱ برای Loopback شبکه‌ی R3. پس ۲۱. این محاسبه را با `show ip ospf interface` و جدول مسیر تأیید کنید.
+
+``` text
+Cost = 10 (R1-R2) + 10 (R2-R3) + 1 (Loopback) = 21
+```
 
 ``` text
 Two links of 10 each (R1-R2, R2-R3) plus 1 for the Loopback = 21.
@@ -4209,11 +4315,15 @@ Two links of 10 each (R1-R2, R2-R3) plus 1 for the Loopback = 21.
 
 **5-5-ت4** — ۴ (متوسط): state ExStart گیر کرده؛ علت؟
 
+ExStart/Exchange گیرکردن معمولاً به MTU متفاوت دو Interface برمی‌گردد (DBD بزرگ رد می‌شود) یا Router ID تکراری. بررسی: `show ip ospf neighbor` و `show interface | include MTU`. رفع: یکسان‌سازی MTU یا `ip ospf mtu-ignore` (فقط موقت) و اصلاح Router ID.
+
 ``` text
 Typically an MTU mismatch (or duplicate router ID).
 ```
 
 **5-5-ت5** — ۵ (سخت): default-information originate بدون Default روی روتر چه می‌شود؟
+
+`default-information originate` فقط در صورتی Default را در OSPF اعلام می‌کند که روتر خودش Route پیش‌فرض داشته باشد. با گزینه‌ی `always` حتی بدون Default اعلام می‌کند (خطرناک: Black-hole اگر روتر واقعاً خروجی ندارد). برای ISP دوگانه معمولاً بدون always و با Track.
 
 ``` text
 Nothing is advertised unless "always" is used; the router needs its own default route.
@@ -4221,17 +4331,25 @@ Nothing is advertised unless "always" is used; the router needs its own default 
 
 **5-5-م1** — network statement چه می‌کند؟
 
+دستور `network` تعیین می‌کند کدام Interfaceها (که آدرسشان در بازه‌ی Wildcard می‌افتد) در OSPF و در کدام Area شرکت کنند؛ یعنی هم Hello ارسال شود و هم Prefix اعلام گردد. خطا در Wildcard باعث نبود Adjacency یا اعلام ناخواسته می‌شود.
+
 Interfaceهایی که آدرسشان در بازه است را وارد OSPF می‌کند.
 
 **5-5-م2** — passive-interface چه فایده‌ای دارد؟
+
+Passive Interface فقط Hello ارسال نمی‌کند و Adjacency نمی‌سازد، ولی شبکه‌ی آن را همچنان اعلام می‌کند. فایده: امنیت (کاربر نتواند همسایه‌ی OSPF بسازد)، کاهش ترافیک و جلوگیری از Adjacency ناخواسته.
 
 Hello نمی‌فرستد؛ امنیت و کاهش ترافیک، ولی شبکه همچنان اعلام می‌شود.
 
 **5-5-Q1** — Quick quiz (answer in English): Which command verifies that neighbors reached FULL?
 
+پاسخ انگلیسی در پایین آمده است؛ همسایه‌ی سالم در حالت FULL (یا 2-WAY برای DROther) است و `show ip ospf neighbor` حالت و Dead Time را نشان می‌دهد.
+
 show ip ospf neighbor
 
 **5-6-ت1** — ۱ (ساده): اولین ابزار عیب‌یابی مسیریابی؟
+
+اولین ابزار: `show ip route <destination>` برای دیدن Route و Next-hop، سپس `ping` و `traceroute` از Source واقعی (`ping ... source`). این سه نشان می‌دهد Route هست یا نه و بسته تا کجا می‌رود. بعد: ARP، Interface، ACL/Policy.
 
 ``` text
 show ip route <destination> and ping/traceroute.
@@ -4239,11 +4357,15 @@ show ip route <destination> and ping/traceroute.
 
 **5-6-ت2** — ۲ (ساده): پنج دلیل Adjacency نشدن؟
 
+پنج دلیل اصلی نبود Adjacency: ۱) Hello/Dead متفاوت، ۲) Area ID متفاوت، ۳) Subnet/Mask متفاوت، ۴) Authentication ناسازگار، ۵) MTU متفاوت. موارد دیگر: ACL، Network Type، Router ID تکراری، پورت Passive. هر مورد را با `show ip ospf interface` و `debug ip ospf adj` (Lab) بررسی کنید.
+
 ``` text
 Hello/Dead, Area, Subnet/Mask, Authentication, MTU.
 ```
 
 **5-6-ت3** — ۳ (متوسط): در ExStart گیر کرده؛ اول چه چیزی را بررسی می‌کنی؟
+
+در ExStart گیرکردن ← اول MTU دو Interface را مقایسه کنید (`show interface | include MTU`). علت: DBD بزرگ‌تر از MTU همسایه رد می‌شود و تبادل پیش نمی‌رود. رفع: یکسان‌سازی MTU. سپس Router ID و Authentication.
 
 ``` text
 MTU mismatch between the two interfaces.
@@ -4251,26 +4373,33 @@ MTU mismatch between the two interfaces.
 
 **5-6-ت4** — ۴ (سخت): ping از A به B شکست می‌خورد ولی traceroute تا Hop آخر پیش می‌رود؛ حدس؟
 
+اگر traceroute تا Hop آخر می‌رسد ولی ping شکست می‌خورد: Route برگشت مقصد (پاسخ Echo نمی‌رسد) یا ACL/Firewall مقصد که ICMP Echo Reply را می‌بندد. بررسی: Capture روی مقصد، `show ip route` برای Source و ACL. این همان حالت Asymmetric/Return path است.
+
 ``` text
 Return path issue at the destination or an ACL/firewall on the destination side.
 ```
 
 **5-6-م1** — قدم اول عیب‌یابی مسیریابی؟
 
+قدم اول: تعیین مبدأ و مقصد دقیق و بررسی Route رفت و برگشت. بدون آن نمی‌دانید کدام Hop را بررسی کنید و ممکن است خرابی در بخش نامربوط جست‌وجو شود.
+
 تعیین مبدأ و مقصد دقیق و بررسی Route رفت و برگشت.
 
 **5-6-م2** — MTU Mismatch چه علامتی دارد؟
 
+عدم‌تطابق MTU باعث می‌شود همسایه در ExStart/Exchange بماند و Full نشود؛ معمولاً Hello و 2-Way سالم‌اند. شاهد: `show ip ospf neighbor` و Log «Nbr Exchange/ExStart». رفع: یکسان‌سازی MTU.
+
 همسایه در ExStart/Exchange می‌ماند.
 
 **5-6-Q1** — Quick quiz (answer in English): A neighbor is stuck in ExStart. What is the most likely cause?
+
+پاسخ انگلیسی در پایین آمده است؛ نکته‌ی عملی: ExStart بدون Full عموماً MTU یا Router ID تکراری است، نه Hello/Dead.
 
 An MTU mismatch between the two interfaces.
 
 ---
 
 <a id="ch6"></a>
-
 
 ### پاسخ‌های درس‌های افزوده‌ی فصل 5 (۵-۰ و ۵-۷)
 
