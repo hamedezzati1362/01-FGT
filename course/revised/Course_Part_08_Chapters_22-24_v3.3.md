@@ -36,7 +36,7 @@
 
 <a id="ch22"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.2):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۲-۰، ۲۴-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.3):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۲-۰، ۲۴-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 22 — High Availability: FGCP، Session Sync و Failover
 
@@ -992,6 +992,124 @@ Split-brain.
 
 <a id="l-23-1"></a>
 
+## درس 23-0 — Asymmetric Routing در Stateful Firewall: تحلیل بسته‌به‌بسته، RPF و راه‌حل‌ها
+
+**فصل ۲۳ · درس افزوده (پیش‌درس ۲۳-۱) · پیش‌نیاز: ۱۰-۶، ۱۰-۹، ۱۲-۰، ۱۱-۷ · ≈ ۶ ساعت**
+
+> **وضعیت (FortiOS 7.0.3):** رفتار RPF و Session از مستند Packet Flow؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+
+### ۱) هدف آموزشی
+
+1. تعریف دقیق **Asymmetric Routing** و علت‌های پیدایش آن (ISP دوگانه، ECMP، دو فایروال).
+2. توضیح بسته‌به‌بسته‌ی علت Drop در فایروال Stateful (نبود Session، RPF، TCP out-of-window).
+3. نشانه‌ها در Log و Debug؛ تفکیک از مشکل Policy.
+4. راه‌حل‌ها و ریسک هرکدام: طراحی متقارن، Policy Route، SNAT، Session Sync، `asymroute` (بی‌ریسک نیست).
+5. طراحی چندفایروال با مسیر متقارن.
+
+### ۲) مفهوم پایه
+
+در مسیر نامتقارن، **رفت** از فایروال A و **برگشت** از فایروال B می‌گذرد. A فقط SYN را دیده؛ B فقط SYN/ACK را. هیچ‌کدام Handshake کامل را ندیده‌اند؛ فایروال Stateful برگشتی را که Session ندارد رد می‌کند.
+
+### ۳) توضیح عمیق فنی
+
+#### ۳-۱) علت‌ها
+
+- **Dual-ISP/ECMP:** مسیر رفت و برگشت بر اساس Hash/BGP متفاوت.
+- **دو فایروال موازی** بدون Sync.
+- **VPN + Internet:** رفت از Tunnel، برگشت از Internet.
+- **Policy Routing/SD-WAN** در یک سر.
+- **Route خراب:** Route برگشت به Interface دیگر.
+
+#### ۳-۲) بسته‌به‌بسته
+
+``` text
+Client -> FW-A (SYN)            : session created on A
+Server -> FW-B (SYN/ACK)        : B has no session -> DROP (or RPF fail)
+Client never gets SYN/ACK       : retransmit SYN, timeout
+```
+
+دو شکل Drop:
+
+1. **RPF (Reverse Path Check) fail:** بسته‌ی برگشتی از Interfaceای وارد شد که بهترین مسیر به مبدأ آن نیست. Debug Flow: `reverse path check fail, drop`.
+2. **No session / Denied policy:** بسته‌ی برگشتی مطابق Policy جدید ارزیابی می‌شود (چون Session نیست) و اگر Policy مجاز نداشته باشد Drop می‌شود؛ یا SYN/ACK بدون SYN را ماشین حالت TCP نمی‌پذیرد.
+
+#### ۳-۳) راه‌حل‌ها
+
+| راه‌حل | چگونه | مزیت | ریسک |
+|---|---|---|---|
+| طراحی متقارن | Route/Metric برای برگشت از همان مسیر | بهترین | نیاز طراحی |
+| Policy Route/SNAT | برگشت را به همان فایروال بکشید | سریع | عیب‌یابی سخت‌تر، Log مبهم |
+| Session Sync/HA | Session به فایروال دیگر کپی | حفظ Session | پیچیدگی/لایسنس |
+| `asymroute`/غیرفعال‌سازی بررسی‌ها | بسته‌ی بدون Session را عبور می‌دهد | رفع Drop | **امنیت کم**؛ Inspection ناقص؛ فقط موقت |
+| Hash متقارن/Anycast | Flow هر دو جهت یک مسیر | مقیاس | وابسته به تجهیزات |
+
+> **اصل:** ابتدا طراحی متقارن؛ سپس Sync؛ آخرین راه غیرفعال‌کردن بررسی.
+
+#### ۳-۴) تشخیص
+
+``` text
+diagnose debug flow filter addr <client>
+diagnose debug flow trace start 20
+diagnose sys session filter src <client>
+diagnose sys session list
+get router info routing-table details <client>
+diagnose sniffer packet any "host <client> and port <p>" 4 20 l
+```
+
+سه شاهد: Sniffer SYN فقط در A؛ SYN/ACK فقط در B؛ `session list` فقط در A.
+
+### ۴) مثال حل‌شده
+
+**شرایط:** دو ISP روی یک فایروال، SD-WAN با Load-balance. کاربران گزارش می‌دهند «بعضی اتصال‌ها بعد از Failover قفل می‌شوند». شواهد: Sniffer روی WAN1: SYN؛ روی WAN2: SYN/ACK؛ `session list`: Session با NAT مربوط به WAN1. **تحلیل:** پس از Failover مسیر برگشت پیش از به‌روزشدن Session تغییر کرده؛ پاسخ از Interface دیگری می‌رسد و Session روی Interface قبلی ثبت شده است. **رفع:** Clear فیلترشده‌ی Sessionهای مرتبط (۱۳-۷) و تنظیم Health-check/Timeout (۲۱-۷). **درس:** قبل از نتیجه‌گیری، شواهد را از هر دو Interface و Session جمع کنید.
+
+**مثال متوسط:** دو فایروال موازی با ECMP: Hash رفت و برگشت متفاوت. **رفع:** Hash متقارن یا Active-Passive.
+
+**مثال سخت:** VPN دو‌طرفه: رفت از Tunnel، برگشت از Internet (Route خراب). Debug Flow سمت مقابل: «reverse path check fail». **رفع:** Route برگشت به Tunnel.
+
+### ۵) GUI و CLI
+
+**GUI:** Network → Static Routes/Policy Routes؛ Log & Report → Forward Traffic (Deny)؛ Dashboard → Sessions. **CLI:** مطابق ۳-۴؛ `config router policy`.
+
+### ۶) نکات امنیتی
+
+- غیرفعال‌کردن بررسی‌های RPF/State باعث عبور بسته‌های جعلی می‌شود.
+- هر استثنا مستند با تاریخ بازبینی.
+
+### ۷) جمع‌بندی مفهومی
+
+- Asymmetric = رفت و برگشت از دو مسیر؛ Stateful نمی‌پذیرد.
+- شواهد: Sniffer در هر دو سمت + Session.
+- طراحی متقارن بهترین راه؛ `asymroute` آخرین.
+- RPF و Policy دو علت متفاوت Drop‌اند.
+
+### ۸) تمرین و ارزیابی
+
+**ت1.** (ساده) Asymmetric Routing چیست؟ *(پاسخ: 23-0-ت1)*
+
+**ت2.** (ساده) چرا Stateful آن را رد می‌کند؟ *(پاسخ: 23-0-ت2)*
+
+**ت3.** (متوسط) RPF fail چه نشانه‌ای در Debug دارد؟ *(پاسخ: 23-0-ت3)*
+
+**ت4.** (سخت) سه راه‌حل را با ریسک مقایسه کنید. *(پاسخ: 23-0-ت4)*
+
+**ت5.** (سخت، طراحی) دو فایروال موازی با ECMP را متقارن کنید. *(پاسخ: 23-0-ت5)*
+
+**Q1.** Quick quiz (English): Which evidence proves asymmetric routing? *(پاسخ: 23-0-Q1)*
+
+### ۹) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| RPF | Reverse Path Forwarding | بررسی مسیر معکوس |
+| asymroute | Asymmetric routing allowance | اجازه‌ی مسیر نامتقارن |
+| SNAT | Source NAT | تغییر مبدأ |
+
+- *Prefer a symmetric design over disabling stateful checks.* ← طراحی متقارن را به غیرفعال‌کردن بررسی‌ها ترجیح دهید.
+
+### ۱۰) منابع
+
+- Fortinet Docs: [Debugging the packet flow](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/54688/debugging-the-packet-flow)؛ FortiOS 7.0 Administration Guide — Asymmetric routing.
+
 ## درس 23-1 — چرا Asymmetric برای Stateful مشکل است
 
 **فصل 23 - روز 1 · پیش‌نیاز: فصل ۱۰ · ۶ ساعت**
@@ -1555,6 +1673,21 @@ Route.
 ---
 
 <a id="ch24"></a>
+
+
+### پاسخ‌های درس افزوده‌ی 23-0 (فصل 23)
+
+**23-0-ت1** — رفت و برگشت یک ارتباط از دو مسیر/دستگاه متفاوت.
+
+**23-0-ت2** — چون برگشتی بدون Session مطابق Handshake نیست (و/یا RPF fail) و رد می‌شود.
+
+**23-0-ت3** — پیام reverse path check fail, drop.
+
+**23-0-ت4** — طراحی متقارن (کم‌ریسک)، Policy Route/SNAT (سریع ولی Log مبهم)، Session Sync/HA (حفظ Session ولی پیچیده)، asymroute (امنیت کم).
+
+**23-0-ت5** — Hash متقارن یا Active-Passive، یا Policy Route برای برگشت از همان فایروال، یا Session Sync.
+
+**23-0-Q1** — Sniffer shows SYN on one firewall and SYN/ACK on another, and the session exists only on the first.
 
 # فصل 24 — معماری Data Center و Segmentation (G9)
 

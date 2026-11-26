@@ -36,7 +36,7 @@
 
 <a id="ch25"></a>
 
-> **نسخه v3.2:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.3:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 25 — Multi-Vendor: FortiGate در کنار Cisco CSR (معماری ۶)
 
@@ -54,6 +54,126 @@
 ---
 
 <a id="l-25-1"></a>
+
+## درس 25-0 — Interoperability چندسازنده: نگاشت مفاهیم، پیش‌فرض‌های ناهمسان و عیب‌یابی
+
+**فصل ۲۵ · درس افزوده (پیش‌درس ۲۵-۱) · پیش‌نیاز: ۱۸-۰، ۵-۷، ۹-۷ · ≈ ۵ ساعت**
+
+> **وضعیت:** CSR1000v 17.03.02 (IOS-XE) و FortiOS 7.0.3؛ دستورهای CSR/FortiGate `Unverified`؛ Lab «اجرا نشده».
+
+### ۱) هدف آموزشی
+
+1. نگاشت اصطلاحات Cisco و Fortinet (Interface، Zone، ACL/Policy، Route-map، VRF/VDOM).
+2. شناخت **پیش‌فرض‌های ناهمسان** و آثار آن (Timer، MTU، Lifetime، Authentication).
+3. اتصال Cisco–FortiGate با OSPF/BGP و IPsec و عیب‌یابی مقایسه‌ای.
+4. نوشتن چک‌لیست Interop.
+
+### ۲) مفهوم پایه
+
+پروتکل‌ها استاندارد (RFC) هستند ولی **پیش‌فرض‌ها و محدودیت‌ها** برند-به-برند فرق دارد؛ بیشتر خرابی Interop از «فرض یکسان بودن پیش‌فرض‌ها» می‌آید.
+
+### ۳) توضیح عمیق فنی
+
+#### ۳-۱) نگاشت مفاهیم
+
+| مفهوم | Cisco IOS-XE | FortiOS |
+|---|---|---|
+| Interface L3 | `interface Gi0/1` + `ip address` | `config system interface` |
+| Zone | (Zone-Based Firewall) | `config system zone` |
+| ACL/Policy | ACL | Firewall Policy |
+| NAT | `ip nat` | Policy NAT/VIP/IP Pool |
+| Route-map | `route-map` | `config router route-map` |
+| Prefix-list | `ip prefix-list` | `config router prefix-list` |
+| VRF | `vrf` | VDOM/VRF |
+| نمایش جدول مسیر | `show ip route` | `get router info routing-table all` |
+| نمایش Session | `show ip nat translations` | `diagnose sys session list` |
+
+#### ۳-۲) پیش‌فرض‌های ناهمسان (نمونه)
+
+| مورد | Cisco | FortiOS | اثر |
+|---|---|---|---|
+| OSPF Hello/Dead | 10/40 (Broadcast/P2P) | قابل‌تنظیم؛ باید یکی باشد | Neighbor نمی‌آید |
+| OSPF Network Type | Broadcast روی Ethernet | تنظیم دستی | DR/BDR یا P2P ناسازگار |
+| MTU | 1500 | 1500؛ Tunnel کمتر | OSPF Exstart |
+| IKEv2 | قابل‌تنظیم | IKEv1 پیش‌فرض در 7.0 (CLI Ref) | عدم توافق |
+| PFS | Group تنظیم | PFS پیش‌فرض enable | Phase 2 ناسازگار |
+| Lifetime | IKE 24h، IPsec 1h (پیش‌فرض‌های متداول؛ `Unverified`) | 86400/43200 | Rekey ناهمسان |
+| BGP Hold | 180 | 180 (متداول؛ `Unverified`) | — |
+
+(جدول بر پایه‌ی پیش‌فرض‌های متداول است؛ هر مقدار را در Lab بخوانید.)
+
+#### ۳-۳) استراتژی Interop
+
+1. هر دو سمت را **صریح** پیکربندی کنید؛ به پیش‌فرض‌ها تکیه نکنید.
+2. یک «برگه‌ی پارامتر» مشترک (Proposal، DH، PFS، Timer، MTU، MSS، Auth).
+3. تست مرحله‌ای: L3 → Routing → IPsec → Policy.
+4. عیب‌یابی با Debug **هر دو سو** هم‌زمان.
+
+### ۴) مثال حل‌شده
+
+**OSPF FGT–CSR:** Neighbor در Exstart می‌ماند. شواهد: `show ip ospf neighbor` (CSR) Exstart؛ `get router info ospf neighbor` (FGT). **علت:** MTU متفاوت (Tunnel/VLAN). **رفع:** MTU یکسان یا `ip ospf mtu-ignore` (CSR؛ با ریسک؛ `Unverified`). **تأیید:** Full.
+
+``` text
+! CSR
+interface Tunnel0
+ ip mtu 1400
+ ip ospf network point-to-point
+router ospf 1
+ network 10.255.0.0 0.0.0.3 area 0
+```
+
+``` text
+# FortiGate
+config router ospf
+    config ospf-interface
+        edit "TO-CSR"
+            set interface "TO-CSR"
+            set network-type point-to-point
+        next
+    end
+end
+```
+
+**IPsec Interop (مثال سخت):** Phase 1 OK، Phase 2 NO_PROPOSAL_CHOSEN. فرضیه‌ها: PFS/DH Group، Transform، Selector. شاهد: Debug هر دو؛ **رفع:** تطبیق PFS Group و Proposal.
+
+### ۵) GUI و CLI
+
+FortiGate: Network → OSPF/BGP؛ VPN → IPsec Tunnels. CSR: CLI. **Verification:** `show ip ospf neighbor`/`get router info ospf neighbor`؛ `show crypto ikev2 sa`/`diagnose vpn ike gateway list`.
+
+### ۶) نکات امنیتی
+
+- Authentication OSPF/BGP هر دو سمت یکسان.
+- از الگوریتم‌های قوی مشترک.
+
+### ۷) جمع‌بندی
+
+- پروتکل یکی؛ پیش‌فرض‌ها فرق دارد.
+- پیکربندی صریح + برگه‌ی پارامتر.
+- Debug دو سمتی.
+
+### ۸) تمرین و ارزیابی
+
+**ت1.** (ساده) معادل `show ip route` در FortiOS؟ *(پاسخ: 25-0-ت1)*
+
+**ت2.** (متوسط) چرا OSPF در Exstart می‌ماند؟ *(پاسخ: 25-0-ت2)*
+
+**ت3.** (سخت) یک برگه‌ی پارامتر IPsec بین FGT و CSR بنویسید. *(پاسخ: 25-0-ت3)*
+
+**Q1.** Quick quiz (English): Why shouldn't you rely on vendor defaults in multi-vendor links? *(پاسخ: 25-0-Q1)*
+
+### ۹) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Interop | Interoperability | سازگاری |
+| Exstart | OSPF ExStart state | مرحله‌ی تبادل DBD |
+| mtu-ignore | OSPF MTU ignore | نادیده‌گرفتن MTU |
+
+- *Configure parameters explicitly on both vendors.* ← پارامترها را روی هر دو سازنده صریحاً تنظیم کنید.
+
+### ۱۰) منابع
+
+- Cisco: IOS XE OSPF/IKEv2 Configuration Guides؛ Fortinet Docs: FortiOS 7.0 CLI Reference (`config router ospf`، `phase1-interface`)؛ RFC 2328، RFC 7296.
 
 ## درس 25-1 — تفاوت اصطلاحات Cisco و Fortinet
 
@@ -615,6 +735,17 @@ Redistribute.
 
 <a id="ch26"></a>
 
+
+### پاسخ‌های درس افزوده‌ی 25-0 (فصل 25)
+
+**25-0-ت1** — get router info routing-table all.
+
+**25-0-ت2** — اغلب MTU Mismatch بین دو سر.
+
+**25-0-ت3** — IKEv2، AES-256-GCM، SHA-256، DH 20 (یا ≥ 14)، PFS روشن با همان Group، Lifetime یکسان، DPD، MTU/MSS مشترک، Authentication PSK/Cert.
+
+**25-0-Q1** — Because defaults differ between vendors and cause subtle mismatches.
+
 # فصل 26 — FortiManager و FortiAnalyzer (معماری ۹) و جایگزین‌های بدون لایسنس
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۲۲، ۲۵.
@@ -631,6 +762,136 @@ Redistribute.
 ---
 
 <a id="l-26-1"></a>
+
+## درس 26-0 — مدیریت مرکزی: معماری FortiManager و FortiAnalyzer، ADOM، Policy Package و محدودیت لایسنس
+
+**فصل ۲۶ · درس افزوده (پیش‌درس ۲۶-۱) · پیش‌نیاز: ۱۲-۰، ۱۳-۷، ۲۲-۰ · ≈ ۵ ساعت**
+
+> **وضعیت (FortiManager/FortiAnalyzer 7.0):** مفهوم ADOM، Install Wizard، افزودن FAZ و تداخل Log Forwarding از مستند رسمی بررسی شد ([Device Manager](https://docs.fortinet.com/document/fortimanager/7.0.0/administration-guide/478145/device-manager)، [Add FortiAnalyzer](https://docs.fortinet.com/document/fortimanager/7.0.0/administration-guide/654379/add-fortianalyzer)، [Installing policy packages](https://docs.fortinet.com/document/fortimanager/7.0.7/administration-guide/153046/installing-policy-packages-and-device-settings)). **Needs-License:** FMG/FAZ VM به لایسنس/Evaluation نیاز دارند؛ **هیچ ادعای اجرا روی آن‌ها نشده است.** جزئیات لایسنس VM باید از مستند/فروشنده تأیید شود (`Unverified`). Lab: جایگزین عملی با rsyslog و Backup.
+
+### ۱) هدف آموزشی
+
+1. نقش **FMG** (مدیریت پیکربندی) و **FAZ** (Log/Report) را تفکیک کند.
+2. **ADOM، Device Manager، Policy Package، Install** و **Revision** را توضیح دهد.
+3. معماری مدیریت مرکزی برای ۱۰ تا ۱۰۰ دستگاه را طراحی و ریسک‌ها را بگوید.
+4. **جایگزین بدون لایسنس** (Syslog مرکزی + Git/Backup + Ansible/API) را طراحی کند.
+5. RBAC و Audit مدیریت مرکزی را بنویسد.
+
+### ۲) مفهوم پایه
+
+مدیریت ۲۰ فایروال یکی‌یکی = ناهمگونی، خطا، بی‌Audit. **FMG** پیکربندی/Policy را مرکزی نگه می‌دارد و به دستگاه‌ها «نصب» می‌کند؛ **FAZ** Logها را جمع و تحلیل می‌کند. مرکزی‌سازی هم **سطح حمله** و هم **نقطه‌ی شکست** جدید است.
+
+### ۳) توضیح عمیق فنی
+
+#### ۳-۱) اجزا
+
+- **Device Manager:** ثبت دستگاه‌ها و گروه‌ها، وضعیت Sync.
+- **ADOM (Administrative Domain):** بخش مجزا برای دستگاه‌ها/مدیران؛ هر ADOM Policy Package و Object خودش را دارد (برای Multi-tenant یا نسخه‌های مختلف).
+- **Policy Package:** مجموعه‌ی Policy/Object که به یک یا چند دستگاه **نصب (Install)** می‌شود؛ مستند: Install Wizard → انتخاب Package و مقصد و زمان‌بندی اختیاری.
+- **Device Settings:** تنظیمات مختص دستگاه (Interface، Route).
+- **Revision History:** نسخه‌ی تنظیمات؛ بازگشت (Revert).
+
+#### ۳-۲) FAZ
+
+- FAZ Logهای FortiGate را جمع می‌کند (Log Forwarding/Fetching).
+- طبق مستند: در FMG با ADOM فعال می‌توان یک FAZ به هر ADOM وصل کرد؛ نام ADOM باید در هر دو یکی باشد؛ و **وقتی ویژگی‌های FAZ در FMG فعال است، Log Forwarding/Fetching/Aggregation پشتیبانی نمی‌شود**؛ افزودن FAZ، قابلیت‌های FAZ را خودکار فعال می‌کند و غیرفعال‌شدنی نیست.
+
+#### ۳-۳) ریسک‌های مرکزی‌سازی
+
+| ریسک | کاهش |
+|---|---|
+| FMG هدف حمله/نقطه‌ی شکست | شبکه‌ی مدیریت جدا، HA، RBAC، MFA |
+| Install اشتباه روی همه | Staging/ADOM آزمایشی، Install Preview، Revision |
+| Sync نامنظم | بررسی وضعیت Sync، Install زمان‌بندی‌شده |
+| لایسنس | برنامه‌ریزی/جایگزین |
+
+#### ۳-۴) جایگزین بدون لایسنس (برای Lab)
+
+``` text
+Config backup : execute backup config tftp/sftp (daily) -> Git repo (no secrets)
+Logs          : config log syslogd setting -> rsyslog -> (Zabbix/ELK)
+Monitoring    : SNMPv3 + Zabbix
+Automation    : REST API/Ansible (read-first)
+Change record : ticket + diff of configs
+```
+
+#### ۳-۵) Syslog (جایگزین FAZ)
+
+طبق CLI Reference 7.0: `config log syslogd setting` گزینه‌های `server`، `port` (پیش‌فرض 514)، `mode` (udp، reliable، legacy-reliable)، `facility`، `source-ip`، `format` (default، csv، cef، rfc5424) و TLS را دارد؛ **حالت reliable** برای Extended Logging لازم است (مستند Log Message Reference).
+
+### ۴) مثال حل‌شده
+
+**نیاز:** Log مرکزی بدون FAZ.
+
+``` text
+config log syslogd setting
+    set status enable
+    set server "192.168.90.20"
+    set mode reliable
+    set port 514
+    set format rfc5424
+    set facility local7
+end
+```
+
+(ممکن است برای TCP/TLS پورت دیگری لازم باشد؛ سینتکس `Unverified`.) سمت rsyslog: Listener TCP، قالب RFC5424، چرخش Log. **آزمون:** تولید رویداد (Login ناموفق) و دیدن آن در سرور؛ بررسی Timestamp و NTP.
+
+**مثال متوسط:** پس از Install Policy Package به ۳ دستگاه، یکی خطا می‌دهد؛ روش: Install Preview، Revision Diff، Rollback، بررسی وابستگی (Interface Mapping).
+
+**مثال سخت (طراحی):** ۴ شعبه + HQ؛ ADOM برای هر واحد؟ تصمیم: ADOM بر اساس نسخه FortiOS یا مستأجر؛ نه صرفاً جغرافیا؛ Policy Package پایه + Override محلی.
+
+### ۵) GUI و CLI
+
+**GUI FMG:** Device Manager → Add Device؛ Policy & Objects → Policy Package → Install. **GUI FGT:** Security Fabric/Central Management. **CLI FGT:**
+
+``` text
+config system central-management
+    set type fortimanager
+    set fmg "192.168.90.30"
+end
+```
+
+(`Unverified`.)
+
+### ۶) نکات امنیتی
+
+- مدیریت مرکزی فقط از شبکه‌ی مدیریت؛ Admin جدا با MFA.
+- Log شامل داده‌ی حساس است؛ رمزنگاری انتقال/ذخیره.
+- بدون Audit تغییرات، Change ثبت نمی‌شود.
+
+### ۷) جمع‌بندی
+
+- FMG پیکربندی؛ FAZ Log؛ ADOM جداسازی؛ Policy Package نصب.
+- مرکزی‌سازی ریسک جدید ایجاد می‌کند.
+- جایگزین بدون لایسنس: Syslog، Git، SNMPv3، API.
+- ادعای اجرا بدون دستگاه ممنوع.
+
+### ۸) تمرین و ارزیابی
+
+**ت1.** (ساده) FMG و FAZ چه فرقی دارند؟ *(پاسخ: 26-0-ت1)*
+
+**ت2.** (ساده) ADOM چیست؟ *(پاسخ: 26-0-ت2)*
+
+**ت3.** (متوسط) چرا Install Preview لازم است؟ *(پاسخ: 26-0-ت3)*
+
+**ت4.** (سخت) معماری جایگزین بدون لایسنس را برای ۱۰ فایروال بنویسید. *(پاسخ: 26-0-ت4)*
+
+**Q1.** Quick quiz (English): What is an ADOM used for? *(پاسخ: 26-0-Q1)*
+
+### ۹) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| FMG | FortiManager | مدیریت مرکزی |
+| FAZ | FortiAnalyzer | تحلیل Log |
+| ADOM | Administrative Domain | دامنه‌ی مدیریتی |
+| RBAC | Role-Based Access Control | دسترسی نقش‌محور |
+
+- *Preview before installing a policy package.* ← قبل از نصب Policy Package پیش‌نمایش بگیرید.
+
+### ۱۰) منابع
+
+- Fortinet Docs: [Device Manager](https://docs.fortinet.com/document/fortimanager/7.0.0/administration-guide/478145/device-manager)، [Add FortiAnalyzer](https://docs.fortinet.com/document/fortimanager/7.0.0/administration-guide/654379/add-fortianalyzer)، [Installing policy packages](https://docs.fortinet.com/document/fortimanager/7.0.7/administration-guide/153046/installing-policy-packages-and-device-settings)، [config log syslogd setting](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/456620/config-log-syslogd-setting).
 
 ## درس 26-1 — مفهوم FMG/FAZ و لایسنس
 
@@ -1192,6 +1453,19 @@ Profile.
 
 <a id="ch27"></a>
 
+
+### پاسخ‌های درس افزوده‌ی 26-0 (فصل 26)
+
+**26-0-ت1** — FMG پیکربندی/Policy مرکزی؛ FAZ جمع‌آوری و تحلیل Log.
+
+**26-0-ت2** — دامنه‌ی مدیریتی مجزا برای دستگاه‌ها/مدیران با Policy Package و Object خودش.
+
+**26-0-ت3** — تا تأثیر نصب پیش از اعمال دیده شود و خطای گسترده رخ ندهد.
+
+**26-0-ت4** — Syslog مرکزی (rsyslog)، Backup روزانه به Git/SFTP بدون Secret، SNMPv3 + Zabbix، Ansible/API خواندنی، ثبت Change با Diff.
+
+**26-0-Q1** — To separate devices, administrators and policy sets into administrative domains (for example per tenant or version).
+
 # فصل 27 — Logging، Monitoring، Performance، API، Hardening و Backup (G10)
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۴، ۲۶.
@@ -1208,6 +1482,134 @@ Profile.
 ---
 
 <a id="l-27-1"></a>
+
+## درس 27-0 — Logging، Monitoring و Baseline: چه چیزی را، چرا و چگونه ثبت و پایش کنیم
+
+**فصل ۲۷ · درس افزوده (پیش‌درس ۲۷-۱) · پیش‌نیاز: ۱۴-۷، ۲۶-۰ · ≈ ۶ ساعت**
+
+> **وضعیت (FortiOS 7.0):** انواع Log و گزینه‌های Syslog از مستند رسمی ([Sample logs by log type](https://docs.fortinet.com/document/fortigate/7.0.5/administration-guide/986892/sample-logs-by-log-type)، [syslogd setting](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/456620/config-log-syslogd-setting)) تأیید شد. SNMPv3 و REST API روی FortiGate در این دور تأیید نشد و `Unverified` است.
+
+### ۱) هدف آموزشی
+
+1. انواع Log (Traffic، Event، UTM) و **سطح ثبت** را بشناسد و بر اساس هدف انتخاب کند.
+2. **Baseline** عملکرد (CPU، Memory، Session، Throughput) بسازد و انحراف را تشخیص دهد.
+3. معیارهای مانیتورینگ و **آستانه‌ی هشدار** معنادار تعیین کند (نه فقط «روشن/خاموش»).
+4. Log را با NTP همگام و در مقصد مرکزی نگه دارد (Retention).
+5. از Log به **تحلیل حادثه** برسد.
+
+### ۲) مفهوم پایه
+
+Log بدون هدف = انبار داده؛ Monitoring بدون Baseline = «همه چیز نرمال است» یا «همه چیز بد است» بدون مرجع. سه سؤال: **چه چیزی ثبت شود؟ برای چه تصمیمی؟ چه کسی می‌بیند و چه زمانی؟**
+
+### ۳) توضیح عمیق فنی
+
+#### ۳-۱) انواع Log
+
+| نوع | محتوا | کاربرد |
+|---|---|---|
+| Traffic (Forward/Local) | Sessionها: Source/Dest/Service/Action/Policy | تحلیل جریان، حادثه |
+| Event | Login مدیر، تغییر Config، VPN، HA، System | Audit، تغییر |
+| UTM/Security | AV، Web، DNS، App، IPS، DLP | تهدید |
+
+طبق مستند: Log امنیتی نیاز دارد که Policy دارای UTM باشد و `logtraffic` روی `utm` یا `all`. **Policyهای Deny** را هم Log کنید؛ Policy 0 (Implicit deny) با تنظیم جدا قابل Log است (`Unverified`).
+
+#### ۳-۲) سطح Log و هزینه
+
+`logtraffic all` همه‌ی Session‌ها (حجم زیاد)؛ `utm` فقط Sessionهای دارای رویداد UTM. تصمیم: Allow مهم و همه‌ی Deny؛ سرویس‌های پرحجم بی‌اهمیت: خاموش. **حجم Log = Session × اندازه‌ی رکورد.**
+
+#### ۳-۳) Baseline
+
+قبل از مشکل، در یک هفته‌ی عادی اندازه بگیرید و نگه دارید: CPU/Memory میانگین و پیک، تعداد Session، Throughput، Interface Errors، تعداد VPN، حجم Log. «CPU 70٪» بدون Baseline معنی ندارد: برای یک دستگاه عادی و برای دیگری اوج حمله.
+
+#### ۳-۴) آستانه‌ها (نمونه؛ برای محیط خود تنظیم کنید)
+
+| معیار | هشدار | بحرانی | دلیل |
+|---|---|---|---|
+| CPU | > 70٪ ۵ دقیقه | > 90٪ | ظرفیت |
+| Memory | > 80٪ | > 90٪ (Conserve mode) | ظرفیت |
+| Session | > 70٪ حد | > 90٪ | Exhaustion |
+| Interface Error | رشد مداوم | — | کابل/Duplex |
+| HA | عضو Out-of-sync | Failover | دسترس‌پذیری |
+| VPN | Tunnel Down | — | وصل نبودن |
+| Disk Log | > 80٪ | > 90٪ | از دست رفتن Log |
+
+#### ۳-۵) ابزارها
+
+- **Syslog:** ارسال Log به سرور مرکزی (UDP/TCP/TLS؛ `format rfc5424`/`cef`)؛ حالت reliable ضروری برای Extended Logging.
+- **SNMP** (ترجیحاً v3): پایش Interface/CPU/Memory با Zabbix.
+- **API/CLI:** جمع‌آوری وضعیت (`get system performance status`، `diagnose sys top`).
+- **NTP:** بدون زمان یکسان Log چند دستگاه قابل Correlation نیست.
+
+#### ۳-۶) از Log به حادثه
+
+مثال تحلیل: «Deny زیاد از 198.51.100.7 به پورت‌های متعدد» ← Port Scan. Correlation: همان IP در Log DNS/Web؟ آیا موفق شد؟ اقدام: Block، بازبینی. این پایه‌ی فصل ۲۹ است.
+
+### ۴) مثال حل‌شده
+
+``` text
+config firewall policy
+    edit 10
+        set logtraffic all
+    next
+end
+config log syslogd setting
+    set status enable
+    set server "192.168.90.20"
+    set mode reliable
+    set format rfc5424
+end
+get system performance status
+diagnose sys top 2 20
+```
+
+(`Unverified`.) **برنامه‌ی Baseline:** هر ۵ دقیقه ۷ روز؛ جدول میانگین/پیک؛ آستانه‌ها = Baseline × ضریب.
+
+**مثال متوسط:** CPU ناگهان 85٪: تقسیم مسیر: Session جدید (حمله؟)، Profile/UTM، Local-in (Scan مدیریتی)، Log. شواهد: `sys top`، `session statistics`، Log Deny.
+
+**مثال سخت:** Log دیسک پر و Log حادثه از دست رفت: راه‌حل: Syslog مرکزی reliable + Retention + هشدار Disk.
+
+### ۵) GUI و CLI
+
+**GUI:** Log & Report → Log Settings؛ Forward Traffic؛ Events؛ Dashboard → Performance؛ FortiView. **CLI:** `get log ...`، `get system performance status`.
+
+### ۶) نکات امنیتی
+
+- Log حاوی IP/User است؛ دسترسی محدود و رمزنگاری انتقال.
+- از Log پاک نکردن برای مخفی‌کردن؛ Immutable storage.
+- Timestamp دقیق (NTP) برای ارزش قانونی.
+
+### ۷) جمع‌بندی
+
+- ثبت هدفمند؛ Baseline قبل از مشکل؛ آستانه‌ی مبتنی بر Baseline.
+- Log مرکزی reliable، NTP هماهنگ.
+- Log→Correlation→حادثه.
+
+### ۸) تمرین و ارزیابی
+
+**ت1.** (ساده) سه نوع Log را بگویید. *(پاسخ: 27-0-ت1)*
+
+**ت2.** (متوسط) چرا Baseline لازم است؟ *(پاسخ: 27-0-ت2)*
+
+**ت3.** (سخت) آستانه‌های هشدار برای ۶ معیار با دلیل بنویسید. *(پاسخ: 27-0-ت3)*
+
+**ت4.** (سخت، طراحی) برنامه‌ی Retention برای ۱۸۰ روز Log با حجم ۲ GB/روز. *(پاسخ: 27-0-ت4)*
+
+**Q1.** Quick quiz (English): Why must firewall clocks be synchronized with NTP? *(پاسخ: 27-0-Q1)*
+
+### ۹) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Baseline | Performance baseline | مرجع وضعیت عادی |
+| SNMP | Simple Network Management Protocol | پروتکل پایش |
+| Retention | Log retention | مدت نگهداری |
+| Correlation | Log correlation | همبستگی Log |
+
+- *Establish a baseline before setting alert thresholds.* ← قبل از آستانه‌ها Baseline بسازید.
+
+### ۱۰) منابع
+
+- Fortinet Docs: [Sample logs by log type](https://docs.fortinet.com/document/fortigate/7.0.5/administration-guide/986892/sample-logs-by-log-type)، [config log syslogd setting](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/456620/config-log-syslogd-setting)؛ NIST SP 800-92 — Guide to Log Management.
 
 ## درس 27-1 — Logging و Log Settings
 
@@ -1823,6 +2225,121 @@ get system status
 
 <a id="ans-27"></a>
 
+## درس 27-7 — Hardening، Backup/Restore و API: امن‌سازی مدیریتی و بازیابی قابل‌اثبات
+
+**فصل ۲۷ · درس افزوده (پس از ۲۷-۵) · پیش‌نیاز: ۱۲-۸، ۲۶-۰، ۲۷-۰ · ≈ ۶ ساعت**
+
+> **وضعیت (FortiOS 7.0.3):** اصول از دانش عملیاتی و Local-in (۱۲-۸)؛ دستورهای `Unverified`؛ **REST API و SNMPv3 در این دور با مستند رسمی تأیید نشد** (به مرجع 7.0 مراجعه شود). Lab «اجرا نشده».
+
+### ۱) هدف آموزشی
+
+1. چک‌لیست Hardening مدیریتی (Admin، Access، سرویس‌ها، زمان‌بندی) را اجرا و دلیل هر مورد را بگوید.
+2. **Backup/Restore** را طوری انجام دهد که «بازیابی‌شدنی بودن» اثبات شود.
+3. **API/Automation** را با Least Privilege و Trusted Host محدود و ایمن به‌کار بگیرد.
+4. تغییرات مدیریتی را Audit و Rollback کند.
+
+### ۲) مفهوم پایه
+
+فایروال لبه با پیش‌فرض‌های «راحت» ایمن نیست. Hardening یعنی کاهش سطح حمله: هر سرویس/حساب/پورت غیرضروری را ببندید و هر چه باقی ماند محافظت و پایش شود. Backup بدون **تست Restore** ادعاست، نه تضمین.
+
+### ۳) توضیح عمیق فنی
+
+#### ۳-۱) چک‌لیست Hardening
+
+| حوزه | اقدام | دلیل |
+|---|---|---|
+| Admin | تغییر رمز/نام admin پیش‌فرض، حساب شخصی، حذف حساب مشترک | Accountability |
+| دسترسی | `allowaccess` حداقل، Trusted Host، Local-in Policy | سطح حمله (۱۲-۸) |
+| پروتکل | غیرفعال Telnet/HTTP؛ HTTPS/SSH با TLS/Cipher مناسب | رمزنگاری |
+| MFA | برای Admin | سرقت رمز |
+| Timeout/Lockout | `admintimeout`، `admin-lockout-*` | Brute-force |
+| Profile | Admin Profile حداقلی (Read-only برای Audit) | Least Privilege |
+| زمان | NTP امن | Log معتبر |
+| Banner/Log | Log تغییر Config و Login | Audit |
+| Patch | پیگیری PSIRT؛ نسخه‌ی 7.0.3 قدیمی است | CVE |
+
+#### ۳-۲) Backup
+
+- **چه چیزی:** Config (کامل)، Certificate/Key (جدا و رمزشده)، لیست نسخه/Serial/لایسنس.
+- **کجا:** مقصد خارج از دستگاه (SFTP/Git)، رمزنگاری، Retention (روزانه/هفتگی).
+- **امنیت:** فایل Config شامل Hash/رمز رمزگذاری‌شده است ولی حساس؛ هرگز در مخزن عمومی؛ پاک‌کردن Secret قبل از Git.
+- **تست Restore:** در Lab با همان نسخه و Interface؛ بازیابی و مقایسه `show` پیکربندی؛ ثبت زمان RTO.
+
+#### ۳-۳) API و Automation
+
+اصول: حساب/Token **فقط** با Profile لازم؛ **Trusted Host** (IP مبدأ)؛ Token در Vault/متغیر محیطی؛ شروع با GET (خواندنی)؛ هر POST/PUT با Change؛ Log تماس‌های API. `Unverified`: روش ایجاد Token و مسیرهای `/api/v2/...` در 7.0.3 را با مرجع تأیید کنید.
+
+#### ۳-۴) Audit و Rollback
+
+- هر تغییر: Ticket، Diff Config، تأییدکننده.
+- Rollback: Config قبلی + Session (۱۳-۷) + تست مثبت/منفی.
+- «تغییر اضطراری» هم ثبت شود.
+
+### ۴) مثال حل‌شده
+
+``` text
+config system global
+    set admintimeout 10
+    set admin-lockout-threshold 3
+    set admin-lockout-duration 300
+end
+config system admin
+    edit "mgr-hamed"
+        set accprofile "super_admin_readonly"
+        set trusthost1 192.168.90.0 255.255.255.0
+    next
+end
+execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
+```
+
+(نام فیلدها/سینتکس `Unverified`.) **تست Restore:** Lab FGT هم‌نسخه، `execute restore config ...`، مقایسه Interface/Policy، ثبت RTO.
+
+**مثال متوسط:** Backup با رمز در ریپو Commit شد. اقدام: حذف از تاریخچه، چرخش رمزها، Scan Secret (ابزار)، Prevention (pre-commit).
+
+**مثال سخت:** پس از ارتقا Config ناسازگار؛ Rollback: Backup قبل از ارتقا، Firmware قبلی، تست.
+
+### ۵) GUI و CLI
+
+**GUI:** System → Administrators؛ System → Settings؛ System → Config → Backup/Restore؛ Log & Report → Events. **CLI:** مطابق مثال.
+
+### ۶) نکات امنیتی
+
+- حساب مشترک و رمز ضعیف ممنوع.
+- Token API هرگز در Log/ریپو.
+- Backup رمزشده.
+
+### ۷) جمع‌بندی
+
+- Hardening = کاهش سطح حمله + Least Privilege + MFA + Patch.
+- Backup بدون تست Restore بی‌اعتبار.
+- API با Trusted Host و Profile حداقلی.
+
+### ۸) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا Telnet/HTTP غیرفعال شود؟ *(پاسخ: 27-7-ت1)*
+
+**ت2.** (متوسط) تست Restore چگونه انجام می‌شود؟ *(پاسخ: 27-7-ت2)*
+
+**ت3.** (سخت) چک‌لیست ۱۰ مورد Hardening با دلیل. *(پاسخ: 27-7-ت3)*
+
+**ت4.** (سخت، طراحی) Token API برای مانیتورینگ را ایمن طراحی کنید. *(پاسخ: 27-7-ت4)*
+
+**Q1.** Quick quiz (English): Why is an untested backup unreliable? *(پاسخ: 27-7-Q1)*
+
+### ۹) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| RTO | Recovery Time Objective | زمان هدف بازیابی |
+| Hardening | System hardening | امن‌سازی |
+| Trusted host | Trusted host | IP مجاز |
+
+- *Backups must be tested by restoring them.* ← Backupها باید با Restore تست شوند.
+
+### ۱۰) منابع
+
+- Fortinet: «Hardening your FortiOS» (مرجع رسمی؛ نسخه‌ی 7.0 را بررسی کنید)؛ CIS Fortinet FortiGate Benchmark؛ NIST SP 800-53 (CM، AU).
+
 ## پاسخ‌های فصل 27
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -1911,6 +2428,32 @@ Backup بی‌تست بی‌اعتبار.
 ---
 
 <a id="end9"></a>
+
+
+### پاسخ‌های درس افزوده‌ی 27-0 (فصل 27)
+
+**27-0-ت1** — Traffic، Event، UTM/Security.
+
+**27-0-ت2** — تا انحراف را با مرجع عادی تشخیص دهیم و آستانه‌ی معنادار بگذاریم.
+
+**27-0-ت3** — CPU>70٪ هشدار/90٪ بحرانی؛ Memory>80٪/90٪؛ Session>70٪/90٪ حد؛ Interface Error رشد؛ Tunnel/HA Down؛ Disk Log>80٪؛ همه بر پایه‌ی Baseline.
+
+**27-0-ت4** — ۱۸۰ روز × ۲ GB = ۳۶۰ GB؛ + ۲۰٪ حاشیه؛ مرکزی با فشرده‌سازی و چرخش؛ هشدار فضا.
+
+**27-0-Q1** — So events from different devices can be correlated reliably in time.
+
+
+### پاسخ‌های درس افزوده‌ی 27-7 (فصل 27)
+
+**27-7-ت1** — رمز و داده را بدون رمزنگاری می‌فرستند و قابل شنودند.
+
+**27-7-ت2** — در Lab هم‌نسخه Restore، مقایسه Interface/Policy/Route، اندازه‌گیری RTO و ثبت.
+
+**27-7-ت3** — تغییر admin پیش‌فرض، حساب شخصی، Trusted Host، allowaccess حداقل، غیرفعال Telnet/HTTP، MFA، Timeout/Lockout، Profile حداقلی، NTP، Patch.
+
+**27-7-ت4** — حساب API با Profile Read-only، Trusted Host فقط مانیتورینگ، Token در Vault، چرخش دوره‌ای، Log تماس‌ها.
+
+**27-7-Q1** — Because a backup that was never restored may be corrupt or incomplete, so recovery is not proven.
 
 # پایان بخش ۹ (فصل‌های ۲۵ تا ۲۷)
 

@@ -39,7 +39,7 @@
 
 <a id="ch19"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.2):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۰-۷، ۲۱-۷ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.3):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۰-۷، ۲۱-۷ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 19 — Hub-and-Spoke، OSPF/BGP روی FortiGate و Local Breakout
 
@@ -59,6 +59,191 @@
 ---
 
 <a id="l-19-1"></a>
+
+## درس 19-0 — طراحی Overlay چندشعبه: Hub-and-Spoke، Routing پویا روی Tunnel و ADVPN
+
+**فصل ۱۹ · درس افزوده (پیش‌درس ۱۹-۱) · پیش‌نیاز: ۱۸-۰، ۹-۰، ۹-۷، ۵-۷ · ≈ ۸ ساعت**
+
+> **وضعیت (FortiOS 7.0):** نکات ADVPN/BGP از مستند رسمی ([ADVPN and shortcut paths 7.0.9](https://docs.fortinet.com/document/fortigate/7.0.9/administration-guide/985659/advpn-and-shortcut-paths)، [ADVPN with BGP](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/820072/advpn-with-bgp-as-the-routing-protocol)) بررسی شد. سینتکس روی 7.0.3 `Unverified`؛ برخی گزینه‌ها (مثل Shortcut Override) از 7.0.4 آمده‌اند. Lab «اجرا نشده».
+
+### ۱) هدف آموزشی
+
+1. Overlay و Underlay را تفکیک و **توپولوژی‌های Full-mesh، Hub-and-Spoke و ADVPN** را مقایسه کند.
+2. **Routing پویا** (BGP/OSPF) روی Tunnel طراحی کند و تفاوت **iBGP/eBGP** و نقش **Route Reflector** را بگوید.
+3. IP Plan بدون Overlap، **Tunnel Interface IP** و **net-device** را درست تنظیم کند.
+4. ADVPN را (در صورت پشتیبانی نسخه) با Sender/Receiver و Shortcut بفهمد.
+5. رفتار شبکه را هنگام خرابی Tunnel/Hub تحلیل (Convergence) و Failover را طراحی کند.
+6. **Local Breakout** را در برابر مسیر مرکزی (Backhaul) با معیار امنیت/Performance انتخاب کند.
+
+### ۲) پیش‌نیازها
+
+IPsec (۱۸-۰)، BGP (۹-۰، ۹-۷)، Convergence (۵-۷)، Packet Flow (۱۲-۰)، SD-WAN (۲۱-۷ برای ترکیب).
+
+### ۳) مفهوم پایه
+
+شرکتی با ۲۰ شعبه: Full-mesh یعنی ۱۹۰ Tunnel (n(n−1)/2) که مقیاس‌پذیر نیست. **Hub-and-Spoke:** هر شعبه (Spoke) فقط به مرکز (Hub) Tunnel دارد؛ ترافیک شعبه‌به‌شعبه از Hub می‌گذرد (ساده، مرکزی برای Policy/Inspection، ولی تأخیر و بار روی Hub). **ADVPN:** در Hub-and-Spoke، Spokeها در صورت نیاز **Tunnel مستقیم (Shortcut)** بین هم می‌سازند.
+
+### ۴) توضیح عمیق فنی
+
+#### ۴-۱) مقایسه
+
+| الگو | تعداد Tunnel (n شعبه) | مزیت | عیب |
+|---|---|---|---|
+| Full-mesh | n(n−1)/2 | کمترین تأخیر | پیچیده/غیرمقیاس‌پذیر |
+| Hub-and-Spoke | n (به Hub) | ساده، کنترل مرکزی | Hub گلوگاه/SPOF؛ تأخیر Spoke-to-Spoke |
+| ADVPN | n + Shortcutهای پویا | ترکیب مزایا | وابسته به نسخه، پیچیده‌تر |
+
+``` text
+Full-mesh tunnels = n(n-1)/2     example: n=20 -> 190
+```
+
+#### ۴-۲) Routing روی Tunnel
+
+- **Static** برای شعب کم؛ **OSPF** (point-to-point) یا **BGP** برای مقیاس و Failover.
+- **BGP** معمولاً توصیه می‌شود: مقیاس‌پذیر، کنترل Policy. طبق مستند ADVPN: بین Hub و Spokeها **iBGP** استفاده می‌شود؛ Hub می‌تواند **Route Reflector** باشد و Neighbor-group/neighbor-range روی Subnet تونل تعریف کند تا Spokeهای جدید بدون تغییر Hub اضافه شوند.
+- IP روی Tunnel: برای Peering BGP (/32 روی Tunnel یا Loopback). Loopback Peering نیاز به Route Static/IKE-installed برای رسیدن به Loopback دارد.
+- **Selector** Phase 2: 0.0.0.0/0 تا Routing تصمیم بگیرد (۱۸-۰).
+
+#### ۴-۳) نکات اجرایی
+
+- `net-device`: طبق مستند ADVPN با BGP، روی Hub باید `set net-device disable` (Phase 1) باشد تا یک Interface برای همه‌ی Spokeها و Peering درست کار کند.
+- **Route Overlap:** Subnet هر شعبه یکتا (IP Plan فصل ۲).
+- **Policy:** Tunnel↔LAN دوطرفه؛ برای Spoke-to-Spoke از Hub: Policy Tunnel→Tunnel روی Hub.
+- **Anti-loop:** BGP AS_PATH/Route Reflector؛ OSPF Area.
+
+#### ۴-۴) ADVPN (7.0)
+
+طبق مستند: Hub Phase 1: `set auto-discovery-sender enable`؛ Spoke: `set auto-discovery-receiver enable`. Spoke A→Spoke B: ترافیک اول از Hub؛ Hub به A و B اطلاع می‌دهد (Shortcut)؛ A و B Tunnel مستقیم می‌سازند و Routeها/Next-hop به‌روز می‌شوند. مستند می‌گوید **GUI برخی گزینه‌های ADVPN را ندارد** و فقط CLI. در 7.0.4 «shortcut override» و «tag-match» برای کنترل بهتر نیز آمده است.
+
+#### ۴-۵) Local Breakout در برابر Backhaul
+
+| | Backhaul (همه به Hub) | Local Breakout |
+|---|---|---|
+| امنیت | Inspection یکپارچه | هر شعبه باید UTM داشته باشد |
+| Performance | تأخیر/بار Hub | سریع |
+| هزینه | پهنای Hub زیاد | ISP محلی |
+| سیاست | یکسان | ممکن است ناهمگون |
+
+معمول: سازمانی ← Tunnel؛ SaaS/اینترنت ← Local Breakout با UTM و SD-WAN (۲۱-۷).
+
+#### ۴-۶) خرابی و Convergence
+
+- قطع Tunnel Spoke–Hub: Hub مسیر را پس از Detect (DPD/BGP Hold/BFD) حذف می‌کند.
+- Spoke با دو Hub: Failover بین Hubها (Local-pref/MED).
+- Hub fail: Hub دوم + HA؛ زمان Convergence ≈ Detect + BGP.
+
+### ۵) مثال حل‌شده
+
+**نیاز:** 1 Hub (AS 65000) + Spoke1/Spoke2؛ BGP iBGP. Hub: `set auto-discovery-sender enable`، `set net-device disable`؛ Spokeها: `set auto-discovery-receiver enable`.
+
+``` text
+# HUB (sketch)
+config vpn ipsec phase1-interface
+    edit "HUB-TUN"
+        set type dynamic
+        set auto-discovery-sender enable
+        set net-device disable
+        set add-route disable
+    next
+end
+config router bgp
+    set as 65000
+    config neighbor-group
+        edit "SPOKES"
+            set remote-as 65000
+            set route-reflector-client enable
+        next
+    end
+    config neighbor-range
+        edit 1
+            set prefix 10.255.0.0 255.255.255.0
+            set neighbor-group "SPOKES"
+        next
+    end
+end
+```
+
+(سینتکس برگرفته از ساختار مستند 7.0.9؛ جزئیات `Unverified` روی 7.0.3.)
+
+**مثال متوسط:** قطع Tunnel Spoke1: `get router info bgp summary` همسایه Idle؛ Route شعبه از جدول حذف؛ شعب دیگر دیگر ترافیک را به Spoke1 نمی‌فرستند.
+
+**مثال سخت:** ترافیک Spoke1→Spoke2 از Hub می‌گذرد و کند است. با ADVPN Shortcut ساخته می‌شود؛ ولی Shortcut ساخته نشد: بررسی: Sender/Receiver، Policy Spoke→Spoke، Route Next-hop. شاهد: `diagnose vpn tunnel list`.
+
+### ۶) طراحی و تصمیم‌گیری
+
+| سؤال | تصمیم |
+|---|---|
+| تعداد شعب | ≤ ۵: Static/OSPF؛ بیشتر: BGP |
+| Hub تکی/دوتایی | دوتایی برای SLA بالا |
+| ADVPN | وقتی ترافیک Spoke-to-Spoke زیاد و نسخه پشتیبانی کند |
+| Breakout | محلی با UTM برای SaaS |
+| Subnet | Summarize و یکتا |
+
+### ۷) GUI و CLI (Verification)
+
+**GUI:** VPN → IPsec Tunnels؛ Network → BGP/OSPF؛ Monitor → IPsec Monitor؛ Routing Monitor. **CLI:**
+
+``` text
+get router info bgp summary
+get router info routing-table all
+diagnose vpn tunnel list
+diagnose vpn ike gateway list
+```
+
+### ۸) Troubleshooting
+
+| علامت | علت |
+|---|---|
+| BGP Active | Policy/Route Peer، AS، `net-device` |
+| Route نمی‌آید | Filter/RR/Next-hop |
+| Spoke-to-Spoke کند | ADVPN فعال نشده/Policy |
+| شعبه‌ی جدید وصل نمی‌شود | neighbor-range/Phase 1 dynamic |
+
+### ۹) نکات امنیتی
+
+- Hub هدف حمله است؛ Patch و محدودیت Source.
+- Policy Spoke-to-Spoke را حداقلی بنویسید.
+- Local Breakout بدون UTM = حفره.
+
+### ۱۰) جمع‌بندی مفهومی
+
+- Full-mesh n(n−1)/2؛ Hub-and-Spoke n؛ ADVPN ترکیب.
+- BGP iBGP با RR برای مقیاس.
+- IP Plan یکتا؛ Selector باز؛ Policy دوطرفه.
+- ADVPN وابسته به نسخه؛ GUI محدود.
+- Backhaul در برابر Breakout: امنیت در برابر Performance.
+
+### ۱۱) تمرین و ارزیابی
+
+**ت1.** (ساده) تعداد Tunnel Full-mesh برای ۲۰ شعبه؟ *(پاسخ: 19-0-ت1)*
+
+**ت2.** (ساده) Overlay و Underlay چیست؟ *(پاسخ: 19-0-ت2)*
+
+**ت3.** (متوسط) چرا BGP برای شعب زیاد بهتر از Static؟ *(پاسخ: 19-0-ت3)*
+
+**ت4.** (متوسط) نقش Route Reflector در Hub چیست؟ *(پاسخ: 19-0-ت4)*
+
+**ت5.** (سخت) ADVPN چگونه Spoke-to-Spoke را بهینه می‌کند و چه پیش‌نیازهایی دارد؟ *(پاسخ: 19-0-ت5)*
+
+**ت6.** (سخت، طراحی) برای ۱۰ شعبه با دو Hub، Failover و Breakout را طراحی کنید. *(پاسخ: 19-0-ت6)*
+
+**Q1.** Quick quiz (English): What is the main drawback of pure hub-and-spoke for spoke-to-spoke traffic? *(پاسخ: 19-0-Q1)*
+
+### ۱۲) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| ADVPN | Auto-Discovery VPN | Tunnel پویای Spoke-to-Spoke |
+| RR | Route Reflector | بازتاب‌دهنده‌ی مسیر |
+| Overlay | Overlay network | شبکه‌ی روی ISP |
+| Breakout | Local internet breakout | خروج محلی |
+
+- *Use dynamic routing over tunnels for scalability.* ← برای مقیاس‌پذیری از Routing پویا روی Tunnel استفاده کنید.
+- *ADVPN builds on-demand shortcuts between spokes.* ← ADVPN بین Spokeها Shortcut سفارشی می‌سازد.
+
+### ۱۳) منابع
+
+- Fortinet Docs: [ADVPN and shortcut paths](https://docs.fortinet.com/document/fortigate/7.0.9/administration-guide/985659/advpn-and-shortcut-paths)، [ADVPN with BGP](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/820072/advpn-with-bgp-as-the-routing-protocol)، [Enhanced BGP next hop updates and ADVPN shortcut override 7.0.4](https://docs.fortinet.com/document/fortigate/7.0.0/new-features/245878/enhanced-bgp-next-hop-updates-and-advpn-shortcut-override-7-0-4).
 
 ## درس 19-1 — طراحی Hub-and-Spoke و IP Plan
 
@@ -932,6 +1117,23 @@ Backup Route.
 ---
 
 <a id="ch20"></a>
+
+
+### پاسخ‌های درس افزوده‌ی 19-0 (فصل 19)
+
+**19-0-ت1** — 20×19/2 = 190 Tunnel.
+
+**19-0-ت2** — Overlay شبکه‌ی Tunnel روی ISP؛ Underlay خود ISP و لینک‌های فیزیکی.
+
+**19-0-ت3** — مقیاس‌پذیری، Failover خودکار و کنترل Policy؛ اضافه‌کردن شعبه بدون تغییر دستی همه‌ی مسیرها.
+
+**19-0-ت4** — Hub Route Reflector مسیرهای iBGP را بین Spokeها بازتاب می‌دهد تا Full-mesh لازم نباشد.
+
+**19-0-ت5** — Spoke-to-Spoke ابتدا از Hub؛ Hub به دو Spoke اطلاع می‌دهد و Shortcut مستقیم ساخته می‌شود. پیش‌نیاز: Sender روی Hub، Receiver روی Spoke، Routing/Policy مناسب و پشتیبانی نسخه.
+
+**19-0-ت6** — دو Hub، BGP با Local-pref برای Hub اصلی، Failover خودکار، Breakout محلی با UTM برای SaaS، IP Plan یکتا.
+
+**19-0-Q1** — Higher latency and load on the hub because spoke-to-spoke traffic must pass through it.
 
 # فصل 20 — Remote Access VPN: SSL VPN (ایزوله) و Dial-up IPsec
 

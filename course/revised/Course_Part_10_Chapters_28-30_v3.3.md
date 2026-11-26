@@ -36,7 +36,7 @@
 
 <a id="ch28"></a>
 
-> **نسخه v3.2:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.3:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 28 — Packet Analysis و بلوک‌های عیب‌یابی
 
@@ -54,6 +54,119 @@
 ---
 
 <a id="l-28-1"></a>
+
+## درس 28-0 — تحلیل بسته عمیق: TCP، DNS، TLS و الگوهای خرابی در Wireshark/Sniffer
+
+**فصل ۲۸ · درس افزوده (پیش‌درس ۲۸-۱) · پیش‌نیاز: ۲-۰، ۱۴-۷، ۱۱-۷ · ≈ ۸ ساعت**
+
+> **وضعیت:** خروجی‌ها نمونه‌ی آموزشی‌اند؛ Capture واقعی در Lab «اجرا نشده».
+
+### ۱) هدف آموزشی
+
+1. TCP را از روی بسته تحلیل کند: Handshake، Window، Retransmission، Dup ACK، RST، Zero Window.
+2. الگوهای خرابی را تشخیص دهد: Drop، MTU/PMTUD، Asymmetric، Latency، Packet Loss.
+3. DNS و TLS را در Capture بخواند (Query/Response، SNI، Alert).
+4. Capture را درست بگیرد (نقطه، Filter، حجم) و با Sniffer FortiGate تکمیل کند.
+5. از Capture تا RCA بنویسد.
+
+### ۲) مفهوم پایه
+
+بسته‌ها «حقیقت میدانی»اند: لاگ می‌گوید فایروال چه تصمیمی گرفت؛ Capture می‌گوید روی سیم چه گذشت. تحلیل = مقایسه‌ی دو نقطه‌ی Capture (قبل/بعد از دستگاه).
+
+### ۳) توضیح عمیق فنی
+
+#### ۳-۱) نقطه‌ی Capture
+
+``` text
+Client --[A]-- FW(in) FW(out) --[B]-- Server
+A and B captures: compare which packet disappears and where
+```
+
+اگر بسته در A هست و در B نیست: دستگاه میانی (Policy/Route/Drop). اگر هست ولی پاسخ نیست: سرور/مسیر برگشت.
+
+#### ۳-۲) الگوهای TCP
+
+| الگو | معنی | علت‌های رایج |
+|---|---|---|
+| SYN بدون SYN/ACK | اتصال برقرار نمی‌شود | Policy، Route، پورت بسته، Asymmetric |
+| SYN, RST | پورت بسته/رد | سرویس، Firewall |
+| Retransmission | بسته‌ی گم‌شده | تلفات، MTU، Congestion |
+| Dup ACK ×3 | Fast retransmit | Loss/Reordering |
+| Zero Window | گیرنده پر | برنامه کند |
+| ICMP Frag Needed | PMTUD | MTU کمتر در مسیر |
+| فقط بزرگ‌ها قفل | PMTUD Black hole | ICMP Block/MTU |
+
+``` text
+RTT ~= time between SYN and SYN/ACK
+Retransmission rate = retransmitted segments / total segments
+```
+
+#### ۳-۳) Wireshark: Filterهای مفید
+
+``` text
+tcp.analysis.retransmission
+tcp.analysis.duplicate_ack
+tcp.flags.syn==1 and tcp.flags.ack==0
+tcp.analysis.zero_window
+icmp.type==3 and icmp.code==4
+dns.flags.rcode != 0
+tls.alert_message
+```
+
+#### ۳-۴) DNS و TLS
+
+- DNS: Query بدون Response (UDP Drop/سرور)، NXDOMAIN (نام)، Response کند (Latency).
+- TLS: ClientHello با SNI؛ Alert `bad_certificate`/`unknown_ca` (CA/Pinning)؛ Handshake کند (RTT/CPU Inspection).
+
+#### ۳-۵) Sniffer FortiGate
+
+`diagnose sniffer packet <if> "<filter>" 4 <count> l` (verbose 4: IP+Interface؛ 6: Ethernet هم)؛ خروجی را به فایل و با اسکریپت به PCAP تبدیل کنید (ابزار fgt2eth)؛ روی Offloadشده ممکن است ناقص باشد (۱۲-۹).
+
+### ۴) مثال حل‌شده
+
+**پرونده:** دانلود ۵۰ MB از VPN در ۲٪ می‌ایستد. Capture در دو سر: بسته‌های بزرگ (1500 B) از A می‌روند و در B نمی‌رسند؛ ICMP Frag Needed بازگردانده نمی‌شود (ICMP توسط Firewall میانی Block). **RCA:** PMTUD Black hole. **رفع:** MSS Clamp (`tcp-mss`)، اجازه‌ی ICMP Type 3 Code 4. **تأیید:** Capture: بسته‌های ≤ MSS؛ دانلود کامل.
+
+**مثال متوسط:** SYN→RST: سرور پورت را نمی‌شناسد؛ مقایسه با `telnet`. **مثال سخت:** Retransmission فقط یک جهت: مسیر برگشت تلفات دارد (Interface Error) → `get system interface physical`.
+
+### ۵) GUI و CLI
+
+**GUI:** Network → Diagnostics → Packet Capture؛ **CLI:** `diagnose sniffer packet any "host X and port Y" 6 100 l`.
+
+### ۶) نکات امنیتی
+
+- PCAP داده‌ی حساس دارد: محدود، رمزنگاری، حذف.
+- Capture مجاز و مستند.
+
+### ۷) جمع‌بندی
+
+- دو نقطه‌ی Capture بسته‌ی گم‌شده را پیدا می‌کنند.
+- الگوهای TCP علت را نشان می‌دهند.
+- MTU/ICMP/Asymmetric سه علت شایع.
+
+### ۸) تمرین و ارزیابی
+
+**ت1.** (ساده) SYN بدون SYN/ACK یعنی چه؟ *(پاسخ: 28-0-ت1)*
+
+**ت2.** (متوسط) PMTUD Black hole را توضیح دهید. *(پاسخ: 28-0-ت2)*
+
+**ت3.** (سخت) Capture دو نقطه‌ای را برای یافتن Drop بنویسید. *(پاسخ: 28-0-ت3)*
+
+**Q1.** Quick quiz (English): Which ICMP type and code signal fragmentation needed? *(پاسخ: 28-0-Q1)*
+
+### ۹) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| PMTUD | Path MTU Discovery | کشف MTU مسیر |
+| RTT | Round-Trip Time | زمان رفت و برگشت |
+| PCAP | Packet capture | فایل بسته |
+| Dup ACK | Duplicate ACK | ACK تکراری |
+
+- *Capture at two points to locate where packets disappear.* ← در دو نقطه Capture بگیرید تا محل ناپدید شدن بسته‌ها پیدا شود.
+
+### ۱۰) منابع
+
+- Wireshark User's Guide (TCP analysis)؛ RFC 1191 (PMTUD)، RFC 9293 (TCP)، RFC 792 (ICMP).
 
 ## درس 28-1 — Sniffer و Capture درست
 
@@ -754,6 +867,17 @@ Log.
 
 <a id="ch29"></a>
 
+
+### پاسخ‌های درس افزوده‌ی 28-0 (فصل 28)
+
+**28-0-ت1** — درخواست اتصال بی‌پاسخ: Drop/Policy/Route/پورت بسته یا Asymmetric.
+
+**28-0-ت2** — بسته‌های بزرگ در مسیر با MTU کمتر نمی‌رسند و ICMP Frag Needed Block می‌شود؛ فرستنده اندازه را کم نمی‌کند و ارتباط قفل می‌شود.
+
+**28-0-ت3** — Capture هم‌زمان قبل و بعد از دستگاه با Filter یکسان؛ مقایسه‌ی بسته‌ها؛ محل ناپدیدشدن همان نقطه‌ی مشکل است.
+
+**28-0-Q1** — ICMP type 3 code 4.
+
 # فصل 29 — Blue Team، Lifecycle و Vulnerability Management
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۲۷، ۲۸.
@@ -770,6 +894,119 @@ Log.
 ---
 
 <a id="l-29-1"></a>
+
+## درس 29-0 — Blue Team: Detection، Triage و چرخه‌ی پاسخ به حادثه (IR)
+
+**فصل ۲۹ · درس افزوده (پیش‌درس ۲۹-۱) · پیش‌نیاز: ۲۷-۰، ۲۸-۰، ۱۱-۰ · ≈ ۶ ساعت**
+
+> **وضعیت:** مفهومی؛ فقط روی Lab ایزوله و مجاز؛ هیچ حمله‌ی واقعی خارج از Lab.
+
+### ۱) هدف آموزشی
+
+1. چرخه‌ی **IR** (آماده‌سازی، تشخیص/تحلیل، مهار، ریشه‌کنی، بازیابی، درس‌آموخته) را اجرا کند.
+2. از Log نشانه‌ی نفوذ (**IOC**) و الگوی رفتار (**TTP**) را تشخیص دهد.
+3. **Triage** (اولویت‌بندی) و ثبت شواهد را انجام دهد.
+4. Playbook برای سناریوهای رایج بنویسد.
+5. تفاوت Detection و Prevention را در عمل بداند.
+
+### ۲) مفهوم پایه
+
+مهاجم باید فقط یک بار موفق شود؛ مدافع باید همیشه ببیند. Blue Team با **دید** (Log)، **هشدار**، **پاسخ** و **یادگیری** ریسک را مدیریت می‌کند. چارچوب مرجع: NIST SP 800-61 (چرخه‌ی IR) و MITRE ATT&CK (زبان مشترک TTP).
+
+### ۳) توضیح عمیق فنی
+
+#### ۳-۱) چرخه‌ی IR
+
+``` text
+1 Preparation        : tools, logs, playbooks, contacts, backups
+2 Detection/Analysis : alerts, triage, scoping
+3 Containment        : short-term (block) and long-term (isolate)
+4 Eradication        : remove cause (malware, account, vulnerability)
+5 Recovery           : restore, monitor
+6 Lessons learned    : report, improve controls
+```
+
+#### ۳-۲) IOC و TTP
+
+- **IOC:** IP/Domain/Hash/URL مخرب (قابل مسدودسازی ولی زودگذر).
+- **TTP (Tactics, Techniques, Procedures):** رفتار (Scan، Brute-force، Lateral movement، Exfiltration) پایدارتر و ارزشمندتر.
+
+مثال Detection از Firewall:
+
+| الگو | داده | معنی |
+|---|---|---|
+| یک IP با Deny روی ده‌ها پورت | Traffic Log | Port Scan |
+| Login ناموفق مکرر به VPN/Admin | Event Log | Brute-force |
+| حجم بالای خروجی به یک IP ناشناس | Traffic Log (Bytes) | Exfiltration |
+| DNS به دامنه‌ی نویزی/جدید | DNS Log | DGA/C2 |
+| سرور DMZ به Internal (ممنوع) Deny | Traffic Log | حرکت جانبی |
+
+#### ۳-۴) Triage
+
+Severity = اثر × احتمال؛ پرسش‌ها: دارایی کدام است؟ موفق بود؟ داده خارج شد؟ مسیر گسترش؟ (**Scoping**).
+
+#### ۳-۵) مهار با Firewall
+
+Block IP (Address + Deny Policy بالای Policyها)، Quarantine، قطع VPN User، Clear Session (۱۳-۷). **قبل از مهار شواهد را ذخیره کنید** (Log، Capture).
+
+### ۴) مثال حل‌شده
+
+**سناریو:** Alert: ۴۰۰ Deny از 198.51.100.7 در ۲ دقیقه به پورت‌های 22,3389,445. **Triage:** Scan؛ موفق؟ Log Allow از همان IP؟ خیر. **مهار:** Address `BLOCK-IP` + Policy Deny بالا؛ Clear Session. **تحلیل:** منبع اینترنت؛ پورت‌های Management بسته‌اند. **درس:** Local-in WAN بسته (۱۲-۸).
+
+``` text
+config firewall address
+    edit "BLOCK-198.51.100.7"
+        set subnet 198.51.100.7 255.255.255.255
+    next
+end
+```
+
+(`Unverified`.)
+
+**مثال سخت (Lateral movement):** PC کاربر Compromise شده و سعی می‌کند به DC SMB بزند؛ Segmentation Deny+Log؛ Alert؛ جداسازی PC؛ بازبینی اعتبارنامه‌ها؛ RCA.
+
+### ۵) GUI و CLI
+
+**GUI:** Log & Report؛ FortiView؛ Policy & Objects → Addresses. **CLI:** `execute log filter ...`، `diagnose sys session ...`.
+
+### ۶) نکات امنیتی
+
+- مهار بدون Evidence = از دست رفتن مدرک.
+- ارتباط مستند و محدود؛ Change اضطراری ثبت.
+- پس از حادثه Policyها و Patch بازبینی.
+
+### ۷) جمع‌بندی
+
+- IR شش فاز؛ Detection از TTP مهم‌تر از IOC.
+- Triage و Scoping قبل از مهار.
+- Evidence را حفظ کنید؛ درس‌آموخته را اعمال کنید.
+
+### ۸) تمرین و ارزیابی
+
+**ت1.** (ساده) شش فاز IR را بنویسید. *(پاسخ: 29-0-ت1)*
+
+**ت2.** (متوسط) IOC و TTP چه فرقی دارند؟ *(پاسخ: 29-0-ت2)*
+
+**ت3.** (سخت) Playbook Port Scan را بنویسید. *(پاسخ: 29-0-ت3)*
+
+**ت4.** (سخت، طراحی) از Log فایروال سه Detection بسازید. *(پاسخ: 29-0-ت4)*
+
+**Q1.** Quick quiz (English): Why preserve evidence before containment? *(پاسخ: 29-0-Q1)*
+
+### ۹) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| IR | Incident Response | پاسخ به حادثه |
+| IOC | Indicator of Compromise | نشانه‌ی نفوذ |
+| TTP | Tactics, Techniques, Procedures | رفتار مهاجم |
+| SOC | Security Operations Center | مرکز عملیات امنیت |
+
+- *Contain first, but preserve the evidence.* ← مهار کنید ولی شواهد را حفظ کنید.
+
+### ۱۰) منابع
+
+- NIST SP 800-61 Rev.2 — Computer Security Incident Handling Guide؛ MITRE ATT&CK.
 
 ## درس 29-1 — Detection: Log و IOC ساده
 
@@ -1330,6 +1567,19 @@ RCA ناقص.
 
 <a id="ch30"></a>
 
+
+### پاسخ‌های درس افزوده‌ی 29-0 (فصل 29)
+
+**29-0-ت1** — Preparation، Detection/Analysis، Containment، Eradication، Recovery، Lessons learned.
+
+**29-0-ت2** — IOC نشانه‌ی مشخص و زودگذر (IP/Hash)؛ TTP رفتار و روش مهاجم و پایدارتر.
+
+**29-0-ت3** — تشخیص Scan از Deny زیاد، بررسی Allow موفق، Block IP، Clear Session، بررسی Local-in، ثبت Evidence، PIR.
+
+**29-0-ت4** — ۱) Deny چندپورتی از یک IP؛ ۲) Login ناموفق مکرر؛ ۳) حجم خروجی غیرعادی به IP ناشناس.
+
+**29-0-Q1** — Because containment actions can alter or erase logs and sessions that are needed for analysis.
+
 # فصل 30 — Migration: از Cisco ASA/Router به FortiGate (معماری ۸، G11)
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۳، ۲۷.
@@ -1346,6 +1596,118 @@ RCA ناقص.
 ---
 
 <a id="l-30-1"></a>
+
+## درس 30-0 — روش‌شناسی Migration: Inventory، نگاشت Policy، Cutover و Rollback
+
+**فصل ۳۰ · درس افزوده (پیش‌درس ۳۰-۱) · پیش‌نیاز: ۱۳-۷، ۲۷-۷، ۲۵-۰ · ≈ ۶ ساعت**
+
+> **وضعیت:** روش مستقل از برند؛ نگاشت قوانین ASA→FortiGate مفهومی و `Unverified`؛ فقط Lab.
+
+### ۱) هدف آموزشی
+
+1. مهاجرت را به‌صورت پروژه (Discovery، Design، Build، Test، Cutover، Stabilize) برنامه‌ریزی کند.
+2. **Inventory** کامل و **Rule Hygiene** (حذف قوانین مرده/تکراری با Hit Count) انجام دهد.
+3. نگاشت **Object، NAT، Route، VPN، Policy** را بنویسد و تفاوت مدل (ACL→Policy، NAT-order) را بفهمد.
+4. **Cutover** با Rollback قابل‌اثبات طراحی کند.
+5. آزمون پیش/پس و Evidence ثبت کند.
+
+### ۲) مفهوم پایه
+
+مهاجرت = تغییر پرخطر روی دستگاه حیاتی. «کپی کردن Rule» خطرناک است چون مدل پردازش فرق دارد (ترتیب NAT/ACL، Interface Security-level در برابر Zone، Implicit deny). موفقیت = **برابری رفتاری** (نه برابری متن Config) + **بازگشت امن**.
+
+### ۳) توضیح عمیق فنی
+
+#### ۳-۱) فازها
+
+``` text
+1 Discovery : inventory interfaces, routes, NAT, ACLs, VPNs, users, logs
+2 Design    : target architecture, zone mapping, IP plan, rule cleanup
+3 Build     : configure target in parallel (no traffic)
+4 Test      : lab/pre-prod, positive & negative tests
+5 Cutover   : change window, switch traffic, monitor
+6 Stabilize : post-checks, hypercare, decommission after N days
+```
+
+#### ۳-۲) Rule Hygiene
+
+با Hit Count و Log ۹۰ روزه: Ruleهای صفر-Hit، تکراری، Shadow، و Any-Any را شناسایی. هر Rule: صاحب، دلیل، تاریخ. **قبل از مهاجرت پاکسازی** کنید تا قوانین بد به سیستم جدید منتقل نشوند.
+
+#### ۳-۳) نگاشت مفاهیم (مثال ASA→FortiGate؛ `Unverified`)
+
+| ASA | FortiGate |
+|---|---|
+| nameif/security-level | Interface/Zone + Policy |
+| access-list + access-group | Firewall Policy |
+| object network/group | Address/Address Group |
+| NAT (auto/twice) | Policy NAT/VIP/IP Pool/Central NAT |
+| route | Static Route |
+| crypto map | IPsec Phase1/2 (Route-based) |
+| inspect (MPF) | Session Helper/Profile |
+
+نکته: ASA به‌طور پیش‌فرض بین Interfaceهای با Security-level بالاتر→پایین‌تر اجازه می‌دهد؛ FortiGate Implicit deny؛ پس رفتار «بدون Rule» متفاوت است.
+
+#### ۳-۴) Cutover
+
+- **Change Window**، تیم، Rollback Trigger (مثلاً «۳۰ دقیقه بدون سرویس X»)، تماس.
+- مراحل: Backup دو سو؛ جابه‌جایی Gateway/Route یا آدرس؛ ARP/Session؛ آزمون سرویس‌های حیاتی؛ مانیتورینگ.
+- **Rollback:** بازگرداندن مسیر/کابل؛ Config قبلی؛ آزمون.
+
+#### ۳-۵) Test Matrix
+
+| سرویس | مبدأ | مقصد | انتظار | قبل | بعد |
+|---|---|---|---|---|---|
+| وب | Users | Internet | OK | ✓ | ✓ |
+| ERP | Users | SRV | OK | ✓ | ✓ |
+| ممنوع | Guest | SRV | Block | ✓ | ✓ |
+
+### ۴) مثال حل‌شده
+
+**پروژه:** جایگزینی ASA با FGT. Discovery: ۲۴۰ Rule، ۱۱۰ با Hit=0؛ پاکسازی ← ۱۱۰ Policy. Build موازی در Lab. Cutover: شب جمعه ۲۲:۰۰؛ Trigger Rollback ۳۰ دقیقه. شواهد: Test Matrix قبل/بعد. یک سرویس (FTP) خراب: Helper/Session ALG؛ رفع. Hypercare ۷ روز؛ Decommission ۳۰ روز.
+
+**مثال سخت:** پس از Cutover فقط یک اپ کار نمی‌کند؛ ASA «twice NAT» ترتیب خاصی داشت؛ در FGT Policy NAT ناقص. **رفع:** VIP/IP Pool مناسب، Debug Flow.
+
+### ۵) GUI و CLI
+
+**GUI:** Policy & Objects؛ Log & Report. **CLI:** `diagnose firewall iprope lookup ...`، `diagnose debug flow ...`؛ Backup: `execute backup config ...`.
+
+### ۶) نکات امنیتی
+
+- Rule «موقت» هنگام مهاجمت را حذف کنید.
+- Secretهای Config قدیمی منتقل نشوند.
+- دستگاه قدیمی پس از Decommission پاک‌سازی امن.
+
+### ۷) جمع‌بندی
+
+- Inventory + Hygiene قبل از ساخت؛ برابری رفتاری هدف.
+- Cutover بدون Rollback مجاز نیست.
+- Test Matrix و Evidence.
+
+### ۸) تمرین و ارزیابی
+
+**ت1.** (ساده) فازهای Migration را بنویسید. *(پاسخ: 30-0-ت1)*
+
+**ت2.** (متوسط) چرا Rule Hygiene قبل از مهاجرت؟ *(پاسخ: 30-0-ت2)*
+
+**ت3.** (سخت) Rollback Trigger و روش آن را طراحی کنید. *(پاسخ: 30-0-ت3)*
+
+**ت4.** (سخت، طراحی) Test Matrix برای ۱۰ سرویس بنویسید. *(پاسخ: 30-0-ت4)*
+
+**Q1.** Quick quiz (English): Why aim for behavioral equivalence rather than copying rules? *(پاسخ: 30-0-Q1)*
+
+### ۹) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Cutover | Cutover | سوئیچ نهایی |
+| Hypercare | Hypercare | پایش ویژه پس از تغییر |
+| Shadow rule | Shadowed rule | Rule پنهان‌شده |
+| Hit count | Hit count | تعداد استفاده |
+
+- *Clean up rules before migrating them.* ← قبل از مهاجرت قوانین را پاکسازی کنید.
+
+### ۱۰) منابع
+
+- NIST SP 800-41 Rev.1؛ ITIL 4 (Change Enablement)؛ Fortinet FortiConverter (مرجع رسمی؛ لایسنس/نسخه را بررسی کنید).
 
 ## درس 30-1 — Inventory و Mapping
 
@@ -1900,6 +2262,19 @@ Plan+Rollback+Evidence.
 ---
 
 <a id="end10"></a>
+
+
+### پاسخ‌های درس افزوده‌ی 30-0 (فصل 30)
+
+**30-0-ت1** — Discovery، Design، Build، Test، Cutover، Stabilize.
+
+**30-0-ت2** — تا قوانین مرده/تکراری/Any-Any منتقل نشوند و پیچیدگی/ریسک کم شود.
+
+**30-0-ت3** — Trigger: ۳۰ دقیقه بدون سرویس حیاتی؛ روش: بازگرداندن Gateway/کابل و Config قبلی و آزمون.
+
+**30-0-ت4** — جدول سرویس/مبدأ/مقصد/انتظار/قبل/بعد برای ۱۰ سرویس شامل آزمون منفی.
+
+**30-0-Q1** — Because the processing models differ, and the goal is the same behavior, not the same text.
 
 # پایان بخش ۱۰ (فصل‌های ۲۸ تا ۳۰)
 

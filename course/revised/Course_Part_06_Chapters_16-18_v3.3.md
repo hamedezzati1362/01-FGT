@@ -41,7 +41,7 @@
 
 <a id="ch16"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.2):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۶-۰، ۱۶-۷، ۱۸-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.3):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۶-۰، ۱۶-۷، ۱۸-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 16 — UTM: آنتی‌ویروس، IPS، Application Control، Web Filter و SSL Inspection
 
@@ -1483,6 +1483,200 @@ Exempt/Profile انتخابی.
 
 <a id="l-17-1"></a>
 
+## درس 17-0 — AAA و هویت: LDAP، Kerberos، RADIUS و FSSO از درون
+
+**فصل ۱۷ · درس افزوده (پیش‌درس ۱۷-۱) · پیش‌نیاز: ۱۲-۰، ۱۱-۰، آشنایی با AD · ≈ ۸ ساعت**
+
+> **وضعیت (FortiOS 7.0):** حالت‌های FSSO و محدودیت Polling از مستند رسمی ([FSSO polling connector](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/503764/fsso-polling-connector-agent-installation)، [FSSO](https://docs.fortinet.com/document/fortigate/7.0.8/administration-guide/450337)) تأیید شد؛ سینتکس روی Image `Unverified`؛ Lab «اجرا نشده».
+
+### ۱) هدف آموزشی
+
+1. **AAA** (Authentication، Authorization، Accounting) را تعریف و با مثال تفکیک کند.
+2. سازوکار **LDAP Bind/Search** و تفاوت **Simple/Regular Bind** را بفهمد.
+3. **Kerberos** و **NTLM** را در حد مفهومی (Ticket، KDC، ساعت) و اثر آن‌ها بر FSSO بگوید.
+4. **RADIUS** (Access-Request/Accept/Reject، Shared Secret، Attributes) را توضیح دهد.
+5. حالت‌های **FSSO** (DC Agent، Collector Agent Polling، FortiGate Polling) را مقایسه و انتخاب کند.
+6. **Policy مبتنی بر هویت** را بنویسد و محدودیت‌ها (IP→User) را بشناسد.
+
+### ۲) پیش‌نیازها
+
+DNS و AD (مفهوم)، Packet Flow (۱۲-۰)، مدل تهدید (۱۱-۰).
+
+### ۳) مفهوم پایه
+
+فایروال سنتی «IP» می‌شناسد؛ ولی امنیت واقعی بر پایه‌ی **هویت** است: «گروه Finance به سرور مالی»، نه «192.168.10.5». AAA سه پرسش را جواب می‌دهد: **تو کیستی؟ (Authentication)** **چه کاری می‌توانی بکنی؟ (Authorization)** **چه کردی؟ (Accounting)**.
+
+### ۴) توضیح عمیق فنی
+
+#### ۴-۱) LDAP
+
+LDAP پروتکل پرس‌وجو از Directory است (AD یک Directory است). مراحل Authentication با LDAP:
+
+1. فایروال به سرور LDAP **Bind** می‌کند (با حساب سرویس) تا بتواند جست‌وجو کند.
+2. کاربر را با **cnid** (مثلاً `sAMAccountName`) و **DN** پایه جست‌وجو می‌کند و DN کاربر را می‌یابد.
+3. با DN کاربر و رمزی که وارد کرده، **Bind دوم** انجام می‌دهد؛ موفقیت = رمز صحیح.
+4. گروه‌های کاربر را (برای Authorization) می‌خواند.
+
+نکات: پورت 389 (بدون رمزنگاری)، 636 (LDAPS)، StartTLS؛ حساب سرویس حداقل دسترسی؛ **رمز LDAP بدون رمزنگاری قابل شنود است** پس LDAPS/StartTLS.
+
+#### ۴-۲) Kerberos و NTLM
+
+- **Kerberos:** احراز هویت مبتنی بر Ticket؛ KDC (در DC) Ticket Granting Ticket صادر می‌کند؛ نیاز به ساعت هماهنگ (≤ 5 دقیقه اختلاف) و DNS درست. رویدادهای ورود در Security Log DC (مثلاً 4768/4769) تولید می‌شوند.
+- **NTLM:** قدیمی‌تر، چالش–پاسخ؛ ضعیف‌تر و در حال حذف.
+- اثر بر FSSO: طبق مستند، **FSSO Polling فقط Kerberos را پشتیبانی می‌کند** (رویدادهای 4768 و 4769)، **NTLM ساپورت نمی‌شود**، و در ورود هم‌زمان کاربران زیاد ممکن است ورودی‌ها از دست برود.
+
+#### ۴-۳) RADIUS
+
+- Client (فایروال) **Access-Request** به سرور (NPS) می‌فرستد با User-Name/Password (رمز با Shared Secret محافظت می‌شود).
+- پاسخ: **Access-Accept** (با Attributeها مثل Group/VLAN)، **Access-Reject**، یا **Access-Challenge** (برای MFA/OTP).
+- پورت UDP 1812 (Auth) و 1813 (Accounting).
+- Shared Secret باید دو سر یکی باشد؛ NPS فقط Clientهای تعریف‌شده را می‌پذیرد.
+
+#### ۴-۴) FSSO (Fortinet Single Sign-On)
+
+هدف: کاربر یک بار به دامنه Login می‌کند؛ FSSO این ورود را به فایروال خبر می‌دهد تا **IP→User/Group** نگاشت شود و Policy بر اساس گروه کار کند، بدون Login دوباره.
+
+| حالت | سازوکار | نکته |
+|---|---|---|
+| DC Agent + Collector | Agent روی هر DC رویداد را به Collector می‌دهد؛ Collector به FortiGate (TCP 8000؛ UDP 8002 برای DC Agent) | تا ۵ Collector برای Redundancy (مستند) |
+| Collector Agent Polling | Collector خودش DCها را Poll می‌کند (نیاز به DC Agent نیست) | نصب روی یک سرور |
+| FortiGate Polling (Agentless) | FortiGate مستقیم DC را Poll می‌کند (Security Event Log) و گروه‌ها را از LDAP می‌گیرد | فقط Kerberos 4768/4769؛ NTLM نه؛ ممکن است ورود را از دست بدهد؛ پیش‌نیاز: LDAP server تنظیم‌شده |
+
+نکات مستند: در Polling، چون Security Event Log اطلاعات گروه ندارد، FortiGate با LDAP گروه را می‌پرسد و فقط کاربرانی که در گروه‌های Filter هستند به لیست FSSO می‌روند؛ `polling-frequency` بین 1 تا 30 ثانیه (پیش‌فرض 10).
+
+#### ۴-۵) محدودیت‌های هویت مبتنی بر IP
+
+- **چند کاربر روی یک IP** (Terminal Server، NAT): FSSO فقط یک کاربر را می‌بیند (راه‌حل: Terminal Server Agent).
+- **IP عوض می‌شود** (DHCP، VPN): نگاشت باید به‌روز شود؛ Timeout ورود.
+- **سرور/Printer بدون Login:** استثنا/Policy IP-based.
+- **Spoofing:** اگر مهاجم IP کاربر را جعل کند، هویت اشتباه می‌شود؛ به Anti-spoofing و Segmentation وابسته است.
+
+#### ۴-۶) Policy مبتنی بر هویت
+
+Policy Source = User/Group (FSSO) به‌علاوه‌ی Subnet برای دقت. ترتیب: Policy مبتنی بر هویت وقتی Match می‌شود که نگاشت IP→User موجود باشد؛ در غیر این صورت Policy بعدی (یا Captive Portal) مطابق می‌شود.
+
+### ۵) مثال حل‌شده
+
+**نیاز:** گروه Finance به سرور مالی، بقیه ممنوع.
+
+``` text
+config user ldap
+    edit "LDAP-AD"
+        set server "192.168.90.40"
+        set cnid "sAMAccountName"
+        set dn "dc=lab,dc=local"
+        set type regular
+        set username "CN=svc-fgt,CN=Users,DC=lab,DC=local"
+        set password <SERVICE-ACCOUNT-PASSWORD>
+        set secure ldaps
+        set port 636
+    next
+end
+config user fsso-polling
+    edit 1
+        set server "192.168.90.40"
+        set ldap-server "LDAP-AD"
+        set polling-frequency 10
+    next
+end
+config user group
+    edit "GRP-FINANCE"
+        set group-type fsso-service
+        set member "CN=Finance,CN=Users,DC=lab,DC=local"
+    next
+end
+```
+
+(سینتکس نمونه؛ `Unverified`؛ با CLI Reference 7.0 تطبیق شود.) Policy: Source = GRP-FINANCE، Destination = SRV-FIN، Service = HTTPS.
+
+**GUI:** User & Authentication → LDAP Servers؛ Security Fabric → External Connectors → FSSO (Poll Active Directory Server)؛ User & Authentication → User Groups؛ Policy & Objects → Firewall Policy.
+
+**آزمون‌ها:** مثبت: کاربر Finance دسترسی دارد؛ منفی: کاربر دیگر ندارد؛ IP عوض شود؛ Terminal Server.
+
+**مثال متوسط:** کاربر Login کرد ولی Policy مطابق نشد. علت‌ها به ترتیب: نگاشت IP→User نیامده (Polling/Log)، گروه در Filter نیست، DN اشتباه، ساعت ناهماهنگ.
+
+**مثال سخت:** بعضی کاربران پس از ورود با NTLM در Polling دیده نمی‌شوند. علت طبق مستند: Polling فقط Kerberos. راه‌حل: Collector Agent یا اصلاح DNS/SPN تا Kerberos استفاده شود.
+
+### ۶) طراحی و تصمیم‌گیری
+
+| سؤال | تصمیم |
+|---|---|
+| LDAP یا RADIUS؟ | LDAP برای Directory/گروه؛ RADIUS برای VPN/Wi-Fi/MFA/NPS |
+| FSSO کدام حالت؟ | کوچک: Polling؛ بزرگ/NTLM: Collector/DC Agent |
+| رمزنگاری | LDAPS/StartTLS |
+| Redundancy | چند Collector، چند LDAP |
+| Fallback | Captive Portal برای IP بدون Login |
+
+### ۷) Verification
+
+``` text
+diagnose test authserver ldap LDAP-AD <user> <password>
+diagnose debug authd fsso list
+diagnose debug application fnbamd -1
+diagnose debug enable
+diagnose debug disable
+```
+
+### ۸) Troubleshooting
+
+| علامت | علت |
+|---|---|
+| Bind شکست | DN/رمز/پورت/TLS |
+| کاربر یافت نمی‌شود | DN/OU/cnid |
+| FSSO کاربر نیست | Kerberos/NTLM، ساعت، Event Log، Group Filter |
+| RADIUS Reject | Secret/Client/Policy NPS |
+| Policy مطابق نمی‌شود | نگاشت IP→User |
+
+### ۹) نکات امنیتی
+
+- حساب سرویس LDAP read-only؛ رمز قوی؛ ذخیره‌ی رمز در ریپو ممنوع.
+- LDAP بدون TLS ممنوع در تولید.
+- MFA برای مدیریت و VPN.
+- Log ورود ناموفق را مانیتور کنید.
+
+### ۱۰) جمع‌بندی مفهومی
+
+- AAA سه سؤال: کیستی، چه می‌توانی، چه کردی.
+- LDAP: Bind سرویس + Search + Bind کاربر.
+- Kerberos نیازمند ساعت و DNS؛ Polling فقط Kerberos.
+- RADIUS: Request/Accept/Reject با Secret.
+- هویت مبتنی بر IP محدودیت دارد؛ طراحی با Fallback.
+
+### ۱۱) تمرین و ارزیابی
+
+**ت1.** (ساده) AAA را تعریف کنید. *(پاسخ: 17-0-ت1)*
+
+**ت2.** (ساده) پورت LDAP و LDAPS؟ *(پاسخ: 17-0-ت2)*
+
+**ت3.** (متوسط) چرا ساعت برای Kerberos مهم است؟ *(پاسخ: 17-0-ت3)*
+
+**ت4.** (متوسط) FSSO Polling چه محدودیتی دارد؟ *(پاسخ: 17-0-ت4)*
+
+**ت5.** (سخت) چند کاربر روی یک Terminal Server دارید؛ چه مشکلی در FSSO پیش می‌آید؟ *(پاسخ: 17-0-ت5)*
+
+**ت6.** (سخت، طراحی) برای ۵۰۰ کاربر ویندوزی و ۵۰ کاربر Mac/Linux راه‌حل هویت را بنویسید. *(پاسخ: 17-0-ت6)*
+
+**Q1.** Quick quiz (English): Why does LDAP authentication use two binds? *(پاسخ: 17-0-Q1)*
+
+### ۱۲) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| AAA | Authentication, Authorization, Accounting | هویت، مجوز، حسابرسی |
+| LDAP | Lightweight Directory Access Protocol | پروتکل Directory |
+| KDC | Key Distribution Center | مرکز توزیع کلید Kerberos |
+| FSSO | Fortinet Single Sign-On | ورود یکپارچه |
+| NPS | Network Policy Server | سرور RADIUS ویندوز |
+| DN | Distinguished Name | نام مسیر در Directory |
+
+- *Use LDAPS or StartTLS to protect directory credentials.* ← برای محافظت از اعتبارنامه‌ها LDAPS/StartTLS بزنید.
+- *FSSO maps logons to IP addresses.* ← FSSO ورود را به IP نگاشت می‌کند.
+
+### ۱۳) منابع
+
+- Fortinet Docs: [FSSO polling connector agent installation](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/503764/fsso-polling-connector-agent-installation)، [FSSO](https://docs.fortinet.com/document/fortigate/7.0.8/administration-guide/450337)، [config user fsso-polling](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/516620/config-user-fsso-polling).
+- RFC 4511 (LDAP)، RFC 4120 (Kerberos)، RFC 2865 (RADIUS).
+
 ## درس 17-1 — AD، DNS و DHCP روی Windows Server (آماده‌سازی Lab)
 
 **فصل 17 - روز 1 · پیش‌نیاز: فصل ۷ · ۶ ساعت**
@@ -2283,6 +2477,103 @@ diagnose debug disable
 
 <a id="ans-17"></a>
 
+## درس 17-7 — عیب‌یابی Authentication بر اساس شواهد: از Bind تا Policy
+
+**فصل ۱۷ · درس افزوده (پس از ۱۷-۶) · پیش‌نیاز: ۱۷-۰، ۱۴-۷ · ≈ ۴ ساعت**
+
+> **وضعیت:** `Unverified` روی Image؛ فرمت خروجی نمونه است.
+
+### ۱) هدف آموزشی
+
+مشکل Authentication را لایه‌به‌لایه (شبکه، TLS، Bind، Search، Group، نگاشت، Policy) پیدا و رفع کند و برای هر لایه شاهد جمع کند.
+
+### ۲) مفهوم پایه
+
+«Login نمی‌شود» علامت است؛ علت ممکن است در هر نقطه‌ی زنجیره‌ی **کاربر → فایروال → سرور Auth → Directory → گروه → Policy** باشد. با تقسیم مسیر (۱۴-۷) هر حلقه را جدا می‌آزماییم.
+
+### ۳) توضیح عمیق فنی
+
+| لایه | سؤال | آزمون |
+|---|---|---|
+| شبکه | فایروال به سرور می‌رسد؟ | `execute ping`، Sniffer روی 389/636/1812 |
+| DNS/ساعت | نام و زمان درست؟ | `execute nslookup`، NTP |
+| TLS | گواهی LDAPS معتبر؟ | Capture، پیام خطای TLS |
+| Bind | حساب سرویس درست؟ | `diagnose test authserver ldap` |
+| Search | DN/cnid درست؟ | Debug fnbamd |
+| گروه | کاربر عضو گروه؟ | AD Users and Computers |
+| FSSO | نگاشت IP→User هست؟ | `diagnose debug authd fsso list` |
+| Policy | Source گروه درست؟ | Debug Flow (Policy ID) |
+
+#### ۳-۱) خواندن خطاها
+
+- **Invalid credentials (49):** رمز/DN کاربر اشتباه.
+- **Can't contact LDAP server:** شبکه/پورت/TLS.
+- **No such object (32):** DN پایه اشتباه.
+- RADIUS **Access-Reject:** Secret/Policy NPS؛ **بدون پاسخ:** Firewall/Client تعریف نشده.
+
+#### ۳-۲) FSSO
+
+- کاربر Login کرده ولی در لیست نیست: Event Log DC (Kerberos)، Group Filter، ارتباط Collector (TCP 8000)، ساعت.
+- کاربر در لیست هست ولی Policy مطابق نمی‌شود: گروه در Policy/Group Mapping، ترتیب Policy.
+
+### ۴) مثال حل‌شده
+
+**پرونده:** کاربر testuser Login نمی‌شود.
+
+``` text
+FGT # diagnose test authserver ldap LDAP-AD testuser <PASSWORD>
+FGT # diagnose debug application fnbamd -1
+FGT # diagnose debug enable
+```
+
+شواهد (نمونه): `ldap_bind... error 49` ← رمز یا DN. بررسی: حساب سرویس OK (تست جداگانه)، DN کاربر با `cnid` ناسازگار بود (`userPrincipalName` به‌جای `sAMAccountName`). **رفع:** `cnid` اصلاح. **تأیید:** تست دوباره + Login واقعی + Log. **پیشگیری:** مستندسازی cnid.
+
+``` text
+FGT # diagnose debug disable
+FGT # diagnose debug reset
+```
+
+**مثال سخت:** فقط کاربران یک OU Login می‌شوند. علت: `dn` پایه روی OU محدود. **رفع:** dn پایه‌ی دامنه یا چند Search.
+
+### ۵) GUI و CLI
+
+**GUI:** User & Authentication → LDAP Servers → Test Connectivity / Test User Credentials؛ Monitor → Firewall User Monitor؛ Log & Report → Events → User.
+
+**CLI:** `diagnose test authserver ...`، `diagnose debug authd fsso list`، `diagnose debug application fnbamd -1`.
+
+### ۶) نکات امنیتی
+
+- Debug رمز را آشکار می‌کند؛ فایل Capture را حذف کنید.
+- تست با کاربر واقعی در Change.
+
+### ۷) جمع‌بندی
+
+Auth را در ۸ لایه تقسیم کنید؛ شاهد جمع کنید؛ یک تغییر در هر زمان؛ Debug را Disable کنید.
+
+### ۸) تمرین و ارزیابی
+
+**ت1.** (ساده) خطای 49 LDAP یعنی چه؟ *(پاسخ: 17-7-ت1)*
+
+**ت2.** (متوسط) نقشه‌ی «لایه → آزمون» را بنویسید. *(پاسخ: 17-7-ت2)*
+
+**ت3.** (سخت) FSSO کاربر را نشان می‌دهد ولی Policy مطابق نمی‌شود؛ ۴ فرضیه و آزمون. *(پاسخ: 17-7-ت3)*
+
+**Q1.** Quick quiz (English): Which tool checks an LDAP login independently of firewall policies? *(پاسخ: 17-7-Q1)*
+
+### ۹) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| fnbamd | FortiGate authentication daemon | فرایند Authentication |
+| cnid | Common name identifier | ویژگی نام ورود |
+| Bind | LDAP bind | ورود به Directory |
+
+- *Test authentication with the CLI tool before debugging policies.* ← قبل از Policy، Authentication را با ابزار CLI تست کنید.
+
+### ۱۰) منابع
+
+- Fortinet Docs: FortiOS 7.0 Administration Guide — Authentication؛ CLI Reference `diagnose test authserver`.
+
 ## پاسخ‌های فصل 17
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -2387,6 +2678,34 @@ fnbamd.
 ---
 
 <a id="ch18"></a>
+
+
+### پاسخ‌های درس افزوده‌ی 17-0 (فصل 17)
+
+**17-0-ت1** — Authentication (کیستی)، Authorization (چه می‌توانی)، Accounting (چه کردی).
+
+**17-0-ت2** — LDAP 389؛ LDAPS 636.
+
+**17-0-ت3** — Kerberos به Ticket با Timestamp وابسته است؛ اختلاف زمان زیاد باعث رد Ticket می‌شود.
+
+**17-0-ت4** — فقط Kerberos (4768/4769)؛ NTLM پشتیبانی نمی‌شود؛ در ورود هم‌زمان زیاد ممکن است ورودی از دست برود.
+
+**17-0-ت5** — چند کاربر یک IP دارند و FSSO فقط یک نگاشت IP→User می‌بیند؛ راه‌حل Terminal Server Agent یا Policy IP-based.
+
+**17-0-ت6** — ویندوز: FSSO + LDAP؛ Mac/Linux: Captive Portal/RADIUS یا Policy IP-based؛ MFA برای VPN؛ Fallback و Redundancy.
+
+**17-0-Q1** — The first bind uses a service account to find the user DN; the second bind with the user DN and password verifies the password.
+
+
+### پاسخ‌های درس افزوده‌ی 17-7 (فصل 17)
+
+**17-7-ت1** — Invalid credentials: رمز یا DN کاربر اشتباه.
+
+**17-7-ت2** — شبکه (ping/Sniffer)، DNS/ساعت، TLS، Bind، Search/DN، گروه، نگاشت FSSO، Policy.
+
+**17-7-ت3** — ۱) نگاشت IP→User منقضی؛ ۲) گروه در Group Filter/Policy نیست؛ ۳) ترتیب Policy؛ ۴) IP عوض شده. آزمون: fsso list، Debug Flow، Log.
+
+**17-7-Q1** — diagnose test authserver (the authentication test command).
 
 # فصل 18 — IPsec Site-to-Site: IKEv2، Phase 1/2، MTU و عیب‌یابی (G7)
 

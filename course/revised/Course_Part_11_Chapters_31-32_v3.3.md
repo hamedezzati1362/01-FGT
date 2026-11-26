@@ -35,7 +35,7 @@
 
 <a id="ch31"></a>
 
-> **نسخه v3.2:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.3:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 31 — Capstone I و II: طراحی و پیاده‌سازی شبکه‌ی سازمانی
 
@@ -57,6 +57,103 @@
 ---
 
 <a id="l-31-1"></a>
+
+## درس 31-0 — Capstone: روش طراحی، معیار پذیرش و ارزیابی قابل‌اندازه‌گیری
+
+**فصل ۳۱ · درس افزوده (پیش‌درس ۳۱-۱) · پیش‌نیاز: همه‌ی Gateها · ≈ ۴ ساعت**
+
+> **وضعیت:** قالب ارزیابی؛ بدون شاهد واقعی «اجرا نشده».
+
+### ۱) هدف آموزشی
+
+دانشجو بتواند پروژه‌ی جامع را از **نیازمندی** تا **تحویل** با معیار پذیرش قابل‌اندازه‌گیری، ریسک‌ها و Evidence انجام دهد و کار خود را با **Rubric** ارزیابی کند.
+
+### ۲) مفهوم پایه
+
+Capstone یادگیری جدید نیست؛ **اثبات تسلط** است. مهندس را با «چه ساختی» نمی‌سنجند، با «ثابت کن کار می‌کند، امن است، قابل‌عیب‌یابی است و می‌شود تحویل داد».
+
+### ۳) توضیح عمیق فنی
+
+#### ۳-۱) نیازمندی‌ها
+
+- عملکردی: سرویس‌ها، کاربران، مکان‌ها.
+- غیرعملکردی: دسترس‌پذیری (RTO/RPO)، Performance، امنیت، انطباق.
+- محدودیت‌ها: بودجه، لایسنس، زمان، تجهیزات Lab.
+
+``` text
+Availability % = (uptime / total time) x 100
+Allowed downtime per year (99.9%) = 8.76 hours
+```
+
+#### ۳-۲) معیار پذیرش (SMART)
+
+هر نیاز → معیار قابل‌آزمایش: «کاربر Finance فقط به SRV-FIN:443 دسترسی دارد؛ آزمون مثبت/منفی؛ Evidence = Log + Capture».
+
+#### ۳-۳) ماتریس ردیابی
+
+``` text
+Requirement -> Design element -> Config object -> Test case -> Evidence
+```
+
+#### ۳-۴) Rubric ارزیابی (۱۰۰ امتیاز)
+
+| معیار | وزن | سطح عالی |
+|---|---|---|
+| طراحی و IP Plan | 15 | بدون Overlap، توضیح تصمیم‌ها |
+| Routing/Segmentation | 15 | Failover و Zone درست |
+| Policy/Security | 20 | Least Privilege، UTM مناسب |
+| VPN/SD-WAN/HA | 15 | رفتار خرابی اثبات‌شده |
+| Troubleshooting | 15 | RCA با شواهد |
+| مستندسازی/Runbook | 10 | تکرارپذیر |
+| صداقت (Unverified/اجرا نشده) | 10 | هیچ ادعای بدون شاهد |
+
+#### ۳-۵) ریسک و سناریوهای خرابی
+
+برای هر جزء: «اگر خراب شود؟» (ISP، فایروال، Tunnel، DC، DNS). تست حداقل ۳ خرابی با Evidence.
+
+### ۴) مثال حل‌شده
+
+**نیاز:** شعبه‌ی جدید با دسترسی به ERP؛ 99.9٪. معیار: Tunnel + Failover < 30 s؛ ERP فقط 443؛ Guest ایزوله. ماتریس: Req-3 (Failover) → Dual-ISP SD-WAN → config sdwan → Test: قطع WAN1 → Evidence: ping + Log SLA. نمره‌دهی: Rubric.
+
+**مثال سخت:** طراحی تضاد دارد: Backhaul (UTM مرکزی) در برابر Breakout (Latency). تصمیم با ADR (Architecture Decision Record): گزینه‌ها، معیار، انتخاب، ریسک.
+
+### ۵) GUI و CLI
+
+برای هر آزمون، هر دو مسیر (GUI و CLI) مستند؛ Evidence با خروجی خام.
+
+### ۶) نکات امنیتی
+
+- Secret در تحویل پاک شود.
+- هر استثنای امنیتی با تاریخ بازبینی.
+
+### ۷) جمع‌بندی
+
+- نیاز → معیار → ماتریس ردیابی → آزمون → Evidence.
+- Rubric شفاف؛ صداقت بخشی از نمره.
+
+### ۸) تمرین و ارزیابی
+
+**ت1.** (ساده) 99.9٪ چقدر Downtime سالانه می‌دهد؟ *(پاسخ: 31-0-ت1)*
+
+**ت2.** (متوسط) ماتریس ردیابی چیست؟ *(پاسخ: 31-0-ت2)*
+
+**ت3.** (سخت) برای ۵ نیاز، معیار پذیرش و Evidence بنویسید. *(پاسخ: 31-0-ت3)*
+
+**Q1.** Quick quiz (English): What is an acceptance criterion? *(پاسخ: 31-0-Q1)*
+
+### ۹) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| ADR | Architecture Decision Record | ثبت تصمیم معماری |
+| RTO/RPO | Recovery Time/Point Objective | هدف زمان/نقطه‌ی بازیابی |
+| Rubric | Rubric | ماتریس ارزیابی |
+
+- *Every requirement needs a testable acceptance criterion.* ← هر نیاز معیار پذیرش قابل‌آزمایش می‌خواهد.
+
+### ۱۰) منابع
+
+- ISO/IEC/IEEE 29148 (Requirements)؛ Google SRE Book (SLO/Availability)؛ ADR (M. Nygard).
 
 ## درس 31-1 — نیازمندی‌ها و سند طراحی (HLD)
 
@@ -883,6 +980,17 @@ Rollback.
 
 <a id="ch32"></a>
 
+
+### پاسخ‌های درس افزوده‌ی 31-0 (فصل 31)
+
+**31-0-ت1** — ۸٫۷۶ ساعت در سال.
+
+**31-0-ت2** — جدولی که هر نیاز را به عنصر طراحی، Config، آزمون و Evidence وصل می‌کند.
+
+**31-0-ت3** — مثال: Finance→SRV-FIN:443 (Evidence: Log+Capture)؛ Guest ایزوله (nmap)؛ Failover<30s (ping+Log SLA)؛ Backup (Restore)؛ MFA (Login test).
+
+**31-0-Q1** — A testable condition that must be met for a requirement to be considered satisfied.
+
 # فصل 32 — Capstone III و IV: عملیات، حادثه و ارزیابی نهایی
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** Capstone I و II.
@@ -902,6 +1010,112 @@ Rollback.
 ---
 
 <a id="l-32-1"></a>
+
+## درس 32-0 — عملیات واقعی: Change Management، ITIL و شبیه‌سازی حادثه (Capstone III/IV)
+
+**فصل ۳۲ · درس افزوده (پیش‌درس ۳۲-۱) · پیش‌نیاز: ۲۹-۰، ۳۰-۰، ۳۱-۰ · ≈ ۴ ساعت**
+
+> **وضعیت:** قالب عملیات؛ حادثه فقط در Lab شبیه‌سازی؛ نتیجه بدون شاهد «اجرا نشده».
+
+### ۱) هدف آموزشی
+
+1. فرایند **Change** (Standard/Normal/Emergency) و ۱۰ مرحله‌ی تغییر را اجرا کند.
+2. **Incident، Problem، Change، Release** را در چرخه‌ی ITIL تفکیک کند.
+3. حادثه‌ی شبیه‌سازی‌شده را از Detection تا Post-Incident Review (PIR) بدون سرزنش اجرا کند.
+4. معیارهای عملیاتی (MTTD، MTTR، Change Failure Rate) را اندازه بگیرد.
+5. Runbook و Handover بنویسد.
+
+### ۲) مفهوم پایه
+
+بیشتر قطعی‌ها از **تغییر** می‌آیند، نه سخت‌افزار. عملیات حرفه‌ای = تغییر کنترل‌شده + پاسخ سریع + یادگیری. ITIL زبان مشترک است؛ هدف اجرای سبک و موثر است نه بروکراسی.
+
+### ۳) توضیح عمیق فنی
+
+#### ۳-۱) انواع Change
+
+| نوع | مثال | تأیید |
+|---|---|---|
+| Standard | افزودن Address Object تأییدشده | از پیش تأیید |
+| Normal | Policy جدید، تغییر Route | CAB/مدیر + Window |
+| Emergency | رفع قطعی/حمله | سریع + ثبت بعدی |
+
+#### ۳-۲) ده مرحله‌ی تغییر
+
+``` text
+1 Request   2 Risk/Impact   3 Plan (steps, tests, rollback)   4 Approve
+5 Schedule  6 Pre-checks+Backup   7 Implement   8 Post-checks (positive/negative)
+9 Close + evidence   10 Review (PIR if failed)
+```
+
+#### ۳-۳) Incident در برابر Problem
+
+- **Incident:** اختلال فعلی؛ هدف بازگرداندن سرویس سریع.
+- **Problem:** ریشه‌ی تکرارشونده؛ هدف حذف علت (RCA).
+- Incident Priority = Impact × Urgency.
+
+#### ۳-۴) معیارها
+
+``` text
+MTTD = mean time to detect
+MTTR = mean time to restore
+Change failure rate = failed changes / total changes
+```
+
+#### ۳-۵) PIR (بدون سرزنش)
+
+Timeline، اثر، علت‌های مؤثر (فرایند/ابزار/انسان)، چه خوب بود، چه بد، اقدام (Owner، تاریخ). تمرکز بر سیستم، نه فرد.
+
+#### ۳-۶) Runbook/Handover
+
+برای هر سرویس: وضعیت سالم، Verificationها، خطاهای رایج، Rollback، تماس، Escalation.
+
+### ۴) مثال حل‌شده
+
+**Change:** افزودن Policy برای سرور جدید. Plan: Backup، Policy با Source دقیق، Log، Window، Rollback = حذف Policy؛ Pre-check: Route/DNS؛ Post-check: مثبت (443 OK) و منفی (22 Block)؛ Evidence: Log+Capture؛ Close.
+
+**Incident (Lab):** تزریق عیب: Policy اشتباه Deny. Detection: Alert کاربران؛ Triage: Sev2؛ Debug Flow: Denied policy؛ رفع: Rollback؛ MTTR=۱۸ دقیقه؛ PIR: نبود Post-check منفی؛ اقدام: چک‌لیست Post-check.
+
+**مثال سخت:** Emergency Change هنگام حمله: Block IP بدون CAB؛ ثبت بعدی ظرف ۲۴ ساعت؛ بازبینی؛ PIR.
+
+### ۵) GUI و CLI
+
+GUI/CLI برای Evidence؛ Ticketing؛ Config diff (`show full-configuration` و Diff).
+
+### ۶) نکات امنیتی
+
+- Emergency Change سوءاستفاده نشود؛ بازبینی اجباری.
+- Secret در Ticket/Runbook ذخیره نشود.
+
+### ۷) جمع‌بندی
+
+- تغییر کنترل‌شده، ۱۰ مرحله، Rollback.
+- Incident بازگرداندن؛ Problem ریشه‌کنی.
+- معیارها و PIR بدون سرزنش.
+
+### ۸) تمرین و ارزیابی
+
+**ت1.** (ساده) Incident و Problem چه فرقی دارند؟ *(پاسخ: 32-0-ت1)*
+
+**ت2.** (متوسط) ۱۰ مرحله‌ی تغییر را بنویسید. *(پاسخ: 32-0-ت2)*
+
+**ت3.** (سخت) PIR برای حادثه‌ی نمونه بنویسید. *(پاسخ: 32-0-ت3)*
+
+**Q1.** Quick quiz (English): Why is a blameless post-incident review recommended? *(پاسخ: 32-0-Q1)*
+
+### ۹) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| CAB | Change Advisory Board | هیئت تأیید تغییر |
+| MTTR | Mean Time To Restore | میانگین زمان بازیابی |
+| PIR | Post-Incident Review | بازبینی پس از حادثه |
+| ITIL | IT Infrastructure Library | چارچوب مدیریت خدمات IT |
+
+- *A blameless review focuses on process, not individuals.* ← بازبینی بدون سرزنش روی فرایند تمرکز می‌کند نه افراد.
+
+### ۱۰) منابع
+
+- ITIL 4 Foundation؛ Google SRE Book (Postmortem Culture)؛ NIST SP 800-61.
 
 ## درس 32-1 — عملیات روزانه و Change
 
@@ -1728,6 +1942,17 @@ Lab بیشتر.
 ---
 
 <a id="end11"></a>
+
+
+### پاسخ‌های درس افزوده‌ی 32-0 (فصل 32)
+
+**32-0-ت1** — Incident بازگرداندن سرویس؛ Problem حذف علت ریشه‌ای تکرارشونده.
+
+**32-0-ت2** — Request، Risk، Plan، Approve، Schedule، Pre-check+Backup، Implement، Post-check، Close، Review.
+
+**32-0-ت3** — Timeline، اثر، علت (نبود Post-check منفی)، چه خوب/بد، اقدام با Owner و تاریخ.
+
+**32-0-Q1** — Because it exposes process weaknesses without people hiding information.
 
 # پایان بخش ۱۱ (فصل‌های ۳۱ تا ۳۲)
 

@@ -41,7 +41,7 @@
 
 <a id="ch13"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.2):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۳-۷، ۱۴-۷ (دسته A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.3):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۳-۷، ۱۴-۷ (دسته A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 13 — FortiGate II: Policy، Session، NAT، VIP، IP Pool و Central NAT (تک‌فایروالی کامل)
 
@@ -2498,6 +2498,196 @@ logtraffic خاموش.
 
 <a id="l-15-1"></a>
 
+## درس 15-0 — چرا دو فایروال؟ طراحی لبه، DMZ و لایه‌ی داخلی با تحلیل جریان و خرابی
+
+**فصل ۱۵ · درس افزوده (پیش‌درس ۱۵-۱) · پیش‌نیاز: ۱۱-۰، ۱۲-۰، ۱۳-۷ · ≈ ۶ ساعت**
+
+> **وضعیت (FortiOS 7.0.3):** مفهوم و طراحی؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+
+### ۱) هدف آموزشی
+
+1. توضیح دهد چه موقع یک فایروال کافی است و چه موقع دو فایروال (Edge + Internal) توجیه دارد.
+2. **DMZ**، Zoneها و مسیر هر نوع ترافیک (Users→Internet، Internet→DMZ، DMZ→Internal) را طراحی کند.
+3. **NAT** را در دو فایروال (Double NAT) تحلیل و از مشکل‌هایش پرهیز کند.
+4. جریان یک درخواست از اینترنت تا DB را از میان هر دو فایروال با Packet Flow بنویسد.
+5. رفتار سیستم را در خرابی هر فایروال تحلیل کند.
+6. تفاوت **دو فایروال از دو سازنده** (تنوع) با **دو فایروال هم‌سازنده** را بداند.
+
+### ۲) پیش‌نیازها
+
+مدل تهدید و Defense in Depth (۱۱-۰)، Packet Flow (۱۲-۰)، Session و NAT (۱۳-۷)، Asymmetric (۱۰-۶).
+
+### ۳) مفهوم پایه
+
+DMZ (ناحیه‌ی واسط) جایی است که سرورهای در معرض اینترنت (وب، ایمیل، Reverse Proxy) قرار می‌گیرند تا اگر نفوذ شد، مهاجم مستقیماً در شبکه‌ی داخلی نباشد. با یک فایروال سه‌پایه (Inside، Outside، DMZ) این کار ممکن است. دو فایروال پشت‌سرهم **لایه‌ی کنترل دوم** اضافه می‌کند: لبه (Edge) اینترنت را کنترل می‌کند و فایروال داخلی (Internal) فقط ورودی به شبکه‌ی داخلی را؛ حتی اگر Edge آسیب ببیند (یک Zero-day یا خطای Policy)، Internal جداگانه دفاع می‌کند.
+
+> **تشبیه:** ورودی ساختمان (Edge) و درب اتاق سرور (Internal) دو کنترل مستقل‌اند؛ اگر نگهبان ورودی فریب بخورد، درب اتاق سرور هنوز قفل است.
+
+### ۴) توضیح عمیق فنی
+
+#### ۴-۱) سه الگو
+
+| الگو | توضیح | مزیت | هزینه/ریسک |
+|---|---|---|---|
+| تک‌فایروال سه‌پایه | Inside، Outside، DMZ روی یک دستگاه | ساده، ارزان | نقطه‌ی شکست/آسیب واحد |
+| دوفایروال سری (Sandwich) | Edge ← DMZ ← Internal | Defense in Depth، DMZ بین دو فایروال | پیچیدگی، هزینه، Double NAT |
+| دوفایروال با تنوع سازنده | دو برند | کاهش آسیب‌پذیری مشترک | مدیریت دو ابزار، مهارت بیشتر |
+
+#### ۴-۲) توپولوژی Sandwich
+
+``` text
+Internet --- [FW-EDGE] --- DMZ switch --- [FW-INT] --- Internal LAN
+                              |
+                         web / mail / proxy
+```
+
+قواعد:
+
+- Edge: Internet→DMZ فقط پورت‌های سرویس (VIP)؛ DMZ→Internet محدود (Update)؛ Users→Internet از Edge یا از مسیر DMZ-proxy (تصمیم طراحی).
+- Internal: DMZ→Internal فقط پورت‌های لازم (مثلاً Web→App 8080)؛ **Internal→DMZ مجاز و Internet→Internal مستقیم ممنوع**.
+- هیچ مسیر مستقیم Internet→Internal بدون عبور از هر دو.
+
+#### ۴-۳) NAT در دو فایروال
+
+- **Edge:** DNAT (VIP) برای سرویس‌های عمومی؛ SNAT خروجی کاربران.
+- **Internal:** ترجیحاً **بدون NAT** (Routing خالص) تا Log اصلی حفظ شود. Double NAT عیب‌یابی را سخت می‌کند و آدرس واقعی کاربر را در لاگ سرور پنهان می‌کند.
+- اگر شبکه‌ی داخلی RFC 1918 است و DMZ هم، Edge باید مسیر برگشت به Internal داشته باشد (مسیر Static از طریق Internal) یا Source NAT انجام دهد؛ طراحی روتینگ را روی کاغذ بکشید.
+
+#### ۴-۴) جریان یک درخواست
+
+``` text
+1. Client(Internet) -> 203.0.113.50:443            (VIP on EDGE)
+2. EDGE: session lookup -> new; DNAT to 10.10.10.20 (DMZ web)
+3. EDGE: route to DMZ; policy "WAN->DMZ HTTPS" accept; UTM; session
+4. DMZ web -> App 10.20.20.5:8080                  (via FW-INT)
+5. INT: policy "DMZ->Servers 8080" accept; session (no NAT)
+6. App -> DB 10.20.30.7:1433 (inside Internal, same or another zone)
+7. Replies follow the same sessions back (symmetric path)
+```
+
+شرط حیاتی: مسیر **برگشت** از همان فایروال‌ها (Stateful).
+
+#### ۴-۵) خرابی
+
+| خرابی | اثر | کاهش ریسک |
+|---|---|---|
+| Edge از کار بیفتد | اینترنت قطع؛ داخل سالم | HA یا Edge دوم |
+| Internal بیفتد | DMZ→Internal قطع؛ اینترنت سالم | HA |
+| Policy اشتباه Edge | سرویس‌های DMZ آسیب‌پذیر | Internal هنوز محافظ داخلی است |
+| Asymmetric | Drop | طراحی مسیر + Session Sync/Policy Route |
+| FW هر دو CVE مشترک | هر دو آسیب‌پذیر | تنوع سازنده/Patch سریع |
+
+#### ۴-۶) سیاست‌های مدیریتی
+
+Management VLAN جدا، Admin روی هر دو فقط از مدیریت، Syslog مرکزی از هر دو، تغییرات هماهنگ (Change مشترک)، Backup هر دو.
+
+### ۵) مثال حل‌شده
+
+**نیاز:** وب‌سایت عمومی، API داخلی، DB. طراحی: Edge: VIP 203.0.113.50:443→10.10.10.20 (DMZ). Internal: DMZ→10.20.20.5:8080 (App)؛ App→DB فقط داخل Internal. Policy Matrix:
+
+``` text
+EDGE    : WAN  -> DMZ      : VIP web  TCP 443        accept + IPS + log
+EDGE    : DMZ  -> WAN      : DNS, updates only        accept + log
+EDGE    : INT  -> WAN      : users HTTP/HTTPS/DNS     accept + UTM + NAT
+INT     : DMZ  -> SRV      : 10.10.10.20 -> 10.20.20.5 TCP 8080   accept + log
+INT     : SRV  -> DMZ      : established only (implicit via session)
+INT     : any  -> any      : implicit deny + log
+```
+
+**مثال متوسط:** `ping` از Internet به DB داخلی ناکام است؛ Debug Flow روی Edge: «Denied policy 0» ← درست (هیچ Policy). نشان‌دهنده‌ی طراحی سالم است.
+
+**مثال سخت:** پس از Compromise وب‌سرور DMZ، مهاجم سعی می‌کند به DB وصل شود: DMZ→SRV فقط 8080 مجاز است، بقیه deny+log؛ Alert بر پایه‌ی «Denied از DMZ به SRV» می‌تواند نشانه‌ی نفوذ باشد (Detection).
+
+### ۶) طراحی و تصمیم‌گیری
+
+| سؤال | تصمیم |
+|---|---|
+| دوفایروال یا تک؟ | ریسک بالا/دارایی حساس ← دو؛ سازمان کوچک ← یک با DMZ و UTM |
+| NAT | Edge فقط؛ Internal Routing |
+| HA | هر دو HA (فصل ۲۲) |
+| تنوع سازنده | در صورت بودجه/مهارت |
+| Log | مرکزی، با Timestamp همگام (NTP) |
+
+### ۷) پیاده‌سازی و Verification (GUI/CLI)
+
+**GUI:** Policy & Objects → Virtual IPs (VIP)؛ Firewall Policy (WAN→DMZ)؛ Network → Static Routes (DMZ→Internal)؛ Log & Report → Forward Traffic.
+
+**CLI:**
+
+``` text
+config firewall vip
+    edit "VIP-WEB"
+        set extip 203.0.113.50
+        set mappedip "10.10.10.20"
+        set extintf "wan1"
+        set portforward enable
+        set extport 443
+        set mappedport 443
+    next
+end
+get router info routing-table all
+diagnose debug flow filter addr 10.10.10.20
+diagnose sys session filter dst 10.10.10.20
+```
+
+(نام فیلدها `Unverified`.) **آزمون‌ها:** مثبت: اینترنت→VIP؛ منفی: اینترنت→DB، DMZ→DB، Internal→Internet مستقیم (بدون Policy).
+
+### ۸) Troubleshooting
+
+| علامت | علت |
+|---|---|
+| VIP از بیرون کار نمی‌کند | Policy مقصد (post-DNAT)، Route، ARP |
+| DMZ به Internal نمی‌رسد | Policy Internal، مسیر، NAT اشتباه |
+| فقط بعضی ارتباط‌ها Drop | Asymmetric/Session |
+| Log مبدأ همه یک IP | Double NAT |
+
+### ۹) نکات امنیتی
+
+- Internal هرگز Internet را به‌طور مستقیم به‌رسمیت نشناسد.
+- سرورهای DMZ نباید اعتبار (Credential) شبکه‌ی داخلی داشته باشند.
+- تغییرات هر دو فایروال Change یکپارچه.
+
+### ۱۰) جمع‌بندی مفهومی
+
+- DMZ اثر نفوذ را محدود می‌کند؛ دو فایروال لایه‌ی کنترل مستقل است.
+- NAT را فقط لبه؛ Internal ترجیحاً Routing.
+- مسیر برگشت متقارن؛ Policy در جهت درست.
+- طراحی را با «اگر لایه‌ی اول بشکند» ارزیابی کنید.
+- مدیریت و Log را متمرکز کنید.
+
+### ۱۱) تمرین و ارزیابی
+
+**ت1.** (ساده) DMZ چیست؟ *(پاسخ: 15-0-ت1)*
+
+**ت2.** (ساده) چرا Internal NAT نمی‌کند؟ *(پاسخ: 15-0-ت2)*
+
+**ت3.** (متوسط) مسیر یک درخواست Internet→App را بنویسید. *(پاسخ: 15-0-ت3)*
+
+**ت4.** (متوسط) Double NAT چه مشکلی در Log دارد؟ *(پاسخ: 15-0-ت4)*
+
+**ت5.** (سخت) پس از Compromise وب‌سرور، کدام سه کنترل جلوی حرکت جانبی را می‌گیرد؟ *(پاسخ: 15-0-ت5)*
+
+**ت6.** (سخت، طراحی) برای سازمانی با بودجه‌ی محدود تصمیم دو فایروال در برابر تک‌فایروال+DMZ را با معیار ریسک بگیرید. *(پاسخ: 15-0-ت6)*
+
+**Q1.** Quick quiz (English): Why avoid NAT on the internal firewall? *(پاسخ: 15-0-Q1)*
+
+### ۱۲) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| DMZ | Demilitarized Zone | ناحیه‌ی واسط |
+| Edge | Edge firewall | فایروال لبه |
+| Sandwich | Firewall sandwich | دو فایروال با DMZ بین آن‌ها |
+| VIP | Virtual IP | آدرس مجازی DNAT |
+
+- *Place public servers in a DMZ between two firewalls.* ← سرورهای عمومی را در DMZ بین دو فایروال بگذارید.
+- *Preserve original source addresses for logging.* ← آدرس مبدأ اصلی را برای Log حفظ کنید.
+
+### ۱۳) منابع
+
+- NIST SP 800-41 Rev.1 — Guidelines on Firewalls (DMZ designs).
+- Fortinet Docs: FortiOS 7.0 Administration Guide — Virtual IPs، Firewall policy.
+
 ## درس 15-1 — طراحی معماری دوفایروالی
 
 **فصل 15 - روز 1 · پیش‌نیاز: فصل ۱۳، ۱۴ · ۶ ساعت**
@@ -3460,6 +3650,23 @@ Route برگشت.
 ---
 
 <a id="end5"></a>
+
+
+### پاسخ‌های درس افزوده‌ی 15-0 (فصل 15)
+
+**15-0-ت1** — ناحیه‌ی واسط برای سرورهای در معرض اینترنت تا نفوذ به آن‌ها مستقیماً به شبکه‌ی داخلی نرسد.
+
+**15-0-ت2** — برای حفظ آدرس واقعی در Log و جلوگیری از Double NAT و عیب‌یابی سخت؛ Internal فقط Routing می‌کند.
+
+**15-0-ت3** — Client→VIP روی Edge (DNAT به وب DMZ)→Policy WAN→DMZ→وب به App از Internal (Policy DMZ→SRV 8080)→App به DB داخل Internal؛ برگشت از همان Sessionها.
+
+**15-0-ت4** — آدرس مبدأ همه یک IP می‌شود و منبع واقعی در Log سرور پنهان می‌ماند.
+
+**15-0-ت5** — Policy حداقلی DMZ→SRV (فقط 8080)، Deny+Log و Alert روی تلاش‌های ممنوع، Segmentation/Least Privilege و نداشتن اعتبارنامه‌ی داخلی روی DMZ.
+
+**15-0-ت6** — دارایی‌های حساس و بودجه کافی: دو فایروال؛ بودجه کم: تک‌فایروال با DMZ، UTM، HA و Patch دقیق؛ تصمیم با ریسک × اثر.
+
+**15-0-Q1** — To keep the original source address in logs and avoid double-NAT troubleshooting problems.
 
 # پایان بخش ۵ (فصل‌های ۱۳ تا ۱۵)
 
