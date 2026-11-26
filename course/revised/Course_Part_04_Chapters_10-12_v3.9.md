@@ -68,769 +68,877 @@
 
 <a id="l-10-1"></a>
 
-## درس 10-1 — Redistribution: مفهوم و Seed Metric
+## درس 10-1 — Redistribution: مفهوم، Seed Metric، Subnets و Route Type
 
-**فصل 10 - روز 1 · پیش‌نیاز: فصل ۹، ۶ · ۶ ساعت**
+**فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۶-۱، ۶-۴، ۹-۲ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ دستورهای vIOS `Unverified` تا اجرای Lab.
 
-Redistribution مسیرهای یک پروتکل (مثلاً Static یا BGP) را وارد پروتکل دیگر (OSPF) می‌کند. در شبکه‌ی واقعی بین مرکز، شعبه‌ها و ISP لازم است؛ اشتباه آن حلقه‌ی مسیریابی می‌سازد.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-OSPF، Static، BGP (فصل‌های ۵، ۶، ۹).
+1. توضیح دهد Redistribution یعنی تزریق مسیرهای یک پروتکل به پروتکل دیگر، نه «ترجمه‌ی» پروتکل‌ها.
+2. Seed Metric پیش‌فرض و دستور `metric`/`default-metric` را برای OSPF/EIGRP/RIP/BGP تنظیم کند.
+3. `subnets` در OSPF، Route Type E1/E2 و اثر آن‌ها را تحلیل کند.
+4. نتیجه را با `show ip route` و `show ip ospf database external` تأیید کند.
+5. خطاهای رایج (Metric ناسازگار، فراموشی subnets) را رفع کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- هر پروتکل Metric خودش را دارد؛ هنگام ورود به پروتکل دیگر باید **Seed Metric** داده شود.
-- OSPF: `redistribute <proto> subnets metric <n> metric-type <1|2>`؛ بدون `subnets` فقط Classful وارد می‌شود.
-- Routeهای خارجی در OSPF: E2 (Metric ثابت) یا E1 (Metric + هزینه‌ی داخلی).
-- AD پروتکل مبدأ در پروتکل مقصد اهمیتی ندارد؛ مسیر با AD مقصد نصب می‌شود (E2 = AD 110).
-- Redistribution فقط مسیرهای **در Route Table** را وارد می‌کند.
+فرض کنید شرکتی دو شعبه دارد: یکی OSPF اجرا می‌کند، دیگری EIGRP. هر دو زبان خودشان را می‌فهمند و یکدیگر را نه. Redistribution مترجمی در مرز است که مسیرهای یک زبان را می‌گیرد و در زبان دیگر اعلام می‌کند. ولی مترجم باید «هزینه» را هم بسازد، چون Metricها قابل تبدیل نیستند. این هزینه‌ی ساختگی همان Seed Metric است.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-R2 مسیر Static به شبکه‌ی ISP دارد و آن را داخل OSPF پخش می‌کند.
+#### ۱) اصل کار
 
-### ۵) مثال سازمانی
+Redistribution فقط مسیرهایی را که **در RIB با آن پروتکل یا نوع مسیر نصب شده‌اند** برمی‌دارد، نه همه‌ی چیزهایی که پروتکل می‌داند. پس اگر مسیر در RIB نباشد، منتقل نمی‌شود.
 
-Edge مسیر Default را از BGP می‌گیرد و داخل OSPF برای کل Campus پخش می‌کند.
-
-### ۶) تصویر و توپولوژی
-
-```text
-ISP --BGP-- Edge --OSPF-- Core --OSPF-- Access
-      redistribute bgp into ospf (default only)
+``` text
+OSPF domain  <--- R-ASBR --->  EIGRP domain
+R-ASBR: router ospf 1 + router eigrp 100 ; redistribute in the needed direction
 ```
 
-### ۷) پیکربندی (CLI)
+#### ۲) Seed Metric
 
-```text
+| مقصد | Metric پیش‌فرض Seed |
+|---|---|
+| OSPF | 20 (BGP: 1)، Type E2 |
+| EIGRP | بی‌نهایت: باید دستی تعیین شود |
+| RIP | بی‌نهایت: باید دستی تعیین شود |
+| BGP | Metric (MED) از IGP کپی می‌شود |
+
+``` text
 router ospf 1
- redistribute static subnets metric 20 metric-type 2
-!
-! verify
-show ip ospf database external
-show ip route ospf
+ redistribute eigrp 100 subnets metric 100 metric-type 1
+router eigrp 100
+ redistribute ospf 1 metric 10000 100 255 1 1500
+ ! bandwidth(Kbps) delay(10us) reliability load MTU
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+#### ۳) `subnets` و Route Type
 
-- `redistribute static subnets`: Routeهای Static را به‌صورت External وارد می‌کند.
-- `metric 20 metric-type 2`: Seed Metric؛ E2 در همه‌ی مقصدها همان 20 می‌ماند.
-- راستی‌آزمایی: روی روتر دیگر `O E2` دیده شود.
-- بازگشت: `no redistribute static`.
+بدون `subnets` در OSPF فقط مسیرهای classful منتقل می‌شوند و /24ها «ناپدید» می‌شوند: شایع‌ترین خطا. E1 = Metric خارجی + هزینه‌ی داخلی تا ASBR؛ E2 (پیش‌فرض) = فقط Metric خارجی ثابت. E1 برای چند ASBR و انتخاب نزدیک‌ترین خروج مناسب‌تر است.
 
-### ۸) تست عملکرد
+#### ۴) AD
 
-- `show ip route` روی Core: `O E2 ...`؛ `show ip ospf database external` LSA نوع ۵.
+مسیر خارجی OSPF (AD=110)، EIGRP External (170)، EIGRP داخلی (90). اثر: در Redistribution دوطرفه حلقه و Route Feedback ممکن است (درس ۱۰-۲).
 
-### ۹) عیب‌یابی
+#### ۵) اعتبارسنجی
 
-| بخش | شرح |
+``` text
+show ip route ospf
+show ip ospf database external
+show ip route 172.16.5.0
+show ip eigrp topology 172.16.5.0/24
+```
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | Route وارد OSPF نمی‌شود |
-| شواهد/دستور | `show ip route <prefix>` روی ASBR: نیست؛ `redistribute` بدون `subnets` |
-| علت | مسیر مبدأ در Route Table نیست یا subnets فراموش شده |
-| رفع | اضافه‌کردن `subnets` و بررسی مسیر مبدأ |
+| Seed Metric | OSPF: metric-type 1 برای چند ASBR؛ EIGRP/RIP: دستی |
+| فیلتر | Route-map/Prefix-list؛ نه همه‌چیز |
+| جهت | یک‌طرفه تا ممکن؛ دوطرفه با Tag |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** EIGRP 100 دارای 172.16.0.0/16 است؛ در ASBR `redistribute eigrp 100 subnets` زده می‌شود؛ در روتر OSPF دیگر `O E2 172.16.5.0/24 [110/20]` دیده می‌شود. رابطه: Metric 20 همان Seed.
 
-**ت1.** چرا `subnets` لازم است؟ *(پاسخ: 10-1-ت1)*
+**متوسط (تحلیل):** بعد از Redistribute، در OSPF فقط 172.16.0.0/16 هست و /24ها نیستند. علت: `subnets` نبود. رفع: افزودن `subnets`؛ آزمون: `show ip route ospf` و ping به 172.16.5.1.
 
-**ت2.** E1 و E2؟ *(پاسخ: 10-1-ت2)*
+**سخت (طراحی):** دو ASBR (A,B) هر دو EIGRP را به OSPF می‌دهند. با E2 هر روتر OSPF Metric یکسان 20 می‌بیند و ممکن است از ASBR دورتر خارج شود. تحلیل: با E1 هزینه تا ASBR هم افزوده می‌شود و نزدیک‌ترین انتخاب می‌شود. آزمون: traceroute از دو نقطه. معیار: هر Router نزدیک‌ترین ASBR.
 
-**ت3.** چه چیزی redistribute می‌شود؟ *(پاسخ: 10-1-ت3)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-### ۱۱) مرور و ارزیابی
+``` text
+router ospf 1
+ redistribute eigrp 100 subnets metric 100 metric-type 1
+router eigrp 100
+ redistribute ospf 1 metric 10000 100 255 1 1500
+show ip route ospf
+show ip ospf database external
+```
 
-**م1.** چرا Seed Metric لازم است؟ *(پاسخ: 10-1-م1)*
+### ۸) Verification (اثبات صحت)
 
-**م2.** سناریو: Route Static در OSPF دیده نمی‌شود؛ دو بررسی؟ *(پاسخ: 10-1-م2)*
+- مسیرهای Redistribute با نوع E1/E2 یا D EX در جدول.
+- ping/traceroute بین دو دامنه.
+- Metric مطابق Seed.
 
-**معیار تسلط:** تنظیم و راستی‌آزمایی redistribute با توضیح E1/E2.
+### ۹) Troubleshooting
 
-**اشتباهات رایج:** فراموشی subnets؛ فرض اینکه Route خودکار می‌آید.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Redistribution | Route redistribution | انتقال مسیر بین پروتکل‌ها | Edge/ASBR |
-| ASBR | Autonomous System Boundary Router | روتر Redistribute‌کننده | لبه‌ی OSPF |
-| E2 | OSPF External Type 2 | Metric ثابت | Default از ISP |
-
-| English sentence | ترجمه |
-|---|---|
-| Redistribute static routes into OSPF with a seed metric. | Routeهای Static را با Seed Metric وارد OSPF کنید. |
-| Only routes present in the routing table are redistributed. | فقط مسیرهای موجود در Route Table redistribute می‌شوند. |
-
-#### کارت Lab — درس 10-1
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | redistribute static به OSPF |
-| 2 | پیش‌نیاز | فصل ۹، ۶ |
-| 3 | توپولوژی | R1-R2-R3 + Static به ISP |
-| 4 | تجهیزات | ۳ vIOS |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | 10.0.12.0/30 و ... |
-| 7 | وضعیت اولیه | OSPF سالم |
-| 8 | صورت مسئله | Static به OSPF |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `show ip route ospf` |
-| 11 | سناریوی خرابی | Route وارد OSPF نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | O E2 در R3 |
-| 14 | معیار پذیرش | Route E2 دیده شود |
-| 15 | مستندات نهایی | `03-ops/redistribution.md` |
-| 16 | Cleanup و بازگردانی | حذف redistribute |
+| /24ها نیستند | `show ip route` فقط classful | `subnets` را اضافه کنید |
+| مسیر EIGRP به OSPF نمی‌رود | Metric EIGRP تعیین نشده | `metric ...` بدهید |
+| مسیرها ناپایدار | Feedback | Tag و Route-map (۱۰-۲) |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+### ۱۰) نکات امنیتی
 
----
+- مسیر ناخواسته را وارد نکنید؛ Route-map/Prefix-list.
+- ASBR نقطه‌ی حساس: ACL/Auth.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Redistribution مترجم است نه Merge.
+- Seed Metric لازم است.
+- subnets در OSPF.
+- E1 در برابر E2.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Seed Metric پیش‌فرض Redistribution به OSPF چند است؟ *(پاسخ: 10-1-ت1)*
+
+**ت2.** (ساده) چرا EIGRP و RIP Metric پیش‌فرض ندارند؟ *(پاسخ: 10-1-ت2)*
+
+**ت3.** (متوسط) تفاوت E1 و E2؟ *(پاسخ: 10-1-ت3)*
+
+**ت4.** (متوسط) اگر `subnets` نباشد چه می‌شود؟ *(پاسخ: 10-1-ت4)*
+
+**ت5.** (سخت) دو ASBR و تصمیم Type. *(پاسخ: 10-1-ت5)*
+
+**ت6.** (سخت، طراحی) طرح Redistribution یک‌طرفه با فیلتر. *(پاسخ: 10-1-ت6)*
+
+**Q1.** Quick quiz (English): What happens if you redistribute into EIGRP without specifying a metric? *(پاسخ: 10-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| ASBR | Autonomous System Boundary Router | روتر مرزی دامنه |
+| E2 | OSPF External Type 2 | مسیر خارجی نوع ۲ |
+| Seed | Seed metric | Metric اولیه |
+
+- *Redistribution injects routes from one protocol into another.* ← Redistribution مسیرهای یک پروتکل را به دیگری تزریق می‌کند.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Redistribution یک‌طرفه. **Evidence:** `03-ops/redist1.md`.
+
+### ۱۵) منابع
+
+- Cisco IOS IP Routing guide: Redistribution
+- RFC 2328 (OSPF) بخش External
 
 <a id="l-10-2"></a>
 
-## درس 10-2 — Redistribution دوطرفه و جلوگیری از حلقه با Tag
+## درس 10-2 — Redistribution دوطرفه، Route Feedback و جلوگیری از حلقه با Tag
 
-**فصل 10 - روز 2 · پیش‌نیاز: درس ۱۰-۱ · ۶ ساعت**
+**فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۱۰-۱ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ دستورهای vIOS `Unverified` تا اجرای Lab.
 
-وقتی دو نقطه‌ی Redistribution بین دو پروتکل داریم، مسیر می‌تواند برگردد و حلقه یا مسیر بد بسازد. Tag + Route-Map راه استاندارد جلوگیری است.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۰-۱؛ Route-Map (درس ۹-۴).
+1. خطر Route Feedback و Suboptimal routing را در دو ASBR توضیح دهد.
+2. با Tag + Route-map حلقه را قطع کند.
+3. Prefix-list/Distribute-list را مکمل کند.
+4. با آزمون منفی ثابت کند حلقه رخ نمی‌دهد.
+5. مسیر چندپروتکلی را تحلیل کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- حلقه: مسیر OSPF→BGP و دوباره BGP→OSPF با AD/Metric بدتر.
-- راه حل: هنگام ورود **Tag** بزنید و در جهت مقابل مسیرهای Tag‌دار را **deny** کنید.
-- `route-map X deny 10 / match tag N` سپس `permit 20`.
-- AD را برای مسیرهای ورودی خارجی بالاتر نگه دارید.
-- فقط Prefixهای لازم را redistribute کنید (Prefix-List).
+دو شعبه با دو ASBR: R-A و R-B هر دو دوطرفه ترجمه می‌کنند. مسیری که R-A از OSPF به EIGRP برد، R-B دوباره از EIGRP به OSPF برمی‌گرداند و کم‌کم همه چیز به هم می‌ریزد. راه‌حل: هر مسیر را با «برچسب مبدأ» (Tag) علامت بزنید تا دوباره منتقل نشود.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو Edge هر دو بین OSPF و BGP redistribute می‌کنند؛ Tag جلوی بازگشت مسیر را می‌گیرد.
+#### ۱) سناریو
 
-### ۵) مثال سازمانی
-
-مرکز با شعب هم OSPF و هم BGP دارد؛ Tag اطمینان می‌دهد مسیر شعبه دوباره برنگردد.
-
-### ۶) تصویر و توپولوژی
-
-```text
-OSPF <--redistribute--> BGP   (E1 and E2 both do it)
- tag 100 set OSPF->BGP ; deny tag 100 BGP->OSPF
+``` text
+          OSPF area 0              EIGRP 100
+ R1 ----- R-A ======================== R-C
+           \\                      //
+            R-B ===================
 ```
 
-### ۷) پیکربندی (CLI)
+#### ۲) راه‌حل Tag
 
-```text
-route-map OSPF-TO-BGP permit 10
- set tag 100
-route-map BGP-TO-OSPF deny 10
+``` text
+route-map OSPF-TO-EIGRP deny 10
  match tag 100
-route-map BGP-TO-OSPF permit 20
-!
-router bgp 65001
- redistribute ospf 1 route-map OSPF-TO-BGP
+route-map OSPF-TO-EIGRP permit 20
+ set tag 200
+route-map EIGRP-TO-OSPF deny 10
+ match tag 200
+route-map EIGRP-TO-OSPF permit 20
+ set tag 100
+router eigrp 100
+ redistribute ospf 1 metric 10000 100 255 1 1500 route-map OSPF-TO-EIGRP
 router ospf 1
- redistribute bgp 65001 subnets route-map BGP-TO-OSPF
+ redistribute eigrp 100 subnets route-map EIGRP-TO-OSPF
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+منطق: مسیری که از EIGRP به OSPF آمد Tag=100 دارد؛ برگشت آن به EIGRP رد می‌شود و برعکس. 
 
-- Tag 100 هنگام ورود به BGP زده می‌شود.
-- در برگشت به OSPF مسیرهای با Tag 100 رد می‌شوند.
-- راستی‌آزمایی: `show ip route <prefix>` Tag؛ Next-hop پایدار.
-- بازگشت: حذف route-map و redistribute.
+#### ۳) AD و Feedback
 
-### ۸) تست عملکرد
+EIGRP External AD=170 و OSPF External AD=110؛ مسیری که از OSPF وارد EIGRP شده و بر می‌گردد ممکن است با AD بهتر بر مسیر اصلی غلبه کند. Tag مشکل را از ریشه می‌برد.
 
-- `show ip bgp <prefix>` Tag؛ نبود نوسان در `show ip route`.
+#### ۴) مکمل
 
-### ۹) عیب‌یابی
+Prefix-list برای فقط شبکه‌های مجاز؛ و `distance` برای External.
 
-| بخش | شرح |
+#### ۵) آزمون
+
+``` text
+show ip route 10.1.1.0
+show ip ospf database external 10.1.1.0
+show ip eigrp topology 10.1.1.0/24
+```
+
+مسیر باید فقط از منبع اصلی باشد.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | مسیر نوسان می‌کند (Flap) |
-| شواهد/دستور | `show ip route` مسیر بین دو پروتکل جابه‌جا می‌شود |
-| علت | Redistribution دوطرفه بدون Tag |
-| رفع | Tag + deny؛ AD |
+| چند ASBR | Tag+Route-map روی همه |
+| راه جایگزین | یک‌طرفه+Default |
+| مستندسازی | جدول Tagها |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** Tag 100 روی مسیرهای EIGRP→OSPF؛ در R-B فیلتر Tag 100 در جهت برگشت؛ آزمون: مسیر از R-A دوباره به EIGRP نمی‌رود.
 
-**ت1.** هدف Tag چیست؟ *(پاسخ: 10-2-ت1)*
+**متوسط (تحلیل):** ترافیک بین OSPF و EIGRP از مسیر طولانی رفت: Suboptimal؛ علت: ASBR دورتر؛ راه: E1/Metric/Tag؛ و در نهایت طراحی یک ASBR اصلی.
 
-**ت2.** چرا `permit 20` پایانی؟ *(پاسخ: 10-2-ت2)*
+**سخت (چندعلتی):** بعد از افزودن R-B حلقه؛ بررسی: Tag ست نشده روی R-B (Route-map فقط روی R-A)؛ تحلیل: یکسان‌سازی پیکربندی روی هر دو؛ آزمون منفی با شکستن لینک و traceroute. معیار: بدون حلقه و Convergence < 10 s.
 
-**ت3.** آیا یک نقطه‌ی Redistribution حلقه می‌سازد؟ *(پاسخ: 10-2-ت3)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-### ۱۱) مرور و ارزیابی
+``` text
+route-map OSPF-TO-EIGRP deny 10
+ match tag 100
+route-map OSPF-TO-EIGRP permit 20
+ set tag 200
+show route-map OSPF-TO-EIGRP
+show ip route 10.1.1.0
+```
 
-**م1.** چرا Route-Map بدون permit پایانی خطرناک است؟ *(پاسخ: 10-2-م1)*
+### ۸) Verification (اثبات صحت)
 
-**م2.** سناریو: Flap مسیر؛ اولین اقدام؟ *(پاسخ: 10-2-م2)*
+- Tag در جدول مسیر.
+- نبود حلقه (traceroute).
+- Convergence پس از قطع لینک.
 
-**معیار تسلط:** ساخت Redistribution دوطرفه ایمن با Tag.
+### ۹) Troubleshooting
 
-**اشتباهات رایج:** Tag فراموش‌شده؛ permit پایانی فراموش‌شده.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Tag | Route tag | برچسب مسیر | جلوگیری از حلقه |
-| Route-Map | Route-map | شرط/عمل روی مسیر | سیاست مسیریابی |
-| Flap | Route flap | نوسان مسیر | نشانه‌ی حلقه |
-
-| English sentence | ترجمه |
-|---|---|
-| Tag the routes at redistribution to prevent routing loops. | مسیرها را هنگام redistribution Tag کنید تا حلقه ایجاد نشود. |
-| Deny tagged routes in the reverse direction. | مسیرهای Tag‌دار را در جهت مقابل deny کنید. |
-
-#### کارت Lab — درس 10-2
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Redistribution دوطرفه با Tag |
-| 2 | پیش‌نیاز | درس ۱۰-۱ |
-| 3 | توپولوژی | E1/E2 بین OSPF و BGP |
-| 4 | تجهیزات | E1،E2،ISP |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | طبق قبل |
-| 7 | وضعیت اولیه | OSPF+BGP |
-| 8 | صورت مسئله | حلقه را بسازید و با Tag رفع کنید |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `show ip route` |
-| 11 | سناریوی خرابی | مسیر نوسان می‌کند (Flap) |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | مسیر پایدار |
-| 14 | معیار پذیرش | بدون Flap |
-| 15 | مستندات نهایی | `03-ops/redistribution-tags.md` |
-| 16 | Cleanup و بازگردانی | حذف سیاست‌ها |
+| مسیر حلقه می‌زند | traceroute/TTL | Tag/Route-map روی همه ASBRها |
+| مسیر از بین می‌رود | Tag اشتباه | match/set را بازبینی کنید |
+| Suboptimal | AD/Type | E1/Metric |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+### ۱۰) نکات امنیتی
 
----
+- همه‌ی ASBRها یکسان پیکربندی شوند.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- دو ASBR=خطر.
+- Tag کلید.
+- آزمون منفی.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Route Feedback چیست؟ *(پاسخ: 10-2-ت1)*
+
+**ت2.** (ساده) Tag چه کاری می‌کند؟ *(پاسخ: 10-2-ت2)*
+
+**ت3.** (متوسط) چرا Route-map باید روی هر دو ASBR باشد؟ *(پاسخ: 10-2-ت3)*
+
+**ت4.** (متوسط) AD External OSPF و EIGRP؟ *(پاسخ: 10-2-ت4)*
+
+**ت5.** (سخت) پس از R-B حلقه شد؛ تحلیل. *(پاسخ: 10-2-ت5)*
+
+**ت6.** (سخت، طراحی) برگه‌ی Tag سازمان. *(پاسخ: 10-2-ت6)*
+
+**Q1.** Quick quiz (English): Why is route tagging used in two-way redistribution? *(پاسخ: 10-2-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Tag | Route tag | برچسب مسیر |
+| Feedback | Route feedback | بازگشت مسیر |
+
+- *Tag routes at the boundary to stop loops.* ← مسیرها را در مرز Tag کنید تا حلقه نشود.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** دوطرفه با Tag. **Evidence:** `03-ops/redist2.md`.
+
+### ۱۵) منابع
+
+- Cisco IOS Route-map guide
+- RFC 2328
 
 <a id="l-10-3"></a>
 
-## درس 10-3 — ECMP و توزیع بار
+## درس 10-3 — ECMP و توزیع بار: Equal-cost، Hashing و Load Balancing
 
-**فصل 10 - روز 3 · پیش‌نیاز: درس ۱۰-۱ · ۶ ساعت**
+**فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۶-۱، ۱۰-۱ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ دستورهای vIOS `Unverified` تا اجرای Lab.
 
-وقتی چند مسیر هم‌هزینه به یک مقصد داریم، ECMP ترافیک را بین آن‌ها پخش می‌کند. FortiGate هم ECMP دارد و رفتار آن روی Session مهم است.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-OSPF Cost (فصل ۵).
+1. شرط ECMP (برابری Metric و AD) و Maximum-paths را بگوید.
+2. Hashing (Per-flow) را در برابر Per-packet توضیح دهد.
+3. `show ip cef`/`show ip route` را برای مسیرهای برابر بخواند.
+4. اثر ECMP بر ترافیک Stateful (فایروال) را تحلیل کند.
+5. عیب‌یابی نبود Load-balancing را انجام دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- **ECMP** در OSPF: تا `maximum-paths` (پیش‌فرض ۴) مسیر هم‌هزینه نصب می‌شود.
-- CEF توزیع را **Per-flow** (Hash بر پایه‌ی IP/پورت) انجام می‌دهد، نه Per-packet؛ پس یک Session از یک لینک می‌رود.
-- `ip cef load-sharing algorithm` برای تغییر Hash.
-- ECMP با Stateful Firewall باید Session را روی یک مسیر نگه دارد وگرنه نامتقارن می‌شود.
-- FortiGate: `config system settings / set v4-ecmp-mode source-ip-based` (پیش‌فرض) و حالت‌های دیگر (`weight-based`, `usage-based`, `source-dest-ip-based`) — `Unverified` برای 7.0.3.
+دو جاده‌ی هم‌اندازه به مقصد: ECMP هر دو را به‌کار می‌گیرد. ولی ماشین‌هایی که یک «گفتگو» دارند باید همه از یک جاده بروند، وگرنه بسته‌ها برعکس می‌رسند. پس تقسیم «روی جریان» (flow) انجام می‌شود نه روی بسته.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو لینک هم‌هزینه از R1 به R3 دارند؛ هر دو در Route Table.
+#### ۱) شرط
 
-### ۵) مثال سازمانی
+مسیرها با **Metric و AD برابر** و حداکثر `maximum-paths` (OSPF پیش‌فرض 4، EIGRP 4).
 
-دو ISP/دو مسیر به Hub با ECMP؛ Session هر کاربر روی یک مسیر می‌ماند.
-
-### ۶) تصویر و توپولوژی
-
-```text
-R1 ==(cost 10)== R2 ==
-   \==(cost 10)== R3 == Server
-ECMP: two equal-cost next hops
-```
-
-### ۷) پیکربندی (CLI)
-
-```text
+``` text
 router ospf 1
  maximum-paths 4
-!
-show ip route 192.168.3.0
-show ip cef 192.168.3.1 internal
-traceroute 192.168.3.1 source 192.168.1.1
+show ip route 10.1.0.0
+ 10.1.0.0/16 [110/20] via 10.0.1.2 ... via 10.0.2.2
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+#### ۲) Hashing
 
-- `maximum-paths`: سقف مسیرهای هم‌هزینه.
-- `show ip route`: دو Next-hop برای یک Prefix.
-- Per-flow یعنی دو Flow مختلف می‌توانند مسیر متفاوت بگیرند.
-- بازگشت: `maximum-paths 1`.
+CEF بر اساس Hash (Src IP/Dst IP ± پورت) جریان را به یک مسیر نگاشت می‌کند ⇒ جریان واحد ترتیب را حفظ می‌کند ولی توزیع بار ممکن است ناهموار باشد (چند جریان بزرگ روی یک لینک).
 
-### ۸) تست عملکرد
+``` text
+ip cef load-sharing algorithm universal
+show ip cef 10.1.1.1 internal
+```
 
-- دو traceroute با مبدأ مختلف مسیر متفاوت را نشان دهد.
+#### ۳) Per-packet
 
-### ۹) عیب‌یابی
+توزیع بسته به بسته: بار یکنواخت‌تر، ولی بسته‌ها ممکن است نامرتب برسند و برای TCP/فایروال Stateful مشکل می‌سازد؛ ممکن است Session بسته شود.
 
-| بخش | شرح |
+#### ۴) ECMP و فایروال
+
+با دو فایروال Stateful، رفت از یکی و برگشت از دیگری ⇒ Drop (Asymmetric: درس ۱۰-۶). پس Hash باید Symmetric باشد.
+
+#### ۵) خرابی پنهان
+
+یک لینک Down می‌شود، مسیر حذف می‌شود ولی Flowهای آن به لینک دیگر منتقل می‌شوند و Session ریست می‌شود. اندازه‌گیری پهنای باند قبل/بعد.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | ترافیک یک Flow نامتعادل است |
-| شواهد/دستور | `show interfaces` بار یک لینک بیشتر |
-| علت | Hash یک Flow را به یک لینک می‌دهد |
-| رفع | تنوع Flow یا تغییر الگوریتم؛ انتظار واقع‌بینانه |
+| Per-flow یا Per-packet | Per-flow برای Stateful |
+| Maximum-paths | طبق تعداد لینک |
+| Hash | Symmetric |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** دو مسیر OSPF هزینه‌ی 20؛ `show ip route` هر دو را نشان می‌دهد.
 
-**ت1.** ECMP Per-flow یا Per-packet؟ *(پاسخ: 10-3-ت1)*
+**متوسط (تحلیل):** یک لینک ۹۰٪ و دیگری ۱۰٪: Hash بر اساس Src/Dst دو Host اصلی؛ راه: افزودن پورت به Hash یا الگوریتم دیگر؛ آزمون با iperf چند جریان.
 
-**ت2.** چرا Session باید روی یک مسیر بماند؟ *(پاسخ: 10-3-ت2)*
+**سخت (فایروال):** دو فایروال Stateful پشت ECMP؛ برخی Sessionها قطع می‌شوند: Hash رفت/برگشت متفاوت؛ راه: Symmetric hash/Routing طراحی‌شده/Active-Standby؛ آزمون: `diagnose sys session` روی هر دو.
 
-**ت3.** maximum-paths پیش‌فرض؟ *(پاسخ: 10-3-ت3)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-### ۱۱) مرور و ارزیابی
+``` text
+router ospf 1
+ maximum-paths 4
+show ip route 10.1.0.0
+show ip cef 10.1.1.1 internal
+show ip cef exact-route 10.0.0.1 10.1.1.1
+```
 
-**م1.** چرا یک انتقال فایل از دو لینک سرعت دو برابر نمی‌گیرد؟ *(پاسخ: 10-3-م1)*
+### ۸) Verification (اثبات صحت)
 
-**م2.** سناریو: ECMP با فایروال و Drop تصادفی؛ حدس؟ *(پاسخ: 10-3-م2)*
+- چند Next-hop در RIB.
+- `exact-route` مسیر جریان را نشان می‌دهد.
+- آزمون بار با چند جریان.
 
-**معیار تسلط:** نمایش ECMP و توضیح Per-flow.
+### ۹) Troubleshooting
 
-**اشتباهات رایج:** انتظار Per-packet؛ نادیده‌گرفتن اثر روی فایروال.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| ECMP | Equal-Cost Multi-Path | چند مسیر هم‌هزینه | توزیع بار |
-| CEF | Cisco Express Forwarding | موتور ارسال سریع | Hash مسیر |
-| Per-flow | Per-flow load sharing | توزیع بر پایه‌ی Flow | پایداری Session |
-
-| English sentence | ترجمه |
-|---|---|
-| Load sharing is done per flow, not per packet. | توزیع بار بر پایه‌ی Flow است نه بسته. |
-| Keep both directions of a session on one path. | هر دو جهت Session را روی یک مسیر نگه دارید. |
-
-#### کارت Lab — درس 10-3
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | دو مسیر ECMP |
-| 2 | پیش‌نیاز | درس ۱۰-۱ |
-| 3 | توپولوژی | R1-R2/R3-Server |
-| 4 | تجهیزات | ۴ vIOS |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | جدول لینک‌ها |
-| 7 | وضعیت اولیه | OSPF |
-| 8 | صورت مسئله | دو Next-hop |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `show ip route` |
-| 11 | سناریوی خرابی | ترافیک یک Flow نامتعادل است |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | دو مسیر |
-| 14 | معیار پذیرش | دو Flow با مسیر مختلف |
-| 15 | مستندات نهایی | `03-ops/ecmp.md` |
-| 16 | Cleanup و بازگردانی | maximum-paths 1 |
+| فقط یک مسیر | Metric/AD برابر؟ | Cost را یکسان کنید |
+| توزیع ناهموار | Hash | الگوریتم/Port |
+| Sessionها قطع | فایروال | Symmetric |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+### ۱۰) نکات امنیتی
 
----
+- ECMP با فایروال بدون Symmetry ممنوع.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Per-flow.
+- Hash.
+- Stateful حساس.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) شرط ECMP؟ *(پاسخ: 10-3-ت1)*
+
+**ت2.** (ساده) Per-flow چیست؟ *(پاسخ: 10-3-ت2)*
+
+**ت3.** (متوسط) چرا Per-packet برای TCP بد است؟ *(پاسخ: 10-3-ت3)*
+
+**ت4.** (متوسط) maximum-paths پیش‌فرض OSPF؟ *(پاسخ: 10-3-ت4)*
+
+**ت5.** (سخت) توزیع ۹۰/۱۰ را چطور حل کنید؟ *(پاسخ: 10-3-ت5)*
+
+**ت6.** (سخت، طراحی) ECMP دو فایروال. *(پاسخ: 10-3-ت6)*
+
+**Q1.** Quick quiz (English): Why is per-flow load balancing preferred over per-packet? *(پاسخ: 10-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| ECMP | Equal-Cost Multi-Path | چندمسیری هم‌هزینه |
+| CEF | Cisco Express Forwarding | ارسال سریع سیسکو |
+
+- *Per-flow hashing keeps a flow on one path.* ← Hash روی جریان، جریان را روی یک مسیر نگه می‌دارد.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** ECMP. **Evidence:** `03-ops/ecmp.md`.
+
+### ۱۵) منابع
+
+- Cisco CEF guide
 
 <a id="l-10-4"></a>
 
-## درس 10-4 — Policy-Based Routing (PBR)
+## درس 10-4 — Policy-Based Routing (PBR): مسیریابی بر اساس سیاست، نه فقط مقصد
 
-**فصل 10 - روز 4 · پیش‌نیاز: درس ۱۰-۳ · ۶ ساعت**
+**فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۶-۱، ۸-۱ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ دستورهای vIOS `Unverified` تا اجرای Lab.
 
-PBR به‌جای مقصد، بر اساس مبدأ/پروتکل/پورت مسیر را انتخاب می‌کند؛ مثلاً ترافیک یک VLAN از ISP2 برود. در فایروال هم مشابه «Policy Route» وجود دارد.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-ACL (فصل ۷)، Route-Map (فصل ۹).
+1. PBR را در برابر مسیریابی معمولی توضیح دهد.
+2. ACL+Route-map با `set ip next-hop` را پیکربندی و روی Interface اعمال کند.
+3. Local PBR و ترتیب پردازش را بشناسد.
+4. Verification با `show route-map` و Debug محدود را اجرا کند.
+5. خطاهای رایج (ACL غلط، Next-hop نامعتبر) را رفع کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- PBR **قبل** از Route Table روی ترافیک ورودی به Interface اعمال می‌شود.
-- ساختار: ACL ترافیک را مشخص می‌کند ← `route-map` با `match ip address` ← `set ip next-hop` ← `ip policy route-map` روی Interface **ورودی**.
-- `set ip next-hop verify-availability` با Track برای Failover.
-- ترافیک تولیدشده توسط خود روتر: `ip local policy route-map`.
-- برگشت: PBR فقط یک جهت را عوض می‌کند؛ جهت دیگر باید همخوان باشد.
+مسیریابی عادی فقط به «مقصد» نگاه می‌کند. گاهی می‌خواهید ترافیک واحد مالی از ISP-A برود و باقی از ISP-B؛ این «سیاست» است. PBR قبل از جدول مسیریابی تصمیم می‌گیرد.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کاربران VLAN 20 به ISP2 و بقیه به ISP1 بروند.
+#### ۱) ساختار
 
-### ۵) مثال سازمانی
-
-مدیر ترافیک بک‌آپ شب را از لینک ارزان‌تر می‌فرستد.
-
-### ۶) تصویر و توپولوژی
-
-```text
-VLAN20 -> R1 (PBR) -> ISP2
-others -> R1 -> ISP1 (default)
-```
-
-### ۷) پیکربندی (CLI)
-
-```text
-ip access-list extended VLAN20-TRAFFIC
+``` text
+ip access-list extended FINANCE
  permit ip 10.10.20.0 0.0.0.255 any
-route-map PBR permit 10
- match ip address VLAN20-TRAFFIC
- set ip next-hop 10.0.2.2
-interface gi0/0.20
- ip policy route-map PBR
-!
-show route-map PBR
-show ip policy
+route-map PBR-ISPA permit 10
+ match ip address FINANCE
+ set ip next-hop verify-availability 192.0.2.1 10 track 1
+route-map PBR-ISPA permit 20
+interface GigabitEthernet0/1
+ ip policy route-map PBR-ISPA
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+`permit 20` بدون Match = بقیه‌ی ترافیک عادی.
 
-- `ip policy route-map` روی Interface ورودی.
-- `show route-map` شمارنده‌ی Policy routed packets.
-- برگشت: `no ip policy route-map`.
-- هشدار: PBR اشتباه می‌تواند مسیر پیش‌فرض را بشکند؛ با `reload in`/Console کار کنید.
+#### ۲) ترتیب
 
-### ۸) تست عملکرد
+Packet ورودی → PBR (در صورت Match) → Next-hop مشخص؛ در غیر این صورت RIB. `set ip next-hop` در مقابل `set ip default next-hop` (فقط وقتی مسیر ندارد).
 
-- `traceroute` از VLAN20: Hop اول ISP2؛ از VLAN دیگر ISP1.
+#### ۳) Local PBR
 
-### ۹) عیب‌یابی
+``` text
+ip local policy route-map LOCAL-PBR
+```
 
-| بخش | شرح |
+برای ترافیک خود روتر.
+
+#### ۴) Track و Failover
+
+با `ip sla` و `track` اگر Next-hop مرده بود، PBR بی‌خبر نماند.
+
+#### ۵) آزمون
+
+``` text
+show route-map PBR-ISPA
+show ip policy
+traceroute 8.8.8.8 source 10.10.20.5
+```
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | PBR اعمال نمی‌شود |
-| شواهد/دستور | `show route-map`: شمارنده 0؛ `show ip policy` |
-| علت | Interface/ACL اشتباه |
-| رفع | اعمال روی Interface ورودی درست؛ اصلاح ACL |
+| next-hop یا default next-hop | default اگر مسیر عادی ترجیح |
+| Track | اجباری |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** Finance از ISP-A: traceroute از 10.10.20.5 از 192.0.2.1 عبور می‌کند.
 
-**ت1.** PBR کجا اعمال می‌شود؟ *(پاسخ: 10-4-ت1)*
+**متوسط (تحلیل):** PBR اثر ندارد: ACL روی subnet اشتباه؛ `show route-map` شمارنده‌ی Match صفر؛ رفع ACL.
 
-**ت2.** PBR چه زمانی اجرا می‌شود؟ *(پاسخ: 10-4-ت2)*
+**سخت (Failover):** ISP-A قطع شد ولی Finance قطع ماند: Track نبود؛ راه: IP SLA+Track با `verify-availability`؛ آزمون: قطع لینک؛ Finance به مسیر عادی می‌رود.
 
-**ت3.** Verify-availability چیست؟ *(پاسخ: 10-4-ت3)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-### ۱۱) مرور و ارزیابی
+``` text
+route-map PBR-ISPA permit 10
+ match ip address FINANCE
+ set ip next-hop verify-availability 192.0.2.1 10 track 1
+interface Gi0/1
+ ip policy route-map PBR-ISPA
+show route-map PBR-ISPA
+```
 
-**م1.** چرا PBR باید با Return Path همخوان باشد؟ *(پاسخ: 10-4-م1)*
+### ۸) Verification (اثبات صحت)
 
-**م2.** سناریو: شمارنده PBR صفر است؛ چه بررسی؟ *(پاسخ: 10-4-م2)*
+- Match counter بالا می‌رود.
+- traceroute مسیر سیاست.
+- آزمون Failover.
 
-**معیار تسلط:** پیاده‌سازی PBR و اثبات با traceroute.
+### ۹) Troubleshooting
 
-**اشتباهات رایج:** اعمال روی Interface خروجی؛ فراموشی برگشت.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| PBR | Policy-Based Routing | مسیر بر اساس سیاست | لینک مخصوص |
-| Next-hop | Next hop | روتر بعدی | set ip next-hop |
-| Verify | Verify availability | بررسی در دسترس بودن | Failover PBR |
-
-| English sentence | ترجمه |
-|---|---|
-| Apply the policy on the ingress interface. | سیاست را روی Interface ورودی اعمال کنید. |
-| PBR is evaluated before the routing table. | PBR قبل از جدول مسیریابی ارزیابی می‌شود. |
-
-#### کارت Lab — درس 10-4
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | PBR برای VLAN20 |
-| 2 | پیش‌نیاز | درس ۱۰-۳ |
-| 3 | توپولوژی | R1 + دو ISP |
-| 4 | تجهیزات | R1،ISP1،ISP2 |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | 10.0.1.0/30 و 10.0.2.0/30 |
-| 7 | وضعیت اولیه | Default به ISP1 |
-| 8 | صورت مسئله | VLAN20 از ISP2 |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `show route-map` |
-| 11 | سناریوی خرابی | PBR اعمال نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Hop اول ISP2 |
-| 14 | معیار پذیرش | traceroute مطابق |
-| 15 | مستندات نهایی | `03-ops/pbr.md` |
-| 16 | Cleanup و بازگردانی | حذف policy |
+| Match صفر | ACL | Subnet |
+| Failover ندارد | Track | verify-availability |
+| ترافیک گم | Next-hop | ARP/Reachability |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+### ۱۰) نکات امنیتی
 
----
+- PBR مسیرها را از Firewall دور نکند.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- PBR قبل از RIB.
+- ACL+Route-map.
+- Track.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) PBR بر چه اساسی تصمیم می‌گیرد؟ *(پاسخ: 10-4-ت1)*
+
+**ت2.** (ساده) `permit 20` خالی یعنی چه؟ *(پاسخ: 10-4-ت2)*
+
+**ت3.** (متوسط) تفاوت next-hop و default next-hop؟ *(پاسخ: 10-4-ت3)*
+
+**ت4.** (متوسط) Local PBR؟ *(پاسخ: 10-4-ت4)*
+
+**ت5.** (سخت) Failover PBR. *(پاسخ: 10-4-ت5)*
+
+**ت6.** (سخت، طراحی) PBR دو ISP. *(پاسخ: 10-4-ت6)*
+
+**Q1.** Quick quiz (English): What is the purpose of the track keyword in PBR? *(پاسخ: 10-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| PBR | Policy-Based Routing | مسیریابی سیاست‌محور |
+| SLA | Service Level Agreement/IP SLA | پایش |
+
+- *PBR overrides destination-based routing.* ← PBR مسیریابی مبتنی بر مقصد را لغو می‌کند.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** PBR. **Evidence:** `03-ops/pbr.md`.
+
+### ۱۵) منابع
+
+- Cisco PBR guide
 
 <a id="l-10-5"></a>
 
 ## درس 10-5 — VRF-lite: جداسازی جدول مسیریابی
 
-**فصل 10 - روز 5 · پیش‌نیاز: درس ۱۰-۱ · ۶ ساعت**
+**فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۶-۱، ۱۰-۴ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ دستورهای vIOS `Unverified` تا اجرای Lab.
 
-VRF چند جدول مسیریابی مستقل روی یک دستگاه می‌سازد؛ مثل چند روتر مجازی. برای جداسازی مشتری/بخش و برای درک VDOM/Zone فایروال مفید است.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-Route Table و Interface (فصل ۵).
+1. VRF را (چند RIB مستقل) توضیح دهد.
+2. VRF-lite با Interface و مسیر مستقل پیکربندی کند.
+3. Overlap آدرس را مدیریت کند.
+4. Verification و Troubleshooting `vrf` را انجام دهد.
+5. VRF را برای جداسازی فایروال/مشتریان طراحی کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- هر VRF جدول مسیریابی و Interfaceهای خودش را دارد؛ آدرس‌های هم‌پوشان مجازند.
-- IOS: `vrf definition NAME` + `address-family ipv4`؛ `vrf forwarding NAME` روی Interface.
-- دستورها با VRF: `ping vrf X`، `show ip route vrf X`.
-- ارتباط بین VRFها فقط با Leak (مثلاً Static با `global`) و مسیر/فیلتر کنترل‌شده.
-- VRF-lite = بدون MPLS؛ جداسازی محلی.
+یک ساختمان با دو شرکت: هر کدام آدرس 192.168.1.0/24 دارند و نباید یکدیگر را ببینند. VRF روی همان روتر «چند روتر مجازی» می‌سازد؛ هر کدام RIB جداگانه دارند.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو VRF (RED، BLUE) روی یک روتر با آدرس هم‌پوشان.
+#### ۱) پیکربندی
 
-### ۵) مثال سازمانی
-
-مرکز داده: VRF Management جدا از VRF Production.
-
-### ۶) تصویر و توپولوژی
-
-```text
-R1: [VRF RED] gi0/1 10.0.0.1/24   [VRF BLUE] gi0/2 10.0.0.1/24
-Same IP, separate tables
+``` text
+ip vrf CUST-A
+ rd 65000:1
+ip vrf CUST-B
+ rd 65000:2
+interface Gi0/1
+ ip vrf forwarding CUST-A
+ ip address 192.168.1.1 255.255.255.0
+interface Gi0/2
+ ip vrf forwarding CUST-B
+ ip address 192.168.1.1 255.255.255.0
 ```
 
-### ۷) پیکربندی (CLI)
+دستور `ip vrf forwarding` آدرس را پاک می‌کند: بعد از آن آدرس را دوباره بزنید.
 
-```text
-vrf definition RED
- address-family ipv4
- exit-address-family
-interface gi0/1
- vrf forwarding RED
- ip address 10.0.0.1 255.255.255.0
-show ip route vrf RED
-ping vrf RED 10.0.0.2
+#### ۲) مسیر
+
+``` text
+ip route vrf CUST-A 0.0.0.0 0.0.0.0 10.0.0.1
+router ospf 10 vrf CUST-A
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+#### ۳) تست
 
-- `vrf forwarding` قبل از `ip address` (با تغییر VRF آدرس پاک می‌شود).
-- `show ip route vrf RED` جدول جدا.
-- Leak مثال: `ip route vrf RED 0.0.0.0 0.0.0.0 10.9.9.1 global`.
-- بازگشت: `no vrf forwarding`.
+``` text
+show ip vrf
+show ip route vrf CUST-A
+ping vrf CUST-A 192.168.1.2
+```
 
-### ۸) تست عملکرد
+بدون `vrf` به جدول Global می‌رود.
 
-- ping داخل VRF؛ ping بدون VRF شکست.
+#### ۴) استفاده با فایروال
 
-### ۹) عیب‌یابی
+هر VRF یک مسیر به Interface فایروال؛ فایروال VDOM/Zone مقابل. Route Leaking: ۱۰-۸.
 
-| بخش | شرح |
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | ping در VRF شکست می‌خورد |
-| شواهد/دستور | `ping` بدون vrf؛ `show ip route vrf X` خالی |
-| علت | Interface در VRF دیگر/آدرس بعد از vrf forwarding |
-| رفع | تنظیم دوباره‌ی آدرس |
+| VRF-lite یا MPLS VRF | داخلی: lite |
+| RD | یکتا |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** CUST-A و B هر دو 192.168.1.0/24؛ هیچ تداخلی.
 
-**ت1.** VRF چیست؟ *(پاسخ: 10-5-ت1)*
+**متوسط (تحلیل):** ping داخل VRF جواب نمی‌دهد: بدون `vrf` اجرا شده؛ رفع: `ping vrf`.
 
-**ت2.** چرا آدرس هم‌پوشان در دو VRF مجاز است؟ *(پاسخ: 10-5-ت2)*
+**سخت (طراحی):** سه مشتری با خروج اینترنت مشترک: VRFهای جدا + Default به Firewall؛ Leak کنترل‌شده؛ NAT جدا؛ آزمون عدم دسترسی متقابل.
 
-**ت3.** Leak چیست؟ *(پاسخ: 10-5-ت3)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-### ۱۱) مرور و ارزیابی
+``` text
+ip vrf CUST-A
+ rd 65000:1
+interface Gi0/1
+ ip vrf forwarding CUST-A
+ ip address 192.168.1.1 255.255.255.0
+show ip route vrf CUST-A
+ping vrf CUST-A 192.168.1.2
+```
 
-**م1.** چرا بعد از `vrf forwarding` آدرس پاک می‌شود؟ *(پاسخ: 10-5-م1)*
+### ۸) Verification (اثبات صحت)
 
-**م2.** سناریو: ping Gateway شکست؛ اشتباه رایج؟ *(پاسخ: 10-5-م2)*
+- RIB جدا.
+- ping vrf.
+- نبود نشت.
 
-**معیار تسلط:** ساخت دو VRF و اثبات جداسازی.
+### ۹) Troubleshooting
 
-**اشتباهات رایج:** ping بدون vrf؛ ترتیب vrf forwarding/ip address.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| VRF | Virtual Routing and Forwarding | جدول مسیریابی مجازی | جداسازی |
-| VRF-lite | VRF-lite | VRF بدون MPLS | Campus/DC |
-| Leak | Route leaking | عبور کنترل‌شده بین VRF | سرویس مشترک |
-
-| English sentence | ترجمه |
-|---|---|
-| Each VRF has its own routing table. | هر VRF جدول مسیریابی خودش را دارد. |
-| Overlapping addresses are allowed in different VRFs. | آدرس‌های هم‌پوشان در VRFهای مختلف مجازند. |
-
-#### کارت Lab — درس 10-5
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | دو VRF با آدرس هم‌پوشان |
-| 2 | پیش‌نیاز | درس ۱۰-۱ |
-| 3 | توپولوژی | R1 + دو میزبان |
-| 4 | تجهیزات | R1،۲ VPCS |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | 10.0.0.0/24 در هر دو |
-| 7 | وضعیت اولیه | بدون VRF |
-| 8 | صورت مسئله | RED/BLUE |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `ping vrf` |
-| 11 | سناریوی خرابی | ping در VRF شکست می‌خورد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | جداسازی کامل |
-| 14 | معیار پذیرش | ping داخل VRF موفق، بین VRF شکست |
-| 15 | مستندات نهایی | `03-ops/vrf.md` |
-| 16 | Cleanup و بازگردانی | حذف VRF |
+| آدرس پاک شد | forwarding بعد آدرس | آدرس را دوباره بزنید |
+| ping ناموفق | vrf | ping vrf |
+| نشت | Leak | حذف |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+### ۱۰) نکات امنیتی
 
----
+- جداسازی ≠ امنیت کامل؛ سیاست فایروال لازم است.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- VRF=چند RIB.
+- Overlap.
+- ping vrf.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) VRF چیست؟ *(پاسخ: 10-5-ت1)*
+
+**ت2.** (ساده) چرا ip address پاک می‌شود؟ *(پاسخ: 10-5-ت2)*
+
+**ت3.** (متوسط) چگونه ping کنید؟ *(پاسخ: 10-5-ت3)*
+
+**ت4.** (متوسط) RD؟ *(پاسخ: 10-5-ت4)*
+
+**ت5.** (سخت) سه مشتری. *(پاسخ: 10-5-ت5)*
+
+**ت6.** (سخت، طراحی) جداسازی با فایروال. *(پاسخ: 10-5-ت6)*
+
+**Q1.** Quick quiz (English): What does VRF-lite provide? *(پاسخ: 10-5-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| VRF | Virtual Routing and Forwarding | مسیریابی مجازی |
+| RD | Route Distinguisher | تمایزدهنده‌ی مسیر |
+
+- *VRF separates routing tables.* ← VRF جدول‌های مسیریابی را جدا می‌کند.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** VRF. **Evidence:** `03-ops/vrf.md`.
+
+### ۱۵) منابع
+
+- Cisco VRF-lite guide
 
 <a id="l-10-6"></a>
 
-## درس 10-6 — Asymmetric Routing: تحلیل مسیر رفت و برگشت
+## درس 10-6 — Asymmetric Routing: تحلیل رفت و برگشت و اثر بر فایروال
 
-**فصل 10 - روز 6 · پیش‌نیاز: درس ۱۰-۳، ۱۰-۴ · ۶ ساعت**
+**فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۱۰-۳، ۱۱-۱ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ دستورهای vIOS `Unverified` تا اجرای Lab.
 
-مسیر رفت و برگشت بسته می‌تواند متفاوت باشد. روتر مشکلی ندارد ولی فایروال Stateful فقط یک جهت را می‌بیند و برگشت را Drop می‌کند. این یکی از شایع‌ترین خرابی‌های چندفایروالی است.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-ECMP، PBR، VRF (درس‌های قبل).
+1. Asymmetric Routing را تعریف و علت‌ها را بگوید.
+2. اثر آن بر Stateful Firewall را توضیح دهد.
+3. با traceroute و Capture دو سویه آن را ثابت کند.
+4. راه‌حل‌ها (Symmetric design، Policy، Session-pickup) را مقایسه کند.
+5. رفع را اجرا و آزمون کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Asymmetric: Forward از Path A و Return از Path B.
-- Stateful Firewall بدون Session مطابق، بسته‌ی برگشت (SYN-ACK) را Drop می‌کند.
-- علت‌ها: ECMP، PBR یک‌طرفه، Multi-homing، Redistribution/Metric ناسازگار، دو ISP.
-- تشخیص: traceroute از هر دو طرف؛ Capture در هر فایروال؛ جدول Session.
-- رفع: متقارن‌سازی مسیر (Metric/PBR)، یا قرار دادن هر Session روی یک مسیر، یا فایروال‌های همگام (HA).
+بسته‌ی رفت از فایروال ۱ می‌گذرد و برگشت از فایروال ۲. فایروال ۲ فقط «برگشت» را می‌بیند، Session نمی‌شناسد و Drop می‌کند. کاربر می‌گوید «سایت باز نمی‌شود»؛ ولی لینک‌ها سالم‌اند.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو مسیر از LAN به سرور؛ رفت از FW1 و برگشت از FW2.
+#### ۱) علل
 
-### ۵) مثال سازمانی
+- ECMP/Per-packet
+- دو ISP/Policy متفاوت
+- Redistribution/BGP Local-pref متفاوت
+- HA/Cluster نادرست
 
-Hub با دو ISP؛ پاسخ از ISP دیگر برمی‌گردد و فایروال Drop می‌کند.
+#### ۲) اثر بر فایروال
 
-### ۶) تصویر و توپولوژی
+Stateful: SYN-ACK بدون SYN ⇒ "no session matched"/Drop. Stateless: مشکلی ندارد.
 
-```text
-Client -> FW1 -> Server
-Client <- FW2 <- Server   (return differs -> FW1 never sees SYN-ACK)
+#### ۳) اثبات
+
+``` text
+Capture on FW1: SYN seen
+Capture on FW2: SYN-ACK seen, no SYN
+traceroute from both ends shows different hops
 ```
 
-### ۷) پیکربندی (CLI)
+#### ۴) راه‌حل‌ها
 
-```text
-traceroute 10.20.0.10 source 192.168.1.1
-! from server side
-traceroute 192.168.1.1 source 10.20.0.10
-show ip route 192.168.1.0
-show ip cef 192.168.1.0
+| روش | توضیح |
+|---|---|
+| طراحی Symmetric | Routing/Weight/Local-pref |
+| Policy-route | هر جریان را به یک فایروال |
+| Session sync | FGCP session-pickup/Active-Active |
+| Disable asymmetric check | فقط موقت (`asymroute`) و ضعیف‌شدن امنیت |
+
+#### ۵) آزمون بعد از رفع
+
+ping/TCP و `diagnose sys session list` روی یک فایروال.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Symmetric یا sync | Symmetric ترجیح |
+| asymroute | نه |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Capture: FW1 فقط SYN؛ FW2 فقط SYN-ACK؛ تشخیص Asymmetric.
+
+**متوسط (تحلیل):** ISP2 برگشت را از لینک دوم می‌آورد؛ راه: Local-pref/Prepend و PBR.
+
+**سخت (طراحی):** Active-Active با Session sync؛ ریسک: Delay؛ جایگزین: Active-Standby.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+traceroute 10.20.0.5
+show ip route 10.20.0.5
+! on FortiGate (Unverified in lab): diagnose sniffer packet any "host 10.20.0.5" 4
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- دو traceroute (هر جهت) مقایسه شود.
-- `show ip route` مسیر برگشت روی هر روتر.
-- در فایروال: `diagnose sys session list` (فصل‌های بعد) Session ناقص.
-- بازگشت: تغییر Metric/PBR را بازگردانید.
+- Capture دو سویه.
+- Session روی یک FW.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- Hopهای رفت و برگشت را در جدول بنویسید؛ تفاوت را نشان دهید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | ping کار می‌کند ولی TCP نمی‌بندد |
-| شواهد/دستور | SYN دیده می‌شود ولی SYN-ACK به فایروال اول نمی‌رسد |
-| علت | مسیر برگشت متفاوت |
-| رفع | متقارن‌سازی مسیر یا Session روی یک مسیر |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Asymmetric یعنی چه؟ *(پاسخ: 10-6-ت1)*
-
-**ت2.** چرا Stateful آن را نمی‌پذیرد؟ *(پاسخ: 10-6-ت2)*
-
-**ت3.** دو ابزار تشخیص؟ *(پاسخ: 10-6-ت3)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا ping ممکن است کار کند ولی TCP نه؟ *(پاسخ: 10-6-م1)*
-
-**م2.** سناریو: دو ISP و Drop تصادفی؛ چه می‌کنید؟ *(پاسخ: 10-6-م2)*
-
-**معیار تسلط:** تحلیل مسیر دو جهت و پیشنهاد رفع.
-
-**اشتباهات رایج:** بررسی فقط یک جهت.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Asymmetric | Asymmetric routing | مسیر رفت/برگشت متفاوت | خرابی فایروال |
-| Return path | Return path | مسیر برگشت | تحلیل ارتباط |
-| Stateful | Stateful inspection | بازرسی با حافظه‌ی Session | Firewall |
-
-| English sentence | ترجمه |
-|---|---|
-| Check both forward and return paths. | هر دو مسیر رفت و برگشت را بررسی کنید. |
-| A stateful firewall drops traffic it has no session for. | فایروال Stateful ترافیکی را که Session ندارد Drop می‌کند. |
-
-#### کارت Lab — درس 10-6
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | مشاهده و رفع Asymmetric |
-| 2 | پیش‌نیاز | درس ۱۰-۳، ۱۰-۴ |
-| 3 | توپولوژی | Client-FW1/FW2-Server (روتر) |
-| 4 | تجهیزات | ۴ vIOS |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | طبق شکل |
-| 7 | وضعیت اولیه | Metric مساوی |
-| 8 | صورت مسئله | ایجاد نامتقارن و رفع |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | traceroute دوطرفه |
-| 11 | سناریوی خرابی | ping کار می‌کند ولی TCP نمی‌بندد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | مسیرها متفاوت؛ بعد از رفع یکسان |
-| 14 | معیار پذیرش | هر دو جهت از یک مسیر |
-| 15 | مستندات نهایی | `03-ops/asymmetric.md` |
-| 16 | Cleanup و بازگردانی | بازگشت Metric |
+| برخی Sessionها قطع | Capture | Symmetric/Policy |
+| فقط پورت‌های خاص | Hash | ECMP |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+### ۱۰) نکات امنیتی
 
----
+- Disable کردن Check امنیت را کم می‌کند.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Asymmetric=Drop در Stateful.
+- اثبات با Capture.
+- راه Symmetric.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Asymmetric یعنی؟ *(پاسخ: 10-6-ت1)*
+
+**ت2.** (ساده) چرا Stateful Drop می‌کند؟ *(پاسخ: 10-6-ت2)*
+
+**ت3.** (متوسط) سه علت؟ *(پاسخ: 10-6-ت3)*
+
+**ت4.** (متوسط) چگونه ثابت کنیم؟ *(پاسخ: 10-6-ت4)*
+
+**ت5.** (سخت) راه‌حل سازمان. *(پاسخ: 10-6-ت5)*
+
+**ت6.** (سخت، طراحی) Active-Active. *(پاسخ: 10-6-ت6)*
+
+**Q1.** Quick quiz (English): Why do stateful firewalls drop asymmetric flows? *(پاسخ: 10-6-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Asymmetric | Asymmetric routing | مسیر نامتقارن |
+
+- *Asymmetric paths break stateful inspection.* ← مسیر نامتقارن بازرسی حالت‌دار را خراب می‌کند.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Asymmetric. **Evidence:** `03-ops/asym.md`.
+
+### ۱۵) منابع
+
+- Fortinet admin guide: asymmetric routing
 
 <a id="l-10-7"></a>
 
@@ -1295,125 +1403,107 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**10-1-ت1** — چرا `subnets` لازم است؟
 
-بدون آن فقط Prefixهای Classful وارد می‌شوند.
+### پاسخ‌های بازنویسی عمیق درس 10-1
 
-**10-1-ت2** — E1 و E2؟
+**10-1-ت1** — ۲۰ و نوع E2 (برای BGP مقدار ۱).
 
-E2 Metric ثابت؛ E1 با افزودن هزینه‌ی داخلی.
+**10-1-ت2** — Metric OSPF/BGP قابل تبدیل نیست؛ نبود Metric یعنی بی‌نهایت و مسیر منتقل نمی‌شود؛ باید دستی بدهید.
 
-**10-1-ت3** — چه چیزی redistribute می‌شود؟
+**10-1-ت3** — E2 فقط Metric خارجی؛ E1 هزینه‌ی داخلی تا ASBR را هم جمع می‌کند.
 
-فقط مسیرهای موجود در Route Table.
+**10-1-ت4** — فقط مسیرهای classful منتقل می‌شوند؛ زیرشبکه‌ها نمی‌روند.
 
-**10-1-م1** — چرا Seed Metric لازم است؟
+**10-1-ت5** — E1 برای انتخاب نزدیک‌ترین ASBR؛ آزمون با traceroute.
 
-Metric پروتکل‌ها قابل‌مقایسه نیستند و مقصد باید مقدار اولیه بداند.
+**10-1-ت6** — فقط Prefixهای لازم با Prefix-list+Route-map، Seed صریح، E1 در صورت چند ASBR و آزمون منفی روی Prefix غیرمجاز.
 
-**10-1-م2** — سناریو: Route Static در OSPF دیده نمی‌شود؛ دو بررسی؟
+**10-1-Q1** — The routes are not redistributed because the seed metric is infinite.
 
-Route مبدأ و subnets.
 
-**10-2-ت1** — هدف Tag چیست؟
+### پاسخ‌های بازنویسی عمیق درس 10-2
 
-علامت‌گذاری مسیر برای جلوگیری از بازگشت.
+**10-2-ت1** — مسیری که به پروتکل دیگر رفته دوباره به مبدأ برگردد.
 
-**10-2-ت2** — چرا `permit 20` پایانی؟
+**10-2-ت2** — مبدأ مسیر را علامت می‌زند تا بازگشت آن رد شود.
 
-Implicit deny وگرنه همه‌ی مسیرها رد می‌شوند.
+**10-2-ت3** — وگرنه ASBR بدون Route-map حلقه می‌سازد.
 
-**10-2-ت3** — آیا یک نقطه‌ی Redistribution حلقه می‌سازد؟
+**10-2-ت4** — 110 و 170.
 
-معمولاً خیر؛ دو نقطه خطرناک‌اند.
+**10-2-ت5** — Route-map فقط روی R-A؛ یکسان‌سازی و آزمون.
 
-**10-2-م1** — چرا Route-Map بدون permit پایانی خطرناک است؟
+**10-2-ت6** — مبدأ، Tag، جهت، Route-map و مالک.
 
-Implicit deny همه را حذف می‌کند.
+**10-2-Q1** — To prevent routes from being re-redistributed back into their source domain, avoiding loops.
 
-**10-2-م2** — سناریو: Flap مسیر؛ اولین اقدام؟
 
-پیدا کردن نقطه‌های Redistribution و اعمال Tag.
+### پاسخ‌های بازنویسی عمیق درس 10-3
 
-**10-3-ت1** — ECMP Per-flow یا Per-packet؟
+**10-3-ت1** — Metric و AD برابر.
 
-Per-flow.
+**10-3-ت2** — هر جریان همیشه از یک مسیر.
 
-**10-3-ت2** — چرا Session باید روی یک مسیر بماند؟
+**10-3-ت3** — بسته‌ها نامرتب می‌رسند.
 
-Stateful Firewall باید هر دو جهت را ببیند.
+**10-3-ت4** — ۴.
 
-**10-3-ت3** — maximum-paths پیش‌فرض؟
+**10-3-ت5** — الگوریتم Hash با پورت؛ آزمون با چند جریان.
 
-۴
+**10-3-ت6** — Symmetric hash/Active-Standby.
 
-**10-3-م1** — چرا یک انتقال فایل از دو لینک سرعت دو برابر نمی‌گیرد؟
+**10-3-Q1** — It preserves packet order within a flow and works with stateful devices.
 
-Per-flow؛ یک Flow یک لینک.
 
-**10-3-م2** — سناریو: ECMP با فایروال و Drop تصادفی؛ حدس؟
+### پاسخ‌های بازنویسی عمیق درس 10-4
 
-هر جهت Session از مسیر متفاوت؛ نامتقارن.
+**10-4-ت1** — Source/Protocol/Port و ...
 
-**10-4-ت1** — PBR کجا اعمال می‌شود؟
+**10-4-ت2** — بقیه‌ی ترافیک عادی.
 
-روی Interface ورودی.
+**10-4-ت3** — default فقط وقتی مسیر ندارد.
 
-**10-4-ت2** — PBR چه زمانی اجرا می‌شود؟
+**10-4-ت4** — برای ترافیک خود روتر.
 
-قبل از Route Table.
+**10-4-ت5** — Track+IP SLA.
 
-**10-4-ت3** — Verify-availability چیست؟
+**10-4-ت6** — ACL، Track، Failover.
 
-Failover با Track.
+**10-4-Q1** — To remove the policy next hop when it becomes unreachable.
 
-**10-4-م1** — چرا PBR باید با Return Path همخوان باشد؟
 
-برگشت از مسیر دیگر می‌تواند نامتقارن شود.
+### پاسخ‌های بازنویسی عمیق درس 10-5
 
-**10-4-م2** — سناریو: شمارنده PBR صفر است؛ چه بررسی؟
+**10-5-ت1** — RIB مجازی جدا.
 
-Interface ورودی و تطابق ACL.
+**10-5-ت2** — هنگام forwarding.
 
-**10-5-ت1** — VRF چیست؟
+**10-5-ت3** — ping vrf NAME.
 
-جدول مسیریابی مستقل.
+**10-5-ت4** — شناسه‌ی یکتا برای Route.
 
-**10-5-ت2** — چرا آدرس هم‌پوشان در دو VRF مجاز است؟
+**10-5-ت5** — VRF+Default+NAT.
 
-جدول‌ها جدا هستند.
+**10-5-ت6** — VRF+Zone.
 
-**10-5-ت3** — Leak چیست؟
+**10-5-Q1** — Multiple isolated routing tables on a single router without MPLS.
 
-اتصال کنترل‌شده بین VRFها.
 
-**10-5-م1** — چرا بعد از `vrf forwarding` آدرس پاک می‌شود؟
+### پاسخ‌های بازنویسی عمیق درس 10-6
 
-Interface به جدول دیگر رفته؛ آدرس قبلی نامعتبر است.
+**10-6-ت1** — رفت و برگشت از مسیر متفاوت.
 
-**10-5-م2** — سناریو: ping Gateway شکست؛ اشتباه رایج؟
+**10-6-ت2** — Session ندیده.
 
-ping بدون `vrf`.
+**10-6-ت3** — ECMP، دو ISP، Redistribution.
 
-**10-6-ت1** — Asymmetric یعنی چه؟
+**10-6-ت4** — Capture دو سویه.
 
-رفت و برگشت از مسیرهای متفاوت.
+**10-6-ت5** — Symmetric یا Session sync.
 
-**10-6-ت2** — چرا Stateful آن را نمی‌پذیرد؟
+**10-6-ت6** — Sync+Hash.
 
-Session فقط یک جهت را دارد.
-
-**10-6-ت3** — دو ابزار تشخیص؟
-
-traceroute دوطرفه و Capture/Session.
-
-**10-6-م1** — چرا ping ممکن است کار کند ولی TCP نه؟
-
-ICMP ممکن است Session جداگانه/قوانین متفاوت داشته باشد؛ TCP Stateful سخت‌گیر است.
-
-**10-6-م2** — سناریو: دو ISP و Drop تصادفی؛ چه می‌کنید؟
-
-مسیر برگشت را بررسی و متقارن کنید.
+**10-6-Q1** — They do not see the initial packet so no session exists.
 
 **10-7-ت1** — قاعده‌ی طلایی چندفایروالی؟
 
@@ -1710,629 +1800,707 @@ any     -> any      : implicit deny + log
 - Microsoft: STRIDE Threat Modeling.
 - MITRE ATT&CK — Lateral Movement (مفهومی).
 
-## درس 11-1 — فایروال چیست؟ Stateless در برابر Stateful
+## درس 11-1 — فایروال چیست؟ Stateless در برابر Stateful، و چرا هر دو مهم‌اند
 
-**فصل 11 - روز 1 · پیش‌نیاز: فصل ۷ · ۶ ساعت**
+**فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۰، ۲-۱ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
 
-فایروال ترافیک بین بخش‌های شبکه را بر اساس قانون اجازه یا ممنوع می‌کند. فرق Stateless (مثل ACL) و Stateful (فایروال واقعی) مبنای همه‌ی طراحی‌هاست.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-ACL و NAT (فصل ۷).
+1. وظیفه‌ی فایروال را در مدل لایه‌ها توضیح دهد.
+2. Packet filter (Stateless)، Stateful و NGFW را مقایسه کند.
+3. جدول State را برای TCP/UDP/ICMP شرح دهد.
+4. یک ACL Stateless و یک Policy Stateful را برای یک سناریو مقایسه و اشکال ACL را پیدا کند.
+5. محدودیت‌های هر نوع را بگوید.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- **Stateless:** هر بسته مستقل بررسی می‌شود (ACL)؛ برگشت را باید جدا مجاز کنید.
-- **Stateful:** اتصال را به‌صورت **Session** نگه می‌دارد؛ بسته‌های پاسخ خودکار مجاز می‌شوند.
-- Session شامل مبدأ/مقصد/پروتکل/پورت و حالت (State) و Timeout است.
-- فقط اولین بسته با Policy بررسی می‌شود؛ بقیه با Session (سرعت بیشتر).
-- فایروال نسل جدید (NGFW) علاوه بر L3/L4 لایه‌ی ۷ را هم می‌بیند (App، IPS، SSL).
+نگهبان ساختمان را تصور کنید. نگهبان نوع اول فقط لیست «مجاز/ممنوع» دارد و هر بار برگه را چک می‌کند (Stateless). نگهبان نوع دوم یادش می‌ماند چه کسی بیرون رفت و فقط جواب او را اجازه‌ی ورود می‌دهد (Stateful). نوع سوم داخل کیف هم نگاه می‌کند (NGFW).
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کامپیوتر ۱۰.۱۰.۲۰.۱۱ به وب ۸.۸.۸.۸ می‌رود؛ پاسخ خودکار مجاز است.
+#### ۱) سه نسل
 
-### ۵) مثال سازمانی
-
-سرور وب در DMZ فقط به درخواست‌های کاربران پاسخ می‌دهد؛ کسی نمی‌تواند از بیرون اتصال تازه به داخل بزند.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Client --SYN--> [FW: new session] --> Server
-Client <--SYN-ACK-- [FW: matches session] <-- Server
-```
-
-### ۷) پیکربندی (CLI)
-
-```text
-# Linux stateful demo (on a Linux VM acting as a router/firewall)
-sudo iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-sudo iptables -A FORWARD -i eth1 -o eth0 -p tcp --dport 443 -j ACCEPT
-sudo iptables -P FORWARD DROP
-sudo conntrack -L
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- قانون اول: پاسخ‌های Session موجود مجاز.
-- قانون دوم: فقط اتصال جدید به پورت 443 از eth1 به eth0.
-- `-P FORWARD DROP`: Default Deny.
-- `conntrack -L`: جدول Session.
-- بازگشت: `iptables -F FORWARD` و `-P FORWARD ACCEPT`.
-
-### ۸) تست عملکرد
-
-- از Client curl به سرور 443؛ `conntrack -L` ورودی ESTABLISHED نشان دهد.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | اتصال برقرار نمی‌شود با اینکه ACL مجاز است |
-| شواهد/دستور | قانون ESTABLISHED نیست؛ برگشت Drop می‌شود |
-| علت | Stateless بدون قانون برگشت |
-| رفع | قانون Stateful یا Policy مناسب |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Stateless و Stateful چه فرقی دارند؟ *(پاسخ: 11-1-ت1)*
-
-**ت2.** چرا فقط اولین بسته با Policy بررسی می‌شود؟ *(پاسخ: 11-1-ت2)*
-
-**ت3.** Session چه فیلدهایی دارد؟ *(پاسخ: 11-1-ت3)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا ACL به‌تنهایی فایروال Stateful نیست؟ *(پاسخ: 11-1-م1)*
-
-**م2.** سناریو: پاسخ‌ها Drop می‌شوند؛ چرا؟ *(پاسخ: 11-1-م2)*
-
-**معیار تسلط:** توضیح Stateful با مثال و جدول Session.
-
-**اشتباهات رایج:** خلط ACL با Firewall؛ فکر اینکه همه‌ی بسته‌ها Policy می‌خورند.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Stateful | Stateful inspection | بازرسی با Session | Firewall |
-| Session | Connection/session entry | ورودی اتصال | Session Table |
-| NGFW | Next-Generation Firewall | فایروال با لایه ۷ | FortiGate |
-
-| English sentence | ترجمه |
-|---|---|
-| A stateful firewall tracks connections in a session table. | فایروال Stateful اتصال‌ها را در جدول Session دنبال می‌کند. |
-| Return traffic of an allowed session is permitted automatically. | ترافیک برگشت Session مجاز خودکار مجاز است. |
-
-#### کارت Lab — درس 11-1
-
-| # | فیلد | محتوا |
+| نوع | تصمیم بر اساس | حافظه‌ی Session |
 |---|---|---|
-| 1 | عنوان و هدف | مشاهده‌ی Stateful با Linux |
-| 2 | پیش‌نیاز | فصل ۷ |
-| 3 | توپولوژی | Client - Linux FW - Server |
-| 4 | تجهیزات | ۳ Linux |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | ۱۰.۱۰.۱/۲۴ و ۱۰.۲۰.۱/۲۴ |
-| 7 | وضعیت اولیه | Forward فعال |
-| 8 | صورت مسئله | Default Deny + 443 |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `conntrack -L` |
-| 11 | سناریوی خرابی | اتصال برقرار نمی‌شود با اینکه ACL مجاز است |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Session ESTABLISHED |
-| 14 | معیار پذیرش | فقط 443 رد شود |
-| 15 | مستندات نهایی | `03-ops/stateful-demo.md` |
-| 16 | Cleanup و بازگردانی | flush iptables |
+| Packet filter | Src/Dst IP، پورت، پروتکل | ندارد |
+| Stateful | همان + وضعیت اتصال | دارد |
+| NGFW | همان + برنامه، کاربر، محتوا | دارد |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+#### ۲) چرا Stateless مشکل دارد
 
----
+برای اجازه‌ی وب باید هم خروج به 443 و هم «برگشت از 443 به پورت‌های بالا» را باز کنید؛ یعنی هر کسی از بیرون با Source-port 443 وارد می‌شود.
+
+``` text
+access-list OUT permit tcp 10.0.0.0 0.0.0.255 any eq 443
+access-list IN  permit tcp any eq 443 10.0.0.0 0.0.0.255 gt 1023
+! the IN rule also admits crafted packets with source port 443
+```
+
+#### ۳) Stateful
+
+اولین بسته (SYN) را با Policy بررسی می‌کند؛ اگر مجاز بود، ورودی در جدول State ساخته می‌شود: Src, Dst, پورت‌ها، پروتکل، وضعیت، Timeout. بسته‌های برگشتی با جدول مطابقت می‌کنند و بدون Policy جدید عبور می‌کنند.
+
+``` text
+Session: tcp 10.0.0.5:51000 -> 203.0.113.10:443  state=ESTABLISHED  timeout=3600
+Return : tcp 203.0.113.10:443 -> 10.0.0.5:51000  matched to the session
+```
+
+#### ۴) UDP و ICMP
+
+UDP اتصال ندارد؛ فایروال «شبه‌Session» با Timeout کوتاه می‌سازد. ICMP Echo Reply فقط در صورتی که Request قبلاً دیده شده باشد.
+
+#### ۵) NGFW
+
+بازرسی عمیق (IPS، Application Control، SSL Inspection، AV) نیازمند لایسنس و CPU است (Needs-License)؛ و خطر اشتباه بیشتر.
+
+#### ۶) محدودیت
+
+Stateful نمی‌داند داخل 443 چه می‌رود؛ جدول State محدود است (DoS با SYN Flood)؛ مسیر نامتقارن را نمی‌پسندد.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Stateless/Stateful/NGFW | مرز شبکه: Stateful؛ بازرسی عمیق فقط ترافیک ریسک‌دار |
+| Timeout | طبق سرویس |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** کاربر 10.0.0.5 به 203.0.113.10:443 می‌رود؛ Session ساخته می‌شود و جواب بدون Policy دوم برمی‌گردد.
+
+**متوسط (تحلیل):** ACL Stateless با `permit tcp any eq 443 ... gt 1023`: مهاجم با Source-port 443 به پورت 3389 داخل بسته می‌فرستد و می‌گذرد (چون dst>1023). راه: Stateful (`established`/Policy).
+
+**سخت (طراحی):** سازمان وب را باز و RDP را بسته می‌خواهد؛ NGFW برای Application Control؛ ولی CPU کم: ابتدا Stateful+IPS روی ترافیک حساس؛ اندازه‌گیری Throughput قبل و بعد؛ معیار: افت < 30٪.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+! FortiGate (Unverified in lab)
+diagnose sys session list
+diagnose sys session filter dst 203.0.113.10
+diagnose sys session list
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Session برای جریان اجازه‌داده‌شده ساخته می‌شود.
+- بسته‌ی برگشت بدون Policy جدید عبور می‌کند.
+- بسته‌ی بدون SYN رد می‌شود.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| برگشت رد می‌شود | Session | مسیر/Asymmetric |
+| Session پر | جدول | Timeout/DoS |
+
+### ۱۰) نکات امنیتی
+
+- Stateless به‌تنهایی برای مرز اینترنت کافی نیست.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Stateless بی‌حافظه.
+- Stateful جدول State.
+- NGFW عمیق ولی پرهزینه.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) تفاوت Stateless و Stateful؟ *(پاسخ: 11-1-ت1)*
+
+**ت2.** (ساده) NGFW چه چیزی اضافه دارد؟ *(پاسخ: 11-1-ت2)*
+
+**ت3.** (متوسط) چرا ACL برگشتی با eq 443 خطرناک است؟ *(پاسخ: 11-1-ت3)*
+
+**ت4.** (متوسط) UDP چطور Session می‌گیرد؟ *(پاسخ: 11-1-ت4)*
+
+**ت5.** (سخت) CPU کم و نیاز به NGFW. *(پاسخ: 11-1-ت5)*
+
+**ت6.** (سخت، طراحی) انتخاب نوع فایروال برای مرز. *(پاسخ: 11-1-ت6)*
+
+**Q1.** Quick quiz (English): What does a stateful firewall store for each allowed connection? *(پاسخ: 11-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| NGFW | Next-Generation Firewall | فایروال نسل بعد |
+| SYN | Synchronize flag | پرچم شروع اتصال |
+
+- *A stateful firewall tracks connection state.* ← فایروال حالت‌دار وضعیت اتصال را دنبال می‌کند.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Stateful. **Evidence:** `03-ops/stateful.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Firewall policy
+- RFC 793
 
 <a id="l-11-2"></a>
 
 ## درس 11-2 — Zone، Trust Boundary، Default Deny و Least Privilege
 
-**فصل 11 - روز 2 · پیش‌نیاز: درس ۱۱-۱ · ۶ ساعت**
+**فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۱ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
 
-سازمان را به ناحیه‌های اعتماد (Zone) تقسیم می‌کنیم و بین ناحیه‌ها فقط آنچه لازم است مجاز می‌شود. این اساس طراحی Policy است.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۱-۱.
+1. Zone و سطح اعتماد را تعریف و ماتریس Zone-to-Zone بسازد.
+2. Default Deny و Least Privilege را در Policy اعمال کند.
+3. Policy را از ماتریس استخراج و ترتیب را رعایت کند.
+4. Policy گشاد را با Log شناسایی و تنگ کند.
+5. ماتریس را مستند کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- **Zone:** گروهی از Interface/VLAN با سطح اعتماد یکسان (Inside، DMZ، Outside، Mgmt).
-- **Trust Boundary:** مرزی که اعتماد در آن عوض می‌شود؛ ترافیک عبوری از آن باید بازرسی شود.
-- **Default Deny:** همه چیز ممنوع مگر صریحاً مجاز.
-- **Least Privilege:** حداقل دسترسی لازم (مبدأ، مقصد، سرویس، زمان).
-- **Segmentation:** جداسازی برای محدودکردن گسترش حمله (Lateral Movement).
+در یک فرودگاه، مسافر عمومی، کارمند و منطقه‌ی امنیتی سطح اعتماد متفاوت دارند. فایروال هم شبکه را به Zone تقسیم می‌کند و بین Zoneها فقط عبور لازم را مجاز می‌کند؛ بقیه رد می‌شود.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کاربران به اینترنت؛ اینترنت به داخل ممنوع.
+#### ۱) Zone
 
-### ۵) مثال سازمانی
-
-Zoneهای Users، Servers، DMZ، Mgmt؛ هر مسیر یک Policy مشخص.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Outside --(deny by default)--> DMZ --(limited)--> Inside
-Inside --(allow web/dns)--> Outside
-```
-
-### ۷) پیکربندی (CLI)
-
-```text
-# Policy Matrix (example)
-# SRC zone  DST zone  SERVICE        ACTION
-# Users     Outside   HTTP,HTTPS,DNS allow
-# Users     Servers   SMB,HTTPS      allow (limited hosts)
-# Outside   DMZ       HTTPS          allow (VIP only)
-# any       any       any            DENY (implicit)
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- ماتریس: هر خط یک جریان مجاز است.
-- خط آخر Default Deny است.
-- راستی‌آزمایی: برای هر جریان مجاز یک آزمایش و برای چند جریان ممنوع آزمایش منفی.
-- بازگشت: ماتریس نسخه‌دار.
-
-### ۸) تست عملکرد
-
-- برای هر ردیف یک تست مثبت و منفی بنویسید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | کاربر به سرور حساس دسترسی دارد |
-| شواهد/دستور | Policy گسترده‌ی «Users→Servers any» |
-| علت | تجمیع بی‌دقت |
-| رفع | تنگ‌کردن مبدأ/سرویس |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Zone چیست؟ *(پاسخ: 11-2-ت1)*
-
-**ت2.** Default Deny یعنی چه؟ *(پاسخ: 11-2-ت2)*
-
-**ت3.** Least Privilege؟ *(پاسخ: 11-2-ت3)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Segmentation خطر حمله را کم می‌کند؟ *(پاسخ: 11-2-م1)*
-
-**م2.** سناریو: یک Policy «any any» اضافه شده؛ خطر؟ *(پاسخ: 11-2-م2)*
-
-**معیار تسلط:** ساخت Policy Matrix با Least Privilege.
-
-**اشتباهات رایج:** Policy «any» موقت و فراموش‌شده.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Zone | Security zone | ناحیه‌ی اعتماد | Policy |
-| Trust boundary | Trust boundary | مرز اعتماد | طراحی |
-| Least privilege | Least privilege | حداقل دسترسی | Policy |
-
-| English sentence | ترجمه |
-|---|---|
-| Apply the principle of least privilege to every rule. | اصل حداقل دسترسی را برای هر قانون اعمال کنید. |
-| Everything is denied unless explicitly allowed. | همه چیز ممنوع است مگر صریحاً مجاز شود. |
-
-#### کارت Lab — درس 11-2
-
-| # | فیلد | محتوا |
+| Zone | اعتماد | مثال |
 |---|---|---|
-| 1 | عنوان و هدف | Policy Matrix برای سازمان نمونه |
-| 2 | پیش‌نیاز | درس ۱۱-۱ |
-| 3 | توپولوژی | نمودار Zoneها |
-| 4 | تجهیزات | کاغذ/Markdown |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | VLAN 10/20/30/DMZ |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | ماتریس ≥ ۱۰ جریان |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | تست مثبت/منفی |
-| 11 | سناریوی خرابی | کاربر به سرور حساس دسترسی دارد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | ماتریس کامل |
-| 14 | معیار پذیرش | Default Deny دارد |
-| 15 | مستندات نهایی | `02-design/policy-matrix-fw.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Internet | صفر | WAN |
+| DMZ | کم | وب‌سرور |
+| Server | متوسط | DB/App |
+| User | متوسط | کاربران |
+| Mgmt | بالا | مدیریت |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+#### ۲) ماتریس
 
----
+``` text
+          Internet  DMZ   Server  User  Mgmt
+User      HTTP/S    -     App     -     -
+DMZ       -         -     DB-only -     -
+Internet  -         443   -       -     -
+Mgmt      -         SSH   SSH     SSH   -
+```
+
+هر خانه‌ی خالی = Deny.
+
+#### ۳) Default Deny
+
+Policy آخر `deny all + log`. و Policyها از **خاص به عام**.
+
+#### ۴) Least Privilege
+
+به‌جای `ALL` فقط سرویس لازم؛ به‌جای `any` فقط Host/Subnet لازم؛ زمان‌دار.
+
+#### ۵) ممیزی
+
+``` text
+Policy hit-count = 0 (90 days)  -> remove
+Policy ALL/ALL      -> narrow
+```
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| تعداد Zone | طبق ریسک؛ نه بیش از حد |
+| ترتیب | خاص→عام |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** User→Internet فقط HTTP/HTTPS.
+
+**متوسط (تحلیل):** Policy `User→Server ALL`: Log نشان می‌دهد فقط 443 و 1433 استفاده شده؛ تنگ‌سازی به همان دو.
+
+**سخت (طراحی):** ۵ Zone با ماتریس؛ ۱۲ Policy؛ DMZ به DB مستقیم ممنوع؛ از App؛ آزمون منفی برای هر خانه‌ی Deny؛ معیار: صفر Policy ALL.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+! FortiGate (Unverified in lab)
+config firewall policy
+ edit 10
+  set srcintf "port2"
+  set dstintf "port1"
+  set srcaddr "LAN-NET"
+  set dstaddr "all"
+  set action accept
+  set schedule "always"
+  set service "HTTP" "HTTPS"
+  set logtraffic all
+ next
+end
+```
+
+### ۸) Verification (اثبات صحت)
+
+- آزمون مثبت و منفی برای هر خانه.
+- hit-count.
+- Log.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Policy کار نمی‌کند | ترتیب | خاص قبل عام |
+| ALL گشاد | Log | تنگ‌سازی |
+
+### ۱۰) نکات امنیتی
+
+- Default Deny با Log.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Zone و ماتریس.
+- Least Privilege.
+- ترتیب.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Default Deny یعنی؟ *(پاسخ: 11-2-ت1)*
+
+**ت2.** (ساده) Least Privilege؟ *(پاسخ: 11-2-ت2)*
+
+**ت3.** (متوسط) چرا ماتریس؟ *(پاسخ: 11-2-ت3)*
+
+**ت4.** (متوسط) ترتیب Policy؟ *(پاسخ: 11-2-ت4)*
+
+**ت5.** (سخت) Policy ALL را چگونه تنگ کنیم؟ *(پاسخ: 11-2-ت5)*
+
+**ت6.** (سخت، طراحی) ماتریس ۵ Zone. *(پاسخ: 11-2-ت6)*
+
+**Q1.** Quick quiz (English): What does default deny mean in firewall policy design? *(پاسخ: 11-2-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| DMZ | Demilitarized Zone | منطقه‌ی حائل |
+| ACL | Access Control List | فهرست کنترل دسترسی |
+
+- *Apply least privilege to every rule.* ← به هر Rule حداقل دسترسی را بدهید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** ماتریس Zone. **Evidence:** `03-ops/zone-matrix.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Firewall policy
+- NIST SP 800-41
 
 <a id="l-11-3"></a>
 
-## درس 11-3 — مسیر بسته در فایروال و ترافیک عبوری در برابر ترافیک خود فایروال
+## درس 11-3 — مسیر بسته در فایروال: ترافیک عبوری در برابر ترافیک خود فایروال
 
-**فصل 11 - روز 3 · پیش‌نیاز: درس ۱۱-۲ · ۶ ساعت**
+**فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۱، ۱۲-۰ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
 
-برای عیب‌یابی باید بدانید بسته در فایروال چه مراحلی را طی می‌کند: Route، Policy، NAT، Session. و تفاوت ترافیک عبوری با ترافیک مقصد خود فایروال.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس‌های ۱۱-۱ و ۱۱-۲.
+1. مراحل پردازش را (Ingress، Route، Policy، NAT، Egress) بگوید.
+2. Transit، Local-in و Local-out را تفکیک کند.
+3. ترتیب DNAT/Route/Policy/SNAT را بداند.
+4. سناریو را روی کاغذ شبیه‌سازی کند.
+5. Packet-flow را با ابزار تأیید کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- ترتیب مفهومی (ساده): ورود ← بررسی Session ← **DNAT/VIP** ← **Route** ← **Policy** ← **SNAT** ← خروج.
-- ترافیک **عبوری** با Policy؛ ترافیک **به خود فایروال** (SSH/HTTPS مدیریت، Ping) با «Local-in/Allow-access» کنترل می‌شود.
-- Routing تعیین می‌کند «از کجا»؛ Policy تعیین می‌کند «اجازه‌ی عبور».
-- NAT مبدأ/مقصد را عوض می‌کند؛ نه اجازه می‌دهد نه منع.
-- ترتیب دقیق NAT/Policy در FortiOS در فصل ۱۳–۱۴ با Debug Flow ثابت می‌شود.
+وقتی «سایت باز نمی‌شود»، بدون نقشه‌ی مسیر بسته فقط حدس می‌زنید. با نقشه می‌پرسید: بسته به Interface رسید؟ Route داشت؟ Policy؟ NAT؟ خارج شد؟
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-Client → اینترنت: Route (default)، Policy (allow web)، SNAT.
+#### ۱) مسیر عبوری
 
-### ۵) مثال سازمانی
-
-Web در DMZ از اینترنت: VIP (DNAT) ← Policy Outside→DMZ ← Route.
-
-### ۶) تصویر و توپولوژی
-
-```text
-IN -> Session? -> DNAT -> Route -> Policy -> SNAT -> OUT
-to-firewall traffic: Local policy, not forwarding policy
+``` text
+Ingress -> Anti-spoof(RPF) -> Session lookup -> DNAT(VIP) -> Route -> Policy -> SNAT -> Egress
 ```
 
-### ۷) پیکربندی (CLI)
+#### ۲) سه نوع ترافیک
 
-```text
-# Packet walk template
-# 1 ingress interface / zone
-# 2 existing session?
-# 3 DNAT / VIP?
-# 4 route lookup (egress)
-# 5 policy match (id)
-# 6 SNAT?
-# 7 egress and return path
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- برای هر ارتباط قالب را پر کنید.
-- برای FortiGate ابزار واقعی: Debug Flow (فصل ۱۴).
-- بازگشت: ندارد (تحلیل).
-
-### ۸) تست عملکرد
-
-- ۳ ارتباط را روی کاغذ دنبال کنید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | ارتباط کار نمی‌کند و نمی‌دانید کجا |
-| شواهد/دستور | هیچ مرحله‌ای ثبت نشده |
-| علت | عیب‌یابی بدون چارچوب |
-| رفع | قالب ۷ مرحله‌ای |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Routing و Policy چه فرقی دارند؟ *(پاسخ: 11-3-ت1)*
-
-**ت2.** کدام ترافیک Local-in است؟ *(پاسخ: 11-3-ت2)*
-
-**ت3.** NAT اجازه می‌دهد؟ *(پاسخ: 11-3-ت3)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا ping به فایروال با Policy عبوری کار نمی‌کند؟ *(پاسخ: 11-3-م1)*
-
-**م2.** سناریو: Policy هست ولی ارتباط نیست؛ بررسی؟ *(پاسخ: 11-3-م2)*
-
-**معیار تسلط:** دنبال‌کردن مسیر بسته برای ۳ سناریو با قالب.
-
-**اشتباهات رایج:** خلط Policy عبوری با دسترسی مدیریتی.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Local-in | Local-in policy | کنترل ترافیک به خود فایروال | Mgmt |
-| DNAT | Destination NAT | تغییر مقصد | VIP |
-| SNAT | Source NAT | تغییر مبدأ | اینترنت |
-
-| English sentence | ترجمه |
-|---|---|
-| Management traffic to the firewall is not covered by forwarding policies. | ترافیک مدیریت به فایروال توسط Policyهای عبوری پوشش داده نمی‌شود. |
-| Routing decides the path; policy decides the permission. | Routing مسیر را تعیین می‌کند؛ Policy اجازه را. |
-
-#### کارت Lab — درس 11-3
-
-| # | فیلد | محتوا |
+| نوع | مقصد | کنترل |
 |---|---|---|
-| 1 | عنوان و هدف | Packet Walk کاغذی |
-| 2 | پیش‌نیاز | درس ۱۱-۲ |
-| 3 | توپولوژی | ۳ ارتباط نمونه |
-| 4 | تجهیزات | کاغذ |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | سه ارتباط |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | قالب ۷ مرحله‌ای |
-| 11 | سناریوی خرابی | ارتباط کار نمی‌کند و نمی‌دانید کجا |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | سه جدول |
-| 14 | معیار پذیرش | هر مرحله مستند |
-| 15 | مستندات نهایی | `03-ops/packet-walk-paper.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Transit | شبکه‌ی پشت | Firewall Policy |
+| Local-in | خود فایروال | Local-in policy / Admin access |
+| Local-out | از خود فایروال | Routing خود دستگاه |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+#### ۳) ترتیب مهم
 
----
+DNAT قبل از Route و Policy؛ SNAT بعد از Policy. پس Policy با آدرس **بعد از DNAT** نوشته می‌شود.
+
+#### ۴) شبیه‌سازی
+
+کاربر 10.0.0.5 به وب 203.0.113.10:443 ⇒ RPF OK ⇒ Route Default ⇒ Policy User→Internet ⇒ SNAT به WAN ⇒ خروج.
+
+#### ۵) ابزار
+
+``` text
+diagnose debug flow filter addr 203.0.113.10
+diagnose debug flow trace start 20
+diagnose debug enable
+```
+
+(در FortiOS 7.0 برای NP-offload قبلاً offload غیرفعال شود؛ `Unverified` تا Lab.)
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Local-in policy | فقط Mgmt |
+| SNAT | طبق خروجی |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Transit: User→Internet.
+
+**متوسط (تحلیل):** پینگ به آدرس Public VIP از اینترنت؛ Policy باید با آدرس داخلی (بعد DNAT) باشد؛ در غیر این صورت `no policy`.
+
+**سخت (چندمرحله):** ترافیک Admin از Mgmt به فایروال: Local-in؛ شکست: Admin access روی Interface نیست؛ debug flow «local» را نشان می‌دهد.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose debug flow filter addr 203.0.113.10
+diagnose debug flow trace start 20
+diagnose debug enable
+diagnose debug disable
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Debug flow مراحل را نشان می‌دهد.
+- Policy-id درست.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| no policy | Policy | آدرس بعد DNAT |
+| RPF drop | Route برگشت | Route/RPF |
+
+### ۱۰) نکات امنیتی
+
+- Debug را بعد از تست غیرفعال کنید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- مسیر مرحله‌ای.
+- سه نوع.
+- DNAT قبل Policy.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) ترتیب DNAT و Policy؟ *(پاسخ: 11-3-ت1)*
+
+**ت2.** (ساده) Local-in چیست؟ *(پاسخ: 11-3-ت2)*
+
+**ت3.** (متوسط) چرا Policy با آدرس داخلی؟ *(پاسخ: 11-3-ت3)*
+
+**ت4.** (متوسط) RPF؟ *(پاسخ: 11-3-ت4)*
+
+**ت5.** (سخت) Admin قطع. *(پاسخ: 11-3-ت5)*
+
+**ت6.** (سخت، طراحی) نقشه‌ی Flow سازمان. *(پاسخ: 11-3-ت6)*
+
+**Q1.** Quick quiz (English): Does DNAT occur before or after the firewall policy lookup? *(پاسخ: 11-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| RPF | Reverse Path Forwarding | بررسی مسیر معکوس |
+| VIP | Virtual IP | آدرس مجازی DNAT |
+
+- *Trace the packet through each stage.* ← بسته را مرحله‌به‌مرحله ردیابی کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Flow. **Evidence:** `03-ops/flow.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0: Packet flow ingress/egress
 
 <a id="l-11-4"></a>
 
 ## درس 11-4 — ACL، Policy و NAT: تفاوت‌ها و ارتباط‌ها
 
-**فصل 11 - روز 4 · پیش‌نیاز: درس ۱۱-۳ · ۶ ساعت**
+**فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۳ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
 
-سه مفهوم که اغلب قاطی می‌شوند. این درس مرز آن‌ها را روشن و ارتباط با Routing را بیان می‌کند.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۱-۳.
+1. ACL، Firewall Policy و NAT را از نظر وظیفه تفکیک کند.
+2. انواع NAT (Source، Destination، PAT) را بشناسد.
+3. NAT و Policy را برای دسترسی از بیرون هماهنگ کند.
+4. خطاهای NAT/Policy را عیب‌یابی کند.
+5. مثال سناریوی Publish را بنویسد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- **ACL (Cisco):** Stateless، روی Interface، Allow/Deny.
-- **Policy (فایروال):** Stateful، بین Zone/Interface، با Profile و Log.
-- **NAT:** تبدیل آدرس؛ جدا از Policy (ولی در فایروال با Policy مرتبط).
-- ارتباط با Routing: Policy بدون Route بی‌فایده است؛ Route بدون Policy ترافیک را Drop می‌کند.
-- NAT امنیت نیست؛ فقط پنهان‌سازی/تبدیل.
+ACL مثل لیست مهمان، Policy مثل مجوز ورود و NAT مثل تغییر نام‌ها روی تابلو است. هر کدام کار خودش را می‌کند؛ اشتباه گرفتنشان باعث «NAT دارم ولی کار نمی‌کند» می‌شود.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-ACL مهمان را از سرورها جدا می‌کند؛ در فایروال همان یک Policy با Log است.
+#### ۱) تفاوت
 
-### ۵) مثال سازمانی
-
-سازمان: ACL روی Core برای East-West ساده؛ Policy فایروال برای North-South و UTM.
-
-### ۶) تصویر و توپولوژی
-
-```text
-ACL: stateless | Policy: stateful+profiles | NAT: address translation
-```
-
-### ۷) پیکربندی (CLI)
-
-```text
-# Compare (cheat table)
-# Feature      ACL       Firewall Policy
-# State        no        yes
-# Layer 7      no        yes (UTM)
-# Logging      limited   rich
-# Placement    interface zone/interface
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- جدول مقایسه برای انتخاب ابزار.
-- در Lab A از ACL و در Lab B از Policy استفاده می‌شود.
-- بازگشت: ندارد.
-
-### ۸) تست عملکرد
-
-- ۵ نیازمندی را به ابزار مناسب نگاشت کنید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | ACL اضافی بعد از Policy اجرا نمی‌شود |
-| شواهد/دستور | انتظار اجرای ACL روی ترافیک عبوری فایروال |
-| علت | خلط ابزار |
-| رفع | طراحی واضح: کدام لایه کنترل می‌کند |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** آیا NAT امنیت می‌دهد؟ *(پاسخ: 11-4-ت1)*
-
-**ت2.** Policy بدون Route؟ *(پاسخ: 11-4-ت2)*
-
-**ت3.** ACL در برابر Policy؟ *(پاسخ: 11-4-ت3)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Lab A و B مالک Policy متفاوت دارند؟ *(پاسخ: 11-4-م1)*
-
-**م2.** سناریو: Policy مجاز ولی ارتباط ناموفق؛ علت؟ *(پاسخ: 11-4-م2)*
-
-**معیار تسلط:** جدول مقایسه و ۵ نگاشت نیاز به ابزار.
-
-**اشتباهات رایج:** تکیه بر NAT به‌عنوان امنیت.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
+| | ACL | Policy | NAT |
 |---|---|---|---|
-| ACL | Access Control List | فیلتر ساده | Cisco |
-| Policy | Firewall policy | قانون Stateful | FortiGate |
-| NAT | Network Address Translation | تبدیل آدرس | اینترنت |
+| وظیفه | فیلتر ساده | اجازه/ردّ + بازرسی | تغییر آدرس |
+| وضعیت | معمولاً Stateless | Stateful | بسته‌ها را بازنویسی |
 
-| English sentence | ترجمه |
+#### ۲) انواع NAT
+
+- Source NAT (PAT/Overload): خروج کاربران با یک IP.
+- Destination NAT (VIP): انتشار سرور داخلی.
+- Static one-to-one.
+
+#### ۳) انتشار وب
+
+``` text
+VIP: 203.0.113.10:443 -> 10.20.0.10:443
+Policy: Internet -> DMZ, dst = VIP, service HTTPS, accept
+```
+
+#### ۴) نکته
+
+NAT بدون Policy یعنی ترافیک رد می‌شود؛ Policy بدون NAT برای VIP یعنی مقصد ترجمه نمی‌شود.
+
+#### ۵) خطاها
+
+- Hairpin NAT: کاربر داخلی به IP عمومی سرور داخلی.
+- Overlap NAT.
+- SNAT فراموش‌شده ⇒ بدون برگشت.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| NAT is not a security control. | NAT یک کنترل امنیتی نیست. |
-| A policy without a route has no effect. | Policy بدون Route اثری ندارد. |
+| DNS داخلی | Split DNS بهتر از Hairpin |
 
-#### کارت Lab — درس 11-4
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-| # | فیلد | محتوا |
+**ساده (حل‌شده):** PAT خروج کاربران.
+
+**متوسط (تحلیل):** VIP ساخته ولی Policy نیست؛ ترافیک رد می‌شود؛ راه: Policy Internet→VIP.
+
+**سخت (Hairpin):** کاربر داخلی به IP Public سرور داخلی: بدون Hairpin کار نمی‌کند؛ راه: DNS داخلی (Split DNS) یا Hairpin.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+config firewall vip
+ edit "WEB-VIP"
+  set extintf "port1"
+  set extip 203.0.113.10
+  set mappedip "10.20.0.10"
+  set portforward enable
+  set extport 443
+  set mappedport 443
+ next
+end
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Policy hit.
+- Session NAT.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | نگاشت نیازمندی به ابزار |
-| 2 | پیش‌نیاز | درس ۱۱-۳ |
-| 3 | توپولوژی | — |
-| 4 | تجهیزات | کاغذ |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | ۵ نیاز |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | جدول |
-| 11 | سناریوی خرابی | ACL اضافی بعد از Policy اجرا نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | نگاشت درست |
-| 14 | معیار پذیرش | با دلیل |
-| 15 | مستندات نهایی | `03-ops/tool-mapping.md` |
-| 16 | Cleanup و بازگردانی | — |
+| VIP کار نمی‌کند | Policy | dst=VIP |
+| برگشت نیست | SNAT/Route | NAT/Route |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+### ۱۰) نکات امنیتی
 
----
+- VIP فقط پورت لازم.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- ACL≠Policy≠NAT.
+- VIP+Policy.
+- Hairpin.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) NAT چه می‌کند؟ *(پاسخ: 11-4-ت1)*
+
+**ت2.** (ساده) PAT؟ *(پاسخ: 11-4-ت2)*
+
+**ت3.** (متوسط) VIP بدون Policy؟ *(پاسخ: 11-4-ت3)*
+
+**ت4.** (متوسط) Hairpin؟ *(پاسخ: 11-4-ت4)*
+
+**ت5.** (سخت) Split DNS. *(پاسخ: 11-4-ت5)*
+
+**ت6.** (سخت، طراحی) انتشار سه سرویس. *(پاسخ: 11-4-ت6)*
+
+**Q1.** Quick quiz (English): What is the purpose of a VIP on FortiGate? *(پاسخ: 11-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| PAT | Port Address Translation | ترجمه‌ی پورت |
+| VIP | Virtual IP | آدرس مجازی |
+
+- *NAT alone does not permit traffic.* ← NAT به‌تنهایی ترافیک را مجاز نمی‌کند.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** NAT. **Evidence:** `03-ops/nat.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0: Virtual IPs
 
 <a id="l-11-5"></a>
 
 ## درس 11-5 — Session، Timeout، MTU/MSS و ریشه‌ی خرابی‌های TCP/UDP
 
-**فصل 11 - روز 5 · پیش‌نیاز: درس ۱۱-۴ · ۶ ساعت**
+**فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۱، ۴-۲ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
 
-رفتار Session برای TCP/UDP/ICMP و اثر MTU/MSS و Timeout را بدانید. بسیاری از «ارتباط قطع می‌شود» ریشه‌اش Timeout یا MTU است.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۱-۴.
+1. چرخه‌ی Session و Timeout را توضیح دهد.
+2. MTU/MSS/PMTUD و Fragmentation را تحلیل کند.
+3. علائم MTU-black-hole را بشناسد.
+4. MSS-clamp را محاسبه و اعمال کند.
+5. خرابی‌های Timeout را رفع کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- TCP: Session با SYN ساخته و با FIN/RST بسته می‌شود؛ Timeout طولانی‌تر دارد.
-- UDP/ICMP: «شبه‌Session» با Timeout کوتاه.
-- MTU: بزرگ‌ترین بسته؛ **MSS** = MTU − 40 (IPv4 TCP).
-- مشکل: Tunnel/VPN MTU را کم می‌کند؛ بسته‌ی بزرگ با DF Drop می‌شود.
-- نشانه: ping کوچک OK، انتقال بزرگ قفل.
+کاربر می‌گوید «سایت باز می‌شود ولی بعد از لاگین گیر می‌کند» یا «SSH بعد از چند دقیقه می‌پرد». اینها اغلب MTU یا Timeout هستند نه Policy.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-ping با اندازه‌های مختلف نقطه‌ی شکست MTU را نشان می‌دهد.
+#### ۱) Timeout
 
-### ۵) مثال سازمانی
+| پروتکل | Timeout تقریبی |
+|---|---|
+| TCP Established | ساعت‌ها |
+| TCP Half-open | ثانیه‌ها |
+| UDP | دقیقه‌ها |
 
-VPN شعبه: کلاینت‌ها صفحه‌ی بزرگ باز نمی‌کنند؛ MSS Clamp راه‌حل است.
+Session بیکار حذف می‌شود؛ SSH/DB طولانی ⇒ Keepalive یا افزایش Timeout.
 
-### ۶) تصویر و توپولوژی
+#### ۲) MTU/MSS
 
-```text
-MTU 1500 - IP 20 - TCP 20 = MSS 1460
-VPN overhead lowers MTU (e.g. 1400)
+``` text
+Ethernet MTU = 1500
+MSS = MTU - 20 (IP) - 20 (TCP) = 1460
+Over PPPoE/IPsec: lower MTU -> MSS ~ 1360-1400
 ```
 
-### ۷) پیکربندی (CLI)
+#### ۳) علامت Black-hole
 
-```text
-ping -f -l 1472 10.20.0.10    # Windows: find the largest unfragmented size
-ping -M do -s 1472 10.20.0.10  # Linux
-# MSS = MTU - 40
+TCP Handshake و بسته‌های کوچک کار می‌کنند؛ بسته‌های بزرگ می‌میرند (ICMP Frag-needed فیلتر شده).
+
+#### ۴) راه
+
+``` text
+ping -f -l 1472 203.0.113.10
+! reduce until success -> path MTU
+set tcp-mss-sender 1380   ! (Unverified on 7.0.3)
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+#### ۵) آزمون
 
-- بزرگ‌ترین `-s` که بدون Fragment رد می‌شود.
-- MSS = MTU − 40 (برای TCP/IPv4).
-- راستی‌آزمایی: انتقال بزرگ بعد از تنظیم.
-- بازگشت: ندارد.
+بعد از تغییر، فایل بزرگ دانلود شود.
 
-### ۸) تست عملکرد
+### ۴) طراحی و تصمیم‌گیری
 
-- ۳ اندازه ping را امتحان و نتیجه را ثبت کنید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | صفحه‌ی کوچک باز می‌شود، بزرگ نه |
-| شواهد/دستور | ping 1472 با DF شکست؛ 1372 OK |
-| علت | MTU مسیر کوچک‌تر |
-| رفع | کاهش MSS/MTU |
+| MSS-clamp | روی تونل |
+| Timeout | سرویس‌محور |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** MSS = 1500−40 = 1460.
 
-**ت1.** MSS چگونه حساب می‌شود؟ *(پاسخ: 11-5-ت1)*
+**متوسط (تحلیل):** IPsec: ping 1472 شکست؛ 1372 موفق ⇒ MTU مسیر 1400؛ MSS 1360.
 
-**ت2.** چرا ICMP Timeout کوتاه است؟ *(پاسخ: 11-5-ت2)*
+**سخت (Timeout):** SSH بعد از ۵ دقیقه می‌پرد؛ Session Timeout کوتاه؛ Keepalive یا افزایش Timeout برای سرویس.
 
-**ت3.** نشانه‌ی MTU؟ *(پاسخ: 11-5-ت3)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-### ۱۱) مرور و ارزیابی
+``` text
+ping 203.0.113.10 size 1472 df-bit yes
+diagnose sys session list
+```
 
-**م1.** چرا VPN مشکل MTU می‌سازد؟ *(پاسخ: 11-5-م1)*
+### ۸) Verification (اثبات صحت)
 
-**م2.** سناریو: SSH کار می‌کند ولی scp قفل؛ علت؟ *(پاسخ: 11-5-م2)*
+- دانلود بزرگ موفق.
+- Session ماندگار.
 
-**معیار تسلط:** پیدا کردن MTU مؤثر و محاسبه‌ی MSS.
+### ۹) Troubleshooting
 
-**اشتباهات رایج:** فرض MTU = 1500 در Tunnel.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| MTU | Maximum Transmission Unit | بزرگ‌ترین بسته | Tunnel |
-| MSS | Maximum Segment Size | بزرگ‌ترین بخش TCP | Clamp |
-| DF | Don't Fragment | عدم تکه‌تکه شدن | ping آزمون |
-
-| English sentence | ترجمه |
-|---|---|
-| The MSS is the MTU minus 40 bytes for IPv4 TCP. | MSS برابر MTU منهای ۴۰ بایت برای TCP/IPv4 است. |
-| Large packets with DF set are dropped when the MTU is smaller. | بسته‌های بزرگ با DF وقتی MTU کوچک‌تر است Drop می‌شوند. |
-
-#### کارت Lab — درس 11-5
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | اندازه‌گیری MTU |
-| 2 | پیش‌نیاز | درس ۱۱-۴ |
-| 3 | توپولوژی | دو میزبان با Tunnel/MTU کم |
-| 4 | تجهیزات | ۲ Linux + روتر |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | MTU 1400 روی روتر |
-| 8 | صورت مسئله | ping با DF |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping -M do |
-| 11 | سناریوی خرابی | صفحه‌ی کوچک باز می‌شود، بزرگ نه |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | MTU مؤثر |
-| 14 | معیار پذیرش | محاسبه‌ی MSS |
-| 15 | مستندات نهایی | `03-ops/mtu.md` |
-| 16 | Cleanup و بازگردانی | برگرداندن MTU |
+| فقط بزرگ می‌میرد | ping DF | MSS/MTU |
+| SSH می‌پرد | Timeout | Keepalive |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+### ۱۰) نکات امنیتی
 
----
+- ICMP Frag-needed را کاملاً نبندید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- MSS=MTU−40.
+- Black-hole.
+- Timeout.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) MSS چند؟ *(پاسخ: 11-5-ت1)*
+
+**ت2.** (ساده) علامت black-hole؟ *(پاسخ: 11-5-ت2)*
+
+**ت3.** (متوسط) محاسبه برای MTU 1400. *(پاسخ: 11-5-ت3)*
+
+**ت4.** (متوسط) چرا ICMP لازم؟ *(پاسخ: 11-5-ت4)*
+
+**ت5.** (سخت) SSH می‌پرد. *(پاسخ: 11-5-ت5)*
+
+**ت6.** (سخت، طراحی) MSS روی IPsec. *(پاسخ: 11-5-ت6)*
+
+**Q1.** Quick quiz (English): What causes an MTU black hole? *(پاسخ: 11-5-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| MTU | Maximum Transmission Unit | حداکثر اندازه‌ی بسته |
+| MSS | Maximum Segment Size | حداکثر قطعه |
+
+- *Lower the MSS on tunnels.* ← MSS را روی تونل‌ها کاهش دهید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** MTU. **Evidence:** `03-ops/mtu.md`.
+
+### ۱۵) منابع
+
+- RFC 1191
+- RFC 4821
 
 <a id="l-11-6"></a>
 
@@ -2646,105 +2814,90 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**11-1-ت1** — Stateless و Stateful چه فرقی دارند؟
 
-Stateless هر بسته را جدا می‌بیند؛ Stateful Session نگه می‌دارد.
+### پاسخ‌های بازنویسی عمیق درس 11-1
 
-**11-1-ت2** — چرا فقط اولین بسته با Policy بررسی می‌شود؟
+**11-1-ت1** — Stateful وضعیت اتصال را نگه می‌دارد و برگشت را خودکار می‌پذیرد.
 
-بقیه با Session تطبیق می‌شوند.
+**11-1-ت2** — برنامه، کاربر و محتوا.
 
-**11-1-ت3** — Session چه فیلدهایی دارد؟
+**11-1-ت3** — هر کس با Source-port 443 می‌تواند وارد شود.
 
-مبدأ، مقصد، پروتکل، پورت‌ها، State، Timeout.
+**11-1-ت4** — شبه‌Session با Timeout کوتاه.
 
-**11-1-م1** — چرا ACL به‌تنهایی فایروال Stateful نیست؟
+**11-1-ت5** — ابتدا Stateful سپس بازرسی انتخابی و اندازه‌گیری.
 
-حافظه‌ی Session ندارد.
+**11-1-ت6** — Stateful+IPS انتخابی؛ معیار Throughput.
 
-**11-1-م2** — سناریو: پاسخ‌ها Drop می‌شوند؛ چرا؟
+**11-1-Q1** — A session entry with addresses, ports, protocol, state and timeout.
 
-قانون برگشت/Session نیست.
 
-**11-2-ت1** — Zone چیست؟
+### پاسخ‌های بازنویسی عمیق درس 11-2
 
-گروه Interface/VLAN با اعتماد یکسان.
+**11-2-ت1** — هرچه مجاز نشده رد می‌شود.
 
-**11-2-ت2** — Default Deny یعنی چه؟
+**11-2-ت2** — حداقل دسترسی لازم.
 
-هر چه مجاز نشده ممنوع است.
+**11-2-ت3** — تا هر مسیر مجاز مستند و قابل ممیزی باشد.
 
-**11-2-ت3** — Least Privilege؟
+**11-2-ت4** — خاص قبل از عام.
 
-حداقل دسترسی لازم.
+**11-2-ت5** — Log، سرویس‌های واقعی، جایگزینی.
 
-**11-2-م1** — چرا Segmentation خطر حمله را کم می‌کند؟
+**11-2-ت6** — طبق جدول.
 
-گسترش جانبی را محدود می‌کند.
+**11-2-Q1** — Any traffic not explicitly permitted is dropped.
 
-**11-2-م2** — سناریو: یک Policy «any any» اضافه شده؛ خطر؟
 
-Default Deny بی‌اثر می‌شود.
+### پاسخ‌های بازنویسی عمیق درس 11-3
 
-**11-3-ت1** — Routing و Policy چه فرقی دارند؟
+**11-3-ت1** — DNAT اول.
 
-Route مسیر؛ Policy اجازه.
+**11-3-ت2** — ترافیک به خود فایروال.
 
-**11-3-ت2** — کدام ترافیک Local-in است؟
+**11-3-ت3** — چون DNAT قبل Policy انجام شده.
 
-مقصد خود فایروال.
+**11-3-ت4** — بررسی مسیر معکوس Source.
 
-**11-3-ت3** — NAT اجازه می‌دهد؟
+**11-3-ت5** — Admin access/Local-in.
 
-خیر؛ فقط آدرس را عوض می‌کند.
+**11-3-ت6** — طبق مراحل.
 
-**11-3-م1** — چرا ping به فایروال با Policy عبوری کار نمی‌کند؟
+**11-3-Q1** — Before; policies match the translated destination.
 
-مقصد خود فایروال است؛ Local-in/Allow-access.
 
-**11-3-م2** — سناریو: Policy هست ولی ارتباط نیست؛ بررسی؟
+### پاسخ‌های بازنویسی عمیق درس 11-4
 
-Route و Session و NAT.
+**11-4-ت1** — آدرس را بازنویسی.
 
-**11-4-ت1** — آیا NAT امنیت می‌دهد؟
+**11-4-ت2** — چند Host با یک IP.
 
-خیر.
+**11-4-ت3** — رد می‌شود.
 
-**11-4-ت2** — Policy بدون Route؟
+**11-4-ت4** — دسترسی داخلی به IP Public.
 
-بی‌فایده؛ ترافیک مسیر ندارد.
+**11-4-ت5** — پاسخ داخلی IP داخلی.
 
-**11-4-ت3** — ACL در برابر Policy؟
+**11-4-ت6** — VIP+Policy هرکدام.
 
-Stateless در برابر Stateful.
+**11-4-Q1** — To perform destination NAT for inbound access to internal servers.
 
-**11-4-م1** — چرا Lab A و B مالک Policy متفاوت دارند؟
 
-Gateway/Policy جایگاه متفاوت.
+### پاسخ‌های بازنویسی عمیق درس 11-5
 
-**11-4-م2** — سناریو: Policy مجاز ولی ارتباط ناموفق؛ علت؟
+**11-5-ت1** — 1460.
 
-Route/NAT/Session.
+**11-5-ت2** — بسته بزرگ می‌میرد.
 
-**11-5-ت1** — MSS چگونه حساب می‌شود؟
+**11-5-ت3** — 1360.
 
-MTU − 40 برای TCP/IPv4.
+**11-5-ت4** — PMTUD.
 
-**11-5-ت2** — چرا ICMP Timeout کوتاه است؟
+**11-5-ت5** — Timeout.
 
-Session کوتاه‌مدت.
+**11-5-ت6** — کاهش MSS.
 
-**11-5-ت3** — نشانه‌ی MTU؟
-
-بسته‌ی کوچک OK و بزرگ قفل.
-
-**11-5-م1** — چرا VPN مشکل MTU می‌سازد؟
-
-سربار Tunnel MTU مؤثر را کم می‌کند.
-
-**11-5-م2** — سناریو: SSH کار می‌کند ولی scp قفل؛ علت؟
-
-MTU/MSS.
+**11-5-Q1** — Large packets with DF set are dropped and ICMP fragmentation-needed messages are blocked.
 
 **11-6-ت1** — هدف G4؟
 
