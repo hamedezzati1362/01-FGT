@@ -36,7 +36,7 @@
 
 <a id="ch25"></a>
 
-> **نسخه v3.5:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.6:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 25 — Multi-Vendor: FortiGate در کنار Cisco CSR (معماری ۶)
 
@@ -276,371 +276,424 @@ FortiGate: Network → OSPF/BGP؛ VPN → IPsec Tunnels. CSR: CLI. **Verificatio
 
 <a id="l-25-2"></a>
 
-## درس 25-2 — BGP/OSPF بین FGT و CSR
+## درس 25-2 — OSPF و BGP بین FortiGate و CSR: برگه‌ی پارامتر، پیکربندی دوطرفه، Redistribution و عیب‌یابی مقایسه‌ای
 
-**فصل 25 - روز 2 · پیش‌نیاز: درس ۲۵-۰ · ۶ ساعت**
+**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۰، ۲۵-۱، ۶-۱، ۹-۷، ۱۰-۱ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 و CSR1000v 17.03.02 (IOS-XE)؛ بوت‌نشده؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-Routing مشترک.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۵-۰
+1. OSPF و eBGP بین FGT و CSR را با برگه‌ی پارامتر مشترک بسازد.
+2. تفاوت پیش‌فرض‌ها (Hello/Dead، Network Type، MTU، Timer، Auth) و اثر ناسازگاری را بگوید.
+3. Redistribution دوطرفه و جلوگیری از Loop (Tag/Route-map) را پیاده کند.
+4. Verification را با دستورهای هر دو سازنده انجام و مقایسه کند.
+5. Neighbor Stuck (Init/Exstart/Active) را با شواهد هر دو سر عیب‌یابی کند.
+6. Convergence و Failover را اندازه بگیرد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- OSPF: Area/Network Type/Hello.
-- BGP: AS/Neighbor.
-- Timer و Authentication هماهنگ.
-- Route-map.
+بین دو سازنده، پروتکل یکی است ولی هر سازنده «پیش‌فرض‌ها» و «محدودیت‌ها»ی خودش را دارد. بیشتر مشکلات Interop از فرض یکسان بودن پیش‌فرض‌ها می‌آید: Hello/Dead، MTU، Network Type، یا رفتار Redistribution/Metric. روش درست: برگه‌ی پارامتر مشترک، پیکربندی صریح دو سر، و Debug هم‌زمان.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) برگه‌ی پارامتر (مشترک)
+
+``` text
+Link FGT port3 <-> CSR Gi2 : 10.255.0.0/30  (FGT .2, CSR .1)   MTU 1500 both
+OSPF : area 0, network type point-to-point, hello 10, dead 40, auth MD5 key 1 <KEY>
+BGP  : CSR AS 65001 router-id 1.1.1.1 ; FGT AS 65002 router-id 2.2.2.2
+       eBGP over 10.255.0.1/.2, hold 180 (or 9/3 with BFD), prefix-lists both directions
+Redistribution: OSPF<->BGP with tags; never both ways without tag
+```
+
+#### ۲) پیکربندی
+
+``` text
+! CSR (IOS-XE)
+interface GigabitEthernet2
+ ip address 10.255.0.1 255.255.255.252
+ ip ospf network point-to-point
+ ip ospf message-digest-key 1 md5 <KEY>
+ ip ospf authentication message-digest
+ ip mtu 1500
+router ospf 1
+ router-id 1.1.1.1
+ network 10.255.0.0 0.0.0.3 area 0
+router bgp 65001
+ bgp router-id 1.1.1.1
+ neighbor 10.255.0.2 remote-as 65002
+ neighbor 10.255.0.2 prefix-list FROM-FGT in
+ neighbor 10.255.0.2 prefix-list TO-FGT out
+```
+
+``` text
+# FortiGate
+config router ospf
+    set router-id 2.2.2.2
+    config area
+        edit 0.0.0.0
+        next
+    end
+    config network
+        edit 1
+            set prefix 10.255.0.0 255.255.255.252
+        next
+    end
+    config ospf-interface
+        edit "TO-CSR"
+            set interface "port3"
+            set network-type point-to-point
+            set authentication md5
+            set md5-key 1 <KEY>
+        next
+    end
+end
+config router bgp
+    set as 65002
+    set router-id 2.2.2.2
+    config neighbor
+        edit "10.255.0.1"
+            set remote-as 65001
+            set prefix-list-in "FROM-CSR"
+            set prefix-list-out "TO-CSR"
+        next
+    end
+end
+```
+
+(نام فیلدهای FortiOS `Unverified`؛ با CLI Reference 7.0 تطبیق شود.)
+
+#### ۳) Redistribution امن
+
+``` text
+FGT: redistribute ospf into bgp with route-map tag 100; redistribute bgp into ospf only routes WITHOUT tag 100
+CSR: same tag logic
+```
+
+بدون Tag، Prefix بین OSPF و BGP رفت‌وبرگشت می‌کند و حلقه یا Metric بی‌ثبات ایجاد می‌شود (۱۰-۲).
+
+#### ۴) جدول Verification
+
+| سؤال | CSR | FortiGate |
+|---|---|---|
+| همسایه OSPF | `show ip ospf neighbor` | `get router info ospf neighbor` |
+| LSDB | `show ip ospf database` | `get router info ospf database` |
+| BGP | `show ip bgp summary` | `get router info bgp summary` |
+| Route | `show ip route` | `get router info routing-table all` |
+| دریافتی BGP | `show ip bgp neighbors X received-routes` | `get router info bgp neighbors X received-routes` |
+
+#### ۵) ناسازگاری‌های رایج
+
+MTU (Exstart)، Network Type (DR/BDR در یک سر)، Auth، Hello/Dead، Timer BGP، `next-hop` و Filter، AD (eBGP 20 vs OSPF 110؛ مسیر BGP برنده می‌شود).
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| OSPF یا BGP | OSPF داخلی/لینک؛ BGP برای مقیاس/Policy |
+| AD | دقت AD: BGP 20 (eBGP) vs OSPF 110 |
+| Auth | MD5/SHA هر دو سر |
+| Tag | اجباری در Redistribution دوطرفه |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** OSPF Full و eBGP Established؛ Route 10.10.0.0/16 (CSR) در FGT با AD 20 (BGP)؛ ping از LAN CSR به LAN FGT موفق.
+
+**متوسط (تحلیل):** OSPF در Exstart: CSR Tunnel MTU 1400 و FGT 1500؛ DBD ارسالی بزرگ‌تر از MTU همتا؛ رفع: MTU یکسان یا `ip ospf mtu-ignore` (ریسک: ناپایداری). شواهد: دو سر `neighbor` و Debug OSPF.
+
+**سخت (Redistribution):** پس از Redistribution دوطرفه بدون Tag، Prefix 10.10.0.0/16 مدام تغییر می‌کند (BGP→OSPF→BGP). علت: Loop Redistribution. شواهد: `show ip bgp 10.10.0.0` Path عجیب و Flap؛ رفع: Tag و Route-map؛ تأیید: Route پایدار؛ آزمون: قطع لینک و بازگشت.
+
+### ۸) Verification (اثبات صحت)
+
+- Neighbor Full/Established.
+- Route‌ها در هر دو.
+- آزمون قطع لینک و Convergence.
+- آزمون منفی: Prefix غیرمجاز رد می‌شود.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Exstart | MTU | هم‌سان |
+| Init | Hello/Auth/Policy | همسان |
+| BGP Active | TCP 179/AS | Policy/AS |
+| Route نصب نمی‌شود | Next-hop/AD | Route/Distance |
+| Flap مسیر | Redistribution | Tag |
+
+### ۱۰) نکات امنیتی
+
+- Authentication OSPF/BGP.
+- Prefix-list ورودی/خروجی.
+- Max-prefix.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- برگه‌ی پارامتر مشترک.
+- MTU/Network Type/Auth ناسازگاری‌های اصلی.
+- Redistribution با Tag.
 - Verification دوطرفه.
 
-### ۴) مثال ساده
+### ۱۲) تمرین و ارزیابی
 
-دو برند باید با هم صحبت کنند.
+**ت1.** (ساده) چرا OSPF در Exstart می‌ماند؟ *(پاسخ: 25-2-ت1)*
 
-### ۵) مثال سازمانی
+**ت2.** (ساده) AD پیش‌فرض eBGP و OSPF در Cisco؟ *(پاسخ: 25-2-ت2)*
 
-سازمان: لبه Fortinet و هسته Cisco.
+**ت3.** (متوسط) مقایسه‌ی دستور Verification OSPF در دو سازنده. *(پاسخ: 25-2-ت3)*
 
-### ۶) تصویر و توپولوژی
+**ت4.** (متوسط) چرا Tag در Redistribution دوطرفه؟ *(پاسخ: 25-2-ت4)*
 
-```text
-CSR (core) <-BGP-> FGT (edge)
-```
+**ت5.** (سخت) Prefix بین OSPF و BGP Flap می‌کند؛ تحلیل و رفع. *(پاسخ: 25-2-ت5)*
 
-### ۷) پیکربندی (GUI و CLI)
+**ت6.** (سخت، طراحی) برگه‌ی پارامتر برای ۳ Link بین FGT و CSR. *(پاسخ: 25-2-ت6)*
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+**Q1.** Quick quiz (English): Why can a bidirectional redistribution without tags create a routing loop? *(پاسخ: 25-2-Q1)*
 
-#### روش گرافیکی (GUI)
+### ۱۳) اصطلاحات و English Corner
 
-1. Network > OSPF (FGT).
-
-#### روش خط فرمان (CLI)
-
-```text
-! CSR
-router ospf 1
- network 10.0.0.0 0.0.0.255 area 0
-! FGT
-get router info ospf neighbor
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- `Unverified`.
-
-### ۸) تست عملکرد
-
-- Neighbor Full.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Neighbor Exstart |
-| شواهد/دستور | `ospf neighbor` |
-| علت | MTU mismatch |
-| رفع | MTU یکسان |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Exstart؟ *(پاسخ: 25-2-ت1)*
-
-**ت2.** Timer؟ *(پاسخ: 25-2-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا MTU؟ *(پاسخ: 25-2-م1)*
-
-**م2.** سناریو: Exstart؛ علت؟ *(پاسخ: 25-2-م2)*
-
-**معیار تسلط:** اتصال دوبرندی.
-
-**اشتباهات رایج:** پیش‌فرض‌های ناهمسان.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| DBD | Database Description | بسته‌ی OSPF | OSPF |
-
-| English sentence | ترجمه |
-|---|---|
-| Match MTU on both sides. | MTU را دو طرف یکسان کنید. |
-
-#### کارت Lab — درس 25-2
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | OSPF FGT-CSR |
-| 2 | پیش‌نیاز | درس ۲۵-۰ |
-| 3 | توپولوژی | FGT+CSR |
-| 4 | تجهیزات | FGT+CSR |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | OSPF |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | show/get |
-| 11 | سناریوی خرابی | Neighbor Exstart |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Full |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/ospf-fgt-csr.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| DBD | Database Description packet | بسته‌ی توصیف پایگاه |
+| Tag | Route tag | برچسب مسیر |
+| AD | Administrative Distance | اعتبار منبع مسیر |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Match MTU, network type and authentication on both vendors.* ← MTU، Network Type و Auth را در هر دو سازنده یکسان کنید.
 
----
+### ۱۴) کارت Lab
+
+**کارت Lab:** OSPF/BGP FGT–CSR. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ospf-fgt-csr.md`.
+
+### ۱۵) منابع
+
+- RFC 2328
+- RFC 4271
+- Cisco IOS XE OSPF/BGP Configuration Guides
+- Fortinet CLI Reference 7.0
 
 <a id="l-25-3"></a>
 
-## درس 25-3 — IPsec چندسازنده و عیب‌یابی مقایسه‌ای
+## درس 25-3 — IPsec چندسازنده: روش مقایسه‌ی Debug، جدول مغایرت و Interop آزمایشی FGT–CSR
 
-**فصل 25 - روز 3 · پیش‌نیاز: درس ۲۵-۱ · ۶ ساعت**
+**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۰، ۱۸-۰، ۱۸-۳ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 و CSR1000v 17.03.02 (IOS-XE)؛ بوت‌نشده؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-Interop IPsec.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۵-۱
+1. Tunnel IKEv2 بین FGT و CSR را با برگه‌ی پارامتر مشترک بسازد.
+2. Debug هر دو سر را هم‌زمان بگیرد و اولین مغایرت را بیابد.
+3. پیام‌های خطا را بین دو سازنده نگاشت کند.
+4. Rekey/DPD/NAT-T/MTU را آزمایش کند.
+5. گزارش Interop (پارامتر، نتیجه، محدودیت) بنویسد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Proposal/DH/Lifetime.
-- IKEv2.
-- Selector.
-- Debug هر دو سو.
-- Evidence.
+در Interop، هر سازنده خطا را به زبان خودش گزارش می‌کند. «روش مقایسه‌ی دو Debug» سریع‌ترین راه برای پیدا کردن مغایرت است.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو برند باید با هم صحبت کنند.
+#### ۱) روش
 
-### ۵) مثال سازمانی
-
-سازمان: لبه Fortinet و هسته Cisco.
-
-### ۶) تصویر و توپولوژی
-
-```text
-CSR (core) <-BGP-> FGT (edge)
+``` text
+1 Same time window: start debug on both peers; trigger negotiation (clear SA / ping)
+2 Save logs; align by timestamp
+3 Find first divergence: the message where one side rejects/aborts
+4 Map to parameter: proposal, DH, PRF, ID, selectors, lifetime, PFS
+5 Change ONE parameter; repeat
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) نگاشت پیام‌ها
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Monitor > IPsec.
-
-#### روش خط فرمان (CLI)
-
-```text
-show crypto ikev2 sa
-diagnose vpn ike gateway list
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- `Unverified`.
-
-### ۸) تست عملکرد
-
-- Tunnel Up.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Phase 2 شکست |
-| شواهد/دستور | Debug |
-| علت | Selector |
-| رفع | تطبیق |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Interop؟ *(پاسخ: 25-3-ت1)*
-
-**ت2.** Debug؟ *(پاسخ: 25-3-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا هر دو سو؟ *(پاسخ: 25-3-م1)*
-
-**م2.** سناریو: یک‌طرفه؛ علت؟ *(پاسخ: 25-3-م2)*
-
-**معیار تسلط:** اتصال دوبرندی.
-
-**اشتباهات رایج:** پیش‌فرض‌های ناهمسان.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
+| وضعیت | CSR (IOS-XE) | FortiGate | علت |
 |---|---|---|---|
-| Interop | Interoperability | سازگاری | Multi-vendor |
+| Proposal ناسازگار | `no matching proposal` | `NO_PROPOSAL_CHOSEN` | Cipher/PRF/DH |
+| Auth | `AUTH FAILED` | `AUTH_FAILED` | PSK/ID |
+| Selector | `TS unacceptable` | `TS_UNACCEPTABLE` | Selector |
+| DH | `INVALID_KE_PAYLOAD` | `INVALID_KE_PAYLOAD` | گروه DH |
+| پایان | `SA deleted` | `delete` | Lifetime/DPD |
 
-| English sentence | ترجمه |
-|---|---|
-| Debug both ends together. | هر دو سر را با هم Debug کنید. |
+#### ۳) آزمون‌های Interop
 
-#### کارت Lab — درس 25-3
+- Rekey: Lifetime کوتاه (مثلاً 600 s) و مشاهده‌ی Rekey بدون قطع.
+- DPD: قطع یک سر؛ زمان کشف.
+- NAT-T: Peer پشت NAT.
+- MTU: ping DF بزرگ.
+- PFS: Group یکسان.
 
-| # | فیلد | محتوا |
+``` text
+CSR: show crypto ikev2 sa detailed ; show crypto ipsec sa
+FGT: diagnose vpn ike gateway list ; diagnose vpn tunnel list
+```
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Up با AES-GCM-256، DH 20؛ `show crypto ipsec sa` pkts encaps/decaps هر دو افزایش.
+
+**متوسط (تحلیل):** Phase 2 شکست: CSR `TS unacceptable`، FGT `TS_UNACCEPTABLE`؛ Selector CSR 10.10.0.0/16↔10.20.0.0/16 و FGT 0.0.0.0/0؛ رفع: any/any روی هر دو (Route-based) یا آینه‌کردن.
+
+**سخت (قطع دوره‌ای):** Tunnel هر ~۶۰ دقیقه قطع می‌شود: CSR Lifetime IPsec 3600 s و FGT 43200؛ هنگام Rekey با Proposal/PFS متفاوت شکست. شواهد: Log هر دو؛ رفع: یکسان‌سازی Lifetime/PFS؛ آزمون ۴ ساعته.
+
+### ۸) Verification (اثبات صحت)
+
+- Evidence Interop: پارامتر/خروجی/نتیجه.
+- Rekey بدون قطع.
+- DPD آزمایشی.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | IPsec FGT-CSR |
-| 2 | پیش‌نیاز | درس ۲۵-۱ |
-| 3 | توپولوژی | FGT+CSR |
-| 4 | تجهیزات | FGT+CSR |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Tunnel |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | show |
-| 11 | سناریوی خرابی | Phase 2 شکست |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Up |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/ipsec-mv.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| Phase1 شکست | Debug | Proposal/DH/PSK |
+| Phase2 شکست | Debug | Selector/PFS |
+| قطع دوره‌ای | Log | Lifetime |
+| یک جهت | counters | Policy/Route |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- PSK قوی؛ الگوریتم‌های ضعیف ممنوع.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- مقایسه‌ی Debug دو سر.
+- نگاشت پیام‌ها.
+- آزمون Rekey/DPD/NAT-T/MTU.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) معادل NO_PROPOSAL_CHOSEN در CSR؟ *(پاسخ: 25-3-ت1)*
+
+**ت2.** (ساده) چرا Debug هم‌زمان؟ *(پاسخ: 25-3-ت2)*
+
+**ت3.** (متوسط) TS unacceptable چگونه رفع می‌شود؟ *(پاسخ: 25-3-ت3)*
+
+**ت4.** (متوسط) آزمون Rekey چگونه؟ *(پاسخ: 25-3-ت4)*
+
+**ت5.** (سخت) Tunnel هر ساعت قطع می‌شود؛ تحلیل. *(پاسخ: 25-3-ت5)*
+
+**ت6.** (سخت، طراحی) گزارش Interop. *(پاسخ: 25-3-ت6)*
+
+**Q1.** Quick quiz (English): How do you locate the cause of an interop IKE failure efficiently? *(پاسخ: 25-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Divergence | First divergence point | اولین نقطه‌ی اختلاف |
+| PRF | Pseudo-random function | تابع شبه‌تصادفی |
+
+- *Debug both peers in the same time window.* ← هر دو Peer را در یک بازه‌ی زمانی Debug کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** IPsec FGT–CSR. **Evidence:** `03-ops/ipsec-mv.md`.
+
+### ۱۵) منابع
+
+- RFC 7296
+- Cisco IKEv2 guides
+- Fortinet IPsec CLI Reference 7.0
 
 <a id="l-25-4"></a>
 
-## درس 25-4 — معماری ۶ و آزمون
+## درس 25-4 — آزمون معماری ۶ (FGT+CSR): صورت مسئله، کلید پاسخ و Rubric
 
-**فصل 25 - روز 4 · پیش‌نیاز: درس ۲۵-۲ · ۶ ساعت**
+**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۰ تا ۲۵-۳ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 و CSR1000v 17.03.02 (IOS-XE)؛ بوت‌نشده؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-ترکیب و ارزیابی.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۵-۲
+1. اتصال FGT–CSR با Routing و IPsec را با شواهد تحویل دهد.
+2. سه عیب تزریق‌شده (MTU، Proposal، Redistribution) را رفع کند.
+3. Failover و Backup هر دو سازنده را انجام دهد.
+4. گزارش Interop و RCA ارائه دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- اتصال کامل.
-- Failover.
-- RCA.
-- Backup.
-- آزمون.
+آزمون جامع چندسازنده با شواهد. کلید پاسخ پس از تلاش.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو برند باید با هم صحبت کنند.
+#### صورت مسئله
 
-### ۵) مثال سازمانی
+HQ: CSR؛ شعبه: FGT؛ دو لینک (WAN1/WAN2). نیاز: OSPF داخلی، eBGP لبه، IPsec IKEv2 روی هر دو لینک، Failover < ۱۰ ثانیه، Backup هر دو.
 
-سازمان: لبه Fortinet و هسته Cisco.
+عیب‌ها: ۱) MTU Tunnel ناهمسان؛ ۲) PFS Group متفاوت؛ ۳) Redistribution بدون Tag.
 
-### ۶) تصویر و توپولوژی
+#### کلید پاسخ (خلاصه)
 
-```text
-CSR (core) <-BGP-> FGT (edge)
-```
+- OSPF Exstart ← MTU؛ IPsec Phase2 ← PFS؛ Flap ← Tag.
+- Failover با BFD/Local-pref؛ اندازه‌گیری ≈ ۶ ثانیه.
+- Backup: `copy running-config` و `execute backup config`.
 
-### ۷) پیکربندی (GUI و CLI)
+#### Rubric
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+اتصال ۲۵؛ عیب‌یابی ۳۰؛ Failover ۱۵؛ Backup ۱۰؛ گزارش/Evidence ۱۵؛ صداقت ۵.
 
-#### روش گرافیکی (GUI)
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-1. Monitor.
+**ساده:** Up و Route‌ها.
 
-#### روش خط فرمان (CLI)
+**متوسط:** سه عیب رفع.
 
-```text
-show running-config | section router
-get router info routing-table all
-```
+**سخت:** Failover و گزارش.
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- خواندنی.
+- Evidence A6.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- اجرای A6.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | مسیر نامتقارن |
-| شواهد/دستور | traceroute |
-| علت | Metric |
-| رفع | تنظیم |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** A6؟ *(پاسخ: 25-4-ت1)*
-
-**ت2.** Backup؟ *(پاسخ: 25-4-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا RCA؟ *(پاسخ: 25-4-م1)*
-
-**م2.** سناریو: Route نیست؛ علت؟ *(پاسخ: 25-4-م2)*
-
-**معیار تسلط:** اتصال دوبرندی.
-
-**اشتباهات رایج:** پیش‌فرض‌های ناهمسان.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| A6 | Architecture 6 | معماری ۶ | دوره |
-
-| English sentence | ترجمه |
-|---|---|
-| Back up both vendors. | از هر دو سازنده Backup بگیرید. |
-
-#### کارت Lab — درس 25-4
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون A6 |
-| 2 | پیش‌نیاز | درس ۲۵-۲ |
-| 3 | توپولوژی | FGT+CSR |
-| 4 | تجهیزات | FGT+CSR |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | A6 |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping |
-| 11 | سناریوی خرابی | مسیر نامتقارن |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | شاهد |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/a6.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Failover کند | Timer | BFD |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Secret پاک.
 
-<a id="ans-25"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- آزمون با شواهد.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) سه عیب آزمون؟ *(پاسخ: 25-4-ت1)*
+
+**ت2.** (ساده) Backup هر دو سازنده چگونه؟ *(پاسخ: 25-4-ت2)*
+
+**ت3.** (متوسط) چگونه Failover < ۱۰ s را اثبات می‌کنید؟ *(پاسخ: 25-4-ت3)*
+
+**ت4.** (متوسط) عیب PFS را از Debug چگونه می‌فهمید؟ *(پاسخ: 25-4-ت4)*
+
+**ت5.** (سخت) RCA برای Flap Redistribution. *(پاسخ: 25-4-ت5)*
+
+**ت6.** (سخت، طراحی) برنامه‌ی بهبود. *(پاسخ: 25-4-ت6)*
+
+**Q1.** Quick quiz (English): What artifacts must be backed up in a multi-vendor design? *(پاسخ: 25-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| A6 | Architecture 6 | معماری ۶ |
+
+- *Back up both vendors.* ← از هر دو سازنده Backup بگیرید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** A6. **Evidence:** `03-ops/a6.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۲۵-۱ تا ۲۵-۳
 
 ## پاسخ‌های فصل 25
 
@@ -661,59 +714,56 @@ get router info routing-table all
 
 **25-1-Q1** — A firewall policy between interfaces or zones.
 
-**25-2-ت1** — Exstart؟
 
-اغلب MTU.
+### پاسخ‌های بازنویسی عمیق درس 25-2
 
-**25-2-ت2** — Timer؟
+**25-2-ت1** — معمولاً MTU متفاوت؛ DBD بزرگ‌تر از MTU همتا کنار گذاشته می‌شود.
 
-باید یکی.
+**25-2-ت2** — eBGP = 20 و OSPF = 110؛ پس BGP برنده است.
 
-**25-2-م1** — چرا MTU؟
+**25-2-ت3** — CSR: `show ip ospf neighbor`؛ FGT: `get router info ospf neighbor`.
 
-Mismatch DBD.
+**25-2-ت4** — تا Prefix دوباره به منبعش بازگردانده نشود؛ از Loop و Flap جلوگیری می‌کند.
 
-**25-2-م2** — سناریو: Exstart؛ علت؟
+**25-2-ت5** — Loop Redistribution؛ افزودن Tag/Route-map، حذف Redistribute یک‌جهته در صورت نیاز؛ آزمون قطع/بازگشت.
 
-MTU.
+**25-2-ت6** — جدول: IP/MTU/Area/Network Type/Auth/Timer/BGP AS/Filter برای هر Link.
 
-**25-3-ت1** — Interop؟
-
-هماهنگی.
-
-**25-3-ت2** — Debug؟
-
-هر دو سو.
-
-**25-3-م1** — چرا هر دو سو؟
-
-علت آشکار.
-
-**25-3-م2** — سناریو: یک‌طرفه؛ علت؟
-
-Selector.
-
-**25-4-ت1** — A6؟
-
-FGT+CSR.
-
-**25-4-ت2** — Backup؟
-
-هر دو.
-
-**25-4-م1** — چرا RCA؟
-
-یادگیری.
-
-**25-4-م2** — سناریو: Route نیست؛ علت؟
-
-Redistribute.
+**25-2-Q1** — Because routes can be redistributed back into their source protocol repeatedly.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 25-3
 
-<a id="ch26"></a>
+**25-3-ت1** — `no matching proposal`.
 
+**25-3-ت2** — هر سمت بخش دیگری از مذاکره را می‌بیند؛ مقایسه اولین مغایرت را نشان می‌دهد.
+
+**25-3-ت3** — Selector آینه یا any/any در Route-based.
+
+**25-3-ت4** — Lifetime کوتاه و ping پیوسته؛ باید بدون قطع Rekey شود.
+
+**25-3-ت5** — Lifetime/PFS ناهمسان؛ Log دو سر؛ یکسان‌سازی؛ آزمون طولانی.
+
+**25-3-ت6** — جدول پارامتر/نتیجه/محدودیت/تاریخ/نسخه.
+
+**25-3-Q1** — Capture debug from both peers in the same time window and find the first diverging message.
+
+
+### پاسخ‌های بازنویسی عمیق درس 25-4
+
+**25-4-ت1** — MTU ناهمسان، PFS Group متفاوت، Redistribution بدون Tag.
+
+**25-4-ت2** — CSR: copy running-config tftp/scp؛ FGT: execute backup config tftp/sftp.
+
+**25-4-ت3** — قطع لینک و ping پیوسته؛ شمارش بسته‌ها × فاصله؛ ثبت.
+
+**25-4-ت4** — `INVALID_KE_PAYLOAD`/`NO_PROPOSAL_CHOSEN` در Phase 2؛ مقایسه‌ی PFS Group دو سر.
+
+**25-4-ت5** — علامت: Flap Prefix؛ شواهد: Path/Route؛ علت: Loop بدون Tag؛ رفع: Tag؛ پیشگیری: استاندارد Route-map.
+
+**25-4-ت6** — برگه‌ی پارامتر مشترک، استاندارد MTU، قالب Redistribution با Tag، BFD، آزمون دوره‌ای.
+
+**25-4-Q1** — Configurations of both vendors, including routing and VPN settings, stored without secrets in version control.
 
 ### پاسخ‌های درس افزوده‌ی 25-0 (فصل 25)
 

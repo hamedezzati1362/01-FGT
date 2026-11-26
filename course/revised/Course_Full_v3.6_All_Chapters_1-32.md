@@ -53,7 +53,7 @@
 ---
 <a id="ch1"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.5):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲-۰ (فصل ۲). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.6):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲-۰ (فصل ۲). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 1 — زیرساخت Lab، کشف وضع موجود و تغییر ایمن
 
@@ -5144,7 +5144,7 @@ Symptom, Scope, Hypothesis, Test, Fix and Verify.
 
 <a id="ch4"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.5؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_02_Chapters_04-06.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۵-۰ و ۵-۷ (فصل ۵). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.6؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_02_Chapters_04-06.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۵-۰ و ۵-۷ (فصل ۵). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 4 — Switching II: STP، EtherChannel و امنیت L2
 
@@ -11077,7 +11077,7 @@ Lab A و سوییچ‌ها؛ OSPF؛ آماده‌بودن Image CSR/IOSv برا�
 
 <a id="ch7"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.5؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_03_Chapters_07-09.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۹-۰ و ۹-۷ (فصل ۹). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.6؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_03_Chapters_07-09.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۹-۰ و ۹-۷ (فصل ۹). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 7 — IP Services: DHCP، DNS، NTP، NAT، ACL، Syslog و QoS
 
@@ -16141,7 +16141,7 @@ BGP عملی روی دو vIOS؛ آماده‌بودن Image دوم برای ISP-
 
 > **نسخه‌ی اصلاح‌شده (v3.1، دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_04_Chapters_10-12.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۱۰-۸ و ۱۰-۹ (فصل ۱۰). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
 
-> **نسخه‌ی اصلاح‌شده (v3.5):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۰-۸، ۱۰-۹، ۱۱-۰، ۱۱-۷، ۱۲-۰، ۱۲-۸، ۱۲-۹ (دسته‌های B و A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.6):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۰-۸، ۱۰-۹، ۱۱-۰، ۱۱-۷، ۱۲-۰، ۱۲-۸، ۱۲-۹ (دسته‌های B و A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 10 — Redistribution، ECMP، PBR، VRF-lite و Asymmetric Routing
 
@@ -20991,7 +20991,7 @@ Console + بازگرداندن Route.
 
 <a id="ch13"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.5):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۳-۷، ۱۴-۷ (دسته A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.6):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۳-۷، ۱۴-۷ (دسته A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 13 — FortiGate II: Policy، Session، NAT، VIP، IP Pool و Central NAT (تک‌فایروالی کامل)
 
@@ -24739,7 +24739,7 @@ Lab معماری ۲ ساخته و Backup؛ لایسنس UTM (Needs-License) بر
 
 <a id="ch16"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.5):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۶-۰، ۱۶-۷، ۱۸-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.6):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۶-۰، ۱۶-۷، ۱۸-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 16 — UTM: آنتی‌ویروس، IPS، Application Control، Web Filter و SSL Inspection
 
@@ -28797,7 +28797,7 @@ Tunnel S2S پایدار و Backup؛ آشنایی با OSPF/BGP؛ برنامه‌
 
 <a id="ch19"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.5):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۰-۷، ۲۱-۷ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.6):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۰-۷، ۲۱-۷ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 19 — Hub-and-Spoke، OSPF/BGP روی FortiGate و Local Breakout
 
@@ -29003,879 +29003,1186 @@ diagnose vpn ike gateway list
 
 - Fortinet Docs: [ADVPN and shortcut paths](https://docs.fortinet.com/document/fortigate/7.0.9/administration-guide/985659/advpn-and-shortcut-paths)، [ADVPN with BGP](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/820072/advpn-with-bgp-as-the-routing-protocol)، [Enhanced BGP next hop updates and ADVPN shortcut override 7.0.4](https://docs.fortinet.com/document/fortigate/7.0.0/new-features/245878/enhanced-bgp-next-hop-updates-and-advpn-shortcut-override-7-0-4).
 
-## درس 19-1 — طراحی Hub-and-Spoke و IP Plan
+## درس 19-1 — طراحی آدرس‌دهی چندشعبه: IP Plan، Summarization با محاسبه‌ی باینری، Tunnel IP و ظرفیت Hub
 
-**فصل 19 - روز 1 · پیش‌نیاز: فصل ۱۸ · ۶ ساعت**
+**فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۲-۲ (VLSM)، ۹-۰ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک مرجع؛ Lab «اجرا نشده».
 
-قبل از پیکربندی طراحی: چند Tunnel، IP Tunnel و Subnet.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۱۸
+1. IP Plan سلسله‌مراتبی برای ۴۰ شعبه بنویسد که قابل‌خلاصه‌سازی باشد.
+2. Summary را با محاسبه‌ی باینری و بررسی «Black hole» تعیین کند.
+3. Tunnel IP (/30، /32، Unnumbered) را با توجه به Routing پویا انتخاب کند.
+4. ظرفیت Hub (تعداد Tunnel، SA، Throughput، Route) را برآورد کند.
+5. تعارض‌ها (Overlap، ادغام شرکت) را شناسایی و راه‌حل بدهد.
+6. طرح را با آزمون‌های قابل‌اندازه‌گیری (Route Count، Traceroute) تأیید کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Hub مرکز؛ Spokeها شعبه.
-- هر Tunnel IP نقطه‌به‌نقطه (/30 یا /32).
-- Subnet هر شعبه بدون Overlap.
-- ترافیک Spoke-to-Spoke از Hub.
-- جدول IP Plan.
+قبل از ساخت اولین Tunnel باید دانست «هر شعبه چه آدرسی دارد و چه Prefixی در Routing اعلام می‌شود». آدرس‌دهی بد بعدها با هیچ پیکربندی جبران نمی‌شود: Overlap، Route زیاد روی Hub، ناتوانی در Summary و NAT ناخواسته. IP Plan یک **سند معماری** است، نه فهرست آدرس.
 
-### ۴) مثال ساده
+سه مسئله‌ی بنیادی:
+1. **یکتایی:** هیچ دو سایت Prefix هم‌پوشان نداشته باشند.
+2. **قابلیت خلاصه‌سازی (Summarization):** شعب یک منطقه با یک Prefix قابل‌اعلام باشند تا جدول مسیر کوچک و Convergence سریع بماند.
+3. **رشد:** برای شعبه‌های جدید جا گذاشته شود، بدون Re-IP.
 
-سه شعبه به یک مرکز.
+### ۳) توضیح عمیق فنی
 
-### ۵) مثال سازمانی
+#### ۱) الگوی سلسله‌مراتبی
 
-سازمان: چند شعبه با Routing پویا و اینترنت محلی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Spoke1/Spoke2 ==IPsec== Hub (OSPF/BGP)
+``` text
+10.0.0.0/8 company
+  10.0.0.0/16      HQ (data center, users, mgmt)
+  10.1.0.0/16      Region A  (branches 10.1.0.0/24 ... 10.1.255.0/24)
+  10.2.0.0/16      Region B
+  10.3.0.0/16      Region C
+  10.250.0.0/16    Tunnel interconnect (p2p /30 or /32)
+  10.254.0.0/24    Loopbacks (management, BGP peering)
+  10.255.0.0/16    Reserved / future
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+هر منطقه یک /16 دارد ← تا ۲۵۶ شعبه‌ی /24؛ خلاصه‌ی منطقه = یک Route.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۲) محاسبه‌ی Summary (باینری)
 
-#### روش گرافیکی (GUI)
+فرض: چهار شعبه 10.1.4.0/24، 10.1.5.0/24، 10.1.6.0/24، 10.1.7.0/24.
 
-1. Network > Interfaces: Tunnelها.
-
-#### روش خط فرمان (CLI)
-
-```text
-get router info routing-table all
+``` text
+10.1.4.0 = 00001010.00000001.00000100.00000000
+10.1.5.0 = 00001010.00000001.00000101.00000000
+10.1.6.0 = 00001010.00000001.00000110.00000000
+10.1.7.0 = 00001010.00000001.00000111.00000000
+common prefix = first 22 bits  (octet3: 000001xx)
+Summary = 10.1.4.0/22   covers 10.1.4.0 - 10.1.7.255
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+شرط: بلوک باید **هم‌تراز (aligned)** باشد (شروع 4 بر 4 بخش‌پذیر). اگر شعب 10.1.3..6 بودند، یک /22 تنها پوشش نمی‌داد.
 
-- خواندنی؛ ایمن.
+#### ۳) Black hole در Summary
 
-### ۸) تست عملکرد
+اگر Summary 10.1.4.0/22 را اعلام کنید ولی فقط ۳ شعبه موجود باشد، ترافیک به 10.1.7.0/24 (ناموجود) به Hub می‌آید و پس از Longest Prefix Match مسیری ندارد؛ بسته Drop می‌شود. این رفتار قابل‌قبول (Fail-closed) است؛ خطرناک وقتی است که Default Route وجود دارد و ترافیک ناموجود به اینترنت نشت می‌کند. راه‌حل: **Null route (Blackhole route)** برای Summary روی Hub:
 
-- IP Plan را کامل کنید.
+``` text
+config router static
+    edit 200
+        set dst 10.1.4.0 255.255.252.0
+        set blackhole enable
+        set distance 254
+    next
+end
+```
 
-### ۹) عیب‌یابی
+(`blackhole` در Static Route FortiOS؛ `Unverified` برای جزئیات 7.0.3.) Routeهای دقیق‌تر شعب (LPM) همچنان برنده‌اند.
 
-| بخش | شرح |
-|---|---|
-| Symptom | Overlap |
-| شواهد/دستور | Routing table |
-| علت | Subnet تکراری |
-| رفع | تغییر Subnet |
+#### ۴) Tunnel Interface IP
 
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** چرا Overlap بد است؟ *(پاسخ: 19-1-ت1)*
-
-**ت2.** Spoke-to-Spoke؟ *(پاسخ: 19-1-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا IP Plan؟ *(پاسخ: 19-1-م1)*
-
-**م2.** سناریو: دو شعبه 10.1.1.0/24؛ چه می‌کنید؟ *(پاسخ: 19-1-م2)*
-
-**معیار تسلط:** ساخت Hub-and-Spoke و Routing.
-
-**اشتباهات رایج:** Overlap و Policy.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
+| روش | توضیح | مزیت | محدودیت |
 |---|---|---|---|
-| Hub | Hub site | سایت مرکزی | VPN |
-| Spoke | Spoke site | سایت شعبه | VPN |
+| /30 هر لینک | دو IP برای دو سر | استاندارد، Routing پویا ساده | مصرف آدرس (۴ به‌ازای هر Tunnel) |
+| /32 دو سر | IP محلی و Remote /32 | کم‌مصرف؛ در FortiOS برای Tunnel بدون Subnet مشترک | باید Route Static/پویا به Remote /32 |
+| Unnumbered | بدون IP روی Tunnel | کمترین آدرس | محدودیت پروتکل‌ها (BGP با Loopback) |
 
-| English sentence | ترجمه |
+برای ۴۰ شعبه: ۴۰ × /30 = ۱۶۰ آدرس از 10.250.0.0/16؛ کاملاً کافی.
+
+#### ۵) برآورد ظرفیت Hub
+
+``` text
+Tunnels      = number of spokes x tunnels per spoke   (e.g. 40 x 2 = 80)
+IKE/IPsec SA = 2 SA per tunnel (IKE SA + Child SA)      -> ~160
+Routes       = spokes x prefixes per spoke + summaries  (e.g. 40 x 3 = 120)
+Throughput   = sum of expected branch traffic through hub (peak, not average)
+```
+
+باید با **Datasheet مدل** (IPsec VPN Throughput، تعداد Tunnel مجاز، Concurrent Sessions) با Profile فعال بسنجید؛ عدد Datasheet معمولاً برای بسته‌های بزرگ/بدون UTM است. اگر Hub مرکز Backhaul اینترنت هم باشد، بار چندبرابر می‌شود.
+
+#### ۶) مهاجرت و ادغام (Overlap)
+
+Overlap در موارد: شرکت ادغام‌شده با همان 192.168.1.0/24، شعبه‌ی قدیمی با Subnet تکراری. راه‌حل‌ها: (۱) Re-IP تدریجی (امن‌ترین، گران)؛ (۲) NAT یک‌طرفه/دوطرفه روی Tunnel (VIP/IP Pool) با جدول «آدرس واقعی ↔ آدرس مجازی»؛ (۳) VRF/VDOM جدا (مرز Routing). هر NAT = بدهی عیب‌یابی (Log آدرس مجازی).
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Plan the addressing before building tunnels. | قبل از ساخت Tunnel آدرس‌دهی را برنامه‌ریزی کنید. |
+| Summary در چه سطحی؟ | Region /16؛ نه بر پایه‌ی تعداد فعلی شعب |
+| Tunnel IP | /30 برای سادگی؛ /32 برای صرفه‌جویی (با Route Remote) |
+| Overlap | Re-IP > NAT > VRF/VDOM |
+| ظرفیت Hub | عدد Datasheet با UTM/بسته‌ی واقعی؛ حاشیه ۳۰٪ |
+| Null route | برای هر Summary روی Hub |
 
-#### کارت Lab — درس 19-1
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-| # | فیلد | محتوا |
+**ساده (حل‌شده):** ۴ شعبه در یک منطقه با 10.1.4–7.0/24: Summary 10.1.4.0/22 با Null route؛ Hub فقط یک Route منطقه را به بقیه اعلام می‌کند؛ `get router info routing-table all` باید Route /22 و ۴ Route /24 (در Hub) را نشان دهد.
+
+**متوسط (حل‌شده):** شعبه‌ی ۵ با 10.1.8.0/24 اضافه می‌شود: /22 دیگر آن را پوشش نمی‌دهد ولی Region /16 (10.1.0.0/16) پوشش می‌دهد. نتیجه: اگر ISP/Region-level Summary استفاده شود، اضافه‌شدن شعبه نیاز به تغییر Summary ندارد؛ برای همین Summary سطح منطقه (/16) پایدارتر از Summary چهارتایی است. تصمیم: Summary را در مرز منطقه بگذارید، نه بر پایه‌ی تعداد فعلی.
+
+**سخت (تحلیل):** شرکت ادغام‌شده 10.0.0.0/8 را به‌طور پراکنده استفاده می‌کند و ۶ شعبه با شما Overlap دارند. تحلیل: (الف) Overlap دقیق را با اسکریپت بیابید؛ (ب) برای ۶ شعبه NAT دوطرفه به بلوک 172.20.0.0/16 اختصاص دهید و جدول Mapping بسازید؛ (ج) Re-IP تدریجی را برنامه‌ریزی کنید (۱۲ ماه)؛ (د) Policy/Logging بر پایه‌ی آدرس واقعی حفظ شود (Log فقط آدرس مجازی دارد؛ لذا سیستم Log باید Mapping را بشناسد). ریسک: خرابی Route برگشت، DNS (جواب با آدرس واقعی)، Applicationهایی که IP را داخل Payload می‌گذارند (ALG).
+
+### ۸) Verification (اثبات صحت)
+
+- اسکریپت بررسی Overlap (مثلاً Python ipaddress) روی IP Plan بدون خطا.
+- `get router info routing-table all`: Summaryها و Null routeها.
+- traceroute به آدرس ناموجود داخل Summary: Drop در Hub (نه نشت به اینترنت).
+- Route Count Hub مطابق برآورد.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | IP Plan Hub |
-| 2 | پیش‌نیاز | فصل ۱۸ |
-| 3 | توپولوژی | — |
-| 4 | تجهیزات | — |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | جدول |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | Overlap |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | سند |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `02-design/hub-spoke-plan.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Route مبهم بین دو شعبه | `get router info routing-table details <ip>` | Overlap؛ باید Re-IP/NAT |
+| ترافیک آدرس ناموجود به اینترنت نشت می‌کند | traceroute/Log | نبود Null route با وجود Default Route؛ افزودن blackhole |
+| Summary اعلام نمی‌شود | `get router info bgp network` / OSPF area-range | Summary در Protocol تنظیم نشده یا Prefix هم‌تراز نیست |
+| Hub CPU بالا با ۴۰ Tunnel | `diagnose sys top`، IKE counters | ظرفیت/Rekey همزمان؛ توزیع Lifetime |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- IP Plan را در مخزن نسخه‌دار و با مالک ثبت کنید؛ تغییر بدون Review ممنوع.
+- Null route برای جلوگیری از نشت ترافیک.
+- NAT روی Tunnel را مستند کنید (Log و Audit).
+
+### ۱۱) جمع‌بندی مفهومی
+
+- IP Plan سلسله‌مراتبی = پایه‌ی Summary و رشد.
+- Summary فقط روی بلوک هم‌تراز؛ Null route برای ایمنی.
+- Tunnel IP: /30 ساده، /32 کم‌مصرف.
+- ظرفیت Hub را با Profile واقعی بسنجید.
+- Overlap: Re-IP بهترین؛ NAT بدهی است.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا Summary باید «هم‌تراز» باشد؟ *(پاسخ: 19-1-ت1)*
+
+**ت2.** (ساده) Tunnel IP با /30 چند آدرس مصرف می‌کند و چرا؟ *(پاسخ: 19-1-ت2)*
+
+**ت3.** (متوسط) Summary 10.1.0.0/16 اعلام شده ولی فقط 10.1.4.0/24 موجود است. ترافیک 10.1.9.5 چه می‌شود و چرا Null route مهم است؟ *(پاسخ: 19-1-ت3)*
+
+**ت4.** (متوسط) برای ۴۰ شعبه با ۲ Tunnel هر کدام، تعداد SA و Tunnel Hub را حساب کنید. *(پاسخ: 19-1-ت4)*
+
+**ت5.** (سخت) شرکت ادغام‌شده Overlap دارد. طرح گذار سه‌مرحله‌ای بنویسید. *(پاسخ: 19-1-ت5)*
+
+**ت6.** (سخت، طراحی) IP Plan منطقه‌ای را برای ۳ منطقه × ۲۵۰ شعبه بنویسید و خلاصه‌ها را نشان دهید. *(پاسخ: 19-1-ت6)*
+
+**Q1.** Quick quiz (English): Why must a summary prefix be aligned to its block boundary? *(پاسخ: 19-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Summarization | Route summarization | خلاصه‌سازی مسیر |
+| Null route | Blackhole route | مسیر دور‌ریز |
+| LPM | Longest Prefix Match | بلندترین Prefix مطابق |
+| Aligned | Block alignment | هم‌ترازی بلوک |
+
+- *Summarize routes at regional boundaries.* ← مسیرها را در مرز منطقه‌ها خلاصه کنید.
+- *Add a null route for every summary.* ← برای هر Summary یک Null route اضافه کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** IP Plan چندشعبه. **هدف:** طرح ۴۰ شعبه + Summary + Null route. **وضعیت:** اجرا نشده. **مراحل:** (۱) جدول IP Plan؛ (۲) اسکریپت Overlap؛ (۳) تنظیم blackhole Route؛ (۴) آزمون traceroute. **Verification:** مطابق بخش ۸. **Rollback:** حذف Routeها. **Evidence:** `02-design/hub-spoke-plan.md`.
+
+### ۱۵) منابع
+
+- RFC 4632 — CIDR
+- RFC 1918
+- Fortinet Docs: Static routes (blackhole)؛ FortiOS 7.0 Administration Guide
 
 <a id="l-19-2"></a>
 
-## درس 19-2 — ساخت Tunnelهای Spoke و OSPF روی Tunnel
+## درس 19-2 — Tunnelهای Hub–Spoke و OSPF روی Tunnel: طراحی، Network Type، Cost، Convergence و عیب‌یابی
 
-**فصل 19 - روز 2 · پیش‌نیاز: درس ۱۹-۰ · ۶ ساعت**
+**فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۱۹-۱، ۱۸-۲، ۶-۱ (OSPF) · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک مرجع؛ Lab «اجرا نشده».
 
-Tunnel بین Hub و هر Spoke و Routing پویا.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۹-۰
+1. Hub–Spoke را با Phase1 dynamic/Static و Selector باز بسازد.
+2. OSPF را روی Tunnel Interface با Network Type درست راه بیندازد و Hello/Dead/Cost را تنظیم کند.
+3. رفتار OSPF هنگام خرابی Tunnel را (Detect، LSA، SPF) تحلیل و زمان Convergence را محاسبه کند.
+4. Policy و Local-in لازم برای OSPF را بنویسد.
+5. Neighbor Stuck در Init/Exstart/2-Way را عیب‌یابی کند.
+6. Area Design و LSA Filtering را برای مقیاس بسنجد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Phase1/2 مانند فصل ۱۸ با Selector 0.0.0.0/0.
-- IP روی Tunnel (`config system interface` روی tunnel).
-- OSPF روی Tunnel: Network Type point-to-point.
-- Policy: Tunnel <-> LAN.
-- تأیید: `get router info ospf neighbor`.
+OSPF روی Tunnel دو مزیت دارد: (۱) Route شعب خودکار یاد گرفته می‌شود؛ (۲) قطع Tunnel باعث حذف Route می‌شود و ترافیک به مسیر جایگزین می‌رود. ولی OSPF برای شبکه‌ی چندشعبه **فرض‌هایی** دارد (Multicast، Hello، DR/BDR) که روی Tunnel باید آگاهانه تنظیم شوند، وگرنه Neighbor ناپایدار یا Convergence کند می‌شود.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-سه شعبه به یک مرکز.
+#### ۱) Network Type روی Tunnel
 
-### ۵) مثال سازمانی
+- **Point-to-point:** هر Tunnel یک لینک دو‌نقطه‌ای؛ بدون DR/BDR؛ Hello 10 / Dead 40 پیش‌فرض؛ **انتخاب پیش‌فرض برای Hub–Spoke با Tunnel جدا.**
+- **Broadcast:** DR/BDR انتخاب می‌شود؛ روی Tunnelهای Dynamic/چندسر مناسب نیست.
+- **Point-to-multipoint:** Hub برای Spokeهای زیاد روی یک Interface؛ Neighbor هر Spoke جدا؛ نیاز به تنظیم Cost و بدون DR.
 
-سازمان: چند شعبه با Routing پویا و اینترنت محلی.
+در FortiOS با Phase1 `type dynamic` و Interface واحد روی Hub، چند Spoke روی یک Tunnel Interface‌اند؛ OSPF باید point-to-multipoint باشد یا هر Spoke Interface جدا (`net-device enable`) داشته باشد (`Unverified` در جزئیات).
 
-### ۶) تصویر و توپولوژی
+#### ۲) پارامترها
 
-```text
-Spoke1/Spoke2 ==IPsec== Hub (OSPF/BGP)
+``` text
+Hello 10 s / Dead 40 s      default; Dead = 4 x Hello
+Fast failover               Hello 1 / Dead 3-4, or BFD (RFC 5880)
+Cost (cost = ref-bw / bw)   set explicit cost per tunnel: primary 10, backup 100
+Authentication              MD5 or SHA (RFC 5709) on tunnel interfaces
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۳) Convergence (تحلیل زمان)
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+``` text
+Total = Detect + LSA flood + SPF delay + Install
+Example: Dead 40 s, LSA flood ~50 ms, SPF throttle ~200 ms, FIB ~10 ms  -> ~40.3 s
+With BFD (300 ms x 3): ~0.9 s + 0.26 s -> ~1.2 s
+```
 
-#### روش گرافیکی (GUI)
+نتیجه: در Tunnelهای IPsec، Detect را با DPD/BFD کوتاه کنید؛ Hello/Dead تنها کافی نیست چون Tunnel ممکن است Up بماند در حالی که مسیر عملاً مرده است.
 
-1. Network > OSPF: Area و Networks.
-2. Network > Interfaces: IP Tunnel.
+#### ۴) Local-in و Policy
 
-#### روش خط فرمان (CLI)
+OSPF Hello/LSA به خود FortiGate می‌رسد (Local-in). Policy عبوری برای OSPF لازم **نیست**؛ ولی (۱) اگر Local-in Policy دارید باید OSPF (proto 89) را مجاز کنید؛ (۲) Policy داده بین Tunnel↔LAN جدا لازم است. اگر Selector Phase 2 فقط Subnetهای مشخص باشد، Hello (آدرس Tunnel) ممکن است خارج از Selector باشد ⇒ Selector باز (0.0.0.0/0) توصیه می‌شود.
 
-```text
+#### ۵) مقیاس
+
+Area 0 در Hub؛ هر منطقه Area جدا با ABR؛ Stub/NSSA برای کاهش LSA؛ Summary روی ABR (range). Spokeهای زیاد در Area 0 = LSDB بزرگ؛ در ≥ ۵۰ شعبه BGP ترجیح داده می‌شود (۱۹-۳).
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Network type | p2p برای Tunnel جدا؛ p2mp برای Interface مشترک Hub |
+| Failover | BFD یا Hello/Dead کوتاه |
+| Cost | صریح؛ اصلی 10، پشتیبان 100 |
+| Area | Area 0 Hub؛ منطقه‌ها Area جدا |
+| Auth | MD5/SHA روی Tunnel |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Hub و Spoke1: Phase1/2 با Selector 0.0.0.0/0؛ IP Tunnel 10.250.1.1/30 و .2؛ OSPF point-to-point؛ `get router info ospf neighbor` ⇒ Full؛ `get router info routing-table ospf` ⇒ 10.1.4.0/24 via 10.250.1.2.
+
+**متوسط (تحلیل):** Neighbor در Init: Hub Hello Spoke را می‌بیند ولی Spoke Hello Hub را نه. اولین فرضیه: Policy/Local-in Spoke بسته OSPF را رد می‌کند؛ دوم: یک سر Hello 10 و دیگری 1؛ سوم: Auth ناهمسان. شواهد: Sniffer روی Tunnel (proto 89)، `diagnose ip ... ospf` / Debug OSPF. رفع: یکسان‌سازی Hello/Auth و مجازکردن Local-in.
+
+**سخت (طراحی+محاسبه):** دو Tunnel (ISP1 و ISP2) از Spoke به Hub؛ می‌خواهید ISP1 اصلی باشد. Cost 10 برای Tunnel1 و 100 برای Tunnel2. هنگام قطع ISP1 با Dead 40: ۴۰ ثانیه Black hole. با BFD 300ms×3 و SPF throttle: ≈ 1.2 s. محاسبه: بدون BFD، ۴۰ ثانیه قطع برای VoIP غیرقابل‌قبول؛ با BFD قابل‌قبول. همچنین Failback: وقتی ISP1 برمی‌گردد، Cost پایین‌تر باعث بازگشت می‌شود؛ برای جلوگیری از Flap، Hold-down/Dampening در لینک ناپایدار.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. VPN → IPsec Tunnels: Tunnel Hub–Spoke با Selector 0.0.0.0/0 (طبق ۱۸-۲).
+2. Network → Interfaces → Tunnel Interface: IP/Remote IP (یا /32).
+3. Network → OSPF: Router ID، Areas، Networks (10.250.0.0/16)، Interfaces (Network Type=Point-to-Point، Hello/Dead، Cost، Authentication).
+4. Policy & Objects: Policy Tunnel↔LAN دوطرفه.
+5. Monitor → Routing Monitor و Network → OSPF Neighbors.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+config system interface
+    edit "TO-SPOKE1"
+        set ip 10.250.1.1 255.255.255.255
+        set remote-ip 10.250.1.2 255.255.255.252
+    next
+end
 config router ospf
-    set router-id 10.255.0.1
+    set router-id 10.254.0.1
     config area
         edit 0.0.0.0
         next
     end
     config network
         edit 1
-            set prefix 10.255.1.0 255.255.255.0
+            set prefix 10.250.0.0 255.255.0.0
         next
     end
     config ospf-interface
         edit "TO-SPOKE1"
             set interface "TO-SPOKE1"
             set network-type point-to-point
+            set hello-interval 10
+            set dead-interval 40
+            set cost 10
         next
     end
 end
 get router info ospf neighbor
+get router info ospf database
+get router info routing-table ospf
+diagnose sniffer packet TO-SPOKE1 "proto 89" 4 20 l
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `Unverified` روی Image.
-- Selector 0.0.0.0/0 برای Routing پویا.
+- Neighbor Full برای هر Spoke.
+- Route شعب در Hub و Route Summary در Spoke.
+- قطع Tunnel (Shutdown): زمان حذف Route و ping پیوسته؛ اندازه‌گیری Convergence.
+- Failback: بازگشت به مسیر اصلی بدون Flap بیش از ۱ بار.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- Neighbor Full.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Neighbor نمی‌آید |
-| شواهد/دستور | `ospf neighbor` خالی |
-| علت | Policy/Network Type |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Selector برای پویا؟ *(پاسخ: 19-2-ت1)*
-
-**ت2.** network-type؟ *(پاسخ: 19-2-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Policy برای OSPF؟ *(پاسخ: 19-2-م1)*
-
-**م2.** سناریو: Neighbor Init؛ علت؟ *(پاسخ: 19-2-م2)*
-
-**معیار تسلط:** ساخت Hub-and-Spoke و Routing.
-
-**اشتباهات رایج:** Overlap و Policy.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| OSPF | Open Shortest Path First | پروتکل مسیریابی | Routing |
-
-| English sentence | ترجمه |
-|---|---|
-| Allow OSPF through the tunnel policy. | OSPF را در Policy تونل مجاز کنید. |
-
-#### کارت Lab — درس 19-2
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | OSPF Tunnel |
-| 2 | پیش‌نیاز | درس ۱۹-۰ |
-| 3 | توپولوژی | Hub+Spoke1 |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Tunnel |
-| 8 | صورت مسئله | OSPF |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | get ospf |
-| 11 | سناریوی خرابی | Neighbor نمی‌آید |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Neighbor Full |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/ospf-tunnel.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| Neighbor Init | Sniffer proto 89؛ Local-in | Hello یک‌طرفه: Policy/Auth/Hello ناهمسان |
+| Exstart/Exchange | `ospf neighbor` | MTU ناسازگار؛ هم‌سان کنید (فصل ۱۸-۴) |
+| Neighbor Flap | Log OSPF؛ DPD | DPD/لینک ناپایدار؛ زمان‌ها |
+| Route Spoke در Hub نیست | `ospf database` | Network statement/Area/Passive |
+| Convergence کند | محاسبه Dead | BFD/Fast Hello |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Authentication MD5/SHA روی Tunnel؛ Passive-interface روی LAN شعبه.
+- OSPF Filtering تا Spoke مسیرهای نامطلوب ندهد.
+- Policy حداقلی بین Spokeها.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- OSPF روی Tunnel: Network Type مناسب (p2p/p2mp).
+- Convergence = Detect + LSA + SPF؛ Detect غالب است؛ BFD.
+- Selector باز و Local-in برای OSPF.
+- Cost صریح برای Primary/Backup.
+- در مقیاس بزرگ: Area و Summary یا BGP.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Hello/Dead پیش‌فرض OSPF روی Tunnel p2p چند ثانیه است و Dead چه رابطه‌ای با Hello دارد؟ *(پاسخ: 19-2-ت1)*
+
+**ت2.** (ساده) چرا Selector 0.0.0.0/0 برای OSPF لازم است؟ *(پاسخ: 19-2-ت2)*
+
+**ت3.** (متوسط) محاسبه کنید: Dead 40 s، BFD 300 ms×3، SPF delay 200 ms. زمان قطع در هر دو حالت؟ *(پاسخ: 19-2-ت3)*
+
+**ت4.** (متوسط) Neighbor در Init مانده؛ سه فرضیه به ترتیب بنویسید. *(پاسخ: 19-2-ت4)*
+
+**ت5.** (سخت) دو Tunnel با Cost 10 و 100. لینک ISP1 ناپایدار است (۳۰ ثانیه Up/۳۰ ثانیه Down). مشکل را شرح دهید و راه‌حل بدهید. *(پاسخ: 19-2-ت5)*
+
+**ت6.** (سخت، طراحی) برای ۴۰ شعبه OSPF یا BGP؟ با ۴ معیار توجیه کنید. *(پاسخ: 19-2-ت6)*
+
+**Q1.** Quick quiz (English): Why do tunnels often need BFD or very short dead timers for fast failover? *(پاسخ: 19-2-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| p2p | Point-to-point network type | نوع شبکه‌ی نقطه‌به‌نقطه |
+| p2mp | Point-to-multipoint | نقطه‌به‌چندنقطه |
+| SPF | Shortest Path First | الگوریتم مسیر کوتاه |
+| ABR | Area Border Router | روتر مرز Area |
+| BFD | Bidirectional Forwarding Detection | تشخیص دوطرفه‌ی خرابی |
+
+- *Set explicit OSPF costs to define primary and backup tunnels.* ← برای تعیین Tunnel اصلی و پشتیبان Cost را صریح تنظیم کنید.
+- *Convergence time is dominated by failure detection.* ← زمان Convergence عمدتاً به کشف خرابی بستگی دارد.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** OSPF روی Tunnel. **هدف:** Neighbor Full + Failover زیر ۲ ثانیه با BFD. **وضعیت:** اجرا نشده. **مراحل:** Tunnel، OSPF، Cost، BFD، قطع لینک. **Verification:** مطابق بخش ۸. **Rollback:** حذف OSPF Interface. **Evidence:** `03-ops/ospf-tunnel.md`.
+
+### ۱۵) منابع
+
+- RFC 2328 — OSPFv2
+- RFC 5880 — BFD
+- Fortinet Docs: OSPF؛ IPsec VPN with dynamic routing (7.0)
 
 <a id="l-19-3"></a>
 
-## درس 19-3 — BGP روی FortiGate و Failover مسیر
+## درس 19-3 — BGP روی FortiGate برای Overlay: iBGP، Route Reflector، Next-hop، Local-pref، Failover و Filtering
 
-**فصل 19 - روز 3 · پیش‌نیاز: درس ۱۹-۱ · ۶ ساعت**
+**فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۹-۰، ۹-۷ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک مرجع؛ Lab «اجرا نشده». از مستند: ADVPN با BGP → iBGP بین Hub و Spoke، `net-device disable` روی Hub.
 
-BGP برای مقیاس و کنترل Policy.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۹-۱
+1. iBGP با Route Reflector و neighbor-group/neighbor-range را برای Spokeهای پویا بسازد.
+2. Next-hop در iBGP و Reachability Loopback/Tunnel را تحلیل کند.
+3. Failover دو Hub را با Local-pref/MED/Weight طراحی و اندازه‌گیری کند.
+4. Route Filtering (Prefix-list، Route-map، Max-prefix) را برای جلوگیری از Leak اعمال کند.
+5. Convergence BGP (Hold، BFD، MRAI) را محاسبه کند.
+6. عیب‌یابی Neighbor Active/Idle/Established-no-routes را انجام دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- iBGP/eBGP روی Tunnel.
-- `config router bgp`: AS، Neighbor، Network.
-- Prefer path با `local-pref`/`med`.
-- Failover: قطع Tunnel، مسیر پشتیبان.
-- تأیید: `get router info bgp summary`.
+با ۴۰ شعبه و دو Hub، BGP مقیاس‌پذیرتر و قابل‌کنترل‌تر از OSPF است: Policy بر پایه‌ی Attribute، Route Reflector برای حذف Full-mesh، و جداسازی Control Plane شعب. ولی BGP به Reachability Next-hop وابسته است و Convergence پیش‌فرضش کند است؛ این دو باید آگاهانه طراحی شوند.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-سه شعبه به یک مرکز.
+#### ۱) چرا iBGP و Route Reflector؟
 
-### ۵) مثال سازمانی
+همه‌ی روترها در یک AS (مثلاً 65000) هستند؛ **iBGP Split-horizon:** مسیر یادگرفته‌شده از iBGP Peer به iBGP Peer دیگر داده نمی‌شود. برای n روتر Full-mesh = n(n−1)/2 Session؛ با ۴۰ Spoke + ۲ Hub ≈ ۸۶۱ Session. **Route Reflector (RR)** Hub را واسطه می‌کند: هر Spoke فقط با Hub (و Hub دوم) Peer می‌شود؛ تعداد Session ≈ ۲×۴۰ = ۸۰.
 
-سازمان: چند شعبه با Routing پویا و اینترنت محلی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Spoke1/Spoke2 ==IPsec== Hub (OSPF/BGP)
+``` text
+Full mesh sessions = n(n-1)/2     n=42 -> 861
+Route reflector    = clients x RR count   40 x 2 = 80
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+نکات RR: Cluster-ID یکتا برای RRهای مستقل (جلوگیری از Loop)؛ ORIGINATOR_ID/CLUSTER_LIST برای Loop prevention.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۲) Peering و Next-hop
 
-#### روش گرافیکی (GUI)
+- **Peering روی IP Tunnel یا Loopback.** Loopback پایدارتر است ولی نیاز به Route Static/IGP برای رسیدن به Loopback دارد (طبق مستند ADVPN: Loopback از طریق IKE نصب می‌شود).
+- **Next-hop:** در iBGP، Next-hop تغییر نمی‌کند؛ Spoke باید Next-hop را از طریق IGP/Static حل کند؛ اگر Next-hop (Spoke دیگر) قابل‌دسترس نباشد، Route «Inaccessible» است (درس ۹-۰). گزینه‌ی `next-hop-self` روی RR (در 7.0 برای Client/Peer؛ `Unverified`).
+- **TTL:** iBGP TTL 255؛ eBGP با GTSM.
 
-1. Network > BGP.
+#### ۳) Policy مسیر
 
-#### روش خط فرمان (CLI)
+``` text
+Primary hub   : local-preference 200  (inbound from hub1)
+Secondary hub : local-preference 100
+Spokes advertise: own LAN /24 only   (prefix-list)
+Hub advertises: summaries + default if needed
+Max-prefix    : per spoke 20 (warning), protect memory
+```
 
-```text
+Failover: با قطع Hub1، Spoke مسیر Hub2 را (Local-pref پایین‌تر) انتخاب می‌کند. ترافیک Spoke→Spoke از Hub زنده می‌گذرد (یا ADVPN).
+
+#### ۴) Convergence BGP
+
+``` text
+Detect: Hold 180 s default  | BFD 300ms x 3 ~ 0.9 s
+Propagate: MRAI (eBGP 30 s / iBGP 5 s typical - Unverified) + RR processing
+Compute/Install: best-path + FIB, ~ tens of ms
+```
+
+برای Failover سریع: BFD روی BGP، Hold/Keepalive کوتاه‌تر (مثلاً 9/3)، Soft-reconfiguration، `advertisement-interval` کم برای iBGP.
+
+#### ۵) فیلترینگ و امنیت
+
+Prefix-list ورودی از Spoke (فقط 10.n.x.0/24 خودش)، خروجی به Spoke (Summary + Default)، `maximum-prefix`، Password/Auth، Route-map برای Community (Tagging مسیرهای شعب).
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| iBGP یا eBGP؟ | iBGP + RR در یک AS (طبق مستند ADVPN)؛ eBGP با ASN مجزا برای هر شعبه در مقیاس خیلی بزرگ |
+| Peering | Tunnel IP ساده؛ Loopback پایدار‌تر |
+| Failover | Local-pref + BFD + Hold کوتاه |
+| Filter | Prefix-list ورودی/خروجی + Max-prefix |
+| Cluster | Cluster-ID یکتا برای RRهای مستقل |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Hub (AS 65000) با neighbor-range 10.250.0.0/16 و `route-reflector-client`؛ Spoke Neighbor به Hub؛ `get router info bgp summary` ⇒ Established، PfxRcd؛ `get router info bgp network` ⇒ Prefix شعب.
+
+**متوسط (تحلیل):** Route شعبه‌ی 3 در Spoke 7 دیده نمی‌شود. فرضیه‌ها: (۱) Spoke3 مسیر را اعلام نمی‌کند (`network` ندارد یا Prefix-list)؛ (۲) RR `route-reflector-client` ندارد؛ (۳) Route-map Hub Filter می‌کند؛ (۴) Next-hop غیرقابل‌دسترس. آزمون: `get router info bgp neighbors <ip> advertised-routes` در Spoke3، `received-routes` در Hub، `routing-table` در Spoke7. نمونه علت: Spoke3 با Prefix-list خروجی اشتباه.
+
+**سخت (محاسبه+طراحی):** Hub1 قطع می‌شود. با Hold 180 s ≈ ۱۸۰ ثانیه Black hole تا Session Down؛ ولی اگر Tunnel Down شود، BGP Session روی TCP روی Tunnel با Tunnel قطع می‌شود و کشف سریع‌تر است. طراحی: DPD 5s×3 + BFD روی Tunnel؛ Local-pref برای Hub2؛ Soft-reconfig. هدف RTO < 10 s؛ تحلیل: Detect ≈ 1 s (BFD)، BGP Update iBGP ≈ 5 s (MRAI)، Install ≈ 0.1 s ⇒ ≈ 6 s ✓. آزمون: قطع Hub1 و ping پیوسته. ریسک: Failback باعث Flap ⇒ Hold-down.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Network → BGP: AS، Router ID.
+2. Neighbor Groups/Neighbors (بعضی گزینه‌ها مثل neighbor-group فقط CLI).
+3. Networks: Prefixهای قابل‌اعلام.
+4. Network → Routing Objects → Prefix Lists/Route Maps.
+5. Monitor → Routing Monitor.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 config router bgp
-    set as 65001
-    config neighbor
-        edit "10.255.1.2"
-            set remote-as 65001
+    set as 65000
+    set router-id 10.254.0.1
+    config neighbor-group
+        edit "SPOKES"
+            set remote-as 65000
+            set route-reflector-client enable
+            set soft-reconfiguration enable
+            set maximum-prefix 20
+            set maximum-prefix-warning-only enable
+        next
+    end
+    config neighbor-range
+        edit 1
+            set prefix 10.250.0.0 255.255.0.0
+            set neighbor-group "SPOKES"
         next
     end
     config network
         edit 1
-            set prefix 192.168.10.0 255.255.255.0
+            set prefix 10.0.0.0 255.255.0.0
         next
     end
 end
 get router info bgp summary
+get router info bgp network
+get router info bgp neighbors 10.250.1.2 advertised-routes
+get router info bgp neighbors 10.250.1.2 received-routes
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- AS نمونه خصوصی.
-- `Unverified` روی Image.
+- همه‌ی Spokeها Established؛ تعداد Prefix دریافتی طبق برنامه.
+- Route Spoke→Spoke از طریق Hub (traceroute).
+- قطع Hub1: زمان بازیابی < هدف؛ مسیر Hub2 انتخاب (`get router info bgp network` Local-pref).
+- Prefix-list: اعلام Prefix غیرمجاز از Spoke رد می‌شود (آزمون منفی).
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- Neighbor Established.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Neighbor Active |
-| شواهد/دستور | `bgp summary` |
-| علت | Policy/AS |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** iBGP؟ *(پاسخ: 19-3-ت1)*
-
-**ت2.** local-pref؟ *(پاسخ: 19-3-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا BGP؟ *(پاسخ: 19-3-م1)*
-
-**م2.** سناریو: Active؛ بررسی؟ *(پاسخ: 19-3-م2)*
-
-**معیار تسلط:** ساخت Hub-and-Spoke و Routing.
-
-**اشتباهات رایج:** Overlap و Policy.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| BGP | Border Gateway Protocol | مسیریابی بین AS | Routing |
-| AS | Autonomous System | سیستم خودمختار | BGP |
-
-| English sentence | ترجمه |
-|---|---|
-| Verify TCP 179 is reachable. | دسترسی TCP 179 را بررسی کنید. |
-
-#### کارت Lab — درس 19-3
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | BGP Tunnel |
-| 2 | پیش‌نیاز | درس ۱۹-۱ |
-| 3 | توپولوژی | Hub+Spoke |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Tunnel |
-| 8 | صورت مسئله | BGP |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | get bgp |
-| 11 | سناریوی خرابی | Neighbor Active |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Established |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/bgp-tunnel.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| Neighbor Active | `get router info bgp summary` | Reachability Peer/Policy/AS/neighbor-range؛ TCP 179 |
+| Established ولی PfxRcd=0 | `advertised-routes` | Filter/network ندارد |
+| Route نصب نمی‌شود | `bgp network` | Next-hop غیرقابل‌دسترس/AD |
+| Failover کند | Hold/BFD | تنظیم Timer/BFD |
+| Route Leak | `advertised-routes` Hub | Prefix-list خروجی ناقص |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Prefix-list و Max-prefix؛ Authentication BGP.
+- Route Reflector نباید Prefix ناخواسته را بین شعب پخش کند (Filter).
+- Hub را از اینترنت محافظت کنید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- iBGP+RR جایگزین Full-mesh؛ ۸۶۱ ← ۸۰ Session.
+- Next-hop باید قابل‌دسترس باشد.
+- Local-pref برای Primary Hub.
+- Convergence = BFD + MRAI + Compute.
+- Filter و Max-prefix اجباری.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) iBGP Split-horizon چیست؟ *(پاسخ: 19-3-ت1)*
+
+**ت2.** (ساده) چرا RR تعداد Session را کم می‌کند؟ *(پاسخ: 19-3-ت2)*
+
+**ت3.** (متوسط) برای Primary Hub Local-pref چه می‌دهید و چرا؟ *(پاسخ: 19-3-ت3)*
+
+**ت4.** (متوسط) Established ولی PfxRcd=0. فرضیه‌ها را بنویسید. *(پاسخ: 19-3-ت4)*
+
+**ت5.** (سخت) Hub1 قطع می‌شود؛ Hold 180 و BFD 300×3 وجود دارد. زمان قطع تقریبی؟ *(پاسخ: 19-3-ت5)*
+
+**ت6.** (سخت، طراحی) Policy BGP را برای جلوگیری از Leak بین شعب بنویسید. *(پاسخ: 19-3-ت6)*
+
+**Q1.** Quick quiz (English): How does a route reflector reduce the number of iBGP sessions? *(پاسخ: 19-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| RR | Route Reflector | بازتاب‌دهنده‌ی مسیر |
+| Cluster-ID | Route reflector cluster ID | شناسه‌ی خوشه RR |
+| MRAI | Minimum Route Advertisement Interval | حداقل فاصله‌ی اعلام |
+| Max-prefix | Maximum prefix limit | سقف Prefix |
+
+- *Use route reflectors instead of a full iBGP mesh.* ← به‌جای Full-mesh iBGP از RR استفاده کنید.
+- *Filter prefixes on both inbound and outbound.* ← Prefix را هم ورودی و هم خروجی فیلتر کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** BGP Overlay. **هدف:** iBGP+RR، Failover Hub. **وضعیت:** اجرا نشده/Unverified. **Verification:** مطابق بخش ۸. **Rollback:** حذف BGP. **Evidence:** `03-ops/bgp-tunnel.md`.
+
+### ۱۵) منابع
+
+- [ADVPN with BGP](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/820072/advpn-with-bgp-as-the-routing-protocol)
+- [ADVPN and shortcut paths](https://docs.fortinet.com/document/fortigate/7.0.9/administration-guide/985659/advpn-and-shortcut-paths)
+- RFC 4271، RFC 4456 (Route Reflection)، RFC 7454
 
 <a id="l-19-4"></a>
 
-## درس 19-4 — Local Breakout و Policy اینترنت شعبه
+## درس 19-4 — Local Breakout و Policy اینترنت شعبه: Backhaul در برابر Breakout، Split مسیر، SaaS، UTM و Failover
 
-**فصل 19 - روز 4 · پیش‌نیاز: درس ۱۹-۲ · ۶ ساعت**
+**فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۱۲-۰، ۱۶-۰، ۲۱-۷ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک مرجع؛ Lab «اجرا نشده».
 
-هر شعبه مستقیم به اینترنت (بدون عبور از Hub).
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۹-۲
+1. Backhaul و Breakout را با معیار Latency/امنیت/هزینه/عملیات مقایسه و تصمیم‌گیری کند.
+2. Routing را طوری بنویسد که ترافیک سازمانی از Tunnel و اینترنت از ISP محلی برود (Longest Prefix Match).
+3. Policy اینترنت شعبه با NAT، Web/DNS/File Filter و IPS مناسب بنویسد.
+4. ترافیک SaaS را با FQDN/Internet Service Database جداسازی کند.
+5. Failover اینترنت شعبه را با Dual-ISP/SD-WAN طراحی کند.
+6. آزمون مثبت/منفی و Log را برای اثبات تفکیک مسیر انجام دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Breakout محلی: Default Route به WAN شعبه.
-- Policy LAN->WAN با NAT.
-- تفکیک ترافیک سازمانی (Tunnel) و اینترنتی.
-- اثر امنیتی: UTM در هر شعبه.
-- هزینه/پهنای‌باند.
+در سازمان چندشعبه، ترافیک اینترنت دو مسیر دارد: **Backhaul** (از Tunnel به Hub و از آن‌جا به اینترنت) و **Local Breakout** (مستقیم از ISP شعبه). Backhaul کنترل متمرکز می‌دهد ولی تأخیر و بار روی Hub و لینک مرکز ایجاد می‌کند (و امروزه بیشتر ترافیک SaaS/Cloud است). Breakout سریع است ولی هر شعبه باید امنیتش را خودش تأمین کند. تصمیم باید **بر اساس نوع ترافیک** باشد، نه یک انتخاب سراسری.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-سه شعبه به یک مرکز.
+#### ۱) مقایسه‌ی کمی
 
-### ۵) مثال سازمانی
-
-سازمان: چند شعبه با Routing پویا و اینترنت محلی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Spoke1/Spoke2 ==IPsec== Hub (OSPF/BGP)
+``` text
+Latency(branch->SaaS) backhaul = RTT(branch->hub) + RTT(hub->SaaS)
+Latency breakout       = RTT(branch->SaaS)
+Example: branch->hub 40 ms, hub->O365 15 ms  -> backhaul 55 ms vs breakout ~20-25 ms
+Hub bandwidth need (backhaul) = sum of branches' internet peak
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+مثال: ۲۰ شعبه × 30 Mbps اینترنت = 600 Mbps فقط برای اینترنت روی Hub (+ ترافیک سازمانی).
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۲) ماتریس تصمیم
 
-#### روش گرافیکی (GUI)
+| ترافیک | مسیر | دلیل |
+|---|---|---|
+| ERP/AD/File | Tunnel→Hub | داخلی؛ نیاز Policy مرکزی |
+| M365/SaaS مورد اعتماد | Breakout | Latency؛ بار Hub |
+| وب عمومی کاربران | Breakout + UTM محلی یا Backhaul برای گروه پرریسک | ریسک |
+| Guest | Breakout ایزوله | عدم دسترسی داخلی |
+| ترافیک سنگین بکاپ | Tunnel در ساعات غیرپیک یا Breakout به Cloud | هزینه |
 
-1. Network > Static Routes.
-2. Policy: LAN->WAN NAT.
+#### ۳) Routing: چرا کار می‌کند؟
 
-#### روش خط فرمان (CLI)
+``` text
+0.0.0.0/0      via wan1 (branch ISP)         distance 10   (default)
+10.0.0.0/8     via Tunnel (dynamic/static)   (more specific wins by Longest Prefix Match)
+10.1.4.0/24    connected LAN
+```
 
-```text
+LPM اطمینان می‌دهد ترافیک 10.x از Tunnel و بقیه از Default می‌رود. مراقب Default Route از طریق Tunnel (Backhaul) در BGP: دو Default رقابت می‌کنند؛ Distance/Local-pref تعیین‌کننده است.
+
+#### ۴) جداسازی SaaS
+
+- **FQDN Address Object** (نیاز DNS صحیح؛ مشکل: IPهای متغیر).
+- **Internet Service Database (ISDB)** برای سرویس‌های شناخته‌شده (Needs-License/به‌روزرسانی FortiGuard).
+- **SD-WAN Rule** برای هدایت SaaS به بهترین لینک (۲۱-۷).
+
+#### ۵) Policy و UTM شعبه
+
+حداقل: Web Filter + DNS Filter + File Filter؛ IPS سبک (Target=Client، Severity High+)؛ SSL Inspection انتخابی؛ Log `utm`. برای شعب کوچک مدل FortiGate محدودیت CPU دارد (Profile انتخابی).
+
+#### ۶) Failover
+
+Dual-ISP شعبه با SD-WAN (Health-check/SLA)؛ در قطع هر دو ISP: Failover اینترنت به Tunnel (Backhaul موقت) با Policy Route/Distance بالاتر (Default از Hub پشتیبان).
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Breakout یا Backhaul | بر اساس نوع ترافیک (جدول) |
+| شناسایی SaaS | ISDB (لایسنس) یا FQDN + DNS |
+| UTM شعبه | حداقل Web/DNS/File؛ IPS سبک؛ طبق CPU |
+| Default Route | محلی ترجیحی؛ Backhaul پشتیبان |
+| Log | مرکزی reliable |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Default Route محلی؛ Route 10.0.0.0/8 از Tunnel؛ Policy LAN→WAN با NAT و Web Filter. `traceroute` به example.com از ISP محلی؛ `traceroute` به ERP از Tunnel.
+
+**متوسط (حل‌شده):** M365 کند است: traceroute نشان می‌دهد از Hub می‌رود (Default از BGP Hub با Distance پایین‌تر). راه‌حل: Default محلی با Distance 10 و Default BGP با Distance 20؛ یا Policy Route/SD-WAN Rule برای M365 FQDN/ISDB. تحلیل: Latency از ۵۵ به ≈ ۲۵ ms.
+
+**سخت (تحلیل):** پس از Breakout، آلودگی بدافزار در شعبه گزارش می‌شود؛ شعبه UTM کامل نداشت. تحلیل ریسک: (۱) Profile حداقلی کافی نبود؛ (۲) Log مرکزی نداشتید؛ (۳) Hub UTM را دیده بود ولی اکنون دور زده شد. تصمیم: Breakout فقط برای SaaS مورد اعتماد (ISDB) و بقیه Backhaul یا UTM کامل محلی؛ Log مرکزی (Syslog)؛ EDR. معیار: ریسک × Latency × هزینه.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Network → Static Routes (Default محلی) و (Tunnel Route).
+2. Policy & Objects → Addresses → FQDN/Internet Service.
+3. Policy & Objects → Firewall Policy: LAN→WAN (NAT ✓) با Security Profiles.
+4. Network → SD-WAN → SD-WAN Rules (در صورت استفاده).
+5. Log & Report → Forward Traffic.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 config router static
     edit 1
-        set gateway 203.0.113.254
-        set device "port1"
+        set gateway 198.51.100.1
+        set device "wan1"
+        set distance 10
     next
 end
+config firewall address
+    edit "FQDN-M365"
+        set type fqdn
+        set fqdn "outlook.office365.com"
+    next
+end
+config firewall policy
+    edit 20
+        set name "BRANCH-Internet"
+        set srcintf "lan"
+        set dstintf "wan1"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "HTTP" "HTTPS" "DNS"
+        set nat enable
+        set utm-status enable
+        set webfilter-profile "WF-STD"
+        set ssl-ssh-profile "certificate-inspection"
+        set logtraffic utm
+    next
+end
+get router info routing-table details 8.8.8.8
+get router info routing-table details 10.0.5.20
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- Default Route محلی.
-- راستی‌آزمایی: traceroute.
+- `get router info routing-table details`: اینترنت از wan1، 10.x از Tunnel.
+- traceroute به SaaS و ERP.
+- Log Forward: Policy ID Breakout.
+- آزمون منفی: Guest→داخل Block.
+- اندازه‌گیری Latency قبل/بعد.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- اینترنت شعبه محلی.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | اینترنت از Hub می‌رود |
-| شواهد/دستور | traceroute |
-| علت | Default Route اشتباه |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Breakout چیست؟ *(پاسخ: 19-4-ت1)*
-
-**ت2.** چرا UTM محلی؟ *(پاسخ: 19-4-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Breakout؟ *(پاسخ: 19-4-م1)*
-
-**م2.** سناریو: اینترنت کند؛ علت؟ *(پاسخ: 19-4-م2)*
-
-**معیار تسلط:** ساخت Hub-and-Spoke و Routing.
-
-**اشتباهات رایج:** Overlap و Policy.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Breakout | Local internet breakout | خروج محلی | WAN |
-
-| English sentence | ترجمه |
-|---|---|
-| Use local breakout to reduce latency. | برای کاهش تأخیر از خروج محلی استفاده کنید. |
-
-#### کارت Lab — درس 19-4
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Breakout |
-| 2 | پیش‌نیاز | درس ۱۹-۲ |
-| 3 | توپولوژی | Spoke |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Tunnel |
-| 8 | صورت مسئله | Breakout |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | traceroute |
-| 11 | سناریوی خرابی | اینترنت از Hub می‌رود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | محلی |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/breakout.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| ERP از اینترنت می‌رود | `routing-table details` | Route Tunnel نیست یا LPM؛ افزودن 10.0.0.0/8 |
+| SaaS هنوز از Hub | traceroute | Default BGP با Distance پایین؛ Policy Route/SD-WAN |
+| اینترنت کند پس از Breakout | Sniffer/Interface Errors | لینک ISP/UTM CPU |
+| Guest به داخل دسترسی دارد | nmap | Policy گسترده |
+| FQDN کار نمی‌کند | DNS | Resolve/Cache |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Breakout بدون UTM = حفره؛ حداقل Profile.
+- Log مرکزی از هر شعبه.
+- Guest ایزوله.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- تصمیم بر اساس نوع ترافیک.
+- LPM Tunnel/Default را تفکیک می‌کند.
+- SaaS با ISDB/FQDN/SD-WAN.
+- UTM محلی حداقلی.
+- Failover اینترنت→Tunnel.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) مزیت اصلی Breakout چیست؟ *(پاسخ: 19-4-ت1)*
+
+**ت2.** (ساده) چرا ERP از Tunnel می‌رود نه Default؟ *(پاسخ: 19-4-ت2)*
+
+**ت3.** (متوسط) Latency را برای Backhaul با 40 ms و 15 ms و Breakout 22 ms مقایسه کنید. *(پاسخ: 19-4-ت3)*
+
+**ت4.** (متوسط) Default Route BGP از Hub و Default محلی هر دو هستند؛ کدام برنده است و چگونه کنترل می‌کنید؟ *(پاسخ: 19-4-ت4)*
+
+**ت5.** (سخت) Breakout بدون UTM باعث آلودگی شد. طرح اصلاح با ۴ لایه بنویسید. *(پاسخ: 19-4-ت5)*
+
+**ت6.** (سخت، طراحی) Failover وقتی هر دو ISP شعبه قطع‌اند چیست؟ *(پاسخ: 19-4-ت6)*
+
+**Q1.** Quick quiz (English): Why does a more specific route to the headquarters win over a local default route? *(پاسخ: 19-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Backhaul | Traffic backhaul | بازگرداندن ترافیک به مرکز |
+| ISDB | Internet Service Database | پایگاه سرویس‌های اینترنتی |
+| SaaS | Software as a Service | نرم‌افزار به‌عنوان سرویس |
+| FQDN | Fully Qualified Domain Name | نام کامل دامنه |
+
+- *Break out trusted SaaS locally and keep sensitive traffic on the tunnel.* ← SaaS مورد اعتماد را محلی خارج کنید و ترافیک حساس را روی Tunnel نگه دارید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Breakout. **هدف:** تفکیک مسیر ERP/اینترنت. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/breakout.md`. **Rollback:** حذف Default محلی.
+
+### ۱۵) منابع
+
+- Fortinet Docs: SD-WAN، Static routes، Internet Service Database (7.0)
+- NIST SP 800-41
 
 <a id="l-19-5"></a>
 
-## درس 19-5 — ADVPN (مفهومی) و مقیاس‌پذیری
+## درس 19-5 — ADVPN در عمل: ساخت، فرایند Shortcut، BGP/OSPF، Policy، محدودیت‌ها و عیب‌یابی
 
-**فصل 19 - روز 5 · پیش‌نیاز: درس ۱۹-۳ · ۶ ساعت**
+**فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۱۹-۳، ۱۸-۰ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک مرجع؛ Lab «اجرا نشده». طبق مستند: Hub `auto-discovery-sender`، Spoke `auto-discovery-receiver`، GUI برخی گزینه‌ها را ندارد؛ shortcut override از 7.0.4.
 
-Spoke-to-Spoke مستقیم بدون عبور از Hub: ADVPN.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۹-۳
+1. ADVPN را با BGP (و مفهوماً OSPF) روی Hub و Spoke پیکربندی کند.
+2. فرایند ساخت Shortcut را گام‌به‌گام و با شواهد توضیح دهد.
+3. پیش‌نیازها (net-device، Selector، Policy Spoke-to-Spoke، Route) را بررسی کند.
+4. محدودیت‌ها (نسخه، NAT، Failover، Offload) را بشناسد.
+5. Shortcut ساخته‌نشده/Shortcut بدون اثر را عیب‌یابی کند.
+6. تصمیم ADVPN یا Hub-only را با معیار کمی بگیرد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- ADVPN: Tunnel پویا بین Spokeها.
-- نیاز BGP/OSPF و تنظیمات `auto-discovery`.
-- Needs-Lab: `Unverified`.
-- مزیت/ریسک.
-- مقایسه با Hub-only.
+در Hub-and-Spoke خالص، ترافیک شعبه‌به‌شعبه دو بار از Hub عبور می‌کند (Latency و بار). ADVPN به Spokeها اجازه می‌دهد برای ترافیک مورد نیاز **Tunnel مستقیم** بسازند. مزیت: Latency کمتر، بار کمتر روی Hub؛ هزینه: پیچیدگی، وابستگی به نسخه، مشکل‌های NAT و Failover.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-سه شعبه به یک مرکز.
+#### ۱) مراحل فرایند
 
-### ۵) مثال سازمانی
-
-سازمان: چند شعبه با Routing پویا و اینترنت محلی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Spoke1/Spoke2 ==IPsec== Hub (OSPF/BGP)
+``` text
+1  Spoke A sends traffic to Spoke B's subnet -> follows route via Hub (iBGP learned)
+2  Hub forwards the traffic and (auto-discovery-sender) sends a shortcut message to A and B
+3  A and B negotiate an IPsec tunnel directly (shortcut); IKE between spokes
+4  Routing: shortcut tunnel gets a route/next-hop override; subsequent packets A->B go direct
+5  Idle shortcut times out; traffic returns via Hub
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) پیکربندی‌های کلیدی (ساختار مستند 7.0.9)
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+- **Hub Phase1:** `type dynamic`، `auto-discovery-sender enable`، `net-device disable` (با BGP طبق مستند)، `add-route disable`.
+- **Spoke Phase1:** `auto-discovery-receiver enable`، `net-device enable` یا طبق مستند نسخه.
+- **BGP:** Hub به‌عنوان RR با neighbor-group؛ Spokeها iBGP به Hub؛ در 7.0.4+ گزینه‌ی «shortcut override» و `tag-match`/`tag-and-best-match` برای Failover Shortcut.
+- **Policy:** Tunnel→Tunnel روی Hub (برای ترافیک اولیه)، Policy Spoke→Spoke (برای Shortcut).
+- **Selector:** باز.
 
-#### روش گرافیکی (GUI)
+#### ۳) محدودیت‌ها و ریسک‌ها
 
-1. VPN > IPsec Tunnels > Advanced.
+- GUI برخی گزینه‌ها را ندارد؛ CLI.
+- وابسته به نسخه/Build؛ رفتار Shortcut Override از 7.0.4 تغییر کرده است.
+- NAT بین Spokeها (Spoke پشت NAT): Shortcut سخت‌تر (NAT-T/Hole punching).
+- Failover: وقتی Shortcut قطع می‌شود ترافیک باید به Hub برگردد؛ Convergence و Route.
+- Offload/Performance: Tunnel مستقیم ممکن است Offload شود؛ ولی Interface پویا و Shortcut ممکن است Counters عجیب بدهد.
 
-#### روش خط فرمان (CLI)
+#### ۴) تصمیم کمی
 
-```text
+``` text
+Spoke-to-spoke traffic share = S2S bytes / total bytes
+If S2S share > ~30% and hub bandwidth is constrained -> ADVPN or full mesh for selected pairs
+If branches <= ~10 -> hub-only is simpler
+```
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| ADVPN یا Hub-only | بر اساس سهم ترافیک S2S و تعداد شعب |
+| Routing | iBGP+RR (طبق مستند) |
+| نسخه | Patch 7.0.4+ برای Shortcut Override |
+| NAT | Spoke با IP عمومی/Port forward برای Shortcut |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Spoke1→Spoke2: traceroute اول ۲ Hop (Hub سپس Spoke2)؛ پس از Shortcut ۱ Hop (مستقیم)؛ `diagnose vpn tunnel list` ⇒ Tunnel Shortcut با نام _0 و Peer Spoke2.
+
+**متوسط (تحلیل):** Shortcut ساخته نمی‌شود: فرضیه‌ها: (۱) `auto-discovery-receiver` روی Spoke فعال نیست؛ (۲) Policy Hub بین Tunnelها ترافیک را Drop می‌کند؛ (۳) Spokeها Route Spoke دیگر را ندارند (BGP)؛ (۴) NAT-T/UDP 4500 مسدود. شواهد: Debug IKE روی Spoke، Log Hub، `get router info bgp network`.
+
+**سخت (طراحی+تحلیل):** Shortcut ساخته می‌شود ولی ترافیک همچنان از Hub می‌رود: علت: Route BGP Next-hop Hub است و Shortcut Override (7.0.4+) فعال نیست؛ در 7.0.3 ممکن است نیاز به `set add-route`/Route Static یا ارتقا باشد. محدودیت 7.0.3 را در سند ثبت کنید. تصمیم: ارتقا به Patch جدیدتر (با Change) یا پذیرش Hub-only. ریسک ارتقا: CVE/Regression؛ آزمون در Lab.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. VPN → IPsec Tunnels: Tunnel Hub/Spoke (گزینه‌های ADVPN فقط CLI).
+2. Network → BGP: Neighbor/Neighbor Group.
+3. Policy & Objects: Policy Spoke→Spoke.
+4. Monitor → IPsec Monitor: Shortcutها.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+# HUB (sketch from the documented structure)
 config vpn ipsec phase1-interface
     edit "HUB"
+        set type dynamic
         set auto-discovery-sender enable
+        set net-device disable
+        set add-route disable
     next
 end
+# SPOKE
+config vpn ipsec phase1-interface
+    edit "TO-HUB"
+        set remote-gw 203.0.113.1
+        set auto-discovery-receiver enable
+    next
+end
+diagnose vpn tunnel list
+diagnose vpn ike gateway list
+get router info bgp network
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- فقط مفهوم؛ آزمایش‌نشده.
+- traceroute Spoke→Spoke قبل/بعد (کاهش Hop).
+- `diagnose vpn tunnel list` شامل Shortcut.
+- Log Hub: shortcut message.
+- آزمون منفی: Policy Spoke→Spoke بسته ⇒ Shortcut بدون ترافیک.
+- پایان Shortcut پس از Idle و بازگشت به Hub.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- مقایسه را بنویسید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | ADVPN کار نمی‌کند |
-| شواهد/دستور | Debug |
-| علت | تنظیم اشتباه |
-| رفع | بازبینی |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** ADVPN؟ *(پاسخ: 19-5-ت1)*
-
-**ت2.** وضعیت؟ *(پاسخ: 19-5-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا ADVPN؟ *(پاسخ: 19-5-م1)*
-
-**م2.** سناریو: Hub-only کافی است؟ *(پاسخ: 19-5-م2)*
-
-**معیار تسلط:** ساخت Hub-and-Spoke و Routing.
-
-**اشتباهات رایج:** Overlap و Policy.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| ADVPN | Auto-Discovery VPN | Tunnel پویا | VPN |
-
-| English sentence | ترجمه |
-|---|---|
-| ADVPN is not verified in this lab. | ADVPN در این Lab تأیید نشده است. |
-
-#### کارت Lab — درس 19-5
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | مقایسه ADVPN |
-| 2 | پیش‌نیاز | درس ۱۹-۳ |
-| 3 | توپولوژی | — |
-| 4 | تجهیزات | — |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | سند |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | ADVPN کار نمی‌کند |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | جدول |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `02-design/advpn.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Shortcut ساخته نمی‌شود | Debug IKE/Phase1 flags | Sender/Receiver، Policy، NAT-T |
+| Shortcut هست ولی ترافیک Hub | Routing table | Shortcut override/Next-hop؛ نسخه |
+| Shortcut ناپایدار | Log | Idle Timeout/DPD/NAT |
+| Hub CPU بالا | `sys top` | تعداد Tunnel/ Rekey |
+| BGP Flap پس از Shortcut | Log BGP | Next-hop/Route سه‌گانه |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Policy Spoke→Spoke حداقلی؛ UTM در Shortcut نیز لازم است (Inspection غیرمتمرکز).
+- Shortcut ترافیک را از Hub دور می‌کند؛ Inspection مرکزی دور می‌شود.
+- Log Shortcutها را جمع کنید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- ADVPN = Shortcut پویا Spoke-to-Spoke با Sender/Receiver.
+- وابسته به نسخه و CLI.
+- ریسک: دور زدن Inspection مرکزی.
+- تصمیم بر پایه‌ی سهم ترافیک S2S.
+- Failover باید طراحی و آزمون شود.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چه چیزی روی Hub و چه چیزی روی Spoke فعال می‌شود؟ *(پاسخ: 19-5-ت1)*
+
+**ت2.** (ساده) ADVPN چه مشکلی را حل می‌کند؟ *(پاسخ: 19-5-ت2)*
+
+**ت3.** (متوسط) ترافیک Spoke-to-Spoke ۴۰٪ کل است و Hub محدود پهنای‌باند دارد؛ تصمیم؟ *(پاسخ: 19-5-ت3)*
+
+**ت4.** (متوسط) Shortcut ساخته نمی‌شود؛ ۴ علت و آزمون. *(پاسخ: 19-5-ت4)*
+
+**ت5.** (سخت) در 7.0.3 Shortcut ترافیک را کنترل نمی‌کند. چه می‌کنید؟ *(پاسخ: 19-5-ت5)*
+
+**ت6.** (سخت، طراحی) ریسک امنیتی Shortcut و کنترل آن. *(پاسخ: 19-5-ت6)*
+
+**Q1.** Quick quiz (English): What security trade-off does an ADVPN shortcut introduce? *(پاسخ: 19-5-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Shortcut | ADVPN shortcut tunnel | Tunnel میان‌بر |
+| Sender | auto-discovery-sender | فرستنده‌ی اعلان Shortcut (Hub) |
+| Receiver | auto-discovery-receiver | گیرنده‌ی اعلان (Spoke) |
+
+- *ADVPN builds shortcut tunnels on demand between spokes.* ← ADVPN در صورت نیاز Tunnel میان‌بر بین Spokeها می‌سازد.
+- *Check the exact FortiOS patch level before relying on shortcut override.* ← پیش از اتکا به shortcut override سطح Patch را بررسی کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** ADVPN. **وضعیت:** اجرا نشده/Unverified؛ نیاز به سه VM FortiGate. **Evidence:** `03-ops/advpn.md`. **Rollback:** غیرفعال‌کردن sender/receiver.
+
+### ۱۵) منابع
+
+- [ADVPN and shortcut paths](https://docs.fortinet.com/document/fortigate/7.0.9/administration-guide/985659/advpn-and-shortcut-paths)
+- [ADVPN with BGP](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/820072/advpn-with-bgp-as-the-routing-protocol)
+- [Enhanced BGP next hop updates and ADVPN shortcut override 7.0.4](https://docs.fortinet.com/document/fortigate/7.0.0/new-features/245878/enhanced-bgp-next-hop-updates-and-advpn-shortcut-override-7-0-4)
 
 <a id="l-19-6"></a>
 
-## درس 19-6 — معماری ۴: چندشعبه و آزمون فصل
+## درس 19-6 — آزمون معماری ۴: چندشعبه با Failover — صورت مسئله، کلید پاسخ و Rubric
 
-**فصل 19 - روز 6 · پیش‌نیاز: درس ۱۹-۴ · ۶ ساعت**
+**فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰ تا ۱۹-۵ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک مرجع؛ Lab «اجرا نشده».
 
-ترکیب: چهار شعبه، Routing پویا، Breakout.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۹-۴
+1. معماری ۴ (HQ + ۳ شعبه + ۲ Hub) را از نیازمندی تا Evidence تحویل دهد.
+2. Convergence را اندازه‌گیری و با هدف مقایسه کند.
+3. سه عیب تزریق‌شده را با روش فرضیه‌محور رفع کند.
+4. گزارش RCA و Evidence Index بنویسد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- چهار شعبه.
-- قطع یک Tunnel.
-- Routing همگرا.
-- RCA.
-- آزمون.
+این درس آزمون عملی است: «صورت مسئله + کلید پاسخ + Rubric». کلید پاسخ پس از تلاش خودتان خوانده شود.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-سه شعبه به یک مرکز.
+#### صورت مسئله
 
-### ۵) مثال سازمانی
+سازمان: HQ (Data Center) + سه شعبه (A، B، C). هر شعبه دو ISP. دو Hub (HQ1، HQ2). نیازمندی‌ها:
+- R1: IP Plan بدون Overlap، Summary منطقه‌ای.
+- R2: Overlay IPsec IKEv2 با iBGP+RR؛ Failover Hub < ۱۰ ثانیه.
+- R3: ERP از Tunnel؛ اینترنت Breakout با UTM حداقلی؛ SaaS محلی.
+- R4: Guest ایزوله.
+- R5: Backup/Restore و Evidence.
 
-سازمان: چند شعبه با Routing پویا و اینترنت محلی.
+عیب‌های تزریق‌شده (توسط مربی): ۱) Policy یک‌طرفه Tunnel↔LAN در شعبه B؛ ۲) Prefix-list خروجی اشتباه در شعبه C؛ ۳) MTU Tunnel شعبه A.
 
-### ۶) تصویر و توپولوژی
+#### کلید پاسخ (خلاصه‌ی مورد انتظار)
 
-```text
-Spoke1/Spoke2 ==IPsec== Hub (OSPF/BGP)
-```
+- IP Plan: Region /16، Tunnel /30، Loopback /32، Null route.
+- Failover: BFD 300×3 + Local-pref؛ اندازه‌گیری ≈ ۶ ثانیه.
+- عیب ۱: Bytes in صفر در B؛ Debug Flow «Denied policy 0»؛ رفع Policy.
+- عیب ۲: Route شعبه C به بقیه نمی‌رسد؛ `advertised-routes` Prefix اشتباه؛ رفع Prefix-list.
+- عیب ۳: ping بزرگ شکست؛ MSS Clamp 1360 / MTU 1400.
 
-### ۷) پیکربندی (GUI و CLI)
+#### Rubric (۱۰۰)
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+طراحی/IP Plan ۱۵؛ پیاده‌سازی Overlay/Routing ۲۰؛ Breakout/Policy ۱۵؛ Failover و اندازه‌گیری ۲۰؛ عیب‌یابی سه‌گانه با RCA ۲۰؛ Evidence/صداقت ۱۰.
 
-#### روش گرافیکی (GUI)
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-1. Monitor > Routing.
+**ساده:** Tunnelها Up و BGP Established؛ Evidence: خروجی `summary`.
 
-#### روش خط فرمان (CLI)
+**متوسط:** قطع Hub1؛ ping پیوسته؛ ۶ ثانیه؛ جدول اندازه.
 
-```text
+**سخت:** سه عیب با RCA کامل؛ هر RCA: علامت، Timeline، شواهد، علت، رفع، پیشگیری.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get router info bgp summary
 get router info routing-table all
-get router info ospf neighbor
+diagnose vpn tunnel list
+diagnose debug flow filter addr 10.2.0.10
+diagnose debug flow trace start 10
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- خواندنی.
+- Evidence Index: فهرست دستور/خروجی/زمان برای هر نیاز.
+- اندازه‌گیری Convergence با جدول.
+- آزمون‌های منفی (Guest، Prefix غیرمجاز).
+- Backup قبل/بعد.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- قطع Tunnel و ثبت همگرایی.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | همگرایی کند |
-| شواهد/دستور | Routing table |
-| علت | Timers |
-| رفع | تنظیم |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Gate معماری ۴؟ *(پاسخ: 19-6-ت1)*
-
-**ت2.** همگرایی؟ *(پاسخ: 19-6-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا تست قطع؟ *(پاسخ: 19-6-م1)*
-
-**م2.** سناریو: بعد از قطع مسیر نماند؛ علت؟ *(پاسخ: 19-6-م2)*
-
-**معیار تسلط:** ساخت Hub-and-Spoke و Routing.
-
-**اشتباهات رایج:** Overlap و Policy.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Convergence | Convergence | همگرایی | Routing |
-
-| English sentence | ترجمه |
-|---|---|
-| Test failover by cutting a tunnel. | Failover را با قطع Tunnel تست کنید. |
-
-#### کارت Lab — درس 19-6
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون A4 |
-| 2 | پیش‌نیاز | درس ۱۹-۴ |
-| 3 | توپولوژی | Hub+Spokes |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Tunnel |
-| 8 | صورت مسئله | Failover |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping |
-| 11 | سناریوی خرابی | همگرایی کند |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | ثبت |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/a4.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Convergence بیش از هدف | Timeline | BFD/MRAI/Local-pref |
+| Evidence ناقص | Index | تکمیل |
+| عیب ۲ کشف نشد | advertised-routes | Prefix-list |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Secret در Evidence پاک شود.
+- تزریق عیب فقط در Lab.
 
-<a id="ans-19"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- آزمون = طراحی + پیاده‌سازی + اندازه‌گیری + RCA.
+- Evidence جزء نمره است.
+- صداقت: آنچه اجرا نشده «اجرا نشده».
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا Summary و Null route در IP Plan آزمون آمده است؟ *(پاسخ: 19-6-ت1)*
+
+**ت2.** (ساده) Evidence Index چه ستون‌هایی دارد؟ *(پاسخ: 19-6-ت2)*
+
+**ت3.** (متوسط) Failover Hub با BFD 300 ms×3 و MRAI iBGP حدود 5 s چقدر است؟ *(پاسخ: 19-6-ت3)*
+
+**ت4.** (متوسط) عیب ۱: Bytes in صفر در شعبه B. مراحل کشف و رفع. *(پاسخ: 19-6-ت4)*
+
+**ت5.** (سخت) عیب ۲: Prefix-list خروجی شعبه C فقط Prefix اشتباه را اجازه می‌دهد. روش کشف و رفع. *(پاسخ: 19-6-ت5)*
+
+**ت6.** (سخت، طراحی) برنامه‌ی بهبود پس از آزمون با ۵ اقدام. *(پاسخ: 19-6-ت6)*
+
+**Q1.** Quick quiz (English): What is the purpose of the evidence index in an architecture exam? *(پاسخ: 19-6-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| A4 | Architecture 4 (multi-branch) | معماری ۴ |
+| Rubric | Scoring rubric | ماتریس ارزیابی |
+| Evidence index | Evidence index | فهرست شواهد |
+
+- *Measure convergence and compare it with the target.* ← Convergence را اندازه بگیرید و با هدف مقایسه کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** آزمون A4. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/a4.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۱۹-۱ تا ۱۹-۵
+- RFC 4271، RFC 2328
 
 ## پاسخ‌های فصل 19
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**19-1-ت1** — چرا Overlap بد است؟
 
-مسیر مبهم.
+### پاسخ‌های بازنویسی عمیق درس 19-1
 
-**19-1-ت2** — Spoke-to-Spoke؟
+**19-1-ت1** — چون Prefix یک بلوک باینری است؛ شروع بلوک باید مضرب اندازه‌ی آن باشد. 10.1.4.0/22 چهار /24 از 4 تا 7 را پوشش می‌دهد؛ 10.1.3.0–6 چنین بلوکی نمی‌سازد و باید به دو Summary شکسته شود (10.1.3.0/24 و 10.1.4.0/23 + 10.1.6.0/24 یا یک /21 بزرگ‌تر با Black hole بیشتر).
 
-از Hub.
+**19-1-ت2** — ۴ آدرس: شبکه، دو Host و Broadcast؛ برای ۴۰ Tunnel = ۱۶۰ آدرس. دو آدرس قابل‌استفاده برای دو سر.
 
-**19-1-م1** — چرا IP Plan؟
+**19-1-ت3** — بسته به Hub می‌رسد؛ Route دقیق‌تر برای 10.1.9.0 نیست؛ اگر Default Route (اینترنت) هست، به اینترنت می‌رود و آدرس خصوصی نشت می‌کند و Log/امنیت دچار مشکل می‌شود. Null route برای 10.1.0.0/16 (distance بالا) باعث می‌شود Longest Prefix Match آن را Drop کند ولی Routeهای دقیق‌تر شعب برنده بمانند.
 
-جلوگیری از Overlap.
+**19-1-ت4** — Tunnel = 80؛ هر Tunnel یک IKE SA و حداقل یک Child SA ⇒ حدود ۱۶۰ SA (بدون Child SAهای چندگانه). این را با حد مدل مقایسه کنید.
 
-**19-1-م2** — سناریو: دو شعبه 10.1.1.0/24؛ چه می‌کنید؟
+**19-1-ت5** — مرحله ۱: کشف دقیق Overlap (اسکریپت) و ثبت Mapping آدرس واقعی↔مجازی. مرحله ۲: NAT دوطرفه موقت برای شعب Overlapدار + Log/DNS سازگار. مرحله ۳: Re-IP تدریجی هر شعبه در Change Window و حذف NAT. ریسک‌ها: ALG، DNS، Route برگشت، Log؛ برای هرکدام آزمون و Rollback.
 
-تغییر یا NAT.
+**19-1-ت6** — Region A 10.1.0.0/16، B 10.2.0.0/16، C 10.3.0.0/16 (هر کدام تا ۲۵۶ شعبه /24)؛ Tunnel 10.250.0.0/16 (/30 ← تا ۱۶۳۸۴ Tunnel)؛ Loopback 10.254.0.0/24؛ HQ 10.0.0.0/16. Summaryها: سه /16 + HQ؛ جمعاً ۴ Route خلاصه و Null route برای هرکدام.
 
-**19-2-ت1** — Selector برای پویا؟
-
-0.0.0.0/0.
-
-**19-2-ت2** — network-type؟
-
-point-to-point.
-
-**19-2-م1** — چرا Policy برای OSPF؟
-
-ترافیک Hello باید مجاز باشد.
-
-**19-2-م2** — سناریو: Neighbor Init؛ علت؟
-
-Policy یک‌طرفه.
-
-**19-3-ت1** — iBGP؟
-
-همان AS.
-
-**19-3-ت2** — local-pref؟
-
-ترجیح خروج.
-
-**19-3-م1** — چرا BGP؟
-
-مقیاس و Policy.
-
-**19-3-م2** — سناریو: Active؛ بررسی؟
-
-پورت 179 و AS.
-
-**19-4-ت1** — Breakout چیست؟
-
-خروج محلی.
-
-**19-4-ت2** — چرا UTM محلی؟
-
-کنترل در هر سایت.
-
-**19-4-م1** — چرا Breakout؟
-
-کاهش تأخیر/بار Hub.
-
-**19-4-م2** — سناریو: اینترنت کند؛ علت؟
-
-عبور از Hub.
-
-**19-5-ت1** — ADVPN؟
-
-Spoke-to-Spoke مستقیم.
-
-**19-5-ت2** — وضعیت؟
-
-Unverified.
-
-**19-5-م1** — چرا ADVPN؟
-
-کاهش بار Hub.
-
-**19-5-م2** — سناریو: Hub-only کافی است؟
-
-شعب کم: بله.
-
-**19-6-ت1** — Gate معماری ۴؟
-
-چهار شعبه+Failover.
-
-**19-6-ت2** — همگرایی؟
-
-Re-calc مسیر.
-
-**19-6-م1** — چرا تست قطع؟
-
-اثبات پایداری.
-
-**19-6-م2** — سناریو: بعد از قطع مسیر نماند؛ علت؟
-
-Backup Route.
+**19-1-Q1** — Because a prefix covers a binary block whose start address must be a multiple of the block size; otherwise it would cover addresses that are not part of the intended subnets.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 19-2
 
-<a id="ch20"></a>
+**19-2-ت1** — Hello 10 و Dead 40 ثانیه؛ Dead چهار برابر Hello است و هر دو سر باید یکی باشند.
 
+**19-2-ت2** — چون Hello/LSA با آدرس Tunnel ارسال می‌شود که ممکن است در Selectorهای Subnet‌های مشخص نباشد؛ Selector باز همه‌ی ترافیک Tunnel را رمز می‌کند و Routing تعیین می‌کند چه چیزی وارد شود.
+
+**19-2-ت3** — بدون BFD ≈ 40.2 s؛ با BFD ≈ 0.9 + 0.2 ≈ 1.1 s (بدون LSA/Install چند ده میلی‌ثانیه).
+
+**19-2-ت4** — ۱) Local-in/Policy بسته OSPF را رد می‌کند؛ ۲) Hello/Dead یا Auth ناهمسان؛ ۳) Network Type/Subnet یکسان نیست. شواهد: Sniffer proto 89، `ospf neighbor` دو سر.
+
+**19-2-ت5** — Failback مکرر باعث Flap و Convergence پی‌درپی (CPU و قطع) می‌شود. راه‌حل: Dampening/Hold-down، افزایش recoverytime در Health-check، یا تثبیت روی پشتیبان تا پایداری، SPF throttle و BFD با Multiplier مناسب.
+
+**19-2-ت6** — BGP: مقیاس (LSDB OSPF با ۴۰ Spoke در Area 0 بزرگ)، کنترل Policy (Local-pref/Filter)، Summary/Route Reflector ساده، Convergence قابل‌تنظیم. OSPF برای ≤ ~۱۵ شعبه یا Area منطقه‌ای قابل‌قبول است.
+
+**19-2-Q1** — Because the tunnel can remain up while the path is broken, so default OSPF dead timers of 40 seconds create a long black hole.
+
+
+### پاسخ‌های بازنویسی عمیق درس 19-3
+
+**19-3-ت1** — مسیری که از یک iBGP Peer یاد گرفته شده به iBGP Peer دیگر داده نمی‌شود؛ برای همین Full-mesh یا RR لازم است.
+
+**19-3-ت2** — هر Client فقط با RR صحبت می‌کند؛ ۴۲ روتر Full-mesh ۸۶۱ Session ولی RR با ۴۰ Client و ۲ RR حدود ۸۰.
+
+**19-3-ت3** — Local-pref بالاتر (مثلاً 200) برای Hub اصلی؛ Local-pref در کل AS رعایت می‌شود و Weight فقط محلی است.
+
+**19-3-ت4** — Peer مسیر اعلام نمی‌کند (network/redistribute)، Filter خروجی/ورودی، RR Client نبودن، Prefix-list. شاهد: advertised/received-routes و `show` Route-map.
+
+**19-3-ت5** — با BFD ≈ 0.9 s Detect + MRAI iBGP حدود چند ثانیه + Install ≈ ۵–۷ ثانیه؛ بدون BFD تا ۱۸۰ ثانیه (یا کمتر اگر Tunnel Down شود و Session قطع شود).
+
+**19-3-ت6** — Spoke فقط Prefix خودش را اعلام کند (Prefix-list out)؛ Hub به Spoke فقط Summary/Default بدهد؛ RR Route-map با Community برای جلوگیری از بازتاب Prefixهای ناخواسته؛ Max-prefix و Alert.
+
+**19-3-Q1** — Clients peer only with the reflector instead of with every other router, which removes the full mesh.
+
+
+### پاسخ‌های بازنویسی عمیق درس 19-4
+
+**19-4-ت1** — کاهش Latency (حذف یک Hop تا Hub) و کاهش بار پهنای باند Hub.
+
+**19-4-ت2** — Longest Prefix Match: Route 10.0.0.0/8 از Tunnel دقیق‌تر از 0.0.0.0/0 است.
+
+**19-4-ت3** — Backhaul = 55 ms؛ Breakout ≈ 22 ms؛ کاهش ≈ 33 ms (60٪).
+
+**19-4-ت4** — Distance کمتر برنده است؛ iBGP پیش‌فرض 200 و Static 10؛ پس Static محلی برنده است. اگر Distance را عوض کنید یا Default محلی نباشد، Backhaul می‌شود؛ کنترل با Distance/Priority.
+
+**19-4-ت5** — Web/DNS/File Filter و IPS سبک در شعبه، SaaS فقط با ISDB، Backhaul برای گروه پرریسک، Log و Alert مرکزی، EDR و Patch.
+
+**19-4-ت6** — Default Route پشتیبان از Tunnel (Distance بالاتر)، Policy LAN→Tunnel→Hub→Internet با UTM مرکزی؛ هشدار؛ Failback خودکار با Hold-down؛ آزمون دوره‌ای.
+
+**19-4-Q1** — Because routers choose the longest matching prefix, so the more specific route is used for matching destinations.
+
+
+### پاسخ‌های بازنویسی عمیق درس 19-5
+
+**19-5-ت1** — Hub: `auto-discovery-sender enable`؛ Spoke: `auto-discovery-receiver enable`.
+
+**19-5-ت2** — ترافیک شعبه‌به‌شعبه که در Hub-and-Spoke دو بار از Hub می‌گذرد؛ با Shortcut مستقیم Latency و بار Hub کم می‌شود.
+
+**19-5-ت3** — ADVPN یا Full-mesh انتخابی برای زوج‌های پرترافیک؛ چون سهم S2S بالا است و Hub گلوگاه می‌شود.
+
+**19-5-ت4** — Receiver خاموش (Phase1)، Policy بین Tunnelها، Route/BGP ناقص، NAT-T؛ آزمون‌ها: Debug IKE، Log Hub، `bgp network`، Sniffer 4500.
+
+**19-5-ت5** — محدودیت نسخه را ثبت کنید؛ بررسی release notes 7.0.4+ (shortcut override)؛ آزمون ارتقا در Lab؛ در صورت نبود امکان ارتقا: Hub-only یا Static Route برای Pairها.
+
+**19-5-ت6** — Inspection مرکزی دور می‌شود؛ پس UTM در Spoke یا Policy حداقلی Spoke-to-Spoke، Log Shortcut مرکزی، Allow فقط Subnetهای لازم.
+
+**19-5-Q1** — Spoke-to-spoke traffic bypasses the hub, so central inspection and logging are skipped unless the spokes enforce them.
+
+
+### پاسخ‌های بازنویسی عمیق درس 19-6
+
+**19-6-ت1** — برای کاهش Route و جلوگیری از نشت ترافیک آدرس ناموجود به اینترنت.
+
+**19-6-ت2** — شناسه، نیازمندی، آزمون، دستور/Capture، نتیجه، فایل/زمان.
+
+**19-6-ت3** — تقریباً 0.9 s Detect + ≈ 5 s Update + Install ≈ ۶ ثانیه؛ هدف < ۱۰ ثانیه برآورده می‌شود.
+
+**19-6-ت4** — Debug Flow در B: Denied policy 0 برای Tunnel→LAN؛ ساخت Policy؛ آزمون مثبت/منفی؛ RCA: چک‌لیست دوطرفه.
+
+**19-6-ت5** — `advertised-routes` در C و `received-routes` در Hub؛ مقایسه با IP Plan؛ اصلاح Prefix-list (10.3.x.0/24)؛ `clear ip bgp soft`؛ تأیید Route در Spokeها.
+
+**19-6-ت6** — BFD روی همه‌ی Tunnelها، Alert بر Prefix غیرمجاز، چک‌لیست Policy دوطرفه، استاندارد MTU/MSS، ADVPN برای زوج‌های پرترافیک.
+
+**19-6-Q1** — It maps every requirement to the test, the raw output and the result so that the claims can be audited.
 
 ### پاسخ‌های درس افزوده‌ی 19-0 (فصل 19)
 
@@ -29911,625 +30218,733 @@ Backup Route.
 
 <a id="l-20-1"></a>
 
-## درس 20-1 — مفاهیم Remote Access و ریسک
+## درس 20-1 — معماری دسترسی راه‌دور: مدل تهدید، مقایسه‌ی VPN/ZTNA/Bastion، Posture و تصمیم‌گیری
 
-**فصل 20 - روز 1 · پیش‌نیاز: فصل ۱۸ · ۶ ساعت**
+**فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۰، ۱۷-۰، ۲۰-۷ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده». SSL VPN فقط در Lab ایزوله (CVE).
 
-مقایسه SSL VPN و IPsec Dial-up و ریسک‌ها.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۱۸
+1. مدل تهدید دسترسی راه‌دور (دارایی، مهاجم، مسیر، کنترل) را بنویسد.
+2. IPsec Dial-up، SSL VPN، ZTNA/Agentless و Bastion را با معیار مقایسه و برای هر گروه کاربر انتخاب کند.
+3. Posture/Device Trust، MFA و Least Privilege را در معماری وارد کند.
+4. Split در برابر Full tunnel را با ریسک بسنجد.
+5. معیارهای ظرفیت (کاربر هم‌زمان، Throughput) و دسترس‌پذیری را برآورد کند.
+6. طرح نهایی را با Rubric ریسک ارزیابی کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- SSL VPN: Web/Tunnel Mode.
-- IPsec Dial-up: با Client.
-- ریسک: CVEهای شناخته‌شده؛ Patch.
-- MFA ضروری.
-- حداقل دسترسی (Least Privilege).
+دسترسی راه‌دور درِ ورودیِ اینترنتیِ شبکه‌ی داخلی است. بیشتر نفوذهای مهم (باج‌افزار) از VPN آسیب‌پذیر یا اعتبارنامه‌ی سرقت‌شده شروع شده‌اند. بنابراین انتخاب «چه فناوری» از سؤال «چه کسی، با چه دستگاهی، به چه چیزی، چگونه احراز و چگونه پایش» جدا نیست.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کارمند از خانه وصل می‌شود.
+#### ۱) مدل تهدید (چهارسؤال)
 
-### ۵) مثال سازمانی
-
-سازمان: دسترسی راه‌دور با MFA و حداقل دسترسی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-User -> Internet -> FGT SSL-VPN -> LAN
+``` text
+Assets    : internal servers, AD, data, management plane
+Attackers : external (credential stuffing, exploit of VPN service), compromised endpoint, malicious insider
+Paths     : internet-facing VPN service -> authenticated session -> flat internal access
+Controls  : MFA, patching, source restriction, posture, least privilege/segmentation, logging, EDR
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) مقایسه (جدول کمی/کیفی)
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+| معیار | IPsec Dial-up IKEv2 | SSL VPN Tunnel | SSL VPN Web/Agentless | ZTNA | Bastion/Jump |
+|---|---|---|---|---|---|
+| لایه‌ی دسترسی | شبکه | شبکه | برنامه (Proxy) | برنامه/هویت | سرور واسط |
+| سطح حمله‌ی سرویس | IKE | وب + TLS | وب | Gateway/Proxy | SSH/RDP |
+| کلاینت | FortiClient/native | FortiClient | مرورگر | Agent | Client SSH/RDP |
+| Least privilege | با Policy | با Policy | ذاتی (فقط اپ) | ذاتی | ذاتی |
+| نیاز Posture | بله | بله | محدود | بله | — |
+| وضعیت نسخه | ادامه | **در 7.6.3 حذف** | Agentless | جدید | مستقل |
 
-#### روش گرافیکی (GUI)
+#### ۳) تصمیم بر اساس گروه
 
-1. Dashboard > System Information.
+- **کارمند مدیریت‌شده:** IPsec IKEv2 + گواهی/EAP + MFA + Posture + Segmentation.
+- **پیمانکار/BYOD:** دسترسی اپلیکیشنی (Agentless/ZTNA) فقط به سیستم‌های لازم؛ بدون Full network.
+- **مدیر:** Bastion + MFA + Session Recording + محدودیت Source.
 
-#### روش خط فرمان (CLI)
+#### ۴) Split در برابر Full tunnel
 
-```text
-get system status
+- Full tunnel: همه‌ی ترافیک از فایروال سازمان (کنترل UTM) ولی پهنای باند/Latency بیشتر.
+- Split: فقط شبکه‌ی سازمانی از Tunnel؛ دستگاه کلاینت به اینترنت مستقیم (ریسک: کلاینت پل بین اینترنت و داخل).
+- تصمیم: Full برای کاربران حساس/دستگاه ناشناس؛ Split برای دستگاه مدیریت‌شده با EDR.
+
+#### ۵) ظرفیت
+
+``` text
+Peak concurrent users = users x peak concurrency (e.g. 600 x 40% = 240)
+Throughput = concurrent users x avg Mbps  (e.g. 240 x 2 = 480 Mbps)
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+با Datasheet VPN Throughput مدل و حاشیه ۳۰٪ بسنجید؛ MFA/Radius باید زیر بار هم پاسخ دهد.
 
-- نسخه را ثبت و با Advisory مقایسه کنید.
+### ۴) طراحی و تصمیم‌گیری
 
-### ۸) تست عملکرد
-
-- جدول مقایسه SSL VPN و IPsec.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | نسخه آسیب‌پذیر |
-| شواهد/دستور | get system status |
-| علت | نسخه قدیمی |
-| رفع | Patch/ایزوله |
+| VPN یا ZTNA | بر اساس گروه کاربر، دستگاه و دسترسی لازم |
+| Split/Full | Posture و ریسک |
+| MFA | الزامی |
+| Posture | Patch/EDR/Encryption |
+| ظرفیت | کاربر هم‌زمان × Throughput + حاشیه |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** ۳ گروه: کارمند/پیمانکار/مدیر؛ جدول انتخاب (بخش ۳). نتیجه: هر گروه یک «نوع دسترسی» و Least Privilege.
 
-**ت1.** چرا ایزوله؟ *(پاسخ: 20-1-ت1)*
+**متوسط (تحلیل):** کارمندی خواهان Split است چون «کند است». تحلیل: Full tunnel Latency را بالا می‌برد؛ اگر لپ‌تاپ مدیریت‌شده با EDR و DNS داخلی/Filter باشد Split قابل‌قبول است؛ در غیر این صورت Full. معیار تصمیم: وضعیت Posture. ثبت استثنا با مالک.
 
-**ت2.** MFA؟ *(پاسخ: 20-1-ت2)*
+**سخت (ریسک):** حمله‌ی Credential stuffing به VPN با ۵۰٬۰۰۰ تلاش/ساعت. تحلیل لایه‌ای: (۱) MFA؛ (۲) Lockout/Rate limit؛ (۳) Source Restriction/Geo؛ (۴) Alert بر نسبت ناموفق/موفق؛ (۵) Credential hygiene (رمزهای نشت‌یافته). حتی اگر رمز درست باشد MFA جلوی ورود را می‌گیرد. معیار: «ورود موفق پس از N تلاش ناموفق» = رویداد بحرانی.
 
-### ۱۱) مرور و ارزیابی
+### ۸) Verification (اثبات صحت)
 
-**م1.** چرا Patch؟ *(پاسخ: 20-1-م1)*
+- ماتریس گروه→روش→کنترل امضا‌شده.
+- برآورد ظرفیت با فرمول.
+- Threat model یک‌صفحه‌ای.
 
-**م2.** سناریو: نسخه 7.0.3 در اینترنت؛ چه می‌کنید؟ *(پاسخ: 20-1-م2)*
+### ۹) Troubleshooting
 
-**معیار تسلط:** تنظیم و تست VPN.
-
-**اشتباهات رایج:** باز بودن بی‌دلیل.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| CVE | Common Vulnerabilities and Exposures | شناسه‌ی آسیب‌پذیری | امنیت |
-| SSL VPN | SSL VPN | VPN مبتنی بر TLS | Remote |
-
-| English sentence | ترجمه |
-|---|---|
-| Never expose an unpatched SSL VPN. | هرگز SSL VPN بدون Patch را در معرض قرار ندهید. |
-
-#### کارت Lab — درس 20-1
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | مقایسه |
-| 2 | پیش‌نیاز | فصل ۱۸ |
-| 3 | توپولوژی | — |
-| 4 | تجهیزات | — |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | جدول |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | نسخه آسیب‌پذیر |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | سند |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `02-design/remote-compare.md` |
-| 16 | Cleanup و بازگردانی | — |
+| دسترسی بیش‌ازحد پس از اتصال | Policy/Segmentation | Least Privilege؛ Policy گروهی |
+| VPN کند | CPU/Throughput | Full tunnel/ظرفیت |
+| حمله‌ی Brute-force | Log | Lockout/MFA/Source |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- VPN سرویس اینترنتی است؛ Patch سریع.
+- MFA بدون استثنا.
+- دسترسی حداقلی پس از اتصال.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- تصمیم بر پایه‌ی گروه/دستگاه/دسترسی.
+- IPsec سطح حمله‌ی کمتر؛ SSL VPN Tunnel منسوخ‌شونده.
+- Split/Full بر پایه‌ی Posture.
+- ظرفیت را محاسبه کنید.
+- Detection ورودهای مشکوک.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا دسترسی راه‌دور پرریسک‌ترین مسیر ورود است؟ *(پاسخ: 20-1-ت1)*
+
+**ت2.** (ساده) Split tunnel چه ریسکی دارد؟ *(پاسخ: 20-1-ت2)*
+
+**ت3.** (متوسط) ظرفیت VPN برای ۶۰۰ کاربر با ۴۰٪ هم‌زمانی و ۲ Mbps میانگین چقدر است؟ *(پاسخ: 20-1-ت3)*
+
+**ت4.** (متوسط) چرا پیمانکار نباید Full network access بگیرد؟ *(پاسخ: 20-1-ت4)*
+
+**ت5.** (سخت) Credential stuffing را با ۵ کنترل لایه‌ای مهار کنید. *(پاسخ: 20-1-ت5)*
+
+**ت6.** (سخت، طراحی) طرح دسترسی راه‌دور برای ۳ گروه با ظرفیت و کنترل‌ها. *(پاسخ: 20-1-ت6)*
+
+**Q1.** Quick quiz (English): Why is multi-factor authentication essential for remote access? *(پاسخ: 20-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Posture | Device posture check | بررسی وضعیت امنیتی دستگاه |
+| Bastion | Bastion/jump host | سرور واسط مدیریتی |
+| ZTNA | Zero Trust Network Access | دسترسی بدون اعتماد پیش‌فرض |
+| Credential stuffing | Credential stuffing | آزمون انبوه رمزهای نشت‌یافته |
+
+- *Grant remote users only the access they need.* ← به کاربران راه‌دور فقط دسترسی لازم بدهید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** ماتریس دسترسی. **وضعیت:** طراحی. **Evidence:** `02-design/remote-compare.md`.
+
+### ۱۵) منابع
+
+- NIST SP 800-46 Rev.2
+- NIST SP 800-207 (Zero Trust)
+- Fortinet Docs: IPsec/SSL VPN (7.0)
 
 <a id="l-20-2"></a>
 
-## درس 20-2 — SSL VPN: Portal، Tunnel و Policy
+## درس 20-2 — SSL VPN در 7.0.3 (فقط Lab ایزوله): سازوکار، Portal، Realm، Tunnel، Split و Hardening
 
-**فصل 20 - روز 2 · پیش‌نیاز: درس ۲۰-۰ · ۶ ساعت**
+**فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۲۰-۱، ۲۰-۷، ۱۷-۲ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده». SSL VPN فقط در Lab ایزوله (CVE).
 
-پیکربندی SSL VPN در Lab ایزوله.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۰-۰
+1. سازوکار SSL VPN (TLS، Web/Tunnel، Portal، IP Pool) را توضیح دهد.
+2. در Lab ایزوله Portal، User Group، Policy و Route را بسازد.
+3. Split tunnel، DNS و Realm را تنظیم کند.
+4. Hardening (Source، MFA، Cert، Timeout، Lockout) را اجرا کند.
+5. Log و مشکلات اتصال را عیب‌یابی کند.
+6. ریسک CVE و راه مهاجرت (۲۰-۷) را ارزیابی کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- `config vpn ssl settings`: port، source-interface.
-- Portal و Tunnel IP Pool.
-- User Group.
-- Policy: ssl.root -> LAN.
-- تأیید: Monitor SSL-VPN.
+SSL VPN در 7.0.3 هنوز وجود دارد ولی (۱) آسیب‌پذیری‌های شناخته‌شده‌ی بحرانی در خط 7.0.x دارد (Fortinet PSIRT)، (۲) Tunnel mode در 7.6.3 حذف شده است. پس این درس برای **درک سازوکار و مهاجرت** است و عملی‌سازی فقط در Lab ایزوله (بدون اینترنت) انجام می‌شود.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کارمند از خانه وصل می‌شود.
+#### ۱) سازوکار
 
-### ۵) مثال سازمانی
+- کلاینت به `https://fgt:port` وصل می‌شود (TLS). **Web mode:** FortiGate Proxy اپلیکیشن‌ها (HTTP/RDP/SSH) را ارائه می‌دهد. **Tunnel mode:** FortiClient یک Interface مجازی می‌سازد و بسته‌های IP را داخل TLS (و Datagram TLS در صورت UDP) کپسوله می‌کند.
+- **Portal:** مجموعه‌ی تنظیم (Tunnel/Web، Split، DNS، Bookmarks).
+- **IP Pool:** آدرس کلاینت‌ها.
+- **Policy:** Source Interface = `ssl.root` (Interface مجازی) به LAN.
+- **Realm/User Group → Portal Mapping:** هر گروه Portal متفاوت.
 
-سازمان: دسترسی راه‌دور با MFA و حداقل دسترسی.
+#### ۲) پیکربندی منطقی
 
-### ۶) تصویر و توپولوژی
-
-```text
-User -> Internet -> FGT SSL-VPN -> LAN
+``` text
+1 Certificate (valid, not factory)       2 Listening interface/port
+3 Tunnel IP pool + DNS                   4 Portal (tunnel mode, split networks)
+5 User Group (LDAP/RADIUS + MFA)         6 Group->Portal mapping
+7 Firewall policy ssl.root -> LAN (group source)
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۳) Hardening (در Lab و برای درک)
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+Source Restriction (Address)، MFA، Certificate معتبر، TLS minimum version، `login-attempt-limit`/Block، Idle Timeout، Realm جدا، غیرفعال‌کردن Web mode در صورت نیاز، Log، Patch.
 
-#### روش گرافیکی (GUI)
+#### ۴) ریسک‌ها
 
-1. VPN > SSL-VPN Settings.
-2. VPN > SSL-VPN Portals.
-3. Policy: Incoming ssl.root.
+CVEهای RCE/Credential-leak روی 7.0.x؛ سرویس عمومی → اسکن/حمله؛ رفتار پیش‌فرض‌ها. **تولید:** مهاجرت به IPsec (۲۰-۷).
 
-#### روش خط فرمان (CLI)
+### ۴) طراحی و تصمیم‌گیری
 
-```text
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| SSL VPN یا مهاجرت | تولید: مهاجرت؛ Lab: درک |
+| Portal | Tunnel برای مدیریت‌شده؛ Web فقط در صورت نیاز |
+| Certificate | معتبر CA |
+| Source | محدود |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Portal tunnel-access، IP Pool 10.212.134.0/24، Policy ssl.root→LAN برای گروه GRP-IT؛ اتصال با FortiClient و ping به سرور LAN.
+
+**متوسط (تحلیل):** وصل می‌شود ولی به LAN نمی‌رسد: فرضیه‌ها: (۱) Policy ssl.root→LAN نیست/Source گروه نادرست؛ (۲) Route بازگشت LAN به IP Pool (Static/Policy)؛ (۳) Split tunnel Network اشتباه؛ (۴) ترافیک به Local-in رسید ولی Selector. شواهد: Debug Flow (Policy)، `get vpn ssl monitor`، Sniffer.
+
+**سخت (ریسک/طراحی):** یک VPN در معرض اینترنت با 7.0.x: تحلیل: اگر CVE کشف‌شده روی نسخه باشد، حتی با MFA، مهاجم می‌تواند Authentication را دور بزند. اقدام فوری: Patch/غیرفعال، محدودسازی Source، Log retrospective، بازنشانی اعتبارنامه‌ها. اقدام بلندمدت: مهاجرت IPsec، Segmentation پشت VPN، Alert.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. VPN → SSL-VPN Settings: Listen Interface/Port، Server Certificate، Tunnel IP Pool، DNS، Restrict Access.
+2. VPN → SSL-VPN Portals: Tunnel Mode، Split Tunneling، Bookmarks.
+3. User & Authentication → User Groups.
+4. VPN → SSL-VPN Settings → Authentication/Portal Mapping.
+5. Policy & Objects → Firewall Policy: Incoming `ssl.root` → LAN.
+6. Monitor → SSL-VPN Monitor.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
 config vpn ssl settings
-    set servercert "Fortinet_Factory"
+    set servercert "LAB-CERT"
     set tunnel-ip-pools "SSLVPN_TUNNEL_ADDR1"
     set source-interface "port1"
     set default-portal "tunnel-access"
+    set login-attempt-limit 3
+    set login-block-time 300
+    set idle-timeout 600
 end
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- فقط در Lab؛ `Unverified`.
-- Certificate Factory برای Lab.
-- راستی‌آزمایی: اتصال FortiClient.
-
-### ۸) تست عملکرد
-
-- اتصال و دسترسی به LAN.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | وصل نمی‌شود |
-| شواهد/دستور | Log VPN |
-| علت | Policy/Port |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Portal؟ *(پاسخ: 20-2-ت1)*
-
-**ت2.** IP Pool؟ *(پاسخ: 20-2-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Group؟ *(پاسخ: 20-2-م1)*
-
-**م2.** سناریو: وصل می‌شود ولی LAN نه؛ علت؟ *(پاسخ: 20-2-م2)*
-
-**معیار تسلط:** تنظیم و تست VPN.
-
-**اشتباهات رایج:** باز بودن بی‌دلیل.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Portal | SSL VPN portal | صفحه/پروفایل | VPN |
-
-| English sentence | ترجمه |
-|---|---|
-| Restrict SSL VPN with a user group. | SSL VPN را با Group محدود کنید. |
-
-#### کارت Lab — درس 20-2
-
-| # | فیلد | محتوا |
-|---|---|---|
-| 1 | عنوان و هدف | SSL VPN |
-| 2 | پیش‌نیاز | درس ۲۰-۰ |
-| 3 | توپولوژی | FGT+Client |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Auth |
-| 8 | صورت مسئله | SSL VPN |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | FortiClient |
-| 11 | سناریوی خرابی | وصل نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Connected |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/sslvpn.md` |
-| 16 | Cleanup و بازگردانی | حذف |
-
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
-
----
-
-<a id="l-20-3"></a>
-
-## درس 20-3 — Dial-up IPsec و Split Tunnel
-
-**فصل 20 - روز 3 · پیش‌نیاز: درس ۲۰-۱ · ۶ ساعت**
-
-### ۱) معرفی درس
-
-IPsec Remote Access با Client.
-
-### ۲) پیش‌نیازها
-
-درس ۲۰-۱
-
-### ۳) توضیح مفهومی
-
-- Phase1 Dynamic.
-- Mode Config.
-- Split Tunnel: فقط ترافیک سازمانی.
-- Full Tunnel: همه‌چیز از VPN.
-- ریسک Split Tunnel.
-
-### ۴) مثال ساده
-
-کارمند از خانه وصل می‌شود.
-
-### ۵) مثال سازمانی
-
-سازمان: دسترسی راه‌دور با MFA و حداقل دسترسی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-User -> Internet -> FGT SSL-VPN -> LAN
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. VPN > IPsec Wizard > Remote Access.
-
-#### روش خط فرمان (CLI)
-
-```text
-config vpn ipsec phase1-interface
-    edit "DIALUP"
-        set type dynamic
-        set mode-cfg enable
-    next
-end
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- Mode Config `Unverified`.
-
-### ۸) تست عملکرد
-
-- اتصال Client.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Client وصل نمی‌شود |
-| شواهد/دستور | Debug IKE |
-| علت | PSK/Proposal |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Dynamic؟ *(پاسخ: 20-3-ت1)*
-
-**ت2.** Split Tunnel؟ *(پاسخ: 20-3-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Split؟ *(پاسخ: 20-3-م1)*
-
-**م2.** سناریو: امنیت؛ Full Tunnel؟ *(پاسخ: 20-3-م2)*
-
-**معیار تسلط:** تنظیم و تست VPN.
-
-**اشتباهات رایج:** باز بودن بی‌دلیل.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Split tunnel | Split tunneling | تونل جزئی | VPN |
-
-| English sentence | ترجمه |
-|---|---|
-| Choose full tunnel for stricter control. | برای کنترل سخت‌تر Full Tunnel را انتخاب کنید. |
-
-#### کارت Lab — درس 20-3
-
-| # | فیلد | محتوا |
-|---|---|---|
-| 1 | عنوان و هدف | Dial-up |
-| 2 | پیش‌نیاز | درس ۲۰-۱ |
-| 3 | توپولوژی | FGT+Client |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Auth |
-| 8 | صورت مسئله | IPsec RA |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | Client |
-| 11 | سناریوی خرابی | Client وصل نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Connected |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/dialup.md` |
-| 16 | Cleanup و بازگردانی | حذف |
-
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
-
----
-
-<a id="l-20-4"></a>
-
-## درس 20-4 — MFA، ثبت رویداد و Hardening VPN
-
-**فصل 20 - روز 4 · پیش‌نیاز: درس ۲۰-۲ · ۶ ساعت**
-
-### ۱) معرفی درس
-
-لایه‌ی دوم و مانیتورینگ.
-
-### ۲) پیش‌نیازها
-
-درس ۲۰-۲
-
-### ۳) توضیح مفهومی
-
-- MFA با RADIUS/FortiToken (Needs-License).
-- Log ورود.
-- Lockout.
-- محدودکردن Geo/Source.
-- Patch.
-
-### ۴) مثال ساده
-
-کارمند از خانه وصل می‌شود.
-
-### ۵) مثال سازمانی
-
-سازمان: دسترسی راه‌دور با MFA و حداقل دسترسی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-User -> Internet -> FGT SSL-VPN -> LAN
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. VPN > SSL-VPN Settings > Restrict Access.
-
-#### روش خط فرمان (CLI)
-
-```text
-config vpn ssl settings
-    set source-address "TRUSTED-SRC"
-end
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- `Unverified`.
-
-### ۸) تست عملکرد
-
-- ثبت Log ورود ناموفق.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | ورود مشکوک |
-| شواهد/دستور | Log |
-| علت | Brute-force |
-| رفع | Lockout/Geo |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Lockout؟ *(پاسخ: 20-4-ت1)*
-
-**ت2.** چرا Log؟ *(پاسخ: 20-4-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا محدود Source؟ *(پاسخ: 20-4-م1)*
-
-**م2.** سناریو: حمله Brute-force؛ چه می‌کنید؟ *(پاسخ: 20-4-م2)*
-
-**معیار تسلط:** تنظیم و تست VPN.
-
-**اشتباهات رایج:** باز بودن بی‌دلیل.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| MFA | Multi-Factor Authentication | احراز چندعاملی | VPN |
-
-| English sentence | ترجمه |
-|---|---|
-| Always enable MFA for remote access. | MFA را همیشه برای دسترسی راه‌دور فعال کنید. |
-
-#### کارت Lab — درس 20-4
-
-| # | فیلد | محتوا |
-|---|---|---|
-| 1 | عنوان و هدف | Hardening VPN |
-| 2 | پیش‌نیاز | درس ۲۰-۲ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | SSL VPN |
-| 8 | صورت مسئله | Restrict |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | Log |
-| 11 | سناریوی خرابی | ورود مشکوک |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | ثبت |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `03-ops/vpn-hardening.md` |
-| 16 | Cleanup و بازگردانی | حذف |
-
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
-
----
-
-<a id="l-20-5"></a>
-
-## درس 20-5 — عیب‌یابی Remote Access و آزمون فصل
-
-**فصل 20 - روز 5 · پیش‌نیاز: درس ۲۰-۳ · ۶ ساعت**
-
-### ۱) معرفی درس
-
-چک‌لیست: Policy، Route، Certificate، Client.
-
-### ۲) پیش‌نیازها
-
-درس ۲۰-۳
-
-### ۳) توضیح مفهومی
-
-- چک‌لیست.
-- Debug SSL VPN.
-- Log.
-- RCA.
-- آزمون.
-
-### ۴) مثال ساده
-
-کارمند از خانه وصل می‌شود.
-
-### ۵) مثال سازمانی
-
-سازمان: دسترسی راه‌دور با MFA و حداقل دسترسی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-User -> Internet -> FGT SSL-VPN -> LAN
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Monitor > SSL-VPN.
-
-#### روش خط فرمان (CLI)
-
-```text
+get vpn ssl monitor
 diagnose debug application sslvpn -1
 diagnose debug enable
 diagnose debug disable
+diagnose debug reset
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `Unverified`.
-- Disable debug.
+- اتصال و IP Pool.
+- دسترسی مثبت/منفی (گروه مجاز/غیرمجاز).
+- Lockout بعد از ۳ تلاش.
+- Monitor و Log.
+- هیچ اتصال اینترنتی به Lab (ایزولاسیون).
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- سه عیب را رفع کنید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Login Loop |
-| شواهد/دستور | Debug |
-| علت | Certificate/Portal |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Debug؟ *(پاسخ: 20-5-ت1)*
-
-**ت2.** پایان؟ *(پاسخ: 20-5-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا چک‌لیست؟ *(پاسخ: 20-5-م1)*
-
-**م2.** سناریو: فقط یک کاربر؛ چرا؟ *(پاسخ: 20-5-م2)*
-
-**معیار تسلط:** تنظیم و تست VPN.
-
-**اشتباهات رایج:** باز بودن بی‌دلیل.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Debug | Debug | اشکال‌زدایی | VPN |
-
-| English sentence | ترجمه |
-|---|---|
-| Disable debug after use. | پس از استفاده Debug را غیرفعال کنید. |
-
-#### کارت Lab — درس 20-5
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون RA |
-| 2 | پیش‌نیاز | درس ۲۰-۳ |
-| 3 | توپولوژی | FGT+Client |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | SSL VPN |
-| 8 | صورت مسئله | سه عیب |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | Debug |
-| 11 | سناریوی خرابی | Login Loop |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | RCA |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/rca-ra.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Login Loop | Capture/Log | Certificate/Portal |
+| وصل ولی LAN نه | Debug Flow | Policy/Route |
+| وصل نمی‌شود | `sslvpn` debug | Port/Policy/Source |
+| Brute-force | Log | Lockout/MFA/Source |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- فقط ایزوله؛ بدون اینترنت.
+- MFA؛ Source Restriction؛ TLS قوی.
+- Patch/مهاجرت.
 
-<a id="ans-20"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- SSL VPN: TLS + Portal + IP Pool + Policy ssl.root.
+- 7.0.x آسیب‌پذیر؛ فقط Lab.
+- Hardening لایه‌ای.
+- مهاجرت به IPsec مسیر تولید.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Interface مجازی ssl.root چه نقشی دارد؟ *(پاسخ: 20-2-ت1)*
+
+**ت2.** (ساده) چرا SSL VPN 7.0.3 فقط در Lab ایزوله؟ *(پاسخ: 20-2-ت2)*
+
+**ت3.** (متوسط) وصل شده ولی به LAN نمی‌رسد؛ سه علت و آزمون. *(پاسخ: 20-2-ت3)*
+
+**ت4.** (متوسط) تنظیم Lockout چه حمله‌ای را کم می‌کند؟ *(پاسخ: 20-2-ت4)*
+
+**ت5.** (سخت) CVE اعلام شد؛ اقدام فوری ۵ مرحله‌ای. *(پاسخ: 20-2-ت5)*
+
+**ت6.** (سخت، طراحی) Hardening ۸‌مورد. *(پاسخ: 20-2-ت6)*
+
+**Q1.** Quick quiz (English): Why is an unpatched SSL VPN a critical risk? *(پاسخ: 20-2-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Portal | SSL VPN portal | پروفایل دسترسی |
+| Realm | SSL VPN realm | محدوده/آدرس ورود |
+| ssl.root | SSL VPN virtual interface | Interface مجازی ترافیک SSL VPN |
+
+- *Never expose an unpatched SSL VPN to the internet.* ← هرگز SSL VPN بدون Patch را در معرض اینترنت قرار ندهید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** SSL VPN ایزوله. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/sslvpn.md`. **Rollback:** حذف Portal/Policy.
+
+### ۱۵) منابع
+
+- [SSL VPN tunnel mode replaced (7.6.3)](https://docs.fortinet.com/document/fortigate/7.6.3/fortios-release-notes/173430/ssl-vpn-tunnel-mode-no-longer-supported)
+- FortiGuard PSIRT Advisories
+- Fortinet Docs: SSL VPN (7.0)
+
+<a id="l-20-3"></a>
+
+## درس 20-3 — IPsec Dial-up (Remote Access): IKEv2، هویت، Mode Config، Split/Full، DNS و Policy
+
+**فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۲۰-۱، ۱۷-۳ · ≈ 9 ساعت**
+
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده». SSL VPN فقط در Lab ایزوله (CVE).
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. Dial-up IKEv2 را با Phase1 dynamic، Peer ID و Authentication (PSK/گواهی/EAP-RADIUS) بسازد.
+2. Mode Config (IP، DNS، Split) را تنظیم کند.
+3. Policy مبتنی بر گروه و Route برگشت را بنویسد.
+4. MFA از طریق RADIUS/Challenge را معماری کند.
+5. مشکلات اتصال/نام/دسترسی را با Debug عیب‌یابی کند.
+6. ظرفیت و Rekey کلاینت‌های همزمان را بسنجد.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+IPsec Dial-up سطح حمله‌ی کمتری نسبت به SSL VPN دارد و مسیر پشتیبانی‌شده‌ی آینده است. ولی چالش‌ها: Peer ناشناس (IP پویا)، هویت قوی، تخصیص آدرس و DNS، و رفتار NAT-T کلاینت پشت NAT.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) اجزا
+
+- **Phase1:** `type dynamic`، `ike-version 2`، `peertype`/Peer ID، `mode-cfg enable`، Proposal قوی.
+- **Authentication:** گواهی کلاینت (قوی‌ترین)، EAP با RADIUS (+MFA)، PSK گروهی (ضعیف؛ ممنوع در تولید).
+- **Mode Config:** `ipv4-start-ip`/`end-ip`، DNS، Split networks.
+- **Phase2:** Selector باز/ Subnet مجاز.
+- **Policy:** `dialup-tunnel` → LAN، Source = User Group/Address.
+- **Route:** ترافیک به IP کلاینت از Tunnel (Dynamic route add: `add-route enable`).
+
+#### ۲) مسیر Authentication با MFA
+
+``` text
+Client -> FGT (IKEv2, EAP) -> RADIUS(NPS) -> AD + OTP challenge -> Access-Accept
+FGT assigns IP/DNS via Mode Config; policy by group
+```
+
+#### ۳) Split/Full و DNS
+
+Split: `split-include` Subnetهای سازمانی؛ DNS داخلی با Suffix؛ Full: Default از Tunnel + Policy اینترنت با UTM. مشکل رایج: «اتصال هست ولی نام داخلی resolve نمی‌شود» ⇒ DNS/Suffix.
+
+#### ۴) ظرفیت
+
+هر کلاینت = IKE SA + Child SA؛ Rekey همزمان بار می‌دهد؛ Lifetime را توزیع کنید؛ ظرفیت مدل را بسنجید.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Authentication | گواهی/EAP+MFA؛ PSK فقط Lab |
+| Split/Full | Posture |
+| DNS | داخلی + Suffix |
+| ظرفیت | SA و Rekey |
+| Redundancy | دو RADIUS |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** کلاینت با گواهی وصل؛ IP 10.212.1.5 از Mode Config؛ ping به LAN و resolve `erp.lab.local`.
+
+**متوسط (تحلیل):** وصل می‌شود ولی erp.lab.local resolve نمی‌شود: Mode Config DNS تنظیم نشده یا کلاینت Split DNS را نادیده می‌گیرد؛ آزمون: `nslookup` با DNS داخلی، Sniffer روی 53؛ رفع: DNS/Suffix.
+
+**سخت (طراحی):** ۸۰۰ کلاینت: کلاینت‌های Windows و macOS؛ MFA؛ بعضی پشت NAT. تحلیل: IKEv2+EAP-RADIUS؛ NAT-T؛ Lifetime 8h با jitter؛ Policy گروه‌های Finance/IT؛ Posture (FortiClient EMS لایسنس) یا Certificate device؛ ظرفیت Hub: 800 SA×2؛ بحرانی‌ترین ریسک: RADIUS Availability (دو NPS) و Log.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. VPN → IPsec Wizard → Remote Access (Dial-up) → Custom.
+2. Authentication: Peer Options / Mode Config (IP range، DNS، Split).
+3. User Groups و Policy (Incoming `dialup`).
+4. Monitor → IPsec Monitor.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+config vpn ipsec phase1-interface
+    edit "DIALUP"
+        set type dynamic
+        set interface "wan1"
+        set ike-version 2
+        set mode-cfg enable
+        set proposal aes256gcm-prfsha256
+        set dhgrp 20
+        set peertype any
+        set ipv4-start-ip 10.212.1.1
+        set ipv4-end-ip 10.212.1.254
+        set ipv4-dns-server1 192.168.90.40
+        set add-route enable
+    next
+end
+config vpn ipsec phase2-interface
+    edit "DIALUP-P2"
+        set phase1name "DIALUP"
+        set proposal aes256gcm
+        set pfs enable
+    next
+end
+diagnose vpn ike gateway list
+```
+
+### ۸) Verification (اثبات صحت)
+
+- اتصال و IP/DNS؛ آزمون مثبت/منفی دسترسی گروهی.
+- `ike gateway list` و Log.
+- Rekey بدون قطع.
+- آزمون NAT-T.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| وصل نمی‌شود | Debug IKE | Proposal/Auth/ID |
+| نام داخلی resolve نمی‌شود | nslookup | DNS Mode Config |
+| وصل ولی LAN نه | Debug Flow | Policy/Route |
+| قطع دوره‌ای | Log | Lifetime/DPD/NAT |
+
+### ۱۰) نکات امنیتی
+
+- PSK گروهی ممنوع؛ گواهی/EAP؛ MFA.
+- Policy گروهی.
+- Log ورود.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Dial-up: dynamic + IKEv2 + mode-cfg.
+- Auth قوی + MFA.
+- DNS/Split.
+- ظرفیت و Rekey.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) type dynamic یعنی چه؟ *(پاسخ: 20-3-ت1)*
+
+**ت2.** (ساده) Mode Config چه چیزهایی به کلاینت می‌دهد؟ *(پاسخ: 20-3-ت2)*
+
+**ت3.** (متوسط) چرا PSK گروهی در تولید ممنوع است؟ *(پاسخ: 20-3-ت3)*
+
+**ت4.** (متوسط) وصل است ولی erp.lab.local resolve نمی‌شود؛ مراحل. *(پاسخ: 20-3-ت4)*
+
+**ت5.** (سخت) ۸۰۰ کلاینت: ظرفیت SA و Rekey را بسنجید. *(پاسخ: 20-3-ت5)*
+
+**ت6.** (سخت، طراحی) معماری Dial-up با MFA برای ۲ گروه. *(پاسخ: 20-3-ت6)*
+
+**Q1.** Quick quiz (English): Why prefer certificates or EAP over a shared pre-shared key for dial-up VPN? *(پاسخ: 20-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| EAP | Extensible Authentication Protocol | پروتکل احراز توسعه‌پذیر |
+| mode-cfg | IKE mode configuration | تخصیص آدرس/DNS به کلاینت |
+| NAT-T | NAT traversal | عبور از NAT |
+
+- *Authenticate every dial-up user individually.* ← هر کاربر Dial-up را جداگانه احراز کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Dial-up. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/dialup.md`.
+
+### ۱۵) منابع
+
+- RFC 7296
+- Fortinet Docs: IPsec VPN — remote access (7.0)
+
+<a id="l-20-4"></a>
+
+## درس 20-4 — MFA، پایش و Hardening دسترسی راه‌دور: Detection، Alert، پاسخ و بازبینی
+
+**فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۲۰-۲، ۲۰-۳، ۲۷-۰، ۲۹-۰ · ≈ 8 ساعت**
+
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده». SSL VPN فقط در Lab ایزوله (CVE).
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. MFA، Lockout، Source/Geo، Posture را به‌صورت لایه‌ای پیاده کند.
+2. Logهای VPN را برای Detection تحلیل کند (آستانه، Baseline).
+3. Alert و Playbook پاسخ به ورود مشکوک را بنویسد.
+4. بازبینی دوره‌ای کاربران/گروه‌ها و دسترسی‌ها را انجام دهد.
+5. معیارهای MTTD/MTTR را برای VPN اندازه بگیرد.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+Hardening تنظیمات ثابت است؛ **پایش** نشان می‌دهد آیا دفاع کار می‌کند. حمله به VPN معمولاً دیده می‌شود (ناموفق‌های بسیار) ولی اگر Alert نباشد، کسی نمی‌بیند.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) لایه‌های Hardening
+
+``` text
+Identity : MFA, strong auth (cert/EAP), lockout, password policy
+Network  : source/geo restriction, rate limit, DoS policy on WAN
+Device   : posture (patch, EDR, encryption), certificate per device
+Session  : idle timeout, max session, re-auth
+Access   : least privilege policy by group, segmentation behind VPN
+Platform : patch, minimal admin exposure
+```
+
+#### ۲) Detection
+
+| رویداد | داده | آستانه‌ی اولیه |
+|---|---|---|
+| Brute-force | Event: login ناموفق | > 10 در ۵ دقیقه از یک IP |
+| ورود موفق بعد از ناموفق‌ها | ترکیب | ≥ 5 ناموفق ⇒ موفق |
+| ورود از کشور/ASN غیرعادی | Geo | خارج از Baseline |
+| یک کاربر هم‌زمان دو IP | Session | هر وقوع |
+| ورود خارج از ساعات | زمان | سیاست |
+
+#### ۳) پاسخ
+
+Block Source (Address+Deny)، Lock کاربر، Reset رمز/توکن، پایان Session، بررسی حرکت جانبی (Log Traffic کاربر)، RCA.
+
+#### ۴) بازبینی دوره‌ای
+
+ماهانه: کاربران غیرفعال، گروه‌ها، Exceptionها؛ فصلی: آزمون MFA/Lockout، Patch.
+
+``` text
+MTTD = mean(detect time - first malicious event)
+MTTR = mean(restore/close time - detect time)
+```
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| آستانه‌ها | بر پایه‌ی Baseline |
+| پاسخ خودکار | Block موقت + تأیید انسانی |
+| بازبینی | ماهانه |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Lockout بعد از ۳ تلاش؛ تست: ۴ رمز غلط ⇒ Block ۵ دقیقه.
+
+**متوسط (تحلیل):** Alert: ۲۰ ناموفق/۵ دقیقه از یک IP؛ پاسخ: Block IP؛ بررسی: آیا موفقی بود؟ Log موفق همان IP/کاربر؛ نتیجه: نفوذ نشد؛ ثبت.
+
+**سخت (حادثه):** ورود موفق بعد از ۱۲۰ ناموفق و دسترسی به ۱۷ سرور در ۱۰ دقیقه. Playbook: Contain (Session کاربر پایان، Block Source، Lock کاربر)، Scope (Traffic Log کاربر، سرورهای لمس‌شده)، Eradicate (چرخش اعتبارنامه‌ی کاربر و سرورها)، Recover، PIR. ریشه: نبود MFA یا Rate limit. اقدام: MFA الزامی، Alert، Segmentation.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+config system global
+    set admin-lockout-threshold 3
+    set admin-lockout-duration 300
+end
+execute log filter category 1
+execute log filter field action tunnel-up
+execute log display
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Alert آزمایشی با ۴ رمز غلط.
+- Log موفق/ناموفق.
+- PIR نمونه.
+- MTTD/MTTR اندازه‌گیری‌شده.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Alert کاذب | Log | آستانه/Whitelist |
+| Alert نمی‌رسد | Syslog | مسیر Log |
+
+### ۱۰) نکات امنیتی
+
+- Log غیرقابل‌حذف؛ NTP.
+- MFA بدون استثنا.
+- دسترسی پس از VPN محدود.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- لایه‌های Hardening + Detection.
+- ورود موفق پس از ناموفق‌ها = بحرانی.
+- Playbook و PIR.
+- بازبینی دوره‌ای.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Lockout چیست؟ *(پاسخ: 20-4-ت1)*
+
+**ت2.** (ساده) چرا ورود موفق پس از ناموفق‌ها خطرناک‌تر است؟ *(پاسخ: 20-4-ت2)*
+
+**ت3.** (متوسط) آستانه‌ی Alert را چگونه تعیین می‌کنید؟ *(پاسخ: 20-4-ت3)*
+
+**ت4.** (متوسط) پس از Block IP چه چیزی را باید بررسی کنید؟ *(پاسخ: 20-4-ت4)*
+
+**ت5.** (سخت) Playbook ورود مشکوک را در ۶ مرحله بنویسید. *(پاسخ: 20-4-ت5)*
+
+**ت6.** (سخت، طراحی) برنامه‌ی بازبینی ماهانه/فصلی دسترسی VPN. *(پاسخ: 20-4-ت6)*
+
+**Q1.** Quick quiz (English): Which VPN log pattern most strongly indicates a successful brute-force attack? *(پاسخ: 20-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| MTTD | Mean Time To Detect | میانگین زمان کشف |
+| PIR | Post-incident review | بازبینی پس از حادثه |
+| Lockout | Account lockout | قفل حساب |
+
+- *Alert on a successful login that follows many failures.* ← روی ورود موفق پس از شکست‌های متعدد هشدار بدهید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Hardening/Detection VPN. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/vpn-hardening.md`.
+
+### ۱۵) منابع
+
+- NIST SP 800-61
+- NIST SP 800-63B
+- Fortinet Docs: Log and report (7.0)
+
+<a id="l-20-5"></a>
+
+## درس 20-5 — آزمون عملی دسترسی راه‌دور: صورت مسئله، کلید پاسخ و Rubric
+
+**فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۲۰-۱ تا ۲۰-۴، ۲۰-۷ · ≈ 8 ساعت**
+
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده». SSL VPN فقط در Lab ایزوله (CVE).
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. IPsec Dial-up با MFA را بسازد، آزمون کند و Detection بگذارد.
+2. سه عیب (DNS، Policy، Certificate) را رفع کند.
+3. حمله‌ی Brute-force آزمایشی (Lab مجاز) را کشف و به آن پاسخ دهد.
+4. طرح مهاجرت از SSL VPN را بنویسد.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+آزمون عملی جامع: ساخت، تزریق عیب، Detection، پاسخ و مستندسازی. کلید پاسخ پس از تلاش خودتان.
+
+### ۳) توضیح عمیق فنی
+
+#### صورت مسئله
+
+1. IPsec Dial-up IKEv2 با EAP-RADIUS+OTP برای گروه IT.
+2. Split tunnel برای 10.0.0.0/8 و DNS داخلی.
+3. Lockout، Source Restriction و Alert.
+4. عیب‌ها (توسط مربی): DNS Mode Config حذف؛ Policy Dialup→LAN با Source اشتباه؛ گواهی سرور منقضی.
+5. شبیه‌سازی Brute-force (Lab): ۲۰ رمز غلط.
+6. طرح مهاجرت SSL VPN→IPsec (مفهومی، ۸ مرحله).
+
+#### کلید پاسخ (خلاصه)
+
+- عیب DNS: nslookup داخلی شکست؛ رفع: `ipv4-dns-server1`.
+- عیب Policy: Debug Flow Denied؛ Source=Group.
+- عیب گواهی: Debug IKE AUTH_FAILED/Alert؛ تمدید/ایجاد گواهی.
+- Detection: Alert بر ۲۰ ناموفق؛ Block IP؛ بررسی عدم ورود موفق.
+
+#### Rubric
+
+ساخت ۲۵؛ عیب‌یابی ۳۰؛ Detection/پاسخ ۲۰؛ مهاجرت ۱۰؛ Evidence/صداقت ۱۵.
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده:** اتصال موفق با MFA.
+
+**متوسط:** رفع DNS و Policy.
+
+**سخت:** کشف Brute-force، پاسخ و PIR.
+
+### ۸) Verification (اثبات صحت)
+
+- Evidence Index RA؛ آزمون‌های مثبت/منفی.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Alert نیامد | Syslog | آستانه/مسیر |
+| MFA پذیرفته نشد | NPS Log | Secret/Policy |
+
+### ۱۰) نکات امنیتی
+
+- حمله فقط در Lab مجاز.
+- Secret در Evidence نیست.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- آزمون = ساخت + عیب + Detection + پاسخ + مهاجرت.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چه مدارکی برای آزمون لازم است؟ *(پاسخ: 20-5-ت1)*
+
+**ت2.** (ساده) چرا شبیه‌سازی حمله فقط در Lab؟ *(پاسخ: 20-5-ت2)*
+
+**ت3.** (متوسط) عیب DNS را چگونه کشف و رفع می‌کنید؟ *(پاسخ: 20-5-ت3)*
+
+**ت4.** (متوسط) عیب Policy: Source اشتباه؛ شواهد و رفع. *(پاسخ: 20-5-ت4)*
+
+**ت5.** (سخت) پس از ۲۰ رمز غلط، آیا ورود موفقی بود؟ چگونه ثابت می‌کنید؟ *(پاسخ: 20-5-ت5)*
+
+**ت6.** (سخت، طراحی) مهاجرت SSL VPN→IPsec در ۸ مرحله. *(پاسخ: 20-5-ت6)*
+
+**Q1.** Quick quiz (English): Why must an attack simulation be run only in an authorized lab? *(پاسخ: 20-5-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| RA | Remote Access | دسترسی راه‌دور |
+| PIR | Post-incident review | بازبینی پس از حادثه |
+
+- *Run attack simulations only in an authorized lab.* ← شبیه‌سازی حمله را فقط در Lab مجاز اجرا کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** آزمون RA. **Evidence:** `03-ops/rca-ra.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۲۰-۱ تا ۲۰-۴
+- NIST SP 800-61
 
 ## درس 20-7 — SSL VPN در برابر IPsec Remote Access: وضعیت نسخه‌ها، ریسک و مهاجرت
 
@@ -30643,91 +31058,90 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**20-1-ت1** — چرا ایزوله؟
 
-CVE.
+### پاسخ‌های بازنویسی عمیق درس 20-1
 
-**20-1-ت2** — MFA؟
+**20-1-ت1** — چون سرویسی اینترنتی است که با اعتبارنامه‌ی کاربر باز می‌شود؛ هدف مهاجمان است و در صورت نفوذ مستقیماً به شبکه‌ی داخلی دسترسی می‌دهد.
 
-لایه‌ی دوم.
+**20-1-ت2** — دستگاه کلاینت هم‌زمان به اینترنت و شبکه‌ی داخلی وصل است و در صورت آلودگی پل نفوذ می‌شود.
 
-**20-1-م1** — چرا Patch؟
+**20-1-ت3** — هم‌زمان ۶۰۰×0.4 = 240؛ Throughput = 240×2 = 480 Mbps؛ با حاشیه ۳۰٪ ≈ 620 Mbps.
 
-رفع CVE.
+**20-1-ت4** — Least Privilege: فقط به سیستم لازم؛ حذف حرکت جانبی؛ Agentless/ZTNA مناسب است.
 
-**20-1-م2** — سناریو: نسخه 7.0.3 در اینترنت؛ چه می‌کنید؟
+**20-1-ت5** — MFA، Lockout/Rate limit، Source/Geo Restriction، Alert نسبت ناموفق/موفق، Credential hygiene (رمز نشت‌یافته).
 
-Patch/ایزوله.
+**20-1-ت6** — جدول گروه→روش→کنترل→ظرفیت؛ کارمند IPsec+MFA+Posture؛ پیمانکار Agentless/ZTNA؛ مدیر Bastion+MFA؛ ظرفیت ۶۲۰ Mbps؛ Log و Alert.
 
-**20-2-ت1** — Portal؟
-
-تعریف دسترسی.
-
-**20-2-ت2** — IP Pool؟
-
-آدرس Client.
-
-**20-2-م1** — چرا Group؟
-
-حداقل دسترسی.
-
-**20-2-م2** — سناریو: وصل می‌شود ولی LAN نه؛ علت؟
-
-Policy/Route.
-
-**20-3-ت1** — Dynamic؟
-
-Peer ناشناس.
-
-**20-3-ت2** — Split Tunnel؟
-
-فقط شبکه‌ی سازمانی.
-
-**20-3-م1** — چرا Split؟
-
-کاهش بار.
-
-**20-3-م2** — سناریو: امنیت؛ Full Tunnel؟
-
-کنترل بیشتر.
-
-**20-4-ت1** — Lockout؟
-
-قفل پس از تلاش‌ها.
-
-**20-4-ت2** — چرا Log؟
-
-کشف حمله.
-
-**20-4-م1** — چرا محدود Source؟
-
-کاهش سطح حمله.
-
-**20-4-م2** — سناریو: حمله Brute-force؛ چه می‌کنید؟
-
-Lockout/MFA.
-
-**20-5-ت1** — Debug؟
-
-sslvpn -1.
-
-**20-5-ت2** — پایان؟
-
-disable.
-
-**20-5-م1** — چرا چک‌لیست؟
-
-سرعت.
-
-**20-5-م2** — سناریو: فقط یک کاربر؛ چرا؟
-
-Group.
+**20-1-Q1** — Because stolen or guessed passwords alone would otherwise grant access to the internal network.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 20-2
 
-<a id="ch21"></a>
+**20-2-ت1** — Source Interface Policyهای ترافیک کلاینت‌های SSL VPN است.
 
+**20-2-ت2** — CVEهای شناخته‌شده؛ سرویس اینترنتی؛ ریسک نفوذ.
+
+**20-2-ت3** — Policy ssl.root→LAN، Route/Policy بازگشت، Split networks؛ Debug Flow، `ssl monitor`، Sniffer.
+
+**20-2-ت4** — Brute-force/Credential stuffing؛ با محدودیت تلاش و زمان Block.
+
+**20-2-ت5** — Patch/غیرفعال، محدودسازی Source، بررسی Log retrospective، چرخش اعتبارنامه‌ها، Alert و مهاجرت.
+
+**20-2-ت6** — Source، MFA، Cert، TLS min، Lockout، Timeout، Realm/Portal حداقلی، Patch/Log.
+
+**20-2-Q1** — Because it is an internet-exposed service with known vulnerabilities that can give attackers direct access to the network.
+
+
+### پاسخ‌های بازنویسی عمیق درس 20-3
+
+**20-3-ت1** — Peer مقابل IP ثابت/شناخته‌شده ندارد و Gateway هر Peer را می‌پذیرد (با Auth).
+
+**20-3-ت2** — IP، DNS و (در صورت تنظیم) Split networks.
+
+**20-3-ت3** — همه یک رمز دارند؛ افشا = دسترسی همه؛ بدون هویت فردی و MFA.
+
+**20-3-ت4** — DNS در Mode Config، Suffix، nslookup با DNS داخلی، Sniffer 53.
+
+**20-3-ت5** — ≈ ۸۰۰ IKE SA + ۸۰۰ Child SA؛ Lifetime را jitter دهید تا Rekey همزمان نشود؛ با Datasheet مدل مقایسه.
+
+**20-3-ت6** — IKEv2+EAP-RADIUS+OTP؛ Finance/IT Policy؛ DNS/Split؛ دو NPS؛ Log و Alert.
+
+**20-3-Q1** — Because each user is authenticated individually and a leaked shared key would expose all users.
+
+
+### پاسخ‌های بازنویسی عمیق درس 20-4
+
+**20-4-ت1** — قفل موقت حساب/IP پس از تعداد مشخص تلاش ناموفق.
+
+**20-4-ت2** — نشانه‌ی احتمالی Brute-force موفق؛ مهاجم اکنون دسترسی دارد.
+
+**20-4-ت3** — از Baseline رفتار عادی (تعداد ناموفق‌ها به‌ازای کاربر/IP) و ضریب ایمنی؛ آزمون FP.
+
+**20-4-ت4** — آیا از آن IP ورود موفقی بوده؛ کاربران/Sessionها؛ دسترسی‌ها؛ Log حرکت جانبی.
+
+**20-4-ت5** — Triage، Contain، Scope، Eradicate، Recover، PIR با Owner و زمان.
+
+**20-4-ت6** — ماهانه کاربران غیرفعال/گروه/Exception؛ فصلی آزمون MFA/Lockout و Patch؛ ثبت.
+
+**20-4-Q1** — Many failed logins followed by a successful login from the same source.
+
+
+### پاسخ‌های بازنویسی عمیق درس 20-5
+
+**20-5-ت1** — Evidence Index با دستور/خروجی/زمان برای هر نیاز، PIR و طرح مهاجرت.
+
+**20-5-ت2** — چون حمله‌ی واقعی بدون مجوز غیرقانونی است و می‌تواند سرویس تولید را مختل کند.
+
+**20-5-ت3** — اتصال برقرار و ping به IP موفق ولی نام شکست؛ nslookup با DNS داخلی؛ رفع: DNS در Mode Config؛ تأیید resolve.
+
+**20-5-ت4** — Debug Flow: Denied policy 0 یا Policy اشتباه؛ تغییر Source به گروه صحیح؛ آزمون مثبت/منفی.
+
+**20-5-ت5** — Log Event: ورود موفق همان کاربر/IP پس از ناموفق‌ها؛ در نبود آن «نفوذ دیده نشد»؛ Session Monitor؛ ثبت.
+
+**20-5-ت6** — فهرست کاربران/Portal، IPsec آزمایشی، Split/DNS، MFA، آموزش، Backup، خاموش SSL VPN، آزمون منفی (پورت SSL VPN بسته).
+
+**20-5-Q1** — Because unauthorized attacks are illegal and may disrupt production services.
 
 ### پاسخ‌های درس افزوده‌ی 20-7 (فصل 20)
 
@@ -31875,7 +32289,7 @@ Dual-ISP پایدار؛ آشنایی با HA؛ لایسنس HA بررسی.
 
 <a id="ch22"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.5):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۲-۰، ۲۴-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.6):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۲-۰، ۲۴-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 22 — High Availability: FGCP، Session Sync و Failover
 
@@ -32900,570 +33314,645 @@ diagnose sniffer packet any "host <client> and port <p>" 4 20 l
 
 - Fortinet Docs: [Debugging the packet flow](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/54688/debugging-the-packet-flow)؛ FortiOS 7.0 Administration Guide — Asymmetric routing.
 
-## درس 23-1 — چرا Asymmetric برای Stateful مشکل است
+## درس 23-1 — Asymmetric Routing برای Stateful: تعریف دقیق، علت‌ها، تحلیل بسته‌به‌بسته و تفکیک RPF از No-session
 
-**فصل 23 - روز 1 · پیش‌نیاز: فصل ۱۰ · ۶ ساعت**
+**فصل 23 · بازنویسی عمیق · پیش‌نیاز: ۲۳-۰، ۱۰-۶، ۱۱-۷، ۱۲-۰ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-فایروال Stateful برگشت را بدون ورودی Session می‌ریزد.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-فصل ۱۰
+1. Asymmetric Routing را در توپولوژی‌های واقعی (Dual-ISP، ECMP، دو فایروال، VPN+Internet) تشخیص دهد.
+2. رفتار فایروال Stateful را بسته‌به‌بسته توضیح دهد (SYN، SYN/ACK، ACK، داده).
+3. دو مکانیزم Drop (RPF fail و No-session/Denied) را تفکیک کند.
+4. با Sniffer دو‌نقطه‌ای و Debug Flow و Session ثابت کند.
+5. اثر Asymmetric روی NAT، UTM و Log را بگوید.
+6. درباره‌ی «نامتقارن مجاز» (Stateless/IPS bypass) قضاوت کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Session روی FW1 ساخته می‌شود.
-- برگشت به FW2 می‌رسد و Session ندارد.
-- نتیجه: Drop (SYN/ACK).
-- علامت: Handshake ناقص.
-- Sniffer هر دو سو.
+در شبکه‌ی ساده یک بسته از A به B می‌رود و پاسخ همان مسیر را برمی‌گردد. در شبکه‌ی واقعی با دو ISP، ECMP، دو فایروال یا ترکیب VPN و اینترنت، رفت و برگشت می‌توانند از دو مسیر مختلف بروند. روتر معمولی اهمیتی نمی‌دهد؛ **فایروال Stateful** می‌دهد، چون تصمیمش بر پایه‌ی Session است و Session فقط روی دستگاهی که اولین بسته را دیده ساخته شده است.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-بسته رفت از یک مسیر و برگشت از مسیر دیگر.
+#### ۱) علت‌های پیدایش
 
-### ۵) مثال سازمانی
-
-سازمان: دو فایروال لبه با مسیر نامتقارن.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Client -> FW1 -> Server ; Server -> FW2 -> Client
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Network > Packet Capture.
-
-#### روش خط فرمان (CLI)
-
-```text
-diagnose sniffer packet any "host 192.168.20.10" 4 20 a
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- Sniffer را کوتاه اجرا کنید.
-- `Unverified`.
-
-### ۸) تست عملکرد
-
-- مسیر رفت/برگشت را رسم کنید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
+| الگو | چرا Asymmetric می‌شود |
 |---|---|
-| Symptom | SYN بدون ACK |
-| شواهد/دستور | sniffer |
-| علت | Asymmetric |
-| رفع | اصلاح مسیر |
+| Dual-ISP | رفت ISP1 (SNAT IP1)، سرور پاسخ به IP1؛ ولی در SD-WAN/ECMP ممکن است برگشت از مسیر دیگر |
+| ECMP دو فایروال | Hash رفت و برگشت متفاوت |
+| VPN + Internet | رفت از Tunnel، برگشت از اینترنت (Route برگشت اشتباه) |
+| PBR/SD-WAN یک‌طرفه | Policy فقط یک جهت |
+| Failover وسط Session | Session روی لینک قدیمی |
 
-### ۱۰) تمرین مستقل
+#### ۲) تحلیل بسته‌به‌بسته
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+``` text
+Client -> FW-A : SYN              A: new session (SYN_SENT) -> forwards
+Server -> FW-B : SYN/ACK          B: no session for this tuple
+   case 1: B routing says best path to client is via another interface -> RPF check fails -> drop
+   case 2: B accepts by routing but policy lookup for a "new" SYN/ACK -> no policy -> drop (policy 0)
+   case 3: B has permissive policy: creates a new session from SYN/ACK -> TCP state machine rejects ACK without SYN
+Client retransmits SYN, timeout.
+```
 
-**ت1.** Stateful؟ *(پاسخ: 23-1-ت1)*
+#### ۳) دو مکانیزم Drop
 
-**ت2.** Asymmetric؟ *(پاسخ: 23-1-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Drop؟ *(پاسخ: 23-1-م1)*
-
-**م2.** سناریو: وب باز نمی‌شود؛ علت؟ *(پاسخ: 23-1-م2)*
-
-**معیار تسلط:** تشخیص و رفع Asymmetric.
-
-**اشتباهات رایج:** Stateful drop.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
+| مکانیزم | نشانه‌ی Debug | علت | رفع |
 |---|---|---|---|
-| Stateful | Stateful inspection | بازرسی حالت‌دار | FW |
-| SYN | TCP SYN | شروع اتصال | TCP |
+| RPF (Reverse Path Check) | `reverse path check fail, drop` | بهترین مسیر به مبدأ از Interface ورودی نمی‌گذرد | Route برگشت/Policy Route |
+| No-session / Policy | `Denied by forward policy check (policy 0)` یا بدون Session | فایروال دوم Session ندارد | متقارن‌سازی/Sync |
 
-| English sentence | ترجمه |
+#### ۴) اثر ثانویه
+
+- **NAT:** SNAT روی فایروال اول؛ پاسخ به فایروال دوم می‌رسد که ترجمه را نمی‌شناسد.
+- **UTM/IPS:** بازرسی فقط یک جهت را می‌بیند؛ Signatureها ناقص؛ AV/Proxy شکست.
+- **Log:** نیمی از Sessionها در هر فایروال؛ تحلیل حادثه ناقص.
+
+#### ۵) نامتقارن عمدی
+
+بعضی طراحی‌ها (ECMP/Anycast) عمداً نامتقارن‌اند؛ آن‌جا فایروال‌ها باید Session Sync داشته باشند یا بررسی Stateful را سبک کنند (ریسک امنیتی). تصمیم آگاهانه، نه پیش‌فرض.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Stateful firewalls require symmetric paths. | فایروال Stateful به مسیر متقارن نیاز دارد. |
+| Asymmetric مجاز؟ | فقط با Sync/تصمیم آگاهانه |
+| متقارن‌سازی | Route/Metric، Hash، Policy Route |
+| Log | هر دو فایروال مرکزی |
 
-#### کارت Lab — درس 23-1
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-| # | فیلد | محتوا |
+**ساده (حل‌شده):** دو ISP: SYN از wan1 خارج و SYN/ACK از wan2 برمی‌گردد. Sniffer: wan1 SYN؛ wan2 SYN/ACK؛ `session list` فقط یک Session با wan1. نتیجه: Asymmetric؛ Drop به‌علت RPF.
+
+**متوسط (تحلیل):** دو فایروال موازی با ECMP: بعضی Flowها سالم، بعضی نه. علت: Hash رفت و برگشت متفاوت؛ برای Flowهایی که Hash یکسان است سالم. آزمون: ۲۰ اتصال و شمارش Success/Fail ≈ ۵۰٪. رفع: Hash متقارن/Active-Passive.
+
+**سخت (تحلیل چندعلتی):** VPN IPsec به‌علاوه‌ی Internet: سرور از دفتر مقابل به IP شما از طریق اینترنت پاسخ می‌دهد چون Route مقصد (IP Tunnel) در سرور نیست. فایروال شما پاسخ را روی Interface wan می‌گیرد؛ RPF: بهترین مسیر به مبدأ (آدرس شبکه‌ی مقابل) Tunnel است ⇒ Drop. دو علت هم‌زمان: Route سرور و Selector. تفکیک: Capture Hop‌به‌Hop؛ Debug Flow: `reverse path check fail`. رفع: Route سرور به Tunnel + بررسی Selector.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose sniffer packet any "host 10.1.4.10 and port 443" 4 20 l
+diagnose sys session filter src 10.1.4.10
+diagnose sys session list
+diagnose debug flow filter addr 10.1.4.10
+diagnose debug flow trace start 20
+diagnose debug enable
+diagnose debug disable
+diagnose debug reset
+get router info routing-table details 10.1.4.10
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Sniffer در دو Interface/دو فایروال: محل SYN و SYN/ACK.
+- `session list` فقط یک فایروال.
+- Debug Flow: پیام RPF/Policy 0.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | تشخیص Asym |
-| 2 | پیش‌نیاز | فصل ۱۰ |
-| 3 | توپولوژی | FW1+FW2 |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Sniffer |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | sniffer |
-| 11 | سناریوی خرابی | SYN بدون ACK |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | جدول |
-| 14 | معیار پذیرش | شاهد |
-| 15 | مستندات نهایی | `03-ops/asym.md` |
-| 16 | Cleanup و بازگردانی | — |
+| SYN بدون ACK | Sniffer | Asymmetric |
+| RPF fail | Debug Flow | Route برگشت |
+| فقط بعضی Flowها | شمارش | Hash/ECMP |
+| VPN+Internet | Routing table | Route برگشت/Selector |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- غیرفعال‌کردن RPF/State باعث عبور بسته‌ی جعلی می‌شود.
+- Asymmetric مجاز باید ثبت و بازبینی شود.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Asymmetric = رفت/برگشت از دو مسیر.
+- Stateful بدون Session Drop می‌کند.
+- دو مکانیزم: RPF و No-session.
+- NAT/UTM/Log هم آسیب می‌بینند.
+- اثبات با Capture دو‌نقطه‌ای.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا روتر معمولی Asymmetric را تحمل می‌کند ولی فایروال Stateful نه؟ *(پاسخ: 23-1-ت1)*
+
+**ت2.** (ساده) دو نشانه‌ی Drop در Debug Flow را نام ببرید. *(پاسخ: 23-1-ت2)*
+
+**ت3.** (متوسط) ECMP دو فایروال: ۵۰٪ Flowها شکست می‌خورند؛ توضیح و رفع. *(پاسخ: 23-1-ت3)*
+
+**ت4.** (متوسط) چرا SNAT بدون Session برگشتی را خراب می‌کند؟ *(پاسخ: 23-1-ت4)*
+
+**ت5.** (سخت) VPN+Internet نامتقارن: دو علت و روش تفکیک. *(پاسخ: 23-1-ت5)*
+
+**ت6.** (سخت، طراحی) چه موقع Asymmetric را می‌پذیریم؟ *(پاسخ: 23-1-ت6)*
+
+**Q1.** Quick quiz (English): What two firewall behaviors commonly cause drops under asymmetric routing? *(پاسخ: 23-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| RPF | Reverse Path Forwarding check | بررسی مسیر معکوس |
+| Session sync | Session synchronization | همگام‌سازی Session |
+| Anycast | Anycast routing | مسیریابی چندمقصدی |
+
+- *Capture at both firewalls to prove asymmetry.* ← برای اثبات Asymmetric در هر دو فایروال Capture بگیرید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** تشخیص Asymmetric. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/asym.md`.
+
+### ۱۵) منابع
+
+- [Debugging the packet flow](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/54688/debugging-the-packet-flow)
+- RFC 3704 (Ingress filtering/RPF)
 
 <a id="l-23-2"></a>
 
-## درس 23-2 — رفع Asymmetric: Policy Routing و Source NAT
+## درس 23-2 — رفع Asymmetric: طراحی متقارن، Policy Route، SNAT، Session Sync و ریسک هر راه‌حل
 
-**فصل 23 - روز 2 · پیش‌نیاز: درس ۲۳-۰ · ۶ ساعت**
+**فصل 23 · بازنویسی عمیق · پیش‌نیاز: ۲۳-۰، ۲۳-۱، ۱۰-۴، ۲۲-۰ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-راه‌حل‌ها: همسان‌سازی مسیر یا SNAT.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۳-۰
+1. راه‌حل‌ها را با ریسک/هزینه مقایسه و برای سناریو انتخاب کند.
+2. Policy Route و SNAT را پیاده و آزمون کند.
+3. Hash متقارن/Active-Passive/Session Sync را توضیح دهد.
+4. اثر هر راه‌حل را روی Log/Inspection/Troubleshooting بسنجد.
+5. پیکربندی را با آزمون‌های مثبت/منفی اثبات کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Policy Route برای مسیر برگشت.
-- Source NAT تا برگشت به همان فایروال.
-- `asymroute` (با احتیاط).
-- طراحی بهتر: Route متقارن.
-- Session Sync بین فایروال‌ها (HA).
+بعد از تشخیص Asymmetric باید راه‌حل را انتخاب کرد. اشتباه رایج: سریع‌ترین راه‌حل (`asymroute`/غیرفعال‌کردن چک‌ها) که امنیت را می‌خرد. ترتیب درست: ۱) طراحی متقارن، ۲) Sync یا Active-Passive، ۳) Policy Route/SNAT، ۴) استثنا با ریسک مستند.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-بسته رفت از یک مسیر و برگشت از مسیر دیگر.
+#### ۱) مقایسه
 
-### ۵) مثال سازمانی
+| راه‌حل | چگونه | مزیت | ریسک/هزینه |
+|---|---|---|---|
+| متقارن‌سازی Route | Metric/Distance/BGP برای برگشت | ریشه‌ای | نیاز طراحی؛ کنترل روی Upstream |
+| Policy Route | مسیر مبتنی بر مبدأ/Interface | سریع | پیچیدگی؛ عیب‌یابی |
+| SNAT به IP یکتا | برگشت به همان فایروال | ساده | Log مبهم؛ Double NAT |
+| Session Sync/HA | Session کپی | حفظ Session | لایسنس/پیچیدگی؛ بار |
+| Hash متقارن | رفت/برگشت یک مسیر | مقیاس | وابسته به تجهیزات |
+| `asymroute` | عبور بدون State | رفع Drop | امنیت کم |
 
-سازمان: دو فایروال لبه با مسیر نامتقارن.
+#### ۲) Policy Route
 
-### ۶) تصویر و توپولوژی
-
-```text
-Client -> FW1 -> Server ; Server -> FW2 -> Client
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Network > Policy Routes.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
 config router policy
-    edit 1
+    edit 10
         set input-device "port2"
-        set src "192.168.20.0/24"
-        set output-device "port1"
-        set gateway 10.0.0.1
+        set src "10.1.4.0/24"
+        set dst "0.0.0.0/0"
+        set output-device "wan1"
+        set gateway 198.51.100.1
     next
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+اصل: Policy Route قبل از Routing Table ارزیابی می‌شود (۱۲-۰)؛ برای ترافیک برگشتی باید Interface ورودی و Source را طوری تعریف کنید که برگشت از همان مسیر برود.
 
-- `Unverified`.
-- asymroute امنیت را کم می‌کند.
+#### ۳) SNAT برای متقارن‌سازی
 
-### ۸) تست عملکرد
+SNAT خروجی با IP همان لینک باعث می‌شود Upstream پاسخ را به همان لینک بفرستد. در Dual-ISP: IP Pool هر WAN؛ در SD-WAN برای Sessionهای Failover Clear.
 
-- ارتباط بعد از اصلاح.
+#### ۴) Session Sync
 
-### ۹) عیب‌یابی
+در HA A-P، Session به Secondary کپی می‌شود؛ در Active-Active/Cluster ممکن است Session را به همتا بدهند تا Asymmetric تحمل شود (محدودیت و لایسنس `Unverified`).
 
-| بخش | شرح |
+#### ۵) فهرست بررسی انتخاب
+
+1. آیا می‌شود Route را متقارن کرد؟ (بله ⇒ همین.)
+2. اگر نه، آیا Session Sync دارید؟
+3. اگر نه، Policy Route/SNAT با مستندسازی.
+4. `asymroute` فقط موقت.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | هنوز Drop |
-| شواهد/دستور | sniffer |
-| علت | Route ناقص |
-| رفع | اصلاح |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Policy Route؟ *(پاسخ: 23-2-ت1)*
-
-**ت2.** asymroute؟ *(پاسخ: 23-2-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا SNAT؟ *(پاسخ: 23-2-م1)*
-
-**م2.** سناریو: فقط یک سرور؛ راه‌حل؟ *(پاسخ: 23-2-م2)*
-
-**معیار تسلط:** تشخیص و رفع Asymmetric.
-
-**اشتباهات رایج:** Stateful drop.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| SNAT | Source NAT | تغییر مبدأ | NAT |
-
-| English sentence | ترجمه |
-|---|---|
-| Prefer symmetric design over workarounds. | طراحی متقارن را به راه‌حل‌های موقت ترجیح دهید. |
-
-#### کارت Lab — درس 23-2
-
-| # | فیلد | محتوا |
-|---|---|---|
-| 1 | عنوان و هدف | رفع Asym |
-| 2 | پیش‌نیاز | درس ۲۳-۰ |
-| 3 | توپولوژی | FW1+FW2 |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Asym |
-| 8 | صورت مسئله | Policy Route |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping |
-| 11 | سناریوی خرابی | هنوز Drop |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Reply |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/asym-fix.md` |
-| 16 | Cleanup و بازگردانی | حذف |
-
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
-
----
-
-<a id="l-23-3"></a>
-
-## درس 23-3 — چند فایروال سری و موازی
-
-**فصل 23 - روز 3 · پیش‌نیاز: درس ۲۳-۱ · ۶ ساعت**
-
-### ۱) معرفی درس
-
-سری: Defense in Depth؛ موازی: Load/Redundancy.
-
-### ۲) پیش‌نیازها
-
-درس ۲۳-۱
-
-### ۳) توضیح مفهومی
-
-- سری: دو لایه Policy.
-- موازی: ECMP/HA.
-- Zone و Trust.
-- NAT یک‌بار.
-- مانیتورینگ.
-
-### ۴) مثال ساده
-
-بسته رفت از یک مسیر و برگشت از مسیر دیگر.
-
-### ۵) مثال سازمانی
-
-سازمان: دو فایروال لبه با مسیر نامتقارن.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Client -> FW1 -> Server ; Server -> FW2 -> Client
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Monitor > Routing.
-
-#### روش خط فرمان (CLI)
-
-```text
-get router info routing-table all
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- خواندنی.
-
-### ۸) تست عملکرد
-
-- طرح سری و موازی.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | NAT دوباره |
-| شواهد/دستور | session list |
-| علت | دو NAT |
-| رفع | حذف یکی |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** سری؟ *(پاسخ: 23-3-ت1)*
-
-**ت2.** موازی؟ *(پاسخ: 23-3-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا یک NAT؟ *(پاسخ: 23-3-م1)*
-
-**م2.** سناریو: دو NAT؛ مشکل؟ *(پاسخ: 23-3-م2)*
-
-**معیار تسلط:** تشخیص و رفع Asymmetric.
-
-**اشتباهات رایج:** Stateful drop.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| ECMP | Equal-Cost Multi-Path | مسیر موازی | Routing |
-
-| English sentence | ترجمه |
-|---|---|
-| Avoid double NAT. | از Double NAT پرهیز کنید. |
-
-#### کارت Lab — درس 23-3
-
-| # | فیلد | محتوا |
-|---|---|---|
-| 1 | عنوان و هدف | سری/موازی |
-| 2 | پیش‌نیاز | درس ۲۳-۱ |
-| 3 | توپولوژی | FW1+FW2 |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | طرح |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | NAT دوباره |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | سند |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `02-design/multi-fw.md` |
-| 16 | Cleanup و بازگردانی | — |
-
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
-
----
-
-<a id="l-23-4"></a>
-
-## درس 23-4 — مانیتورینگ Session و آزمون معماری ۵
-
-**فصل 23 - روز 4 · پیش‌نیاز: درس ۲۳-۲ · ۶ ساعت**
-
-### ۱) معرفی درس
-
-ردیابی Session روی چند فایروال.
-
-### ۲) پیش‌نیازها
-
-درس ۲۳-۲
-
-### ۳) توضیح مفهومی
-
-- `diagnose sys session list`.
-- Filter.
-- Log Forward.
-- RCA.
-- آزمون.
-
-### ۴) مثال ساده
-
-بسته رفت از یک مسیر و برگشت از مسیر دیگر.
-
-### ۵) مثال سازمانی
-
-سازمان: دو فایروال لبه با مسیر نامتقارن.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Client -> FW1 -> Server ; Server -> FW2 -> Client
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Dashboard > Sessions.
-
-#### روش خط فرمان (CLI)
-
-```text
-diagnose sys session filter src 192.168.10.5
+| ترتیب انتخاب | متقارن→Sync→PBR/SNAT→asymroute |
+| Log | مبهم نشود؛ NAT مستند |
+| Sync | لایسنس/پهنا |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Policy Route برای 10.1.4.0/24 از wan1؛ پس از آن SYN/ACK به همان فایروال/Interface برمی‌گردد؛ آزمون: Sniffer و session list.
+
+**متوسط (تحلیل):** SNAT به IP Pool هر WAN: Dual-ISP؛ تحلیل: Session خروجی wan2 با IP ISP2 SNAT می‌شود و پاسخ به ISP2؛ مشکل: IP ثابت بانک؛ تصمیم: Pool/BGP یا پذیرش Re-login.
+
+**سخت (طراحی):** دو فایروال Active-Active پشت ECMP با ۴۰۰۰ Flow/s؛ نیاز: بدون Drop و با Inspection کامل. تحلیل: Session Sync پهنای HB بالا؛ Hash متقارن بهتر؛ تصمیم: Switch/Router با Hash متقارن (Symmetric hash) روی سمت Upstream/Downstream یا Active-Passive. معیار: Throughput، Complexity، SPOF. اگر Hash متقارن ممکن نیست: Active-Passive.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Network → Policy Routes → Create New.
+2. Policy & Objects → IP Pools / NAT در Policy.
+3. System → HA (Session pickup).
+4. Log & Report → Forward Traffic.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+config router policy
+    edit 10
+        set input-device "port2"
+        set src "10.1.4.0/24"
+        set output-device "wan1"
+        set gateway 198.51.100.1
+    next
+end
+config firewall ippool
+    edit "POOL-WAN1"
+        set type overload
+        set startip 198.51.100.10
+        set endip 198.51.100.10
+    next
+end
+diagnose sys session filter src 10.1.4.10
 diagnose sys session list
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- `Unverified`.
+- آزمون ۲۰ اتصال: همه موفق.
+- Sniffer: رفت/برگشت روی یک مسیر.
+- Log: Session کامل در یک فایروال.
+- آزمون منفی: Flow نامعتبر Drop.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- ردیابی Session.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Session نیست |
-| شواهد/دستور | session list |
-| علت | FW دیگر |
-| رفع | بررسی |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Filter؟ *(پاسخ: 23-4-ت1)*
-
-**ت2.** Log؟ *(پاسخ: 23-4-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا RCA؟ *(پاسخ: 23-4-م1)*
-
-**م2.** سناریو: Session روی FW2؛ چرا؟ *(پاسخ: 23-4-م2)*
-
-**معیار تسلط:** تشخیص و رفع Asymmetric.
-
-**اشتباهات رایج:** Stateful drop.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| RCA | Root Cause Analysis | علت ریشه‌ای | Ops |
-
-| English sentence | ترجمه |
-|---|---|
-| Trace sessions on both firewalls. | Session را روی هر دو فایروال دنبال کنید. |
-
-#### کارت Lab — درس 23-4
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون A5 |
-| 2 | پیش‌نیاز | درس ۲۳-۲ |
-| 3 | توپولوژی | FW1+FW2 |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Asym |
-| 8 | صورت مسئله | RCA |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | session |
-| 11 | سناریوی خرابی | Session نیست |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | سند |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/a5.md` |
-| 16 | Cleanup و بازگردانی | — |
+| هنوز Drop | Sniffer | Policy Route/Match |
+| Log مبهم | Log | SNAT مستند |
+| بعضی Flowها | شمارش | Hash |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- ثبت هر استثنا.
+- Policy Route را مستند و بازبینی کنید.
 
-<a id="ans-23"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- ترتیب انتخاب: متقارن اول.
+- Policy Route/SNAT سریع ولی بدهی.
+- Sync هزینه دارد.
+- `asymroute` موقت.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Policy Route چه کاری می‌کند؟ *(پاسخ: 23-2-ت1)*
+
+**ت2.** (ساده) چرا SNAT برگشت را به همان فایروال می‌کشد؟ *(پاسخ: 23-2-ت2)*
+
+**ت3.** (متوسط) ترتیب انتخاب راه‌حل‌ها را با دلیل بنویسید. *(پاسخ: 23-2-ت3)*
+
+**ت4.** (متوسط) SNAT چه اثر منفی روی Log دارد؟ *(پاسخ: 23-2-ت4)*
+
+**ت5.** (سخت) دو فایروال Active-Active با ECMP؛ طرح را انتخاب کنید و دلیل بیاورید. *(پاسخ: 23-2-ت5)*
+
+**ت6.** (سخت، طراحی) آزمون پذیرش پس از رفع Asymmetric. *(پاسخ: 23-2-ت6)*
+
+**Q1.** Quick quiz (English): Why should symmetric routing be preferred over disabling stateful checks? *(پاسخ: 23-2-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| PBR | Policy-based routing | مسیر مبتنی بر Policy |
+| IP Pool | NAT IP pool | مخزن آدرس NAT |
+| Symmetric hash | Symmetric hashing | Hash متقارن |
+
+- *Prefer symmetric design over workarounds.* ← طراحی متقارن را به راه‌حل‌های موقت ترجیح دهید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** رفع. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/asym-fix.md`.
+
+### ۱۵) منابع
+
+- Fortinet Docs: Policy routes، IP pools (7.0)
+- RFC 2992 (ECMP analysis)
+
+<a id="l-23-3"></a>
+
+## درس 23-3 — چند فایروال سری و موازی: الگوها، NAT، Session، Failure Domain و مانیتورینگ
+
+**فصل 23 · بازنویسی عمیق · پیش‌نیاز: ۲۳-۰، ۱۵-۰، ۲۲-۰ · ≈ 8 ساعت**
+
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. الگوهای سری، موازی Active-Passive، Active-Active و N+1 را مقایسه کند.
+2. NAT، Session و Policy را در هر الگو تحلیل کند.
+3. Failure Domain و Blast Radius را بسنجد.
+4. مانیتورینگ و عیب‌یابی چندفایروالی (Log مرکزی، Correlation) را طراحی کند.
+5. Change Management بین چند فایروال (یکنواختی Policy) را بنویسد.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+با رشد شبکه، «یک فایروال» به چند فایروال تبدیل می‌شود: لبه + داخلی، موازی برای ظرفیت، یا چند سایت. هر الگو مزیت و مشکلی دارد؛ اگر نفهمید، Asymmetric، Double NAT و Policy ناهمگون می‌سازید.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) الگوها
+
+| الگو | هدف | الزام | ریسک |
+|---|---|---|---|
+| سری (Edge+Internal) | Defense in Depth | NAT فقط لبه؛ Policy هماهنگ | عیب‌یابی دو لایه |
+| موازی A-P | افزونگی | HA/Sync | ظرفیت ۱× |
+| موازی A-A | ظرفیت+افزونگی | Hash متقارن/Sync | پیچیدگی |
+| N+1 / Pool | مقیاس | Load balancer/ECMP متقارن | Session |
+| چندسایت | DR | Routing/Failover سایتی | Split-brain سایتی |
+
+#### ۲) Failure Domain
+
+اگر یک Policy اشتباه روی فایروال لبه بخورد: اثرش؟ (Blast radius). سری: دو لایه، لایه‌ی دوم هنوز محافظ است؛ موازی: اشتباه Sync شده روی هر دو (HA هم همین را کپی می‌کند). برای کاهش: Change مرحله‌ای (Canary)، آزمون Policy در Lab، Rollback.
+
+#### ۳) NAT و Session
+
+- NAT فقط در یک نقطه.
+- Session Table هر فایروال را مستقل پایش کنید.
+- در Active-Active مطمئن شوید هر Flow هر دو جهت یک فایروال می‌بیند.
+
+#### ۴) مانیتورینگ
+
+Log مرکزی (Syslog reliable) با NTP؛ Correlation بر پایه‌ی Session ID/5-tuple/Policy ID؛ داشبورد: CPU/Session/Interface هر فایروال؛ Alert بر Drift (Policy متفاوت بین جفت).
+
+``` text
+Policy drift check: diff(config firewall policy FW1, FW2) after each change window
+```
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| الگو | نیاز ظرفیت/افزونگی/دفاع |
+| Canary | تغییر روی یک فایروال ابتدا |
+| Drift | Diff دوره‌ای |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** سری: Edge Policy WAN→DMZ و Internal Policy DMZ→SRV؛ آزمون: درخواست از اینترنت تا DB؛ Log در هر دو.
+
+**متوسط (تحلیل):** Double NAT: Log سرور همه‌ی مبدأ‌ها 10.20.0.1. رفع: NAT فقط Edge؛ Internal Routing؛ تأیید Log.
+
+**سخت (Failure domain):** تغییر Policy اشتباه روی هر دو فایروال موازی Sync شد و Block کامل. تحلیل: HA/Sync علت کپی خطا؛ پیشگیری: Change Canary (ابتدا یک فایروال در Window)، Backup و Rollback آماده، آزمون مثبت/منفی پس از Push.
+
+### ۸) Verification (اثبات صحت)
+
+- Log هر دو فایروال برای یک Flow.
+- Diff Policy بدون Drift.
+- Failover آزمایشی.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Drop تصادفی | Session | Asymmetric |
+| Log مبهم | Log | Double NAT |
+| Drift | Diff | Sync/Change |
+
+### ۱۰) نکات امنیتی
+
+- Policy مشابه روی همه‌ی فایروال‌ها؛ Change هماهنگ.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- الگو بر پایه‌ی نیاز.
+- NAT یک‌بار.
+- Failure domain و Canary.
+- Log مرکزی + Drift.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا NAT فقط روی یک فایروال؟ *(پاسخ: 23-3-ت1)*
+
+**ت2.** (ساده) Blast radius چیست؟ *(پاسخ: 23-3-ت2)*
+
+**ت3.** (متوسط) تفاوت Canary و تغییر هم‌زمان؟ *(پاسخ: 23-3-ت3)*
+
+**ت4.** (متوسط) Drift Policy را چگونه کشف می‌کنید؟ *(پاسخ: 23-3-ت4)*
+
+**ت5.** (سخت) Active-Active: ۴ الزام برای عملکرد صحیح. *(پاسخ: 23-3-ت5)*
+
+**ت6.** (سخت، طراحی) الگوی مناسب برای ظرفیت ۳۰ Gbps با Defense in Depth. *(پاسخ: 23-3-ت6)*
+
+**Q1.** Quick quiz (English): What is the main benefit of a canary change on multi-firewall designs? *(پاسخ: 23-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Canary | Canary change | تغییر آزمایشی روی بخش کوچک |
+| Blast radius | Blast radius | دامنه‌ی اثر |
+| Drift | Configuration drift | انحراف پیکربندی |
+
+- *Test changes on one firewall before rolling out.* ← تغییرات را ابتدا روی یک فایروال آزمایش کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** سری/موازی. **Evidence:** `02-design/multi-fw.md`.
+
+### ۱۵) منابع
+
+- NIST SP 800-41
+- Google SRE Book (Canarying)
+
+<a id="l-23-4"></a>
+
+## درس 23-4 — آزمون معماری ۵: چندفایروالی و Asymmetric — صورت مسئله، کلید پاسخ و Rubric
+
+**فصل 23 · بازنویسی عمیق · پیش‌نیاز: ۲۳-۰ تا ۲۳-۳ · ≈ 8 ساعت**
+
+> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. توپولوژی دو‌فایروالی با مسیر نامتقارن را بسازد و Drop را بازتولید کند.
+2. با Sniffer/Debug Flow/Session علت را اثبات کند.
+3. دو راه‌حل (Policy Route و متقارن‌سازی) را پیاده و مقایسه کند.
+4. RCA و Evidence را تحویل دهد.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+آزمون عملی با تمرکز بر شواهد؛ کلید پاسخ پس از تلاش.
+
+### ۳) توضیح عمیق فنی
+
+#### صورت مسئله
+
+دو فایروال FW-A و FW-B با دو ISP؛ کلاینت 10.1.4.10 و سرور 203.0.113.80. مسیر برگشت به‌صورت عمدی نامتقارن (Route Upstream).
+
+1. بازتولید: اتصال TCP 443 ناموفق.
+2. اثبات علت: Sniffer دو فایروال، `session list`، Debug Flow.
+3. رفع: ابتدا Policy Route؛ سپس طراحی متقارن (Route برگشت).
+4. آزمون: ۲۰ اتصال موفق؛ آزمون منفی RPF.
+5. گزارش: RCA و Evidence Index.
+
+#### کلید پاسخ (خلاصه)
+
+- Sniffer: A دارد SYN، B دارد SYN/ACK؛ session فقط در A.
+- Debug Flow B: reverse path check fail.
+- رفع ۱: Policy Route/SNAT؛ ریسک: Log مبهم.
+- رفع ۲ (ترجیحی): Route برگشت متقارن.
+- نتیجه: ۲۰/۲۰؛ آزمون منفی: بسته‌ی جعلی با Source نامعتبر Drop.
+
+#### Rubric
+
+بازتولید ۱۵؛ اثبات علت ۳۰؛ رفع و آزمون ۳۰؛ RCA/Evidence ۱۵؛ صداقت ۱۰.
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده:** بازتولید Drop.
+
+**متوسط:** اثبات با سه شاهد.
+
+**سخت:** دو راه‌حل و مقایسه.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose sniffer packet any "host 203.0.113.80 and port 443" 4 20 l
+diagnose sys session list
+diagnose debug flow filter addr 203.0.113.80
+diagnose debug flow trace start 20
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Evidence Index A5؛ ۲۰ اتصال؛ آزمون منفی.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| اثبات ناقص | Sniffer یک‌طرفه | دو نقطه |
+| رفع ناپایدار | Session | Clear/Hash |
+
+### ۱۰) نکات امنیتی
+
+- آزمون فقط Lab.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- آزمون: بازتولید، اثبات، رفع، RCA.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) سه شاهد اثبات Asymmetric؟ *(پاسخ: 23-4-ت1)*
+
+**ت2.** (ساده) چرا آزمون منفی RPF لازم است؟ *(پاسخ: 23-4-ت2)*
+
+**ت3.** (متوسط) مقایسه‌ی Policy Route و Route متقارن. *(پاسخ: 23-4-ت3)*
+
+**ت4.** (متوسط) چرا ۲۰ اتصال و نه ۱؟ *(پاسخ: 23-4-ت4)*
+
+**ت5.** (سخت) RCA را بنویسید. *(پاسخ: 23-4-ت5)*
+
+**ت6.** (سخت، طراحی) برنامه‌ی پیشگیری از تکرار. *(پاسخ: 23-4-ت6)*
+
+**Q1.** Quick quiz (English): Which command output proves that only one firewall owns the session? *(پاسخ: 23-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| A5 | Architecture 5 | معماری ۵ |
+
+- *Verify the fix with captures and a session list.* ← رفع را با Capture و session list تأیید کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** A5. **Evidence:** `03-ops/a5.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۲۳-۱ تا ۲۳-۳
 
 ## پاسخ‌های فصل 23
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
 
-**23-1-ت1** — Stateful؟
 
-Session محور.
+### پاسخ‌های بازنویسی عمیق درس 23-1
 
-**23-1-ت2** — Asymmetric؟
+**23-1-ت1** — روتر فقط بر پایه‌ی مقصد هر بسته تصمیم می‌گیرد؛ فایروال Stateful تصمیم را به Session وابسته می‌کند که فقط روی دستگاه اول ساخته شده.
 
-رفت/برگشت متفاوت.
+**23-1-ت2** — `reverse path check fail, drop` و `Denied by forward policy check (policy 0)`.
 
-**23-1-م1** — چرا Drop؟
+**23-1-ت3** — Hash رفت و برگشت متفاوت؛ نیمی از Flowها هر دو جهت را از یک فایروال می‌بینند و نیمی نه. رفع: Hash متقارن (هر دو جهت یکسان)، یا Active-Passive، یا Session Sync.
 
-نبود Session.
+**23-1-ت4** — ترجمه‌ی مبدأ فقط در Session فایروال اول ثبت شده؛ فایروال دوم نمی‌تواند پاسخ را به آدرس واقعی ترجمه کند.
 
-**23-1-م2** — سناریو: وب باز نمی‌شود؛ علت؟
+**23-1-ت5** — Route سرور مقابل (پاسخ از اینترنت) و Selector/Route فایروال؛ Capture Hop‌به‌Hop و Debug Flow RPF؛ رفع Route سرور سپس بررسی Selector.
 
-مسیر نامتقارن.
+**23-1-ت6** — وقتی Session Sync/بررسی سبک مدیریت‌شده است (مثلاً Anycast)، ریسک امنیتی پذیرفته‌شده و مستند، و Inspection جای دیگر جبران می‌شود.
 
-**23-2-ت1** — Policy Route؟
-
-مسیر مبتنی بر مبدأ.
-
-**23-2-ت2** — asymroute؟
-
-ریسک.
-
-**23-2-م1** — چرا SNAT؟
-
-برگشت به همان FW.
-
-**23-2-م2** — سناریو: فقط یک سرور؛ راه‌حل؟
-
-Policy Route.
-
-**23-3-ت1** — سری؟
-
-دو لایه.
-
-**23-3-ت2** — موازی؟
-
-Redundancy.
-
-**23-3-م1** — چرا یک NAT؟
-
-سادگی.
-
-**23-3-م2** — سناریو: دو NAT؛ مشکل؟
-
-عیب‌یابی سخت.
-
-**23-4-ت1** — Filter؟
-
-محدود Session.
-
-**23-4-ت2** — Log؟
-
-Forward.
-
-**23-4-م1** — چرا RCA؟
-
-یادگیری.
-
-**23-4-م2** — سناریو: Session روی FW2؛ چرا؟
-
-Route.
+**23-1-Q1** — Reverse path check failure and the absence of a matching session or policy for the return packet.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 23-2
 
-<a id="ch24"></a>
+**23-2-ت1** — مسیر را بر اساس مبدأ/Interface ورودی/سرویس تعیین می‌کند، قبل از Routing Table.
 
+**23-2-ت2** — چون آدرس مبدأ ترجمه‌شده متعلق به همان لینک است و Upstream پاسخ را به همان مسیر می‌دهد.
+
+**23-2-ت3** — متقارن‌سازی (ریشه‌ای)، Session Sync/Active-Passive، Policy Route/SNAT، `asymroute` (آخرین).
+
+**23-2-ت4** — آدرس واقعی مبدأ در سرور پنهان می‌شود و تحلیل حادثه سخت‌تر می‌شود.
+
+**23-2-ت5** — Hash متقارن یا Active-Passive؛ Session Sync پرهزینه؛ معیار: Throughput، سادگی، SPOF.
+
+**23-2-ت6** — ۲۰ اتصال موفق، Sniffer یک‌مسیره، session list در یک فایروال، Log کامل، آزمون منفی RPF.
+
+**23-2-Q1** — Because disabling checks weakens security, while symmetric routing solves the root cause.
+
+
+### پاسخ‌های بازنویسی عمیق درس 23-3
+
+**23-3-ت1** — Log و عیب‌یابی ساده می‌ماند و آدرس واقعی حفظ می‌شود.
+
+**23-3-ت2** — دامنه‌ی اثر یک خطا/خرابی.
+
+**23-3-ت3** — Canary ابتدا روی یک دستگاه؛ اگر سالم بود ادامه؛ تغییر هم‌زمان خطا را همه‌جا ایجاد می‌کند.
+
+**23-3-ت4** — Diff پیکربندی دو فایروال پس از هر تغییر و به‌صورت دوره‌ای؛ Alert.
+
+**23-3-ت5** — Hash/Routing متقارن یا Sync، Policy یکسان، Log مرکزی/زمان، Failover آزمایش‌شده.
+
+**23-3-ت6** — سری (Edge+Internal)، هر لایه A-P؛ Edge برای ظرفیت N+1 با ECMP متقارن اگر لازم؛ معیارها: ریسک، هزینه، عملیات.
+
+**23-3-Q1** — It limits the blast radius by testing the change on one device before applying it everywhere.
+
+
+### پاسخ‌های بازنویسی عمیق درس 23-4
+
+**23-4-ت1** — Sniffer دو فایروال (SYN در یکی/SYN-ACK در دیگری)، session list فقط در یکی، Debug Flow RPF/Policy 0.
+
+**23-4-ت2** — تا نشان دهد بررسی ضدجعل هنوز فعال است و رفع آن را خنثی نکرده.
+
+**23-4-ت3** — Policy Route سریع ولی بدهی (Log، پیچیدگی)؛ Route متقارن ریشه‌ای و ترجیحی.
+
+**23-4-ت4** — تا Hash/تصادفی بودن Asymmetric دیده شود؛ نتیجه‌ی ۲۰/۲۰ اطمینان می‌دهد.
+
+**23-4-ت5** — علامت: TCP 443 ناموفق؛ شواهد: Sniffer/session/Debug؛ علت: Route برگشت Upstream به ISP2؛ رفع: Route/Policy Route؛ پیشگیری: چک‌لیست Route برگشت.
+
+**23-4-ت6** — طراحی Route متقارن، Test Matrix دوره‌ای، Alert بر RPF Drop، Change Canary.
+
+**23-4-Q1** — The session list shows the session only on the firewall that saw the first packet.
 
 ### پاسخ‌های درس افزوده‌ی 23-0 (فصل 23)
 
@@ -34354,7 +34843,7 @@ Backup همه‌ی Gateها؛ آشنایی با FortiManager/Analyzer (لایس�
 
 <a id="ch25"></a>
 
-> **نسخه v3.5:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.6:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 25 — Multi-Vendor: FortiGate در کنار Cisco CSR (معماری ۶)
 
@@ -34594,371 +35083,424 @@ FortiGate: Network → OSPF/BGP؛ VPN → IPsec Tunnels. CSR: CLI. **Verificatio
 
 <a id="l-25-2"></a>
 
-## درس 25-2 — BGP/OSPF بین FGT و CSR
+## درس 25-2 — OSPF و BGP بین FortiGate و CSR: برگه‌ی پارامتر، پیکربندی دوطرفه، Redistribution و عیب‌یابی مقایسه‌ای
 
-**فصل 25 - روز 2 · پیش‌نیاز: درس ۲۵-۰ · ۶ ساعت**
+**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۰، ۲۵-۱، ۶-۱، ۹-۷، ۱۰-۱ · ≈ 9 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 و CSR1000v 17.03.02 (IOS-XE)؛ بوت‌نشده؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-Routing مشترک.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۵-۰
+1. OSPF و eBGP بین FGT و CSR را با برگه‌ی پارامتر مشترک بسازد.
+2. تفاوت پیش‌فرض‌ها (Hello/Dead، Network Type، MTU، Timer، Auth) و اثر ناسازگاری را بگوید.
+3. Redistribution دوطرفه و جلوگیری از Loop (Tag/Route-map) را پیاده کند.
+4. Verification را با دستورهای هر دو سازنده انجام و مقایسه کند.
+5. Neighbor Stuck (Init/Exstart/Active) را با شواهد هر دو سر عیب‌یابی کند.
+6. Convergence و Failover را اندازه بگیرد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- OSPF: Area/Network Type/Hello.
-- BGP: AS/Neighbor.
-- Timer و Authentication هماهنگ.
-- Route-map.
+بین دو سازنده، پروتکل یکی است ولی هر سازنده «پیش‌فرض‌ها» و «محدودیت‌ها»ی خودش را دارد. بیشتر مشکلات Interop از فرض یکسان بودن پیش‌فرض‌ها می‌آید: Hello/Dead، MTU، Network Type، یا رفتار Redistribution/Metric. روش درست: برگه‌ی پارامتر مشترک، پیکربندی صریح دو سر، و Debug هم‌زمان.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) برگه‌ی پارامتر (مشترک)
+
+``` text
+Link FGT port3 <-> CSR Gi2 : 10.255.0.0/30  (FGT .2, CSR .1)   MTU 1500 both
+OSPF : area 0, network type point-to-point, hello 10, dead 40, auth MD5 key 1 <KEY>
+BGP  : CSR AS 65001 router-id 1.1.1.1 ; FGT AS 65002 router-id 2.2.2.2
+       eBGP over 10.255.0.1/.2, hold 180 (or 9/3 with BFD), prefix-lists both directions
+Redistribution: OSPF<->BGP with tags; never both ways without tag
+```
+
+#### ۲) پیکربندی
+
+``` text
+! CSR (IOS-XE)
+interface GigabitEthernet2
+ ip address 10.255.0.1 255.255.255.252
+ ip ospf network point-to-point
+ ip ospf message-digest-key 1 md5 <KEY>
+ ip ospf authentication message-digest
+ ip mtu 1500
+router ospf 1
+ router-id 1.1.1.1
+ network 10.255.0.0 0.0.0.3 area 0
+router bgp 65001
+ bgp router-id 1.1.1.1
+ neighbor 10.255.0.2 remote-as 65002
+ neighbor 10.255.0.2 prefix-list FROM-FGT in
+ neighbor 10.255.0.2 prefix-list TO-FGT out
+```
+
+``` text
+# FortiGate
+config router ospf
+    set router-id 2.2.2.2
+    config area
+        edit 0.0.0.0
+        next
+    end
+    config network
+        edit 1
+            set prefix 10.255.0.0 255.255.255.252
+        next
+    end
+    config ospf-interface
+        edit "TO-CSR"
+            set interface "port3"
+            set network-type point-to-point
+            set authentication md5
+            set md5-key 1 <KEY>
+        next
+    end
+end
+config router bgp
+    set as 65002
+    set router-id 2.2.2.2
+    config neighbor
+        edit "10.255.0.1"
+            set remote-as 65001
+            set prefix-list-in "FROM-CSR"
+            set prefix-list-out "TO-CSR"
+        next
+    end
+end
+```
+
+(نام فیلدهای FortiOS `Unverified`؛ با CLI Reference 7.0 تطبیق شود.)
+
+#### ۳) Redistribution امن
+
+``` text
+FGT: redistribute ospf into bgp with route-map tag 100; redistribute bgp into ospf only routes WITHOUT tag 100
+CSR: same tag logic
+```
+
+بدون Tag، Prefix بین OSPF و BGP رفت‌وبرگشت می‌کند و حلقه یا Metric بی‌ثبات ایجاد می‌شود (۱۰-۲).
+
+#### ۴) جدول Verification
+
+| سؤال | CSR | FortiGate |
+|---|---|---|
+| همسایه OSPF | `show ip ospf neighbor` | `get router info ospf neighbor` |
+| LSDB | `show ip ospf database` | `get router info ospf database` |
+| BGP | `show ip bgp summary` | `get router info bgp summary` |
+| Route | `show ip route` | `get router info routing-table all` |
+| دریافتی BGP | `show ip bgp neighbors X received-routes` | `get router info bgp neighbors X received-routes` |
+
+#### ۵) ناسازگاری‌های رایج
+
+MTU (Exstart)، Network Type (DR/BDR در یک سر)، Auth، Hello/Dead، Timer BGP، `next-hop` و Filter، AD (eBGP 20 vs OSPF 110؛ مسیر BGP برنده می‌شود).
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| OSPF یا BGP | OSPF داخلی/لینک؛ BGP برای مقیاس/Policy |
+| AD | دقت AD: BGP 20 (eBGP) vs OSPF 110 |
+| Auth | MD5/SHA هر دو سر |
+| Tag | اجباری در Redistribution دوطرفه |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** OSPF Full و eBGP Established؛ Route 10.10.0.0/16 (CSR) در FGT با AD 20 (BGP)؛ ping از LAN CSR به LAN FGT موفق.
+
+**متوسط (تحلیل):** OSPF در Exstart: CSR Tunnel MTU 1400 و FGT 1500؛ DBD ارسالی بزرگ‌تر از MTU همتا؛ رفع: MTU یکسان یا `ip ospf mtu-ignore` (ریسک: ناپایداری). شواهد: دو سر `neighbor` و Debug OSPF.
+
+**سخت (Redistribution):** پس از Redistribution دوطرفه بدون Tag، Prefix 10.10.0.0/16 مدام تغییر می‌کند (BGP→OSPF→BGP). علت: Loop Redistribution. شواهد: `show ip bgp 10.10.0.0` Path عجیب و Flap؛ رفع: Tag و Route-map؛ تأیید: Route پایدار؛ آزمون: قطع لینک و بازگشت.
+
+### ۸) Verification (اثبات صحت)
+
+- Neighbor Full/Established.
+- Route‌ها در هر دو.
+- آزمون قطع لینک و Convergence.
+- آزمون منفی: Prefix غیرمجاز رد می‌شود.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Exstart | MTU | هم‌سان |
+| Init | Hello/Auth/Policy | همسان |
+| BGP Active | TCP 179/AS | Policy/AS |
+| Route نصب نمی‌شود | Next-hop/AD | Route/Distance |
+| Flap مسیر | Redistribution | Tag |
+
+### ۱۰) نکات امنیتی
+
+- Authentication OSPF/BGP.
+- Prefix-list ورودی/خروجی.
+- Max-prefix.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- برگه‌ی پارامتر مشترک.
+- MTU/Network Type/Auth ناسازگاری‌های اصلی.
+- Redistribution با Tag.
 - Verification دوطرفه.
 
-### ۴) مثال ساده
+### ۱۲) تمرین و ارزیابی
 
-دو برند باید با هم صحبت کنند.
+**ت1.** (ساده) چرا OSPF در Exstart می‌ماند؟ *(پاسخ: 25-2-ت1)*
 
-### ۵) مثال سازمانی
+**ت2.** (ساده) AD پیش‌فرض eBGP و OSPF در Cisco؟ *(پاسخ: 25-2-ت2)*
 
-سازمان: لبه Fortinet و هسته Cisco.
+**ت3.** (متوسط) مقایسه‌ی دستور Verification OSPF در دو سازنده. *(پاسخ: 25-2-ت3)*
 
-### ۶) تصویر و توپولوژی
+**ت4.** (متوسط) چرا Tag در Redistribution دوطرفه؟ *(پاسخ: 25-2-ت4)*
 
-```text
-CSR (core) <-BGP-> FGT (edge)
-```
+**ت5.** (سخت) Prefix بین OSPF و BGP Flap می‌کند؛ تحلیل و رفع. *(پاسخ: 25-2-ت5)*
 
-### ۷) پیکربندی (GUI و CLI)
+**ت6.** (سخت، طراحی) برگه‌ی پارامتر برای ۳ Link بین FGT و CSR. *(پاسخ: 25-2-ت6)*
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+**Q1.** Quick quiz (English): Why can a bidirectional redistribution without tags create a routing loop? *(پاسخ: 25-2-Q1)*
 
-#### روش گرافیکی (GUI)
+### ۱۳) اصطلاحات و English Corner
 
-1. Network > OSPF (FGT).
-
-#### روش خط فرمان (CLI)
-
-```text
-! CSR
-router ospf 1
- network 10.0.0.0 0.0.0.255 area 0
-! FGT
-get router info ospf neighbor
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- `Unverified`.
-
-### ۸) تست عملکرد
-
-- Neighbor Full.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Neighbor Exstart |
-| شواهد/دستور | `ospf neighbor` |
-| علت | MTU mismatch |
-| رفع | MTU یکسان |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Exstart؟ *(پاسخ: 25-2-ت1)*
-
-**ت2.** Timer؟ *(پاسخ: 25-2-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا MTU؟ *(پاسخ: 25-2-م1)*
-
-**م2.** سناریو: Exstart؛ علت؟ *(پاسخ: 25-2-م2)*
-
-**معیار تسلط:** اتصال دوبرندی.
-
-**اشتباهات رایج:** پیش‌فرض‌های ناهمسان.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| DBD | Database Description | بسته‌ی OSPF | OSPF |
-
-| English sentence | ترجمه |
-|---|---|
-| Match MTU on both sides. | MTU را دو طرف یکسان کنید. |
-
-#### کارت Lab — درس 25-2
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | OSPF FGT-CSR |
-| 2 | پیش‌نیاز | درس ۲۵-۰ |
-| 3 | توپولوژی | FGT+CSR |
-| 4 | تجهیزات | FGT+CSR |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | OSPF |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | show/get |
-| 11 | سناریوی خرابی | Neighbor Exstart |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Full |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/ospf-fgt-csr.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| DBD | Database Description packet | بسته‌ی توصیف پایگاه |
+| Tag | Route tag | برچسب مسیر |
+| AD | Administrative Distance | اعتبار منبع مسیر |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Match MTU, network type and authentication on both vendors.* ← MTU، Network Type و Auth را در هر دو سازنده یکسان کنید.
 
----
+### ۱۴) کارت Lab
+
+**کارت Lab:** OSPF/BGP FGT–CSR. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ospf-fgt-csr.md`.
+
+### ۱۵) منابع
+
+- RFC 2328
+- RFC 4271
+- Cisco IOS XE OSPF/BGP Configuration Guides
+- Fortinet CLI Reference 7.0
 
 <a id="l-25-3"></a>
 
-## درس 25-3 — IPsec چندسازنده و عیب‌یابی مقایسه‌ای
+## درس 25-3 — IPsec چندسازنده: روش مقایسه‌ی Debug، جدول مغایرت و Interop آزمایشی FGT–CSR
 
-**فصل 25 - روز 3 · پیش‌نیاز: درس ۲۵-۱ · ۶ ساعت**
+**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۰، ۱۸-۰، ۱۸-۳ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 و CSR1000v 17.03.02 (IOS-XE)؛ بوت‌نشده؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-Interop IPsec.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۵-۱
+1. Tunnel IKEv2 بین FGT و CSR را با برگه‌ی پارامتر مشترک بسازد.
+2. Debug هر دو سر را هم‌زمان بگیرد و اولین مغایرت را بیابد.
+3. پیام‌های خطا را بین دو سازنده نگاشت کند.
+4. Rekey/DPD/NAT-T/MTU را آزمایش کند.
+5. گزارش Interop (پارامتر، نتیجه، محدودیت) بنویسد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- Proposal/DH/Lifetime.
-- IKEv2.
-- Selector.
-- Debug هر دو سو.
-- Evidence.
+در Interop، هر سازنده خطا را به زبان خودش گزارش می‌کند. «روش مقایسه‌ی دو Debug» سریع‌ترین راه برای پیدا کردن مغایرت است.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو برند باید با هم صحبت کنند.
+#### ۱) روش
 
-### ۵) مثال سازمانی
-
-سازمان: لبه Fortinet و هسته Cisco.
-
-### ۶) تصویر و توپولوژی
-
-```text
-CSR (core) <-BGP-> FGT (edge)
+``` text
+1 Same time window: start debug on both peers; trigger negotiation (clear SA / ping)
+2 Save logs; align by timestamp
+3 Find first divergence: the message where one side rejects/aborts
+4 Map to parameter: proposal, DH, PRF, ID, selectors, lifetime, PFS
+5 Change ONE parameter; repeat
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+#### ۲) نگاشت پیام‌ها
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Monitor > IPsec.
-
-#### روش خط فرمان (CLI)
-
-```text
-show crypto ikev2 sa
-diagnose vpn ike gateway list
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- `Unverified`.
-
-### ۸) تست عملکرد
-
-- Tunnel Up.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Phase 2 شکست |
-| شواهد/دستور | Debug |
-| علت | Selector |
-| رفع | تطبیق |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Interop؟ *(پاسخ: 25-3-ت1)*
-
-**ت2.** Debug؟ *(پاسخ: 25-3-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا هر دو سو؟ *(پاسخ: 25-3-م1)*
-
-**م2.** سناریو: یک‌طرفه؛ علت؟ *(پاسخ: 25-3-م2)*
-
-**معیار تسلط:** اتصال دوبرندی.
-
-**اشتباهات رایج:** پیش‌فرض‌های ناهمسان.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
+| وضعیت | CSR (IOS-XE) | FortiGate | علت |
 |---|---|---|---|
-| Interop | Interoperability | سازگاری | Multi-vendor |
+| Proposal ناسازگار | `no matching proposal` | `NO_PROPOSAL_CHOSEN` | Cipher/PRF/DH |
+| Auth | `AUTH FAILED` | `AUTH_FAILED` | PSK/ID |
+| Selector | `TS unacceptable` | `TS_UNACCEPTABLE` | Selector |
+| DH | `INVALID_KE_PAYLOAD` | `INVALID_KE_PAYLOAD` | گروه DH |
+| پایان | `SA deleted` | `delete` | Lifetime/DPD |
 
-| English sentence | ترجمه |
-|---|---|
-| Debug both ends together. | هر دو سر را با هم Debug کنید. |
+#### ۳) آزمون‌های Interop
 
-#### کارت Lab — درس 25-3
+- Rekey: Lifetime کوتاه (مثلاً 600 s) و مشاهده‌ی Rekey بدون قطع.
+- DPD: قطع یک سر؛ زمان کشف.
+- NAT-T: Peer پشت NAT.
+- MTU: ping DF بزرگ.
+- PFS: Group یکسان.
 
-| # | فیلد | محتوا |
+``` text
+CSR: show crypto ikev2 sa detailed ; show crypto ipsec sa
+FGT: diagnose vpn ike gateway list ; diagnose vpn tunnel list
+```
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Up با AES-GCM-256، DH 20؛ `show crypto ipsec sa` pkts encaps/decaps هر دو افزایش.
+
+**متوسط (تحلیل):** Phase 2 شکست: CSR `TS unacceptable`، FGT `TS_UNACCEPTABLE`؛ Selector CSR 10.10.0.0/16↔10.20.0.0/16 و FGT 0.0.0.0/0؛ رفع: any/any روی هر دو (Route-based) یا آینه‌کردن.
+
+**سخت (قطع دوره‌ای):** Tunnel هر ~۶۰ دقیقه قطع می‌شود: CSR Lifetime IPsec 3600 s و FGT 43200؛ هنگام Rekey با Proposal/PFS متفاوت شکست. شواهد: Log هر دو؛ رفع: یکسان‌سازی Lifetime/PFS؛ آزمون ۴ ساعته.
+
+### ۸) Verification (اثبات صحت)
+
+- Evidence Interop: پارامتر/خروجی/نتیجه.
+- Rekey بدون قطع.
+- DPD آزمایشی.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | IPsec FGT-CSR |
-| 2 | پیش‌نیاز | درس ۲۵-۱ |
-| 3 | توپولوژی | FGT+CSR |
-| 4 | تجهیزات | FGT+CSR |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Tunnel |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | show |
-| 11 | سناریوی خرابی | Phase 2 شکست |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Up |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/ipsec-mv.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| Phase1 شکست | Debug | Proposal/DH/PSK |
+| Phase2 شکست | Debug | Selector/PFS |
+| قطع دوره‌ای | Log | Lifetime |
+| یک جهت | counters | Policy/Route |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- PSK قوی؛ الگوریتم‌های ضعیف ممنوع.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- مقایسه‌ی Debug دو سر.
+- نگاشت پیام‌ها.
+- آزمون Rekey/DPD/NAT-T/MTU.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) معادل NO_PROPOSAL_CHOSEN در CSR؟ *(پاسخ: 25-3-ت1)*
+
+**ت2.** (ساده) چرا Debug هم‌زمان؟ *(پاسخ: 25-3-ت2)*
+
+**ت3.** (متوسط) TS unacceptable چگونه رفع می‌شود؟ *(پاسخ: 25-3-ت3)*
+
+**ت4.** (متوسط) آزمون Rekey چگونه؟ *(پاسخ: 25-3-ت4)*
+
+**ت5.** (سخت) Tunnel هر ساعت قطع می‌شود؛ تحلیل. *(پاسخ: 25-3-ت5)*
+
+**ت6.** (سخت، طراحی) گزارش Interop. *(پاسخ: 25-3-ت6)*
+
+**Q1.** Quick quiz (English): How do you locate the cause of an interop IKE failure efficiently? *(پاسخ: 25-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Divergence | First divergence point | اولین نقطه‌ی اختلاف |
+| PRF | Pseudo-random function | تابع شبه‌تصادفی |
+
+- *Debug both peers in the same time window.* ← هر دو Peer را در یک بازه‌ی زمانی Debug کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** IPsec FGT–CSR. **Evidence:** `03-ops/ipsec-mv.md`.
+
+### ۱۵) منابع
+
+- RFC 7296
+- Cisco IKEv2 guides
+- Fortinet IPsec CLI Reference 7.0
 
 <a id="l-25-4"></a>
 
-## درس 25-4 — معماری ۶ و آزمون
+## درس 25-4 — آزمون معماری ۶ (FGT+CSR): صورت مسئله، کلید پاسخ و Rubric
 
-**فصل 25 - روز 4 · پیش‌نیاز: درس ۲۵-۲ · ۶ ساعت**
+**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۰ تا ۲۵-۳ · ≈ 8 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 و CSR1000v 17.03.02 (IOS-XE)؛ بوت‌نشده؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-ترکیب و ارزیابی.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۲۵-۲
+1. اتصال FGT–CSR با Routing و IPsec را با شواهد تحویل دهد.
+2. سه عیب تزریق‌شده (MTU، Proposal، Redistribution) را رفع کند.
+3. Failover و Backup هر دو سازنده را انجام دهد.
+4. گزارش Interop و RCA ارائه دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- اتصال کامل.
-- Failover.
-- RCA.
-- Backup.
-- آزمون.
+آزمون جامع چندسازنده با شواهد. کلید پاسخ پس از تلاش.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو برند باید با هم صحبت کنند.
+#### صورت مسئله
 
-### ۵) مثال سازمانی
+HQ: CSR؛ شعبه: FGT؛ دو لینک (WAN1/WAN2). نیاز: OSPF داخلی، eBGP لبه، IPsec IKEv2 روی هر دو لینک، Failover < ۱۰ ثانیه، Backup هر دو.
 
-سازمان: لبه Fortinet و هسته Cisco.
+عیب‌ها: ۱) MTU Tunnel ناهمسان؛ ۲) PFS Group متفاوت؛ ۳) Redistribution بدون Tag.
 
-### ۶) تصویر و توپولوژی
+#### کلید پاسخ (خلاصه)
 
-```text
-CSR (core) <-BGP-> FGT (edge)
-```
+- OSPF Exstart ← MTU؛ IPsec Phase2 ← PFS؛ Flap ← Tag.
+- Failover با BFD/Local-pref؛ اندازه‌گیری ≈ ۶ ثانیه.
+- Backup: `copy running-config` و `execute backup config`.
 
-### ۷) پیکربندی (GUI و CLI)
+#### Rubric
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+اتصال ۲۵؛ عیب‌یابی ۳۰؛ Failover ۱۵؛ Backup ۱۰؛ گزارش/Evidence ۱۵؛ صداقت ۵.
 
-#### روش گرافیکی (GUI)
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-1. Monitor.
+**ساده:** Up و Route‌ها.
 
-#### روش خط فرمان (CLI)
+**متوسط:** سه عیب رفع.
 
-```text
-show running-config | section router
-get router info routing-table all
-```
+**سخت:** Failover و گزارش.
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- خواندنی.
+- Evidence A6.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- اجرای A6.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | مسیر نامتقارن |
-| شواهد/دستور | traceroute |
-| علت | Metric |
-| رفع | تنظیم |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** A6؟ *(پاسخ: 25-4-ت1)*
-
-**ت2.** Backup؟ *(پاسخ: 25-4-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا RCA؟ *(پاسخ: 25-4-م1)*
-
-**م2.** سناریو: Route نیست؛ علت؟ *(پاسخ: 25-4-م2)*
-
-**معیار تسلط:** اتصال دوبرندی.
-
-**اشتباهات رایج:** پیش‌فرض‌های ناهمسان.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| A6 | Architecture 6 | معماری ۶ | دوره |
-
-| English sentence | ترجمه |
-|---|---|
-| Back up both vendors. | از هر دو سازنده Backup بگیرید. |
-
-#### کارت Lab — درس 25-4
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون A6 |
-| 2 | پیش‌نیاز | درس ۲۵-۲ |
-| 3 | توپولوژی | FGT+CSR |
-| 4 | تجهیزات | FGT+CSR |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | A6 |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping |
-| 11 | سناریوی خرابی | مسیر نامتقارن |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | شاهد |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/a6.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Failover کند | Timer | BFD |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Secret پاک.
 
-<a id="ans-25"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- آزمون با شواهد.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) سه عیب آزمون؟ *(پاسخ: 25-4-ت1)*
+
+**ت2.** (ساده) Backup هر دو سازنده چگونه؟ *(پاسخ: 25-4-ت2)*
+
+**ت3.** (متوسط) چگونه Failover < ۱۰ s را اثبات می‌کنید؟ *(پاسخ: 25-4-ت3)*
+
+**ت4.** (متوسط) عیب PFS را از Debug چگونه می‌فهمید؟ *(پاسخ: 25-4-ت4)*
+
+**ت5.** (سخت) RCA برای Flap Redistribution. *(پاسخ: 25-4-ت5)*
+
+**ت6.** (سخت، طراحی) برنامه‌ی بهبود. *(پاسخ: 25-4-ت6)*
+
+**Q1.** Quick quiz (English): What artifacts must be backed up in a multi-vendor design? *(پاسخ: 25-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| A6 | Architecture 6 | معماری ۶ |
+
+- *Back up both vendors.* ← از هر دو سازنده Backup بگیرید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** A6. **Evidence:** `03-ops/a6.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۲۵-۱ تا ۲۵-۳
 
 ## پاسخ‌های فصل 25
 
@@ -34979,59 +35521,56 @@ get router info routing-table all
 
 **25-1-Q1** — A firewall policy between interfaces or zones.
 
-**25-2-ت1** — Exstart؟
 
-اغلب MTU.
+### پاسخ‌های بازنویسی عمیق درس 25-2
 
-**25-2-ت2** — Timer؟
+**25-2-ت1** — معمولاً MTU متفاوت؛ DBD بزرگ‌تر از MTU همتا کنار گذاشته می‌شود.
 
-باید یکی.
+**25-2-ت2** — eBGP = 20 و OSPF = 110؛ پس BGP برنده است.
 
-**25-2-م1** — چرا MTU؟
+**25-2-ت3** — CSR: `show ip ospf neighbor`؛ FGT: `get router info ospf neighbor`.
 
-Mismatch DBD.
+**25-2-ت4** — تا Prefix دوباره به منبعش بازگردانده نشود؛ از Loop و Flap جلوگیری می‌کند.
 
-**25-2-م2** — سناریو: Exstart؛ علت؟
+**25-2-ت5** — Loop Redistribution؛ افزودن Tag/Route-map، حذف Redistribute یک‌جهته در صورت نیاز؛ آزمون قطع/بازگشت.
 
-MTU.
+**25-2-ت6** — جدول: IP/MTU/Area/Network Type/Auth/Timer/BGP AS/Filter برای هر Link.
 
-**25-3-ت1** — Interop؟
-
-هماهنگی.
-
-**25-3-ت2** — Debug؟
-
-هر دو سو.
-
-**25-3-م1** — چرا هر دو سو؟
-
-علت آشکار.
-
-**25-3-م2** — سناریو: یک‌طرفه؛ علت؟
-
-Selector.
-
-**25-4-ت1** — A6؟
-
-FGT+CSR.
-
-**25-4-ت2** — Backup؟
-
-هر دو.
-
-**25-4-م1** — چرا RCA؟
-
-یادگیری.
-
-**25-4-م2** — سناریو: Route نیست؛ علت؟
-
-Redistribute.
+**25-2-Q1** — Because routes can be redistributed back into their source protocol repeatedly.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 25-3
 
-<a id="ch26"></a>
+**25-3-ت1** — `no matching proposal`.
 
+**25-3-ت2** — هر سمت بخش دیگری از مذاکره را می‌بیند؛ مقایسه اولین مغایرت را نشان می‌دهد.
+
+**25-3-ت3** — Selector آینه یا any/any در Route-based.
+
+**25-3-ت4** — Lifetime کوتاه و ping پیوسته؛ باید بدون قطع Rekey شود.
+
+**25-3-ت5** — Lifetime/PFS ناهمسان؛ Log دو سر؛ یکسان‌سازی؛ آزمون طولانی.
+
+**25-3-ت6** — جدول پارامتر/نتیجه/محدودیت/تاریخ/نسخه.
+
+**25-3-Q1** — Capture debug from both peers in the same time window and find the first diverging message.
+
+
+### پاسخ‌های بازنویسی عمیق درس 25-4
+
+**25-4-ت1** — MTU ناهمسان، PFS Group متفاوت، Redistribution بدون Tag.
+
+**25-4-ت2** — CSR: copy running-config tftp/scp؛ FGT: execute backup config tftp/sftp.
+
+**25-4-ت3** — قطع لینک و ping پیوسته؛ شمارش بسته‌ها × فاصله؛ ثبت.
+
+**25-4-ت4** — `INVALID_KE_PAYLOAD`/`NO_PROPOSAL_CHOSEN` در Phase 2؛ مقایسه‌ی PFS Group دو سر.
+
+**25-4-ت5** — علامت: Flap Prefix؛ شواهد: Path/Route؛ علت: Loop بدون Tag؛ رفع: Tag؛ پیشگیری: استاندارد Route-map.
+
+**25-4-ت6** — برگه‌ی پارامتر مشترک، استاندارد MTU، قالب Redistribution با Tag، BFD، آزمون دوره‌ای.
+
+**25-4-Q1** — Configurations of both vendors, including routing and VPN settings, stored without secrets in version control.
 
 ### پاسخ‌های درس افزوده‌ی 25-0 (فصل 25)
 
@@ -36864,7 +37403,7 @@ Backup همه‌ی Gateها؛ Wireshark/Sniffer مسلط.
 
 <a id="ch28"></a>
 
-> **نسخه v3.5:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.6:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 28 — Packet Analysis و بلوک‌های عیب‌یابی
 
@@ -39219,7 +39758,7 @@ Plan+Rollback+Evidence.
 
 <a id="ch31"></a>
 
-> **نسخه v3.5:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.6:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 31 — Capstone I و II: طراحی و پیاده‌سازی شبکه‌ی سازمانی
 
