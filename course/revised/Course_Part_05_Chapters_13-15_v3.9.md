@@ -1425,13 +1425,21 @@ get system session-info statistics
 
 **13-3-ت2** — به شیء VIP.
 
+Policy باید به شیء VIP (نه آدرس داخلی) اشاره کند، چون DNAT قبل از Policy انجام می‌شود و Policy مقصد را با VIP تطبیق می‌دهد؛ اگر آدرس داخلی بنویسید `Denied by forward policy check` می‌بینید.
+
 **13-3-ت3** — فقط پورت‌های لازم را در معرض می‌گذارد.
+
+Port-forward فقط پورت‌های لازم (مثلاً 443) را در معرض می‌گذارد؛ در Static NAT یک‌به‌یک همه‌ی پورت‌های سرور از اینترنت قابل‌دسترس می‌شود که سطح حمله را بزرگ می‌کند.
 
 **13-3-ت4** — سرور و کاربر هم‌شبکه‌اند و پاسخ مستقیم می‌دهد و فایروال دور زده می‌شود.
 
 **13-3-ت5** — Policy، Route، ARP، Session، Log، آزمون منفی.
 
+VIP کار نمی‌کند: ۱) Policy با dst=VIP وجود دارد؟ ۲) Route سرور و Gateway آن به فایروال؟ ۳) ARP/IP عمومی روی WAN؟ ۴) Session و DNAT در `session list`. ۵) Log. ۶) آزمون منفی پورت دیگر.
+
 **13-3-ت6** — سه VIP جدا، Policy جدا، Zone DMZ، Log، آزمون منفی.
+
+انتشار سه سرویس: سه VIP جدا (هر کدام پورت خودش)، سه Policy با Service مشخص، سرورها در Zone DMZ، Log All و آزمون منفی (پورت غیرمجاز رد شود).
 
 **13-3-Q1** — Because DNAT happens before policy lookup and the policy matches the VIP.
 
@@ -1440,15 +1448,25 @@ get system session-info statistics
 
 **13-4-ت1** — TCP.
 
+proto=6 یعنی TCP (17 UDP و 1 ICMP). این فیلد در `session list` نوع پروتکل Session را نشان می‌دهد.
+
 **13-4-ت2** — تا Sessionهای دیگر قطع نشوند.
+
+`session clear` بدون فیلتر همه‌ی Sessionها را می‌بندد و قطعی سراسری می‌سازد؛ با فیلتر src/dst/port فقط Sessionهای مشخص پاک می‌شود.
 
 **13-4-ت3** — Session موجود تا انقضا باقی است؛ Session را با فیلتر پاک کنید.
 
 **13-4-ت4** — حدود ۳۶۰۰ ثانیه (طبق نسخه تأیید شود).
 
+Timeout پیش‌فرض TCP Established حدود ۳۶۰۰ ثانیه است، ولی مقدار دقیق بسته به نسخه فرق دارد؛ با `get system session-ttl` تأیید شود (`Unverified` تا Lab).
+
 **13-4-ت5** — timeout پورت 22 افزایش یا Keepalive.
 
+SSH Admin قطع می‌شود چون Timeout Session کوتاه است؛ راه: timeout پورت 22 را در `session-ttl` افزایش دهید یا Keepalive در کلاینت (`ServerAliveInterval`) تنظیم کنید.
+
 **13-4-ت6** — سرویس، پورت، timeout و دلیل.
+
+جدول Timeout سازمان: سرویس، پورت، Timeout و دلیل (مثلاً SSH Admin: 22: 7200: بیکاری طولانی)؛ همه‌ی تغییرات با CHG ثبت شود.
 
 **13-4-Q1** — Without a filter all sessions are cleared causing an outage.
 
@@ -1462,13 +1480,21 @@ get system session-info statistics
 
 **13-5-ت2** — با Reboot/Reset صفر می‌شود و استفاده‌ی فصلی را نمی‌بیند؛ باید با Log تاریخی و مالک تأیید شود.
 
+Hit Count با Reboot/Reset صفر می‌شود و استفاده‌ی فصلی (مثلاً پایان سال مالی) را نمی‌بیند؛ پس قبل از حذف با Log تاریخی ۱۲ ماهه و تأیید مالک بررسی شود.
+
 **13-5-ت3** — تا انقضا یا پاک‌سازی می‌ماند؛ برای قطع فوری Session را با فیلتر پاک کنید.
 
+پس از پایان Schedule، Sessionهای موجود تا انقضا باقی می‌مانند و فقط Sessionهای جدید رد می‌شوند؛ برای قطع فوری Session را با فیلتر پاک کنید.
+
 **13-5-ت4** — برای Rollback سریع اگر سرویس مخفی وابسته باشد.
+
+ابتدا غیرفعال و بعد حذف: اگر سرویس مخفی به Policy وابسته باشد، با فعال‌کردن دوباره Rollback سریع می‌شود؛ حذف نیازمند بازگرداندن از Backup است.
 
 **13-5-ت5** — Log ۱۴–۳۰ روز، استخراج مقصد/پورت، Policy خاص بالای ALL، غیرفعال‌سازی ALL، مشاهده، حذف؛ همراه Backup و Rollback.
 
 **13-5-ت6** — Export، تأیید مالک، Window با Backup، مشاهده/حذف؛ گزارش: ID، مالک، دلیل، Hit، ریسک، تصمیم.
+
+فرایند فصلی: Export Policy و Hit، تأیید مالک، Window با Backup، مشاهده و حذف؛ گزارش شامل ID، مالک، دلیل، Hit، ریسک و تصمیم است.
 
 **13-5-Q1** — Disabling allows quick rollback if an unknown dependency appears.
 
@@ -1477,15 +1503,27 @@ get system session-info statistics
 
 **13-6-ت1** — تعریف دقیق علامت.
 
+اولین گام تعریف دقیق علامت است: چه کسی، به چه سرویسی، از کجا، از کی و چه پیامی می‌بیند؛ سپس Route و بقیه‌ی گام‌ها.
+
 **13-6-ت2** — پاسخ برنگشته؛ SNAT/Route/سرور.
+
+no reply یعنی Session ساخته شده ولی پاسخ برنگشته: SNAT اشتباه، Route برگشت یا سرور پاسخ نمی‌دهد؛ با Sniffer دو سمت مشخص می‌شود.
 
 **13-6-ت3** — Route معکوس مبدأ از Interface ورودی نیست.
 
+RPF fail یعنی Route برگشت به مبدأ از همان Interface ورودی نیست؛ با `get router info routing-table details <src>` بررسی و Route/Asymmetric رفع شود.
+
 **13-6-ت4** — برای دانستن اثر هر تغییر.
+
+یک تغییر در هر بار تا بدانید کدام تغییر مشکل را حل کرد و ریشه‌ی اصلی پنهان نشود.
 
 **13-6-ت5** — اول یکی را رفع، آزمون، سپس دومی.
 
+دو عیب هم‌زمان: ابتدا یکی را رفع و آزمون کنید، بعد دومی؛ ثبت اثر هر تغییر در Evidence.
+
 **13-6-ت6** — Timeline، Impact، Cause، Fix، Prevention.
+
+قالب گزارش حادثه: Timeline، Impact، Cause، Fix و Prevention؛ هر بخش با شواهد.
 
 **13-6-Q1** — The policy lookup (iprope lookup).
 
@@ -2689,15 +2727,27 @@ diagnose debug reset
 
 **14-1-ت1** — چون اگر لینک/VLAN خراب باشد بالاتر هیچ‌چیز معنا ندارد و آزمایش بیهوده است.
 
+از لایه‌ی پایین‌تر شروع می‌کنیم چون اگر لینک/VLAN خراب باشد بالاتر هیچ‌چیز معنا ندارد؛ آزمون‌های بالاتر بی‌فایده و گمراه‌کننده می‌شود.
+
 **14-1-ت2** — تا حجم Capture و بار CPU کنترل شود و دستگاه پر نشود.
+
+count تعداد بسته‌ها را محدود می‌کند تا حجم Capture و CPU کنترل شود و دستگاه Production پر نشود؛ count=0 بی‌پایان و خطرناک است.
 
 **14-1-ت3** — لینک، VLAN، فیلتر اشتباه، یا Interface نادرست. با ARP و وضعیت لینک بررسی می‌شود.
 
+Sniffer ورودی خالی: لینک/VLAN، فیلتر اشتباه یا Interface نادرست؛ با `get system interface physical` و `diagnose ip arp list` بررسی می‌شود.
+
 **14-1-ت4** — Sniffer بسته‌ها را می‌بیند؛ Debug flow تصمیم FortiGate (Policy، Route، NAT) را نشان می‌دهد.
+
+Sniffer خودِ بسته‌ها را می‌بیند؛ Debug flow تصمیم FortiGate (Route، Policy، NAT، Drop) را نشان می‌دهد؛ هر دو مکمل‌اند.
 
 **14-1-ت5** — ping، debug flow، sniffer، تست DF با اندازه‌ی مختلف، PMTU، MSS-clamp، آزمون.
 
+برخی سایت‌ها باز می‌شوند: ping، Debug flow، Sniffer، تست DF با اندازه‌های مختلف، تعیین PMTU، MSS-clamp و آزمون دانلود بزرگ.
+
 **14-1-ت6** — جدول پرسش/ابزار/خروجی مورد انتظار/اقدام بعدی.
+
+چک‌لیست ده‌پرسشی: جدول پرسش، ابزار، خروجی مورد انتظار و اقدام بعدی؛ برای ثبت Evidence هر گام.
 
 **14-1-Q1** — Debug flow.
 
@@ -2709,15 +2759,27 @@ diagnose debug reset
 
 **14-2-ت1** — هدر بسته همراه نام Interface.
 
+verbosity 4 هدر بسته را همراه نام Interface نشان می‌دهد؛ برای دیدن اینکه بسته از کدام Interface آمده/رفته مناسب است.
+
 **14-2-ت2** — تعداد بسته‌ها تا توقف؛ برای کنترل حجم.
+
+count تعداد بسته تا توقف است؛ برای کنترل حجم و CPU استفاده می‌شود.
 
 **14-2-ت3** — مقصد/مسیر پاسخ نمی‌دهد؛ با Capture ورودی/خروجی محل را مشخص کنید.
 
+SYN بدون SYN-ACK یعنی مقصد یا مسیر پاسخ نمی‌دهد؛ Capture ورودی و خروجی محل را مشخص می‌کند.
+
 **14-2-ت4** — بسته‌ی Offload‌شده ممکن است در sniffer دیده نشود.
+
+بسته‌ی Offload‌شده روی NPU ممکن است در sniffer CPU دیده نشود؛ برای Lab Offload غیرفعال شود (`Unverified`).
 
 **14-2-ت5** — Capture چند Interface، مقایسه‌ی جهت‌ها و Interfaceها.
 
+Asymmetric: Sniffer روی چند Interface؛ SYN در یکی، SYN-ACK در دیگری؛ مقایسه‌ی جهت‌ها آن را ثابت می‌کند.
+
 **14-2-ت6** — فیلتر باریک، count، حذف pcap، ثبت زمان/Evidence.
+
+Capture امن: فیلتر باریک، count محدود، حذف pcap پس از تحلیل و ثبت زمان/Evidence بدون داده‌ی حساس.
 
 **14-2-Q1** — Verbosity 4.
 
@@ -2728,15 +2790,27 @@ diagnose debug reset
 
 **14-3-ت1** — ۲۰ بسته را Trace می‌کند و سپس متوقف می‌شود.
 
+`trace start 20` فقط ۲۰ بسته را Trace می‌کند و سپس متوقف می‌شود؛ برای محدود کردن بار.
+
 **14-3-ت2** — Policy 2 اجازه داد و NAT طبق همان اعمال شد.
+
+«Allowed by Policy-2» یعنی Policy 2 اجازه داد و NAT طبق همان Policy اعمال شد.
 
 **14-3-ت3** — Implicit Deny؛ هیچ Policyای مطابق نبود.
 
+policy 0 یعنی Implicit Deny؛ هیچ Policyای مطابق نبود؛ Interface/Zone، Src/Dst (بعد DNAT)، Service و Schedule را بررسی کنید.
+
 **14-3-ت4** — Route معکوس Source از Interface ورودی نیست.
+
+RPF fail یعنی Route معکوس مبدأ از Interface ورودی نیست؛ Route/Asymmetric را بررسی کنید.
 
 **14-3-ت5** — Route را اصلاح، Asymmetric را بررسی، آزمون Allowed.
 
+رفع RPF: Route را اصلاح کنید، Asymmetric را بررسی کنید و با Debug flow Allowed را تأیید کنید.
+
 **14-3-ت6** — فیلتر، زمان، خروجی، تفسیر، رفع، آزمون.
+
+الگوی ثبت Debug: فیلتر، زمان، خروجی، تفسیر، رفع و آزمون؛ بدون اطلاعات حساس.
 
 **14-3-Q1** — The route back to the source does not use the ingress interface.
 
@@ -2744,15 +2818,27 @@ diagnose debug reset
 
 **14-4-ت1** — همه‌ی مسیرها حتی غیرفعال.
 
+`routing-table database` همه‌ی مسیرها را (حتی غیرفعال) نشان می‌دهد؛ برای فهم اینکه چرا مسیر بهتر استفاده نمی‌شود.
+
 **14-4-ت2** — لایه‌ی ۲ پاسخ نمی‌دهد.
+
+ARP incomplete یعنی لایه‌ی ۲ پاسخ نمی‌دهد (کابل، VLAN، سوییچ).
 
 **14-4-ت3** — قبل.
 
+Policy Route قبل از جدول مسیر اعمال می‌شود؛ مسیر «عجیب» اغلب از آن است.
+
 **14-4-ت4** — Policy مطابق جریان.
+
+`iprope lookup` Policy مطابق جریان را نشان می‌دهد و شماره را برای Evidence می‌دهد.
 
 **14-4-ت5** — proute، routing-table، رفع.
 
+ترافیک از ISP اشتباه می‌رود: `proute list` و `routing-table`؛ حذف/اصلاح Policy Route و آزمون traceroute.
+
 **14-4-ت6** — Route، ARP، Lookup، Session با زمان.
+
+پرونده‌ی شواهد: خروجی Route، ARP، Lookup و Session همراه زمان.
 
 **14-4-Q1** — diagnose firewall proute list.
 
@@ -2764,15 +2850,27 @@ diagnose debug reset
 
 **14-5-ت1** — 1360.
 
+MSS برای MTU 1400 برابر 1360 است (MTU−40).
+
 **14-5-ت2** — Handshake و بسته‌ی کوچک ok؛ بزرگ بی‌پاسخ.
+
+Black-hole: Handshake و بسته‌ی کوچک ok؛ بسته‌ی بزرگ بی‌پاسخ و Retransmission.
 
 **14-5-ت3** — DNS/Resolver/Policy 53.
 
+ping IP ok ولی نام no: DNS/Resolver یا Policy پورت 53؛ با `nslookup` و Capture بررسی شود.
+
 **14-5-ت4** — PMTUD برای اطلاع از MTU مسیر.
+
+ICMP Frag-needed برای PMTUD لازم است؛ بستن آن Black-hole می‌سازد.
 
 **14-5-ت5** — PMTU، MSS-clamp، ICMP، آزمون.
 
+IPsec دانلود می‌ایستد: PMTU را اندازه بگیرید، MSS-clamp کنید، ICMP مجاز، آزمون دانلود بزرگ.
+
 **14-5-ت6** — دانلود ۱۰۰MB سه بار + DNS.
+
+آزمون پایدار: دانلود ۱۰۰MB سه بار و ۲۰ پرس‌وجوی DNS بدون خطا.
 
 **14-5-Q1** — Use the DF bit and vary the packet size until it passes.
 
@@ -2783,15 +2881,27 @@ diagnose debug reset
 
 **14-6-ت1** — Implicit Deny.
 
+policyid=0 یعنی Implicit Deny؛ Policy مطابق نبود.
+
 **14-6-ت2** — پاسخی دریافت نشده.
+
+rcvdbyte=0 یعنی هیچ پاسخی دریافت نشد؛ سرور/Route برگشت/ISP.
 
 **14-6-ت3** — Log Policy خاموش است.
 
+Log نیست چون `logtraffic` در Policy خاموش است؛ برای Policy مهم Log All.
+
 **14-6-ت4** — srcintf/dstintf/policy/NAT.
+
+Packet Walk از Log: srcintf، dstintf، policy، NAT و نتیجه.
 
 **14-6-ت5** — Deny، rcvdbyte=0، Drop بی‌Log.
 
+سه پرونده: Deny، rcvdbyte=0 و Drop بی‌Log؛ هر کدام Evidence Log+Flow+Sniffer.
+
 **14-6-ت6** — Log، Flow، علت، رفع، آزمون.
+
+الگوی گزارش: Log، Flow، علت، رفع و آزمون.
 
 **14-6-Q1** — The implicit deny policy.
 
@@ -4063,24 +4173,39 @@ get router info routing-table all
 
 **15-2-ت1** — Deny با Log.
 
+Policy 99 آخرین قاعده با Deny و Log است؛ Implicit Deny Log ندارد و برای Alert/ممیزی نیاز به Deny صریح است.
+
 **15-2-ت2** — DNAT.
+
+VIP ترجمه‌ی مقصد (DNAT) از IP عمومی به IP داخلی سرور را انجام می‌دهد؛ Policy باید به آن اشاره کند.
 
 **15-2-ت3** — سطح حمله.
 
+port1 (WAN) بدون Admin access تا مدیریت از اینترنت قابل‌دسترس نباشد و سطح حمله کم شود.
+
 **15-2-ت4** — SSH به VIP.
+
+آزمون منفی: SSH به VIP (پورت 22) باید رد شود و Log با policyid=99 ثبت شود.
 
 **15-2-ت5** — Policy، Route، Session.
 
+VIP جواب نمی‌دهد: Policy dst=VIP، Route داخلی سرور، Session و DNAT و Log را بررسی کنید.
+
 **15-2-ت6** — جدول.
+
+ماتریس Edge: Transit→WAN (SNAT)، WAN→DMZ (VIP)، DMZ→Transit (فقط App) و Deny صریح.
 
 **15-2-Q1** — An explicit deny with logging.
 
+An explicit deny with logging should end the Edge rule list.
 
 ### پاسخ‌های بازنویسی عمیق درس 15-3
 
 **15-3-ت1** — NAT دوباره Log و رد‌یابی را خراب می‌کند و Edge IP واقعی را نمی‌بیند؛ ترجمه یک‌بار روی Edge کافی است.
 
 **15-3-ت2** — به Edge از طریق Transit (10.255.0.1).
+
+Default Internal به Edge از طریق Transit (10.255.0.1) است.
 
 **15-3-ت3** — سرور آلوده نباید به C2 اینترنت وصل شود؛ فقط مقاصد Update و HTTPS لازم باز می‌ماند.
 
@@ -4107,6 +4232,8 @@ get router info routing-table all
 
 **15-4-ت6** — طبق جدول؛ Alert بر policyid=61.
 
+ماتریس سه‌لایه: Internet→Web 443، Web→App 8443، App→DB 1433، Web→DB ممنوع و Alert روی Deny Web→DB (policyid=61).
+
 **15-4-Q1** — To limit lateral movement and expose the database to fewer systems.
 
 
@@ -4114,7 +4241,11 @@ get router info routing-table all
 
 **15-5-ت1** — فقط روی Edge.
 
+NAT فقط روی Edge انجام می‌شود تا Log و Session ساده بماند.
+
 **15-5-ت2** — خیر؛ ترافیک فقط از Edge به DMZ می‌رود.
+
+در جریان Internet→Web فقط Edge دخیل است؛ Internal نقشی ندارد.
 
 **15-5-ت3** — پاسخ سرور مستقیم به کاربر می‌رود یا مسیر برگشت از فایروال دور می‌زند.
 
@@ -4123,6 +4254,8 @@ get router info routing-table all
 **15-5-ت5** — بسته به Edge نمی‌رسد؛ Transit/Route/ACL.
 
 **15-5-ت6** — قالب بالا.
+
+Runbook سه‌جریانی: برای هر جریان مسیر، Policyها، NAT و دستورهای اثبات.
 
 **15-5-Q1** — Use split DNS so the name resolves to the internal address.
 
