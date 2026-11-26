@@ -1408,9 +1408,15 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-1-ت1** — بعد از Policy lookup و قبل از SNAT؛ فقط برای ترافیک Accept‌شده.
 
+Security Profile پس از Policy lookup و پیش از SNAT روی ترافیک Accept‌شده اعمال می‌شود؛ ترافیک Deny‌شده هرگز بازرسی نمی‌شود. پس بدون Policy مجاز، Profile اثری ندارد.
+
 **16-1-ت2** — File Filter، SSL Inspection، Static URL، DoS Policy، Custom IPS.
 
+زیرمجموعه‌ی Security Profile: File Filter، SSL Inspection، Static URL، DoS Policy و Custom IPS؛ هر کدام لایسنس یا شرط جدا دارد (Needs-License برای FortiGuard).
+
 **16-1-ت3** — باید به Policy وصل، لایسنس معتبر و رفتار با Log اثبات شود.
+
+برای ادعای «فعال است»: Profile به Policy وصل، لایسنس معتبر (`diagnose autoupdate versions`) و رفتار با Log (بلاک/اجازه) اثبات شود.
 
 **16-1-ت4** — برای هر ردیف: خروجی `fortiguard-service status`، `show firewall policy`، و Log آزمون؛ ردیف بدون شاهد «اجرا نشده».
 
@@ -1424,9 +1430,15 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-2-ت2** — Exempt مقصد را از بقیه‌ی بررسی‌های Web Filter معاف می‌کند.
 
+Exempt مقصد را از بقیه‌ی بررسی‌های Web Filter معاف می‌کند (مثلاً وب‌سایت بانک)؛ باید با دقت استفاده شود تا سوراخ امنیتی نسازد.
+
 **16-2-ت3** — مسیر URL داخل HTTPS رمزشده است؛ فقط با رمزگشایی (Deep) دیده می‌شود.
 
+در HTTPS مسیر URL رمزشده است و فقط با رمزگشایی (Deep Inspection) دیده می‌شود؛ بدون آن فقط SNI/دامنه قابل‌رؤیت است.
+
 **16-2-ت4** — DoH/DoT و IP مستقیم دور می‌زنند.
+
+DoH/DoT و دسترسی مستقیم با IP، Web Filter مبتنی بر DNS/نام را دور می‌زنند؛ باید DoH را کنترل و Application Control اعمال کرد.
 
 **16-2-ت5** — Profile وصل نیست؛ Policy دیگر بالاتر؛ HTTPS و نیاز مسیر؛ QUIC؛ DoH؛ Exempt. شاهد: Debug Flow، Log، Capture.
 
@@ -1439,11 +1451,17 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-3-ت1** — فایل تست استاندارد بی‌خطر که ضدویروس‌ها آن را ویروس تست می‌شناسند.
 
+فایل EICAR تست استاندارد بی‌خطر است که همه‌ی ضدویروس‌ها آن را ویروس شناسایی می‌کنند؛ برای آزمون AV بدون خطر.
+
 **16-3-ت2** — Zero-day، آرشیو رمزدار، HTTPS بدون Deep و فایل بزرگ‌تر از سقف.
+
+AV نمی‌بیند: Zero-day، آرشیو رمزدار، HTTPS بدون Deep Inspection و فایل بزرگ‌تر از سقف اسکن.
 
 **16-3-ت3** — Flow در جریان و سبک؛ Proxy فایل را کامل بازسازی می‌کند و دقیق‌تر ولی سنگین‌تر است.
 
 **16-3-ت4** — فایل بزرگ‌تر از سقف اسکن نمی‌شود و ممکن است عبور کند.
+
+فایل بزرگ‌تر از سقف اسکن (oversize) اسکن نمی‌شود و بسته به تنظیم ممکن است عبور کند؛ سقف را با ریسک تنظیم و Log کنید.
 
 **16-3-ت5** — File Filter برای آرشیو رمزدار، Sandbox (لایسنس)، محدودسازی منبع، آموزش کاربر و Monitor.
 
@@ -1455,6 +1473,8 @@ diagnose debug flow filter addr 192.168.10.5
 **16-4-ت1** — IPS بر اساس Signature حمله‌ی شناخته‌شده؛ DoS Policy بر اساس حجم/نرخ غیرعادی.
 
 **16-4-ت2** — بلاک اکسپلویت آسیب‌پذیری تا Patch سرور با Signature IPS.
+
+Virtual Patching: Signature IPS اکسپلویت آسیب‌پذیری را تا زمان Patch واقعی سرور مسدود می‌کند.
 
 **16-4-ت3** — از Baseline حجم عادی؛ آستانه کمی بالاتر از پیک عادی و آزمون با ترافیک واقعی.
 
@@ -1469,9 +1489,15 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-5-ت1** — Trust از قبل برقرار است و نصب دستی روی کلاینت‌ها کم می‌شود.
 
+CA سازمانی در دامنه توزیع می‌شود و Trust از قبل برقرار است؛ نصب دستی روی کلاینت‌ها کم می‌شود.
+
 **16-5-ت2** — Firefox Trust Store جدا دارد.
 
+Firefox Trust Store جدا از ویندوز دارد؛ CA باید جدا نصب یا از طریق Policy توزیع شود.
+
 **16-5-ت3** — به کلاینت گواهی ناموثق می‌دهد تا گواهی نامعتبر مقصد دیده شود.
+
+گواهی ناموثق به کلاینت داده می‌شود تا گواهی نامعتبر مقصد دیده شود و کاربر هشدار بگیرد؛ بدون آن مقصد مشکوک مخفی می‌ماند.
 
 **16-5-ت4** — `openssl s_client -connect host:443 -servername host` و مقایسه‌ی Issuer با CA فایروال.
 
@@ -1484,7 +1510,11 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-6-ت1** — تا اثر هر Profile جداگانه دیده شود.
 
+Profile را یکی‌یکی فعال کنید تا اثر هر کدام (CPU، Latency، Block) جدا دیده شود و علت مشکل معلوم باشد.
+
 **16-6-ت2** — بازرسی محتوایی در CPU/CP انجام می‌شود و Session کامل Offload نمی‌شود.
+
+بازرسی محتوایی در CPU/CP انجام می‌شود و Session کامل Offload نمی‌شود؛ بنابراین Throughput کم می‌شود.
 
 **16-6-ت3** — ستون‌ها: Profile، CPU، Throughput، Latency، FP؛ ردیف Baseline و هر Profile و ترکیب؛ شرایط یکسان.
 
@@ -1500,6 +1530,8 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-0-ت2** — نام سرور در ClientHello (SNI) که معمولاً رمزنشده است و گواهی.
 
+در TLS رمزنشده‌ی ClientHello نام سرور (SNI) و بعد گواهی دیده می‌شود؛ پایه‌ی Web Filter بدون رمزگشایی.
+
 **16-0-ت3** — فایروال برای کلاینت گواهی جایگزین صادر می‌کند؛ مرورگر فقط اگر CA آن را بپذیرد خطا نمی‌دهد.
 
 **16-0-ت4** — برنامه گواهی مشخصی را انتظار دارد؛ با Deep Inspection خطا می‌دهد؛ راه‌حل Exemption.
@@ -1510,6 +1542,8 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-0-م1** — Detection فقط Log می‌کند؛ Prevention ترافیک را مسدود می‌کند.
 
+Detection فقط Log می‌کند؛ Prevention ترافیک را مسدود می‌کند. شروع با Detection برای سنجش False Positive، بعد Prevention.
+
 **16-0-Q1** — Certificate inspection sees the certificate and SNI; deep inspection additionally sees the decrypted payload.
 
 
@@ -1517,11 +1551,19 @@ diagnose debug flow filter addr 192.168.10.5
 
 **16-7-ت1** — FP: بی‌خطر به‌اشتباه تهدید؛ FN: تهدید واقعی که دیده نشد.
 
+False Positive: ترافیک بی‌خطر به‌اشتباه تهدید؛ False Negative: تهدید واقعی که دیده نشد. هر دو هزینه دارند؛ تنظیم باید تعادل ایجاد کند.
+
 **16-7-ت2** — دامنه/SNI و اطلاعات گواهی.
+
+فقط دامنه/SNI و اطلاعات گواهی در دسترس است مگر Deep Inspection فعال باشد.
 
 **16-7-ت3** — DoH درخواست DNS را داخل HTTPS رمز می‌کند و فایروال Query را نمی‌بیند.
 
+DoH درخواست DNS را داخل HTTPS رمز می‌کند و فایروال Query را نمی‌بیند؛ لازم است DoH کنترل شود.
+
 **16-7-ت4** — IPS به بازرسی محتوا در CPU/CP نیاز دارد.
+
+IPS به بازرسی محتوا در CPU/CP نیاز دارد و Offload کامل Session ممکن نیست.
 
 **16-7-ت5** — فاز ۱ Monitor (معیار: جمع FP)، فاز ۲ تنظیم (معیار: FP زیر آستانه)، فاز ۳ Block سیگنچرهای با اطمینان بالا، فاز ۴ بازبینی ماهانه.
 
@@ -2747,13 +2789,21 @@ diagnose debug reset
 
 **17-1-ت1** — AD از SRV Record برای یافتن سرویس‌ها استفاده می‌کند.
 
+AD برای یافتن سرویس‌های دامنه (KDC، LDAP) از رکورد SRV در DNS استفاده می‌کند؛ DNS خراب یعنی دامنه خراب.
+
 **17-1-ت2** — حداقل دسترسی و ممیزی‌پذیری.
 
+حساب سرویس باید Least Privilege و ممیزی‌پذیر باشد تا افشای آن آسیب را محدود کند.
+
 **17-1-ت3** — DNS فایروال، `execute nslookup`، Route/Policy Local-out، Sniffer 53.
+
+DNS کار نمی‌کند: DNS فایروال، `execute nslookup`، Route/Policy Local-out و Sniffer روی 53.
 
 **17-1-ت4** — Corp/Users/Groups/ServiceAccounts؛ گروه‌های Finance/IT/Guest؛ Policy بر پایه‌ی گروه.
 
 **17-1-ت5** — Snapshot قبل از Forest، بعد از پایه، قبل از هر تغییر؛ آزمون Restore.
+
+Snapshot: قبل از ساخت Forest، پس از پایه و پیش از هر تغییر؛ و آزمون Restore برای اثبات.
 
 **17-1-Q1** — Because AD clients locate domain services through DNS SRV records.
 
@@ -2762,9 +2812,15 @@ diagnose debug reset
 
 **17-2-ت1** — ویژگی نام ورود در Directory (مثل sAMAccountName).
 
+Common Name Identifier (cnid) ویژگی نام ورود در Directory است (مثل sAMAccountName) که FortiGate با آن کاربر را می‌جوید.
+
 **17-2-ت2** — تا رمزها قابل شنود نباشند.
 
+LDAPS رمز و پرس‌وجو را رمز می‌کند؛ LDAP ساده می‌تواند رمزها را قابل شنود کند.
+
 **17-2-ت3** — dn/OU اشتباه یا cnid ناسازگار.
+
+user not found: dn/OU اشتباه یا cnid ناسازگار؛ با `diagnose test authserver ldap` بررسی کنید.
 
 **17-2-ت4** — DN گروه، Nested، نگاشت IP→User، ترتیب Policy؛ آزمون‌ها: authserver، AD، Debug Flow.
 
@@ -2777,11 +2833,19 @@ diagnose debug reset
 
 **17-3-ت1** — UDP 1812 و 1813.
 
+RADIUS Authentication روی UDP 1812 و Accounting روی 1813 (برخی پیاده‌سازی قدیمی 1645/1646).
+
 **17-3-ت2** — رمز مشترک Client/Server برای محافظت/اعتبارسنجی.
+
+Shared Secret رمز مشترک FortiGate و RADIUS است که بسته‌ها را اعتبارسنجی/محافظت می‌کند؛ عدم‌تطابق باعث Reject می‌شود.
 
 **17-3-ت3** — Policy NPS/گروه مجاز نیست.
 
+Access-Reject با رمز درست: Policy NPS/گروه مجاز نیست؛ شاهد در Event Log سرور NPS.
+
 **17-3-ت4** — Timeout کوتاه، Challenge پشتیبانی‌نشده، Secret، NPS Policy.
+
+Timeout کوتاه، Challenge پشتیبانی‌نشده، Secret و NPS Policy از علل ناموفق‌بودن MFA هستند.
 
 **17-3-ت5** — Admin remote auth=RADIUS، Challenge OTP، گروه Admin، Accounting، Fallback local admin.
 
@@ -2792,13 +2856,23 @@ diagnose debug reset
 
 **17-4-ت1** — Kerberos 4768/4769.
 
+FSSO Polling فقط رویدادهای Kerberos 4768/4769 را می‌خواند؛ ورود NTLM دیده نمی‌شود.
+
 **17-4-ت2** — Group Filter، NTLM، ساعت/Event Log.
+
+FSSO کاربر را نمی‌بیند: Group Filter، NTLM، ساعت و دسترسی به Event Log را بررسی کنید.
 
 **17-4-ت3** — چند کاربر با یک IP؛ نگاشت یک‌به‌یک ممکن نیست؛ TS Agent.
 
+چند کاربر با یک IP (Terminal Server) نگاشت یک‌به‌یک را ممکن نمی‌کند؛ از TS Agent استفاده کنید.
+
 **17-4-ت4** — Collector/DC Agent؛ Polling محدودیت‌های NTLM و بار دارد.
 
+Collector/DC Agent مدل جایگزین Polling است؛ Polling محدودیت NTLM و بار دارد.
+
 **17-4-ت5** — Login/Logout، تغییر IP، گروه جدید، NTLM، قطع Collector؛ هر کدام Evidence.
+
+آزمون FSSO: Login/Logout، تغییر IP، گروه جدید، NTLM و قطع Collector؛ برای هرکدام Evidence.
 
 **17-4-Q1** — Polling reads only Kerberos events, so NTLM logons are not captured.
 
@@ -2807,13 +2881,23 @@ diagnose debug reset
 
 **17-5-ت1** — صفحه‌ی ورود قبل از دسترسی.
 
+Captive Portal قبل از دسترسی صفحه‌ی ورود را نشان می‌دهد؛ برای Guest و BYOD.
+
 **17-5-ت2** — Redirect HTTPS و جلوگیری از عادت کاربر به هشدار.
+
+Redirect باید HTTPS باشد تا کاربر به هشدار گواهی عادت نکند و رمز در متن ساده نرود.
 
 **17-5-ت3** — Zone جدا، Policy حداقلی، حساب موقت، Log و Timeout.
 
+Guest Wi-Fi: Zone جدا، Policy حداقلی (فقط اینترنت)، حساب موقت، Log و Timeout.
+
 **17-5-ت4** — گواهی، Redirect، DNS، Policy.
 
+Captive Portal کار نمی‌کند: گواهی، Redirect، DNS و Policy را بررسی کنید.
+
 **17-5-ت5** — nmap از Guest به Users/Servers باید Filtered باشد.
+
+nmap از Guest به Users/Servers باید Filtered باشد؛ آزمون منفی جداسازی.
 
 **17-5-Q1** — Because guests are untrusted devices and could attack or scan internal systems.
 
@@ -2822,11 +2906,19 @@ diagnose debug reset
 
 **17-6-ت1** — اعتبارنامه‌ی نامعتبر: DN یا رمز حساب/کاربر اشتباه.
 
+اعتبارنامه‌ی نامعتبر: DN یا رمز حساب/کاربر اشتباه؛ Bind را تست کنید.
+
 **17-6-ت2** — بار CPU، حجم Log و افشای اطلاعات حساس.
+
+Debug بار CPU، حجم Log و افشای اطلاعات حساس دارد؛ محدود و موقتی.
 
 **17-6-ت3** — NTLM؛ Polling فقط Kerberos را می‌بیند؛ یا Group Filter.
 
+FSSO کاربر را نمی‌بیند: NTLM (Polling فقط Kerberos)، یا Group Filter.
+
 **17-6-ت4** — Policy NPS/گروه، Secret، Constraint روش احراز؛ شاهد: NPS Event.
+
+RADIUS Reject: Policy NPS/گروه، Secret و Constraint روش احراز؛ شاهد: NPS Event.
 
 **17-6-ت5** — علامت: Login شکست؛ شواهد: bind error؛ علت: DN حساب سرویس؛ رفع: DN دقیق؛ پیشگیری: ثبت DN و تست پس از تغییر OU.
 
@@ -2838,7 +2930,11 @@ diagnose debug reset
 
 **17-0-ت1** — Authentication (کیستی)، Authorization (چه می‌توانی)، Accounting (چه کردی).
 
+Authentication کیستی، Authorization چه می‌توانی و Accounting چه کردی؛ سه رکن AAA.
+
 **17-0-ت2** — LDAP 389؛ LDAPS 636.
+
+LDAP روی TCP 389 و LDAPS روی 636.
 
 **17-0-ت3** — Kerberos به Ticket با Timestamp وابسته است؛ اختلاف زمان زیاد باعث رد Ticket می‌شود.
 
@@ -2858,15 +2954,27 @@ diagnose debug reset
 
 **17-7-ت1** — اعتبار Bind نامعتبر.
 
+کد 49 LDAP یعنی اعتبار Bind نامعتبر؛ حساب سرویس/رمز را بررسی کنید.
+
 **17-7-ت2** — برای جدا کردن مشکل سرور از Policy.
+
+`diagnose test authserver` مشکل سرور را از مشکل Policy جدا می‌کند.
 
 **17-7-ت3** — گروه در Policy/عضویت.
 
+لاگین موفق ولی دسترسی نه: گروه در Policy یا عضویت گروه.
+
 **17-7-ت4** — Shared Secret/کاربر.
+
+RADIUS Reject: Shared Secret یا کاربر.
 
 **17-7-ت5** — رمز Bind؛ به‌روزرسانی؛ CHG.
 
+پس از تغییر رمز Bind همه رد می‌شوند: رمز را به‌روز کنید و CHG ثبت.
+
 **17-7-ت6** — ۶ گام.
+
+چک‌لیست شش‌گامی: Reachability، Bind، کاربر، رمز، گروه، Policy.
 
 **17-7-Q1** — Invalid credentials.
 
@@ -4196,13 +4304,21 @@ diagnose debug reset
 
 **18-1-ت1** — مدرن‌تر؛ پیام کمتر؛ پیش‌فرض 7.0 v1 است.
 
+IKEv2 مدرن‌تر است، پیام کمتر و ویژگی بهتر دارد؛ پیش‌فرض FortiOS 7.0 هنوز v1 است و باید صریح انتخاب شود.
+
 **18-1-ت2** — تا خطای شبکه با خطای IPsec اشتباه نشود.
 
+Reachability را جدا تست کنید تا خطای شبکه با خطای IPsec اشتباه نشود.
+
 **18-1-ت3** — NAT به Subnet یکتا یا Re-IP؛ ثبت در IP Plan.
+
+Overlap آدرس: NAT به Subnet یکتا یا Re-IP و ثبت در IP Plan.
 
 **18-1-ت4** — جدول ۱۸-۱ کامل شده با مقادیر و دلایل.
 
 **18-1-ت5** — IKE/Child SA، ping، TCP، MTU، Failover.
+
+آزمون: IKE/Child SA، ping، TCP، MTU و Failover.
 
 **18-1-Q1** — To ensure both peers use mirrored settings and to avoid trial and error.
 
@@ -4210,9 +4326,13 @@ diagnose debug reset
 
 **18-2-ت1** — Route به Tunnel، Policy دوطرفه و Selector سازگار.
 
+تونل Route-based نیاز به Route به Tunnel، Policy دوطرفه و Selector سازگار دارد.
+
 **18-2-ت2** — چون ترافیک در هر دو جهت باید اجازه داشته باشد و Stateful فقط جهت شروع را به Session می‌گذارد.
 
 **18-2-ت3** — IKE SA Established؛ Child SA با شمارنده‌ی Encrypt/Decrypt؛ ping/Log داده.
+
+Verify: IKE SA Established، Child SA با شمارنده‌ی Encrypt/Decrypt و ping/Log داده.
 
 **18-2-ت4** — Policy سمت مقابل، Route برگشت، NAT-T/UDP 4500، Selector. شاهد: tunnel list، Sniffer، Debug Flow.
 
@@ -4228,13 +4348,23 @@ diagnose debug reset
 
 **18-3-ت1** — الگوریتم و DH را توافق می‌کند.
 
+IKE_SA_INIT الگوریتم و DH را توافق می‌کند.
+
 **18-3-ت2** — Selector نامطابق.
+
+TS_UNACCEPTABLE یعنی Selector نامطابق.
 
 **18-3-ت3** — PSK/هویت.
 
+AUTHENTICATION_FAILED یعنی PSK یا هویت متفاوت.
+
 **18-3-ت4** — UDP 500/4500.
 
+Timeout: UDP 500/4500 را بررسی کنید.
+
 **18-3-ت5** — Sniffer و ACL.
+
+Timeout را با Sniffer و ACL دو سر رفع کنید.
 
 **18-3-ت6** — طبق متن.
 
@@ -4244,15 +4374,23 @@ diagnose debug reset
 
 **18-4-ت1** — MSS ≈ MTU − 40 (هدر IP و TCP).
 
+MSS ≈ MTU − 40 (هدر IP و TCP)؛ در تونل MTU مؤثر کمتر است.
+
 **18-4-ت2** — بسته‌ی بزرگ DF Drop می‌شود و ICMP Frag-Needed بلاک است؛ فرستنده اندازه را کم نمی‌کند.
 
 **18-4-ت3** — حدود 58–66 بایت (IP 20، UDP 8، ESP 8، IV 8، trailer/pad، ICV 16).
 
+سربار ESP حدود ۵۸ تا ۶۶ بایت (IP 20، UDP 8، ESP 8، IV 8، trailer/pad، ICV 16).
+
 **18-4-ت4** — 1372+28 = 1400.
+
+MTU مسیر = اندازه‌ی ping موفق + 28؛ 1372 + 28 = 1400.
 
 **18-4-ت5** — MSS مخصوص TCP است؛ UDP باید با MTU کم/اندازه‌ی برنامه/Fragmentation حل شود.
 
 **18-4-ت6** — MTU Tunnel 1400، MSS 1360، ICMP 3/4 باز، آزمون پس از هر تغییر.
+
+MTU تونل 1400، MSS 1360، ICMP 3/4 باز و آزمون پس از هر تغییر.
 
 **18-4-Q1** — Small packets fit through the tunnel, but large DF packets are dropped without ICMP feedback.
 
@@ -4261,13 +4399,23 @@ diagnose debug reset
 
 **18-5-ت1** — show crypto ipsec sa.
 
+`show crypto ipsec sa` در Cisco برای Child SA و شمارنده‌ها.
+
 **18-5-ت2** — Route-based؛ Routing تعیین می‌کند ترافیک وارد Tunnel شود.
+
+Route-based: Routing تعیین می‌کند ترافیک وارد Tunnel شود؛ برخلاف Policy-based.
 
 **18-5-ت3** — Phase 2/Rekey شکست؛ INVALID_KE_PAYLOAD/NO_PROPOSAL.
 
+Phase 2/Rekey شکست: INVALID_KE_PAYLOAD یا NO_PROPOSAL (PFS/DH).
+
 **18-5-ت4** — Rekey رفتار متفاوت دارد و ممکن است قطع/Flap شود.
 
+Rekey در سازنده‌ها رفتار متفاوت دارد و ممکن است Flap بدهد.
+
 **18-5-ت5** — Lifetime/PFS؛ Log دو سر؛ یکسان‌سازی؛ آزمون.
+
+Lifetime/PFS را در دو سر یکسان کنید و Log دو سر را مقایسه کنید.
 
 **18-5-ت6** — جدول پارامتر/نتیجه/نسخه.
 
@@ -4287,6 +4435,8 @@ diagnose debug reset
 
 **18-6-ت4** — تا CPU و حجم Log کنترل شود و فقط همان تونل دیده شود.
 
+Debug محدود به peer تا CPU و حجم Log کنترل شود.
+
 **18-6-ت5** — MSS = 1400 − 40 = 1360؛ با حاشیه 1350 تنظیم و با دانلود بزرگ آزمون می‌شود.
 
 **18-6-ت6** — فهرست خروجی‌ها: ike gateway، tunnel list، session، ping/TCP، Debug محدود، تصویر، زمان و نتیجه.
@@ -4297,11 +4447,17 @@ diagnose debug reset
 
 **18-0-ت1** — Phase 1 کانال کنترل امن (IKE SA)؛ Phase 2 SA داده (Child SA) و Selector.
 
+Phase 1 کانال کنترل امن (IKE SA) و Phase 2 SA داده (Child SA) با Selector.
+
 **18-0-ت2** — با هر Rekey کلید تازه با DH جدید می‌سازد تا افشای کلید قدیمی ترافیک گذشته را باز نکند.
 
 **18-0-ت3** — Selector باز + Routing + Policy؛ Routing پویا و مقیاس‌پذیری راحت.
 
+Route-based: Selector باز + Routing + Policy؛ مقیاس‌پذیر و مناسب Routing پویا.
+
 **18-0-ت4** — عبور از NAT با کپسوله‌کردن ESP در UDP؛ پورت UDP 4500.
+
+NAT-T ESP را در UDP 4500 کپسوله می‌کند تا از NAT عبور کند.
 
 **18-0-ت5** — ۱) Policy سمت مقابل؛ ۲) Route برگشت؛ ۳) NAT-T/UDP 4500؛ ۴) Selector. شاهد: tunnel list، Sniffer، Debug Flow سمت مقابل.
 
@@ -4310,6 +4466,8 @@ diagnose debug reset
 **18-0-ت7** — Selectorها آینه‌ی هم باشند؛ در Route-based از 0.0.0.0/0 استفاده یا Subnetهای دقیق هم‌سان؛ بررسی Debug IKE.
 
 **18-0-م1** — پیام دوره‌ای برای تشخیص مرگ Peer و پاک‌کردن SA.
+
+DPD پیام دوره‌ای برای تشخیص مرگ Peer و پاک‌کردن SA است.
 
 **18-0-Q1** — Because it gives forward secrecy: compromise of a long-term key does not expose past sessions.
 

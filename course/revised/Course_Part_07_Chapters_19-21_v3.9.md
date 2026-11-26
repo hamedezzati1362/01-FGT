@@ -1380,9 +1380,15 @@ diagnose debug flow trace start 10
 
 **19-4-ت1** — کاهش Latency (حذف یک Hop تا Hub) و کاهش بار پهنای باند Hub.
 
+Local Breakout تأخیر را کم می‌کند (حذف Hop تا Hub) و بار پهنای باند Hub را کاهش می‌دهد.
+
 **19-4-ت2** — Longest Prefix Match: Route 10.0.0.0/8 از Tunnel دقیق‌تر از 0.0.0.0/0 است.
 
+Longest Prefix Match: Route 10.0.0.0/8 از Tunnel دقیق‌تر از 0.0.0.0/0 است؛ پس ترافیک داخلی از Tunnel و بقیه محلی.
+
 **19-4-ت3** — Backhaul = 55 ms؛ Breakout ≈ 22 ms؛ کاهش ≈ 33 ms (60٪).
+
+Backhaul 55 ms در برابر Breakout 22 ms: کاهش ≈ 33 ms (حدود ۶۰٪).
 
 **19-4-ت4** — Distance کمتر برنده است؛ iBGP پیش‌فرض 200 و Static 10؛ پس Static محلی برنده است. اگر Distance را عوض کنید یا Default محلی نباشد، Backhaul می‌شود؛ کنترل با Distance/Priority.
 
@@ -1414,7 +1420,11 @@ diagnose debug flow trace start 10
 
 **19-6-ت1** — برای کاهش Route و جلوگیری از نشت ترافیک آدرس ناموجود به اینترنت.
 
+Summary Route تعداد Route را کم و نشت ترافیک آدرس ناموجود به اینترنت را کم می‌کند.
+
 **19-6-ت2** — شناسه، نیازمندی، آزمون، دستور/Capture، نتیجه، فایل/زمان.
+
+Evidence Index: شناسه، نیازمندی، آزمون، دستور/Capture، نتیجه، فایل و زمان.
 
 **19-6-ت3** — تقریباً 0.9 s Detect + ≈ 5 s Update + Install ≈ ۶ ثانیه؛ هدف < ۱۰ ثانیه برآورده می‌شود.
 
@@ -1430,7 +1440,11 @@ diagnose debug flow trace start 10
 
 **19-0-ت1** — 20×19/2 = 190 Tunnel.
 
+Full-mesh برای ۲۰ سایت ۱۹۰ Tunnel دارد (۲۰×۱۹/۲)؛ ADVPN/Hub-Spoke این را کم می‌کند.
+
 **19-0-ت2** — Overlay شبکه‌ی Tunnel روی ISP؛ Underlay خود ISP و لینک‌های فیزیکی.
+
+Overlay شبکه‌ی Tunnel روی ISP و Underlay خود ISP و لینک‌های فیزیکی است.
 
 **19-0-ت3** — مقیاس‌پذیری، Failover خودکار و کنترل Policy؛ اضافه‌کردن شعبه بدون تغییر دستی همه‌ی مسیرها.
 
@@ -2404,11 +2418,17 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 **20-2-ت1** — Source Interface Policyهای ترافیک کلاینت‌های SSL VPN است.
 
+Source Interface تعیین می‌کند SSL VPN روی کدام Interface گوش دهد (معمولاً WAN).
+
 **20-2-ت2** — CVEهای شناخته‌شده؛ سرویس اینترنتی؛ ریسک نفوذ.
+
+SSL VPN سرویس اینترنتی با CVEهای شناخته‌شده است؛ ریسک نفوذ دارد؛ پچ فوری و محدودکردن.
 
 **20-2-ت3** — Policy ssl.root→LAN، Route/Policy بازگشت، Split networks؛ Debug Flow، `ssl monitor`، Sniffer.
 
 **20-2-ت4** — Brute-force/Credential stuffing؛ با محدودیت تلاش و زمان Block.
+
+Brute-force/Credential stuffing: محدودیت تلاش و Block زمان‌دار و MFA.
 
 **20-2-ت5** — Patch/غیرفعال، محدودسازی Source، بررسی Log retrospective، چرخش اعتبارنامه‌ها، Alert و مهاجرت.
 
@@ -2423,13 +2443,21 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 **20-3-ت2** — IP، DNS و (در صورت تنظیم) Split networks.
 
+Mode Config IP، DNS و (در صورت تنظیم) Split networks را به کلاینت می‌دهد.
+
 **20-3-ت3** — همه یک رمز دارند؛ افشا = دسترسی همه؛ بدون هویت فردی و MFA.
 
+PSK گروهی: همه یک رمز دارند؛ افشا یعنی دسترسی همه، بدون هویت فردی و MFA.
+
 **20-3-ت4** — DNS در Mode Config، Suffix، nslookup با DNS داخلی، Sniffer 53.
+
+DNS در Mode Config، Suffix، `nslookup` با DNS داخلی و Sniffer 53 را بررسی کنید.
 
 **20-3-ت5** — ≈ ۸۰۰ IKE SA + ۸۰۰ Child SA؛ Lifetime را jitter دهید تا Rekey همزمان نشود؛ با Datasheet مدل مقایسه.
 
 **20-3-ت6** — IKEv2+EAP-RADIUS+OTP؛ Finance/IT Policy؛ DNS/Split؛ دو NPS؛ Log و Alert.
+
+طرح: IKEv2+EAP-RADIUS+OTP، Policy Finance/IT، DNS/Split، دو NPS، Log و Alert.
 
 **20-3-Q1** — Because each user is authenticated individually and a leaked shared key would expose all users.
 
@@ -2438,13 +2466,19 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 **20-4-ت1** — قفل موقت حساب/IP پس از تعداد مشخص تلاش ناموفق.
 
+Lockout قفل موقت حساب/IP پس از تعداد مشخص تلاش ناموفق است.
+
 **20-4-ت2** — نشانه‌ی احتمالی Brute-force موفق؛ مهاجم اکنون دسترسی دارد.
+
+ورود موفق پس از چند شکست یعنی Brute-force احتمالاً موفق شده؛ مهاجم اکنون دسترسی دارد.
 
 **20-4-ت3** — از Baseline رفتار عادی (تعداد ناموفق‌ها به‌ازای کاربر/IP) و ضریب ایمنی؛ آزمون FP.
 
 **20-4-ت4** — آیا از آن IP ورود موفقی بوده؛ کاربران/Sessionها؛ دسترسی‌ها؛ Log حرکت جانبی.
 
 **20-4-ت5** — Triage، Contain، Scope، Eradicate، Recover، PIR با Owner و زمان.
+
+پاسخ: Triage، Contain، Scope، Eradicate، Recover و PIR با Owner و زمان.
 
 **20-4-ت6** — ماهانه کاربران غیرفعال/گروه/Exception؛ فصلی آزمون MFA/Lockout و Patch؛ ثبت.
 
@@ -2458,7 +2492,11 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 **20-5-ت1** — رمز لو رفته بدون عامل دوم دسترسی نمی‌دهد.
 
+رمز لورفته بدون عامل دوم (MFA) دسترسی نمی‌دهد.
+
 **20-5-ت2** — فقط ترافیک شبکه‌ی سازمان از Tunnel می‌رود و بقیه مستقیم.
+
+Split Tunnel: فقط ترافیک شبکه‌ی سازمان از Tunnel می‌رود و بقیه مستقیم.
 
 **20-5-ت3** — Policy Lookup، گروه، dstaddr، Route/Tunnel IP.
 
@@ -2474,13 +2512,19 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 **20-7-ت1** — SSL VPN Tunnel mode حذف شد و با IPsec جایگزین شد.
 
+SSL VPN Tunnel mode حذف شد و با IPsec جایگزین شد (7.6.3).
+
 **20-7-ت2** — نام جدید SSL VPN Web mode (دسترسی مرورگری بدون کلاینت).
+
+نام جدید SSL VPN Web mode: دسترسی مرورگری بدون کلاینت.
 
 **20-7-ت3** — سرویس وب عمومی ندارد؛ سطح حمله‌ی IKE محدودتر است (و CVEهای SSL VPN متعدد بوده).
 
 **20-7-ت4** — ۱) فهرست کاربران؛ ۲) IPsec آزمایشی؛ ۳) Split-tunnel/DNS؛ ۴) MFA؛ ۵) آموزش؛ ۶) Backup؛ ۷) خاموش‌کردن SSL VPN؛ ۸) آزمون منفی. ریسک: قطعی کاربران، ناسازگاری کلاینت.
 
 **20-7-ت5** — کارمندان: IPsec+MFA؛ پیمانکار: Agentless/ZTNA به یک اپ؛ مهمان: بدون VPN.
+
+کارمندان: IPsec+MFA؛ پیمانکار: Agentless/ZTNA به یک اپ؛ مهمان: بدون VPN.
 
 **20-7-Q1** — Because the support status of a feature determines how long the design stays supported and secure.
 
@@ -3537,15 +3581,27 @@ get router info routing-table all
 
 **21-1-ت1** — Route ترجیحی.
 
+Static با Priority/Distance بهتر Route ترجیحی است.
+
 **21-1-ت2** — با Probe کشف قطع ISP و حذف Route.
+
+Probe (Link-monitor/Health-check) قطع ISP را کشف و Route را حذف می‌کند.
 
 **21-1-ت3** — تا خرابی Server با خرابی لینک اشتباه نشود.
 
+چند Server پایش شود تا خرابی یک Server با خرابی لینک اشتباه نشود.
+
 **21-1-ت4** — ≈ 5 ثانیه (به‌علاوه‌ی Convergence).
+
+زمان تشخیص تقریباً failtime × interval ≈ ۵ ثانیه به‌علاوه‌ی Convergence.
 
 **21-1-ت5** — خیر؛ SLA/Loss Threshold در SD-WAN.
 
+خیر؛ در SD-WAN SLA/Loss Threshold برای کیفیت وجود دارد.
+
 **21-1-ت6** — SLA، چند لینک، Overlay، گزارش کیفیت.
+
+طرح: SLA، چند لینک، Overlay و گزارش کیفیت.
 
 **21-1-Q1** — A degraded link with high loss or latency that still answers probes.
 
@@ -3554,6 +3610,8 @@ get router info routing-table all
 **21-2-ت1** — چون Interface عضو SD-WAN نباید مستقیم در Policy/Route/Object مرجع داشته باشد.
 
 **21-2-ت2** — روی Zone SD-WAN.
+
+Policy روی Zone SD-WAN نوشته می‌شود، نه Interface فیزیکی.
 
 **21-2-ت3** — Server/Protocol Probe، ICMP توسط ISP بلاک؛ Route/Source Probe؛ شاهد Sniffer؛ رفع: dns/http Probe.
 
@@ -3566,9 +3624,15 @@ get router info routing-table all
 
 **21-3-ت1** — بالا به پایین؛ اولین Rule مطابق.
 
+SD-WAN Rule از بالا به پایین و اولین Rule مطابق اعمال می‌شود.
+
 **21-3-ت2** — sla: اولین عضو دارای SLA؛ load-balance: توزیع بین همه‌ی اعضای دارای SLA.
 
+Mode sla اولین عضو دارای SLA؛ load-balance توزیع بین همه‌ی اعضای دارای SLA.
+
 **21-3-ت3** — Rule عمومی بالاتر Match می‌شود؛ ترتیب را اصلاح کنید.
+
+Rule عمومی بالاتر Match می‌شود؛ ترتیب را اصلاح کنید.
 
 **21-3-ت4** — VoIP: sla با Latency<80/Jitter<20؛ ERP: sla با ترجیح لینک پایدار؛ Backup: load-balance.
 
@@ -3579,15 +3643,27 @@ get router info routing-table all
 
 **21-4-ت1** — Session با SNAT/Interface قدیمی ادامه نمی‌یابد.
 
+با Failover، Session با SNAT/Interface قدیمی ادامه نمی‌یابد؛ باید Session پاک یا Pickup شود.
+
 **21-4-ت2** — `filter dev/src/dst` سپس `clear`.
+
+`diagnose sys session filter dev/src/dst` سپس `clear` برای پاک‌سازی انتخابی.
 
 **21-4-ت3** — تا بازگشت زودهنگام به لینک ناپایدار رخ ندهد.
 
+recoverytime/Hold برای جلوگیری از بازگشت زودهنگام به لینک ناپایدار.
+
 **21-4-ت4** — Rule روی ISP ثابت، IP Pool/BGP، هماهنگی Partner.
+
+Rule روی ISP ثابت، IP Pool/BGP و هماهنگی Partner برای IP مبدأ.
 
 **21-4-ت5** — قطع/Session/بازگشت/Partner با اندازه‌گیری.
 
+Evidence Failover: قطع، Session، بازگشت و Partner با اندازه‌گیری.
+
 **21-4-ت6** — Dual-ISP SD-WAN HA با Rule/SLA و Clear.
+
+طرح Dual-ISP SD-WAN HA با Rule/SLA و Clear.
 
 **21-4-Q1** — The outgoing source IP changes to the other ISP address.
 
@@ -3615,9 +3691,19 @@ get router info routing-table all
 
 **21-7-ت1** — سنجش کیفیت لینک (Latency/Jitter/Loss) و تشخیص Dead.
 
+Performance SLA سنجش کیفیت لینک (Latency/Jitter/Loss) و تشخیص Dead است.
+
 **21-7-ت2** — روی Zone SD-WAN.
 
+Rule SD-WAN روی ترافیک Zone SD-WAN اعمال می‌شود.
+
 **21-7-ت3** — Detect = 500 ms × 4 = 2 s؛ Recovery = 500 ms × 20 = 10 s.
+
+Detect = 500 ms × 4 = 2 s؛ Recovery = 500 ms × 20 = 10 s.
+
+``` text
+Detect = 500 ms x 4 = 2 s ; Recovery = 500 ms x 20 = 10 s
+```
 
 **21-7-ت4** — Lowest Cost (SLA): اولین عضو دارای SLA؛ Maximize Bandwidth: توزیع بین همه‌ی اعضای دارای SLA.
 
