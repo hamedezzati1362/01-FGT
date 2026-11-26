@@ -45,6 +45,8 @@
 
 > **نسخه‌ی اصلاح‌شده (v3.1، دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_04_Chapters_10-12.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۱۰-۸ و ۱۰-۹ (فصل ۱۰). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
 
+> **نسخه‌ی اصلاح‌شده (v3.2):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۰-۸، ۱۰-۹، ۱۱-۰، ۱۱-۷، ۱۲-۰، ۱۲-۸، ۱۲-۹ (دسته‌های B و A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+
 # فصل 10 — Redistribution، ECMP، PBR، VRF-lite و Asymmetric Routing
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۹ (BGP)، فصل ۶ (OSPF).
@@ -1494,6 +1496,220 @@ Session sync/HA یا مسیریابی تثبیت‌شده.
 
 <a id="l-11-1"></a>
 
+## درس 11-0 — مدل تهدید، مرز اعتماد و Defense in Depth: قبل از نوشتن اولین Policy
+
+**فصل ۱۱ · درس افزوده (پیش‌درس ۱۱-۱) · پیش‌نیاز: فصل ۲، ۴، ۱۰ · ≈ ۶ ساعت**
+
+> **وضعیت:** مفهومی؛ مستقل از برند؛ مبنای تصمیم‌های فصل‌های ۱۲ تا ۳۲.
+
+### ۱) هدف آموزشی
+
+در پایان می‌توانید:
+
+1. **دارایی (Asset)، تهدید (Threat)، آسیب‌پذیری (Vulnerability)، ریسک (Risk)** و کنترل (Control) را تعریف و تفکیک کنید.
+2. یک **مدل تهدید ساده** برای یک شبکه‌ی سازمانی بسازید (چه چیزی را از چه کسی و از چه راهی محافظت می‌کنیم).
+3. **مرز اعتماد (Trust Boundary)** را روی نقشه مشخص و برای هر مرز یک کنترل تعیین کنید.
+4. **Defense in Depth** را با مثال لایه‌به‌لایه توضیح دهید و بگویید چرا یک فایروال به‌تنهایی کافی نیست.
+5. **Least Privilege** را به Policy واقعی تبدیل کنید و تفاوت **Default Deny** و **Default Allow** را بگویید.
+6. مسیر **North-South** و **East-West** را تفکیک و کنترل‌های هرکدام را انتخاب کنید.
+
+### ۲) پیش‌نیازها
+
+VLAN و Subnet (فصل ۳ و ۲)، Routing (فصل ۵)، مفهوم NAT و DMZ در حد آشنایی.
+
+### ۳) مفهوم پایه: چرا قبل از Policy باید «فکر کرد»؟
+
+بسیاری از شبکه‌ها فایروال دارند ولی ناامن‌اند، چون Policyها بر پایه‌ی «کار بیفتد» نوشته شده‌اند، نه بر پایه‌ی تحلیل ریسک. نتیجه: `any → any → ALL → accept` که فایروال را به یک روتر گران‌قیمت تبدیل می‌کند.
+
+مهندس امنیت به‌جای سؤال «چطور این پورت را باز کنم؟» می‌پرسد:
+
+1. چه چیزی ارزشمند است؟ (Asset: دیتابیس مشتری، AD، سرور مالی)
+2. چه کسی/چه چیزی می‌تواند به آن آسیب بزند؟ (Threat: مهاجم خارجی، کارمند ناراضی، بدافزار)
+3. از چه راهی؟ (Attack Path: VPN، ایمیل، سرور وب، حرکت جانبی)
+4. کدام کنترل جلوی هر مسیر را می‌گیرد؟ و اگر آن کنترل شکست خورد، کنترل بعدی چیست؟
+
+> **تشبیه:** امنیت یک بانک فقط «در ورودی» نیست: در ورودی، نگهبان، دوربین، درب شیشه‌ای، صندوق‌های جدا، خزانه، و دستور بازرسی. اگر یکی بشکند، بقیه می‌مانند. این Defense in Depth است.
+
+### ۴) توضیح عمیق فنی
+
+#### ۴-۱) واژگان ریسک
+
+| واژه | تعریف | مثال |
+|---|---|---|
+| Asset | چیزی که ارزش دارد | پایگاه‌داده‌ی مشتریان |
+| Threat | عامل بالقوه‌ی آسیب | باج‌افزار، مهاجم خارجی |
+| Vulnerability | ضعفی که تهدید از آن استفاده می‌کند | سرور بدون Patch، رمز پیش‌فرض |
+| Risk | احتمال × اثر | احتمال بالا × اثر زیاد = ریسک بالا |
+| Control | اقدام کاهش ریسک | فایروال، Patch، MFA، Segmentation |
+
+``` text
+Risk ~= Likelihood x Impact
+```
+
+ریسک صفر وجود ندارد؛ هدف کاهش به سطح قابل‌قبول و مدیریت باقی‌مانده است.
+
+#### ۴-۲) مدل تهدید ساده (چهار سؤال)
+
+یک چارچوب عملی (الهام‌گرفته از STRIDE و مدل‌های ساده): برای هر سیستم بپرسید:
+
+1. **چه چیزی می‌سازیم/محافظت می‌کنیم؟** (نقشه + جریان داده)
+2. **چه چیزی می‌تواند خراب شود؟** (Spoofing، Tampering، Information Disclosure، DoS، Elevation)
+3. **چه کاری برایش می‌کنیم؟** (کنترل)
+4. **آیا کافی است؟** (آزمون/Verification)
+
+STRIDE = Spoofing (جعل هویت)، Tampering (دستکاری)، Repudiation (انکار)، Information disclosure (افشا)، Denial of service (انکار سرویس)، Elevation of privilege (ارتقای دسترسی).
+
+#### ۴-۳) Trust Boundary و Zone
+
+**مرز اعتماد** جایی است که سطح اعتماد تغییر می‌کند: Internet ↔ DMZ، DMZ ↔ LAN، Guest ↔ Corporate، Server ↔ Management. **هر عبور از مرز باید کنترل شود** (Policy + Log). شبکه را به **Zoneها** تقسیم می‌کنیم؛ هر Zone سطح اعتماد مشابه دارد:
+
+| Zone | سطح اعتماد | نمونه |
+|---|---|---|
+| Internet (Untrust) | صفر | همه‌ی اینترنت |
+| DMZ | پایین/متوسط | وب‌سرور عمومی |
+| Users | متوسط | PC کارمندان |
+| Servers | بالا | اپلیکیشن/DB |
+| Management | بسیار بالا | سرورهای مدیریت، OOB |
+| Guest | صفر/بسیار پایین | مهمان |
+
+قانون عبور: از اعتماد کمتر به بیشتر **سخت‌تر**؛ از بالاتر به پایین‌تر معمولاً مجاز با Inspection.
+
+#### ۴-۴) Defense in Depth
+
+لایه‌های کنترل (از بیرون به داخل):
+
+``` text
+1 Perimeter     : edge firewall, DoS protection, IPS
+2 Network       : segmentation (VLAN/Zone), ACL, internal firewall
+3 Host          : EDR/antivirus, host firewall, patching
+4 Application   : WAF, secure coding, authentication
+5 Data          : encryption, backup, DLP
+6 Identity      : MFA, least privilege, privileged access management
+7 Monitoring    : logs, SIEM, alerting, incident response
+```
+
+ایده: **هیچ لایه‌ای را کامل فرض نکن.** اگر مهاجم لایه‌ی ۱ را رد کند، لایه‌ی ۲ حرکت جانبی را محدود می‌کند.
+
+#### ۴-۵) Least Privilege و Default Deny
+
+- **Least Privilege:** هر کاربر/سیستم فقط حداقل دسترسی لازم.
+- **Default Deny:** هر چه صریحاً مجاز نشده، رد است؛ برخلاف Default Allow که همه‌چیز مجاز است مگر ممنوع.
+- در Policy: Source دقیق (نه all)، Destination دقیق، Service دقیق (نه ALL)، زمان‌بندی در صورت نیاز، Log فعال.
+
+``` text
+BAD : srcintf=any dstintf=any src=all dst=all service=ALL action=accept
+GOOD: srcintf=users dstintf=servers src=Users-subnet dst=App-1 service=HTTPS action=accept log=all
+```
+
+#### ۴-۶) North-South و East-West
+
+- **North-South:** ورود/خروج از سازمان (اینترنت). سنتی‌ترین نقطه‌ی کنترل.
+- **East-West:** ترافیک داخلی بین سرورها/کاربران. بیشتر حملات واقعی پس از نفوذ اولیه از همین مسیر **حرکت جانبی (Lateral Movement)** می‌کنند. اگر فقط لبه کنترل شود، مهاجمی که یک PC را بگیرد آزادانه به سرورها می‌رسد.
+
+نتیجه: **Segmentation داخلی** و Policy بین Zoneهای داخلی ضروری است (فصل ۲۴: Data Center).
+
+### ۵) مثال حل‌شده
+
+**سازمان کوچک:** وب‌سرور عمومی (DMZ)، اپلیکیشن و دیتابیس (Servers)، کاربران، Guest، Management.
+
+مدل تهدید:
+
+| Asset | Threat | مسیر حمله | کنترل |
+|---|---|---|---|
+| DB مشتری | مهاجم پس از نفوذ به وب‌سرور | DMZ → Servers | Policy فقط وب‌سرور→App روی پورت لازم؛ App→DB؛ هیچ مسیر DMZ→DB |
+| AD | بدافزار روی PC | Users → DC | فقط پروتکل‌های لازم (Kerberos/LDAP) از Users به DC؛ Log |
+| فایروال | مدیر ناشناس | اینترنت → GUI مدیریت | غیرفعال‌سازی `allowaccess` روی WAN، Trusted Host، MFA |
+| Guest | کاربر مهمان آلوده | Guest → Users | Zone جدا، فقط اینترنت |
+
+``` text
+Users   -> Internet : HTTP/HTTPS/DNS      allow + UTM
+Users   -> Servers  : HTTPS to app only   allow + log
+Servers -> DB       : TCP 1433 only       allow + log
+DMZ     -> Servers  : TCP 8080 to app only
+DMZ     -> DB       : none (deny)
+Guest   -> Internet : HTTP/HTTPS/DNS only
+Guest   -> any internal : deny
+any     -> any      : implicit deny + log
+```
+
+**مثال سخت:** مدیر شبکه می‌خواهد برای عیب‌یابی «موقتاً» همه‌چیز را باز کند. با مدل تهدید توضیح دهید چرا خطرناک است و روش جایگزین ایمن چیست (Policy موقت با Source دقیق + زمان‌بندی + Log + حذف بعد از اتمام، با Change). 
+
+### ۶) طراحی و تصمیم‌گیری
+
+| تصمیم | گزینه‌ها | معیار |
+|---|---|---|
+| تعداد Zone | کم (ساده) / زیاد (امن‌تر) | ریسک، پیچیدگی عملیات |
+| فایروال یکتا یا چندلایه | تک/دوتایی | ریسک + بودجه؛ برای داده‌ی حساس: دو لایه (فصل ۱۵) |
+| Inspection کامل یا انتخابی | UTM همه/انتخابی | Performance (فصل ۱۶) |
+| Logging | همه‌ی Deny + Allow مهم | فضا، هزینه |
+
+### ۷) پیاده‌سازی و Verification (مفهومی)
+
+- نقشه‌ی Zoneها و جدول Policy Matrix (Source Zone، Destination Zone، Service، Action) را قبل از پیکربندی بنویسید.
+- پس از پیاده‌سازی: **آزمون مثبت** (مجاز موفق) و **آزمون منفی** (غیرمجاز شکست) برای هر خط.
+- ابزار: `nmap` از هر Zone، `ping/curl`، و Log فایروال.
+
+### ۸) Troubleshooting (مبتنی بر طراحی)
+
+| علامت | علت محتمل |
+|---|---|
+| «همه چیز کار می‌کند» ولی ناامن | Policy any-any؛ آزمون منفی انجام نشده |
+| سرویس کار نمی‌کند | Service/Port ناقص، یا Zone اشتباه |
+| Log حجیم و بی‌فایده | Log همه‌ی Allow بدون هدف |
+
+### ۹) نکات امنیتی
+
+- بزرگ‌ترین اشتباه: تصمیم امنیتی بدون مدل تهدید.
+- Policyهای موقت را با تاریخ انقضا بنویسید.
+- مرز مدیریتی (Management) را جدا نگه دارید و از اینترنت قابل‌دسترس نکنید.
+
+### ۱۰) جمع‌بندی مفهومی
+
+- Risk = احتمال × اثر؛ کنترل ریسک را کم می‌کند، صفر نمی‌کند.
+- مرز اعتماد = جایی که سطح اعتماد عوض می‌شود؛ هر عبور کنترل می‌شود.
+- Defense in Depth: چند لایه‌ی مستقل.
+- Default Deny و Least Privilege پایه‌ی Policy خوب‌اند.
+- East-West را هم کنترل کنید؛ حرکت جانبی واقعی‌ترین مسیر بعد از نفوذ است.
+
+### ۱۱) تمرین و ارزیابی
+
+**ت1.** (ساده) Asset، Threat و Vulnerability را با مثال تعریف کنید. *(پاسخ: 11-0-ت1)*
+
+**ت2.** (ساده) Trust Boundary یعنی چه؟ *(پاسخ: 11-0-ت2)*
+
+**ت3.** (متوسط) چرا Default Deny امن‌تر از Default Allow است؟ *(پاسخ: 11-0-ت3)*
+
+**ت4.** (متوسط) چرا فایروال لبه به‌تنهایی از حرکت جانبی جلوگیری نمی‌کند؟ *(پاسخ: 11-0-ت4)*
+
+**ت5.** (سخت) برای شبکه‌ای با Users، Servers، DMZ، Guest و Management جدول Policy Matrix بنویسید و برای هر سطر یک دلیل ذکر کنید. *(پاسخ: 11-0-ت5)*
+
+**ت6.** (سخت، طراحی) مهاجمی از طریق VPN کاربر آلوده به شبکه نفوذ کرده است. چهار لایه‌ی Defense in Depth که باید او را متوقف کنند نام ببرید. *(پاسخ: 11-0-ت6)*
+
+**م1.** STRIDE سرنام چیست؟ *(پاسخ: 11-0-م1)*
+
+**Q1.** Quick quiz (English): What is lateral movement and which control limits it? *(پاسخ: 11-0-Q1)*
+
+### ۱۲) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| STRIDE | Spoofing, Tampering, Repudiation, Information disclosure, DoS, Elevation | مدل دسته‌بندی تهدید |
+| DiD | Defense in Depth | دفاع چندلایه |
+| NS/EW | North-South / East-West | ترافیک ورود/خروج و ترافیک داخلی |
+| LM | Lateral Movement | حرکت جانبی مهاجم |
+| MFA | Multi-Factor Authentication | احراز چندعاملی |
+| DMZ | Demilitarized Zone | ناحیه‌ی واسط |
+
+- *Never rely on a single control; layer your defenses.* ← هرگز فقط به یک کنترل اتکا نکنید؛ دفاع را لایه‌ای کنید.
+- *Segment the network to limit lateral movement.* ← شبکه را بخش‌بندی کنید تا حرکت جانبی محدود شود.
+
+### ۱۳) منابع
+
+- NIST SP 800-30 — Guide for Conducting Risk Assessments.
+- NIST SP 800-41 Rev.1 — Guidelines on Firewalls and Firewall Policy.
+- Microsoft: STRIDE Threat Modeling.
+- MITRE ATT&CK — Lateral Movement (مفهومی).
+
 ## درس 11-1 — فایروال چیست؟ Stateless در برابر Stateful
 
 **فصل 11 - روز 1 · پیش‌نیاز: فصل ۷ · ۶ ساعت**
@@ -2240,6 +2456,192 @@ matrix + walk + tests
 
 <a id="ans-11"></a>
 
+## درس 11-7 — Stateful Inspection از درون: State Table، TCP State و Timeout
+
+**فصل ۱۱ · درس افزوده (تکمیل ۱۱-۱) · پیش‌نیاز: ۱۱-۰، ۱۱-۱، فصل ۲ (TCP) · ≈ ۶ ساعت**
+
+> **وضعیت:** مفهومی با مثال Linux conntrack؛ رفتار FortiGate در فصل ۱۲ و ۱۳ ادامه می‌یابد؛ Labها «اجرا نشده».
+
+### ۱) هدف آموزشی
+
+دانشجو در پایان می‌تواند:
+
+1. تفاوت **Stateless (Packet Filter)** و **Stateful** را با مثال بسته‌به‌بسته بگوید.
+2. توضیح دهد جدول State (Session/Connection Table) چه چیزی نگه می‌دارد و هنگام ساخت، استفاده و حذف ورودی چه می‌شود.
+3. حالت‌های TCP (SYN_SENT، ESTABLISHED، FIN_WAIT، TIME_WAIT، ...) را در جدول State تفسیر کند.
+4. رفتار UDP و ICMP (بدون اتصال) را در یک فایروال Stateful توضیح دهد.
+5. بداند چرا Timeout، Asymmetric Routing و تغییر Policy بر Session اثر می‌گذارند.
+6. محدودیت‌های Stateful (ALG، Fragmentation، Session Exhaustion) را بشناسد.
+
+### ۲) پیش‌نیازها
+
+TCP Three-way Handshake و Flagها (SYN، ACK، FIN، RST)، تفاوت UDP/ICMP، Packet Flow پایه (۵-۰).
+
+### ۳) مفهوم پایه
+
+**Packet Filter (Stateless):** هر بسته را مستقل و بدون حافظه با قوانین مقایسه می‌کند. برای اجازه‌ی «کلاینت به وب»، باید دو قانون بنویسیم: رفت (مقصد پورت 443) و برگشت (مبدأ پورت 443 به هر پورت بالا). قانون برگشت یک سوراخ بزرگ است (هر بسته با مبدأ 443 رد می‌شود، حتی بدون درخواست قبلی).
+
+**Stateful Inspection:** فایروال **ارتباط** را می‌شناسد. وقتی کلاینت اتصال را شروع می‌کند، فایروال یک **Session** ثبت می‌کند. بسته‌ی برگشت فقط اگر **با یک Session موجود مطابقت کند** مجاز است. پس به قانون برگشت نیاز نیست و سوراخ‌ها بسته می‌شوند.
+
+> **تشبیه:** Stateless مثل نگهبانی است که برای هر نامه فقط نشانی را می‌خواند. Stateful مثل منشی‌ای است که دفترچه دارد: «نامه‌ی پاسخ را فقط وقتی تحویل می‌دهم که قبلاً خودمان درخواستش را فرستاده باشیم.»
+
+### ۴) توضیح عمیق فنی
+
+#### ۴-۱) Session چیست؟
+
+یک Session معمولاً با **۵-تایی (5-tuple)** شناسایی می‌شود:
+
+``` text
+(src_ip, src_port, dst_ip, dst_port, protocol)
+```
+
+به‌علاوه: Interface ورودی/خروجی، Policy مطابق، اطلاعات NAT، Timeout باقی‌مانده، شمارنده‌ی بایت/بسته، و وضعیت TCP. جدول State در RAM است و ظرفیت محدود دارد (**Session Exhaustion** حمله‌ی رایج: سیل SYN).
+
+#### ۴-۲) چرخه‌ی عمر یک Session TCP
+
+``` text
+Client           Firewall                 Server
+SYN  ---------->  (lookup: no session)
+                  policy check: allowed
+                  create session [SYN_SENT / half-open, short timeout]
+                  SYN  ------------------> 
+                  <---------------- SYN/ACK
+                  [session -> SYN_RECV / ESTABLISHED]
+ACK  ---------->  ACK --------------------> 
+data <----> data  (fast path: session lookup only; no policy re-eval)
+FIN  ---------->  FIN -------------------->
+                  [FIN_WAIT / TIME_WAIT] -> removed after timeout
+```
+
+نکات:
+
+- **Policy فقط برای بسته‌ی اول** ارزیابی می‌شود. بسته‌های بعدی با Session مطابقت می‌کنند و Policy دوباره بررسی نمی‌شود. بنابراین تغییر Policy روی Sessionهای موجود فوراً اثر نمی‌گذارد (درس ۱۳-۷).
+- بسته‌ای که ACK/ دیتا دارد ولی Session برایش نیست (مثلاً بعد از Timeout یا در مسیر Asymmetric) **Drop** می‌شود، چون «ارتباط ناشناخته» است.
+- **Half-open** (فقط SYN دیده شده) Timeout کوتاه دارد تا SYN Flood جدول را پر نکند.
+- **Established** Timeout طولانی دارد (مثلاً چند ساعت)؛ برای ارتباط‌های بی‌فعالیت مثل SSH ممکن است Session قبل از قطع ارتباط حذف شود (راه‌حل: Keepalive یا افزایش Timeout).
+
+#### ۴-۳) UDP و ICMP
+
+UDP بدون اتصال است؛ فایروال «شبه‌Session» می‌سازد: بسته‌ی اول ← Session با Timeout کوتاه (مثلاً دقایق)، پاسخ مطابق 5-tuple معکوس مجاز. ICMP Echo/Reply با شناسه‌ی Echo (ID) تطبیق می‌شود. برای Error ICMP (مثل Destination Unreachable) فایروال می‌تواند آن را به Session مرتبط (RELATED) نسبت دهد.
+
+#### ۴-۵) Application Layer Gateway و پروتکل‌های چندکاناله
+
+FTP فعال، SIP و ... پورت‌های دوم را در **محتوای** بسته مذاکره می‌کنند. فایروال باید داخل Payload را بخواند (ALG/Helper/Session Helper) و Session فرعی (**Expected/Related Session**) بسازد. اگر Helper غیرفعال یا اشتباه باشد، اتصال داده‌ی FTP قطع می‌شود. (در FortiGate: Session Helper/ALG؛ فصل ۱۳.)
+
+#### ۴-۶) Timeout و حافظه
+
+``` text
+Total sessions ~= connections per second x average session lifetime (seconds)
+```
+
+مثال: ۲۰۰۰ اتصال در ثانیه و عمر متوسط ۶۰ ثانیه = ۱۲۰٬۰۰۰ Session هم‌زمان. اگر Timeout را از ۶۰ به ۳۶۰۰ ثانیه ببریم، جدول ۶۰ برابر بزرگ می‌شود.
+
+#### ۴-۷) رفتار در Asymmetric و Failover
+
+- Asymmetric: برگشت از فایروال دیگر ← Session نیست ← Drop (درس ۱۰-۶).
+- Failover در HA: بدون **Session Sync/Pickup**، Sessionهای TCP قطع می‌شوند و کاربر باید دوباره وصل شود (فصل ۲۲).
+
+### ۵) مثال حل‌شده (Linux conntrack)
+
+``` text
+# Linux router/firewall lab (example)
+iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+iptables -A FORWARD -i lan -o wan -m conntrack --ctstate NEW -j ACCEPT
+iptables -P FORWARD DROP
+
+conntrack -L | head
+conntrack -L -p tcp --dport 443
+```
+
+تحلیل: بسته‌ی NEW از LAN به WAN مجاز است؛ پاسخ‌ها با ESTABLISHED رد می‌شوند. یک بسته‌ی ACK ناخواسته از اینترنت (بدون Session) ردیف NEW/INVALID می‌شود و `DROP` پیش‌فرض آن را می‌ریزد.
+
+**مثال متوسط:** SSH بی‌فعالیت پس از ۱۰ دقیقه قطع می‌شود. علت: Timeout Established کوتاه‌تر از انتظار. راه‌حل‌ها: `ServerAliveInterval` در SSH، یا Timeout بلندتر فقط برای سرویس SSH.
+
+**مثال سخت:** فایروال در برابر SYN Flood: ۵۰٬۰۰۰ SYN/s با IP جعلی. بدون محافظت جدول Half-open پر می‌شود و کاربران واقعی Session نمی‌گیرند. راه‌حل‌ها: SYN Cookies/SYN Proxy، DoS Policy (Threshold)، کاهش Timeout Half-open، و محدودیت نرخ Session به‌ازای Source (فصل ۱۶: DoS).
+
+### ۶) طراحی و تصمیم‌گیری
+
+| سؤال | گزینه | معیار |
+|---|---|---|
+| Timeout پیش‌فرض یا سفارشی؟ | پیش‌فرض / Per-service | سرویس‌های طولانی (SSH، DB) |
+| محافظت SYN Flood | DoS Policy / SYN cookie | حساس بودن سرویس به در دسترس بودن |
+| ALG روشن یا خاموش؟ | روشن برای FTP/SIP در صورت نیاز | امنیت در برابر سازگاری |
+| ظرفیت Session | محاسبه‌ی CPS × عمر | انتخاب مدل/لایسنس |
+
+### ۷) Verification (Linux و مفهومی)
+
+``` text
+conntrack -L
+conntrack -C
+sysctl net.netfilter.nf_conntrack_max
+sysctl net.netfilter.nf_conntrack_tcp_timeout_established
+```
+
+- شمارش Session (`conntrack -C`) را با حد (`nf_conntrack_max`) مقایسه کنید.
+- در FortiGate معادل: `diagnose sys session list` و `get system performance status` (فصل ۱۳ و ۱۴).
+
+### ۸) Troubleshooting
+
+| علامت | شاهد | علت |
+|---|---|---|
+| ارتباط طولانی قطع می‌شود | Session حذف بعد از X دقیقه | Timeout |
+| SYN می‌رود، SYN/ACK برنمی‌گردد | Capture | Policy/Route/Asymmetric |
+| پاسخ‌ها Drop می‌شوند | Log: no session | Asymmetric یا Timeout |
+| FTP لیست دایرکتوری نمی‌دهد | Capture | ALG/Helper |
+| کاربران جدید Session نمی‌گیرند | جدول پر | Session Exhaustion/حمله |
+
+### ۹) نکات امنیتی
+
+- Stateful بخشی از دفاع است؛ فایروال محتوا را نمی‌فهمد مگر UTM/IPS فعال باشد.
+- Timeoutهای بسیار بلند برای همه‌ی سرویس‌ها ریسک Exhaustion دارند.
+- Logging باید بسته‌های Drop به‌دلیل «بدون Session» را ثبت کند؛ نشانه‌ی Asymmetric یا اسکن است.
+
+### ۱۰) جمع‌بندی مفهومی
+
+- Stateless بسته را مستقل می‌سنجد؛ Stateful ارتباط را می‌شناسد.
+- Policy فقط برای بسته‌ی اول؛ بعد از آن Session Lookup.
+- جدول State محدود و هدف DoS است؛ Timeout تعادل کارایی/امنیت است.
+- بدون Session، بسته‌ی برگشت Drop می‌شود (Asymmetric، Timeout).
+- ALG برای پروتکل‌های چندکاناله لازم است.
+
+### ۱۱) تمرین و ارزیابی
+
+**ت1.** (ساده) تفاوت Stateless و Stateful را بگویید. *(پاسخ: 11-7-ت1)*
+
+**ت2.** (ساده) 5-tuple شامل چه فیلدهایی است؟ *(پاسخ: 11-7-ت2)*
+
+**ت3.** (متوسط) چرا پس از ایجاد Session، Policy برای هر بسته بازبینی نمی‌شود؟ *(پاسخ: 11-7-ت3)*
+
+**ت4.** (متوسط) ۱۵۰۰ اتصال در ثانیه با عمر متوسط ۴۵ ثانیه چند Session هم‌زمان می‌سازد؟ *(پاسخ: 11-7-ت4)*
+
+**ت5.** (سخت) SSH کاربر پس از ۲۰ دقیقه سکوت قطع می‌شود. سه راه‌حل با مزایا/ریسک بدهید. *(پاسخ: 11-7-ت5)*
+
+**ت6.** (سخت، طراحی) برای سرور وب روی اینترنت، محافظت در برابر SYN Flood را از سه لایه (فایروال، سرور، شبکه) شرح دهید. *(پاسخ: 11-7-ت6)*
+
+**م1.** Half-open Session چیست؟ *(پاسخ: 11-7-م1)*
+
+**Q1.** Quick quiz (English): Why are return packets accepted by a stateful firewall without an explicit rule? *(پاسخ: 11-7-Q1)*
+
+### ۱۲) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Stateful | Stateful inspection | بازرسی با حافظه‌ی اتصال |
+| 5-tuple | 5-tuple | پنج فیلد شناسایی Session |
+| Half-open | Half-open connection | اتصال نیمه‌باز |
+| ALG | Application Layer Gateway | دروازه‌ی لایه‌ی کاربرد |
+| SYN cookie | SYN cookie | مکانیزم دفاع بدون ذخیره‌ی State |
+| conntrack | Connection tracking | ردیابی اتصال در Linux |
+
+- *A stateful firewall matches return traffic against existing sessions.* ← فایروال Stateful ترافیک برگشتی را با Sessionهای موجود تطبیق می‌دهد.
+- *Session exhaustion is a common denial-of-service target.* ← پر شدن جدول Session هدف رایج DoS است.
+
+### ۱۳) منابع
+
+- NIST SP 800-41 Rev.1 — Guidelines on Firewalls and Firewall Policy (Stateful Inspection).
+- RFC 9293 — Transmission Control Protocol (TCP).
+- Linux kernel documentation: nf_conntrack sysctl.
+
 ## پاسخ‌های فصل 11
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -2369,6 +2771,44 @@ MTU/MSS.
 
 <a id="ch12"></a>
 
+
+### پاسخ‌های درس افزوده‌ی 11-0 (فصل 11)
+
+**11-0-ت1** — Asset ارزش‌دار (DB)؛ Threat عامل آسیب (باج‌افزار)؛ Vulnerability ضعف قابل‌سوءاستفاده (سرور بدون Patch).
+
+**11-0-ت2** — نقطه‌ای که سطح اعتماد عوض می‌شود (مثلاً Internet↔DMZ)؛ هر عبور باید با Policy و Log کنترل شود.
+
+**11-0-ت3** — چون هر چه صریحاً مجاز نشده رد می‌شود؛ خطای فراموشی به باز بودن نمی‌انجامد.
+
+**11-0-ت4** — مهاجمی که یک PC داخلی را بگیرد از مسیر East-West بدون عبور از لبه به سرورها می‌رسد؛ نیاز به Segmentation داخلی.
+
+**11-0-ت5** — نمونه: Users→Internet: HTTP/HTTPS/DNS + UTM؛ Users→Servers: فقط HTTPS به اپ؛ Servers→DB: فقط TCP 1433؛ DMZ→Servers: فقط 8080 به اپ؛ DMZ→DB: ممنوع؛ Guest→Internet فقط وب/DNS؛ Guest→داخل ممنوع؛ Management فقط از شبکه‌ی مدیریت؛ هر چیز دیگر Implicit deny+Log. دلیل هر سطر: Least Privilege و جلوگیری از مسیر حمله.
+
+**11-0-ت6** — Segmentation/Policy حداقلی، IPS/Inspection، MFA و Least Privilege هویتی، EDR روی میزبان، Monitoring/Alert (SIEM).
+
+**11-0-م1** — Spoofing، Tampering، Repudiation، Information disclosure، Denial of service، Elevation of privilege.
+
+**11-0-Q1** — Lateral movement is an attacker moving between internal systems after the first compromise; internal segmentation and least-privilege policies limit it.
+
+
+### پاسخ‌های درس افزوده‌ی 11-7 (فصل 11)
+
+**11-7-ت1** — Stateless هر بسته را مستقل می‌سنجد؛ Stateful ارتباط را در جدول State می‌شناسد و برگشت را با Session مطابقت می‌دهد.
+
+**11-7-ت2** — IP مبدأ، پورت مبدأ، IP مقصد، پورت مقصد، پروتکل.
+
+**11-7-ت3** — نتیجه‌ی ارزیابی در Session ذخیره می‌شود؛ بسته‌های بعدی با Session مطابقت می‌کنند و بررسی مجدد هزینه‌ی CPU دارد.
+
+**11-7-ت4** — 1500 × 45 = 67,500 Session هم‌زمان (تقریبی).
+
+**11-7-ت5** — (۱) Keepalive در SSH: ساده و بی‌ریسک. (۲) افزایش Timeout فقط برای سرویس SSH: جدول بزرگ‌تر. (۳) Timeout بلند برای همه: ریسک Exhaustion.
+
+**11-7-ت6** — فایروال: DoS Policy/SYN cookie و Rate limit؛ سرور: SYN backlog/cookies؛ شبکه: Upstream scrubbing/ISP و ACL.
+
+**11-7-م1** — اتصال که فقط SYN دیده شده و هنوز Handshake کامل نشده؛ Timeout کوتاه دارد.
+
+**11-7-Q1** — Because the return packet matches an existing session entry created by the outbound packet.
+
 # فصل 12 — FortiGate I: معماری، Interface، Zone، Object، Routing، Admin و Backup (معماری ۱)
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۱ (G4)، فصل ۸ (CP1).
@@ -2389,6 +2829,248 @@ MTU/MSS.
 ---
 
 <a id="l-12-1"></a>
+
+## درس 12-0 — Packet Flow در FortiGate: مسیر یک بسته از ورود تا خروج
+
+**فصل ۱۲ · درس افزوده (پیش‌درس ۱۲-۱) · پیش‌نیاز: ۵-۰، ۱۱-۰، ۱۱-۷ · ≈ ۸ ساعت**
+
+> **وضعیت (FortiOS 7.0.3، `Unverified` روی Image):** ترتیب مراحل بر پایه‌ی مستند رسمی «Debugging the packet flow» (Administration Guide 7.0) و مقاله‌های جامعه‌ی Fortinet است؛ جزئیات داخلی نسخه‌ی دقیق باید با `get system status` و Debug واقعی تأیید شود. Lab «اجرا نشده».
+
+### ۱) هدف آموزشی
+
+دانشجو در پایان می‌تواند برای یک بسته‌ی واقعی توضیح دهد:
+
+1. از کدام Interface وارد شده، آیا Session موجودی دارد یا جدید است.
+2. اگر VIP/DNAT هست، چه موقع و چگونه آدرس مقصد عوض می‌شود.
+3. کدام **Route** انتخاب می‌شود و چرا (Route Lookup).
+4. کدام **Policy** مطابق می‌شود و چه ترتیبی دارد (Policy Lookup).
+5. چه تغییری روی آدرس‌ها اعمال می‌شود (SNAT/IP Pool).
+6. چه **Security Profileهایی** اعمال می‌شوند و Session چگونه ساخته می‌شود.
+7. چرا بسته عبور کرد یا Drop شد؛ و با Debug Flow آن را اثبات کند.
+
+### ۲) پیش‌نیازها
+
+مسیر عبور در روتر (۵-۰)، مدل تهدید و Stateful (۱۱-۰، ۱۱-۷)، NAT مقدماتی، مفهوم Zone و Interface.
+
+### ۳) مفهوم پایه: چرا Packet Flow مهم‌ترین موضوع FortiGate است؟
+
+وقتی کاربر می‌گوید «سایت باز نمی‌شود»، علت می‌تواند Route، Policy، NAT، Profile، DNS، MTU یا Session باشد. اگر ترتیب پردازش را ندانید، حدس می‌زنید؛ اگر بدانید، **هر مرحله را جداگانه با شواهد بررسی** و دقیقاً مرحله‌ای که بسته در آن رفتار غیرمنتظره دارد را پیدا می‌کنید. تمام عیب‌یابی در فصل ۱۴ و ۲۸ بر همین مسیر ساخته می‌شود.
+
+> **تشبیه:** FortiGate مثل فرودگاه است: ورود (Interface)، بررسی بلیت قبلی (Session Lookup)، تعیین گیت (Route)، کنترل امنیتی (Policy + Profile)، تغییر مشخصات (NAT)، خروج. اگر مسافری در کنترل امنیتی مانده، به گیت دیگر رسیدن بی‌معنی است.
+
+### ۴) توضیح عمیق فنی
+
+#### ۴-۱) نمای کلی (ترتیب منطقی)
+
+![شکل ۱: مراحل منطقی پردازش یک بسته‌ی عبوری (Transit) در FortiGate.](../figures/ch12-l0-fig1.svg)
+
+*شکل ۱: ترتیب منطقی: Ingress → Session Lookup → DNAT → Route → Policy → SNAT/Profile → Egress.*
+
+``` text
+1. Ingress           : packet arrives on an interface (L2 checks, VLAN)
+2. Anti-spoofing     : reverse path check (RPF)
+3. Session lookup    : is it an existing session (fast path)?
+                       YES -> apply session state (NAT, profile) and forward
+                       NO  -> continue (new session)
+4. DNAT / VIP        : destination NAT (before routing and policy)
+5. Route lookup      : find egress interface and next-hop
+6. Policy lookup     : match firewall policy (in order, first match)
+7. Security profiles : AV / IPS / Web / App / SSL (if enabled in policy)
+8. SNAT              : source NAT (policy NAT or IP pool)
+9. Session create    : install session entry (with NAT info)
+10. Egress           : ARP/next-hop MAC, send
+```
+
+دو نکته‌ی فراتر از جدول:
+
+- **DNAT قبل از Route و Policy** اتفاق می‌افتد؛ بنابراین Policy باید بر اساس آدرس **مقصد بعد از DNAT** (آدرس داخلی) تطبیق شود، نه IP عمومی VIP. در مستند Fortinet و مقاله‌ی Central NAT این ترتیب «ingress → session lookup → DNAT → route → policy → SNAT» آمده است.
+- **SNAT بعد از Policy** است؛ Policy مبدأ اصلی (قبل از SNAT) را می‌بیند.
+
+#### ۴-۲) Ingress و Anti-spoofing (RPF)
+
+FortiGate هر بسته‌ی ورودی را با **Reverse Path Forwarding (RPF)** می‌سنجد: آیا بهترین مسیر به آدرس **مبدأ** از همان Interfaceی که بسته آمده می‌گذرد؟ اگر نه، به‌عنوان جعل/Asymmetric Drop می‌شود (Debug: `reverse path check fail, drop`). این یکی از شایع‌ترین دلایل Drop در شبکه‌های نامتقارن یا با Route ناقص است (فصل ۱۰-۶، ۲۳).
+
+#### ۴-۳) Session Lookup (Fast path)
+
+اگر بسته با یک Session موجود (در یکی از جهت‌ها) مطابقت کند، Route و Policy برای آن دوباره بررسی نمی‌شوند (به‌جز موارد خاص مثل تغییر Route و `session-route-check`). نتیجه:
+
+- پاسخ‌های برگشتی بدون Policy عبور می‌کنند (چون Session دارند).
+- تغییر Policy یا Route روی **Sessionهای موجود** تا پایان Session یا پاک کردن آن اثر ندارد (درس ۱۳-۷).
+
+#### ۴-۴) Route Lookup
+
+انتخاب Interface خروجی و Next-hop با همان قواعد (LPM، Distance، Priority، Policy Route). در FortiOS: ترتیب بررسی: **Policy Route (PBR)** ← **SD-WAN Rule** ← **Routing Table (RIB/FIB)**. (جزئیات SD-WAN: فصل ۲۱.) **Zone** و Interface خروجی همین‌جا مشخص می‌شود.
+
+> تفاوت مهم: **Routing می‌گوید بسته از کجا برود؛ Policy می‌گوید اجازه‌ی عبور دارد یا نه.** هر دو باید درست باشند؛ Route درست و Policy غایب = Drop؛ Policy درست و Route غلط = Drop یا مسیر اشتباه.
+
+#### ۴-۵) Policy Lookup
+
+بررسی Policyها **از بالا به پایین؛ اولین تطبیق برنده است (First Match)**. فیلدهای تطبیق: Incoming Interface/Zone، Outgoing Interface/Zone، Source (آدرس/کاربر/دستگاه)، Destination، Service، Schedule. اگر هیچ Policy مطابق نباشد، **Implicit Deny** (Policy شناسه‌ی 0) و ثبت `Denied by forward policy check (policy 0)`.
+
+#### ۴-۶) Security Profile Inspection
+
+پس از تطبیق Policy، اگر Profileها وصل باشند (AV، IPS، Web Filter، Application Control، SSL Inspection ...)، بسته/جریان بر اساس **Inspection Mode (Flow یا Proxy)** بازرسی می‌شود. در 7.0 حالت بازرسی در **هر Policy** تنظیم می‌شود (`set inspection-mode flow|proxy`). جزئیات در فصل ۱۶.
+
+#### ۴-۷) NAT و ساخت Session
+
+اگر Policy NAT فعال باشد، آدرس مبدأ به IP خروجی Interface یا IP Pool تغییر می‌کند و در Session ذخیره می‌شود تا بسته‌های بعدی و پاسخ بدون پردازش مجدد ترجمه شوند. پس هر Session دو جهت دارد: Original و Reply.
+
+#### ۴-۸) ترافیک Local-in و Local-out (مرور)
+
+ترافیکی که **مقصدش خود FortiGate** است (Local-in) یا **مبدأش خود FortiGate** است (Local-out) مسیر متفاوتی دارد و Forward Policy بر آن اعمال نمی‌شود؛ درس ۱۲-۸ آن را کامل توضیح می‌دهد.
+
+### ۵) مثال حل‌شده: Debug Flow
+
+**توپولوژی:** LAN (port2، 192.168.10.0/24) و WAN (port1). کلاینت 192.168.10.5 به 8.8.8.8 پورت 443 وصل می‌شود. Policy 10: LAN→WAN با NAT.
+
+``` text
+FGT # diagnose debug reset
+FGT # diagnose debug flow filter addr 8.8.8.8
+FGT # diagnose debug flow filter port 443
+FGT # diagnose debug flow show function-name enable
+FGT # diagnose debug flow trace start 10
+FGT # diagnose debug enable
+```
+
+خروجی نمونه‌ی **مفهومی** (ساده‌شده؛ فرمت واقعی در نسخه‌ی شما را با Lab تأیید کنید):
+
+``` text
+id=20085 trace_id=1 func=print_pkt_detail msg="vd-root:0 received a packet(proto=6, 192.168.10.5:51200->8.8.8.8:443) from port2. flag [S], seq ..."
+id=20085 trace_id=1 func=init_ip_session_common msg="allocate a new session-00004a2b"
+id=20085 trace_id=1 func=vf_ip_route_input_common msg="find a route: flag=00000000 gw-203.0.113.1 via port1"
+id=20085 trace_id=1 func=fw_forward_handler msg="Allowed by Policy-10: SNAT"
+id=20085 trace_id=1 func=__ip_session_run_tuple msg="SNAT 192.168.10.5->203.0.113.10:51200"
+```
+
+**تحلیل خط‌به‌خط:**
+
+| خط | معنی | مرحله |
+|---|---|---|
+| received a packet ... from port2 | ورود، جدید است (flag S) | Ingress |
+| allocate a new session | Session موجود نبود | Session lookup |
+| find a route ... via port1 | Route انتخاب شد | Route lookup |
+| Allowed by Policy-10 | Policy مطابق | Policy lookup |
+| SNAT ... | ترجمه‌ی مبدأ | NAT |
+
+``` text
+FGT # diagnose debug disable
+FGT # diagnose debug flow trace stop
+FGT # diagnose debug reset
+```
+
+> **هشدار:** Debug Flow را حتماً پس از کار Disable/Reset کنید. در مستند رسمی آمده که برای مشاهده‌ی Packet Flow روی پلتفرم‌های دارای **NP4/NP6** باید Offload غیرفعال شود (`diagnose npu fastpath disable`) و نسخه‌ی 7.0.12 اضافه می‌کند مانیتور Flow برای ترافیک Offloadشده در NP6/NP7 کار نمی‌کند (درس ۱۲-۹). FortiGate-VM معمولاً NP ندارد (`Unverified`).
+
+**مثال متوسط (Drop):**
+
+``` text
+... msg="Denied by forward policy check (policy 0)"
+```
+
+یعنی هیچ Policy مطابق نبود. علت‌های رایج: Interface/Zone اشتباه، Service نادرست، Source/Destination اشتباه، یا ترتیب Policyها.
+
+**مثال سخت (RPF):**
+
+``` text
+... msg="reverse path check fail, drop"
+```
+
+یعنی بهترین مسیر به مبدأ از Interface ورودی نمی‌گذرد: Route ناقص/Asymmetric. بررسی: `get router info routing-table details <src-ip>`.
+
+### ۶) طراحی و تصمیم‌گیری
+
+| تصمیم | معیار |
+|---|---|
+| Policy بر اساس Interface یا Zone | Zone برای سادگی چند Interface؛ Interface برای دقت |
+| DNAT با VIP | Policy مقصد = IP داخلی (post-DNAT) |
+| Policy NAT یا Central NAT | Central NAT برای سیاست NAT متمرکز؛ توجه به ترتیب |
+| Inspection Mode per policy | Flow (سبک‌تر) / Proxy (قابلیت بیشتر) طبق نیاز |
+
+### ۷) پیاده‌سازی: GUI و CLI
+
+**GUI:**
+
+1. Policy & Objects → Firewall Policy: ترتیب Policyها را ببینید (ستون ID، Hit Count).
+2. Log & Report → Forward Traffic: فیلتر بر اساس Source/Destination برای دیدن Action و Policy ID.
+3. Network → Diagnostics → Packet Capture: Capture با Filter.
+4. (در 7.0) Policy → ستون Bytes/Sessions برای Hit.
+
+**CLI:**
+
+``` text
+get router info routing-table details 8.8.8.8
+get router info routing-table all
+diagnose firewall iprope lookup 192.168.10.5 51200 8.8.8.8 443 tcp port2
+diagnose sys session filter dst 8.8.8.8
+diagnose sys session list
+diagnose sniffer packet any "host 8.8.8.8 and port 443" 4 20 l
+```
+
+- `iprope lookup`: شبیه‌سازی Policy Lookup (دقت فرمت `Unverified`).
+- `session list`: ورودی Session شامل Policy و NAT است.
+
+### ۸) Troubleshooting (یک الگوی ثابت)
+
+1. Ingress: بسته در Sniffer روی Interface ورودی دیده می‌شود؟
+2. RPF: خطای reverse path check دارد؟
+3. Session: جدید است یا موجود؟
+4. Route: Interface خروجی درست است؟
+5. Policy: کدام Policy؟ (ID)
+6. NAT/Profile: ترجمه و Profile چیست؟
+7. Egress: بسته در Interface خروجی دیده می‌شود؟ پاسخ برمی‌گردد؟
+
+اگر بسته در مرحله‌ی N ناپدید شود، علت در همان مرحله است. این «روش تقسیم مسیر» تمام عیب‌یابی بعدی است.
+
+### ۹) نکات امنیتی
+
+- Debug Flow بار CPU دارد و ممکن است اطلاعات حساس نشان دهد؛ با Filter دقیق و زمان کوتاه.
+- Policy با Implicit Deny و Log باعث می‌شود تلاش‌های ناموفق دیده شوند؛ Logging Policy 0 را فعال کنید.
+- DNAT/VIP بدون Policy دقیق، سرویس داخلی را برای همه باز می‌کند.
+
+### ۱۰) جمع‌بندی مفهومی
+
+- ترتیب: Ingress → RPF → Session → DNAT → Route → Policy → Profile → SNAT → Session → Egress.
+- DNAT قبل از Route/Policy؛ SNAT بعد از Policy.
+- Session موجود Policy/Route را دور می‌زند.
+- Routing و Policy دو تصمیم جدا هستند؛ هر دو لازم‌اند.
+- Debug Flow + Session + Routing Table سه شاهد اصلی‌اند.
+
+### ۱۱) تمرین و ارزیابی
+
+**ت1.** (ساده) ترتیب مراحل پردازش یک بسته‌ی جدید را بنویسید. *(پاسخ: 12-0-ت1)*
+
+**ت2.** (ساده) Implicit Deny چه شناسه‌ای دارد و چه Log می‌دهد؟ *(پاسخ: 12-0-ت2)*
+
+**ت3.** (متوسط) VIP پورت 443 را به 10.1.1.10 می‌برد. Policy باید مقصد را چه بگذارد؟ چرا؟ *(پاسخ: 12-0-ت3)*
+
+**ت4.** (متوسط) چرا Route درست و Policy غایب باعث Drop می‌شود؟ *(پاسخ: 12-0-ت4)*
+
+**ت5.** (سخت) بسته‌ای در Sniffer روی port2 دیده می‌شود ولی روی port1 نه. فهرست علت‌ها را به ترتیب بررسی بنویسید. *(پاسخ: 12-0-ت5)*
+
+**ت6.** (سخت، طراحی) Debug Flow نشان می‌دهد `reverse path check fail`. سه علت و روش اثبات هر کدام را بنویسید. *(پاسخ: 12-0-ت6)*
+
+**م1.** SNAT بعد از کدام مرحله است؟ *(پاسخ: 12-0-م1)*
+
+**Q1.** Quick quiz (English): Does a reply packet of an existing session go through policy lookup again? *(پاسخ: 12-0-Q1)*
+
+### ۱۲) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| RPF | Reverse Path Forwarding | بررسی مسیر معکوس برای ضد جعل |
+| DNAT | Destination NAT | ترجمه‌ی مقصد |
+| SNAT | Source NAT | ترجمه‌ی مبدأ |
+| VIP | Virtual IP | آدرس مجازی برای DNAT |
+| Policy ID 0 | Implicit deny | Policy ضمنی رد |
+| Debug flow | Packet flow debug | ردگیری گام‌به‌گام بسته |
+
+- *The firewall policy is evaluated only for the first packet of a session.* ← Policy فقط برای بسته‌ی اول Session ارزیابی می‌شود.
+- *Check routing and policy as two separate decisions.* ← Routing و Policy را دو تصمیم جدا بررسی کنید.
+
+### ۱۳) منابع
+
+- Fortinet Docs: [Debugging the packet flow](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/54688/debugging-the-packet-flow) (FortiOS 7.0 Administration Guide).
+- Fortinet Community: «Central NAT: Packet processing, troubleshooting steps and traffic flow» و «FortiGate Debug Flow Functions» (غیررسمی؛ `Unverified` تا تأیید روی Lab).
+- Fortinet Docs: FortiOS 7.0 CLI Reference (`diagnose debug flow`).
 
 ## درس 12-1 — معماری FortiGate، اولین بوت و تأیید نسخه
 
@@ -3368,6 +4050,379 @@ show full-configuration | grep -c config
 
 <a id="l-12-7"></a>
 
+## درس 12-8 — Transit، Local-in و Local-out: سه نوع ترافیک و سه مسیر پردازش
+
+**فصل ۱۲ · درس افزوده (پس از ۱۲-۶) · پیش‌نیاز: ۱۲-۰، ۵-۰ · ≈ ۶ ساعت**
+
+> **وضعیت (FortiOS 7.0.3، `Unverified` روی Image):** دسته‌بندی مفهومی است؛ نام دقیق دستورها با CLI Reference 7.0 تطبیق داده شود. Lab «اجرا نشده».
+
+### ۱) هدف آموزشی
+
+دانشجو در پایان می‌تواند:
+
+1. سه نوع ترافیک **Transit (Forward)**، **Local-in** و **Local-out** را تعریف و برای هرکدام مثال بزند.
+2. بگوید هر نوع با کدام ساز و کار کنترل می‌شود (Firewall Policy، `allowaccess`، Local-in Policy، تنظیمات Source-IP سرویس).
+3. توضیح دهد چرا «Policy برای ping به فایروال لازم نیست ولی `allowaccess ping` لازم است».
+4. مدیریت فایروال را ایمن کند (Trusted Host، Admin Port، Local-in Policy).
+5. علت رایج‌ترین خطاها را بیابد: «از فایروال ping می‌زنم ولی کاربران نه»، «GUI از WAN باز نمی‌شود/خیلی باز است».
+
+### ۲) پیش‌نیازها
+
+Packet Flow (۱۲-۰)، Punt و Management Plane (۵-۰)، مدل تهدید (۱۱-۰).
+
+### ۳) مفهوم پایه
+
+بسته‌ها سه سرنوشت دارند:
+
+| نوع | مبدأ → مقصد | مثال |
+|---|---|---|
+| **Transit / Forward** | از FortiGate عبور می‌کند | کاربر → اینترنت |
+| **Local-in** | مقصد = خود FortiGate | SSH/HTTPS به فایروال، OSPF/BGP، IKE، ping به فایروال |
+| **Local-out** | مبدأ = خود FortiGate | ping از CLI فایروال، DNS/NTP/FortiGuard، Syslog، ارسال Log، RADIUS، اتصال IPsec خروجی |
+
+برای هر نوع **ساز و کار کنترل متفاوت** است. اشتباه رایج: فکر می‌کنیم «Firewall Policy همه‌چیز را کنترل می‌کند». ولی Policy فقط **Transit** را کنترل می‌کند.
+
+### ۴) توضیح عمیق فنی
+
+#### ۴-۱) Transit
+
+مسیر کامل درس ۱۲-۰: Session، DNAT، Route، Policy، Profile، SNAT. کنترل: `config firewall policy` (و Central NAT/VIP).
+
+#### ۴-۲) Local-in
+
+ترافیک به سرویس‌های خود فایروال می‌رسد: مدیریت (HTTPS/SSH/Telnet/SNMP)، Ping، پروتکل‌های مسیریابی، IKE/IPsec، DHCP Server، DNS Server، FortiGuard Update (پاسخ‌ها) و ...
+
+کنترل‌ها:
+
+1. **`allowaccess` روی Interface:** مشخص می‌کند کدام سرویس‌ها روی آن Interface پاسخ می‌دهند (`ping https ssh snmp fgfm http telnet ...`).
+2. **Local-in Policy** (`config firewall local-in-policy`): قوانین دقیق‌تر روی ترافیک ورودی به فایروال (مثلاً فقط مدیریت از یک Subnet).
+3. **Trusted Host** برای هر Admin: فقط از IPهای مشخص.
+4. **Admin Port/Redirect:** تغییر پورت و اجبار HTTPS.
+
+نتیجه: مدیریت فایروال از اینترنت = ریسک بحرانی (و تاریخچه‌ی CVE روی GUI/SSL VPN). `allowaccess` را روی WAN حداقل کنید.
+
+#### ۴-۳) Local-out
+
+فایروال هم مثل یک Host ترافیک می‌سازد. نکات:
+
+- مسیر خروجی با **Routing Table** (و گاهی تنظیمات **Source-IP**) تعیین می‌شود، نه Firewall Policy.
+- Source IP پیش‌فرض = IP Interface خروجی؛ برای سرویس‌هایی مثل Syslog، SNMP Trap، RADIUS و NTP می‌توان `source-ip` تعیین کرد (در بخش تنظیم آن سرویس؛ نام دقیق پارامتر در 7.0 تطبیق شود).
+- اگر Route خروجی از VPN بگذرد، ترافیک Local-out باید در Phase 2 Selector هم بگنجد (مشکل رایج: ping از CLI فایروال به شبکه‌ی آن‌طرف VPN کار نمی‌کند چون Source IP ناسازگار است).
+- در 7.0 ترافیک Local-out معمولاً **Firewall Policy** نمی‌خواهد ولی Log آن در بخش Local Traffic Log است.
+
+#### ۴-۴) خلاصه‌ی کنترل‌ها
+
+| نوع | کنترل اصلی | Log |
+|---|---|---|
+| Transit | Firewall Policy | Forward Traffic |
+| Local-in | `allowaccess` + Local-in Policy + Trusted Host | Local Traffic |
+| Local-out | Routing + `source-ip` سرویس | Local Traffic |
+
+### ۵) مثال حل‌شده
+
+**مسئله:** از CLI فایروال `execute ping 192.168.20.1` (مقصد پشت VPN) جواب نمی‌گیرد ولی کاربران LAN به آن می‌رسند.
+
+``` text
+FGT # execute ping-options source 192.168.10.1
+FGT # execute ping 192.168.20.1
+FGT # get router info routing-table details 192.168.20.1
+```
+
+**تحلیل:** Ping از CLI = Local-out؛ Source پیش‌فرض IP Interface خروجی (Tunnel) است که در Selector نیست. با تعیین Source = IP داخلی که در Selector هست، ping موفق می‌شود. نتیجه: شبکه خراب نیست؛ آزمون با Source غلط انجام شده بود.
+
+**مثال متوسط:** GUI فایروال از WAN باز می‌شود. علت: `allowaccess https` روی WAN.
+
+``` text
+config system interface
+    edit "port1"
+        set allowaccess ping
+    next
+end
+config system admin
+    edit "admin-lab"
+        set trusthost1 192.168.90.0 255.255.255.0
+    next
+end
+```
+
+**مثال سخت:** فقط مدیریت از Subnet مدیریت (192.168.90.0/24) روی HTTPS و SSH مجاز و بقیه رد شود، با Local-in Policy:
+
+``` text
+config firewall address
+    edit "MGMT-NET"
+        set subnet 192.168.90.0 255.255.255.0
+    next
+end
+config firewall local-in-policy
+    edit 1
+        set intf "port1"
+        set srcaddr "MGMT-NET"
+        set dstaddr "all"
+        set action accept
+        set service "HTTPS" "SSH"
+        set schedule "always"
+    next
+    edit 2
+        set intf "port1"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action deny
+        set service "ALL"
+        set schedule "always"
+    next
+end
+```
+
+(نام فیلدها در 7.0 با CLI Reference تطبیق داده شود؛ `Unverified`.)
+
+### ۶) طراحی و تصمیم‌گیری
+
+| سؤال | تصمیم |
+|---|---|
+| مدیریت از کجا؟ | فقط شبکه‌ی مدیریت/Interface اختصاصی؛ نه WAN |
+| چند لایه؟ | `allowaccess` حداقل + Trusted Host + Local-in Policy + MFA |
+| Ping به فایروال | روی WAN غیرفعال یا محدود |
+| سرویس‌های Local-out | Source-IP مشخص، Route صریح |
+
+### ۷) پیاده‌سازی: GUI و CLI
+
+**GUI:**
+
+1. Network → Interfaces → انتخاب Interface → «Administrative Access»: فقط سرویس‌های لازم.
+2. System → Administrators → ویرایش Admin → «Restrict login to trusted hosts».
+3. Policy & Objects → Local-in Policy (اگر فعال نیست در Feature Visibility روشن شود).
+4. Log & Report → Local Traffic: بررسی ورودی/خروجی.
+
+**CLI:**
+
+``` text
+show system interface port1
+show firewall local-in-policy
+show system admin
+diagnose sniffer packet port1 "host 192.168.90.5 and (port 443 or port 22)" 4 20 l
+execute ping-options source <ip>
+```
+
+### ۸) Troubleshooting
+
+| علامت | علت محتمل | شاهد |
+|---|---|---|
+| GUI باز نمی‌شود | `allowaccess` نیست/Trusted Host/Local-in deny | Sniffer، Local Traffic Log |
+| Ping به فایروال ندارد | `allowaccess ping` غایب | Sniffer: Request بدون Reply |
+| ping از CLI به VPN شکست | Source/Selector | `execute ping-options source` |
+| NTP/DNS فایروال کار نمی‌کند | Route/Source IP | Sniffer روی Interface خروجی |
+
+### ۹) نکات امنیتی
+
+- مدیریت از اینترنت ممنوع مگر با VPN/Trusted Host/MFA.
+- رمز پیش‌فرض و Admin عمومی را تغییر دهید.
+- Telnet/HTTP را غیرفعال کنید.
+- نسخه‌های 7.0.x دارای CVE روی GUI/SSL VPN هستند؛ در Lab ایزوله کار کنید.
+
+### ۱۰) جمع‌بندی مفهومی
+
+- Policy فقط Transit را کنترل می‌کند.
+- Local-in = `allowaccess` + Local-in Policy + Trusted Host.
+- Local-out = Routing + Source-IP.
+- آزمون از CLI فایروال همیشه شبیه ترافیک کاربران نیست.
+- مدیریت را از WAN ببندید.
+
+### ۱۱) تمرین و ارزیابی
+
+**ت1.** (ساده) سه نوع ترافیک را نام ببرید. *(پاسخ: 12-8-ت1)*
+
+**ت2.** (ساده) کدام تنظیم Ping به فایروال را روی یک Interface مجاز می‌کند؟ *(پاسخ: 12-8-ت2)*
+
+**ت3.** (متوسط) چرا Firewall Policy برای SSH به خود فایروال کافی/لازم نیست؟ *(پاسخ: 12-8-ت3)*
+
+**ت4.** (متوسط) ping از CLI به شبکه‌ی پشت VPN شکست می‌خورد؛ چرا؟ *(پاسخ: 12-8-ت4)*
+
+**ت5.** (سخت) مدیریت را فقط از 192.168.90.0/24 مجاز کنید؛ سه لایه‌ی کنترل را بنویسید. *(پاسخ: 12-8-ت5)*
+
+**ت6.** (سخت، طراحی) فایروال Syslog را به سرور 192.168.90.20 می‌فرستد ولی Log نمی‌رسد؛ مراحل بررسی Local-out را مرتب کنید. *(پاسخ: 12-8-ت6)*
+
+**م1.** Trusted Host چیست؟ *(پاسخ: 12-8-م1)*
+
+**Q1.** Quick quiz (English): Which mechanism controls traffic destined to the firewall itself? *(پاسخ: 12-8-Q1)*
+
+### ۱۲) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Local-in | Local-in traffic | ترافیک ورودی به خود فایروال |
+| Local-out | Local-out traffic | ترافیک خروجی از خود فایروال |
+| Transit | Transit traffic | ترافیک عبوری |
+| allowaccess | Administrative access | سرویس‌های مجاز روی Interface |
+| Trusted host | Trusted host | IP مجاز برای ورود Admin |
+
+- *Firewall policies do not control traffic destined to the firewall itself.* ← Policyها ترافیک مقصد خود فایروال را کنترل نمی‌کنند.
+- *Restrict management access to a dedicated network.* ← دسترسی مدیریتی را به شبکه‌ی اختصاصی محدود کنید.
+
+### ۱۳) منابع
+
+- Fortinet Docs: FortiOS 7.0 Administration Guide — Interface settings (Administrative access)، Local-in policy؛ CLI Reference `config firewall local-in-policy`، `config system interface`.
+- Fortinet: «Hardening your FortiOS» (مقاله‌ی رسمی؛ نسخه‌ی 7.0 را بررسی کنید).
+
+
+## درس 12-9 — Hardware Acceleration (NPU/SPU) و Session Offload: اثر بر عملکرد و عیب‌یابی
+
+**فصل ۱۲ · درس افزوده (پس از ۱۲-۸) · پیش‌نیاز: ۱۲-۰، ۱۱-۷ · ≈ ۴ ساعت**
+
+> **وضعیت:** مفهومی. FortiGate-VM در Lab ما سخت‌افزار NP ندارد؛ بنابراین رفتار Offload در Lab «اجرا نشده» است. دستورها `Unverified`.
+
+### ۱) هدف آموزشی
+
+دانشجو در پایان می‌تواند:
+
+1. توضیح دهد Hardware Acceleration چیست و چه مشکلی را حل می‌کند.
+2. تفاوت پردازش **Software (CPU/Kernel)** و **Offload (NPU)** را برای یک Session بگوید.
+3. بداند چه ترافیکی Offload می‌شود و چه چیزی مانع آن است (Profile، NAT خاص، ...).
+4. بفهمد چرا Debug Flow و Sniffer روی ترافیک Offloadشده کامل نیست و چه کند.
+5. اثر Offload را بر Performance، Log و Troubleshooting ارزیابی کند.
+
+### ۲) پیش‌نیازها
+
+Packet Flow (۱۲-۰)، Session (۱۱-۷)، مفهوم CPU و ASIC.
+
+### ۳) مفهوم پایه
+
+پردازش بسته روی CPU عمومی گران است. FortiGateهای سخت‌افزاری دارای **ASIC**های اختصاصی‌اند: **NPU (Network Processor)** برای ارسال سریع و **CP (Content Processor)** برای رمزنگاری/Inspection (نام‌گذاری نسل‌ها: NP4/NP6/NP7 ...؛ نسخه/مدل `Unverified`). **Session Offload** یعنی بعد از ساخت Session توسط CPU (بسته‌ی اول، Policy، NAT)، بسته‌های بعدی همان Session مستقیماً در NPU ارسال می‌شوند و CPU را درگیر نمی‌کنند.
+
+> **تشبیه:** CPU مثل مدیر است که اولین بار قانون را تعیین می‌کند؛ NPU مثل کارمند تندکار که بعد از آن، کار تکراری را بدون مراجعه به مدیر انجام می‌دهد.
+
+### ۴) توضیح عمیق فنی
+
+#### ۴-۱) مسیرها
+
+``` text
+Slow path (software): CPU -> full policy/NAT/profile -> forward
+Fast path (kernel)  : session lookup in CPU kernel -> forward
+NPU offload         : session installed in NPU -> forwarded in hardware
+```
+
+#### ۴-۲) چه ترافیکی Offload می‌شود؟
+
+- معمولاً Sessionهای TCP/UDP ساده‌ی ارسالی (Forward) با NAT مجاز.
+- **Sessionی که نیاز به Inspection محتوایی دارد** (برخی Profile‌ها، Proxy-based) یا ALG خاص، یا فیچرهای نیازمند CPU **Offload نمی‌شود** یا فقط بخشی از آن.
+- ترافیک **Local-in/Local-out** اغلب CPU است.
+- IPsec: رمزنگاری می‌تواند در CP/NPU انجام شود (`npu-offload` در Phase1؛ پیش‌فرض enable طبق CLI Reference 7.0).
+
+(شرایط دقیق Offload وابسته به مدل، نسل NPU و نسخه است؛ مرجع رسمی آن مدل را ببینید.)
+
+#### ۴-۳) پیامد برای عیب‌یابی
+
+مستند رسمی «Debugging the packet flow» تأکید می‌کند: برای ردگیری Packet Flow روی پلتفرم‌های دارای **NP4/NP6**، Offload باید غیرفعال شود (`diagnose npu fastpath disable`) و برای NP7 باید Offload در Policy موردنظر غیرفعال شود؛ در غیر این صورت Debug Flow و گاهی Sniffer بسته‌های Offloadشده را نمی‌بینند. پس «بسته در Debug دیده نمی‌شود» همیشه یعنی Drop نیست؛ ممکن است Offloadشده باشد.
+
+#### ۴-۴) پیامد برای Log و Counter
+
+شمارنده‌ها و Log ممکن است برای Sessionهای Offloadشده با تأخیر/دقت متفاوت به‌روز شوند. برای تحلیل دقیق، Session را بررسی کنید (`diagnose sys session list` نشانگر Offload دارد؛ نام فیلد `Unverified`).
+
+#### ۴-۵) Trade-off
+
+| عامل | Offload روشن | Offload خاموش |
+|---|---|---|
+| Throughput | بالا | پایین |
+| CPU | کم | زیاد |
+| قابلیت Debug | محدود | کامل |
+| Inspection عمیق | برخی ممنوع | کامل |
+
+### ۵) مثال حل‌شده
+
+**مسئله:** مدیر Debug Flow اجرا کرده ولی ترافیک ping ۱۰۰٪ کار می‌کند و در Debug هیچ‌چیز دیده نمی‌شود.
+
+**تحلیل:** احتمال Offload. اقدام (در Lab/Change Window، نه تولید): غیرفعال‌کردن موقت Offload طبق مرجع همان مدل، تکرار تست، و بازگرداندن.
+
+``` text
+FGT # diagnose npu fastpath disable
+FGT # diagnose debug flow trace start 10
+...
+FGT # diagnose npu fastpath enable
+```
+
+(فقط روی مدل‌هایی که NP4/NP6 دارند؛ روی VM پشتیبانی نمی‌شود/لازم نیست؛ `Unverified`.)
+
+**مثال متوسط:** فعال‌کردن IPS روی Policy باعث افت Throughput از ۲۰ به ۵ گیگابیت می‌شود. دلیل: بخش بازرسی در CPU/CP انجام می‌شود و Offload محدود می‌شود؛ باید Profile را انتخابی کرد (فصل ۱۶).
+
+**مثال سخت:** در مقایسه‌ی دو Policy مشابه یکی Offload می‌شود و دیگری نه. با مقایسه‌ی Profile، Inspection Mode و ALG علت را پیدا کنید؛ سپس تصمیم بگیرید امنیت مهم‌تر است یا Throughput.
+
+### ۶) طراحی و تصمیم‌گیری
+
+| سؤال | معیار |
+|---|---|
+| Profile را روی همه‌ی ترافیک؟ | فقط جایی که لازم است؛ ترافیک Backup/Data Center ممکن است Offload شود |
+| Flow یا Proxy | Flow سبک‌تر؛ Proxy قابلیت بیشتر |
+| اندازه‌گیری | Baseline قبل/بعد از فعال‌سازی Profile |
+| مدل فایروال | بر اساس Throughput با Inspection فعال (نه عدد Firewall خام Datasheet) |
+
+### ۷) پیاده‌سازی: GUI و CLI
+
+**GUI:** Dashboard → Performance (CPU/Memory/Sessions)؛ Policy & Objects → Firewall Policy → ستون Inspection Mode؛ Log & Report.
+
+**CLI:**
+
+``` text
+get system performance status
+diagnose sys top 2 20
+diagnose sys session list
+diagnose npu fastpath status
+```
+
+(`diagnose npu ...` فقط مدل‌های دارای NPU؛ `Unverified`.)
+
+### ۸) Troubleshooting
+
+| علامت | علت محتمل | اقدام |
+|---|---|---|
+| Debug Flow هیچ بسته‌ای نشان نمی‌دهد | Offload | غیرفعال موقت Offload (طبق مدل) |
+| Throughput افت کرده | Profile/Proxy | مقایسه‌ی CPU و Profile |
+| CPU بالا با ترافیک کم | Inspection سنگین/Local-in | `diagnose sys top` |
+
+### ۹) نکات امنیتی
+
+- خاموش‌کردن Offload در تولید فقط برای زمان کوتاه و با Change.
+- Offload به‌معنای «دور زدن امنیت» نیست؛ فقط محل پردازش Sessionهای مجاز است؛ ولی Inspectionهای فعال‌نشده انجام نمی‌شوند.
+
+### ۱۰) جمع‌بندی مفهومی
+
+- Offload بعد از ساخت Session، پردازش را به NPU می‌دهد.
+- Inspection عمیق/Proxy Offload را محدود می‌کند.
+- Debug/Sniffer روی ترافیک Offloadشده می‌تواند ناقص باشد.
+- Performance واقعی با Profile فعال اندازه‌گیری می‌شود.
+- در Lab VM این‌ها قابل آزمایش نیستند؛ فقط مفهوم.
+
+### ۱۱) تمرین و ارزیابی
+
+**ت1.** (ساده) NPU چه می‌کند؟ *(پاسخ: 12-9-ت1)*
+
+**ت2.** (ساده) چرا Debug Flow ممکن است ترافیک را نبیند؟ *(پاسخ: 12-9-ت2)*
+
+**ت3.** (متوسط) چرا IPS Throughput را کم می‌کند؟ *(پاسخ: 12-9-ت3)*
+
+**ت4.** (متوسط) چرا عدد Throughput Datasheet برای انتخاب مدل کافی نیست؟ *(پاسخ: 12-9-ت4)*
+
+**ت5.** (سخت) برنامه‌ی تست کنترل‌شده برای مقایسه‌ی Throughput با و بدون Profile بنویسید. *(پاسخ: 12-9-ت5)*
+
+**م1.** Slow path و Fast path چه فرقی دارند؟ *(پاسخ: 12-9-م1)*
+
+**Q1.** Quick quiz (English): Why can offloaded traffic be missing from debug flow output? *(پاسخ: 12-9-Q1)*
+
+### ۱۲) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| NPU | Network Processor Unit | پردازنده‌ی شبکه‌ی سخت‌افزاری |
+| CP | Content Processor | پردازنده‌ی محتوا/رمز |
+| ASIC | Application-Specific Integrated Circuit | مدار مجتمع اختصاصی |
+| Offload | Session offload | واگذاری Session به سخت‌افزار |
+
+- *Offloaded sessions bypass the CPU for forwarding.* ← Sessionهای Offloadشده ارسال را بدون CPU انجام می‌دهند.
+- *Disable offload only temporarily when debugging.* ← Offload را فقط موقت و برای Debug غیرفعال کنید.
+
+### ۱۳) منابع
+
+- Fortinet Docs: [Debugging the packet flow](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/54688/debugging-the-packet-flow) و بخش Hardware acceleration در Administration Guide 7.0 (مدل خود را بررسی کنید).
+- Fortinet: FortiGate datasheet مدل مورد استفاده.
+
 ## درس 12-7 — آزمون پایان فصل ۱۲ و تحلیل خطا (مدیریت قفل‌شده)
 
 **فصل 12 - روز 7 · پیش‌نیاز: درس‌های ۱۲-۱ تا ۱۲-۵ · ۶ ساعت**
@@ -3665,6 +4720,61 @@ Console + بازگرداندن Route.
 ---
 
 <a id="end4"></a>
+
+
+### پاسخ‌های درس افزوده‌ی 12-0 (فصل 12)
+
+**12-0-ت1** — Ingress، RPF، Session lookup، DNAT، Route lookup، Policy lookup، Profiles، SNAT، ساخت Session، Egress.
+
+**12-0-ت2** — Policy ID 0؛ Log: Denied by forward policy check (policy 0).
+
+**12-0-ت3** — مقصد = IP داخلی (10.1.1.10) چون DNAT قبل از Policy انجام می‌شود (post-DNAT).
+
+**12-0-ت4** — Route فقط مسیر را می‌دهد؛ Policy اجازه‌ی عبور را؛ بدون Policy Implicit deny می‌شود.
+
+**12-0-ت5** — ۱) Debug Flow: Denied policy؟ ۲) RPF؟ ۳) Route به port1 هست؟ ۴) Offload باعث نبودن در Debug؟ ۵) NAT/Profile؟ ۶) لینک/ARP روی port1.
+
+**12-0-ت6** — ۱) Route ناقص به مبدأ؛ ۲) Asymmetric (برگشت از Interface دیگر)؛ ۳) مسیر مبدأ به Interface دیگر اشاره می‌کند. اثبات: get router info routing-table details و Sniffer.
+
+**12-0-م1** — بعد از Policy lookup (و بعد از Route/Profile).
+
+**12-0-Q1** — No; reply packets match the existing session and skip policy lookup.
+
+
+### پاسخ‌های درس افزوده‌ی 12-8 (فصل 12)
+
+**12-8-ت1** — Transit، Local-in، Local-out.
+
+**12-8-ت2** — allowaccess ping روی Interface.
+
+**12-8-ت3** — Policy فقط Transit را کنترل می‌کند؛ SSH به فایروال Local-in است و با allowaccess/Local-in Policy/Trusted Host کنترل می‌شود.
+
+**12-8-ت4** — Local-out با Source IP پیش‌فرض Interface خروجی (Tunnel) می‌رود که در Selector نیست؛ Source را به IP داخلی تغییر دهید.
+
+**12-8-ت5** — allowaccess فقط روی Interface مدیریتی، Trusted Host برای Admin و Local-in Policy (accept از MGMT-NET، deny بقیه).
+
+**12-8-ت6** — Route به سرور، Source IP، ping از CLI، Sniffer روی Interface خروجی، تنظیم syslog (server/port/status)، ACL سرور.
+
+**12-8-م1** — فهرست IPهایی که Admin اجازه‌ی ورود از آن‌ها را دارد.
+
+**12-8-Q1** — Local-in policies together with the interface administrative-access settings and trusted hosts.
+
+
+### پاسخ‌های درس افزوده‌ی 12-9 (فصل 12)
+
+**12-9-ت1** — Sessionهای ساخته‌شده را در سخت‌افزار ارسال می‌کند و CPU را سبک می‌کند.
+
+**12-9-ت2** — چون ترافیک Offloadشده از مسیر CPU/Kernel نمی‌گذرد و Debug آن را نمی‌بیند.
+
+**12-9-ت3** — بازرسی محتوا در CPU/CP انجام می‌شود و Offload را محدود می‌کند.
+
+**12-9-ت4** — Datasheet معمولاً Firewall خام بدون UTM است؛ با Profile فعال Throughput کم می‌شود.
+
+**12-9-ت5** — Baseline بدون Profile (iperf)، فعال‌کردن یک Profile، تکرار با همان بار و تعداد Session، ثبت CPU/Throughput/Latency، مقایسه.
+
+**12-9-م1** — Slow path در CPU با بررسی کامل؛ Fast path Session موجود را سریع می‌فرستد (و NPU در سخت‌افزار).
+
+**12-9-Q1** — Because offloaded packets are forwarded in hardware and never reach the CPU path that debug flow monitors.
 
 # پایان بخش ۴ (فصل‌های ۱۰ تا ۱۲)
 
