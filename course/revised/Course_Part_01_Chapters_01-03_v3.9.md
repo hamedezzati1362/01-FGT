@@ -174,6 +174,16 @@ bridge link
 (در ادامه‌ی همین درس)
 
 
+#### English Corner — درس 1-0
+
+| English sentence | ترجمه |
+|---|---|
+| The lab is isolated from the production network. | آزمایشگاه از شبکه‌ی تولید جدا (ایزوله) است. |
+| A snapshot is not a backup. | Snapshot جایگزین Backup نیست. |
+| A port group without an uplink cannot reach the physical network. | Port Group بدون Uplink به شبکه‌ی فیزیکی دسترسی ندارد. |
+
+**Q1.** Quick quiz (English): Why is a vSwitch without an uplink considered isolated? *(پاسخ: 1-0-Q1)*
+
 #### کارت Lab — درس ۱-۰
 
 | # | فیلد | محتوا |
@@ -325,6 +335,16 @@ PNetLab VM: eth1 -> pnet0 (192.168.88.199)   eth0 -> pnet1 (isolated pipe)
 فهرست کامل در صفحه «مرور دوره‌ای».
 
 
+#### English Corner — درس 1-A
+
+| English sentence | ترجمه |
+|---|---|
+| Phase 0A is read-only discovery. | Phase 0A کشف فقط‌خواندنی است. |
+| Never assume the interface order; verify by MAC address. | ترتیب Interface را فرض نکنید؛ با MAC تأیید کنید. |
+| Every change needs a backup and a rollback plan. | هر تغییر نیاز به Backup و Rollback Plan دارد. |
+
+**Q1.** Quick quiz (English): What three things must every change include? *(پاسخ: 1-A-Q1)*
+
 #### کارت Lab — درس ۱-A (Phase 0A)
 
 | # | فیلد | محتوا |
@@ -469,6 +489,16 @@ Router#
 > چند فرمان را یک‌جا و بدون Enter نچسبانید؛ `<ID>` یعنی عدد واقعی.
 
 
+#### English Corner — درس 1-B
+
+| English sentence | ترجمه |
+|---|---|
+| Image validation records what was actually tested. | Image Validation آنچه واقعاً آزمایش شده را ثبت می‌کند. |
+| CLI accepted does not mean the feature works. | پذیرفته‌شدن دستور یعنی کار کردن ویژگی نیست. |
+| Always record evidence for each feature. | برای هر ویژگی شاهد ثبت کنید. |
+
+**Q1.** Quick quiz (English): Why is "CLI accepted" not enough to claim a feature works? *(پاسخ: 1-B-Q1)*
+
 #### کارت Lab — درس ۱-B (Phase 0B)
 
 | # | فیلد | محتوا |
@@ -502,35 +532,63 @@ Router#
 
 **1-A-م1** — چرا Uplinks خالی در vSwitch-FGT مهم است؟
 
-چون هیچ مسیر فیزیکی به شبکه واقعی وجود ندارد؛ ایزولاسیون واقعی است.
+خالی بودن Uplink در vSwitch-FGT یعنی هیچ کارت فیزیکی به آن وصل نیست؛ پس هر ترافیک Lab فقط داخل میزبان می‌ماند و هرگز از ESXi خارج نمی‌شود. این ایزولاسیون واقعی است، نه قرارداد. اثبات: خروجی `esxcli network vswitch standard list` که Uplinks را خالی نشان می‌دهد.
 
 **1-A-م2** — VLAN 4095 چه می‌کند؟
 
-همه VLANها را با Tag به VM می‌رساند (حالت Trunk در ESXi).
+VLAN ID 4095 در ESXi حالت «Trunk کامل» است: همه‌ی VLANها را با Tag به VM می‌رساند. VM باید بتواند Tag را پردازش کند (مثلاً PNetLab). استفاده‌ی اشتباه Tag را به شبکه‌ی غیرمنتظره می‌رساند؛ پس فقط برای Port Group لازم.
 
 **1-A-م3** — چرا نباید فرض کنیم eth0 همان Adapter 1 است؟
 
-ترتیب نام‌گذاری لینوکس ممکن است با ترتیب ESXi فرق کند؛ MAC مرجع است.
+نام eth0/eth1 در لینوکس بر اساس ترتیب کشف سخت‌افزار است و با ترتیب Adapter 1/2 در ESXi لزوماً یکی نیست. مرجع قطعی MAC است: MAC Adapter را در ESXi ببینید و در لینوکس با `ip link` تطبیق دهید.
 
 **1-A-م4** — سه چیزی که هر تغییر لازم دارد؟
 
-Backup، Rollback Plan، تأیید صریح.
+هر تغییر سه چیز لازم دارد: Backup (قابل‌بازیابی)، Rollback Plan (مرحله‌به‌مرحله و زمان‌بندی‌شده)، تأیید صریح صاحب سیستم. بدون هر یک، تغییر مجاز نیست؛ طبق قانون پروژه فقط کاربر روی ESXi/PNetLab تغییر می‌دهد.
 
 **1-B-م1** — فرق Snapshot و Backup؟
 
-Snapshot نقطه بازگشت روی همان دیسک است و بکاپ نیست؛ Backup کپی مستقل خارج از آن است.
+Snapshot حالت VM را روی همان دیسک نگه می‌دارد و وابسته به دیسک اصلی است؛ اگر دیسک خراب شود Snapshot هم از بین می‌رود، و Snapshotهای طولانی کارایی را پایین می‌آورند. Backup کپی مستقل در محل دیگر است.
 
 **1-B-م2** — چرا RAM Nodeهای داخل PNetLab به RAM ESXi اضافه نمی‌شود؟
 
-چون از همان RAM تخصیص‌داده‌شده به VM PNetLab مصرف می‌شود.
+RAM هر Node شبکه از RAM اختصاص‌یافته به VM PNetLab کم می‌شود، نه از ESXi به‌صورت جدا. برنامه‌ریزی ظرفیت: مجموع RAM Nodeها نباید از RAM VM بیشتر باشد.
 
 **1-B-م3** — پرامپت `Router(config)#` یعنی چه؟
 
-Global Configuration؛ تغییر تنظیمات.
+Prompt `Router(config)#` یعنی Global Configuration Mode در IOS: تغییرات روی running-config اعمال می‌شود. با `end` به Privileged EXEC برمی‌گردید؛ تشخیص مد از Prompt اولین مهارت CLI است.
 
 **1-B-م4** — چرا ساعت (NTP) برای شبکه و امنیت مهم است؟
 
-لاگ‌ها، گواهی‌ها و احراز هویت (Kerberos) به زمان وابسته‌اند.
+NTP لازم است چون Logها، گواهی‌های TLS و Kerberos به زمان صحیح وابسته‌اند؛ اختلاف ساعت Correlation را غیرممکن و احراز هویت را ناموفق می‌کند.
+
+**1-0-ت1** — ت۱ (نقشه‌ی Lab)
+
+نقشه‌ی سه‌لایه‌ی Lab: لایه‌ی فیزیکی/میزبان (ESXi)، لایه‌ی شبکه‌ی مجازی (vSwitch و Port Group)، و لایه‌ی Node (PNetLab و Imageهای شبکه). مسیر مدیریت جدا از مسیر ایزوله‌ی ترافیک Lab است؛ vSwitch-FGT بدون Uplink است تا هیچ ترافیکی به شبکه‌ی واقعی نشت نکند.
+
+**1-0-ت2** — ت۲ (خطر Uplink)
+
+اگر به vSwitch-FGT یک Uplink فیزیکی اضافه شود، ایزولاسیون از بین می‌رود: ترافیک Lab (و Imageهای آسیب‌پذیر یا Loop) می‌تواند به شبکه‌ی واقعی برسد و بالعکس. خطرات: نشت Broadcast/DHCP، Loop STP، افشای IPهای تکراری و تغییر ناخواسته در شبکه‌ی تولید.
+
+**1-0-ت3** — ت۳ (Snapshot در برابر Backup)
+
+Snapshot نقطه‌ی بازگشت روی همان دیسک VM است و با خرابی دیسک یا حذف VM از بین می‌رود؛ Backup کپی مستقل در محل دیگر است و برای بازیابی فاجعه استفاده می‌شود. Snapshot برای تغییر کوتاه‌مدت و Backup برای نگهداری بلندمدت.
+
+**1-0-ت4** — ت۴ (RAM Nodeها)
+
+RAM Nodeها از همان RAM اختصاص‌داده‌شده به VM PNetLab مصرف می‌شود؛ ESXi فقط RAM VM را می‌بیند. پس برای افزودن Node بیشتر باید RAM VM PNetLab را افزایش داد، نه انتظار افزایش خودکار.
+
+**1-0-Q1** — Quick quiz (English): Why is a vSwitch without an uplink considered isolated?
+
+It has no physical network adapter attached, so traffic cannot leave the host.
+
+**1-A-Q1** — Quick quiz (English): What three things must every change include?
+
+A backup, a rollback plan and explicit approval.
+
+**1-B-Q1** — Quick quiz (English): Why is "CLI accepted" not enough to claim a feature works?
+
+Because the command may be accepted without the feature actually functioning; it must be tested with evidence.
 
 <a id="mist-1"></a>
 
