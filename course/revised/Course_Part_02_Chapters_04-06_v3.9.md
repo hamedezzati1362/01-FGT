@@ -1785,6 +1785,8 @@ udld enable
 
 **4-1-ت1** — ۱ (ساده): چرا Loop در لایه ۲ خطرناک‌تر از لایه ۳ است؟
 
+فریم لایه‌ی ۲ هیچ فیلد TTL ندارد، پس فریم Broadcast/Unknown-unicast در حلقه تا ابد می‌چرخد و با هر دور تکثیر می‌شود (Broadcast Storm)؛ CPU و پهنای باند سوییچ‌ها در چند ثانیه پر می‌شود. بسته‌ی لایه‌ی ۳ TTL دارد و پس از رسیدن به صفر دور ریخته می‌شود؛ پس حلقه‌ی L3 زودتر خود را محدود می‌کند. به همین دلیل STP لازم است.
+
 ``` text
 Layer-2 frames have no TTL, so they never expire.
 Layer-3 packets have a TTL and are dropped when it reaches 0.
@@ -1792,11 +1794,19 @@ Layer-3 packets have a TTL and are dropped when it reaches 0.
 
 **4-1-ت2** — ۲ (ساده): Root Bridge را چطور انتخاب می‌کنند؟
 
+Root Bridge با کوچک‌ترین Bridge ID انتخاب می‌شود: ابتدا کمترین Priority (که با VLAN ID جمع می‌شود در PVST) و در صورت برابری کوچک‌ترین MAC. چون MAC معمولاً سوییچ قدیمی‌تر کوچک‌تر است، بدون تنظیم، قدیمی‌ترین سوییچ Root می‌شود: خطای شایع. راه: Priority را دستی (مثلاً 4096) روی Core بگذارید.
+
+``` text
+Bridge ID = Priority (+ VLAN ID) + MAC ; lowest wins
+```
+
 ``` text
 Lowest Bridge ID = lowest (Priority + VLAN ID), then lowest MAC address.
 ```
 
 **4-1-ت3** — ۳ (متوسط): دو سوییچ با اولویت 32768 و 4096؛ کدام Root است؟
+
+سوییچ با Priority ۴۰۹۶ Root می‌شود چون کوچک‌تر بهتر است و ۴۰۹۶ از ۳۲۷۶۸ کمتر است. MAC فقط وقتی Priority برابر باشد تعیین‌کننده است. در عمل برای اطمینان Root اصلی را 4096 و Secondary را 8192 تنظیم می‌کنند (`spanning-tree vlan X root primary/secondary`).
 
 ``` text
 The switch with priority 4096 (lower value wins).
@@ -1804,11 +1814,23 @@ The switch with priority 4096 (lower value wins).
 
 **4-1-ت4** — ۴ (متوسط): هزینه‌ی مسیر سه لینک ۱ گیگ پشت‌سرهم تا Root با روش Short؟
 
+هزینه‌ی مسیر مجموع Costهای لینک‌ها در جهت Root است. روش Short (IEEE 802.1D 1998) برای 1 Gbps هزینه‌ی ۴ دارد؛ سه لینک پشت‌سرهم ۴+۴+۴=۱۲. روش Long (RSTP پیش‌فرض نسخه‌های جدید) برای 1G مقدار ۲۰۰۰ را می‌دهد؛ مهم است که همه‌ی سوییچ‌ها از یک روش استفاده کنند.
+
+``` text
+Cost = 4 + 4 + 4 = 12  (short method, 1 Gbps links)
+```
+
 ``` text
 Cost = 4 + 4 + 4 = 12
 ```
 
 **4-1-ت5** — ۵ (سخت): در مثلث A (Root)، B، C با لینک‌های 1G، اگر لینک A-C خراب شود، SW-C از کدام مسیر Root را می‌بیند و هزینه چقدر است؟
+
+قبل از خرابی A-C، C مسیر مستقیم به Root (هزینه ۴) و مسیر از B (۸) دارد؛ پورت به سمت B در حالت Alternate/Blocking است. با خرابی A-C، پورت Alternate به سمت B به Root Port تبدیل می‌شود و Forwarding می‌شود؛ هزینه ۸. در RSTP این انتقال معمولاً زیر ۱ ثانیه است؛ در STP کلاسیک تا ۵۰ ثانیه.
+
+``` text
+New path: C -> B -> A ; Cost = 4 + 4 = 8
+```
 
 ``` text
 New path: C -> B -> A
@@ -1818,21 +1840,31 @@ The previously blocked port on C (towards B) becomes the Root Port.
 
 **4-1-م1** — چرا لایه ۲ به STP نیاز دارد؟
 
+چون فریم TTL ندارد و حلقه‌ی L2 فریم را بی‌پایان می‌چرخاند و Storm می‌سازد. STP با Block کردن لینک‌های مازاد (و بازکردن آن‌ها در خرابی) یک ساختار درختی بدون حلقه می‌سازد و هم‌زمان افزونگی نگه می‌دارد.
+
 چون فریم TTL ندارد و در صورت وجود حلقه تا ابد می‌چرخد.
 
 **4-1-م2** — Root Bridge چه کسی است؟
+
+Root Bridge سوییچی با کوچک‌ترین Bridge ID (Priority سپس MAC) است. تمام مسیرها برای محاسبه‌ی Cost به سمت Root سنجیده می‌شوند؛ پس بهتر است Root سوییچ Core باشد، نه یک Access تصادفی.
 
 سوییچی با کوچک‌ترین Bridge ID؛ یعنی کوچک‌ترین اولویت و سپس کوچک‌ترین MAC.
 
 **4-1-م3** — Root Port و Designated Port چه فرقی دارند؟
 
+Root Port پورتی در سوییچ غیر Root است که کوتاه‌ترین مسیر به Root را دارد (هر سوییچ غیر Root فقط یکی). Designated Port پورتی در هر Segment است که کوتاه‌ترین مسیر Segment به Root را دارد و ترافیک آن Segment را Forward می‌کند. پورت‌های دیگر Alternate/Blocking می‌شوند. همه‌ی پورت‌های Root سوییچ Designated هستند.
+
 Root Port پورت غیر Root به سمت Root است؛ Designated Port پورت فعال هر Segment به سمت دورتر از Root.
 
 **4-1-Q1** — Quick quiz (answer in English): What does STP do with a redundant link?
 
+پاسخ انگلیسی در پایین آمده است؛ نکته‌ی عملی: پورت Blocked مسیر پشتیبان است نه «پورت خراب»؛ در خرابی لینک اصلی آن Forward می‌شود و افزونگی را فراهم می‌کند.
+
 It places one of the ports in a blocking (alternate) state to prevent a loop, and unblocks it if the active link fails.
 
 **4-2-ت1** — ۱ (ساده): چرا RSTP سریع‌تر است؟
+
+RSTP به‌جای انتظار برای Timerها (Listening/Learning ~30 ثانیه)، سوییچ‌ها با Proposal/Agreement به‌صورت Handshake روی لینک Point-to-point مستقیماً Forwarding را می‌گیرند. پورت Alternate از قبل آماده است و پس از خرابی Root Port بلافاصله جایگزین می‌شود. نتیجه: همگرایی در حد ثانیه (کمتر از ۱ تا ۲ ثانیه) در مقابل ~۳۰–۵۰ ثانیه در STP.
 
 ``` text
 Switches negotiate (proposal/agreement) instead of waiting for timers; alternate ports are ready.
@@ -1840,17 +1872,23 @@ Switches negotiate (proposal/agreement) instead of waiting for timers; alternate
 
 **4-2-ت2** — ۲ (ساده): اولویت‌های مجاز؟
 
+Priority باید مضرب ۴۰۹۶ باشد (۰، ۴۰۹۶، ... ۶۱۴۴۰) چون ۱۲ بیت بالای Bridge ID شامل Extended System ID (VLAN) است و فقط ۴ بیت برای Priority باقی می‌ماند. پیش‌فرض ۳۲۷۶۸. تنظیم عدد دیگر با خطا رد می‌شود.
+
 ``` text
 Multiples of 4096 (0, 4096, 8192, ... 61440). Default 32768.
 ```
 
 **4-2-ت3** — ۳ (متوسط): PortFast بدون BPDU Guard چه خطری دارد؟
 
+PortFast پورت را فوراً Forwarding می‌کند و Listening/Learning را رد می‌کند. اگر کاربر یک سوییچ/Hub به آن وصل کند و حلقه بسازد، STP فرصت واکنش ندارد و Storm رخ می‌دهد. BPDU Guard با دیدن BPDU روی پورت PortFast آن را err-disable می‌کند. ترکیب PortFast+BPDU Guard استاندارد پورت کاربر است.
+
 ``` text
 A switch plugged into a PortFast port can create a loop before STP reacts; BPDU Guard shuts the port.
 ```
 
 **4-2-ت4** — ۴ (متوسط): پورت err-disabled شد؛ مراحل رفع؟
+
+مراحل رفع err-disabled: ۱) `show interfaces status err-disabled` و Log برای علت (BPDU Guard، Port Security). ۲) علت را حذف کنید (سوییچ جعلی/دستگاه). ۳) `shutdown` سپس `no shutdown`. ۴) آزمون. اگر علت حذف نشود پورت دوباره می‌افتد. `errdisable recovery cause bpduguard interval 300` بازیابی خودکار را فعال می‌کند ولی علت را رفع نمی‌کند.
 
 ``` text
 1) show interfaces status err-disabled
@@ -1861,27 +1899,39 @@ A switch plugged into a PortFast port can create a loop before STP reacts; BPDU 
 
 **4-2-ت5** — ۵ (سخت): Root Guard را روی کدام پورت‌ها می‌گذاریم و چرا؟
 
+Root Guard روی پورت‌هایی که به سوییچ‌های خارج از کنترل شما (مشتری/Edge/ISP) می‌روند گذاشته می‌شود. اگر BPDU برتر (ادعای Root) برسد، پورت به حالت root-inconsistent می‌رود و ترافیک را Forward نمی‌کند تا سوییچ بیگانه Root نشود. وقتی BPDU برتر قطع شد، پورت خودکار بازیابی می‌شود. بر خلاف BPDU Guard، روی پورت کاربر نیست.
+
 ``` text
 On ports that face switches you do not control (customer/edge); a superior BPDU there puts the port in root-inconsistent state so no foreign switch becomes root.
 ```
 
 **4-2-م1** — PortFast برای چه پورتی؟
 
+PortFast فقط برای پورت‌های دستگاه انتهایی (PC، پرینتر، تلفن) که از BPDU استفاده نمی‌کنند. روی لینک بین سوییچ‌ها خطرناک است چون ممکن است حلقه‌ی موقت بسازد.
+
 فقط پورت دستگاه انتهایی (PC، پرینتر)، نه لینک بین سوییچ‌ها.
 
 **4-2-م2** — تفاوت BPDU Guard و Root Guard؟
+
+BPDU Guard روی پورت PortFast با دیدن هر BPDU پورت را خاموش می‌کند؛ Root Guard فقط BPDUهای برتر را بلوک می‌کند و پورت را روی Alternate/inconsistent نگه می‌دارد. یکی ضد سوییچ ناخواسته در پورت کاربر و دیگری ضد Root جعلی روی پورت اتصال به خارج.
 
 BPDU Guard با هر BPDU پورت را خاموش می‌کند؛ Root Guard فقط BPDUهای برتر (ادعای Root) را بلوک می‌کند.
 
 **4-2-م3** — چرا Root را دستی تعیین می‌کنیم؟
 
+اگر Root دستی نباشد، قدیمی‌ترین (کوچک‌ترین MAC) سوییچ Root می‌شود که ممکن است ضعیف‌ترین سوییچ و در محل بد باشد. تنظیم دستی Root (Primary/Secondary) مسیر ترافیک را قابل‌پیش‌بینی و پایدار می‌کند.
+
 تا سوییچ قدیمی یا ضعیف تصادفاً Root نشود و مسیر ترافیک قابل‌پیش‌بینی باشد.
 
 **4-2-Q1** — Quick quiz (answer in English): When should you not enable PortFast?
 
+پاسخ انگلیسی در پایین آمده است؛ قانون ساده: PortFast فقط روی Access/Edge پورت دستگاه انتهایی، نه Trunk و نه لینک سوییچ-به-سوییچ.
+
 On trunk or switch-to-switch links, because it can create temporary loops.
 
 **4-3-ت1** — ۱ (ساده): چرا EtherChannel لازم است؟
+
+بدون EtherChannel، لینک‌های موازی بین دو سوییچ را STP Block می‌کند و پهنای باند اضافه استفاده نمی‌شود. EtherChannel چند لینک را به یک لینک منطقی تبدیل می‌کند: STP یک لینک می‌بیند، پهنای باند جمع می‌شود و خرابی یک لینک بدون Re-convergence تحمل می‌شود.
 
 ``` text
 Without it STP blocks the parallel link; with it the links are bundled into one logical link.
@@ -1889,11 +1939,15 @@ Without it STP blocks the parallel link; with it the links are bundled into one 
 
 **4-3-ت2** — ۲ (ساده): LACP با کدام Modeها؟
 
+LACP دو Mode دارد: active (شروع مذاکره) و passive (فقط پاسخ). حداقل یک سر باید active باشد تا Channel بسازد. توصیه: هر دو active. PAgP (سیسکو) desirable/auto دارد. Mode on (بدون پروتکل) تنها وقتی که هر دو سر on باشند.
+
 ``` text
 active and passive
 ```
 
 **4-3-ت3** — ۳ (متوسط): کدام ترکیب Channel نمی‌سازد؟
+
+ترکیب‌های ناموفق: passive-passive (هیچ‌کس شروع نمی‌کند)، on با active/passive (on پروتکل ندارد)، و LACP با PAgP (پروتکل‌های ناسازگار). مشخصات پورت‌ها (Speed/Duplex/VLAN/Trunk) هم باید یکسان باشد وگرنه عضو Suspended می‌شود.
 
 ``` text
 passive-passive, on-active, LACP-PAgP
@@ -1901,11 +1955,15 @@ passive-passive, on-active, LACP-PAgP
 
 **4-3-ت4** — ۴ (متوسط): تفسیر Po1(SD) Gi0/1(D) Gi0/2(D)
 
+Po1(SD) یعنی Port-channel لایه‌ی ۲ (S) و Down (D)؛ هر دو عضو (D) یعنی Down: کابل، پورت سمت مقابل یا Shutdown. بررسی: `show interfaces status`، Log، سمت مقابل و `show etherchannel summary`. SU = L2 Up، P = Bundled، I = Standalone، s = Suspended.
+
 ``` text
 Port-channel is down; both member ports are down (cable or remote side down).
 ```
 
 **4-3-ت5** — ۵ (سخت): چرا ۲ لینک ۱G برای یک انتقال فایل تکی ۲G سرعت نمی‌دهد؟
+
+EtherChannel بار را با Hash (IP/MAC/پورت) بین لینک‌ها تقسیم می‌کند و یک جریان (Flow) همیشه روی یک عضو می‌رود تا ترتیب بسته‌ها حفظ شود. بنابراین یک انتقال فایل تکی حداکثر سرعت یک لینک (1G) را می‌بیند؛ چندین جریان بین لینک‌ها توزیع می‌شود. برای بهبود: الگوریتم Hash با پورت (`port-channel load-balance src-dst-port`).
 
 ``` text
 A single flow is hashed to one member link, so one flow is limited to 1G; many flows spread across links.
@@ -1913,17 +1971,25 @@ A single flow is hashed to one member link, so one flow is limited to 1G; many f
 
 **4-3-م1** — EtherChannel چه مشکلی را حل می‌کند؟
 
+EtherChannel دو مشکل را حل می‌کند: پهنای باند بیشتر از لینک‌های موازی که STP Block می‌کرد، و تحمل خطا (خرابی یک لینک بدون قطع). همچنین Config STP را ساده می‌کند چون یک لینک منطقی است.
+
 پهنای باند و تحمل خطا برای لینک‌های موازی که STP آن‌ها را نمی‌بندد.
 
 **4-3-م2** — چرا LACP را ترجیح می‌دهیم؟
+
+LACP (802.3ad) استاندارد IEEE است و بین سازنده‌های مختلف کار می‌کند؛ PAgP اختصاصی سیسکو. با LACP هم سیسکو-به-فورتی‌گیت/لینوکس ممکن است و خطاهای پیکربندی با Mode active/active و Fast timer کمتر می‌شود.
 
 استاندارد است و با تجهیزات سازنده‌های مختلف کار می‌کند.
 
 **4-3-Q1** — Quick quiz (answer in English): Why does a single file transfer not use the full bundled bandwidth?
 
+پاسخ انگلیسی در پایین آمده است؛ جمع‌بندی: برای بهبود توزیع بار تعداد جریان‌های مختلف و Hash مناسب لازم است نه فقط افزودن لینک.
+
 Because one flow is hashed onto a single member link.
 
 **4-4-ت1** — ۱ (ساده): سه نوع Violation؟
+
+سه حالت Violation: shutdown (پیش‌فرض؛ پورت err-disabled و Log)، restrict (فریم نامجاز دور ریخته و Log/شمارنده، پورت فعال)، protect (دور ریختن بدون Log). برای امنیت و ممیزی shutdown یا restrict بهتر از protect است چون Log دارند.
 
 ``` text
 shutdown, restrict, protect
@@ -1931,17 +1997,23 @@ shutdown, restrict, protect
 
 **4-4-ت2** — ۲ (ساده): sticky یعنی چه؟
 
+Sticky یعنی سوییچ MACهای یادگرفته‌شده را به‌صورت خودکار به running-config اضافه می‌کند؛ پس بعد از ذخیره (`copy run start`) پایدار می‌ماند. مزیت: بدون لیست دستی MAC، پورت به اولین دستگاه‌ها قفل می‌شود. عیب: دستگاه عوض‌شده نیاز به پاک‌سازی دارد (`clear port-security sticky`).
+
 ``` text
 The switch learns MAC addresses dynamically and stores them in the running-config.
 ```
 
 **4-4-ت3** — ۳ (متوسط): چرا بعد از reload ممکن است sticky پاک شود؟
 
+Sticky MACها فقط در running-config هستند؛ اگر `copy running-config startup-config` انجام نشود، بعد از reload پاک می‌شوند و سوییچ دوباره یاد می‌گیرد، یعنی امنیت غیرمنتظره عوض می‌شود. پس بعد از تغییر Port Security Config را ذخیره کنید.
+
 ``` text
 Sticky MACs are only in running-config; without copy running-config startup-config they are lost.
 ```
 
 **4-4-ت4** — ۴ (متوسط): پورت err-disabled شد؛ مراحل؟
+
+مراحل: ۱) علت: `show port-security interface Gi0/5` و Log برای MAC متخلف. ۲) دستگاه نامجاز را بردارید یا MAC را مجاز کنید. ۳) `shutdown` و `no shutdown` (یا errdisable recovery). ۴) آزمون. بدون رفع علت، پورت دوباره می‌افتد.
 
 ``` text
 1) find the offending MAC
@@ -1952,23 +2024,33 @@ Sticky MACs are only in running-config; without copy running-config startup-conf
 
 **4-4-ت5** — ۵ (سخت): maximum را برای پورت Phone+PC چند می‌گذاریم و چرا؟
 
+پورت دارای تلفن IP و PC پشت آن حداقل دو MAC دارد؛ مقدار ۳ (تلفن + PC + یک رزرو) از قفل‌شدن ناخواسته هنگام تعویض دستگاه جلوگیری می‌کند. مقدار بیش‌ازحد بزرگ هدف Port Security را کم می‌کند؛ دلیل ۳ تعادل بین کاربرد و امنیت است.
+
 ``` text
 3 (Phone + PC + one spare), to avoid unnecessary lockouts.
 ```
 
 **4-4-م1** — Port Security چه چیزی را کنترل می‌کند؟
 
+Port Security تعداد و هویت MACهای مجاز روی یک پورت را کنترل می‌کند تا دستگاه ناشناس، Switch/Hub جعلی یا حمله‌ی MAC Flooding روی پورت Access محدود شود.
+
 تعداد و هویت MACهای مجاز روی یک پورت.
 
 **4-4-م2** — تفاوت restrict و shutdown؟
+
+restrict فریم نامجاز را دور می‌ریزد، Log و شمارنده می‌دهد ولی پورت فعال می‌ماند؛ shutdown پورت را err-disabled می‌کند و نیاز به ریست دارد. restrict برای محیط‌هایی که قطع کامل پورت نامطلوب است مناسب‌تر است.
 
 restrict فریم را دور می‌ریزد و لاگ می‌دهد ولی پورت فعال می‌ماند؛ shutdown پورت را err-disabled می‌کند.
 
 **4-4-Q1** — Quick quiz (answer in English): What is the default violation mode?
 
+پاسخ انگلیسی در پایین آمده است؛ پیش‌فرض Violation برابر shutdown است: پورت err-disabled می‌شود و برای بازیابی باید shutdown/no shutdown یا errdisable recovery اجرا شود.
+
 Shutdown: the port goes into err-disabled state.
 
 **4-5-ت1** — ۱ (ساده): نام چهار پیام DORA؟
+
+DORA مراحل گرفتن IP است: Discover (کلاینت Broadcast می‌کند)، Offer (سرور پیشنهاد می‌دهد)، Request (کلاینت پیشنهاد را درخواست می‌کند)، Acknowledge (سرور تأیید و Lease). اگر Offer نیاید، کلاینت APIPA (169.254.x.x) می‌گیرد.
 
 ``` text
 Discover, Offer, Request, Acknowledge
@@ -1976,17 +2058,23 @@ Discover, Offer, Request, Acknowledge
 
 **4-5-ت2** — ۲ (ساده): کدام پورت‌ها Trusted می‌شوند؟
 
+Trusted: پورت به سمت DHCP Server قانونی و Trunk بین سوییچ‌ها (و گاهی Relay). پورت کاربر هرگز Trusted نیست. روی Untrusted فقط DISCOVER/REQUEST مجاز است و Offer/ACK دور ریخته می‌شود. این همان دفاع در برابر Rogue DHCP است.
+
 ``` text
 Ports toward the legitimate DHCP server and inter-switch trunks. Never user ports.
 ```
 
 **4-5-ت3** — ۳ (متوسط): DAI به چه چیزی وابسته است؟
 
+DAI (Dynamic ARP Inspection) هر ARP را با جدول Binding DHCP Snooping (IP-MAC-پورت-VLAN) مقایسه می‌کند و ARP جعلی را دور می‌ریزد. بدون Binding (مثلاً IP Static) باید ARP ACL یا Static Binding داد وگرنه ARP مشروع هم Drop می‌شود.
+
 ``` text
 The DHCP Snooping binding table (or static ARP ACL entries).
 ```
 
 **4-5-ت4** — ۴ (متوسط): کلاینت 169.254.x.x گرفته؛ دو علت محتمل؟
+
+APIPA (169.254.x.x) یعنی هیچ Offer دریافت نشده. دو علت محتمل: ۱) DHCP Server در دسترس/روشن نیست (VLAN/Relay اشتباه). ۲) Snooping Offer را Drop می‌کند چون پورت سرور/Trunk Trusted نیست. بررسی: `show ip dhcp snooping`، `show ip dhcp binding` و Capture روی کلاینت.
 
 ``` text
 1) DHCP server unreachable/down
@@ -1995,23 +2083,33 @@ The DHCP Snooping binding table (or static ARP ACL entries).
 
 **4-5-ت5** — ۵ (سخت): چرا سرور با IP ثابت بعد از DAI قطع می‌شود؟
 
+سرور با IP ثابت در جدول Binding DHCP نیست؛ DAI ARP آن را نامعتبر می‌بیند و Drop می‌کند و سرور قطع می‌شود. راه: Static Binding (`ip source binding`) یا ARP ACL (`arp access-list`) و `ip arp inspection filter`، یا Trusted کردن پورت سرور. پیش از فعال‌سازی DAI، سرورهای IP ثابت را فهرست کنید.
+
 ``` text
 It has no DHCP binding entry; DAI drops its ARP packets. Fix: add a static binding / ARP ACL.
 ```
 
 **4-5-م1** — DHCP Snooping چه مشکلی را حل می‌کند؟
 
+DHCP Snooping سرور DHCP جعلی (Rogue) را مسدود می‌کند (Offer/ACK فقط از پورت Trusted) و جدول Binding IP-MAC-پورت می‌سازد که DAI و IP Source Guard از آن استفاده می‌کنند. بدون آن، یک پرینتر یا روتر خانگی اشتباه می‌تواند Gateway/DNS جعلی بدهد.
+
 مسدودکردن سرور DHCP جعلی و ساخت جدول Binding.
 
 **4-5-م2** — DAI چطور کار می‌کند؟
+
+DAI پیام‌های ARP را رهگیری و با Binding Table مقایسه می‌کند؛ ARP با IP-MAC نامطابق دور ریخته می‌شود و حمله‌ی ARP Spoofing/MITM را خنثی می‌کند. باید روی VLANها فعال و پورت‌های Trunk/Uplink Trusted شوند.
 
 هر ARP را با جدول Binding مقایسه می‌کند و ARP نامعتبر را می‌اندازد.
 
 **4-5-Q1** — Quick quiz (answer in English): Why must the trunk between switches be trusted for DHCP snooping?
 
+پاسخ انگلیسی در پایین آمده است؛ اگر Trunk بین سوییچ‌ها Untrusted باشد، Offer سرور که از Trunk می‌رسد Drop می‌شود و کلاینت‌های سوییچ دیگر IP نمی‌گیرند.
+
 Otherwise legitimate DHCP replies arriving over the trunk are dropped.
 
 **4-6-ت1** — ۱ (ساده): سه لایه‌ی شبکه؟
+
+مدل سه‌لایه: Access (اتصال کاربران/سرورها، پورت‌های کاربر و سیاست‌های L2)، Distribution (تجمیع Accessها، سیاست، L3 بین VLANها، ACL/QoS)، Core (انتقال سریع و بدون سیاست بین Distributionها). هر لایه وظیفه و Scale مستقل دارد.
 
 ``` text
 Access, Distribution, Core
@@ -2019,11 +2117,15 @@ Access, Distribution, Core
 
 **4-6-ت2** — ۲ (ساده): Collapsed Core یعنی چه؟
 
+Collapsed Core یعنی Distribution و Core در یک لایه ادغام شده‌اند (مثلاً دو سوییچ L3 با HSRP). برای شعبه و سازمان کوچک مقرون‌به‌صرفه و ساده است؛ با رشد، یک لایه‌ی Core جدا لازم می‌شود. نقطه‌ی ضعف: Blast radius بزرگ‌تر.
+
 ``` text
 Distribution and Core are merged into one layer (two layer-3 switches).
 ```
 
 **4-6-ت3** — ۳ (متوسط): چرا Access به دو Distribution وصل است؟
+
+اتصال Access به دو Distribution افزونگی می‌دهد: خرابی یک Uplink یا یک سوییچ Distribution، ارتباط را قطع نمی‌کند. با STP/RSTP یا Routed Access یکی فعال و دیگری Standby است؛ با Port-channel هر دو فعال. بدون این، یک خرابی Uplink کل Access را قطع می‌کند.
 
 ``` text
 Redundancy: if one uplink or distribution switch fails, the other keeps the access switch online.
@@ -2031,26 +2133,33 @@ Redundancy: if one uplink or distribution switch fails, the other keeps the acce
 
 **4-6-ت4** — ۴ (سخت): در طراحی سه‌لایه، Root STP کجا باشد؟
 
+Root STP باید روی Distribution/Core باشد، نه Access. اگر Access Root شود، ترافیک بین سوییچ‌ها از یک دستگاه کم‌ظرفیت لبه عبور می‌کند و مسیرهای زیربهینه می‌سازد. راه: Priority پایین روی Distribution و Root Guard روی Uplink Access.
+
 ``` text
 On the Distribution/Core switches, never on access switches.
 ```
 
 **4-6-م1** — چرا لایه‌بندی؟
 
+لایه‌بندی مقیاس‌پذیری و کنترل را آسان می‌کند: هر لایه کار مشخص دارد، افزودن Access بدون دست‌زدن به Core، عیب‌یابی ساده‌تر و طراحی قابل‌تکرار.
+
 برای مقیاس‌پذیری و کنترل: هر لایه کار مشخصی دارد.
 
 **4-6-م2** — Collapsed Core کی مناسب است؟
 
+Collapsed Core برای شعبه‌ی کوچک یا کاربران کم (چند ده تا چند صد) مناسب است. با رشد یا نیاز به جداسازی سیاست‌ها، Core جدا بسازید.
+
 شعبه‌ی کوچک با کاربران کم.
 
 **4-6-Q1** — Quick quiz (answer in English): Why should the STP root never be an access switch?
+
+پاسخ انگلیسی در پایین آمده است؛ توصیه: Root را روی Distribution/Core با Priority صریح تنظیم و Root Guard را روی Uplinkهای Access اعمال کنید.
 
 Because all traffic would flow through a low-capacity edge device instead of the core.
 
 ---
 
 <a id="ch5"></a>
-
 
 ### پاسخ‌های درس افزوده‌ی 4-7 (فصل 4)
 
