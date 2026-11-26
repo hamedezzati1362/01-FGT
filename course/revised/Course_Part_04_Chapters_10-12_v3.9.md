@@ -1944,9 +1944,9 @@ diagnose sys session list
 
 <a id="l-11-2"></a>
 
-## درس 11-2 — Zone، Trust Boundary، Default Deny و Least Privilege
+## درس 11-2 — Zone، Trust Boundary، Default Deny و Least Privilege: از ماتریس تا Policy
 
-**فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۱ · ≈ 9 ساعت**
+**فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۰، ۱۱-۱ · ≈ 10 ساعت**
 
 > **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
 
@@ -1955,82 +1955,112 @@ diagnose sys session list
 در پایان این درس باید بتوانید:
 
 1. Zone و سطح اعتماد را تعریف و ماتریس Zone-to-Zone بسازد.
-2. Default Deny و Least Privilege را در Policy اعمال کند.
-3. Policy را از ماتریس استخراج و ترتیب را رعایت کند.
-4. Policy گشاد را با Log شناسایی و تنگ کند.
-5. ماتریس را مستند کند.
+2. Default Deny و Least Privilege را در Policy واقعی اعمال کند.
+3. Policy را از ماتریس استخراج و ترتیب خاص به عام را رعایت کند.
+4. Policy گشاد (ALL) را با Log شناسایی و تنگ کند.
+5. آزمون مثبت/منفی برای هر خانه‌ی ماتریس بنویسد.
+6. ماتریس را برای ممیزی مستند و نگهداری کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-در یک فرودگاه، مسافر عمومی، کارمند و منطقه‌ی امنیتی سطح اعتماد متفاوت دارند. فایروال هم شبکه را به Zone تقسیم می‌کند و بین Zoneها فقط عبور لازم را مجاز می‌کند؛ بقیه رد می‌شود.
+فرودگاه را در نظر بگیرید: سالن عمومی، گیت امنیتی، سالن پرواز، باند و اتاق کنترل. هر منطقه سطح اعتماد متفاوت و مرز مشخص دارد؛ عبور از هر مرز فقط با مجوز مخصوص. اگر همه‌ی درها باز باشند، دیوار بی‌معناست.
+
+شبکه هم همین است. Zone یعنی «منطقه‌ی هم‌اعتماد»؛ Trust Boundary مرز بین دو سطح اعتماد؛ Default Deny یعنی «هر عبور ثبت‌نشده ممنوع»؛ Least Privilege یعنی «فقط همان‌قدر که لازم است». اگر این چهار را درست بفهمید، طراحی Policy از «حدس» به «استخراج از جدول» تبدیل می‌شود.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) Zone
+#### ۱) Zoneها و سطح اعتماد
 
-| Zone | اعتماد | مثال |
+| Zone | سطح اعتماد | مثال |
 |---|---|---|
 | Internet | صفر | WAN |
-| DMZ | کم | وب‌سرور |
-| Server | متوسط | DB/App |
-| User | متوسط | کاربران |
-| Mgmt | بالا | مدیریت |
+| DMZ | کم | وب‌سرور عمومی |
+| Users | متوسط | VLAN کاربران |
+| Servers | متوسط‌بالا | App/DB |
+| Mgmt | بالا | ایستگاه Admin |
+
+قانون: ترافیک از اعتماد کمتر به بیشتر سخت‌گیرانه‌تر است؛ از بیشتر به کمتر هم باید کنترل شود (Exfiltration).
 
 #### ۲) ماتریس
 
 ``` text
-          Internet  DMZ   Server  User  Mgmt
-User      HTTP/S    -     App     -     -
-DMZ       -         -     DB-only -     -
-Internet  -         443   -       -     -
-Mgmt      -         SSH   SSH     SSH   -
+from\to   Internet  DMZ     Users  Servers  Mgmt
+Internet  -         443VIP  -      -        -
+DMZ       Updates   -       -      DB-only  -
+Users     HTTP/S    HTTPS   -      App 443  -
+Servers   Updates   -       -      -        -
+Mgmt      -         SSH     SSH    SSH      -
 ```
 
-هر خانه‌ی خالی = Deny.
+هر خانه‌ی «-» = Deny. هر خانه‌ی پر = یک یا چند Policy با سرویس مشخص.
 
-#### ۳) Default Deny
-
-Policy آخر `deny all + log`. و Policyها از **خاص به عام**.
-
-#### ۴) Least Privilege
-
-به‌جای `ALL` فقط سرویس لازم؛ به‌جای `any` فقط Host/Subnet لازم؛ زمان‌دار.
-
-#### ۵) ممیزی
+#### ۳) از ماتریس به Policy
 
 ``` text
-Policy hit-count = 0 (90 days)  -> remove
-Policy ALL/ALL      -> narrow
+ID  from   to       src         dst        service     action
+10  Users  Internet NET-USERS   all        HTTP,HTTPS,DNS ACCEPT
+20  Users  Servers  NET-USERS   SRV-APP    TCP-443     ACCEPT
+30  Mgmt   Servers  HOST-ADMIN  GRP-SERVERS SSH        ACCEPT
+99  any    any      all         all        ALL         DENY + log
 ```
+
+ترتیب: خاص بالا، عام پایین، Deny صریح آخر.
+
+#### ۴) Least Privilege در عمل
+
+- به‌جای dst=all فقط مقصد لازم.
+- به‌جای ALL فقط سرویس لازم.
+- به‌جای always فقط Schedule لازم (مثلاً پیمانکار).
+- مدیریت فقط از Mgmt.
+
+#### ۵) تشخیص Policy گشاد
+
+``` text
+Policy 55: Users -> Servers  ALL/ALL ACCEPT  (hit count: 1.2M)
+```
+
+Log ۱۴ روز نشان می‌دهد فقط 443/445/1433 به سه سرور استفاده شده؛ جایگزین: سه Policy خاص.
+
+#### ۶) آزمون ماتریس
+
+برای هر خانه: آزمون مثبت (مجاز کار کند) و منفی (ممنوع رد شود و Log شود). ثبت در جدول Evidence.
 
 ### ۴) طراحی و تصمیم‌گیری
 
 | سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| تعداد Zone | طبق ریسک؛ نه بیش از حد |
+| تعداد Zone | طبق تفاوت اعتماد؛ نه بیش‌ازحد |
 | ترتیب | خاص→عام |
+| Log | Deny همیشه؛ Accept حساس |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** User→Internet فقط HTTP/HTTPS.
+**ساده (حل‌شده):** Users→Internet فقط HTTP/HTTPS/DNS. ورودی: کاربر 10.10.0.5 با SSH به اینترنت. مراحل: Policy 10 تطبیق نمی‌کند (Service)؛ Policy 99 Deny. پاسخ: رد و Log با policyid=99.
 
-**متوسط (تحلیل):** Policy `User→Server ALL`: Log نشان می‌دهد فقط 443 و 1433 استفاده شده؛ تنگ‌سازی به همان دو.
+**متوسط (تنگ‌سازی):** Policy 55 ALL/ALL بین Users و Servers. مراحل: ۱) Log All روشن. ۲) ۱۴ روز جمع‌آوری. ۳) استخراج: 10.20.0.10:443، 10.20.0.11:445، 10.20.0.20:1433. ۴) سه Policy خاص بالای 55. ۵) 55 را Disable و دو هفته مشاهده. ۶) حذف. پاسخ: کاهش سطح حمله از ALL به سه مسیر.
 
-**سخت (طراحی):** ۵ Zone با ماتریس؛ ۱۲ Policy؛ DMZ به DB مستقیم ممنوع؛ از App؛ آزمون منفی برای هر خانه‌ی Deny؛ معیار: صفر Policy ALL.
+**سخت (طراحی ۵ Zone):** سازمان ۱۵۰ کاربر؛ وب عمومی؛ DB داخلی؛ مدیریت. طراحی: ۱) ۵ Zone. ۲) ماتریس ۲۵ خانه؛ ۹ خانه پر. ۳) ۱۲ Policy. ۴) DMZ→DB ممنوع؛ فقط App→DB. ۵) آزمون ۲۵ خانه (۹ مثبت، ۱۶ منفی). ۶) Evidence. معیار پذیرش: صفر Policy ALL، همه‌ی Deny ها Log دارند.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Network → Interfaces → Create New → Zone.
+2. Policy & Objects → Firewall Policy → Create New با Zone.
+3. Policy → Drag برای ترتیب.
+4. Hit Count/Log برای ممیزی.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
-! FortiGate (Unverified in lab)
 config firewall policy
- edit 10
-  set srcintf "port2"
-  set dstintf "port1"
-  set srcaddr "LAN-NET"
-  set dstaddr "all"
+ edit 20
+  set name "USERS-to-APP-443"
+  set srcintf "ZN-USERS"
+  set dstintf "ZN-SERVER"
+  set srcaddr "NET-USERS"
+  set dstaddr "SRV-APP"
   set action accept
   set schedule "always"
-  set service "HTTP" "HTTPS"
+  set service "HTTPS"
   set logtraffic all
  next
 end
@@ -2038,66 +2068,69 @@ end
 
 ### ۸) Verification (اثبات صحت)
 
-- آزمون مثبت و منفی برای هر خانه.
-- hit-count.
-- Log.
+- آزمون مثبت/منفی هر خانه.
+- Hit Count Policyها.
+- Log Deny‌ها.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Policy کار نمی‌کند | ترتیب | خاص قبل عام |
+| Policy کار نمی‌کند | ترتیب/Zone | خاص قبل عام |
 | ALL گشاد | Log | تنگ‌سازی |
+| DMZ→DB باز است | Lookup | Policy حذف |
 
 ### ۱۰) نکات امنیتی
 
 - Default Deny با Log.
+- ALL/ALL ممنوع.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- Zone و ماتریس.
+- Zone=منطقه‌ی هم‌اعتماد.
+- ماتریس منبع Policy.
 - Least Privilege.
-- ترتیب.
+- آزمون هر خانه.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Default Deny یعنی؟ *(پاسخ: 11-2-ت1)*
+**ت1.** (ساده) Default Deny یعنی چه؟ *(پاسخ: 11-2-ت1)*
 
 **ت2.** (ساده) Least Privilege؟ *(پاسخ: 11-2-ت2)*
 
 **ت3.** (متوسط) چرا ماتریس؟ *(پاسخ: 11-2-ت3)*
 
-**ت4.** (متوسط) ترتیب Policy؟ *(پاسخ: 11-2-ت4)*
+**ت4.** (متوسط) چرا ترتیب مهم است؟ *(پاسخ: 11-2-ت4)*
 
-**ت5.** (سخت) Policy ALL را چگونه تنگ کنیم؟ *(پاسخ: 11-2-ت5)*
+**ت5.** (سخت) Policy ALL را چطور تنگ می‌کنید؟ *(پاسخ: 11-2-ت5)*
 
-**ت6.** (سخت، طراحی) ماتریس ۵ Zone. *(پاسخ: 11-2-ت6)*
+**ت6.** (سخت، طراحی) ماتریس ۵ Zone و آزمون. *(پاسخ: 11-2-ت6)*
 
-**Q1.** Quick quiz (English): What does default deny mean in firewall policy design? *(پاسخ: 11-2-Q1)*
+**Q1.** Quick quiz (English): What does default deny mean? *(پاسخ: 11-2-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
 | DMZ | Demilitarized Zone | منطقه‌ی حائل |
-| ACL | Access Control List | فهرست کنترل دسترسی |
+| Trust boundary | Trust boundary | مرز اعتماد |
 
 - *Apply least privilege to every rule.* ← به هر Rule حداقل دسترسی را بدهید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** ماتریس Zone. **Evidence:** `03-ops/zone-matrix.md`.
+**کارت Lab:** ماتریس Zone (اجرا نشده). **Evidence:** `03-ops/zone-matrix.md`.
 
 ### ۱۵) منابع
 
-- Fortinet FortiOS 7.0 Administration Guide: Firewall policy
-- NIST SP 800-41
+- Fortinet FortiOS 7.0 Administration Guide: Firewall policies
+- NIST SP 800-41 Rev.1
 
 <a id="l-11-3"></a>
 
-## درس 11-3 — مسیر بسته در فایروال: ترافیک عبوری در برابر ترافیک خود فایروال
+## درس 11-3 — مسیر بسته در فایروال: Transit، Local-in، Local-out و ترتیب DNAT/Route/Policy/SNAT
 
-**فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۱، ۱۲-۰ · ≈ 9 ساعت**
+**فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۱، ۱۱-۲ · ≈ 10 ساعت**
 
 > **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
 
@@ -2105,69 +2138,96 @@ end
 
 در پایان این درس باید بتوانید:
 
-1. مراحل پردازش را (Ingress، Route، Policy، NAT، Egress) بگوید.
-2. Transit، Local-in و Local-out را تفکیک کند.
-3. ترتیب DNAT/Route/Policy/SNAT را بداند.
+1. مراحل پردازش بسته (Ingress، RPF، Session، DNAT، Route، Policy، SNAT، Egress) را به ترتیب بگوید.
+2. سه نوع ترافیک را تفکیک و کنترل هرکدام را بگوید.
+3. Policy را با آدرس درست (بعد DNAT) بنویسد.
 4. سناریو را روی کاغذ شبیه‌سازی کند.
-5. Packet-flow را با ابزار تأیید کند.
+5. با Debug/Session مسیر را اثبات کند.
+6. علائم هر مرحله‌ی شکست را بشناسد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-وقتی «سایت باز نمی‌شود»، بدون نقشه‌ی مسیر بسته فقط حدس می‌زنید. با نقشه می‌پرسید: بسته به Interface رسید؟ Route داشت؟ Policy؟ NAT؟ خارج شد؟
+کاربر می‌گوید «سایت باز نمی‌شود». بدون نقشه‌ی مسیر بسته، حدس می‌زنید: Policy؟ Route؟ NAT؟ DNS؟ با نقشه، مرحله‌به‌مرحله می‌پرسید: بسته رسید؟ Session ساخته شد؟ Route دارد؟ Policy؟ NAT؟ خارج شد؟ هر پاسخ «نه» محل خرابی را نشان می‌دهد.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) مسیر عبوری
+#### ۱) مراحل ترافیک عبوری (Transit)
 
 ``` text
-Ingress -> Anti-spoof(RPF) -> Session lookup -> DNAT(VIP) -> Route -> Policy -> SNAT -> Egress
+1 Ingress interface
+2 Anti-spoof / RPF check
+3 Session lookup (existing session? -> fast path)
+4 DNAT (VIP)
+5 Route lookup (egress interface)
+6 Policy lookup (srcintf, dstintf, src, dst, service, schedule)
+7 UTM inspection (if enabled)
+8 SNAT (IP pool / interface address)
+9 Egress
 ```
+
+نکته‌ی ظریف: DNAT قبل از Route و Policy است؛ پس Policy با آدرس **داخلی** (بعد DNAT) و VIP object تطابق می‌کند.
 
 #### ۲) سه نوع ترافیک
 
 | نوع | مقصد | کنترل |
 |---|---|---|
-| Transit | شبکه‌ی پشت | Firewall Policy |
-| Local-in | خود فایروال | Local-in policy / Admin access |
-| Local-out | از خود فایروال | Routing خود دستگاه |
+| Transit | شبکه‌ی پشت فایروال | Firewall Policy |
+| Local-in | خود فایروال (Admin، BGP، IPsec، DNS) | Allowaccess + Local-in policy |
+| Local-out | تولیدشده توسط فایروال (NTP، FortiGuard، Syslog) | Routing خود فایروال + Source-IP |
 
-#### ۳) ترتیب مهم
+#### ۳) شبیه‌سازی
 
-DNAT قبل از Route و Policy؛ SNAT بعد از Policy. پس Policy با آدرس **بعد از DNAT** نوشته می‌شود.
+``` text
+User 10.10.0.5:40000 -> 203.0.113.10:443
+1 ingress port2, RPF: route to 10.10.0.5 via port2 OK
+2 no session -> new
+3 no DNAT
+4 route: default -> port1
+5 policy: ZN-USERS->port1 src NET-USERS svc HTTPS -> ACCEPT (id 10)
+6 SNAT -> 198.51.100.2:40000
+7 egress port1
+```
 
-#### ۴) شبیه‌سازی
-
-کاربر 10.0.0.5 به وب 203.0.113.10:443 ⇒ RPF OK ⇒ Route Default ⇒ Policy User→Internet ⇒ SNAT به WAN ⇒ خروج.
-
-#### ۵) ابزار
+#### ۴) اثبات
 
 ``` text
 diagnose debug flow filter addr 203.0.113.10
+diagnose debug flow show function-name enable
 diagnose debug flow trace start 20
 diagnose debug enable
+diagnose sys session list
 ```
 
-(در FortiOS 7.0 برای NP-offload قبلاً offload غیرفعال شود؛ `Unverified` تا Lab.)
+#### ۵) علائم هر مرحله
+
+| پیام | مرحله |
+|---|---|
+| reverse path check fail | RPF |
+| no matching policy / Denied by forward policy check | Policy |
+| iprope_in_check() check failed | Local-in |
+| find a route: ... | Route |
+| no session matched | بسته میانه‌ی اتصال |
 
 ### ۴) طراحی و تصمیم‌گیری
 
 | سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Local-in policy | فقط Mgmt |
-| SNAT | طبق خروجی |
+| Local-in | Policy برای BGP/IPsec/Admin |
+| Source IP Local-out | Loopback/Interface ثابت |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Transit: User→Internet.
+**ساده (حل‌شده):** کاربر به اینترنت: Walk بالا؛ نتیجه: Policy 10، SNAT.
 
-**متوسط (تحلیل):** پینگ به آدرس Public VIP از اینترنت؛ Policy باید با آدرس داخلی (بعد DNAT) باشد؛ در غیر این صورت `no policy`.
+**متوسط (VIP):** کاربر اینترنت به 203.0.113.10:443 (VIP به 10.30.0.10). مراحل: DNAT اول؛ Route به DMZ؛ Policy با dstaddr=VIP-WEB (نه IP داخلی)؛ Accept. اگر Policy با 10.30.0.10 نوشته شود تطابق نمی‌کند ⇒ `Denied by forward policy check`.
 
-**سخت (چندمرحله):** ترافیک Admin از Mgmt به فایروال: Local-in؛ شکست: Admin access روی Interface نیست؛ debug flow «local» را نشان می‌دهد.
+**سخت (Local-in):** Admin از Mgmt به https فایروال وصل نمی‌شود. مراحل: ۱) ترافیک Local-in؛ ۲) Debug flow: `iprope_in_check() check failed`. ۳) allowaccess https روی Interface Mgmt نیست یا Local-in policy بسته. رفع: allowaccess و Trusted host؛ آزمون ورود.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
 diagnose debug flow filter addr 203.0.113.10
+diagnose debug flow show function-name enable
 diagnose debug flow trace start 20
 diagnose debug enable
 diagnose debug disable
@@ -2176,63 +2236,65 @@ diagnose debug disable
 ### ۸) Verification (اثبات صحت)
 
 - Debug flow مراحل را نشان می‌دهد.
-- Policy-id درست.
+- policy-id مطابق.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| no policy | Policy | آدرس بعد DNAT |
-| RPF drop | Route برگشت | Route/RPF |
+| no policy | Lookup | آدرس بعد DNAT |
+| RPF fail | Route برگشت | Route |
+| Admin وارد نمی‌شود | allowaccess | Interface Mgmt |
 
 ### ۱۰) نکات امنیتی
 
-- Debug را بعد از تست غیرفعال کنید.
+- Debug را خاموش کنید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- مسیر مرحله‌ای.
-- سه نوع.
-- DNAT قبل Policy.
+- DNAT قبل Route/Policy.
+- سه نوع ترافیک.
+- Debug flow اثبات.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) ترتیب DNAT و Policy؟ *(پاسخ: 11-3-ت1)*
+**ت1.** (ساده) DNAT قبل یا بعد Policy؟ *(پاسخ: 11-3-ت1)*
 
 **ت2.** (ساده) Local-in چیست؟ *(پاسخ: 11-3-ت2)*
 
-**ت3.** (متوسط) چرا Policy با آدرس داخلی؟ *(پاسخ: 11-3-ت3)*
+**ت3.** (متوسط) چرا Policy VIP با IP داخلی کار نمی‌کند؟ *(پاسخ: 11-3-ت3)*
 
-**ت4.** (متوسط) RPF؟ *(پاسخ: 11-3-ت4)*
+**ت4.** (متوسط) RPF چیست؟ *(پاسخ: 11-3-ت4)*
 
-**ت5.** (سخت) Admin قطع. *(پاسخ: 11-3-ت5)*
+**ت5.** (سخت) Admin به https نمی‌رسد؛ مسیر عیب‌یابی. *(پاسخ: 11-3-ت5)*
 
 **ت6.** (سخت، طراحی) نقشه‌ی Flow سازمان. *(پاسخ: 11-3-ت6)*
 
-**Q1.** Quick quiz (English): Does DNAT occur before or after the firewall policy lookup? *(پاسخ: 11-3-Q1)*
+**Q1.** Quick quiz (English): Does destination NAT occur before or after the policy lookup? *(پاسخ: 11-3-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
 | RPF | Reverse Path Forwarding | بررسی مسیر معکوس |
-| VIP | Virtual IP | آدرس مجازی DNAT |
+| VIP | Virtual IP | آدرس مجازی |
 
-- *Trace the packet through each stage.* ← بسته را مرحله‌به‌مرحله ردیابی کنید.
+- *Trace the packet stage by stage.* ← بسته را مرحله‌به‌مرحله ردیابی کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Flow. **Evidence:** `03-ops/flow.md`.
+**کارت Lab:** Flow (اجرا نشده). **Evidence:** `03-ops/packet-walk.md`.
 
 ### ۱۵) منابع
 
-- Fortinet FortiOS 7.0: Packet flow ingress/egress
+- Fortinet FortiOS 7.0 Administration Guide: Packet flow
+- FortiOS 7.0 Troubleshooting guide
 
 <a id="l-11-4"></a>
 
-## درس 11-4 — ACL، Policy و NAT: تفاوت‌ها و ارتباط‌ها
+## درس 11-4 — ACL، Policy و NAT: تفاوت‌ها، ارتباط‌ها و ترکیب درست
 
-**فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۳ · ≈ 9 ساعت**
+**فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۱، ۱۱-۳ · ≈ 10 ساعت**
 
 > **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
 
@@ -2240,70 +2302,83 @@ diagnose debug disable
 
 در پایان این درس باید بتوانید:
 
-1. ACL، Firewall Policy و NAT را از نظر وظیفه تفکیک کند.
-2. انواع NAT (Source، Destination، PAT) را بشناسد.
-3. NAT و Policy را برای دسترسی از بیرون هماهنگ کند.
-4. خطاهای NAT/Policy را عیب‌یابی کند.
-5. مثال سناریوی Publish را بنویسد.
+1. وظیفه‌ی ACL، Firewall Policy و NAT را تفکیک کند.
+2. Source NAT، Destination NAT و PAT را بشناسد.
+3. NAT و Policy را برای انتشار سرویس هماهنگ کند.
+4. Hairpin NAT و Split DNS را مقایسه کند.
+5. خطاهای رایج (NAT بدون Policy، Policy بدون Route) را رفع کند.
+6. مثال کامل Publish و آزمون منفی بنویسد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-ACL مثل لیست مهمان، Policy مثل مجوز ورود و NAT مثل تغییر نام‌ها روی تابلو است. هر کدام کار خودش را می‌کند؛ اشتباه گرفتنشان باعث «NAT دارم ولی کار نمی‌کند» می‌شود.
+سه اشتباه رایج: «NAT گذاشتم ولی کار نمی‌کند»، «Policy گذاشتم ولی ترجمه نمی‌شود»، «ACL گذاشتم ولی دور زده می‌شود». هر سه از یکی‌گرفتن سه ابزار با وظایف متفاوت می‌آید.
+
+مثال روزمره: ACL فهرست مهمان‌های مجاز، Policy مجوز ورود هر مهمان (با شرایط)، NAT تغییر نام روی تابلو (مثلاً «اتاق ۲۱۴» برای بیرون «طبقه‌ی بالا»).
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) تفاوت
+#### ۱) جدول تفاوت
 
 | | ACL | Policy | NAT |
 |---|---|---|---|
-| وظیفه | فیلتر ساده | اجازه/ردّ + بازرسی | تغییر آدرس |
-| وضعیت | معمولاً Stateless | Stateful | بسته‌ها را بازنویسی |
+| وظیفه | فیلتر ساده | اجازه/ردّ + بازرسی | بازنویسی آدرس/پورت |
+| وضعیت | معمولاً Stateless | Stateful | Stateful |
+| معیار | IP/پورت | Interface/Zone، User، Service، App | آدرس مبدأ/مقصد |
 
 #### ۲) انواع NAT
 
-- Source NAT (PAT/Overload): خروج کاربران با یک IP.
-- Destination NAT (VIP): انتشار سرور داخلی.
-- Static one-to-one.
+- Source NAT (SNAT/PAT): کاربران داخلی با IP عمومی.
+- Destination NAT (DNAT/VIP): انتشار سرور داخلی.
+- Static NAT: یک‌به‌یک.
 
 #### ۳) انتشار وب
 
 ``` text
-VIP: 203.0.113.10:443 -> 10.20.0.10:443
-Policy: Internet -> DMZ, dst = VIP, service HTTPS, accept
+VIP: 203.0.113.10:443 -> 10.30.0.10:443
+Policy: Internet -> DMZ, dst=VIP-WEB, service=HTTPS, ACCEPT, log all
 ```
 
-#### ۴) نکته
+بدون Policy: VIP ترجمه می‌کند ولی بسته رد می‌شود. بدون VIP: Policy مقصد عمومی را نمی‌شناسد.
 
-NAT بدون Policy یعنی ترافیک رد می‌شود؛ Policy بدون NAT برای VIP یعنی مقصد ترجمه نمی‌شود.
+#### ۴) Hairpin
+
+کاربر داخلی به IP عمومی وب داخلی: بسته به فایروال می‌رود، DNAT می‌شود و به سرور می‌رسد؛ سرور پاسخ را مستقیم به کاربر می‌دهد (هم‌شبکه) و فایروال را دور می‌زند ⇒ Session ناقص. راه‌ها: Split DNS (ترجیح) یا SNAT برای Hairpin.
 
 #### ۵) خطاها
 
-- Hairpin NAT: کاربر داخلی به IP عمومی سرور داخلی.
-- Overlap NAT.
-- SNAT فراموش‌شده ⇒ بدون برگشت.
+| علامت | علت |
+|---|---|
+| VIP کار نمی‌کند | Policy dst=VIP نیست |
+| برگشت نیست | سرور Default Gateway ندارد/Route |
+| فقط بعضی کاربران | NAT Overlap |
+
+#### ۶) آزمون
+
+مثبت: HTTPS از اینترنت. منفی: SSH به VIP باید رد شود.
 
 ### ۴) طراحی و تصمیم‌گیری
 
 | سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| DNS داخلی | Split DNS بهتر از Hairpin |
+| Hairpin | Split DNS |
+| VIP | Port-forward حداقل |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** PAT خروج کاربران.
+**ساده (حل‌شده):** PAT: ۲۰۰ کاربر با یک IP؛ Session با SNAT.
 
-**متوسط (تحلیل):** VIP ساخته ولی Policy نیست؛ ترافیک رد می‌شود؛ راه: Policy Internet→VIP.
+**متوسط (VIP بدون Policy):** VIP ساخته ولی سایت باز نمی‌شود؛ Debug flow: `Denied by forward policy check`. Policy dst=VIP-WEB؛ آزمون موفق.
 
-**سخت (Hairpin):** کاربر داخلی به IP Public سرور داخلی: بدون Hairpin کار نمی‌کند؛ راه: DNS داخلی (Split DNS) یا Hairpin.
+**سخت (Hairpin):** کاربران داخلی به وب با نام عمومی نمی‌رسند ولی از اینترنت باز است. مراحل: ۱) DNS عمومی IP عمومی. ۲) مسیر Hairpin ناقص. رفع: Split DNS با پاسخ 10.30.0.10؛ آزمون nslookup و باز شدن سایت. جایگزین: Hairpin NAT با ریسک پیچیدگی.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
 config firewall vip
- edit "WEB-VIP"
+ edit "VIP-WEB-443"
   set extintf "port1"
   set extip 203.0.113.10
-  set mappedip "10.20.0.10"
+  set mappedip "10.30.0.10"
   set portforward enable
   set extport 443
   set mappedport 443
@@ -2313,41 +2388,41 @@ end
 
 ### ۸) Verification (اثبات صحت)
 
-- Policy hit.
-- Session NAT.
+- آزمون مثبت/منفی.
+- Session DNAT.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
 | VIP کار نمی‌کند | Policy | dst=VIP |
-| برگشت نیست | SNAT/Route | NAT/Route |
+| برگشت نیست | Route سرور | Gateway |
 
 ### ۱۰) نکات امنیتی
 
-- VIP فقط پورت لازم.
+- فقط پورت لازم.
 
 ### ۱۱) جمع‌بندی مفهومی
 
 - ACL≠Policy≠NAT.
 - VIP+Policy.
-- Hairpin.
+- Split DNS.
 
 ### ۱۲) تمرین و ارزیابی
 
 **ت1.** (ساده) NAT چه می‌کند؟ *(پاسخ: 11-4-ت1)*
 
-**ت2.** (ساده) PAT؟ *(پاسخ: 11-4-ت2)*
+**ت2.** (ساده) PAT چیست؟ *(پاسخ: 11-4-ت2)*
 
-**ت3.** (متوسط) VIP بدون Policy؟ *(پاسخ: 11-4-ت3)*
+**ت3.** (متوسط) چرا VIP بدون Policy کار نمی‌کند؟ *(پاسخ: 11-4-ت3)*
 
-**ت4.** (متوسط) Hairpin؟ *(پاسخ: 11-4-ت4)*
+**ت4.** (متوسط) Hairpin چیست؟ *(پاسخ: 11-4-ت4)*
 
-**ت5.** (سخت) Split DNS. *(پاسخ: 11-4-ت5)*
+**ت5.** (سخت) Hairpin را چطور حل می‌کنید؟ *(پاسخ: 11-4-ت5)*
 
 **ت6.** (سخت، طراحی) انتشار سه سرویس. *(پاسخ: 11-4-ت6)*
 
-**Q1.** Quick quiz (English): What is the purpose of a VIP on FortiGate? *(پاسخ: 11-4-Q1)*
+**Q1.** Quick quiz (English): Why does a VIP alone not allow traffic through? *(پاسخ: 11-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
@@ -2360,17 +2435,17 @@ end
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** NAT. **Evidence:** `03-ops/nat.md`.
+**کارت Lab:** NAT و VIP (اجرا نشده). **Evidence:** `02-design/fgt-nat.md`.
 
 ### ۱۵) منابع
 
-- Fortinet FortiOS 7.0: Virtual IPs
+- Fortinet FortiOS 7.0 Administration Guide: NAT; Virtual IPs
 
 <a id="l-11-5"></a>
 
-## درس 11-5 — Session، Timeout، MTU/MSS و ریشه‌ی خرابی‌های TCP/UDP
+## درس 11-5 — Session، Timeout، MTU/MSS و ریشه‌ی خرابی‌های «نیمه‌کارکرده» TCP/UDP
 
-**فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۱، ۴-۲ · ≈ 9 ساعت**
+**فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۱، ۴-۲، ۱۱-۳ · ≈ 10 ساعت**
 
 > **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
 
@@ -2378,89 +2453,112 @@ end
 
 در پایان این درس باید بتوانید:
 
-1. چرخه‌ی Session و Timeout را توضیح دهد.
-2. MTU/MSS/PMTUD و Fragmentation را تحلیل کند.
-3. علائم MTU-black-hole را بشناسد.
+1. چرخه‌ی Session TCP/UDP/ICMP و Timeoutها را توضیح دهد.
+2. MTU، MSS، PMTUD و Fragmentation را با محاسبه تحلیل کند.
+3. علائم MTU Black-hole را بشناسد و PMTU را اندازه بگیرد.
 4. MSS-clamp را محاسبه و اعمال کند.
-5. خرابی‌های Timeout را رفع کند.
+5. خرابی‌های Timeout (SSH، DB) را رفع کند.
+6. آزمون پایدار برای تأیید طراحی کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-کاربر می‌گوید «سایت باز می‌شود ولی بعد از لاگین گیر می‌کند» یا «SSH بعد از چند دقیقه می‌پرد». اینها اغلب MTU یا Timeout هستند نه Policy.
+شکایت رایج: «سایت باز می‌شود ولی بعد از لاگین گیر می‌کند»، «ping جواب می‌دهد ولی دانلود می‌ایستد»، «SSH بعد از چند دقیقه می‌پرد». اینها Policy نیستند؛ MTU یا Timeout‌اند. تشخیصشان نیاز به دانستن این دارد که در لایه‌ی انتقال چه می‌گذرد.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) Timeout
+#### ۱) Timeoutها
 
 | پروتکل | Timeout تقریبی |
 |---|---|
-| TCP Established | ساعت‌ها |
-| TCP Half-open | ثانیه‌ها |
-| UDP | دقیقه‌ها |
+| TCP Established | ۳۶۰۰ ثانیه |
+| TCP Half-open (SYN) | ۶۰ ثانیه |
+| UDP | ۶۰ ثانیه (DNS کمتر) |
+| ICMP | ۱۰ ثانیه |
 
-Session بیکار حذف می‌شود؛ SSH/DB طولانی ⇒ Keepalive یا افزایش Timeout.
+مقادیر پیش‌فرض بسته به نسخه فرق دارند؛ با `get system session-ttl` ببینید. Session بیکار حذف می‌شود؛ سرویس‌های طولانی (SSH، DB) Keepalive یا Timeout بیشتر می‌خواهند.
 
-#### ۲) MTU/MSS
+#### ۲) MTU و MSS
 
 ``` text
 Ethernet MTU = 1500
-MSS = MTU - 20 (IP) - 20 (TCP) = 1460
-Over PPPoE/IPsec: lower MTU -> MSS ~ 1360-1400
+IP header = 20
+TCP header = 20
+MSS = 1500 - 20 - 20 = 1460
 ```
 
-#### ۳) علامت Black-hole
+تونل (IPsec) سربار دارد: مثلاً MTU مؤثر 1400 ⇒ MSS ≈ 1360.
 
-TCP Handshake و بسته‌های کوچک کار می‌کنند؛ بسته‌های بزرگ می‌میرند (ICMP Frag-needed فیلتر شده).
+#### ۳) PMTUD و Black-hole
 
-#### ۴) راه
+TCP بسته‌ها را با DF می‌فرستد؛ اگر مسیر MTU کوچک‌تر دارد، روتر ICMP «Fragmentation needed» برمی‌گرداند. اگر فایروالی ICMP را ببندد، فرستنده نمی‌فهمد و بسته‌های بزرگ بی‌خبر می‌میرند: Black-hole. علامت: Handshake و بسته‌های کوچک ok؛ بزرگ نه.
+
+#### ۴) اندازه‌گیری
 
 ``` text
-ping -f -l 1472 203.0.113.10
-! reduce until success -> path MTU
-set tcp-mss-sender 1380   ! (Unverified on 7.0.3)
+ping -f -l 1472 203.0.113.10     (Windows; 1472+28=1500)
+execute ping-options df-bit yes
+execute ping-options data-size 1372
+execute ping 203.0.113.10
 ```
 
-#### ۵) آزمون
+کاهش تا اولین موفقیت ⇒ PMTU = اندازه + 28.
 
-بعد از تغییر، فایل بزرگ دانلود شود.
+#### ۵) MSS-clamp
+
+``` text
+config firewall policy
+ edit 2
+  set tcp-mss-sender 1360
+  set tcp-mss-receiver 1360
+ next
+end
+```
+
+(`Unverified` روی 7.0.3؛ با CLI help ببینید.)
+
+#### ۶) آزمون پایدار
+
+دانلود ۱۰۰ MB، صفحه‌ی HTTPS بزرگ، SSH ۳۰ دقیقه‌ی بیکار.
 
 ### ۴) طراحی و تصمیم‌گیری
 
 | سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| MSS-clamp | روی تونل |
+| MSS | PMTU−40 با حاشیه |
 | Timeout | سرویس‌محور |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** MSS = 1500−40 = 1460.
+**ساده (حل‌شده):** MSS=1500−40=1460.
 
-**متوسط (تحلیل):** IPsec: ping 1472 شکست؛ 1372 موفق ⇒ MTU مسیر 1400؛ MSS 1360.
+**متوسط (PMTU):** IPsec: ping 1472 شکست، 1372 موفق، 1422 شکست، 1400 موفق ⇒ PMTU=1428؛ MSS ≈ 1388؛ clamp 1380 (حاشیه).
 
-**سخت (Timeout):** SSH بعد از ۵ دقیقه می‌پرد؛ Session Timeout کوتاه؛ Keepalive یا افزایش Timeout برای سرویس.
+**سخت (SSH می‌پرد):** SSH Admin پس از ۵ دقیقه بیکاری قطع می‌شود. مراحل: ۱) Session expire ۳۰۰. ۲) `session-ttl` پورت 22 = 7200 یا Keepalive 60s در کلاینت. ۳) آزمون ۳۰ دقیقه بیکار. ریسک: Session بیکار منابع می‌گیرد؛ فقط برای پورت لازم.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
-ping 203.0.113.10 size 1472 df-bit yes
-diagnose sys session list
+execute ping-options df-bit yes
+execute ping-options data-size 1372
+execute ping 203.0.113.10
+get system session-ttl
 ```
 
 ### ۸) Verification (اثبات صحت)
 
-- دانلود بزرگ موفق.
-- Session ماندگار.
+- دانلود بزرگ.
+- SSH ماندگار.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| فقط بزرگ می‌میرد | ping DF | MSS/MTU |
-| SSH می‌پرد | Timeout | Keepalive |
+| فقط بزرگ می‌میرد | DF ping | MSS/MTU |
+| SSH می‌پرد | Timeout | Keepalive/session-ttl |
 
 ### ۱۰) نکات امنیتی
 
-- ICMP Frag-needed را کاملاً نبندید.
+- ICMP frag-needed را کامل نبندید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
@@ -2470,17 +2568,17 @@ diagnose sys session list
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) MSS چند؟ *(پاسخ: 11-5-ت1)*
+**ت1.** (ساده) MSS برای MTU 1500؟ *(پاسخ: 11-5-ت1)*
 
-**ت2.** (ساده) علامت black-hole؟ *(پاسخ: 11-5-ت2)*
+**ت2.** (ساده) علامت Black-hole؟ *(پاسخ: 11-5-ت2)*
 
 **ت3.** (متوسط) محاسبه برای MTU 1400. *(پاسخ: 11-5-ت3)*
 
-**ت4.** (متوسط) چرا ICMP لازم؟ *(پاسخ: 11-5-ت4)*
+**ت4.** (متوسط) چرا ICMP لازم است؟ *(پاسخ: 11-5-ت4)*
 
-**ت5.** (سخت) SSH می‌پرد. *(پاسخ: 11-5-ت5)*
+**ت5.** (سخت) SSH بعد ۵ دقیقه می‌پرد. *(پاسخ: 11-5-ت5)*
 
-**ت6.** (سخت، طراحی) MSS روی IPsec. *(پاسخ: 11-5-ت6)*
+**ت6.** (سخت، طراحی) MSS روی IPsec و آزمون. *(پاسخ: 11-5-ت6)*
 
 **Q1.** Quick quiz (English): What causes an MTU black hole? *(پاسخ: 11-5-Q1)*
 
@@ -2495,134 +2593,127 @@ diagnose sys session list
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** MTU. **Evidence:** `03-ops/mtu.md`.
+**کارت Lab:** MTU (اجرا نشده). **Evidence:** `03-ops/mtu-mss.md`.
 
 ### ۱۵) منابع
 
+- Fortinet FortiOS 7.0 Administration Guide: Session TTL
 - RFC 1191
 - RFC 4821
 
 <a id="l-11-6"></a>
 
-## درس 11-6 — کارگاه طراحی Policy و ۱۰ پرسش مسیر بسته + Gate G4
+## درس 11-6 — کارگاه طراحی Policy، ۱۰ پرسش مسیر بسته و آزمون G4
 
-**فصل 11 - روز 6 · پیش‌نیاز: درس‌های ۱۱-۱ تا ۱۱-۵ · ۶ ساعت**
+**فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۰ تا ۱۱-۷ · ≈ 12 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
 
-جمع‌بندی فصل با طراحی Policy برای یک سازمان و پاسخ به ۱۰ پرسش مسیر بسته. این آزمون ورود به FortiGate است.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس‌های ۱۱-۱ تا ۱۱-۵.
+1. ماتریس Zone و ۱۰ Policy بنویسد.
+2. ۱۰ پرسش مسیر بسته را پاسخ دهد.
+3. آزمون مثبت/منفی بنویسد.
+4. Gate G4 را با Rubric تحویل دهد.
+5. طراحی را ارزیابی و بهبود دهد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- ۱۰ پرسش: ورود؟ مبدأ/مقصد؟ Route؟ Policy؟ NAT؟ Session؟ خروج؟ دریافت؟ برگشت؟ نقطه‌ی شکست؟
-- Policy Matrix با Least Privilege و Default Deny.
-- Packet Walk رفت/برگشت برای ۳ جریان.
-- تحلیل ۳ خرابی کاغذی (Route، Policy، NAT).
+این کارگاه فصل ۱۱ را به یک طراحی واقعی تبدیل می‌کند. شرکت کوچکی را فرض کنید: اینترنت، DMZ با وب‌سرور، سرورهای داخلی، کاربران و شبکه‌ی مدیریت.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-سازمان کوچک: Users/Servers/DMZ/Outside.
+#### ۱) سناریو
 
-### ۵) مثال سازمانی
-
-سازمان دو‌فایروالی (پیش‌نمایش فصل ۱۵).
-
-### ۶) تصویر و توپولوژی
-
-```text
-Users | Servers | DMZ | Outside
-matrix + walk + tests
+``` text
+Internet - [FW] - DMZ (web 10.30.0.10)
+                - Servers (app 10.20.0.10, db 10.20.0.20)
+                - Users 10.10.0.0/24
+                - Mgmt 10.99.0.0/24
 ```
 
-### ۷) پیکربندی (CLI)
+#### ۲) ۱۰ پرسش مسیر بسته
 
-```text
-# G4 deliverables
-# 1 policy-matrix.md
-# 2 packet-walk-3flows.md
-# 3 fault-analysis-3cases.md
+1. مسیر Users→Internet کدام Policy و NAT دارد؟
+2. VIP وب چیست و Policy چه مقصدی دارد؟
+3. چرا DB مستقیم از Internet ممنوع است؟
+4. Admin از کجا به فایروال و سرورها می‌رسد؟
+5. Default Deny کجاست و Log دارد؟
+6. Logها به کجا می‌روند؟
+7. NAT کجا انجام می‌شود؟
+8. اگر MTU تونل 1400 باشد MSS چقدر؟
+9. Asymmetric چه علامتی دارد؟
+10. آزمون منفی برای DMZ→DB چیست؟
+
+#### ۳) تحویل
+
+ماتریس، ۱۰ Policy، پاسخ ۱۰ پرسش، جدول آزمون (۹ مثبت/۱۶ منفی)، Evidence؛ Rubric: ماتریس ۲۰، Policy ۲۵، پاسخ ۲۵، آزمون ۲۰، صداقت ۱۰.
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** پاسخ پرسش ۱: Policy 10 (Users→Internet، HTTP/HTTPS/DNS، SNAT)؛ Session act=snat.
+
+**متوسط (تحلیل):** پرسش ۳: DB فقط از App؛ از اینترنت هیچ مسیری؛ Policy Deny صریح و VIP فقط برای 443 وب.
+
+**سخت (آزمون منفی):** DMZ→DB: Policy 61 Deny با Log؛ آزمون telnet 1433 از وب؛ انتظار: Timeout و Log policyid=61؛ ثبت Evidence.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+! see lessons 11-2 and 11-4 for the policies
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۸) Verification (اثبات صحت)
 
-- هر خروجی یک فایل.
-- معیار قبولی: ≥ ۴ از ۵ مورد آزمون.
+- G4.
 
-### ۸) تست عملکرد
+### ۹) Troubleshooting
 
-- آزمون: ۵ مورد (Matrix، ۳ Walk، ۳ تحلیل، ۱۰ پرسش، MTU).
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Matrix دارای any-any |
-| شواهد/دستور | Default Deny بی‌اثر |
-| علت | Policy گسترده |
-| رفع | تنگ‌کردن |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** هدف G4؟ *(پاسخ: 11-6-ت1)*
-
-**ت2.** Default Deny چه شکلی دارد؟ *(پاسخ: 11-6-ت2)*
-
-**ت3.** Packet Walk چند مرحله دارد؟ *(پاسخ: 11-6-ت3)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا قبل از FortiGate این فصل لازم است؟ *(پاسخ: 11-6-م1)*
-
-**م2.** سناریو: ارتباط نیست؛ اولین سؤال؟ *(پاسخ: 11-6-م2)*
-
-**معیار تسلط:** G4 ≥ ۴ از ۵.
-
-**اشتباهات رایج:** حفظ‌کردن Policy بدون فهم.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| G4 | Gate 4 | آزمون فصل ۱۱ | ورود به FortiGate |
-| Walk | Packet walk | مسیر بسته | عیب‌یابی |
-
-| English sentence | ترجمه |
-|---|---|
-| Define a default deny at the end of the policy list. | در انتهای فهرست Policy یک Default Deny تعریف کنید. |
-| Prove each rule with a positive and a negative test. | هر قانون را با تست مثبت و منفی ثابت کنید. |
-
-#### کارت Lab — درس 11-6
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | آزمون G4 |
-| 2 | پیش‌نیاز | درس‌های ۱۱-۱ تا ۱۱-۵ |
-| 3 | توپولوژی | کاغذ/Markdown |
-| 4 | تجهیزات | — |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | ۵ مورد |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | Matrix دارای any-any |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | تحویل‌ها |
-| 14 | معیار پذیرش | ≥ ۴ از ۵ |
-| 15 | مستندات نهایی | `03-ops/g4.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Policy گشاد | Log | تنگ‌سازی |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+### ۱۰) نکات امنیتی
 
----
+- Default Deny.
 
-<a id="ans-11"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- طراحی کامل.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Default Deny کجاست؟ *(پاسخ: 11-6-ت1)*
+
+**ت2.** (ساده) DB از Internet؟ *(پاسخ: 11-6-ت2)*
+
+**ت3.** (متوسط) Admin از کجا؟ *(پاسخ: 11-6-ت3)*
+
+**ت4.** (متوسط) Log کجا؟ *(پاسخ: 11-6-ت4)*
+
+**ت5.** (سخت) آزمون منفی برای هر خانه. *(پاسخ: 11-6-ت5)*
+
+**ت6.** (سخت، طراحی) طرح کامل. *(پاسخ: 11-6-ت6)*
+
+**Q1.** Quick quiz (English): Name one negative test for a DMZ policy. *(پاسخ: 11-6-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| G4 | Gate 4 | دروازه‌ی ۴ |
+
+- *Test both allowed and denied flows.* ← هم جریان مجاز و هم ممنوع را آزمون کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** کارگاه Policy (اجرا نشده). **Evidence:** `03-ops/g4.md`.
+
+### ۱۵) منابع
+
+- درس‌های فصل ۱۱
 
 ## درس 11-7 — Stateful Inspection از درون: State Table، TCP State و Timeout
 
@@ -2834,96 +2925,96 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 
 ### پاسخ‌های بازنویسی عمیق درس 11-2
 
-**11-2-ت1** — هرچه مجاز نشده رد می‌شود.
 
-**11-2-ت2** — حداقل دسترسی لازم.
+### پاسخ‌های بازنویسی عمیق درس 11-2
 
-**11-2-ت3** — تا هر مسیر مجاز مستند و قابل ممیزی باشد.
+**11-2-ت1** — هر ترافیک که صریحاً مجاز نشده رد می‌شود.
 
-**11-2-ت4** — خاص قبل از عام.
+**11-2-ت2** — حداقل دسترسی لازم برای انجام کار.
 
-**11-2-ت5** — Log، سرویس‌های واقعی، جایگزینی.
+**11-2-ت3** — برای اینکه هر مسیر مجاز مستند، قابل ممیزی و قابل آزمون باشد.
 
-**11-2-ت6** — طبق جدول.
+**11-2-ت4** — First Match؛ اگر عام بالا باشد خاص هرگز اجرا نمی‌شود.
 
-**11-2-Q1** — Any traffic not explicitly permitted is dropped.
+**11-2-ت5** — Log، استخراج مقاصد/سرویس‌ها، Policy خاص، غیرفعال‌سازی ALL، مشاهده، حذف.
+
+**11-2-ت6** — جدول ماتریس + ۹ آزمون مثبت و ۱۶ منفی.
+
+**11-2-Q1** — Any traffic not explicitly allowed is blocked.
+
+### پاسخ‌های بازنویسی عمیق درس 11-3
 
 
 ### پاسخ‌های بازنویسی عمیق درس 11-3
 
-**11-3-ت1** — DNAT اول.
+**11-3-ت1** — قبل؛ پس Policy با VIP یا آدرس بعد DNAT مطابقت می‌کند.
 
-**11-3-ت2** — ترافیک به خود فایروال.
+**11-3-ت2** — ترافیک به مقصد خود فایروال.
 
-**11-3-ت3** — چون DNAT قبل Policy انجام شده.
+**11-3-ت3** — Policy مقصد را با شیء VIP تطبیق می‌دهد.
 
-**11-3-ت4** — بررسی مسیر معکوس Source.
+**11-3-ت4** — بررسی اینکه Route به Source از همان Interface ورودی است.
 
-**11-3-ت5** — Admin access/Local-in.
+**11-3-ت5** — Debug flow، allowaccess، Local-in، Trusted host.
 
-**11-3-ت6** — طبق مراحل.
+**11-3-ت6** — Transit، Local-in، Local-out، ابزار اثبات هر مرحله.
 
 **11-3-Q1** — Before; policies match the translated destination.
+
+### پاسخ‌های بازنویسی عمیق درس 11-4
 
 
 ### پاسخ‌های بازنویسی عمیق درس 11-4
 
-**11-4-ت1** — آدرس را بازنویسی.
+**11-4-ت1** — آدرس/پورت بسته را بازنویسی می‌کند.
 
-**11-4-ت2** — چند Host با یک IP.
+**11-4-ت2** — ترجمه‌ی چند Host با یک IP با استفاده از پورت‌های مختلف.
 
-**11-4-ت3** — رد می‌شود.
+**11-4-ت3** — NAT اجازه نمی‌دهد؛ Policy لازم است.
 
-**11-4-ت4** — دسترسی داخلی به IP Public.
+**11-4-ت4** — دسترسی داخلی به IP عمومی سرور داخلی.
 
-**11-4-ت5** — پاسخ داخلی IP داخلی.
+**11-4-ت5** — Split DNS یا Hairpin NAT؛ آزمون.
 
-**11-4-ت6** — VIP+Policy هرکدام.
+**11-4-ت6** — سه VIP، سه Policy، آزمون منفی.
 
-**11-4-Q1** — To perform destination NAT for inbound access to internal servers.
+**11-4-Q1** — A VIP only translates addresses; a firewall policy must still permit the traffic.
+
+### پاسخ‌های بازنویسی عمیق درس 11-5
 
 
 ### پاسخ‌های بازنویسی عمیق درس 11-5
 
 **11-5-ت1** — 1460.
 
-**11-5-ت2** — بسته بزرگ می‌میرد.
+**11-5-ت2** — Handshake ok، بسته‌ی بزرگ بی‌پاسخ.
 
 **11-5-ت3** — 1360.
 
-**11-5-ت4** — PMTUD.
+**11-5-ت4** — PMTUD برای اطلاع از MTU مسیر.
 
-**11-5-ت5** — Timeout.
+**11-5-ت5** — Timeout/Keepalive.
 
-**11-5-ت6** — کاهش MSS.
+**11-5-ت6** — اندازه‌گیری PMTU، clamp، دانلود ۱۰۰MB.
 
-**11-5-Q1** — Large packets with DF set are dropped and ICMP fragmentation-needed messages are blocked.
-
-**11-6-ت1** — هدف G4؟
-
-ورود به FortiGate با مبانی.
-
-**11-6-ت2** — Default Deny چه شکلی دارد؟
-
-آخرین خط deny/Implicit deny.
-
-**11-6-ت3** — Packet Walk چند مرحله دارد؟
-
-۷ مرحله‌ی قالب.
-
-**11-6-م1** — چرا قبل از FortiGate این فصل لازم است؟
-
-تا منو/دستور را بفهمیم.
-
-**11-6-م2** — سناریو: ارتباط نیست؛ اولین سؤال؟
-
-ورود؟ مبدأ/مقصد؟
+**11-5-Q1** — Large DF packets are dropped while ICMP fragmentation-needed messages are blocked.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 11-6
 
-<a id="ch12"></a>
+**11-6-ت1** — آخر لیست با Log.
 
+**11-6-ت2** — ممنوع.
+
+**11-6-ت3** — فقط Mgmt با Trusted host.
+
+**11-6-ت4** — Syslog/FortiAnalyzer.
+
+**11-6-ت5** — ۱۶ آزمون منفی و Evidence.
+
+**11-6-ت6** — ماتریس+Policy+آزمون.
+
+**11-6-Q1** — Attempt a direct connection from the DMZ to the database and confirm it is denied.
 
 ### پاسخ‌های درس افزوده‌ی 11-0 (فصل 11)
 
