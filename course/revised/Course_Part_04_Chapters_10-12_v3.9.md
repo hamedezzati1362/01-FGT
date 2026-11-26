@@ -3129,17 +3129,31 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 
 **11-2-ت1** — هر ترافیک که صریحاً مجاز نشده رد می‌شود.
 
+Default Deny یعنی هر ترافیکی که صراحتاً مجاز نشده رد می‌شود؛ پایه‌ی امنیت مبتنی بر «فهرست مجاز». در FortiGate Implicit Deny انتهای لیست است ولی Log ندارد؛ پس Deny صریح با Log هم بسازید تا Alert و ممیزی ممکن شود.
+
 **11-2-ت2** — حداقل دسترسی لازم برای انجام کار.
+
+Least Privilege یعنی هر کاربر/سیستم فقط حداقل دسترسی لازم برای کارش را دارد: مقصد، پورت و زمان مشخص به‌جای ALL. مثال: Users فقط HTTPS به SRV-APP نه به کل شبکه‌ی سرورها.
 
 **11-2-ت3** — برای اینکه هر مسیر مجاز مستند، قابل ممیزی و قابل آزمون باشد.
 
+ماتریس Zone-to-Zone نشان می‌دهد هر مسیر مجاز چیست؛ منبع Policyها، مرجع ممیزی و پایه‌ی آزمون مثبت/منفی است. بدون ماتریس Policyها ad-hoc می‌شوند و تعداد مسیرهای ناخواسته نامعلوم می‌ماند.
+
 **11-2-ت4** — First Match؛ اگر عام بالا باشد خاص هرگز اجرا نمی‌شود.
+
+چون First Match است: اولین Policy مطابق اعمال می‌شود. اگر Policy عام (مثلاً Users→all ALL) بالاتر باشد، Policyهای خاص هرگز اجرا نمی‌شوند؛ پس خاص بالا و عام پایین، و Deny صریح آخر.
 
 **11-2-ت5** — Log، استخراج مقاصد/سرویس‌ها، Policy خاص، غیرفعال‌سازی ALL، مشاهده، حذف.
 
+تنگ‌سازی Policy ALL: Log را روشن، ۱۴ تا ۳۰ روز جمع‌آوری، مقصد/سرویس‌های واقعی را استخراج، Policyهای خاص بساز و بالای ALL بگذار، ALL را غیرفعال و دو هفته مشاهده، سپس حذف با Backup و مستندسازی.
+
 **11-2-ت6** — جدول ماتریس + ۹ آزمون مثبت و ۱۶ منفی.
 
+ماتریس ۵ Zone: ۲۵ خانه که ۹ خانه مجاز (آزمون مثبت) و ۱۶ خانه ممنوع (آزمون منفی) است. برای هر خانه‌ی ممنوع باید Deny و Log دیده شود؛ این ۲۵ آزمون Evidence طراحی هستند.
+
 **11-2-Q1** — Any traffic not explicitly allowed is blocked.
+
+Default deny blocks everything not permitted. در عمل این یعنی هر سرویس جدید باید با Policy صریح و CHG وارد شود.
 
 ### پاسخ‌های بازنویسی عمیق درس 11-3
 
@@ -3148,17 +3162,31 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 
 **11-3-ت1** — قبل؛ پس Policy با VIP یا آدرس بعد DNAT مطابقت می‌کند.
 
+DNAT (VIP) قبل از Route و Policy انجام می‌شود؛ پس Policy باید با آدرس پس از DNAT یا شیء VIP نوشته شود نه آدرس عمومی. SNAT بعد از Policy اعمال می‌شود.
+
 **11-3-ت2** — ترافیک به مقصد خود فایروال.
+
+Local-in ترافیکی است که مقصدش خود فایروال است (Admin، BGP، IPsec، DNS). کنترل آن با Allowaccess روی Interface و Local-in policy است؛ Firewall Policy عادی آن را کنترل نمی‌کند.
 
 **11-3-ت3** — Policy مقصد را با شیء VIP تطبیق می‌دهد.
 
+Policy مقصد را با شیء VIP (که DNAT را تعریف می‌کند) تطبیق می‌دهد. اگر آدرس داخلی (10.30.0.10) را به‌جای VIP بنویسید، Policy تطبیق نمی‌کند و `Denied by forward policy check` می‌بینید.
+
 **11-3-ت4** — بررسی اینکه Route به Source از همان Interface ورودی است.
+
+RPF بررسی می‌کند Route به آدرس مبدأ از همان Interface ورودی است. اگر نیست (مثلاً Asymmetric یا Spoof) بسته Drop می‌شود: `reverse path check fail`. رفع: Route برگشت یا طراحی Symmetric.
 
 **11-3-ت5** — Debug flow، allowaccess، Local-in، Trusted host.
 
+Admin به https نمی‌رسد: Debug flow پیام `iprope_in_check() check failed` می‌دهد؛ بررسی allowaccess https روی Interface، Local-in policy و Trusted host؛ رفع و آزمون ورود.
+
 **11-3-ت6** — Transit، Local-in، Local-out، ابزار اثبات هر مرحله.
 
+نقشه‌ی Flow سازمان: Transit (Users→Internet)، Local-in (Admin/BGP/IPsec)، Local-out (NTP/FortiGuard/Syslog) و برای هر کدام ابزار اثبات: Debug flow، Sniffer، Session، Log.
+
 **11-3-Q1** — Before; policies match the translated destination.
+
+DNAT occurs before policy lookup; therefore policies must reference the VIP or translated destination.
 
 ### پاسخ‌های بازنویسی عمیق درس 11-4
 
@@ -3167,17 +3195,31 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 
 **11-4-ت1** — آدرس/پورت بسته را بازنویسی می‌کند.
 
+NAT آدرس و/یا پورت بسته را بازنویسی می‌کند (SNAT مبدأ، DNAT مقصد). NAT به‌تنهایی اجازه‌ی عبور نمی‌دهد؛ Policy تصمیم‌گیرنده است.
+
 **11-4-ت2** — ترجمه‌ی چند Host با یک IP با استفاده از پورت‌های مختلف.
+
+PAT چند Host داخلی را با یک IP عمومی ترجمه می‌کند و برای تمایز، پورت مبدأ را تغییر می‌دهد؛ ظرفیت تقریبی ۶۴ هزار پورت به‌ازای IP و مقصد.
 
 **11-4-ت3** — NAT اجازه نمی‌دهد؛ Policy لازم است.
 
+VIP فقط ترجمه‌ی مقصد را تعریف می‌کند؛ بدون Policy که اجازه‌ی عبور بدهد ترافیک Implicit Deny می‌شود. پس VIP + Policy (dst=VIP) هر دو لازم‌اند.
+
 **11-4-ت4** — دسترسی داخلی به IP عمومی سرور داخلی.
+
+Hairpin یعنی کاربر داخلی به IP عمومی سروری که داخل همان شبکه است وصل شود: بسته به فایروال می‌رسد و DNAT می‌شود ولی پاسخ سرور مستقیم به کاربر می‌رود و Session ناقص می‌ماند.
 
 **11-4-ت5** — Split DNS یا Hairpin NAT؛ آزمون.
 
+Hairpin را با Split DNS (DNS داخلی IP داخلی را بدهد، ترجیح) یا Hairpin NAT (SNAT برای این جریان) حل می‌کنند؛ آزمون: nslookup و باز شدن سایت از LAN.
+
 **11-4-ت6** — سه VIP، سه Policy، آزمون منفی.
 
+انتشار سه سرویس: سه VIP (با Port-forward حداقل)، سه Policy با dst=VIP و Service مشخص، Log All و آزمون منفی (پورت غیرمجاز رد شود).
+
 **11-4-Q1** — A VIP only translates addresses; a firewall policy must still permit the traffic.
+
+A VIP only translates addresses; a firewall policy is still needed to permit the traffic.
 
 ### پاسخ‌های بازنویسی عمیق درس 11-5
 
@@ -3186,18 +3228,39 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 
 **11-5-ت1** — 1460.
 
+MSS برای MTU 1500 برابر 1500−20−20=1460 است.
+
+``` text
+MSS = MTU - IP(20) - TCP(20) = 1460
+```
+
 **11-5-ت2** — Handshake ok، بسته‌ی بزرگ بی‌پاسخ.
+
+علامت Black-hole: Handshake و بسته‌های کوچک (ping معمولی) موفق؛ بسته‌ی بزرگ بی‌پاسخ و Retransmission. علت: بسته‌ی بزرگ با DF از لینک کوچک‌تر عبور نمی‌کند و ICMP Frag-needed بسته شده است.
 
 **11-5-ت3** — 1360.
 
+MSS برای MTU 1400: 1400−40=1360.
+
+``` text
+MSS = 1400 - 40 = 1360
+```
+
 **11-5-ت4** — PMTUD برای اطلاع از MTU مسیر.
+
+ICMP Fragmentation-needed (Type 3 Code 4) به فرستنده می‌گوید MTU مسیر کوچک‌تر است (PMTUD). اگر فایروال آن را ببندد، Black-hole می‌شود؛ پس این نوع ICMP را مجاز کنید.
 
 **11-5-ت5** — Timeout/Keepalive.
 
+SSH پس از ۵ دقیقه بیکاری قطع می‌شود چون Timeout Session کوتاه است؛ راه: افزایش `session-ttl` برای پورت 22 یا Keepalive در کلاینت، و آزمون ۳۰ دقیقه بیکاری.
+
 **11-5-ت6** — اندازه‌گیری PMTU، clamp، دانلود ۱۰۰MB.
+
+MSS روی IPsec: PMTU را با ping DF اندازه بگیرید (مثلاً 1400)، MSS=PMTU−40 با حاشیه (1360)، روی Policy تونل تنظیم و با دانلود ۱۰۰MB سه بار آزمون کنید.
 
 **11-5-Q1** — Large DF packets are dropped while ICMP fragmentation-needed messages are blocked.
 
+An MTU black hole happens when large DF packets are dropped while ICMP fragmentation-needed messages are blocked.
 
 ### پاسخ‌های بازنویسی عمیق درس 11-6
 
@@ -3206,17 +3269,31 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 
 **11-6-ت1** — Policy 99 در انتها با Log.
 
+Default Deny در Policy 99 در انتهای لیست با Log All قرار دارد؛ هر ترافیک مجازنشده Deny و ثبت می‌شود و برای Alert و ممیزی استفاده می‌شود.
+
 **11-6-ت2** — هیچ مسیری ندارد؛ ممنوع.
+
+DB از اینترنت هیچ مسیری ندارد: نه VIP، نه Policy؛ فقط APP→DB با Policy 60. آزمون منفی: اتصال از INET به SRV-DB رد و Log شود.
 
 **11-6-ت3** — Implicit Log ندارد؛ صریح برای Alert.
 
+Implicit Deny Log ندارد؛ Deny صریح با Log برای Alert و ممیزی لازم است (مثلاً تلاش DMZ→DB).
+
 **11-6-ت4** — فقط Policy 10، 40، 80.
+
+NAT فقط روی Policy 10 (SNAT کاربران)، 40 (DNAT/VIP وب) و 80 (SNAT خروج سرورها به Update) است؛ بقیه‌ی Policyها بدون NAT.
 
 **11-6-ت5** — هر خانه‌ی «-» ماتریس: INET→SRV/USR/MGT، DMZ→USR/MGT، SRV→DMZ/USR/MGT، USR→MGT، MGT→INET و ... با نتیجه‌ی deny.
 
+۱۶ آزمون منفی: هر خانه‌ی «-» ماتریس؛ مثلاً INET→SRV، INET→USR، INET→MGT، DMZ→USR، DMZ→MGT، SRV→DMZ، SRV→USR، SRV→MGT، USR→MGT، MGT→INET و ...؛ همه باید Deny و Log داشته باشند.
+
 **11-6-ت6** — SSO/MFA برای Admin، Segment بیشتر DMZ، WAF (Needs-License).
 
+بهبود طرح: SSO/MFA برای Admin، Segment بیشتر در DMZ، WAF برای وب (Needs-License)، Alert روی Deny بین لایه‌ها و بازبینی فصلی Policy.
+
 **11-6-Q1** — Attempt a direct connection from the DMZ to the database and confirm it is denied.
+
+A negative test: connect from the DMZ to the database and verify it is denied and logged.
 
 ### پاسخ‌های درس افزوده‌ی 11-0 (فصل 11)
 
@@ -5186,18 +5263,29 @@ show system interface port2
 
 **12-1-ت1** — `get system status`؛ خروجی Version/Serial/License را دارد.
 
+`get system status` نسخه (Version/Build)، Serial، License، Hostname و Operation Mode را نشان می‌دهد؛ اولین دستور برای تأیید نسخه‌ی دستگاه.
+
 **12-1-ت2** — زمان صحیح برای Log، گواهی و Correlation در SIEM لازم است.
+
+NTP زمان صحیح می‌دهد؛ Log، گواهی TLS و Correlation در SIEM به آن وابسته‌اند؛ اختلاف چند دقیقه ترتیب رویدادها را به‌هم می‌ریزد.
 
 **12-1-ت3** — دستورها و رفتارها بین نسخه‌ها فرق دارند (مثلاً SD-WAN/SSL-VPN)؛ بدون تطبیق ممکن است دستور خطا بدهد یا رفتار متفاوت باشد.
 
 **12-1-ت4** — فوراً قوی کنیم و در ریپو ذخیره نکنیم.
 
+رمز پیش‌فرض را فوراً به رمز قوی تغییر دهید و در ریپو/سند ذخیره نکنید؛ رمز در Vault و تغییر نام/غیرفعال‌سازی admin پیش‌فرض.
+
 **12-1-ت5** — ثبت، مقایسه با Release Notes، علامت Unverified، عدم Downgrade بدون Backup.
+
+نسخه‌ی v7.2 به‌جای 7.0.3: نسخه را ثبت، با Release Notes مقایسه، دستورهای مشکوک را `Unverified` علامت بزنید و بدون Backup و تأیید Downgrade نکنید.
 
 **12-1-ت6** — نسخه، سریال، License، hostname، NTP، DNS، رمز، Backup اولیه.
 
+برگه‌ی اولین بوت: نسخه، سریال، License، Hostname، NTP، DNS، رمز قوی، Backup اولیه و ثبت در Inventory.
+
 **12-1-Q1** — get system status.
 
+`get system status` shows the version, serial number and license state.
 
 ### پاسخ‌های بازنویسی عمیق درس 12-2
 
@@ -5205,100 +5293,175 @@ show system interface port2
 
 **12-2-ت2** — Interface منطقی با vlanid که روی یک پورت فیزیکی/Aggregate ساخته می‌شود تا چند شبکه‌ی جدا روی یک لینک Trunk داشته باشیم.
 
+VLAN Sub-interface یک Interface منطقی با vlanid است که روی پورت فیزیکی یا Aggregate ساخته می‌شود تا چند شبکه‌ی جدا روی یک لینک Trunk داشته باشیم.
+
 **12-2-ت3** — پنل مدیریت از اینترنت قابل Brute-force و سوءاستفاده از آسیب‌پذیری می‌شود؛ مدیریت باید فقط از شبکه‌ی Mgmt و با Trusted host باشد.
 
 **12-2-ت4** — Trunk نبودن پورت سوییچ، VLAN غیرمجاز، vlanid اشتباه؛ شاهد: ARP incomplete.
 
+لینک up ولی VLAN کار نمی‌کند: Trunk نبودن پورت سوییچ، VLAN غیرمجاز یا vlanid اشتباه؛ شاهد: ARP incomplete. رفع روی سوییچ و آزمون ping.
+
 **12-2-ت5** — حذف https/ssh از WAN، Mgmt جدا، Trusted host، Local-in policy، MFA، بررسی Log و آزمون nmap.
+
+حذف https/ssh از WAN، مدیریت فقط از Mgmt با Trusted host، Local-in policy، MFA، بررسی Log و آزمون nmap از اینترنت (پورت‌های 22/443 بسته).
 
 **12-2-ت6** — جدول: نام، IP، Role، allowaccess، VLAN، Zone؛ Mgmt فقط https/ssh با Trusted host.
 
+جدول Interfaceهای شعبه: نام، IP، Role، allowaccess، VLAN و Zone؛ Mgmt فقط https/ssh با Trusted host؛ WAN بدون مدیریت.
+
 **12-2-Q1** — allowaccess.
 
+`allowaccess` controls which management services are reachable on the interface.
 
 ### پاسخ‌های بازنویسی عمیق درس 12-3
 
 **12-3-ت1** — یک نقطه‌ی تعریف؛ تغییر آدرس در یک جا همه‌ی Policyها را به‌روز می‌کند و Policy خوانا می‌شود.
 
+Address Object یک نقطه‌ی تعریف است؛ تغییر آدرس سرور در یک جا همه‌ی Policyها را به‌روز می‌کند و Policy خواناتر می‌شود.
+
 **12-3-ت2** — ترافیک بین Interfaceهای همان Zone را بدون Policy رد می‌کند.
+
+`intrazone deny` ترافیک بین Interfaceهای همان Zone را بدون Policy صریح رد می‌کند؛ امن‌تر از allow.
 
 **12-3-ت3** — چون Zone جایگزین آن Interface‌ها در Policy است.
 
+Interface عضو Zone در Policy مستقیماً انتخاب نمی‌شود چون Zone جایگزین آن است؛ باید Zone را انتخاب کرد.
+
 **12-3-ت4** — وابستگی به DNS؛ اگر DNS خراب شود Policy کار نمی‌کند.
+
+Object FQDN به DNS وابسته است؛ اگر Resolver خراب شود Policy کار نمی‌کند؛ فقط جایی که DNS مطمئن است.
 
 **12-3-ت5** — Export، Where-used، تأیید مالک، Backup، حذف/ادغام، استاندارد نام.
 
+ممیزی ۲۰۰ Object: Export، Where-used، تأیید مالک، Backup، حذف/ادغام، اعمال استاندارد نام؛ معیار: صفر Object بی‌مالک.
+
 **12-3-ت6** — جدول پیشوندها، مالک، Comment، مثال.
+
+استاندارد نام‌گذاری: NET-/HOST-/SRV-/RNG-/FQDN-/TCP-/UDP-/GRP-/ZN- همراه Comment مالک و دلیل.
 
 **12-3-Q1** — Zones group interfaces with the same role so policies are shorter and easier to maintain.
 
+Zones group interfaces with the same role so policies stay short and easy to maintain.
 
 ### پاسخ‌های بازنویسی عمیق درس 12-4
 
 **12-4-ت1** — اعتبار منبع Route؛ کمتر بهتر؛ بین Routeهای مختلف به یک مقصد انتخاب می‌کند.
 
+Distance اعتبار منبع Route است (کمتر بهتر) و بین Routeهای مختلف به یک مقصد انتخاب می‌کند؛ Static پیش‌فرض ۱۰ در FortiOS.
+
 **12-4-ت2** — Priority بین Routeهای هم‌Distance تعیین‌کننده است.
+
+Priority بین Routeهای هم‌Distance به یک مقصد تعیین‌کننده است (کمتر ترجیح)؛ دو Default با Distance برابر و Priority متفاوت یعنی Primary/Backup.
 
 **12-4-ت3** — Gateway ممکن است زنده باشد ولی ISP قطع؛ Monitor به مقصد خارجی Route را غیرفعال می‌کند.
 
+Gateway ISP ممکن است زنده باشد ولی ISP قطع؛ Link-monitor به مقصد خارجی (مثل 8.8.8.8) Route را غیرفعال می‌کند و Failover می‌شود.
+
 **12-4-ت4** — قبل از جدول مسیر.
+
+Policy Route قبل از جدول مسیر اعمال می‌شود؛ پس مسیر «عجیب» اغلب از `diagnose firewall proute list` پیداست.
 
 **12-4-ت5** — RPF و Route برگشت؛ هماهنگی NAT/Route؛ آزمون.
 
+پس از Policy Route برخی Sessionها قطع می‌شوند: RPF و Route برگشت؛ NAT و Route باید هماهنگ باشند؛ آزمون Debug flow.
+
 **12-4-ت6** — Distance برابر، Priority 1/10، Link-monitor با failtime/recoverytime، آزمون قطع.
+
+دو ISP: Distance برابر، Priority 1/10، Link-monitor با failtime/recoverytime مناسب، آزمون قطع ISP و Failover.
 
 **12-4-Q1** — Priority.
 
+Priority breaks the tie between static routes with equal distance.
 
 ### پاسخ‌های بازنویسی عمیق درس 12-5
 
 **12-5-ت1** — کنترل دسترسی بر اساس نقش؛ هر مدیر فقط به اندازه‌ی نقشش دسترسی دارد.
 
+RBAC کنترل دسترسی نقش‌محور است: هر مدیر فقط به اندازه‌ی نقشش دسترسی دارد (Super، Network، ReadOnly).
+
 **12-5-ت2** — ورود Admin را به آدرس‌های مشخص محدود می‌کند.
+
+Trusted host ورود Admin را به آدرس‌های مشخص محدود می‌کند؛ حتی با رمز لورفته از بیرون نمی‌توان وارد شد.
 
 **12-5-ت3** — پس از چند تلاش ناموفق حساب/مبدأ را موقتاً قفل می‌کند و Brute-force را کند می‌کند.
 
+Lockout پس از چند تلاش ناموفق حساب یا مبدأ را موقتاً قفل می‌کند و Brute-force را کند می‌کند.
+
 **12-5-ت4** — دسترسی اضطراری وقتی MFA/SSO در دسترس نیست؛ با Alert و Rotate.
+
+Break-glass حساب اضطراری برای وقتی که MFA/SSO در دسترس نیست؛ رمز طولانی در گاوصندوق، Alert روی استفاده و Rotate پس از آن.
 
 **12-5-ت5** — Lockout، Local-in، Trusted host، Alert و Log.
 
+Brute-force از یک IP: Lockout، Local-in، Trusted host، Alert و بررسی Log؛ مدیریت را از WAN حذف کنید.
+
 **12-5-ت6** — طبق متن.
+
+سه سطح: Super (۲ نفر با MFA)، Network Admin (fwgrp/netgrp رایت)، ReadOnly (NOC)؛ Break-glass جدا.
 
 **12-5-Q1** — The source addresses from which an administrator may log in.
 
+A trusted host restricts the source addresses from which an administrator may log in.
 
 ### پاسخ‌های بازنویسی عمیق درس 12-6
 
 **12-6-ت1** — حاوی رمزها و کلیدهاست و افشا یعنی نفوذ.
 
+Backup حاوی رمزها و کلیدهاست؛ افشای آن یعنی نفوذ؛ باید رمزگذاری و محدود شود.
+
 **12-6-ت2** — ابزار Fortinet که مسیر نسخه‌های پشتیبانی‌شده را می‌دهد.
+
+Upgrade Path Tool ابزار Fortinet است که مسیر نسخه‌های پشتیبانی‌شده (و نسخه‌ی میانی) را می‌دهد.
 
 **12-6-ت3** — Backup، Release Notes، Known Issues، Window، Rollback، نسخه‌ی فعلی.
 
+پیش از Upgrade: Backup، Release Notes، Known Issues، Window، Rollback و نسخه‌ی فعلی/Path.
+
 **12-6-ت4** — تا سرویس با Failover حفظ شود.
+
+در HA ابتدا Secondary ارتقا می‌یابد تا با Failover سرویس حفظ شود و سپس Primary قبلی.
 
 **12-6-ت5** — کنسول، Partition قبلی، Restore، گزارش.
 
+Boot loop پس از Upgrade: کنسول، Boot از Partition قبلی، Restore Config در صورت نیاز و گزارش علت.
+
 **12-6-ت6** — هدف، Window، Path، Backup، Rollback، آزمون، تأیید.
+
+برنامه‌ی CHG Upgrade: هدف، Window، Path، Backup، Rollback، آزمون و تأیید.
 
 **12-6-Q1** — Because a failed upgrade can cause outage and you must restore service quickly.
 
+A failed upgrade can cause an outage, so a rollback must be planned in advance.
 
 ### پاسخ‌های بازنویسی عمیق درس 12-7
 
 **12-7-ت1** — کنسول و بازگرداندن allowaccess.
 
+قفل‌شدن مدیریت: از کنسول وارد شوید و allowaccess را بازگردانید (`set allowaccess https ssh ping`).
+
 **12-7-ت2** — لایه‌ی ۲ مشکل دارد.
+
+ARP incomplete یعنی لایه‌ی ۲ مشکل دارد (VLAN/Trunk/کابل)، نه Policy.
 
 **12-7-ت3** — Route با Distance کمتر برنده می‌شود.
 
+Route با Distance کمتر برنده می‌شود؛ پس Static اشتباه با Distance کوچک مسیر Default را می‌دزدد.
+
 **12-7-ت4** — تغییر از Mgmt جدا، Rollback/زمان‌بندی، کنسول آماده.
+
+پیشگیری: تغییر مدیریت از Mgmt جدا، Rollback/زمان‌بندی، کنسول آماده و Backup.
 
 **12-7-ت5** — ابتدا لایه‌ی پایین‌تر.
 
+دو عیب هم‌زمان: ابتدا لایه‌ی پایین‌تر (VLAN) و بعد Route؛ هر کدام جدا آزمون.
+
 **12-7-ت6** — Backup، Window، کنسول، آزمون، Rollback.
 
+Runbook تغییر Interface: Backup، Window، کنسول آماده، آزمون و Rollback.
+
 **12-7-Q1** — Log in via the console and restore the setting.
+
+Log in via the console and restore the management setting.
 
 ### پاسخ‌های درس افزوده‌ی 12-0 (فصل 12)
 
