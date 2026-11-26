@@ -517,9 +517,9 @@ show ip cef exact-route 10.0.0.1 10.1.1.1
 
 <a id="l-10-4"></a>
 
-## درس 10-4 — Policy-Based Routing (PBR): مسیریابی بر اساس سیاست، نه فقط مقصد
+## درس 10-4 — Policy-Based Routing (PBR): مسیریابی بر اساس سیاست با Route-map، Track و Failover
 
-**فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۶-۱، ۸-۱ · ≈ 9 ساعت**
+**فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۶-۱، ۸-۱، ۱۰-۱ · ≈ 10 ساعت**
 
 > **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ دستورهای vIOS `Unverified` تا اجرای Lab.
 
@@ -527,86 +527,118 @@ show ip cef exact-route 10.0.0.1 10.1.1.1
 
 در پایان این درس باید بتوانید:
 
-1. PBR را در برابر مسیریابی معمولی توضیح دهد.
-2. ACL+Route-map با `set ip next-hop` را پیکربندی و روی Interface اعمال کند.
-3. Local PBR و ترتیب پردازش را بشناسد.
-4. Verification با `show route-map` و Debug محدود را اجرا کند.
-5. خطاهای رایج (ACL غلط، Next-hop نامعتبر) را رفع کند.
+1. PBR را در برابر مسیریابی بر اساس مقصد توضیح دهد و جای آن را در ترتیب پردازش بگوید.
+2. ACL، Route-map و `ip policy route-map` را پیکربندی کند.
+3. set ip next-hop را با default next-hop، verify-availability و Track مقایسه و درست انتخاب کند.
+4. Local PBR را برای ترافیک خود روتر به‌کار ببرد.
+5. Verification با `show route-map`، شمارنده و traceroute را اجرا کند.
+6. خطاهای رایج (ACL غلط، Next-hop ناقابل‌دسترس، نبود Failover) را عیب‌یابی کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-مسیریابی عادی فقط به «مقصد» نگاه می‌کند. گاهی می‌خواهید ترافیک واحد مالی از ISP-A برود و باقی از ISP-B؛ این «سیاست» است. PBR قبل از جدول مسیریابی تصمیم می‌گیرد.
+مسیریابی عادی فقط یک سؤال می‌پرسد: «مقصد کجاست؟». ولی کسب‌وکار سؤال‌های دیگری دارد: «این بسته از واحد مالی است؟ از وب است یا ویدئو؟». اگر ترافیک مالی باید از ISP گران‌قیمت‌تر ولی مطمئن‌تر برود و بقیه از ISP ارزان، مقصد یکی است ولی مسیر باید فرق کند. PBR همین کار را می‌کند: قبل از نگاه به جدول مسیریابی، شرط می‌گذارد و Next-hop را خودش تعیین می‌کند.
+
+چون PBR مسیر را بدون توجه به جدول مسیریابی تغییر می‌دهد، خطرناک هم هست: Next-hop مرده یعنی ترافیک بی‌صدا گم می‌شود. به همین دلیل Track و Failover بخش جدایی‌ناپذیر این درس‌اند.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) ساختار
+#### ۱) ترتیب پردازش
+
+``` text
+packet in (interface with 'ip policy') -> PBR match? 
+    yes -> set next-hop/interface  (if next-hop usable)
+    no/permit-without-set -> normal routing table
+```
+
+PBR روی Interface **ورودی** اعمال می‌شود، نه خروجی.
+
+#### ۲) ساختار
 
 ``` text
 ip access-list extended FINANCE
  permit ip 10.10.20.0 0.0.0.255 any
-route-map PBR-ISPA permit 10
+!
+route-map PBR-FIN permit 10
  match ip address FINANCE
  set ip next-hop verify-availability 192.0.2.1 10 track 1
-route-map PBR-ISPA permit 20
+ set ip next-hop 192.0.2.5
+route-map PBR-FIN permit 20
+!
+ip sla 1
+ icmp-echo 192.0.2.1 source-interface GigabitEthernet0/2
+ frequency 5
+ip sla schedule 1 life forever start-time now
+track 1 ip sla 1 reachability
+!
 interface GigabitEthernet0/1
- ip policy route-map PBR-ISPA
+ ip policy route-map PBR-FIN
 ```
 
-`permit 20` بدون Match = بقیه‌ی ترافیک عادی.
+- `permit 10` با Match: ترافیک مالی.
+- `permit 20` بدون Match/Set: بقیه‌ی ترافیک عادی (بدون آن، ترافیک غیرمطابق **Drop** می‌شود در حالت deny/نبود sequence).
+- اگر Next-hop اول با Track پایین رفت، Next-hop دوم (192.0.2.5) استفاده می‌شود.
 
-#### ۲) ترتیب
+#### ۳) next-hop در برابر default next-hop
 
-Packet ورودی → PBR (در صورت Match) → Next-hop مشخص؛ در غیر این صورت RIB. `set ip next-hop` در مقابل `set ip default next-hop` (فقط وقتی مسیر ندارد).
+| دستور | رفتار |
+|---|---|
+| `set ip next-hop X` | حتی اگر مسیر دقیق در RIB باشد، X را ترجیح می‌دهد |
+| `set ip default next-hop X` | فقط وقتی RIB مسیر مشخصی ندارد (غیر از Default) |
 
-#### ۳) Local PBR
+#### ۴) Local PBR
 
 ``` text
 ip local policy route-map LOCAL-PBR
 ```
 
-برای ترافیک خود روتر.
-
-#### ۴) Track و Failover
-
-با `ip sla` و `track` اگر Next-hop مرده بود، PBR بی‌خبر نماند.
+برای ترافیکی که خود روتر تولید می‌کند (مثلاً BGP، SNMP).
 
 #### ۵) آزمون
 
 ``` text
-show route-map PBR-ISPA
+show route-map PBR-FIN
 show ip policy
 traceroute 8.8.8.8 source 10.10.20.5
+debug ip policy   ! lab only, rate-limited
 ```
+
+شمارنده‌های `policy routing matches` باید بالا بروند.
+
+#### ۶) PBR و CEF/عملکرد
+
+PBR با CEF روی بسیاری از پلتفرم‌ها سخت‌افزاری است؛ ولی `set` بعضی ویژگی‌ها (مثل `set ip next-hop recursive`) ممکن است ترافیک را به CPU ببرد. `Unverified` روی vIOS.
 
 ### ۴) طراحی و تصمیم‌گیری
 
 | سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
 | next-hop یا default next-hop | default اگر مسیر عادی ترجیح |
-| Track | اجباری |
+| Track | اجباری برای Next-hop خارجی |
+| Local PBR | فقط وقتی لازم |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Finance از ISP-A: traceroute از 10.10.20.5 از 192.0.2.1 عبور می‌کند.
+**ساده (حل‌شده):** ترافیک 10.10.20.0/24 باید از 192.0.2.1 برود. ورودی: Host 10.10.20.5 به 8.8.8.8. مراحل: ۱) ACL تطبیق. ۲) Next-hop 192.0.2.1. پاسخ: traceroute از 192.0.2.1 عبور می‌کند؛ Host 10.10.30.5 از مسیر عادی.
 
-**متوسط (تحلیل):** PBR اثر ندارد: ACL روی subnet اشتباه؛ `show route-map` شمارنده‌ی Match صفر؛ رفع ACL.
+**متوسط (تحلیل):** PBR اثری ندارد. مراحل: ۱) `show route-map` شمارنده Match=0. ۲) ACL روی subnet اشتباه (10.10.2.0 به‌جای 10.10.20.0). ۳) اصلاح ACL. ۴) شمارنده بالا می‌رود؛ traceroute تأیید.
 
-**سخت (Failover):** ISP-A قطع شد ولی Finance قطع ماند: Track نبود؛ راه: IP SLA+Track با `verify-availability`؛ آزمون: قطع لینک؛ Finance به مسیر عادی می‌رود.
+**سخت (Failover):** لینک ISP-A قطع شد ولی Finance قطع ماند. مراحل: ۱) `set ip next-hop 192.0.2.1` بدون Track. ۲) روتر همچنان ترافیک را به Next-hop مرده می‌فرستد. ۳) افزودن IP SLA+Track و `verify-availability`، Next-hop دوم. ۴) آزمون: قطع لینک، Finance به ISP-B می‌رود (شمارنده‌ها). معیار: Failover < 15 s.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
-route-map PBR-ISPA permit 10
+route-map PBR-FIN permit 10
  match ip address FINANCE
  set ip next-hop verify-availability 192.0.2.1 10 track 1
 interface Gi0/1
- ip policy route-map PBR-ISPA
-show route-map PBR-ISPA
+ ip policy route-map PBR-FIN
+show route-map PBR-FIN
+show ip policy
 ```
 
 ### ۸) Verification (اثبات صحت)
 
-- Match counter بالا می‌رود.
+- شمارنده‌ی Match افزایش.
 - traceroute مسیر سیاست.
 - آزمون Failover.
 
@@ -614,58 +646,61 @@ show route-map PBR-ISPA
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Match صفر | ACL | Subnet |
+| Match صفر | ACL/Interface ورودی | ACL و ip policy روی Interface درست |
 | Failover ندارد | Track | verify-availability |
-| ترافیک گم | Next-hop | ARP/Reachability |
+| ترافیک گم | Next-hop مرده | ARP/Reachability |
+| ترافیک غیرمطابق قطع | permit 20 | sequence پایانی |
 
 ### ۱۰) نکات امنیتی
 
-- PBR مسیرها را از Firewall دور نکند.
+- PBR مسیرهای حفاظتی را دور نزند.
+- تغییر با CHG و آزمون.
 
 ### ۱۱) جمع‌بندی مفهومی
 
 - PBR قبل از RIB.
-- ACL+Route-map.
-- Track.
+- Interface ورودی.
+- Track و Failover.
+- permit پایانی.
 
 ### ۱۲) تمرین و ارزیابی
 
 **ت1.** (ساده) PBR بر چه اساسی تصمیم می‌گیرد؟ *(پاسخ: 10-4-ت1)*
 
-**ت2.** (ساده) `permit 20` خالی یعنی چه؟ *(پاسخ: 10-4-ت2)*
+**ت2.** (ساده) PBR روی کدام Interface اعمال می‌شود؟ *(پاسخ: 10-4-ت2)*
 
 **ت3.** (متوسط) تفاوت next-hop و default next-hop؟ *(پاسخ: 10-4-ت3)*
 
-**ت4.** (متوسط) Local PBR؟ *(پاسخ: 10-4-ت4)*
+**ت4.** (متوسط) چرا `permit 20` پایانی لازم است؟ *(پاسخ: 10-4-ت4)*
 
-**ت5.** (سخت) Failover PBR. *(پاسخ: 10-4-ت5)*
+**ت5.** (سخت) Failover PBR را طراحی کنید. *(پاسخ: 10-4-ت5)*
 
-**ت6.** (سخت، طراحی) PBR دو ISP. *(پاسخ: 10-4-ت6)*
+**ت6.** (سخت، طراحی) PBR برای دو ISP با ریسک‌ها. *(پاسخ: 10-4-ت6)*
 
-**Q1.** Quick quiz (English): What is the purpose of the track keyword in PBR? *(پاسخ: 10-4-Q1)*
+**Q1.** Quick quiz (English): What is the purpose of the track keyword with a PBR next hop? *(پاسخ: 10-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
 | PBR | Policy-Based Routing | مسیریابی سیاست‌محور |
-| SLA | Service Level Agreement/IP SLA | پایش |
+| SLA | IP SLA | پایش لینک |
 
 - *PBR overrides destination-based routing.* ← PBR مسیریابی مبتنی بر مقصد را لغو می‌کند.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** PBR. **Evidence:** `03-ops/pbr.md`.
+**کارت Lab:** PBR (اجرا نشده). **Evidence:** `03-ops/pbr.md`.
 
 ### ۱۵) منابع
 
-- Cisco PBR guide
+- Cisco IOS IP Routing: Policy-Based Routing
 
 <a id="l-10-5"></a>
 
-## درس 10-5 — VRF-lite: جداسازی جدول مسیریابی
+## درس 10-5 — VRF-lite: چند جدول مسیریابی مستقل، Overlap آدرس و ارتباط با فایروال
 
-**فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۶-۱، ۱۰-۴ · ≈ 9 ساعت**
+**فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۶-۱، ۱۰-۴ · ≈ 10 ساعت**
 
 > **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ دستورهای vIOS `Unverified` تا اجرای Lab.
 
@@ -673,15 +708,16 @@ show route-map PBR-ISPA
 
 در پایان این درس باید بتوانید:
 
-1. VRF را (چند RIB مستقل) توضیح دهد.
-2. VRF-lite با Interface و مسیر مستقل پیکربندی کند.
-3. Overlap آدرس را مدیریت کند.
-4. Verification و Troubleshooting `vrf` را انجام دهد.
-5. VRF را برای جداسازی فایروال/مشتریان طراحی کند.
+1. VRF را (چند RIB/FIB مستقل) توضیح دهد.
+2. VRF-lite با Interface، RD و مسیر مستقل را پیکربندی کند.
+3. Overlap آدرس بین مشتریان را مدیریت کند.
+4. ping/traceroute/OSPF را در VRF اجرا کند.
+5. VRF را با فایروال (Zone/VDOM) هم‌ساز کند.
+6. خطاهای رایج (پاک‌شدن IP، نبود vrf در دستور) را رفع کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-یک ساختمان با دو شرکت: هر کدام آدرس 192.168.1.0/24 دارند و نباید یکدیگر را ببینند. VRF روی همان روتر «چند روتر مجازی» می‌سازد؛ هر کدام RIB جداگانه دارند.
+ساختمانی دارید با دو شرکت مستأجر که هر دو شبکه‌ی 192.168.1.0/24 دارند و نباید یکدیگر را ببینند. اگر یک روتر فیزیکی بخرید برای هرکدام، هزینه و فضا هدر می‌رود. VRF روی همان روتر «چند روتر مجازی» می‌سازد؛ هر کدام جدول مسیریابی مستقل دارند و آدرس‌ها می‌توانند تکراری باشند.
 
 ### ۳) توضیح عمیق فنی
 
@@ -692,21 +728,23 @@ ip vrf CUST-A
  rd 65000:1
 ip vrf CUST-B
  rd 65000:2
-interface Gi0/1
+!
+interface GigabitEthernet0/1
  ip vrf forwarding CUST-A
  ip address 192.168.1.1 255.255.255.0
-interface Gi0/2
+interface GigabitEthernet0/2
  ip vrf forwarding CUST-B
  ip address 192.168.1.1 255.255.255.0
 ```
 
-دستور `ip vrf forwarding` آدرس را پاک می‌کند: بعد از آن آدرس را دوباره بزنید.
+دستور `ip vrf forwarding` آدرس Interface را پاک می‌کند: اول forwarding بعد IP.
 
-#### ۲) مسیر
+#### ۲) مسیریابی
 
 ``` text
 ip route vrf CUST-A 0.0.0.0 0.0.0.0 10.0.0.1
 router ospf 10 vrf CUST-A
+ network 192.168.1.0 0.0.0.255 area 0
 ```
 
 #### ۳) تست
@@ -715,13 +753,18 @@ router ospf 10 vrf CUST-A
 show ip vrf
 show ip route vrf CUST-A
 ping vrf CUST-A 192.168.1.2
+traceroute vrf CUST-A 8.8.8.8
 ```
 
-بدون `vrf` به جدول Global می‌رود.
+بدون `vrf` به جدول Global می‌رود: شایع‌ترین «ping کار نمی‌کند».
 
-#### ۴) استفاده با فایروال
+#### ۴) VRF و فایروال
 
-هر VRF یک مسیر به Interface فایروال؛ فایروال VDOM/Zone مقابل. Route Leaking: ۱۰-۸.
+هر VRF یک لینک (یا VLAN) به فایروال؛ فایروال برای هر VRF Zone یا VDOM جدا. جداسازی VRF خودش سیاست امنیتی نیست؛ فقط RIB را جدا می‌کند و Policy فایروال لازم است.
+
+#### ۵) Route Leaking
+
+برای ارتباط کنترل‌شده (مثلاً سرویس مشترک) بین VRFها: درس ۱۰-۸.
 
 ### ۴) طراحی و تصمیم‌گیری
 
@@ -729,14 +772,15 @@ ping vrf CUST-A 192.168.1.2
 |---|---|
 | VRF-lite یا MPLS VRF | داخلی: lite |
 | RD | یکتا |
+| فایروال | Zone/VDOM هر VRF |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** CUST-A و B هر دو 192.168.1.0/24؛ هیچ تداخلی.
+**ساده (حل‌شده):** CUST-A و B هر دو 192.168.1.0/24: ping vrf CUST-A 192.168.1.2 فقط Hostهای A را می‌بیند.
 
-**متوسط (تحلیل):** ping داخل VRF جواب نمی‌دهد: بدون `vrf` اجرا شده؛ رفع: `ping vrf`.
+**متوسط (تحلیل):** `ping 192.168.1.2` از روتر جواب نمی‌دهد. علت: بدون vrf در جدول Global اجرا شده؛ رفع: `ping vrf CUST-A`.
 
-**سخت (طراحی):** سه مشتری با خروج اینترنت مشترک: VRFهای جدا + Default به Firewall؛ Leak کنترل‌شده؛ NAT جدا؛ آزمون عدم دسترسی متقابل.
+**سخت (طراحی):** سه مشتری با اینترنت مشترک: ۱) سه VRF. ۲) Default هر VRF به Interface فایروال جدا. ۳) NAT جدا برای هر مشتری. ۴) آزمون: A به B نمی‌رسد؛ A به اینترنت می‌رسد. ۵) Log. ریسک: Leak ناخواسته. معیار: آزمون منفی A→B رد.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
@@ -760,31 +804,32 @@ ping vrf CUST-A 192.168.1.2
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| آدرس پاک شد | forwarding بعد آدرس | آدرس را دوباره بزنید |
-| ping ناموفق | vrf | ping vrf |
-| نشت | Leak | حذف |
+| آدرس پاک شد | ترتیب دستور | IP را دوباره بزنید |
+| ping ناموفق | بدون vrf | ping vrf |
+| نشت | Leak/Static | حذف |
 
 ### ۱۰) نکات امنیتی
 
-- جداسازی ≠ امنیت کامل؛ سیاست فایروال لازم است.
+- VRF امنیت کامل نیست؛ Policy فایروال لازم است.
 
 ### ۱۱) جمع‌بندی مفهومی
 
 - VRF=چند RIB.
 - Overlap.
 - ping vrf.
+- فایروال لازم.
 
 ### ۱۲) تمرین و ارزیابی
 
 **ت1.** (ساده) VRF چیست؟ *(پاسخ: 10-5-ت1)*
 
-**ت2.** (ساده) چرا ip address پاک می‌شود؟ *(پاسخ: 10-5-ت2)*
+**ت2.** (ساده) چرا IP هنگام forwarding پاک می‌شود؟ *(پاسخ: 10-5-ت2)*
 
 **ت3.** (متوسط) چگونه ping کنید؟ *(پاسخ: 10-5-ت3)*
 
-**ت4.** (متوسط) RD؟ *(پاسخ: 10-5-ت4)*
+**ت4.** (متوسط) RD چیست؟ *(پاسخ: 10-5-ت4)*
 
-**ت5.** (سخت) سه مشتری. *(پاسخ: 10-5-ت5)*
+**ت5.** (سخت) سه مشتری با اینترنت مشترک. *(پاسخ: 10-5-ت5)*
 
 **ت6.** (سخت، طراحی) جداسازی با فایروال. *(پاسخ: 10-5-ت6)*
 
@@ -801,17 +846,17 @@ ping vrf CUST-A 192.168.1.2
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** VRF. **Evidence:** `03-ops/vrf.md`.
+**کارت Lab:** VRF (اجرا نشده). **Evidence:** `03-ops/vrf.md`.
 
 ### ۱۵) منابع
 
-- Cisco VRF-lite guide
+- Cisco VRF-lite configuration guide
 
 <a id="l-10-6"></a>
 
-## درس 10-6 — Asymmetric Routing: تحلیل رفت و برگشت و اثر بر فایروال
+## درس 10-6 — Asymmetric Routing: تحلیل رفت و برگشت، اثر بر فایروال و راه‌حل‌ها
 
-**فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۱۰-۳، ۱۱-۱ · ≈ 9 ساعت**
+**فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۱۰-۳، ۱۱-۱، ۱۱-۳ · ≈ 10 ساعت**
 
 > **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ دستورهای vIOS `Unverified` تا اجرای Lab.
 
@@ -819,71 +864,78 @@ ping vrf CUST-A 192.168.1.2
 
 در پایان این درس باید بتوانید:
 
-1. Asymmetric Routing را تعریف و علت‌ها را بگوید.
-2. اثر آن بر Stateful Firewall را توضیح دهد.
+1. Asymmetric Routing را تعریف و علت‌های رایج را بشمارد.
+2. اثر آن بر Stateful Firewall را دقیق توضیح دهد.
 3. با traceroute و Capture دو سویه آن را ثابت کند.
-4. راه‌حل‌ها (Symmetric design، Policy، Session-pickup) را مقایسه کند.
+4. راه‌حل‌ها (طراحی Symmetric، Policy، Session-pickup، disable check) را مقایسه کند.
 5. رفع را اجرا و آزمون کند.
+6. طراحی را برای ECMP و چند ISP بازبینی کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-بسته‌ی رفت از فایروال ۱ می‌گذرد و برگشت از فایروال ۲. فایروال ۲ فقط «برگشت» را می‌بیند، Session نمی‌شناسد و Drop می‌کند. کاربر می‌گوید «سایت باز نمی‌شود»؛ ولی لینک‌ها سالم‌اند.
+نامه‌ای را از پست‌خانه‌ی A می‌فرستید ولی جوابش از پست‌خانه‌ی B می‌آید. اگر پست‌خانه‌ی B ثبت نکرده باشد که این نامه جواب کدام درخواست است، آن را دور می‌اندازد. فایروال Stateful دقیقاً همین رفتار را دارد: «Session ندیدم، پس بسته‌ی برگشت را نمی‌پذیرم». ولی لینک‌ها سالم‌اند و کاربر فقط می‌گوید «سایت باز نمی‌شود».
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) علل
+#### ۱) علل رایج
 
-- ECMP/Per-packet
-- دو ISP/Policy متفاوت
-- Redistribution/BGP Local-pref متفاوت
-- HA/Cluster نادرست
+- ECMP/Per-packet بین دو فایروال.
+- دو ISP با Policy ورودی/خروجی متفاوت (Local-pref در برابر Prepend).
+- Redistribution/Route-map ناهمگون.
+- HA/Cluster نادرست.
+- NAT متفاوت در دو مسیر.
 
 #### ۲) اثر بر فایروال
 
-Stateful: SYN-ACK بدون SYN ⇒ "no session matched"/Drop. Stateless: مشکلی ندارد.
+``` text
+Client -> FW1 -> Server       (SYN, FW1 creates session)
+Server -> FW2 -> Client       (SYN-ACK arrives at FW2: "no session matched" -> DROP)
+```
+
+Stateless: مشکلی ندارد.
 
 #### ۳) اثبات
 
 ``` text
-Capture on FW1: SYN seen
-Capture on FW2: SYN-ACK seen, no SYN
+FW1 capture: SYN present, no SYN-ACK
+FW2 capture: SYN-ACK present, no SYN
 traceroute from both ends shows different hops
 ```
 
 #### ۴) راه‌حل‌ها
 
-| روش | توضیح |
-|---|---|
-| طراحی Symmetric | Routing/Weight/Local-pref |
-| Policy-route | هر جریان را به یک فایروال |
-| Session sync | FGCP session-pickup/Active-Active |
-| Disable asymmetric check | فقط موقت (`asymroute`) و ضعیف‌شدن امنیت |
+| روش | توضیح | ریسک |
+|---|---|---|
+| طراحی Symmetric | Local-pref/Weight/PBR تا هر دو جهت از یک FW | کمترین |
+| Session-pickup/Sync | FGCP Session sync بین Cluster | تأخیر |
+| Policy Route | هر جریان را به یک فایروال | پیچیدگی |
+| `asymroute enable` | فایروال اجازه‌ی بسته‌ی برگشت بدون SYN | ضعیف‌شدن امنیت |
 
-#### ۵) آزمون بعد از رفع
+#### ۵) آزمون
 
-ping/TCP و `diagnose sys session list` روی یک فایروال.
+بعد از رفع: ping/TCP، `diagnose sys session list` روی یک فایروال، و Failover قطع لینک.
 
 ### ۴) طراحی و تصمیم‌گیری
 
 | سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symmetric یا sync | Symmetric ترجیح |
-| asymroute | نه |
+| Symmetric یا Sync | Symmetric ترجیح |
+| asymroute | نه (فقط موقت) |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Capture: FW1 فقط SYN؛ FW2 فقط SYN-ACK؛ تشخیص Asymmetric.
+**ساده (حل‌شده):** Capture: FW1 فقط SYN، FW2 فقط SYN-ACK ⇒ Asymmetric.
 
-**متوسط (تحلیل):** ISP2 برگشت را از لینک دوم می‌آورد؛ راه: Local-pref/Prepend و PBR.
+**متوسط (تحلیل):** ISP2 برگشت را از لینک دوم می‌آورد. مراحل: ۱) BGP Local-pref برای خروج ISP1. ۲) Prepend برای ورود. ۳) آزمون traceroute. نتیجه: هر دو جهت از ISP1.
 
-**سخت (طراحی):** Active-Active با Session sync؛ ریسک: Delay؛ جایگزین: Active-Standby.
+**سخت (Active-Active):** Cluster با Session sync؛ مراحل: ۱) فعال‌سازی session-pickup. ۲) آزمون قطع FW1: Sessionها در FW2 می‌مانند. ۳) اندازه‌گیری Delay. ریسک: Sync تأخیر؛ جایگزین: Active-Standby. معیار: صفر قطع Session.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
 traceroute 10.20.0.5
 show ip route 10.20.0.5
-! on FortiGate (Unverified in lab): diagnose sniffer packet any "host 10.20.0.5" 4
+! FortiGate (Unverified): diagnose sniffer packet any "host 10.20.0.5" 4
 ```
 
 ### ۸) Verification (اثبات صحت)
@@ -895,18 +947,18 @@ show ip route 10.20.0.5
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| برخی Sessionها قطع | Capture | Symmetric/Policy |
+| برخی Session قطع | Capture | Symmetric/Policy |
 | فقط پورت‌های خاص | Hash | ECMP |
 
 ### ۱۰) نکات امنیتی
 
-- Disable کردن Check امنیت را کم می‌کند.
+- asymroute امنیت را کم می‌کند.
 
 ### ۱۱) جمع‌بندی مفهومی
 
 - Asymmetric=Drop در Stateful.
-- اثبات با Capture.
-- راه Symmetric.
+- Capture اثبات.
+- Symmetric ترجیح.
 
 ### ۱۲) تمرین و ارزیابی
 
@@ -934,132 +986,138 @@ show ip route 10.20.0.5
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Asymmetric. **Evidence:** `03-ops/asym.md`.
+**کارت Lab:** Asymmetric (اجرا نشده). **Evidence:** `03-ops/asym.md`.
 
 ### ۱۵) منابع
 
-- Fortinet admin guide: asymmetric routing
+- Fortinet FortiOS 7.0: Asymmetric routing
 
 <a id="l-10-7"></a>
 
-## درس 10-7 — طراحی مسیر برای چندفایروالی و آزمون کوچک
+## درس 10-7 — طراحی مسیر برای چندفایروالی و آزمون فصل ۱۰ (پروژه‌ی جامع)
 
-**فصل 10 - روز 7 · پیش‌نیاز: درس ۱۰-۵ · ۶ ساعت**
+**فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۱۰-۱ تا ۱۰-۶ · ≈ 12 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** Cisco IOSv 15.9/CSR1000v 17.03؛ خروجی‌ها نمونه‌ی آموزشی؛ Lab «اجرا نشده»؛ دستورهای vIOS `Unverified` تا اجرای Lab.
 
-جمع‌بندی: هنگام قرار دادن چند فایروال در مسیر باید جدول مسیر هر دستگاه و جهت Session را طراحی کنید. این درس مرجع ورود به فصل‌های فایروال است.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس‌های ۱۰-۱ تا ۱۰-۵.
+1. طرح مسیر برای Edge و Internal را با BGP/OSPF/Static تدوین کند.
+2. Redistribution، ECMP، PBR و VRF را در طرح ترکیب کند.
+3. خطرات (Asymmetric، Loop، Black-hole) و آزمون منفی را بنویسد.
+4. آزمون فصل ۱۰ را با Evidence و Rubric تحویل دهد.
+5. طرح را برای ممیز مستند کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- برای هر فایروال: «Route رفت»، «Route برگشت»، «NAT» و «Policy» را بنویسید.
-- قاعده: **Session باید هر دو جهت را از همان فایروال ببیند.**
-- Redistribution کنترل‌شده، Metric/Local-Pref برای تقارن، PBR فقط با Return همخوان.
-- مستندسازی: جدول «Packet Walk رفت/برگشت».
+سازمانی دو فایروال دارد (Edge و Internal)، دو ISP، یک دامنه‌ی OSPF داخلی و می‌خواهد ترافیک مالی از ISP-A و بقیه از ISP-B برود. طراحی مسیر قبل از Policy است: اگر مسیر اشتباه باشد، Policy درست هم کمکی نمی‌کند.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-دو فایروال سری: Client → FW-A → FW-B → Server با Static متقارن.
+#### ۱) طرح
 
-### ۵) مثال سازمانی
-
-دو فایروال موازی (HA یا Active-Active) با ECMP: Session sync لازم است.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Client -> FW-A -> FW-B -> Server
-Packet Walk table: hop, route, policy, NAT
+``` text
+ISP-A ---- BGP ---- [EDGE FW pair] ---- Core (OSPF) ---- [INTERNAL FW] ---- Servers
+ISP-B ---- BGP ----/
 ```
 
-### ۷) پیکربندی (CLI)
+- Edge: BGP با دو ISP؛ Local-pref خروج؛ Prepend ورودی.
+- Core: OSPF؛ Default Originate از Edge.
+- Internal: Static یا OSPF Passive.
+- PBR: Finance از ISP-A با Track.
+- VRF: شبکه‌ی مهمان جدا.
+- ECMP: فقط بین جفت HA/لینک‌های یکسان.
 
-```text
-show ip route 10.20.0.10
-traceroute 10.20.0.10 source 192.168.1.1
-show ip route 192.168.1.0
-```
+#### ۲) جدول تصمیم
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- هر Hop را ثبت و تقارن را بررسی کنید.
-- نتیجه: جدول Packet Walk.
-
-### ۸) تست عملکرد
-
-- ۴ سناریو (ECMP، PBR، Redistribution، دو ISP) با تحلیل تقارن و راه‌حل.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | بعد از افزودن لینک جدید ارتباط TCP قطع شد |
-| شواهد/دستور | مسیر برگشت از لینک جدید |
-| علت | Metric لینک جدید بهتر است |
-| رفع | تنظیم Metric/Local-Pref |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** قاعده‌ی طلایی چندفایروالی؟ *(پاسخ: 10-7-ت1)*
-
-**ت2.** Packet Walk چیست؟ *(پاسخ: 10-7-ت2)*
-
-**ت3.** چه زمانی Session sync لازم است؟ *(پاسخ: 10-7-ت3)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا افزودن لینک جدید خطرناک است؟ *(پاسخ: 10-7-م1)*
-
-**م2.** سناریو: دو فایروال موازی؛ چه باید کرد؟ *(پاسخ: 10-7-م2)*
-
-**معیار تسلط:** ساخت Packet Walk برای یک توپولوژی دو فایروالی و ≥ ۴ از ۵ مورد آزمون.
-
-**اشتباهات رایج:** تحلیل بدون جدول؛ فرض تقارن.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Packet Walk | Packet walk | دنبال‌کردن بسته Hop به Hop | عیب‌یابی |
-| Session sync | Session synchronization | همگام‌سازی Session | HA |
-
-| English sentence | ترجمه |
-|---|---|
-| Document the packet walk for both directions. | Packet Walk را برای هر دو جهت مستند کنید. |
-| Both directions must traverse the same firewall. | هر دو جهت باید از یک فایروال عبور کنند. |
-
-#### کارت Lab — درس 10-7
-
-| # | فیلد | محتوا |
+| موضوع | تصمیم | دلیل |
 |---|---|---|
-| 1 | عنوان و هدف | Packet Walk دو فایروالی |
-| 2 | پیش‌نیاز | درس ۱۰-۵ |
-| 3 | توپولوژی | Client-FW-A-FW-B-Server |
-| 4 | تجهیزات | ۴ vIOS |
-| 5 | نسخه نرم‌افزار | vIOS-L2 15.2(20200924، Experimental)؛ vIOS 15.9(3)M9؛ CSR1000v 17.03.02 (IOS-XE)؛ VPCS؛ PNetLab 4.2.8 |
-| 6 | IP Plan | جدول آدرس |
-| 7 | وضعیت اولیه | Static |
-| 8 | صورت مسئله | جدول Packet Walk |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | traceroute |
-| 11 | سناریوی خرابی | بعد از افزودن لینک جدید ارتباط TCP قطع شد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | جدول کامل |
-| 14 | معیار پذیرش | جهت‌ها متقارن |
-| 15 | مستندات نهایی | `03-ops/packet-walk.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Redistribution | یک‌طرفه BGP→OSPF Default فقط | جلوگیری از Feedback |
+| NAT | فقط Edge | رد‌یابی ساده |
+| Asymmetric | Local-pref+Prepend | Stateful |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** روی Image شما اجرا نشده؛ خروجی‌ها پیش‌بینی هستند.
+#### ۳) آزمون
 
----
+``` text
+1 traceroute from each zone
+2 fail ISP-A: Finance fails over via Track
+3 fail one Edge member
+4 negative: Guest VRF cannot reach Servers
+5 check asymmetric: capture both firewalls
+```
 
-<a id="ans-10"></a>
+#### ۴) Rubric
+
+طرح ۳۰، آزمون ۳۰، ریسک ۲۰، مستند ۲۰.
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** ورودی: طرح Edge+Internal. پاسخ: جدول تصمیم و نمودار.
+
+**متوسط (تحلیل):** ECMP + Stateful: Hash رفت و برگشت متفاوت. پاسخ: ECMP فقط بین HA و Session sync یا Symmetric Hash.
+
+**سخت (طراحی):** VRF+PBR+HA کامل؛ آزمون ۵‌گانه؛ ریسک و رفع.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+show ip route
+show ip bgp summary
+traceroute 8.8.8.8
+```
+
+### ۸) Verification (اثبات صحت)
+
+- آزمون ۵‌گانه.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Failover کند | Timer | BFD |
+
+### ۱۰) نکات امنیتی
+
+- Least privilege.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- مسیر طراحی‌شده.
+- آزمون منفی.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا ECMP فقط بین HA؟ *(پاسخ: 10-7-ت1)*
+
+**ت2.** (ساده) Default کجاست؟ *(پاسخ: 10-7-ت2)*
+
+**ت3.** (متوسط) آزمون پنجگانه؟ *(پاسخ: 10-7-ت3)*
+
+**ت4.** (متوسط) PBR کجا؟ *(پاسخ: 10-7-ت4)*
+
+**ت5.** (سخت) ریسک. *(پاسخ: 10-7-ت5)*
+
+**ت6.** (سخت، طراحی) طرح کامل. *(پاسخ: 10-7-ت6)*
+
+**Q1.** Quick quiz (English): Which design principle avoids asymmetric flows with stateful firewalls? *(پاسخ: 10-7-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| HA | High Availability | دسترس‌پذیری بالا |
+
+- *Design routes before policies.* ← قبل از Policy مسیر را طراحی کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** طرح چندفایروالی (اجرا نشده). **Evidence:** `03-ops/multi-fw.md`.
+
+### ۱۵) منابع
+
+- درس‌های ۱۰-۱ تا ۱۰-۶
 
 ## درس 10-8 — Route Leaking میان VRFها و جدول Global: طراحی کنترل‌شده
 
@@ -1457,43 +1515,50 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 ### پاسخ‌های بازنویسی عمیق درس 10-4
 
-**10-4-ت1** — Source/Protocol/Port و ...
 
-**10-4-ت2** — بقیه‌ی ترافیک عادی.
+### پاسخ‌های بازنویسی عمیق درس 10-4
 
-**10-4-ت3** — default فقط وقتی مسیر ندارد.
+**10-4-ت1** — بر اساس ACL (مبدأ، پروتکل، پورت) و نه فقط مقصد.
 
-**10-4-ت4** — برای ترافیک خود روتر.
+**10-4-ت2** — Interface ورودی ترافیک.
 
-**10-4-ت5** — Track+IP SLA.
+**10-4-ت3** — default فقط وقتی مسیر مشخص در RIB نباشد استفاده می‌شود.
 
-**10-4-ت6** — ACL، Track، Failover.
+**10-4-ت4** — تا ترافیک غیرمطابق با مسیریابی عادی برود و Drop نشود.
 
-**10-4-Q1** — To remove the policy next hop when it becomes unreachable.
+**10-4-ت5** — IP SLA+Track، verify-availability، Next-hop دوم، آزمون قطع لینک.
+
+**10-4-ت6** — ACL، Track، Failover، مستند و آزمون منفی؛ ریسک: Next-hop مرده.
+
+**10-4-Q1** — To stop using the next hop when it becomes unreachable.
+
+### پاسخ‌های بازنویسی عمیق درس 10-5
 
 
 ### پاسخ‌های بازنویسی عمیق درس 10-5
 
-**10-5-ت1** — RIB مجازی جدا.
+**10-5-ت1** — جدول مسیریابی مجازی مستقل روی همان روتر.
 
-**10-5-ت2** — هنگام forwarding.
+**10-5-ت2** — چون Interface به جدول دیگری منتقل می‌شود و IP قبلی در جدول Global ثبت بوده.
 
 **10-5-ت3** — ping vrf NAME.
 
-**10-5-ت4** — شناسه‌ی یکتا برای Route.
+**10-5-ت4** — شناسه‌ی یکتا برای Prefix در VRF.
 
-**10-5-ت5** — VRF+Default+NAT.
+**10-5-ت5** — VRF جدا، فایروال Zone، NAT جدا، آزمون منفی.
 
-**10-5-ت6** — VRF+Zone.
+**10-5-ت6** — VRF+Zone+Policy+Log.
 
-**10-5-Q1** — Multiple isolated routing tables on a single router without MPLS.
+**10-5-Q1** — Multiple isolated routing tables on one router without MPLS.
+
+### پاسخ‌های بازنویسی عمیق درس 10-6
 
 
 ### پاسخ‌های بازنویسی عمیق درس 10-6
 
-**10-6-ت1** — رفت و برگشت از مسیر متفاوت.
+**10-6-ت1** — رفت و برگشت از مسیر یا فایروال متفاوت.
 
-**10-6-ت2** — Session ندیده.
+**10-6-ت2** — Session اولیه را ندیده.
 
 **10-6-ت3** — ECMP، دو ISP، Redistribution.
 
@@ -1501,35 +1566,26 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 **10-6-ت5** — Symmetric یا Session sync.
 
-**10-6-ت6** — Sync+Hash.
+**10-6-ت6** — Sync+Hash+آزمون.
 
-**10-6-Q1** — They do not see the initial packet so no session exists.
-
-**10-7-ت1** — قاعده‌ی طلایی چندفایروالی؟
-
-هر دو جهت Session از یک فایروال.
-
-**10-7-ت2** — Packet Walk چیست؟
-
-جدول مسیر و سیاست هر Hop برای رفت و برگشت.
-
-**10-7-ت3** — چه زمانی Session sync لازم است؟
-
-وقتی مسیر ممکن است عوض شود (HA/Active-Active).
-
-**10-7-م1** — چرا افزودن لینک جدید خطرناک است؟
-
-ممکن است مسیر برگشت را عوض کند.
-
-**10-7-م2** — سناریو: دو فایروال موازی؛ چه باید کرد؟
-
-Session sync/HA یا مسیریابی تثبیت‌شده.
+**10-6-Q1** — They never saw the initial packet, so no session exists.
 
 
----
+### پاسخ‌های بازنویسی عمیق درس 10-7
 
-<a id="ch11"></a>
+**10-7-ت1** — Session sync و Symmetric.
 
+**10-7-ت2** — Edge.
+
+**10-7-ت3** — Zone، ISP-A، Member، Guest منفی، Asym.
+
+**10-7-ت4** — Core با Track.
+
+**10-7-ت5** — Asymmetric و Next-hop مرده.
+
+**10-7-ت6** — VRF+PBR+HA.
+
+**10-7-Q1** — Ensure both directions of a flow traverse the same firewall.
 
 ### پاسخ‌های درس‌های افزوده‌ی فصل 10 (۱۰-۸ و ۱۰-۹)
 
