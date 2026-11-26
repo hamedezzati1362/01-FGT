@@ -2576,102 +2576,167 @@ diagnose debug reset
 - درس‌های ۱۷-۰ تا ۱۷-۷
 - RFC 4511، RFC 2865
 
-## درس 17-7 — عیب‌یابی Authentication بر اساس شواهد: از Bind تا Policy
+## درس 17-7 — عیب‌یابی Authentication بر اساس شواهد: از Bind تا Policy (LDAP، RADIUS، FSSO)
 
-**فصل ۱۷ · درس افزوده (پس از ۱۷-۶) · پیش‌نیاز: ۱۷-۰، ۱۴-۷ · ≈ ۴ ساعت**
+**فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۱ تا ۱۷-۶ · ≈ 11 ساعت**
 
-> **وضعیت:** `Unverified` روی Image؛ فرمت خروجی نمونه است.
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
-مشکل Authentication را لایه‌به‌لایه (شبکه، TLS، Bind، Search، Group، نگاشت، Policy) پیدا و رفع کند و برای هر لایه شاهد جمع کند.
+در پایان این درس باید بتوانید:
 
-### ۲) مفهوم پایه
+1. مسیر Authentication (کاربر → FortiGate → Auth Server → گروه → Policy) را مرحله‌به‌مرحله بکشد.
+2. با `diagnose test authserver` و Debug fnbamd علت شکست Bind/رمز/گروه را بیابد.
+3. خطاهای رایج LDAP (Bind DN، Base DN، Filter، LDAPS)، RADIUS (Shared Secret، NAS-IP) و FSSO را تشخیص دهد.
+4. نتیجه را با Event Log اثبات و رفع کند.
+5. گزارش RCA با شواهد بنویسد.
 
-«Login نمی‌شود» علامت است؛ علت ممکن است در هر نقطه‌ی زنجیره‌ی **کاربر → فایروال → سرور Auth → Directory → گروه → Policy** باشد. با تقسیم مسیر (۱۴-۷) هر حلقه را جدا می‌آزماییم.
+### ۲) مفهوم پایه: چیست و چرا؟
+
+«کاربر وارد نمی‌شود» از مبهم‌ترین گزارش‌هاست. می‌تواند رمز اشتباه باشد، سرور احراز هویت در دسترس نباشد، کاربر عضو گروه نباشد، یا Policy گروه را نشناسد. اگر زنجیره را نشناسید، ساعت‌ها حدس می‌زنید؛ اگر بشناسید، در پنج دقیقه می‌دانید حلقه‌ی شکسته کجاست.
 
 ### ۳) توضیح عمیق فنی
 
-| لایه | سؤال | آزمون |
+#### ۱) زنجیره‌ی Authentication
+
+``` text
+User -> FortiGate (portal / VPN / captive) -> Auth server (LDAP/RADIUS)
+   1 reachability (UDP/TCP 389/636/1812)
+   2 bind / shared secret
+   3 user lookup (Base DN, filter)
+   4 password check
+   5 group membership returned
+   6 firewall policy matches group
+```
+
+#### ۲) ابزار
+
+``` text
+diagnose test authserver ldap AD-LDAP user01 'Password'
+diagnose test authserver radius RAD01 pap user01 'Password'
+diagnose debug application fnbamd -1
+diagnose debug enable
+...
+diagnose debug disable
+diagnose debug reset
+diagnose debug authd fsso list
+```
+
+(`Unverified`؛ رمز واقعی در Lab؛ هرگز در گزارش ثبت نشود.)
+
+#### ۳) نگاشت علامت به علت
+
+| علامت / پیام | علت | رفع |
 |---|---|---|
-| شبکه | فایروال به سرور می‌رسد؟ | `execute ping`، Sniffer روی 389/636/1812 |
-| DNS/ساعت | نام و زمان درست؟ | `execute nslookup`، NTP |
-| TLS | گواهی LDAPS معتبر؟ | Capture، پیام خطای TLS |
-| Bind | حساب سرویس درست؟ | `diagnose test authserver ldap` |
-| Search | DN/cnid درست؟ | Debug fnbamd |
-| گروه | کاربر عضو گروه؟ | AD Users and Computers |
-| FSSO | نگاشت IP→User هست؟ | `diagnose debug authd fsso list` |
-| Policy | Source گروه درست؟ | Debug Flow (Policy ID) |
+| LDAP bind failed / invalid credentials | Bind DN یا رمز سرویس | حساب سرویس |
+| user not found | Base DN/Identifier/Filter | `cnid`, `dn` |
+| سرور unreachable | Route/Policy/Firewall سرور | UDP/TCP پورت |
+| RADIUS Access-Reject | Shared Secret یا کاربر | Secret/NPS |
+| لاگین ok ولی دسترسی نه | گروه به Policy وصل نیست | Group در Policy |
+| FSSO: کاربر دیده نمی‌شود | Collector Agent/Polling | `fsso list` |
 
-#### ۳-۱) خواندن خطاها
-
-- **Invalid credentials (49):** رمز/DN کاربر اشتباه.
-- **Can't contact LDAP server:** شبکه/پورت/TLS.
-- **No such object (32):** DN پایه اشتباه.
-- RADIUS **Access-Reject:** Secret/Policy NPS؛ **بدون پاسخ:** Firewall/Client تعریف نشده.
-
-#### ۳-۲) FSSO
-
-- کاربر Login کرده ولی در لیست نیست: Event Log DC (Kerberos)، Group Filter، ارتباط Collector (TCP 8000)، ساعت.
-- کاربر در لیست هست ولی Policy مطابق نمی‌شود: گروه در Policy/Group Mapping، ترتیب Policy.
-
-### ۴) مثال حل‌شده
-
-**پرونده:** کاربر testuser Login نمی‌شود.
+#### ۴) نمونه Debug
 
 ``` text
-FGT # diagnose test authserver ldap LDAP-AD testuser <PASSWORD>
-FGT # diagnose debug application fnbamd -1
-FGT # diagnose debug enable
+fnbamd: ldap_connect ... 10.20.0.2:636
+fnbamd: ldap_bind  result=49 (Invalid credentials)
 ```
 
-شواهد (نمونه): `ldap_bind... error 49` ← رمز یا DN. بررسی: حساب سرویس OK (تست جداگانه)، DN کاربر با `cnid` ناسازگار بود (`userPrincipalName` به‌جای `sAMAccountName`). **رفع:** `cnid` اصلاح. **تأیید:** تست دوباره + Login واقعی + Log. **پیشگیری:** مستندسازی cnid.
+کد 49 یعنی اعتبار Bind نادرست.
+
+#### ۵) روش
+
+ابتدا Reachability، سپس Bind سرویس، سپس کاربر، سپس گروه، سپس Policy. هر گام یک Evidence.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| LDAPS | TLS 636 |
+| حساب سرویس | Least privilege |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** `diagnose test authserver ldap AD-LDAP user01 ...` پاسخ موفق همراه گروه‌ها؛ یعنی سرور و Bind سالم است.
+
+**متوسط (گروه):** لاگین موفق ولی دسترسی ندارد. مراحل: ۱) تست authserver: گروه CN=VPN-FIN نیامد. ۲) کاربر عضو نیست. ۳) افزودن عضویت. ۴) تست دوباره ⇒ گروه؛ ۵) Policy hit. پاسخ: عضویت گروه.
+
+**سخت (چندعلتی):** پس از تغییر رمز حساب سرویس، همه‌ی کاربران رد می‌شوند. مراحل: ۱) Debug fnbamd: result=49. ۲) رمز Bind در FortiGate قدیمی. ۳) به‌روزرسانی. ۴) تست. RCA: رمز سرویس بدون CHG تغییر کرد؛ اقدام: Vault و Alert.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. User & Authentication → LDAP Servers → Test Connectivity / Test User Credentials.
+2. User Groups → Remote Groups.
+
+### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
-FGT # diagnose debug disable
-FGT # diagnose debug reset
+diagnose test authserver ldap AD-LDAP user01 Password
+diagnose debug application fnbamd -1
+diagnose debug enable
+diagnose debug disable
+diagnose debug reset
 ```
 
-**مثال سخت:** فقط کاربران یک OU Login می‌شوند. علت: `dn` پایه روی OU محدود. **رفع:** dn پایه‌ی دامنه یا چند Search.
+### ۸) Verification (اثبات صحت)
 
-### ۵) GUI و CLI
+- Bind OK.
+- گروه برگشت.
+- Policy hit.
 
-**GUI:** User & Authentication → LDAP Servers → Test Connectivity / Test User Credentials؛ Monitor → Firewall User Monitor؛ Log & Report → Events → User.
+### ۹) Troubleshooting
 
-**CLI:** `diagnose test authserver ...`، `diagnose debug authd fsso list`، `diagnose debug application fnbamd -1`.
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Invalid credentials | Bind | حساب |
+| user not found | Base DN | dn/cnid |
+| Reject | Secret | Shared secret |
 
-### ۶) نکات امنیتی
+### ۱۰) نکات امنیتی
 
-- Debug رمز را آشکار می‌کند؛ فایل Capture را حذف کنید.
-- تست با کاربر واقعی در Change.
+- LDAPS.
+- رمز در Vault.
+- Debug را خاموش کنید.
 
-### ۷) جمع‌بندی
+### ۱۱) جمع‌بندی مفهومی
 
-Auth را در ۸ لایه تقسیم کنید؛ شاهد جمع کنید؛ یک تغییر در هر زمان؛ Debug را Disable کنید.
+- زنجیره‌ی ۶ گام.
+- Debug fnbamd.
+- Policy و گروه.
 
-### ۸) تمرین و ارزیابی
+### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) خطای 49 LDAP یعنی چه؟ *(پاسخ: 17-7-ت1)*
+**ت1.** (ساده) کد 49 LDAP؟ *(پاسخ: 17-7-ت1)*
 
-**ت2.** (متوسط) نقشه‌ی «لایه → آزمون» را بنویسید. *(پاسخ: 17-7-ت2)*
+**ت2.** (ساده) چرا Test authserver؟ *(پاسخ: 17-7-ت2)*
 
-**ت3.** (سخت) FSSO کاربر را نشان می‌دهد ولی Policy مطابق نمی‌شود؛ ۴ فرضیه و آزمون. *(پاسخ: 17-7-ت3)*
+**ت3.** (متوسط) لاگین موفق ولی دسترسی نه؟ *(پاسخ: 17-7-ت3)*
 
-**Q1.** Quick quiz (English): Which tool checks an LDAP login independently of firewall policies? *(پاسخ: 17-7-Q1)*
+**ت4.** (متوسط) RADIUS Reject؟ *(پاسخ: 17-7-ت4)*
 
-### ۹) اصطلاحات و English Corner
+**ت5.** (سخت) پس از تغییر رمز همه رد می‌شوند. *(پاسخ: 17-7-ت5)*
+
+**ت6.** (سخت، طراحی) چک‌لیست. *(پاسخ: 17-7-ت6)*
+
+**Q1.** Quick quiz (English): What does LDAP result code 49 mean? *(پاسخ: 17-7-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| fnbamd | FortiGate authentication daemon | فرایند Authentication |
-| cnid | Common name identifier | ویژگی نام ورود |
-| Bind | LDAP bind | ورود به Directory |
+| LDAP | Lightweight Directory Access Protocol | پروتکل دایرکتوری |
+| FSSO | Fortinet Single Sign-On | ورود یکپارچه |
 
-- *Test authentication with the CLI tool before debugging policies.* ← قبل از Policy، Authentication را با ابزار CLI تست کنید.
+- *Test each hop of the authentication chain.* ← هر گام زنجیره‌ی Authentication را آزمون کنید.
 
-### ۱۰) منابع
+### ۱۴) کارت Lab
 
-- Fortinet Docs: FortiOS 7.0 Administration Guide — Authentication؛ CLI Reference `diagnose test authserver`.
+**کارت Lab:** عیب‌یابی Auth (اجرا نشده). **Evidence:** `03-ops/auth-rca.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Authentication; LDAP; RADIUS; FSSO
 
 ## پاسخ‌های فصل 17
 
@@ -2788,13 +2853,22 @@ Auth را در ۸ لایه تقسیم کنید؛ شاهد جمع کنید؛ یک
 
 ### پاسخ‌های درس افزوده‌ی 17-7 (فصل 17)
 
-**17-7-ت1** — Invalid credentials: رمز یا DN کاربر اشتباه.
 
-**17-7-ت2** — شبکه (ping/Sniffer)، DNS/ساعت، TLS، Bind، Search/DN، گروه، نگاشت FSSO، Policy.
+### پاسخ‌های بازنویسی عمیق درس 17-7
 
-**17-7-ت3** — ۱) نگاشت IP→User منقضی؛ ۲) گروه در Group Filter/Policy نیست؛ ۳) ترتیب Policy؛ ۴) IP عوض شده. آزمون: fsso list، Debug Flow، Log.
+**17-7-ت1** — اعتبار Bind نامعتبر.
 
-**17-7-Q1** — diagnose test authserver (the authentication test command).
+**17-7-ت2** — برای جدا کردن مشکل سرور از Policy.
+
+**17-7-ت3** — گروه در Policy/عضویت.
+
+**17-7-ت4** — Shared Secret/کاربر.
+
+**17-7-ت5** — رمز Bind؛ به‌روزرسانی؛ CHG.
+
+**17-7-ت6** — ۶ گام.
+
+**17-7-Q1** — Invalid credentials.
 
 # فصل 18 — IPsec Site-to-Site: IKEv2، Phase 1/2، MTU و عیب‌یابی (G7)
 
@@ -3374,99 +3448,150 @@ diagnose debug flow filter addr 192.168.20.5
 
 ## درس 18-3 — عیب‌یابی IPsec با Debug IKE: خواندن پیام‌ها و تصمیم‌گیری لایه‌ای
 
-**فصل ۱۸ · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۱۸-۲، ۱۴-۷ · ≈ ۶ ساعت**
+**فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۱، ۱۸-۲ · ≈ 11 ساعت**
 
-> **وضعیت:** فرمت Debug نمونه‌ی آموزشی؛ روی Image `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
-1. Debug IKE را با Filter محدود اجرا و ایمن خاتمه دهد.
-2. پیام‌های رایج (NO_PROPOSAL_CHOSEN، AUTH_FAILED، TS_UNACCEPTABLE، INVALID_KE_PAYLOAD، timeout) را به علت نگاشت کند.
-3. «Up ولی ترافیک نه» را با شمارنده و Debug Flow تفکیک کند.
-4. RCA بنویسد.
+در پایان این درس باید بتوانید:
 
-### ۲) روش
+1. مراحل IKEv2 (SA_INIT، AUTH، CREATE_CHILD_SA) را بشناسد.
+2. Debug IKE را محدود و ایمن اجرا کند.
+3. پیام‌های رایج (no proposal، AUTHENTICATION_FAILED، TS_UNACCEPTABLE) را تفسیر کند.
+4. عیب را به Phase، Proposal، Auth، Selector یا NAT-T نگاشت کند.
+5. رفع و Verify را انجام دهد.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+تونل بالا نمی‌آید و Debug صدها خط می‌نویسد. بدون دانستن ساختار پیام‌ها، غرق می‌شوید؛ با دانستن، فقط به چند خط کلیدی نگاه می‌کنید: کدام مرحله شکست خورد و چرا.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) مراحل IKEv2
+
+| تبادل | هدف | شکست رایج |
+|---|---|---|
+| IKE_SA_INIT | توافق الگوریتم و DH | no proposal chosen |
+| IKE_AUTH | احراز هویت و Child SA | AUTHENTICATION_FAILED، TS_UNACCEPTABLE |
+| CREATE_CHILD_SA | Rekey | عدم‌تطابق PFS/Lifetime |
+
+#### ۲) Debug محدود
 
 ``` text
-diagnose vpn ike log filter clear
-diagnose vpn ike log filter name TO-B
+diagnose vpn ike log-filter clear
+diagnose vpn ike log-filter dst-addr4 203.0.113.2
 diagnose debug application ike -1
 diagnose debug enable
-...trigger negotiation (ping across tunnel or clear SA)...
+... trigger traffic ...
 diagnose debug disable
 diagnose debug reset
 ```
 
-(Filter با نام Tunnel یا IP Peer؛ بدون Filter حجم زیاد و CPU.)
+#### ۳) تفسیر
 
-### ۳) نقشه‌ی پیام → علت
+| خط | معنی | اقدام |
+|---|---|---|
+| `no suitable proposal found` / `NO_PROPOSAL_CHOSEN` | Proposal یا DH متفاوت | یکسان‌سازی |
+| `AUTHENTICATION_FAILED` | PSK/هویت متفاوت | PSK، peerid |
+| `TS_UNACCEPTABLE` | Selector نامتطابق | Subnet |
+| `negotiation timeout` | Reachability/UDP 500/4500 | ACL/NAT |
+| `NAT-T` مشکل | UDP 4500 | بازکردن |
 
-| پیام | معنی | علت | رفع |
-|---|---|---|---|
-| NO_PROPOSAL_CHOSEN | Proposal مشترک نیست | الگوریتم/DH Phase 1 یا Child | تطبیق Proposal |
-| AUTH_FAILED | هویت رد شد | PSK، Peer ID، گواهی | PSK/ID |
-| TS_UNACCEPTABLE | Selectorها ناسازگار | Subnet/Selector | آینه‌کردن Selector |
-| INVALID_KE_PAYLOAD | DH Group متفاوت | DH/PFS | هم‌گروه‌کردن |
-| timeout/بدون پاسخ | Peer جواب نمی‌دهد | UDP 500/4500، Route، ACL | Sniffer/Firewall |
-| SA بالا، ESP صفر | NAT-T/ESP Block | UDP 4500/IP 50 | باز کردن |
+#### ۴) وضعیت
 
-### ۴) مثال‌های حل‌شده
+``` text
+diagnose vpn ike gateway list
+diagnose vpn tunnel list
+get vpn ipsec tunnel summary
+```
 
-**۱) Phase 1:** `negotiation failure... NO_PROPOSAL_CHOSEN`؛ مقایسه‌ی Proposal دو سر: یک سر AES256-SHA256 CBC، دیگری GCM. **رفع:** هماهنگی. **تأیید:** IKE SA Established.
+#### ۵) درخت تصمیم
 
-**۲) Phase 2:** Phase 1 OK، سپس `TS_UNACCEPTABLE`: Site A Selector 192.168.10.0/24↔192.168.20.0/24، Site B 0.0.0.0/0. **رفع:** آینه‌کردن (یا هر دو 0.0.0.0/0 در Route-based).
+Timeout ⇒ Reachability. NO_PROPOSAL ⇒ Proposal/DH. AUTH_FAILED ⇒ PSK/ID. TS_UNACCEPTABLE ⇒ Selector. Up ولی ترافیک نه ⇒ Route/Policy/MTU.
 
-**۳) داده:** Tunnel Up، ping شکست؛ `tunnel list` Bytes out رشد، in صفر. Sniffer WAN سمت B: ESP/UDP 4500 می‌رسد ولی Debug Flow B «Denied policy 0». **رفع:** Policy B→LAN.
+### ۴) طراحی و تصمیم‌گیری
 
-**۴) سخت (دو علت هم‌زمان):** Tunnel بعد از Rekey ناپایدار است و دانلود بزرگ قفل می‌شود. علت ۱: Lifetime/DPD؛ علت ۲: MTU. شواهد جدا: Log VPN برای Rekey؛ `ping -f` برای MTU. رفع هر کدام جداگانه و اندازه‌گیری.
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Debug | فیلتر peer |
+| درخت تصمیم | پایین‌به‌بالا |
 
-### ۵) GUI
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-Log & Report → Events → VPN؛ Monitor → IPsec Monitor (Bring Up/Down)؛ VPN → IPsec Tunnels (وضعیت).
+**ساده (حل‌شده):** Debug: NO_PROPOSAL_CHOSEN؛ مقایسه Proposal دو سر؛ یکسان‌سازی؛ Established.
 
-### ۶) نکات امنیتی
+**متوسط (AUTH):** AUTHENTICATION_FAILED. مراحل: PSK دو سر و `peertype`؛ تفاوت یک کاراکتر؛ اصلاح؛ up. درس: PSK را کپی/پیست از Vault.
 
-- Debug IKE ممکن است هویت و اطلاعات حساس نشان دهد؛ فایل را حذف کنید.
-- Debug را همیشه Disable/Reset.
+**سخت (Timeout):** negotiation timeout. مراحل: Sniffer UDP 500/4500: خروج هست، ورود نه؛ ACL ISP/Firewall سایت مقابل؛ رفع؛ تونل up.
 
-### ۷) جمع‌بندی
+### ۷) پیاده‌سازی از مسیر CLI
 
-- Filter + محدودیت زمانی.
-- پیام → لایه → علت.
-- «Up ولی نه» با Counter + Policy/Route.
-- RCA مستند.
+``` text
+diagnose vpn ike log-filter dst-addr4 203.0.113.2
+diagnose debug application ike -1
+diagnose debug enable
+diagnose debug disable
+diagnose vpn ike gateway list
+```
 
-### ۸) تمرین و ارزیابی
+### ۸) Verification (اثبات صحت)
 
-**ت1.** (ساده) NO_PROPOSAL_CHOSEN یعنی چه؟ *(پاسخ: 18-3-ت1)*
+- Phase 1 و 2 up.
+- ping.
 
-**ت2.** (ساده) چرا Filter در Debug لازم است؟ *(پاسخ: 18-3-ت2)*
+### ۹) Troubleshooting
 
-**ت3.** (متوسط) TS_UNACCEPTABLE را چگونه رفع می‌کنید؟ *(پاسخ: 18-3-ت3)*
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| NO_PROPOSAL | Proposal | یکسان |
+| AUTH_FAILED | PSK | اصلاح |
+| TS_UNACCEPTABLE | Selector | Subnet |
+| Timeout | UDP 500/4500 | ACL |
 
-**ت4.** (سخت) Up ولی Bytes in صفر؛ ۴ فرضیه و آزمون. *(پاسخ: 18-3-ت4)*
+### ۱۰) نکات امنیتی
 
-**ت5.** (سخت) RCA یک‌صفحه‌ای برای مثال ۴ بنویسید. *(پاسخ: 18-3-ت5)*
+- PSK در Vault.
+- Debug را خاموش کنید.
 
-**Q1.** Quick quiz (English): What does AUTH_FAILED usually indicate? *(پاسخ: 18-3-Q1)*
+### ۱۱) جمع‌بندی مفهومی
 
-### ۹) اصطلاحات و English Corner
+- IKE سه تبادل.
+- خط کلیدی.
+- درخت تصمیم.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) IKE_SA_INIT چه می‌کند؟ *(پاسخ: 18-3-ت1)*
+
+**ت2.** (ساده) TS_UNACCEPTABLE؟ *(پاسخ: 18-3-ت2)*
+
+**ت3.** (متوسط) AUTH_FAILED؟ *(پاسخ: 18-3-ت3)*
+
+**ت4.** (متوسط) Timeout؟ *(پاسخ: 18-3-ت4)*
+
+**ت5.** (سخت) Timeout رفع. *(پاسخ: 18-3-ت5)*
+
+**ت6.** (سخت، طراحی) درخت تصمیم. *(پاسخ: 18-3-ت6)*
+
+**Q1.** Quick quiz (English): Which IKEv2 exchange negotiates algorithms and DH? *(پاسخ: 18-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| TS | Traffic Selector | انتخاب‌گر ترافیک |
-| KE | Key Exchange payload | بخش تبادل کلید |
-| Rekey | SA rekey | تعویض کلید SA |
+| TS | Traffic Selector | انتخابگر ترافیک |
 
-- *Filter the IKE debug to the peer under investigation.* ← Debug IKE را روی Peer مورد بررسی فیلتر کنید.
+- *Filter the IKE debug to a single peer.* ← Debug IKE را به یک peer محدود کنید.
 
-### ۱۰) Lab
+### ۱۴) کارت Lab
 
-**کارت Lab:** عیب Proposal/Selector. **وضعیت:** اجرا نشده. **Rollback:** Disable debug. **Evidence:** `03-ops/rca-ike.md`.
+**کارت Lab:** Debug IKE (اجرا نشده). **Evidence:** `03-ops/ike-debug.md`.
 
-### ۱۱) منابع
+### ۱۵) منابع
 
-- Fortinet Docs: FortiOS 7.0 Administration Guide — IPsec VPN troubleshooting؛ RFC 7296 (error notify types).
+- Fortinet FortiOS 7.0 Administration Guide: IPsec VPN troubleshooting
+- RFC 7296
 
 <a id="l-18-4"></a>
 
@@ -4098,18 +4223,22 @@ diagnose debug reset
 
 ### پاسخ‌های بازنویسی درس 18-3
 
-**18-3-ت1** — هیچ Proposal مشترکی بین دو سر پیدا نشد.
 
-**18-3-ت2** — بدون Filter حجم Debug زیاد و CPU بالا می‌رود و خواندن سخت می‌شود.
+### پاسخ‌های بازنویسی عمیق درس 18-3
 
-**18-3-ت3** — Selectorها را آینه یا در Route-based هر دو را 0.0.0.0/0 کنید.
+**18-3-ت1** — الگوریتم و DH را توافق می‌کند.
 
-**18-3-ت4** — Policy مقابل، Route برگشت، NAT-T/ESP، Selector؛ آزمون: Debug Flow سمت مقابل، Sniffer، tunnel list.
+**18-3-ت2** — Selector نامطابق.
 
-**18-3-ت5** — عنوان، Timeline، شواهد (Log Rekey، ping -f)، علت‌ها (Lifetime/DPD و MTU)، اقدام، پیشگیری.
+**18-3-ت3** — PSK/هویت.
 
-**18-3-Q1** — Authentication failure: wrong PSK, peer ID mismatch or invalid certificate.
+**18-3-ت4** — UDP 500/4500.
 
+**18-3-ت5** — Sniffer و ACL.
+
+**18-3-ت6** — طبق متن.
+
+**18-3-Q1** — IKE_SA_INIT.
 
 ### پاسخ‌های بازنویسی عمیق درس 18-4
 

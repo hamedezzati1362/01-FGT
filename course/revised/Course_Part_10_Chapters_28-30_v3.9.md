@@ -2244,135 +2244,141 @@ get system status
 
 ## درس 30-3 — تست پیش/پس Migration و Evidence: Test Matrix، مقایسه‌ی Session/Log، RCA اختلاف‌ها
 
-**فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰ تا ۳۰-۲، ۲۸-۰ · ≈ 8 ساعت**
+**فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۱، ۳۰-۲ · ≈ 11 ساعت**
 
-> **وضعیت:** روش‌شناسی مستقل از برند؛ نگاشت ASA→FortiGate مفهومی/`Unverified`؛ فقط Lab/Change مجاز؛ FortiOS 7.0.3 (بوت‌نشده).
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Test Matrix جامع (مثبت/منفی/عملکرد/Failover) بنویسد.
-2. قبل و بعد را با داده (Session، NAT، Log، Latency) مقایسه کند.
-3. اختلاف‌ها را RCA و رفع کند.
-4. Evidence را بسته‌بندی و Sign-off بگیرد.
-5. Hypercare Metrics را پیگیری کند.
+1. Test Matrix پیش و پس را با معیار عددی بنویسد.
+2. Session، Route، Policy hit و Log را قبل/بعد مقایسه کند.
+3. اختلاف‌ها را دسته‌بندی (قابل‌قبول/نیازمند رفع) و RCA کند.
+4. Evidence را سازمان‌دهی کند.
+5. تصمیم Go/No-Go بگیرد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-برابری رفتاری باید اثبات شود، نه فرض. Test Matrix + مقایسه‌ی داده + رفع اختلاف = اثبات.
+پس از Migration می‌پرسند «همه‌چیز مثل قبل است؟». بدون Baseline نمی‌توانید جواب دهید. این درس نشان می‌دهد چه چیزهایی را قبل از تغییر اندازه بگیرید تا پس از آن با عدد جواب دهید.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) ساختار Test Matrix
-
-| ID | سرویس | مبدأ | مقصد | انتظار | قبل (مرجع) | بعد | وضعیت |
-|---|---|---|---|---|---|---|---|
-| T1 | وب | Users | Internet | OK | ✓ | ✓ | Pass |
-| T2 | ERP | Users | SRV | OK | ✓ | ✓ | Pass |
-| T3 | ممنوع | Guest | SRV | Block | ✓ | ✓ | Pass |
-| T4 | VPN | Branch | HQ | OK | ✓ | ✓ | Pass |
-| T5 | NAT/IP ثابت | SRV | Partner | IP صحیح | ✓ | ✗ | Fail |
-
-#### ۲) مقایسه‌ی داده
-
-- Session count و CPS قبل/بعد (ظرفیت).
-- NAT: IP مبدأ دیده‌شده توسط Partner.
-- Log: توزیع Policy/Deny غیرعادی.
-- Latency/Throughput.
-
-#### ۳) RCA اختلاف
+#### ۱) Baseline
 
 ``` text
-T5 fail: Partner sees new IP -> cause: SNAT pool differs -> fix: IP Pool = old public IP -> verify T5
+get system status
+diagnose sys session stat
+get router info routing-table all
+diagnose firewall iprope list (summary)   Unverified
+policy hit counts (top 20)
+IPsec: get vpn ipsec tunnel summary
 ```
 
-#### ۴) Evidence و Sign-off
+#### ۲) Test Matrix
 
-بسته‌ی Evidence: Matrix، Log، Capture، Config نهایی (Sanitized)، امضا مالکان سرویس.
+| # | آزمون | قبل | بعد | معیار |
+|---|---|---|---|---|
+| 1 | ping/DNS | ok | ok | برابر |
+| 2 | HTTPS خروج | ok | ok | برابر |
+| 3 | VIP وب | ok | ok | برابر |
+| 4 | IPsec | up | up | برابر |
+| 5 | تعداد Session | 41k | 39k | ±10٪ |
+| 6 | Routeها | N | N | برابر |
+| 7 | Policy hit | baseline | مقایسه | روند مشابه |
+| 8 | Log | ok | ok | ورود Log |
 
-#### ۵) Hypercare Metrics
+#### ۳) دسته‌بندی اختلاف
 
-Ticket مرتبط، Deny غیرعادی، CPU/Session، شکایت کاربران؛ آستانه‌ی خروج از Hypercare.
+| اختلاف | دسته | اقدام |
+|---|---|---|
+| Session 5٪ کمتر | قابل‌قبول | ثبت |
+| IPsec down | بحرانی | RCA و رفع |
+| Policy hit صفر | بررسی | Mapping |
+
+#### ۴) RCA نمونه
+
+IPsec down: Proposal پیش‌فرض نسخه‌ی جدید تغییر کرده؛ شاهد Debug؛ رفع صریح؛ پیشگیری: Config صریح (نه اتکا به پیش‌فرض).
+
+#### ۵) Go/No-Go
+
+Go اگر همه‌ی بحرانی‌ها OK و اختلاف قابل‌قبول؛ No-Go ⇒ Rollback.
 
 ### ۴) طراحی و تصمیم‌گیری
 
 | سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Matrix | مثبت/منفی/Performance/Failover |
-| Sign-off | مالک سرویس |
+| Baseline | قبل از تغییر |
+| Go/No-Go | معیار عددی |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Matrix ۱۰ سطری؛ همه Pass؛ Evidence.
+**ساده (حل‌شده):** Session قبل 41k، بعد 39k ⇒ −۴٫۹٪ ⇒ قابل‌قبول.
 
-**متوسط (تحلیل):** T5 Fail: Partner IP جدید می‌بیند؛ RCA: IP Pool؛ رفع؛ Pass؛ ثبت.
+**متوسط (Policy hit):** Policy 20 قبل Hit 1M، بعد 0. علت: Interface Mapping اشتباه (port2 ↔ port3). رفع: Mapping؛ Hit بازگشت.
 
-**سخت (ظرفیت):** پس از Cutover CPU 85٪ (قبلاً 40٪): UTM روی همه. تحلیل: Profile پیش‌فرض/Deep؛ رفع: Profile انتخابی؛ مقایسه‌ی Baseline؛ Hypercare. درس: Test Matrix باید Performance هم داشته باشد.
+**سخت (Go/No-Go):** IPsec up ولی دانلود می‌ایستد، Log ingestion قطع. تصمیم: No-Go؛ Rollback ظرف ۱۰ دقیقه؛ RCA در Lab (MTU/Log setting)؛ اقدام: آزمون کامل پیش از تلاش دوم.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
 diagnose sys session stat
-get system performance status
-diagnose sys session list
+get vpn ipsec tunnel summary
 ```
 
 ### ۸) Verification (اثبات صحت)
 
-- Matrix کامل.
-- مقایسه‌ی قبل/بعد.
-- Sign-off.
+- Test Matrix.
+- Evidence.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Fail | RCA | NAT/Policy |
-| Performance | CPU | Profile |
+| Session کم | Timeout | session-ttl |
 
 ### ۱۰) نکات امنیتی
 
-- Evidence بدون Secret.
+- Evidence بدون رمز.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- اثبات برابری رفتاری.
-- مقایسه‌ی داده.
-- RCA اختلاف.
-- Sign-off.
+- Baseline.
+- Matrix.
+- RCA.
+- Go/No-Go.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) چرا Matrix؟ *(پاسخ: 30-3-ت1)*
+**ت1.** (ساده) چرا Baseline؟ *(پاسخ: 30-3-ت1)*
 
-**ت2.** (ساده) چرا Performance در Matrix؟ *(پاسخ: 30-3-ت2)*
+**ت2.** (ساده) ±۱۰٪؟ *(پاسخ: 30-3-ت2)*
 
-**ت3.** (متوسط) T5 Fail: Partner IP جدید می‌بیند؛ تحلیل. *(پاسخ: 30-3-ت3)*
+**ت3.** (متوسط) Policy hit صفر؟ *(پاسخ: 30-3-ت3)*
 
-**ت4.** (متوسط) Sign-off از چه کسی؟ *(پاسخ: 30-3-ت4)*
+**ت4.** (متوسط) دسته‌بندی؟ *(پاسخ: 30-3-ت4)*
 
-**ت5.** (سخت) CPU از 40٪ به 85٪ رسید؛ تحلیل. *(پاسخ: 30-3-ت5)*
+**ت5.** (سخت) No-Go چه می‌کنید؟ *(پاسخ: 30-3-ت5)*
 
-**ت6.** (سخت، طراحی) Matrix ۱۵ سطری برای سازمان. *(پاسخ: 30-3-ت6)*
+**ت6.** (سخت، طراحی) Test Matrix. *(پاسخ: 30-3-ت6)*
 
-**Q1.** Quick quiz (English): What does a before/after test matrix demonstrate? *(پاسخ: 30-3-Q1)*
+**Q1.** Quick quiz (English): Why must you collect a baseline before migration? *(پاسخ: 30-3-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Sign-off | Sign-off | تأیید نهایی |
+| Baseline | Baseline measurement | اندازه‌ی مبنا |
 
-- *Compare before and after with data.* ← قبل و بعد را با داده مقایسه کنید.
+- *Compare before and after with evidence.* ← قبل و بعد را با شواهد مقایسه کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Matrix. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/mig-test.md`.
+**کارت Lab:** تست Migration (اجرا نشده). **Evidence:** `03-ops/migration-tests.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۳۰-۰ تا ۳۰-۲
+- Fortinet FortiOS 7.0 Administration Guide: Upgrade
 
 <a id="l-30-4"></a>
 
@@ -2561,20 +2567,22 @@ get system session-ttl
 
 ### پاسخ‌های بازنویسی عمیق درس 30-3
 
-**30-3-ت1** — تا آزمون‌ها سیستماتیک و قابل‌ردیابی باشند.
 
-**30-3-ت2** — تا ظرفیت و افت کارایی پس از مهاجرت دیده شود.
+### پاسخ‌های بازنویسی عمیق درس 30-3
 
-**30-3-ت3** — SNAT/Pool متفاوت؛ IP Pool مطابق IP قبلی؛ آزمون مجدد.
+**30-3-ت1** — برای مقایسه.
 
-**30-3-ت4** — مالک سرویس/کسب‌وکار و مسئول امنیت.
+**30-3-ت2** — حد قابل‌قبول Session.
 
-**30-3-ت5** — Profile UTM/Deep؛ Sensor انتخابی؛ Baseline؛ Hypercare.
+**30-3-ت3** — Mapping اشتباه.
 
-**30-3-ت6** — سرویس‌ها/ممنوعات/VPN/NAT/Performance/Failover.
+**30-3-ت4** — قابل‌قبول/بحرانی.
 
-**30-3-Q1** — That service behavior and security controls are equivalent after the migration.
+**30-3-ت5** — Rollback و RCA.
 
+**30-3-ت6** — جدول.
+
+**30-3-Q1** — To compare the state before and after the change with numbers.
 
 ### پاسخ‌های بازنویسی عمیق درس 30-4
 

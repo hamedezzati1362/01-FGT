@@ -30055,102 +30055,167 @@ diagnose debug reset
 - درس‌های ۱۷-۰ تا ۱۷-۷
 - RFC 4511، RFC 2865
 
-## درس 17-7 — عیب‌یابی Authentication بر اساس شواهد: از Bind تا Policy
+## درس 17-7 — عیب‌یابی Authentication بر اساس شواهد: از Bind تا Policy (LDAP، RADIUS، FSSO)
 
-**فصل ۱۷ · درس افزوده (پس از ۱۷-۶) · پیش‌نیاز: ۱۷-۰، ۱۴-۷ · ≈ ۴ ساعت**
+**فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۱ تا ۱۷-۶ · ≈ 11 ساعت**
 
-> **وضعیت:** `Unverified` روی Image؛ فرمت خروجی نمونه است.
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
-مشکل Authentication را لایه‌به‌لایه (شبکه، TLS، Bind، Search، Group، نگاشت، Policy) پیدا و رفع کند و برای هر لایه شاهد جمع کند.
+در پایان این درس باید بتوانید:
 
-### ۲) مفهوم پایه
+1. مسیر Authentication (کاربر → FortiGate → Auth Server → گروه → Policy) را مرحله‌به‌مرحله بکشد.
+2. با `diagnose test authserver` و Debug fnbamd علت شکست Bind/رمز/گروه را بیابد.
+3. خطاهای رایج LDAP (Bind DN، Base DN، Filter، LDAPS)، RADIUS (Shared Secret، NAS-IP) و FSSO را تشخیص دهد.
+4. نتیجه را با Event Log اثبات و رفع کند.
+5. گزارش RCA با شواهد بنویسد.
 
-«Login نمی‌شود» علامت است؛ علت ممکن است در هر نقطه‌ی زنجیره‌ی **کاربر → فایروال → سرور Auth → Directory → گروه → Policy** باشد. با تقسیم مسیر (۱۴-۷) هر حلقه را جدا می‌آزماییم.
+### ۲) مفهوم پایه: چیست و چرا؟
+
+«کاربر وارد نمی‌شود» از مبهم‌ترین گزارش‌هاست. می‌تواند رمز اشتباه باشد، سرور احراز هویت در دسترس نباشد، کاربر عضو گروه نباشد، یا Policy گروه را نشناسد. اگر زنجیره را نشناسید، ساعت‌ها حدس می‌زنید؛ اگر بشناسید، در پنج دقیقه می‌دانید حلقه‌ی شکسته کجاست.
 
 ### ۳) توضیح عمیق فنی
 
-| لایه | سؤال | آزمون |
+#### ۱) زنجیره‌ی Authentication
+
+``` text
+User -> FortiGate (portal / VPN / captive) -> Auth server (LDAP/RADIUS)
+   1 reachability (UDP/TCP 389/636/1812)
+   2 bind / shared secret
+   3 user lookup (Base DN, filter)
+   4 password check
+   5 group membership returned
+   6 firewall policy matches group
+```
+
+#### ۲) ابزار
+
+``` text
+diagnose test authserver ldap AD-LDAP user01 'Password'
+diagnose test authserver radius RAD01 pap user01 'Password'
+diagnose debug application fnbamd -1
+diagnose debug enable
+...
+diagnose debug disable
+diagnose debug reset
+diagnose debug authd fsso list
+```
+
+(`Unverified`؛ رمز واقعی در Lab؛ هرگز در گزارش ثبت نشود.)
+
+#### ۳) نگاشت علامت به علت
+
+| علامت / پیام | علت | رفع |
 |---|---|---|
-| شبکه | فایروال به سرور می‌رسد؟ | `execute ping`، Sniffer روی 389/636/1812 |
-| DNS/ساعت | نام و زمان درست؟ | `execute nslookup`، NTP |
-| TLS | گواهی LDAPS معتبر؟ | Capture، پیام خطای TLS |
-| Bind | حساب سرویس درست؟ | `diagnose test authserver ldap` |
-| Search | DN/cnid درست؟ | Debug fnbamd |
-| گروه | کاربر عضو گروه؟ | AD Users and Computers |
-| FSSO | نگاشت IP→User هست؟ | `diagnose debug authd fsso list` |
-| Policy | Source گروه درست؟ | Debug Flow (Policy ID) |
+| LDAP bind failed / invalid credentials | Bind DN یا رمز سرویس | حساب سرویس |
+| user not found | Base DN/Identifier/Filter | `cnid`, `dn` |
+| سرور unreachable | Route/Policy/Firewall سرور | UDP/TCP پورت |
+| RADIUS Access-Reject | Shared Secret یا کاربر | Secret/NPS |
+| لاگین ok ولی دسترسی نه | گروه به Policy وصل نیست | Group در Policy |
+| FSSO: کاربر دیده نمی‌شود | Collector Agent/Polling | `fsso list` |
 
-#### ۳-۱) خواندن خطاها
-
-- **Invalid credentials (49):** رمز/DN کاربر اشتباه.
-- **Can't contact LDAP server:** شبکه/پورت/TLS.
-- **No such object (32):** DN پایه اشتباه.
-- RADIUS **Access-Reject:** Secret/Policy NPS؛ **بدون پاسخ:** Firewall/Client تعریف نشده.
-
-#### ۳-۲) FSSO
-
-- کاربر Login کرده ولی در لیست نیست: Event Log DC (Kerberos)، Group Filter، ارتباط Collector (TCP 8000)، ساعت.
-- کاربر در لیست هست ولی Policy مطابق نمی‌شود: گروه در Policy/Group Mapping، ترتیب Policy.
-
-### ۴) مثال حل‌شده
-
-**پرونده:** کاربر testuser Login نمی‌شود.
+#### ۴) نمونه Debug
 
 ``` text
-FGT # diagnose test authserver ldap LDAP-AD testuser <PASSWORD>
-FGT # diagnose debug application fnbamd -1
-FGT # diagnose debug enable
+fnbamd: ldap_connect ... 10.20.0.2:636
+fnbamd: ldap_bind  result=49 (Invalid credentials)
 ```
 
-شواهد (نمونه): `ldap_bind... error 49` ← رمز یا DN. بررسی: حساب سرویس OK (تست جداگانه)، DN کاربر با `cnid` ناسازگار بود (`userPrincipalName` به‌جای `sAMAccountName`). **رفع:** `cnid` اصلاح. **تأیید:** تست دوباره + Login واقعی + Log. **پیشگیری:** مستندسازی cnid.
+کد 49 یعنی اعتبار Bind نادرست.
+
+#### ۵) روش
+
+ابتدا Reachability، سپس Bind سرویس، سپس کاربر، سپس گروه، سپس Policy. هر گام یک Evidence.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| LDAPS | TLS 636 |
+| حساب سرویس | Least privilege |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** `diagnose test authserver ldap AD-LDAP user01 ...` پاسخ موفق همراه گروه‌ها؛ یعنی سرور و Bind سالم است.
+
+**متوسط (گروه):** لاگین موفق ولی دسترسی ندارد. مراحل: ۱) تست authserver: گروه CN=VPN-FIN نیامد. ۲) کاربر عضو نیست. ۳) افزودن عضویت. ۴) تست دوباره ⇒ گروه؛ ۵) Policy hit. پاسخ: عضویت گروه.
+
+**سخت (چندعلتی):** پس از تغییر رمز حساب سرویس، همه‌ی کاربران رد می‌شوند. مراحل: ۱) Debug fnbamd: result=49. ۲) رمز Bind در FortiGate قدیمی. ۳) به‌روزرسانی. ۴) تست. RCA: رمز سرویس بدون CHG تغییر کرد؛ اقدام: Vault و Alert.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. User & Authentication → LDAP Servers → Test Connectivity / Test User Credentials.
+2. User Groups → Remote Groups.
+
+### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
-FGT # diagnose debug disable
-FGT # diagnose debug reset
+diagnose test authserver ldap AD-LDAP user01 Password
+diagnose debug application fnbamd -1
+diagnose debug enable
+diagnose debug disable
+diagnose debug reset
 ```
 
-**مثال سخت:** فقط کاربران یک OU Login می‌شوند. علت: `dn` پایه روی OU محدود. **رفع:** dn پایه‌ی دامنه یا چند Search.
+### ۸) Verification (اثبات صحت)
 
-### ۵) GUI و CLI
+- Bind OK.
+- گروه برگشت.
+- Policy hit.
 
-**GUI:** User & Authentication → LDAP Servers → Test Connectivity / Test User Credentials؛ Monitor → Firewall User Monitor؛ Log & Report → Events → User.
+### ۹) Troubleshooting
 
-**CLI:** `diagnose test authserver ...`، `diagnose debug authd fsso list`، `diagnose debug application fnbamd -1`.
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Invalid credentials | Bind | حساب |
+| user not found | Base DN | dn/cnid |
+| Reject | Secret | Shared secret |
 
-### ۶) نکات امنیتی
+### ۱۰) نکات امنیتی
 
-- Debug رمز را آشکار می‌کند؛ فایل Capture را حذف کنید.
-- تست با کاربر واقعی در Change.
+- LDAPS.
+- رمز در Vault.
+- Debug را خاموش کنید.
 
-### ۷) جمع‌بندی
+### ۱۱) جمع‌بندی مفهومی
 
-Auth را در ۸ لایه تقسیم کنید؛ شاهد جمع کنید؛ یک تغییر در هر زمان؛ Debug را Disable کنید.
+- زنجیره‌ی ۶ گام.
+- Debug fnbamd.
+- Policy و گروه.
 
-### ۸) تمرین و ارزیابی
+### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) خطای 49 LDAP یعنی چه؟ *(پاسخ: 17-7-ت1)*
+**ت1.** (ساده) کد 49 LDAP؟ *(پاسخ: 17-7-ت1)*
 
-**ت2.** (متوسط) نقشه‌ی «لایه → آزمون» را بنویسید. *(پاسخ: 17-7-ت2)*
+**ت2.** (ساده) چرا Test authserver؟ *(پاسخ: 17-7-ت2)*
 
-**ت3.** (سخت) FSSO کاربر را نشان می‌دهد ولی Policy مطابق نمی‌شود؛ ۴ فرضیه و آزمون. *(پاسخ: 17-7-ت3)*
+**ت3.** (متوسط) لاگین موفق ولی دسترسی نه؟ *(پاسخ: 17-7-ت3)*
 
-**Q1.** Quick quiz (English): Which tool checks an LDAP login independently of firewall policies? *(پاسخ: 17-7-Q1)*
+**ت4.** (متوسط) RADIUS Reject؟ *(پاسخ: 17-7-ت4)*
 
-### ۹) اصطلاحات و English Corner
+**ت5.** (سخت) پس از تغییر رمز همه رد می‌شوند. *(پاسخ: 17-7-ت5)*
+
+**ت6.** (سخت، طراحی) چک‌لیست. *(پاسخ: 17-7-ت6)*
+
+**Q1.** Quick quiz (English): What does LDAP result code 49 mean? *(پاسخ: 17-7-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| fnbamd | FortiGate authentication daemon | فرایند Authentication |
-| cnid | Common name identifier | ویژگی نام ورود |
-| Bind | LDAP bind | ورود به Directory |
+| LDAP | Lightweight Directory Access Protocol | پروتکل دایرکتوری |
+| FSSO | Fortinet Single Sign-On | ورود یکپارچه |
 
-- *Test authentication with the CLI tool before debugging policies.* ← قبل از Policy، Authentication را با ابزار CLI تست کنید.
+- *Test each hop of the authentication chain.* ← هر گام زنجیره‌ی Authentication را آزمون کنید.
 
-### ۱۰) منابع
+### ۱۴) کارت Lab
 
-- Fortinet Docs: FortiOS 7.0 Administration Guide — Authentication؛ CLI Reference `diagnose test authserver`.
+**کارت Lab:** عیب‌یابی Auth (اجرا نشده). **Evidence:** `03-ops/auth-rca.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Authentication; LDAP; RADIUS; FSSO
 
 ## پاسخ‌های فصل 17
 
@@ -30267,13 +30332,22 @@ Auth را در ۸ لایه تقسیم کنید؛ شاهد جمع کنید؛ یک
 
 ### پاسخ‌های درس افزوده‌ی 17-7 (فصل 17)
 
-**17-7-ت1** — Invalid credentials: رمز یا DN کاربر اشتباه.
 
-**17-7-ت2** — شبکه (ping/Sniffer)، DNS/ساعت، TLS، Bind، Search/DN، گروه، نگاشت FSSO، Policy.
+### پاسخ‌های بازنویسی عمیق درس 17-7
 
-**17-7-ت3** — ۱) نگاشت IP→User منقضی؛ ۲) گروه در Group Filter/Policy نیست؛ ۳) ترتیب Policy؛ ۴) IP عوض شده. آزمون: fsso list، Debug Flow، Log.
+**17-7-ت1** — اعتبار Bind نامعتبر.
 
-**17-7-Q1** — diagnose test authserver (the authentication test command).
+**17-7-ت2** — برای جدا کردن مشکل سرور از Policy.
+
+**17-7-ت3** — گروه در Policy/عضویت.
+
+**17-7-ت4** — Shared Secret/کاربر.
+
+**17-7-ت5** — رمز Bind؛ به‌روزرسانی؛ CHG.
+
+**17-7-ت6** — ۶ گام.
+
+**17-7-Q1** — Invalid credentials.
 
 # فصل 18 — IPsec Site-to-Site: IKEv2، Phase 1/2، MTU و عیب‌یابی (G7)
 
@@ -30853,99 +30927,150 @@ diagnose debug flow filter addr 192.168.20.5
 
 ## درس 18-3 — عیب‌یابی IPsec با Debug IKE: خواندن پیام‌ها و تصمیم‌گیری لایه‌ای
 
-**فصل ۱۸ · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۱۸-۲، ۱۴-۷ · ≈ ۶ ساعت**
+**فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۱، ۱۸-۲ · ≈ 11 ساعت**
 
-> **وضعیت:** فرمت Debug نمونه‌ی آموزشی؛ روی Image `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
-1. Debug IKE را با Filter محدود اجرا و ایمن خاتمه دهد.
-2. پیام‌های رایج (NO_PROPOSAL_CHOSEN، AUTH_FAILED، TS_UNACCEPTABLE، INVALID_KE_PAYLOAD، timeout) را به علت نگاشت کند.
-3. «Up ولی ترافیک نه» را با شمارنده و Debug Flow تفکیک کند.
-4. RCA بنویسد.
+در پایان این درس باید بتوانید:
 
-### ۲) روش
+1. مراحل IKEv2 (SA_INIT، AUTH، CREATE_CHILD_SA) را بشناسد.
+2. Debug IKE را محدود و ایمن اجرا کند.
+3. پیام‌های رایج (no proposal، AUTHENTICATION_FAILED، TS_UNACCEPTABLE) را تفسیر کند.
+4. عیب را به Phase، Proposal، Auth، Selector یا NAT-T نگاشت کند.
+5. رفع و Verify را انجام دهد.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+تونل بالا نمی‌آید و Debug صدها خط می‌نویسد. بدون دانستن ساختار پیام‌ها، غرق می‌شوید؛ با دانستن، فقط به چند خط کلیدی نگاه می‌کنید: کدام مرحله شکست خورد و چرا.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) مراحل IKEv2
+
+| تبادل | هدف | شکست رایج |
+|---|---|---|
+| IKE_SA_INIT | توافق الگوریتم و DH | no proposal chosen |
+| IKE_AUTH | احراز هویت و Child SA | AUTHENTICATION_FAILED، TS_UNACCEPTABLE |
+| CREATE_CHILD_SA | Rekey | عدم‌تطابق PFS/Lifetime |
+
+#### ۲) Debug محدود
 
 ``` text
-diagnose vpn ike log filter clear
-diagnose vpn ike log filter name TO-B
+diagnose vpn ike log-filter clear
+diagnose vpn ike log-filter dst-addr4 203.0.113.2
 diagnose debug application ike -1
 diagnose debug enable
-...trigger negotiation (ping across tunnel or clear SA)...
+... trigger traffic ...
 diagnose debug disable
 diagnose debug reset
 ```
 
-(Filter با نام Tunnel یا IP Peer؛ بدون Filter حجم زیاد و CPU.)
+#### ۳) تفسیر
 
-### ۳) نقشه‌ی پیام → علت
+| خط | معنی | اقدام |
+|---|---|---|
+| `no suitable proposal found` / `NO_PROPOSAL_CHOSEN` | Proposal یا DH متفاوت | یکسان‌سازی |
+| `AUTHENTICATION_FAILED` | PSK/هویت متفاوت | PSK، peerid |
+| `TS_UNACCEPTABLE` | Selector نامتطابق | Subnet |
+| `negotiation timeout` | Reachability/UDP 500/4500 | ACL/NAT |
+| `NAT-T` مشکل | UDP 4500 | بازکردن |
 
-| پیام | معنی | علت | رفع |
-|---|---|---|---|
-| NO_PROPOSAL_CHOSEN | Proposal مشترک نیست | الگوریتم/DH Phase 1 یا Child | تطبیق Proposal |
-| AUTH_FAILED | هویت رد شد | PSK، Peer ID، گواهی | PSK/ID |
-| TS_UNACCEPTABLE | Selectorها ناسازگار | Subnet/Selector | آینه‌کردن Selector |
-| INVALID_KE_PAYLOAD | DH Group متفاوت | DH/PFS | هم‌گروه‌کردن |
-| timeout/بدون پاسخ | Peer جواب نمی‌دهد | UDP 500/4500، Route، ACL | Sniffer/Firewall |
-| SA بالا، ESP صفر | NAT-T/ESP Block | UDP 4500/IP 50 | باز کردن |
+#### ۴) وضعیت
 
-### ۴) مثال‌های حل‌شده
+``` text
+diagnose vpn ike gateway list
+diagnose vpn tunnel list
+get vpn ipsec tunnel summary
+```
 
-**۱) Phase 1:** `negotiation failure... NO_PROPOSAL_CHOSEN`؛ مقایسه‌ی Proposal دو سر: یک سر AES256-SHA256 CBC، دیگری GCM. **رفع:** هماهنگی. **تأیید:** IKE SA Established.
+#### ۵) درخت تصمیم
 
-**۲) Phase 2:** Phase 1 OK، سپس `TS_UNACCEPTABLE`: Site A Selector 192.168.10.0/24↔192.168.20.0/24، Site B 0.0.0.0/0. **رفع:** آینه‌کردن (یا هر دو 0.0.0.0/0 در Route-based).
+Timeout ⇒ Reachability. NO_PROPOSAL ⇒ Proposal/DH. AUTH_FAILED ⇒ PSK/ID. TS_UNACCEPTABLE ⇒ Selector. Up ولی ترافیک نه ⇒ Route/Policy/MTU.
 
-**۳) داده:** Tunnel Up، ping شکست؛ `tunnel list` Bytes out رشد، in صفر. Sniffer WAN سمت B: ESP/UDP 4500 می‌رسد ولی Debug Flow B «Denied policy 0». **رفع:** Policy B→LAN.
+### ۴) طراحی و تصمیم‌گیری
 
-**۴) سخت (دو علت هم‌زمان):** Tunnel بعد از Rekey ناپایدار است و دانلود بزرگ قفل می‌شود. علت ۱: Lifetime/DPD؛ علت ۲: MTU. شواهد جدا: Log VPN برای Rekey؛ `ping -f` برای MTU. رفع هر کدام جداگانه و اندازه‌گیری.
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Debug | فیلتر peer |
+| درخت تصمیم | پایین‌به‌بالا |
 
-### ۵) GUI
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-Log & Report → Events → VPN؛ Monitor → IPsec Monitor (Bring Up/Down)؛ VPN → IPsec Tunnels (وضعیت).
+**ساده (حل‌شده):** Debug: NO_PROPOSAL_CHOSEN؛ مقایسه Proposal دو سر؛ یکسان‌سازی؛ Established.
 
-### ۶) نکات امنیتی
+**متوسط (AUTH):** AUTHENTICATION_FAILED. مراحل: PSK دو سر و `peertype`؛ تفاوت یک کاراکتر؛ اصلاح؛ up. درس: PSK را کپی/پیست از Vault.
 
-- Debug IKE ممکن است هویت و اطلاعات حساس نشان دهد؛ فایل را حذف کنید.
-- Debug را همیشه Disable/Reset.
+**سخت (Timeout):** negotiation timeout. مراحل: Sniffer UDP 500/4500: خروج هست، ورود نه؛ ACL ISP/Firewall سایت مقابل؛ رفع؛ تونل up.
 
-### ۷) جمع‌بندی
+### ۷) پیاده‌سازی از مسیر CLI
 
-- Filter + محدودیت زمانی.
-- پیام → لایه → علت.
-- «Up ولی نه» با Counter + Policy/Route.
-- RCA مستند.
+``` text
+diagnose vpn ike log-filter dst-addr4 203.0.113.2
+diagnose debug application ike -1
+diagnose debug enable
+diagnose debug disable
+diagnose vpn ike gateway list
+```
 
-### ۸) تمرین و ارزیابی
+### ۸) Verification (اثبات صحت)
 
-**ت1.** (ساده) NO_PROPOSAL_CHOSEN یعنی چه؟ *(پاسخ: 18-3-ت1)*
+- Phase 1 و 2 up.
+- ping.
 
-**ت2.** (ساده) چرا Filter در Debug لازم است؟ *(پاسخ: 18-3-ت2)*
+### ۹) Troubleshooting
 
-**ت3.** (متوسط) TS_UNACCEPTABLE را چگونه رفع می‌کنید؟ *(پاسخ: 18-3-ت3)*
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| NO_PROPOSAL | Proposal | یکسان |
+| AUTH_FAILED | PSK | اصلاح |
+| TS_UNACCEPTABLE | Selector | Subnet |
+| Timeout | UDP 500/4500 | ACL |
 
-**ت4.** (سخت) Up ولی Bytes in صفر؛ ۴ فرضیه و آزمون. *(پاسخ: 18-3-ت4)*
+### ۱۰) نکات امنیتی
 
-**ت5.** (سخت) RCA یک‌صفحه‌ای برای مثال ۴ بنویسید. *(پاسخ: 18-3-ت5)*
+- PSK در Vault.
+- Debug را خاموش کنید.
 
-**Q1.** Quick quiz (English): What does AUTH_FAILED usually indicate? *(پاسخ: 18-3-Q1)*
+### ۱۱) جمع‌بندی مفهومی
 
-### ۹) اصطلاحات و English Corner
+- IKE سه تبادل.
+- خط کلیدی.
+- درخت تصمیم.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) IKE_SA_INIT چه می‌کند؟ *(پاسخ: 18-3-ت1)*
+
+**ت2.** (ساده) TS_UNACCEPTABLE؟ *(پاسخ: 18-3-ت2)*
+
+**ت3.** (متوسط) AUTH_FAILED؟ *(پاسخ: 18-3-ت3)*
+
+**ت4.** (متوسط) Timeout؟ *(پاسخ: 18-3-ت4)*
+
+**ت5.** (سخت) Timeout رفع. *(پاسخ: 18-3-ت5)*
+
+**ت6.** (سخت، طراحی) درخت تصمیم. *(پاسخ: 18-3-ت6)*
+
+**Q1.** Quick quiz (English): Which IKEv2 exchange negotiates algorithms and DH? *(پاسخ: 18-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| TS | Traffic Selector | انتخاب‌گر ترافیک |
-| KE | Key Exchange payload | بخش تبادل کلید |
-| Rekey | SA rekey | تعویض کلید SA |
+| TS | Traffic Selector | انتخابگر ترافیک |
 
-- *Filter the IKE debug to the peer under investigation.* ← Debug IKE را روی Peer مورد بررسی فیلتر کنید.
+- *Filter the IKE debug to a single peer.* ← Debug IKE را به یک peer محدود کنید.
 
-### ۱۰) Lab
+### ۱۴) کارت Lab
 
-**کارت Lab:** عیب Proposal/Selector. **وضعیت:** اجرا نشده. **Rollback:** Disable debug. **Evidence:** `03-ops/rca-ike.md`.
+**کارت Lab:** Debug IKE (اجرا نشده). **Evidence:** `03-ops/ike-debug.md`.
 
-### ۱۱) منابع
+### ۱۵) منابع
 
-- Fortinet Docs: FortiOS 7.0 Administration Guide — IPsec VPN troubleshooting؛ RFC 7296 (error notify types).
+- Fortinet FortiOS 7.0 Administration Guide: IPsec VPN troubleshooting
+- RFC 7296
 
 <a id="l-18-4"></a>
 
@@ -31295,100 +31420,251 @@ diagnose vpn tunnel list
 
 <a id="l-18-6"></a>
 
-## درس 18-6 — Gate G7: آزمون عملی IPsec — صورت مسئله، کلید پاسخ و Rubric
+## درس 18-6 — Gate G7: آزمون عملی IPsec — صورت مسئله، کلید پاسخ کامل و Rubric
 
-**فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰ تا ۱۸-۵ · ≈ 8 ساعت**
+**فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۱ تا ۱۸-۵ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده) و CSR1000v؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. G7: Tunnel، Route/Policy، MTU، عیب‌یابی و مستندسازی را با شواهد تحویل دهد.
-2. سه عیب (Selector/PFS، Policy، MTU) را رفع کند.
-3. Backup/Rollback را اثبات کند.
+1. یک تونل Site-to-Site IPsec (IKEv2) را از طراحی تا Verification مستند و پیاده‌سازی کند.
+2. سه خرابی تزریق‌شده (عدم‌تطابق Proposal، Selector، NAT-T/MTU) را با شواهد تشخیص دهد.
+3. هر خرابی را با Debug محدود و دستور Verification اثبات و رفع کند.
+4. گزارش RCA و Evidence Index را تحویل دهد.
+5. خود را با Rubric نمره‌دهی و ضعف‌ها را صادقانه ثبت کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-اثبات توانایی ساخت و عیب‌یابی IPsec. کلید پاسخ پس از تلاش.
+Gate G7 آخرین سنجش فصل IPsec است. در دنیای واقعی تونل «بالا نمی‌آید» و مشتری فقط همین را می‌گوید؛ شما باید مرحله‌به‌مرحله ثابت کنید مشکل در Phase 1 است یا Phase 2، در Proposal است یا Selector، در NAT-T است یا MTU. این درس صورت مسئله، کلید پاسخ کامل و Rubric را یک‌جا می‌دهد تا هم تمرین کنید و هم خودتان را ارزیابی.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-1. Tunnel S2S بین دو FGT با برگه‌ی پارامتر؛ Route/Policy دوطرفه.
-2. MTU/MSS آزمون‌شده.
-3. عیب‌ها (مربی): PFS Group ناهمسان؛ Policy یک‌طرفه؛ MTU 1500 بدون Clamp.
-4. Backup قبل/بعد؛ Rollback.
+دو سایت: HQ (FGT-HQ، WAN 198.51.100.2، LAN 10.10.0.0/16) و Branch (FGT-BR، WAN 203.0.113.2، LAN 10.20.0.0/16). نیاز: تونل IPsec IKEv2 با AES-256/SHA-256، DH Group 14، PFS فعال، DPD، فقط ترافیک LAN↔LAN، Log و Policy دوطرفه.
 
-#### کلید
+#### ۲) طراحی (پاسخ مرجع)
 
-- PFS: Debug INVALID_KE_PAYLOAD/NO_PROPOSAL؛ هم‌گروه‌کردن.
-- Policy: Bytes in=0؛ Debug Flow Denied؛ Policy مقابل.
-- MTU: ping DF؛ MSS 1360.
+| پارامتر | مقدار |
+|---|---|
+| IKE | v2 |
+| Phase1 Proposal | aes256-sha256 |
+| DH Group | 14 |
+| Lifetime P1 | 86400 s |
+| Phase2 Proposal | aes256-sha256 |
+| PFS | enable (DH 14) |
+| Lifetime P2 | 43200 s |
+| Selector | 10.10.0.0/16 ↔ 10.20.0.0/16 |
+| DPD | on-idle، interval 10، retry 3 |
+| NAT-T | enable |
+| MTU/MSS | MSS-clamp 1350 |
 
-#### Rubric
+#### ۳) پیکربندی مرجع HQ
 
-ساخت ۲۵؛ عیب‌یابی ۳۰؛ MTU ۱۰؛ Policy/امنیت ۱۰؛ Evidence ۱۵؛ صداقت ۱۰.
+``` text
+config vpn ipsec phase1-interface
+ edit "TO-BR"
+  set interface "port1"
+  set ike-version 2
+  set peertype any
+  set net-device disable
+  set proposal aes256-sha256
+  set dhgrp 14
+  set remote-gw 203.0.113.2
+  set psksecret <PSK-FROM-VAULT>
+  set dpd on-idle
+  set dpd-retrycount 3
+  set dpd-retryinterval 10
+  set nattraversal enable
+ next
+end
+config vpn ipsec phase2-interface
+ edit "TO-BR-P2"
+  set phase1name "TO-BR"
+  set proposal aes256-sha256
+  set pfs enable
+  set dhgrp 14
+  set src-subnet 10.10.0.0 255.255.0.0
+  set dst-subnet 10.20.0.0 255.255.0.0
+ next
+end
+config router static
+ edit 50
+  set dst 10.20.0.0 255.255.0.0
+  set device "TO-BR"
+ next
+end
+config firewall policy
+ edit 70
+  set name "HQ-to-BR"
+  set srcintf "port2"
+  set dstintf "TO-BR"
+  set srcaddr "NET-HQ"
+  set dstaddr "NET-BR"
+  set action accept
+  set schedule "always"
+  set service "ALL"
+  set logtraffic all
+ next
+ edit 71
+  set name "BR-to-HQ"
+  set srcintf "TO-BR"
+  set dstintf "port2"
+  set srcaddr "NET-BR"
+  set dstaddr "NET-HQ"
+  set action accept
+  set schedule "always"
+  set service "ALL"
+  set logtraffic all
+ next
+end
+```
+
+(PSK را هرگز در ریپو ننویسید؛ دستورها `Unverified` تا Lab؛ نام پارامتر `dpd` و `net-device` را با CLI help تأیید کنید.)
+
+#### ۴) خرابی‌های تزریق‌شده و کلید پاسخ
+
+**خرابی A: Proposal متفاوت.** Branch با aes128-sha1 پیکربندی شده. شاهد:
+
+``` text
+diagnose vpn ike gateway list
+diagnose debug application ike -1
+diagnose debug enable
+ ... "no proposal chosen" / NO_PROPOSAL_CHOSEN
+```
+
+علت: عدم‌تطابق Phase 1 Proposal. رفع: یکسان‌سازی aes256-sha256. آزمون: `diagnose vpn ike gateway list` وضعیت established.
+
+**خرابی B: Selector.** Phase 1 ok ولی Phase 2 نمی‌آید؛ Branch Selector 10.20.0.0/24 است. شاهد: `diagnose vpn tunnel list` بدون SA یا پیام `TS_UNACCEPTABLE`/`no matching selector`. رفع: یکسان‌سازی /16 (یا Selector دقیق در هر دو). آزمون: `get vpn ipsec tunnel summary` up و ping.
+
+**خرابی C: MTU/NAT-T.** تونل up ولی انتقال فایل بزرگ می‌ایستد. شاهد: ping با DF: 1372 ok و 1422 fail؛ Capture: Retransmission بزرگ. رفع: MSS-clamp 1350 و اجازه‌ی ICMP؛ NAT-T فعال و UDP 4500 باز. آزمون: دانلود ۱۰۰ MB.
+
+#### ۵) Verification مرجع
+
+``` text
+get vpn ipsec tunnel summary
+diagnose vpn ike gateway list
+diagnose vpn tunnel list name TO-BR
+diagnose sys session filter dst 10.20.0.5
+diagnose sys session list
+```
+
+#### ۶) Rubric (۱۰۰ امتیاز)
+
+| معیار | امتیاز |
+|---|---|
+| طراحی و جدول پارامتر | 15 |
+| پیکربندی صحیح هر دو سر | 20 |
+| تشخیص سه خرابی با شواهد | 30 |
+| رفع و آزمون مثبت/منفی | 20 |
+| Evidence Index و RCA | 10 |
+| صداقت (Unverified و محدودیت‌ها) | 5 |
+
+نمره‌ی قبولی ۷۵ و حداقل ۲۰ در بخش «تشخیص».
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| IKEv2 یا v1 | IKEv2 برای Site-to-Site جدید |
+| PFS | enable |
+| DPD | on-idle |
+| Policy | دوطرفه با Log |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Tunnel Up؛ ping.
+**ساده (حل‌شده: خرابی A):** ورودی: Debug IKE پیام NO_PROPOSAL_CHOSEN. مراحل: ۱) `diagnose vpn ike gateway list` تونل در حالت connecting. ۲) Debug محدود به peer: `diagnose vpn ike log-filter dst-addr4 203.0.113.2`. ۳) خط Proposal دو سر مقایسه می‌شود: HQ aes256-sha256، BR aes128-sha1. پاسخ: عدم‌تطابق Proposal؛ رفع در BR و آزمون established.
 
-**متوسط:** عیب PFS.
+**متوسط (خرابی B):** Phase 1 established ولی ping به 10.20.0.5 ندارد. مراحل: ۱) `diagnose vpn tunnel list` تعداد SA صفر برای Phase 2. ۲) Selector HQ /16 و BR /24. ۳) رفع Selector. ۴) `get vpn ipsec tunnel summary` selectors up. پاسخ: Selector Mismatch؛ با /16 یکسان یا Subnet دقیق.
 
-**سخت:** Policy/MTU و RCA.
+**سخت (خرابی C + RCA):** تونل up ولی فایل بزرگ می‌ایستد. مراحل: ۱) PMTU با ping DF: 1372 ok، 1422 fail ⇒ PMTU≈1400. ۲) MSS=1400−40=1360 با حاشیه 1350. ۳) `set tcp-mss-sender 1350` روی Policy تونل. ۴) ICMP frag-needed مجاز. ۵) دانلود ۱۰۰MB سه بار بدون Retransmission. RCA: سربار ESP/UDP-encap MTU مؤثر را کم کرد و MSS تنظیم نشده بود؛ پیشگیری: MSS-clamp استاندارد برای همه‌ی تونل‌ها.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. VPN → IPsec Wizard یا Custom: Phase 1 و Phase 2 را مطابق جدول بسازید.
+2. Network → Static Routes: مسیر 10.20.0.0/16 به Interface تونل.
+3. Policy & Objects → دو Policy (HQ→BR و BR→HQ).
+4. Monitor → IPsec Monitor برای وضعیت.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get vpn ipsec tunnel summary
+diagnose vpn ike gateway list
+diagnose vpn tunnel list name TO-BR
+diagnose debug application ike -1
+diagnose debug enable
+diagnose debug disable
+diagnose debug reset
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence G7.
+- Phase 1 و Phase 2 در حالت up.
+- ping و TCP بین LANها.
+- Session با policy_id درست.
+- دانلود بزرگ بدون Retransmission.
+- آزمون منفی: ترافیک غیرمجاز رد.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| ناقص | Rubric | کسری |
+| NO_PROPOSAL_CHOSEN | Proposal دو سر | یکسان‌سازی |
+| TS_UNACCEPTABLE | Selector | Subnet |
+| فایل بزرگ می‌ایستد | PMTU | MSS-clamp |
+| تونل flap | DPD/NAT-T | تایمر/UDP 4500 |
 
 ### ۱۰) نکات امنیتی
 
-- Secret پاک.
+- PSK قوی و در Vault.
+- Policy حداقلی.
+- Debug را خاموش کنید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- شواهد.
+- Proposal، Selector، MTU سه خرابی رایج.
+- Debug محدود به peer.
+- Rubric و Evidence.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) وظایف G7؟ *(پاسخ: 18-6-ت1)*
+**ت1.** (ساده) NO_PROPOSAL_CHOSEN یعنی چه؟ *(پاسخ: 18-6-ت1)*
 
-**ت2.** (ساده) چرا آزمون منفی؟ *(پاسخ: 18-6-ت2)*
+**ت2.** (ساده) Selector چیست؟ *(پاسخ: 18-6-ت2)*
 
-**ت3.** (متوسط) عیب PFS را از Debug چگونه می‌فهمید؟ *(پاسخ: 18-6-ت3)*
+**ت3.** (متوسط) Phase 1 up ولی ping نه؛ بررسی‌ها؟ *(پاسخ: 18-6-ت3)*
 
-**ت4.** (متوسط) Policy یک‌طرفه چه علامتی دارد؟ *(پاسخ: 18-6-ت4)*
+**ت4.** (متوسط) چرا Debug محدود به peer؟ *(پاسخ: 18-6-ت4)*
 
-**ت5.** (سخت) RCA MTU. *(پاسخ: 18-6-ت5)*
+**ت5.** (سخت) MSS را برای PMTU 1400 محاسبه کنید. *(پاسخ: 18-6-ت5)*
 
-**ت6.** (سخت، طراحی) برنامه‌ی تکرار Gate پس از Patch. *(پاسخ: 18-6-ت6)*
+**ت6.** (سخت، طراحی) Evidence Index برای G7. *(پاسخ: 18-6-ت6)*
 
-**Q1.** Quick quiz (English): What does Gate G7 prove? *(پاسخ: 18-6-Q1)*
+**Q1.** Quick quiz (English): Which command lists IKE gateways and their state? *(پاسخ: 18-6-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| G7 | Gate 7 | دروازه ۷ |
+| IKE | Internet Key Exchange | تبادل کلید اینترنت |
+| PFS | Perfect Forward Secrecy | محرمانگی پیش‌رونده |
+| DPD | Dead Peer Detection | تشخیص همتای مرده |
+| NAT-T | NAT Traversal | عبور از NAT |
 
-- *Evidence is part of the grade.* ← شاهد جزء نمره است.
+- *The tunnel is up but traffic does not flow.* ← تونل up است ولی ترافیک عبور نمی‌کند.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** G7. **Evidence:** `03-ops/g7.md`.
+**کارت Lab:** G7 IPsec (اجرا نشده). **Evidence:** `03-ops/g7-ipsec.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۱۸-۰ تا ۱۸-۵
+- Fortinet FortiOS 7.0 Administration Guide: IPsec VPN
+- FortiOS 7.0 IPsec troubleshooting
 
 ## پاسخ‌های فصل 18
 
@@ -31426,18 +31702,22 @@ diagnose vpn tunnel list
 
 ### پاسخ‌های بازنویسی درس 18-3
 
-**18-3-ت1** — هیچ Proposal مشترکی بین دو سر پیدا نشد.
 
-**18-3-ت2** — بدون Filter حجم Debug زیاد و CPU بالا می‌رود و خواندن سخت می‌شود.
+### پاسخ‌های بازنویسی عمیق درس 18-3
 
-**18-3-ت3** — Selectorها را آینه یا در Route-based هر دو را 0.0.0.0/0 کنید.
+**18-3-ت1** — الگوریتم و DH را توافق می‌کند.
 
-**18-3-ت4** — Policy مقابل، Route برگشت، NAT-T/ESP، Selector؛ آزمون: Debug Flow سمت مقابل، Sniffer، tunnel list.
+**18-3-ت2** — Selector نامطابق.
 
-**18-3-ت5** — عنوان، Timeline، شواهد (Log Rekey، ping -f)، علت‌ها (Lifetime/DPD و MTU)، اقدام، پیشگیری.
+**18-3-ت3** — PSK/هویت.
 
-**18-3-Q1** — Authentication failure: wrong PSK, peer ID mismatch or invalid certificate.
+**18-3-ت4** — UDP 500/4500.
 
+**18-3-ت5** — Sniffer و ACL.
+
+**18-3-ت6** — طبق متن.
+
+**18-3-Q1** — IKE_SA_INIT.
 
 ### پاسخ‌های بازنویسی عمیق درس 18-4
 
@@ -31475,19 +31755,22 @@ diagnose vpn tunnel list
 
 ### پاسخ‌های بازنویسی عمیق درس 18-6
 
-**18-6-ت1** — ساخت، آزمون، سه عیب، Backup/Rollback.
 
-**18-6-ت2** — اثبات Least Privilege.
+### پاسخ‌های بازنویسی عمیق درس 18-6
 
-**18-6-ت3** — INVALID_KE_PAYLOAD/NO_PROPOSAL_CHOSEN در Phase 2؛ مقایسه PFS دو سر.
+**18-6-ت1** — دو سر روی الگوریتم‌های Phase 1 توافق نکردند؛ Proposal هر دو سر را مقایسه و یکسان کنید.
 
-**18-6-ت4** — Bytes out>0 و in=0؛ Debug Flow Denied در سمت مقابل.
+**18-6-ت2** — شبکه‌های مبدأ و مقصدی که در Phase 2 رمز می‌شوند؛ باید در دو سر یکسان (متقارن) باشد.
 
-**18-6-ت5** — ping DF، Retransmission، MSS 1360، دانلود موفق.
+**18-6-ت3** — Phase 2/Selector، Route به Interface تونل، Policy دوطرفه، سپس Debug و Session.
 
-**18-6-ت6** — Test Matrix دوره‌ای و Evidence.
+**18-6-ت4** — تا CPU و حجم Log کنترل شود و فقط همان تونل دیده شود.
 
-**18-6-Q1** — That you can build, break, troubleshoot and document an IPsec tunnel.
+**18-6-ت5** — MSS = 1400 − 40 = 1360؛ با حاشیه 1350 تنظیم و با دانلود بزرگ آزمون می‌شود.
+
+**18-6-ت6** — فهرست خروجی‌ها: ike gateway، tunnel list، session، ping/TCP، Debug محدود، تصویر، زمان و نتیجه.
+
+**18-6-Q1** — diagnose vpn ike gateway list.
 
 ### پاسخ‌های درس افزوده‌ی 18-0 (فصل 18)
 
@@ -33670,108 +33953,190 @@ execute log display
 
 <a id="l-20-5"></a>
 
-## درس 20-5 — آزمون عملی دسترسی راه‌دور: صورت مسئله، کلید پاسخ و Rubric
+## درس 20-5 — آزمون عملی دسترسی راه‌دور: SSL-VPN/IPsec Dial-up، MFA و Split Tunnel — صورت مسئله، کلید کامل و Rubric
 
-**فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۲۰-۱ تا ۲۰-۴، ۲۰-۷ · ≈ 8 ساعت**
+**فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۲۰-۱ تا ۲۰-۴ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده». SSL VPN فقط در Lab ایزوله (CVE).
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. IPsec Dial-up با MFA را بسازد، آزمون کند و Detection بگذارد.
-2. سه عیب (DNS، Policy، Certificate) را رفع کند.
-3. حمله‌ی Brute-force آزمایشی (Lab مجاز) را کشف و به آن پاسخ دهد.
-4. طرح مهاجرت از SSL VPN را بنویسد.
+1. دسترسی راه‌دور (Portal یا Tunnel) را با گروه کاربری، MFA و Policy حداقلی طراحی کند.
+2. Split Tunnel در برابر Full Tunnel را با ریسک‌ها انتخاب و پیکربندی کند.
+3. سه خرابی (Authentication، Policy/Route، DNS/Split) را با شاهد رفع کند.
+4. آزمون منفی (کاربر غیرمجاز، سرویس غیرمجاز) را اجرا کند.
+5. گزارش و Rubric تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون عملی جامع: ساخت، تزریق عیب، Detection، پاسخ و مستندسازی. کلید پاسخ پس از تلاش خودتان.
+دورکاری یعنی در اصلی‌ترین ورودی شبکه را برای کاربران رها کرده‌اید. اگر رمز یک کاربر لو برود و MFA نباشد، مهاجم مستقیم در شبکه‌ی داخلی است. این آزمون سنجش می‌کند بتوانید دسترسی راه‌دور را هم کاربردی و هم امن بسازید و وقتی «وصل نمی‌شود» گفتند، علت را با شاهد پیدا کنید.
+
+نکته‌ی نسخه: SSL-VPN حالت Tunnel در FortiOS 7.0.3 وجود دارد ولی در 7.6.3 حذف شده است؛ برای طراحی جدید IPsec Dial-up (IKEv2) توصیه می‌شود. Needs-License برای FortiToken و FortiClient EMS.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-1. IPsec Dial-up IKEv2 با EAP-RADIUS+OTP برای گروه IT.
-2. Split tunnel برای 10.0.0.0/8 و DNS داخلی.
-3. Lockout، Source Restriction و Alert.
-4. عیب‌ها (توسط مربی): DNS Mode Config حذف؛ Policy Dialup→LAN با Source اشتباه؛ گواهی سرور منقضی.
-5. شبیه‌سازی Brute-force (Lab): ۲۰ رمز غلط.
-6. طرح مهاجرت SSL VPN→IPsec (مفهومی، ۸ مرحله).
+۱۲۰ کاربر دورکار. گروه‌ها: GRP-FIN (دسترسی فقط به 10.20.0.10:443 و 10.20.0.11:445)، GRP-IT (SSH به Mgmt). الزام: MFA، لاگ همه‌ی اتصال‌ها، Split Tunnel برای اینترنت عمومی، DNS داخلی برای دامنه‌ی corp.local.
 
-#### کلید پاسخ (خلاصه)
+#### ۲) طراحی
 
-- عیب DNS: nslookup داخلی شکست؛ رفع: `ipv4-dns-server1`.
-- عیب Policy: Debug Flow Denied؛ Source=Group.
-- عیب گواهی: Debug IKE AUTH_FAILED/Alert؛ تمدید/ایجاد گواهی.
-- Detection: Alert بر ۲۰ ناموفق؛ Block IP؛ بررسی عدم ورود موفق.
+| مورد | تصمیم |
+|---|---|
+| نوع | SSL-VPN Tunnel (7.0.3) یا IPsec Dial-up |
+| احراز هویت | LDAP/AD + FortiToken |
+| Tunnel IP Pool | 10.212.134.0/24 |
+| Split Tunnel | بله، فقط 10.20.0.0/16 و 10.99.0.0/24 |
+| DNS | 10.20.0.2 |
+| Policy | یک Policy برای هر گروه با مقصد حداقلی |
 
-#### Rubric
+``` text
+config vpn ssl settings
+ set servercert "Fortinet_Factory"
+ set tunnel-ip-pools "SSLVPN_TUNNEL_ADDR1"
+ set tunnel-ipv6-pools "SSLVPN_TUNNEL_IPv6_ADDR1"
+ set dns-server1 10.20.0.2
+ set port 10443
+ set source-interface "port1"
+ set default-portal "tunnel-access"
+end
+config firewall policy
+ edit 80
+  set name "SSLVPN-FIN"
+  set srcintf "ssl.root"
+  set dstintf "port3"
+  set srcaddr "all"
+  set dstaddr "SRV-FIN-WEB" "SRV-FIN-SMB"
+  set groups "GRP-FIN"
+  set action accept
+  set schedule "always"
+  set service "HTTPS" "SMB"
+  set logtraffic all
+ next
+end
+```
 
-ساخت ۲۵؛ عیب‌یابی ۳۰؛ Detection/پاسخ ۲۰؛ مهاجرت ۱۰؛ Evidence/صداقت ۱۵.
+(گواهی Factory برای Production نامناسب است؛ گواهی معتبر. پارامترها `Unverified`؛ در 7.0.3 با CLI help تأیید شود.)
+
+#### ۳) خرابی‌ها و کلید
+
+**A: Authentication.** کاربر «Login failed». شاهد: Event Log: `ssl-login-fail` با reason. علل: LDAP Bind، رمز، عضویت گروه، یا FortiToken. رفع: `diagnose test authserver ldap AD user pass` (Unverified) و اصلاح گروه.
+
+**B: Policy/Route.** وصل می‌شود ولی به 10.20.0.10 نمی‌رسد. شاهد: Debug flow `no matching policy`/Denied. علت: Policy فاقد گروه یا dst نادرست. رفع: Policy.
+
+**C: DNS/Split.** با IP می‌رسد و با نام نه. علت: DNS Server به کلاینت نمی‌رسد یا Split-DNS. رفع: `set dns-server1` و Policy UDP 53 به DNS.
+
+**آزمون منفی:** کاربر GRP-FIN به SSH Mgmt وصل نمی‌شود؛ Log deny با policyid.
+
+#### ۴) Verification
+
+``` text
+get vpn ssl monitor
+diagnose debug application sslvpn -1
+diagnose debug enable
+diagnose firewall iprope lookup 10.212.134.5 40000 10.20.0.10 443 tcp ssl.root
+```
+
+#### ۵) Rubric
+
+طراحی ۱۵، پیکربندی ۲۵، تشخیص سه خرابی ۳۰، آزمون منفی ۱۵، Evidence و صداقت ۱۵. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| SSL-VPN یا IPsec Dial-up | طراحی جدید: IPsec |
+| Split Tunnel | با EDR |
+| MFA | اجباری |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** اتصال موفق با MFA.
+**ساده (حل‌شده):** کاربر FIN با MFA وصل می‌شود؛ `get vpn ssl monitor` نشان می‌دهد Tunnel IP 10.212.134.5؛ HTTPS به 10.20.0.10 باز می‌شود.
 
-**متوسط:** رفع DNS و Policy.
+**متوسط (خرابی B):** وصل است ولی به سرور نمی‌رسد. مراحل: ۱) Lookup برای 10.212.134.5→10.20.0.10:443 ⇒ policy 0. ۲) Policy گروه GRP-FIN نیست یا dstaddr اشتباه. ۳) تصحیح. ۴) آزمون: Allowed و Hit افزایش. پاسخ: Policy ناقص.
 
-**سخت:** کشف Brute-force، پاسخ و PIR.
+**سخت (Split Tunnel و نشت):** کاربر می‌گوید «اینترنت کند شد». بررسی: Full Tunnel فعال بود و ترافیک اینترنت از فایروال می‌رفت. راه: Split Tunnel با Routing Address 10.20.0.0/16؛ ریسک: ترافیک اینترنت کاربر محافظت نمی‌شود؛ جبران: FortiClient/EDR (Needs-License) و DNS امن. آزمون: traceroute به 8.8.8.8 از کلاینت مستقیم؛ به 10.20.0.10 از Tunnel.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. VPN → SSL-VPN Settings: Port، Cert، Tunnel pool، DNS.
+2. VPN → SSL-VPN Portals: Split Tunneling و Routing Address.
+3. User & Device: LDAP و FortiToken و گروه.
+4. Policy: Source ssl.root و Group.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get vpn ssl monitor
+diagnose debug application sslvpn -1
+diagnose debug enable
+diagnose debug disable
+diagnose firewall iprope lookup 10.212.134.5 40000 10.20.0.10 443 tcp ssl.root
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence Index RA؛ آزمون‌های مثبت/منفی.
+- ورود با MFA موفق.
+- دسترسی فقط به مقاصد مجاز.
+- Log هر اتصال.
+- آزمون منفی رد.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Alert نیامد | Syslog | آستانه/مسیر |
-| MFA پذیرفته نشد | NPS Log | Secret/Policy |
+| Login failed | Event log/LDAP | Bind/گروه/Token |
+| به سرور نمی‌رسد | Lookup | Policy گروه |
+| با نام نمی‌رسد | DNS | dns-server |
+| کند | Full tunnel | Split |
 
 ### ۱۰) نکات امنیتی
 
-- حمله فقط در Lab مجاز.
-- Secret در Evidence نیست.
+- MFA.
+- گواهی معتبر.
+- Least privilege.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- آزمون = ساخت + عیب + Detection + پاسخ + مهاجرت.
+- گروه+MFA+Policy حداقلی.
+- Split Tunnel با EDR.
+- آزمون منفی.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) چه مدارکی برای آزمون لازم است؟ *(پاسخ: 20-5-ت1)*
+**ت1.** (ساده) چرا MFA؟ *(پاسخ: 20-5-ت1)*
 
-**ت2.** (ساده) چرا شبیه‌سازی حمله فقط در Lab؟ *(پاسخ: 20-5-ت2)*
+**ت2.** (ساده) Split Tunnel چیست؟ *(پاسخ: 20-5-ت2)*
 
-**ت3.** (متوسط) عیب DNS را چگونه کشف و رفع می‌کنید؟ *(پاسخ: 20-5-ت3)*
+**ت3.** (متوسط) وصل است ولی به سرور نمی‌رسد؛ مراحل. *(پاسخ: 20-5-ت3)*
 
-**ت4.** (متوسط) عیب Policy: Source اشتباه؛ شواهد و رفع. *(پاسخ: 20-5-ت4)*
+**ت4.** (متوسط) چرا گواهی Factory مناسب نیست؟ *(پاسخ: 20-5-ت4)*
 
-**ت5.** (سخت) پس از ۲۰ رمز غلط، آیا ورود موفقی بود؟ چگونه ثابت می‌کنید؟ *(پاسخ: 20-5-ت5)*
+**ت5.** (سخت) Split Tunnel ریسک و جبران. *(پاسخ: 20-5-ت5)*
 
-**ت6.** (سخت، طراحی) مهاجرت SSL VPN→IPsec در ۸ مرحله. *(پاسخ: 20-5-ت6)*
+**ت6.** (سخت، طراحی) دو گروه با دسترسی متفاوت. *(پاسخ: 20-5-ت6)*
 
-**Q1.** Quick quiz (English): Why must an attack simulation be run only in an authorized lab? *(پاسخ: 20-5-Q1)*
+**Q1.** Quick quiz (English): Why is MFA recommended for remote access VPN? *(پاسخ: 20-5-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| RA | Remote Access | دسترسی راه‌دور |
-| PIR | Post-incident review | بازبینی پس از حادثه |
+| MFA | Multi-Factor Authentication | احراز چندعاملی |
+| EDR | Endpoint Detection and Response | تشخیص و پاسخ نقطه‌ی پایانی |
 
-- *Run attack simulations only in an authorized lab.* ← شبیه‌سازی حمله را فقط در Lab مجاز اجرا کنید.
+- *Remote access must use multi-factor authentication.* ← دسترسی راه‌دور باید از MFA استفاده کند.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** آزمون RA. **Evidence:** `03-ops/rca-ra.md`.
+**کارت Lab:** آزمون دسترسی راه‌دور (اجرا نشده). **Evidence:** `03-ops/g-remote.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۰-۱ تا ۲۰-۴
-- NIST SP 800-61
+- Fortinet FortiOS 7.0 Administration Guide: SSL VPN; IPsec dial-up
+- FortiOS 7.0 SSL VPN guide
 
 ## درس 20-7 — SSL VPN در برابر IPsec Remote Access: وضعیت نسخه‌ها، ریسک و مهاجرت
 
@@ -33956,19 +34321,22 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 ### پاسخ‌های بازنویسی عمیق درس 20-5
 
-**20-5-ت1** — Evidence Index با دستور/خروجی/زمان برای هر نیاز، PIR و طرح مهاجرت.
 
-**20-5-ت2** — چون حمله‌ی واقعی بدون مجوز غیرقانونی است و می‌تواند سرویس تولید را مختل کند.
+### پاسخ‌های بازنویسی عمیق درس 20-5
 
-**20-5-ت3** — اتصال برقرار و ping به IP موفق ولی نام شکست؛ nslookup با DNS داخلی؛ رفع: DNS در Mode Config؛ تأیید resolve.
+**20-5-ت1** — رمز لو رفته بدون عامل دوم دسترسی نمی‌دهد.
 
-**20-5-ت4** — Debug Flow: Denied policy 0 یا Policy اشتباه؛ تغییر Source به گروه صحیح؛ آزمون مثبت/منفی.
+**20-5-ت2** — فقط ترافیک شبکه‌ی سازمان از Tunnel می‌رود و بقیه مستقیم.
 
-**20-5-ت5** — Log Event: ورود موفق همان کاربر/IP پس از ناموفق‌ها؛ در نبود آن «نفوذ دیده نشد»؛ Session Monitor؛ ثبت.
+**20-5-ت3** — Policy Lookup، گروه، dstaddr، Route/Tunnel IP.
 
-**20-5-ت6** — فهرست کاربران/Portal، IPsec آزمایشی، Split/DNS، MFA، آموزش، Backup، خاموش SSL VPN، آزمون منفی (پورت SSL VPN بسته).
+**20-5-ت4** — عمومی/نامعتبر و هشدار مرورگر و ریسک MITM.
 
-**20-5-Q1** — Because unauthorized attacks are illegal and may disrupt production services.
+**20-5-ت5** — ترافیک اینترنت بی‌حفاظت؛ EDR/DNS امن/FortiClient.
+
+**20-5-ت6** — دو Policy، دو گروه، مقاصد حداقلی، آزمون منفی متقابل.
+
+**20-5-Q1** — Because stolen passwords alone would not allow access without the second factor.
 
 ### پاسخ‌های درس افزوده‌ی 20-7 (فصل 20)
 
@@ -34583,102 +34951,214 @@ diagnose sys session filter clear
 
 <a id="l-21-5"></a>
 
-## درس 21-5 — Gate G8: آزمون عملی Dual-ISP و SD-WAN — صورت مسئله، کلید پاسخ و Rubric
+## درس 21-5 — Gate G8: آزمون عملی Dual-ISP و SD-WAN — صورت مسئله، کلید پاسخ کامل و Rubric
 
-**فصل 21 · بازنویسی عمیق · پیش‌نیاز: ۲۱-۱ تا ۲۱-۷ · ≈ 8 ساعت**
+**فصل 21 · بازنویسی عمیق · پیش‌نیاز: ۲۱-۱ تا ۲۱-۴ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده) و CSR1000v؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. G8: Zone/Member/Health-check/Rule/Failover/Failback را با شواهد تحویل دهد.
-2. عیب Health-check و Rule را رفع کند.
-3. RCA و Backup ارائه دهد.
+1. SD-WAN با دو Member (ISP-A و ISP-B)، Health-check و Service Rule را طراحی و پیاده‌سازی کند.
+2. Failover و Failback را با اندازه‌گیری (Failtime/Recoverytime) آزمون کند.
+3. تفاوت Mode (priority/load-balance/Best Quality) را انتخاب و توجیه کند.
+4. سه خرابی (Health-check اشتباه، Policy ناهمخوان، Route) را رفع کند.
+5. گزارش و Rubric را تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-اثبات Dual-ISP/SD-WAN. کلید پاسخ پس از تلاش.
+دو ISP داریم. اگر ISP-A قطع شد، ترافیک مالی باید خودکار به ISP-B برود و پس از بازگشت A ظرف زمان مشخص برگردد. «قطع شد ولی Failover نشد» رایج‌ترین گزارش است و علتش اغلب Health-check نادرست یا Policy بدون SD-WAN است. این Gate سنجش همین است.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-1. SD-WAN Zone با دو Member و HC دوسروره.
-2. Rule VoIP (sla) و Backup (load-balance).
-3. افت کیفیت ساختگی (Latency 150 ms با `tc`) و قطع لینک.
-4. عیب‌ها: Server HC نامعتبر؛ Rule عمومی بالا؛ Policy روی Interface به‌جای Zone.
-5. Backup/Rollback.
+FortiGate شعبه: port1 (ISP-A، 198.51.100.2/30، GW 198.51.100.1) و port4 (ISP-B، 203.0.113.2/30، GW 203.0.113.1). LAN 10.10.0.0/24. نیاز: ترافیک عادی از A؛ Failover به B ظرف زیر ۱۰ ثانیه؛ Failback پس از ۳۰ ثانیه پایداری A؛ ترافیک ویدئو (Microsoft Teams) ترجیحاً با کمترین Latency.
 
-#### کلید
+#### ۲) طراحی مرجع (FortiOS 7.0)
 
-- HC Dead کاذب: Server/Protocol.
-- Rule Hit: ترتیب.
-- Policy روی Zone.
-- Failover/Failback با SLA.
+| مورد | مقدار |
+|---|---|
+| Members | port1 (seq 1)، port4 (seq 2) |
+| Health-check | HC-GLOBAL: server 8.8.8.8 و 1.1.1.1، ping، interval 1000 ms |
+| failtime / recoverytime | 5 / 10 |
+| Rule 1 | Teams: Mode best-quality (latency) |
+| Rule 2 | Default: priority-mode (member 1 اول) |
 
-#### Rubric
+``` text
+config system sdwan
+ set status enable
+ config zone
+  edit "virtual-wan-link"
+  next
+ end
+ config members
+  edit 1
+   set interface "port1"
+   set gateway 198.51.100.1
+  next
+  edit 2
+   set interface "port4"
+   set gateway 203.0.113.1
+  next
+ end
+ config health-check
+  edit "HC-GLOBAL"
+   set server "8.8.8.8" "1.1.1.1"
+   set protocol ping
+   set interval 1000
+   set failtime 5
+   set recoverytime 10
+   set members 1 2
+  next
+ end
+ config service
+  edit 1
+   set name "Teams"
+   set mode sla
+   set dst "Microsoft-Teams"
+   config sla
+    edit "HC-GLOBAL"
+     set id 1
+    next
+   end
+   set priority-members 1 2
+  next
+  edit 2
+   set name "Default"
+   set mode manual
+   set dst "all"
+   set priority-members 1 2
+  next
+ end
+end
+```
 
-ساخت ۲۵؛ آزمون ۳۰؛ عیب‌یابی ۲۰؛ Policy ۱۰؛ Evidence ۱۰؛ صداقت ۵.
+نکته‌ی 7.0: `mode` و گزینه‌های `sla`/`manual`/`priority`/`load-balance` با CLI help تأیید شود؛ تغییرات 7.4.1 در Failtime/Recoverytime مرتبط نیست؛ `Unverified`.
+
+Policy باید `srcintf LAN` و `dstintf virtual-wan-link` (Zone SD-WAN) داشته باشد، نه Interface فیزیکی.
+
+#### ۳) خرابی‌ها و کلید
+
+**خرابی A:** Health-check فقط Gateway ISP را می‌زند؛ ISP قطع ولی Gateway زنده ⇒ Failover نمی‌شود. شاهد: `diagnose sys sdwan health-check` وضعیت alive. رفع: Server خارجی (8.8.8.8).
+
+**خرابی B:** Policy `dstintf port1` است نه Zone SD-WAN ⇒ Service Rule اعمال نمی‌شود. شاهد: `diagnose sys sdwan service` و Session: خروجی ثابت port1. رفع: Policy به Zone.
+
+**خرابی C:** Route Static Default هنوز با Distance کمتر از SD-WAN ⇒ ترافیک از Static. شاهد: `get router info routing-table all`. رفع: حذف Static Default یا Distance بزرگ‌تر.
+
+#### ۴) آزمون Failover
+
+``` text
+diagnose sys sdwan health-check
+diagnose sys sdwan member
+diagnose sys sdwan service
+# 1 ping -t to 8.8.8.8 from LAN host
+# 2 disable ISP-A (cable or interface down)
+# 3 measure packets lost -> time to failover
+# 4 enable ISP-A; measure failback after recoverytime
+```
+
+معیار: Failover ≤ 10 s، Failback ≈ 10–30 s، بدون قطع Sessionهای فعال مهم (Session Pickup/Preserve برای Session موجود طبق Rule).
+
+#### ۵) Rubric
+
+طراحی ۱۵، پیکربندی ۲۵، تشخیص ۳ خرابی ۳۰، آزمون Failover/Failback با اندازه‌گیری ۲۰، Evidence و صداقت ۱۰. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Mode | priority برای Failover ساده؛ SLA برای حساس به Latency |
+| Health-check | Server خارجی نه Gateway |
+| Policy | به Zone SD-WAN |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Members Alive.
+**ساده (حل‌شده):** Health-check به 8.8.8.8 با failtime 5 و interval 1000 ms: زمان تشخیص ≈ 5 ثانیه؛ پس Failover حدود ۵–۷ ثانیه. محاسبه: failtime × interval = 5 × 1 s = 5 s.
 
-**متوسط:** VoIP به wan2.
+**متوسط (خرابی B):** Policy dstintf=port1. مراحل: ۱) `diagnose sys sdwan service` نشان می‌دهد Rule ساخته شده ولی Hit ندارد. ۲) `session list` ⇒ خروجی port1. ۳) تغییر dstintf به Zone. ۴) Hit افزایش و Session از member انتخابی. پاسخ: Policy باید Zone SD-WAN را هدف بگیرد.
 
-**سخت:** عیب‌ها و RCA.
+**سخت (Failback ناپایدار):** A هر چند دقیقه Flap می‌کند و ترافیک مرتب بین دو ISP می‌پرد. تحلیل: recoverytime کوتاه؛ A ناپایدار برمی‌گردد. رفع: افزایش recoverytime به 30–60، Health-check با دو Server، و در صورت نیاز Hold. آزمون: ۳ بار قطع/وصل؛ حداکثر یک Failback. ریسک: Failback دیرتر ⇒ مصرف ISP گران‌تر.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Network → SD-WAN → Interface Members: افزودن port1 و port4.
+2. Performance SLA: ساخت HC-GLOBAL.
+3. SD-WAN Rules: Teams و Default.
+4. Policy & Objects: خروجی Zone SD-WAN.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose sys sdwan health-check
+diagnose sys sdwan member
+diagnose sys sdwan service
+get router info routing-table all
+diagnose sys session list
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence G8.
+- Health-check alive برای هر دو.
+- Failover ≤ 10 s.
+- Failback پس از recoverytime.
+- Rule Hit و Session روی member درست.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| ناقص | Rubric | کسری |
+| Failover نمی‌شود | Health-check | Server خارجی |
+| Rule اثر ندارد | Policy dstintf | Zone SD-WAN |
+| ترافیک از Static | routing-table | Distance/حذف Static |
+| Flap | recoverytime | افزایش |
 
 ### ۱۰) نکات امنیتی
 
-- Probe Local-out.
+- Policy حداقلی.
+- ثبت تغییرات.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- شواهد.
+- SD-WAN=Member+Health-check+Rule.
+- Policy به Zone.
+- Failover/Failback اندازه‌گیری.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) وظایف G8؟ *(پاسخ: 21-5-ت1)*
+**ت1.** (ساده) چرا Health-check به Gateway کافی نیست؟ *(پاسخ: 21-5-ت1)*
 
-**ت2.** (ساده) افت کیفیت ساختگی را چگونه می‌سازید؟ *(پاسخ: 21-5-ت2)*
+**ت2.** (ساده) Failtime و Recoverytime چیست؟ *(پاسخ: 21-5-ت2)*
 
-**ت3.** (متوسط) Rule VoIP Hit ندارد؛ علت؟ *(پاسخ: 21-5-ت3)*
+**ت3.** (متوسط) زمان تقریبی Failover با failtime 5 و interval 1000 ms؟ *(پاسخ: 21-5-ت3)*
 
-**ت4.** (متوسط) HC Dead با اینترنت سالم؛ علت؟ *(پاسخ: 21-5-ت4)*
+**ت4.** (متوسط) چرا Policy باید به Zone SD-WAN باشد؟ *(پاسخ: 21-5-ت4)*
 
-**ت5.** (سخت) RCA Policy روی Interface. *(پاسخ: 21-5-ت5)*
+**ت5.** (سخت) Flap باعث پرش ترافیک می‌شود؛ تحلیل و رفع. *(پاسخ: 21-5-ت5)*
 
-**ت6.** (سخت، طراحی) بهبود پس از آزمون. *(پاسخ: 21-5-ت6)*
+**ت6.** (سخت، طراحی) Rule برای Teams. *(پاسخ: 21-5-ت6)*
 
-**Q1.** Quick quiz (English): What does G8 verify? *(پاسخ: 21-5-Q1)*
+**Q1.** Quick quiz (English): Why should the policy destination be the SD-WAN zone? *(پاسخ: 21-5-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| G8 | Gate 8 | دروازه ۸ |
+| SD-WAN | Software-Defined WAN | شبکه‌ی گسترده‌ی نرم‌افزاری |
+| SLA | Service Level Agreement | توافق سطح سرویس |
 
-- *Record evidence for every gate.* ← برای هر Gate شاهد ثبت کنید.
+- *A health check should probe a remote target.* ← Health-check باید مقصد دور را پایش کند.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** G8. **Evidence:** `03-ops/g8.md`.
+**کارت Lab:** G8 Dual-ISP/SD-WAN (اجرا نشده). **Evidence:** `03-ops/g8-sdwan.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۱-۲، ۲۱-۳، ۲۱-۷
+- Fortinet FortiOS 7.0 Administration Guide: SD-WAN
+- FortiOS 7.0 SD-WAN guide
 
 ## درس 21-7 — SD-WAN از درون: Health-check، SLA، استراتژی‌ها، Failover/Failback و تفاوت با Routing
 
@@ -34982,19 +35462,22 @@ get router info routing-table all
 
 ### پاسخ‌های بازنویسی عمیق درس 21-5
 
-**21-5-ت1** — Zone/HC/Rule/آزمون/عیب‌ها/Backup.
 
-**21-5-ت2** — با `tc netem` روی Lab برای Latency/Loss.
+### پاسخ‌های بازنویسی عمیق درس 21-5
 
-**21-5-ت3** — Rule عمومی بالاتر Match می‌شود؛ ترتیب.
+**21-5-ت1** — Gateway ممکن است زنده باشد ولی ISP قطع؛ باید مقصد خارجی را پایش کرد.
 
-**21-5-ت4** — Server/Protocol/Policy/Route Probe.
+**21-5-ت2** — تعداد شکست پشت‌سرهم برای Dead و تعداد موفقیت برای بازگشت (Alive).
 
-**21-5-ت5** — Policy باید روی Zone؛ Failover Policy را از بین برده بود.
+**21-5-ت3** — حدود ۵ ثانیه (۵ × ۱ ثانیه) به‌علاوه‌ی چند صد میلی‌ثانیه.
 
-**21-5-ت6** — Multi-server HC، Hysteresis، Alert.
+**21-5-ت4** — Rule و انتخاب Member فقط برای ترافیک وارد Zone SD-WAN اعمال می‌شود.
 
-**21-5-Q1** — Failover, rule-based path selection and SLA behavior with evidence.
+**21-5-ت5** — recoverytime کوتاه؛ افزایش و Health-check دو-Server؛ آزمون ۳ قطع/وصل.
+
+**21-5-ت6** — Mode SLA با Latency و Health-check؛ Default priority؛ آزمون اندازه‌گیری Latency.
+
+**21-5-Q1** — Because SD-WAN rules only apply to traffic that goes to the SD-WAN zone.
 
 ### پاسخ‌های درس افزوده‌ی 21-7 (فصل 21)
 
@@ -35471,443 +35954,641 @@ Downtime/year at 99.9% = 8.76 h ; at 99.99% = 52.6 min
 
 <a id="l-22-2"></a>
 
-## درس 22-2 — پیکربندی HA Active-Passive: برگه‌ی طراحی، GUI، CLI و Verification
+## درس 22-2 — پیکربندی HA Active-Passive: برگه‌ی طراحی، GUI، CLI، Heartbeat، Monitor و Verification
 
-**فصل ۲۲ · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰ (FGCP، Election، Heartbeat) · ≈ ۶ ساعت**
+**فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰، ۲۲-۱، ۱۲-۲ · ≈ 11 ساعت**
 
-> **وضعیت (7.0.3):** Needs-License (دو VM با لایسنس معتبر)؛ سینتکس `Unverified`؛ Lab «اجرا نشده». **هر Boot/تغییر فقط با تأیید کاربر.**
-
-### ۱) هدف آموزشی
-
-Cluster Active-Passive را با برگه‌ی طراحی، Heartbeat Redundant، Monitor Interface و Session Pickup بسازد و Verification/Backup/Rollback را اجرا کند.
-
-### ۲) برگه‌ی طراحی
-
-``` text
-Units      : FGT-1 (priority 200), FGT-2 (priority 100); same model, same FortiOS, same license type
-Group      : name FGT-HA-LAB, mode a-p, password <HA-PASSWORD>
-Heartbeat  : port3 (priority 100), port4 (priority 50) back-to-back, no switch
-Monitor    : port1 (WAN), port2 (LAN)
-Session    : session-pickup enable (TCP)
-Override   : disable (prevent flap)  [decision: failback manual]
-Mgmt       : dedicated management interface per unit (reserved mgmt ip)
-```
-
-### ۳) مراحل
-
-1. Backup هر دو. بررسی نسخه/Serial.
-2. تنظیم HA روی FGT-1 (Primary) سپس FGT-2.
-3. اتصال Heartbeat Back-to-back.
-4. صبر برای Sync؛ بررسی Checksum.
-
-**GUI:** System → HA → Mode Active-Passive؛ Device Priority؛ Group Name؛ Password؛ Heartbeat Interfaces (port3 100، port4 50)؛ Monitor Interfaces (port1، port2)؛ Session Pickup.
-
-**CLI (`Unverified`):**
-
-``` text
-config system ha
-    set group-name "FGT-HA-LAB"
-    set mode a-p
-    set password <HA-PASSWORD>
-    set hbdev "port3" 100 "port4" 50
-    set monitor "port1" "port2"
-    set priority 200
-    set session-pickup enable
-    set override disable
-end
-```
-
-FGT-2 همان ولی `priority 100`.
-
-### ۴) Verification
-
-``` text
-get system ha status
-diagnose sys ha status
-diagnose sys ha checksum cluster
-diagnose sys ha history read
-```
-
-انتظار: دو عضو، Primary/Secondary، Checksum یکسان، Heartbeat هر دو لینک Up.
-
-### ۵) مثال‌ها
-
-**ساده:** `ha status`: FGT-1 Primary؛ Hostname و Serial هر دو.
-
-**متوسط:** Secondary «out of sync»: مقایسه‌ی Firmware/Config؛ `checksum cluster` مغایر؛ علت: نسخه‌ی متفاوت؛ رفع: ارتقای یکسان.
-
-**سخت (Flap):** Cluster بین دو عضو سوئیچ می‌کند: History: Monitor Interface خراب مکرر؛ لینک port2 نوسان؛ شواهد Interface Errors؛ رفع: کابل/Duplex، Hold-down، `override disable`.
-
-### ۶) Troubleshooting
-
-| علامت | علت |
-|---|---|
-| Cluster تشکیل نمی‌شود | Group/Password/Mode/HB |
-| Secondary Sync نمی‌شود | Firmware/Config |
-| Flap | Monitor/لینک |
-| Split-brain | HB قطع |
-
-### ۷) نکات امنیتی
-
-- Password قوی؛ HB جدا از شبکه‌ی کاربران.
-- Reserved Mgmt IP برای دسترسی به هر عضو.
-
-### ۸) جمع‌بندی
-
-- برگه‌ی طراحی؛ Heartbeat Redundant؛ Monitor مناسب.
-- Firmware یکسان.
-- Verification: status/checksum/history.
-
-### ۹) تمرین و ارزیابی
-
-**ت1.** (ساده) چه چیزی در دو عضو باید یکسان باشد؟ *(پاسخ: 22-2-ت1)*
-
-**ت2.** (متوسط) چرا `override disable`؟ *(پاسخ: 22-2-ت2)*
-
-**ت3.** (سخت) Cluster Flap می‌کند؛ تحلیل. *(پاسخ: 22-2-ت3)*
-
-**Q1.** Quick quiz (English): Which command compares configuration consistency between cluster members? *(پاسخ: 22-2-Q1)*
-
-### ۱۰) اصطلاحات و English Corner
-
-| مخفف | شکل کامل | معنی |
-|---|---|---|
-| hbdev | Heartbeat device | Interface نبض |
-| Reserved mgmt | Reserved management interface | مدیریت جدا برای هر عضو |
-
-- *Use identical firmware on all cluster members.* ← روی همه‌ی اعضا Firmware یکسان استفاده کنید.
-
-### ۱۱) Lab
-
-**کارت Lab:** HA A-P. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ha-ap.md`.
-
-### ۱۲) منابع
-
-- Fortinet Docs: [FGCP](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/62403/fgcp).
-
-<a id="l-22-3"></a>
-
-## درس 22-3 — آزمون Failover/Failback و Session Pickup: طراحی تست، اندازه‌گیری و تحلیل
-
-**فصل ۲۲ · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰، ۲۲-۲ · ≈ ۶ ساعت**
-
-> **وضعیت:** آزمون فقط در Lab با تأیید؛ اعداد نمونه؛ `Unverified`.
-
-### ۱) هدف آموزشی
-
-آزمون Failover را برنامه‌ریزی (سناریو، معیار، اندازه‌گیری) و نتایج را تحلیل کند؛ اثر Session Pickup، VPN و ARP را ببیند.
-
-### ۲) ماتریس آزمون
-
-| # | سناریو | انتظار | اندازه‌گیری |
-|---|---|---|---|
-| 1 | قطع Primary (Power off) | Failover چند ثانیه | بسته‌های از دست‌رفته |
-| 2 | قطع port1 (Monitor) | Failover | زمان |
-| 3 | قطع یک Heartbeat | Cluster باقی | بدون Failover |
-| 4 | قطع هر دو Heartbeat | Split-brain (آزمون کنترل‌شده) | ثبت رفتار |
-| 5 | بازگشت Primary | بدون Failback (override disable) | تأیید |
-| 6 | Session TCP طولانی (SSH) | با Pickup ادامه | Session |
-
-### ۳) روش اندازه‌گیری
-
-``` text
-# client A (continuous)
-ping -i 0.2 192.168.20.5 | ts
-# session test
-ssh user@192.168.20.5   (keep typing)
-# FGT
-get system ha status
-diagnose sys ha history read
-diagnose sys session list
-```
-
-``` text
-Packet loss time ~= lost packets x ping interval
-```
-
-### ۴) مثال حل‌شده
-
-**آزمون ۱:** ۱۵ بسته از دست رفته با فاصله 0.2 s = ≈ ۳ ثانیه قطع. SSH با Pickup ادامه یافت یا قطع شد: اگر قطع شد، Pickup/Hash/Interface Monitor را بررسی. **درس:** قطع ۳ ثانیه با Pickup معمولاً برای TCP قابل‌تحمل است؛ UDP/IPsec ممکن است Renegotiate کند.
-
-**آزمون ۴ (Split-brain):** با قطع هر دو HB: هر دو Primary؛ ARP: دو MAC؛ ping ناپایدار. **اقدام:** وصل HB، ریست یک عضو، بررسی Checksum و Config. **پیشگیری:** HB Redundant/Back-to-back.
-
-**مثال سخت:** پس از Failover VPN دوباره برقرار نمی‌شود: بررسی IKE: Peer SPI قدیمی؛ DPD/Rekey؛ در صورت لزوم `diagnose vpn ike gateway clear` (با احتیاط). ثبت.
-
-### ۵) Troubleshooting
-
-| علامت | علت |
-|---|---|
-| Failover کند | Heartbeat/Lost interval |
-| Session قطع | Pickup خاموش/UDP |
-| دو Primary | HB قطع |
-| بعد از Failover VPN قطع | Renegotiate |
-
-### ۶) نکات امنیتی
-
-- آزمون Split-brain فقط Lab.
-- Change و Rollback.
-
-### ۷) جمع‌بندی
-
-- آزمون Failover = سناریو + معیار + اندازه‌گیری.
-- Pickup TCP را حفظ می‌کند.
-- Split-brain را عمداً فقط در Lab بیازمایید.
-
-### ۸) تمرین و ارزیابی
-
-**ت1.** (ساده) چگونه زمان قطع را اندازه می‌گیرید؟ *(پاسخ: 22-3-ت1)*
-
-**ت2.** (متوسط) SSH پس از Failover قطع شد؛ چرا؟ *(پاسخ: 22-3-ت2)*
-
-**ت3.** (سخت) ماتریس آزمون ۶ سناریویی را با انتظار بنویسید. *(پاسخ: 22-3-ت3)*
-
-**Q1.** Quick quiz (English): How do you measure failover time with a continuous ping? *(پاسخ: 22-3-Q1)*
-
-### ۹) اصطلاحات و English Corner
-
-| مخفف | شکل کامل | معنی |
-|---|---|---|
-| Failover | Failover | انتقال به عضو دوم |
-| Failback | Failback | بازگشت |
-| Hold-down | Hold-down timer | تأخیر پیش از تغییر |
-
-- *Test every failure mode and record the measured downtime.* ← هر حالت خرابی را تست و زمان قطع را ثبت کنید.
-
-### ۱۰) Lab
-
-**کارت Lab:** Failover. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ha-fail.md`.
-
-### ۱۱) منابع
-
-- Fortinet Docs: [Troubleshoot an HA formation](https://docs.fortinet.com/document/fortigate/7.4.0/administration-guide/946059/troubleshoot-an-ha-formation) (مفهوم؛ نسخه‌ی 7.0 را بررسی کنید).
-
-<a id="l-22-4"></a>
-
-## درس 22-4 — عیب‌یابی HA و ارتقای Cluster: روش، Out-of-sync، Flap، Split-brain، Upgrade Path و Rollback
-
-**فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰، ۲۲-۲، ۲۲-۳، ۲۷-۴ · ≈ 8 ساعت**
-
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ HA/VDOM Needs-License؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده»؛ HA/VDOM وابسته به مدل/لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. مشکلات Cluster (Form نشدن، Out-of-sync، Flap، Split-brain) را با شواهد عیب‌یابی کند.
-2. ارتقای Cluster را با Upgrade Path، Backup، Pre/Post-check برنامه‌ریزی کند.
-3. Rollback را اجرا و اثبات کند.
-4. Log/History HA را بخواند.
-5. ریسک‌های ارتقا را مستند کند.
+1. پیش‌نیازهای HA (هم‌مدل، هم‌نسخه، هم‌لایسنس، پورت‌ها) را بررسی کند.
+2. برگه‌ی طراحی (Group، Mode، Priority، hbdev، monitor، session-pickup) را بنویسد.
+3. HA را از GUI و CLI روی دو دستگاه پیکربندی کند.
+4. وضعیت Cluster و Sync را با دستورهای Verification تأیید کند.
+5. Management Interface اختصاصی (ha-mgmt) را تنظیم کند.
+6. خطاهای رایج (Mismatch، Out-of-sync، Heartbeat) را عیب‌یابی کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-ارتقا و عیب‌یابی HA پرخطرترین عملیات‌اند. بدون Plan و Rollback، یک ارتقا می‌تواند هر دو عضو را از کار بیندازد.
+یک فایروال تنها نقطه‌ی شکست است: اگر بسوزد، سازمان از اینترنت جدا می‌شود. HA دو فایروال را طوری به هم می‌بندد که یکی فعال و دیگری آماده باشد. اگر فعال بیفتد، دومی ظرف چند ثانیه جای آن را می‌گیرد و کاربر شاید فقط یک بار «رفرش» کند.
+
+اما HA تنها زمانی کار می‌کند که پیکربندی دقیق باشد: دو دستگاه باید یکسان باشند، Heartbeat جدا و قابل‌اعتماد باشد و Monitor درست انتخاب شود. در این درس هر پارامتر را با دلیلش می‌نویسید. توجه: FGCP نیازمند مدل/لایسنس مناسب است؛ در Lab مجازی بدون لایسنس معتبر ممکن است ناممکن باشد (Needs-License).
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) ابزارها
+#### ۱) پیش‌نیازها
+
+| مورد | الزام |
+|---|---|
+| مدل | یکسان |
+| FortiOS | یکسان (مثلاً 7.0.3 Build یکسان) |
+| لایسنس | معتبر روی هر دو (نرم‌افزار/سرویس) |
+| پورت‌ها | Heartbeat اختصاصی، Monitor Interfaceها همنام |
+| دیسک/RAM | یکسان |
+
+#### ۲) برگه‌ی طراحی
+
+| پارامتر | مقدار | دلیل |
+|---|---|---|
+| Mode | Active-Passive | ساده و قابل‌پیش‌بینی |
+| Group name | FGT-HA | یکسان در هر دو |
+| Password | از Vault | احراز اعضا |
+| hbdev | port3 (50)، port4 (100) | دو لینک مستقل |
+| Priority | A=200، B=100 | A ترجیحاً Primary |
+| override | disable | جلوگیری از Flap |
+| session-pickup | enable | ماندگاری TCP |
+| monitor | port1 port2 | Failover با خرابی لینک |
+
+#### ۳) CLI
+
+``` text
+config system ha
+ set group-name "FGT-HA"
+ set mode a-p
+ set password <FROM-VAULT>
+ set hbdev "port3" 50 "port4" 100
+ set priority 200
+ set session-pickup enable
+ set monitor "port1" "port2"
+ set override disable
+ set ha-mgmt-status enable
+ config ha-mgmt-interfaces
+  edit 1
+   set interface "mgmt"
+   set gateway 10.99.0.1
+  next
+ end
+end
+```
+
+روی دستگاه B همان پارامترها با priority 100. پس از Apply، اعضا شرکت می‌کنند و Config از Primary به Secondary همگام می‌شود (Hostname و ha-mgmt مستثنی). پارامترها `Unverified`.
+
+#### ۴) GUI
+
+System → HA: Mode = Active-Passive، Device Priority، Group Name، Password، Heartbeat Interfaces و Monitor Interfaces را تنظیم کنید.
+
+#### ۵) Verification
 
 ``` text
 get system ha status
 diagnose sys ha status
 diagnose sys ha checksum cluster
-diagnose sys ha history read
-diagnose sys ha dump-by group
+diagnose sys ha checksum show
+execute ha manage 1 admin
 ```
 
-#### ۲) مشکلات و علل
+انتظار: دو عضو، Primary=A، checksumها یکسان.
 
-| علامت | علت | رفع |
-|---|---|---|
-| Form نمی‌شود | Group/Password/Mode/HB | تطبیق |
-| Out-of-sync | Firmware/Config/Checksum | Sync/ارتقا |
-| Flap | Monitor/لینک/Override | کابل/Hold |
-| Split-brain | HB قطع | HB Redundant |
-| Session قطع | Pickup | فعال‌سازی |
+#### ۶) خطاهای رایج
 
-#### ۳) Plan ارتقا
+| علامت | علت |
+|---|---|
+| عضو دوم Join نمی‌شود | Mismatch نسخه/Group/Password/لایسنس |
+| Out-of-sync | تفاوت Config/HB ضعیف |
+| Flap | override enable یا Monitor ناپایدار |
 
-``` text
-1 Release notes + Upgrade path (may require intermediate versions)
-2 Backups of both; export certs/licenses info
-3 Pre-check: cluster healthy, checksums equal, HB links ok, no pending alerts
-4 Upgrade (FGCP typically upgrades secondary, fails over, then upgrades former primary - per doc)
-5 Post-check: HA status, sync, sessions, VPN, services
-6 Rollback criteria and procedure (firmware + config)
-```
+### ۴) طراحی و تصمیم‌گیری
 
-#### ۴) Rollback
-
-Firmware قبلی + Config Backup؛ اگر ارتقای مرحله‌ای شکست: بازگشت عضو به نسخه‌ی قبل و Sync؛ تأیید.
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Heartbeat | دو لینک |
+| override | disable |
+| Mgmt | ha-mgmt جدا |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Out-of-sync: Firmware متفاوت؛ ارتقای عضو؛ checksum یکسان.
+**ساده (حل‌شده):** پس از پیکربندی دو دستگاه `get system ha status` نشان می‌دهد دو عضو، Primary=A. checksum یکسان؛ پس Cluster سالم.
 
-**متوسط (تحلیل):** Flap: History: Monitor port2 down/up هر ۲ دقیقه؛ Interface Errors؛ کابل؛ رفع؛ پایدار.
+**متوسط (Mismatch):** B Join نمی‌شود. مراحل: ۱) `get system status` نسخه‌ی B 7.0.2 و A 7.0.3. ۲) هم‌نسخه‌سازی. ۳) Join. پاسخ: نسخه‌ی یکسان لازم است.
 
-**سخت (ارتقا):** Upgrade Path نیاز به نسخه‌ی میانی داشت؛ ارتقای مستقیم Secondary را Sync نکرد؛ Rollback با Backup؛ Plan اصلاح با مرحله‌ی میانی؛ RCA و آزمون در Lab.
+**سخت (Out-of-sync):** `diagnose sys ha checksum cluster` تفاوت در بخش Policy. مراحل: ۱) `diagnose sys ha checksum show` بخش متفاوت. ۲) Primary را مرجع کنید؛ در B `execute ha synchronize start`(Unverified) یا Reboot. ۳) Verify. علت: تغییر مستقیم روی Secondary. درس: همیشه روی Primary تغییر دهید.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. System → HA را باز کنید.
+2. Mode و Priority را تنظیم کنید.
+3. Heartbeat و Monitor Interfaces را انتخاب کنید.
+4. Apply و بررسی Cluster Members.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
 get system ha status
+diagnose sys ha status
 diagnose sys ha checksum cluster
-diagnose sys ha history read
-execute backup config sftp pre-upgrade.conf 192.168.90.10 backup-user <PASSWORD>
+execute ha manage 1 admin
 ```
 
 ### ۸) Verification (اثبات صحت)
 
-- Pre/Post-check ثبت.
+- دو عضو و Primary.
+- checksum یکسان.
+- Failover آزمون.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Out-of-sync | checksum | Firmware/Config |
-| Flap | history | Monitor/لینک |
-| Split-brain | ha status | HB |
+| Join نمی‌شود | نسخه/Group/Password | یکسان‌سازی |
+| Out-of-sync | checksum | Sync/Reboot |
+| Flap | override/monitor | disable |
 
 ### ۱۰) نکات امنیتی
 
-- Change و Backup.
+- رمز HA در Vault.
+- HB جدا.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- Plan + Backup + Check + Rollback.
+- HA نیاز به یکسانی.
+- HB مضاعف.
+- override disable.
+- Primary تغییر دهید.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) checksum cluster چیست؟ *(پاسخ: 22-4-ت1)*
+**ت1.** (ساده) پیش‌نیازهای HA؟ *(پاسخ: 22-2-ت1)*
 
-**ت2.** (ساده) چرا Upgrade Path؟ *(پاسخ: 22-4-ت2)*
+**ت2.** (ساده) چرا دو hbdev؟ *(پاسخ: 22-2-ت2)*
 
-**ت3.** (متوسط) Pre-check چه چیزهایی؟ *(پاسخ: 22-4-ت3)*
+**ت3.** (متوسط) override disable چه می‌کند؟ *(پاسخ: 22-2-ت3)*
 
-**ت4.** (متوسط) Flap؛ علل. *(پاسخ: 22-4-ت4)*
+**ت4.** (متوسط) Out-of-sync یعنی؟ *(پاسخ: 22-2-ت4)*
 
-**ت5.** (سخت) ارتقا شکست خورد؛ Rollback. *(پاسخ: 22-4-ت5)*
+**ت5.** (سخت) عضو دوم Join نمی‌شود. *(پاسخ: 22-2-ت5)*
 
-**ت6.** (سخت، طراحی) Plan ارتقای Cluster. *(پاسخ: 22-4-ت6)*
+**ت6.** (سخت، طراحی) برگه‌ی HA. *(پاسخ: 22-2-ت6)*
 
-**Q1.** Quick quiz (English): What must be backed up before a cluster firmware upgrade? *(پاسخ: 22-4-Q1)*
+**Q1.** Quick quiz (English): Why should changes be made on the primary unit only? *(پاسخ: 22-2-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Upgrade path | Firmware upgrade path | مسیر ارتقا |
+| FGCP | FortiGate Clustering Protocol | پروتکل خوشه‌بندی |
 
-- *Back up before upgrading.* ← قبل از ارتقا Backup بگیرید.
+- *Heartbeat links must be dedicated.* ← لینک‌های Heartbeat باید اختصاصی باشند.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Upgrade HA. **Evidence:** `03-ops/ha-upgrade.md`.
+**کارت Lab:** پیکربندی HA (اجرا نشده؛ Needs-License). **Evidence:** `03-ops/ha-config.md`.
 
 ### ۱۵) منابع
 
-- Fortinet Docs: FGCP، Firmware upgrade (7.0)
-- [Troubleshoot an HA formation](https://docs.fortinet.com/document/fortigate/7.4.0/administration-guide/946059/troubleshoot-an-ha-formation)
+- Fortinet FortiOS 7.0 Administration Guide: HA (FGCP)
+- FortiOS 7.0 HA guide
 
-<a id="l-22-5"></a>
+<a id="l-22-3"></a>
 
-## درس 22-5 — آزمون عملی HA: طراحی، Failover، Split-brain کنترل‌شده، Upgrade و RCA — صورت مسئله و Rubric
+## درس 22-3 — آزمون Failover/Failback و Session Pickup: طراحی تست، اندازه‌گیری و تحلیل
 
-**فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰ تا ۲۲-۴ · ≈ 8 ساعت**
+**فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۲ · ≈ 11 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ HA/VDOM Needs-License؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده»؛ HA/VDOM وابسته به مدل/لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Cluster را بسازد و ۶ آزمون Failover را اندازه بگیرد.
-2. Split-brain را در Lab شبیه‌سازی و رفع کند.
-3. ارتقا/Rollback آزمایشی را اجرا کند.
-4. RCA و Evidence ارائه دهد.
+1. برنامه‌ی تست Failover (Reboot، قطع لینک، قطع Monitor) را طراحی کند.
+2. زمان قطع را با Ping/Probe با دقت اندازه بگیرد.
+3. Session Pickup را برای TCP/UDP/NAT آزمون و محدودیت‌ها را بداند.
+4. Failback کنترل‌شده را انجام دهد.
+5. نتایج را در جدول Evidence تحلیل کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون جامع HA (Lab، Needs-License).
+«HA داریم» یعنی ادعا؛ «Failover در ۳٫۲ ثانیه با حفظ ۹۸٪ Sessionها» یعنی اثبات. بدون آزمون اندازه‌گیری‌شده نمی‌دانید HA واقعاً کار می‌کند یا فقط پیکربندی شده.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) ماتریس تست
 
-1. HA A-P با HB Redundant و Monitor.
-2. ماتریس ۶ آزمون (۲۲-۳).
-3. Split-brain کنترل‌شده (قطع HBها) و بازیابی.
-4. ارتقا/Rollback.
-5. عیب (مربی): Heartbeat تنها یک لینک؛ Monitor اشتباه.
+| # | آزمون | روش | معیار |
+|---|---|---|---|
+| 1 | Reboot Primary | `execute reboot` | قطع < 5 s |
+| 2 | قطع کابل Monitor | جدا کردن port1 | Failover |
+| 3 | قطع یک HB | جدا کردن port3 | Cluster ثابت |
+| 4 | قطع هر دو HB | جدا کردن | Split-brain (Lab کنترل‌شده) |
+| 5 | Failback | بازگرداندن A | بدون Flap |
 
-#### کلید
+#### ۲) اندازه‌گیری
 
-- Failover ≈ ۳–۶ s (اندازه).
-- Split-brain: دو Primary؛ بازیابی با ریست یک عضو و Checksum.
-- پیشگیری: HB Redundant/Back-to-back.
+``` text
+# on a client
+ping -t -w 200 8.8.8.8   (interval ~ 200 ms)
+# lost packets x 0.2 s = outage seconds
+```
 
-#### Rubric
+مثال: ۱۴ بسته گمشده × ۰٫۲ = ۲٫۸ ثانیه.
 
-ساخت ۲۵؛ آزمون ۳۰؛ Split-brain ۱۵؛ ارتقا ۱۰؛ Evidence ۱۵؛ صداقت ۵.
+#### ۳) Session Pickup
+
+``` text
+config system ha
+ set session-pickup enable
+ set session-pickup-connectionless enable
+ set session-pickup-nat enable
+end
+```
+
+(`Unverified`.) TCP ماندگار می‌شود؛ بعضی Sessionهای UTM/Proxy-based یا SSL Inspection پس از Failover ممکن است ریست شوند؛ NAT با گزینه‌ی مربوط. اندازه‌گیری با SSH باز و دانلود جاری.
+
+#### ۴) Failback
+
+با override disable، Primary قبلی پس از بازگشت Secondary می‌ماند. برای بازگرداندن: `execute ha failover set 1` سپس `unset` (`Unverified`) در Window.
+
+#### ۵) تحلیل
+
+اگر قطع > 5 s: Monitor/Link Failed Threshold/HB timers. اگر Sessionها ریست: session-pickup یا نوع Session.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| آزمون | قطع واقعی |
+| اندازه‌گیری | Ping 200 ms |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Cluster Healthy.
+**ساده (حل‌شده):** Reboot Primary: ۱۲ بسته گمشده با Interval 0٫2 ⇒ ۲٫۴ ثانیه؛ پذیرفته.
 
-**متوسط:** Failover.
+**متوسط (Session):** SSH باز در Failover قطع شد. مراحل: ۱) session-pickup خاموش. ۲) فعال‌سازی. ۳) تکرار: SSH ماند. پاسخ: session-pickup لازم است.
 
-**سخت:** Split-brain.
+**سخت (Failover کند):** Failover ۱۲ ثانیه. مراحل: ۱) Monitor روی port1 ولی Link Failed با تأخیر. ۲) HB interval و lost-threshold. ۳) کاهش timers با احتیاط (`hb-interval`، `hb-lost-threshold` Unverified). ۴) آزمون: ۴ ثانیه. ریسک: Timer کم ⇒ Flap؛ تست پایداری.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get system ha status
+execute ha failover set 1
+execute ha failover unset 1
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence HA.
+- جدول Evidence.
+- Session ماندگار.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| ناقص | Rubric | کسری |
+| Failover کند | Timers/Monitor | تنظیم |
+| Session ریست | pickup/UTM | pickup |
 
 ### ۱۰) نکات امنیتی
 
-- Lab فقط.
+- Failover تست فقط در Window.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- شواهد.
+- اثبات با اندازه‌گیری.
+- pickup.
+- Failback کنترل‌شده.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) وظایف آزمون؟ *(پاسخ: 22-5-ت1)*
+**ت1.** (ساده) قطع چگونه محاسبه می‌شود؟ *(پاسخ: 22-3-ت1)*
 
-**ت2.** (ساده) چرا Split-brain فقط Lab؟ *(پاسخ: 22-5-ت2)*
+**ت2.** (ساده) pickup؟ *(پاسخ: 22-3-ت2)*
 
-**ت3.** (متوسط) Failover را چگونه اندازه می‌گیرید؟ *(پاسخ: 22-5-ت3)*
+**ت3.** (متوسط) کدام Sessionها ریست می‌شوند؟ *(پاسخ: 22-3-ت3)*
 
-**ت4.** (متوسط) Monitor اشتباه چه می‌کند؟ *(پاسخ: 22-5-ت4)*
+**ت4.** (متوسط) چرا Failback کنترل‌شده؟ *(پاسخ: 22-3-ت4)*
 
-**ت5.** (سخت) RCA Split-brain. *(پاسخ: 22-5-ت5)*
+**ت5.** (سخت) Failover ۱۲ ثانیه؛ تحلیل. *(پاسخ: 22-3-ت5)*
 
-**ت6.** (سخت، طراحی) بهبود. *(پاسخ: 22-5-ت6)*
+**ت6.** (سخت، طراحی) ماتریس تست. *(پاسخ: 22-3-ت6)*
 
-**Q1.** Quick quiz (English): How is split-brain best avoided? *(پاسخ: 22-5-Q1)*
+**Q1.** Quick quiz (English): How do you calculate the outage duration with a continuous ping? *(پاسخ: 22-3-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| HB | Heartbeat | نبض |
+| HB | Heartbeat | ضربان |
 
-- *Test every failure mode.* ← هر حالت خرابی را تست کنید.
+- *Measure failover time, do not assume it.* ← زمان Failover را اندازه بگیرید، فرض نکنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** آزمون HA. **Evidence:** `03-ops/ha-exam.md`.
+**کارت Lab:** تست Failover (اجرا نشده). **Evidence:** `03-ops/ha-failover.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۲-۰ تا ۲۲-۴
+- Fortinet FortiOS 7.0 Administration Guide: HA failover
+
+<a id="l-22-4"></a>
+
+## درس 22-4 — عیب‌یابی HA و ارتقای Cluster: Out-of-sync، Flap، Split-brain، Upgrade Path و Rollback
+
+**فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۲، ۲۲-۳، ۱۲-۶ · ≈ 11 ساعت**
+
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده»؛ HA/VDOM وابسته به مدل/لایسنس (Needs-License).
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. علائم و علل Out-of-sync، Flap و Split-brain را بشناسد.
+2. با دستورهای HA (status، checksum، history) علت را بیابد.
+3. Split-brain را رفع و پیشگیری کند.
+4. Upgrade Cluster بدون قطع طولانی را برنامه‌ریزی کند.
+5. Rollback را آزمون کند.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+HA وقتی خراب شود بد خراب می‌شود: دو دستگاه فکر می‌کنند هر دو اصلی‌اند، یا مدام Primary عوض می‌شود، یا Config یکی نیست. چون HA برای افزایش پایداری است، خرابی آن بدترین نوع خرابی است: «سیستم افزونگی دارد ولی دچار قطعی شد». روش منظم لازم است.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) علائم و علل
+
+| علامت | علت | شاهد |
+|---|---|---|
+| Out-of-sync | تغییر مستقیم Secondary، HB ضعیف | checksum متفاوت |
+| Flap پیاپی | override، Monitor ناپایدار، HB | `diagnose sys ha history read` |
+| Split-brain | قطع همه‌ی HB | دو Primary |
+| عضو Join نمی‌شود | نسخه/Group/Password | status |
+
+#### ۲) ابزارها
+
+``` text
+get system ha status
+diagnose sys ha status
+diagnose sys ha history read
+diagnose sys ha checksum cluster
+diagnose sys ha checksum show
+diagnose sys ha checksum recalculate
+```
+
+#### ۳) Split-brain
+
+تشخیص: روی هر دو `get system ha status` Primary. اثر: IP/MAC یکسان در شبکه، ARP ناپایدار. رفع: بازگرداندن HB؛ یک عضو را Reboot؛ Primary را تعیین؛ Re-sync. پیشگیری: دو HB مستقل، Monitor، Alert روی تغییر Primary.
+
+#### ۴) Upgrade Cluster
+
+1. Upgrade Path Tool و Release Notes. 2. Backup هر دو. 3. Upgrade Secondary و Boot. 4. Failover به Secondary (جدید). 5. Upgrade قبلی Primary. 6. checksum. 7. آزمون Sessionها.
+
+در 7.0 گزینه‌ی Upgrade بدون وقفه (uninterruptible) وجود دارد (`Unverified`؛ شرایط نسخه‌ها را از مستند بخوانید).
+
+#### ۵) Rollback
+
+اگر پس از Upgrade مشکل: Boot از Partition قبلی هر دو؛ یا Restore Config+Firmware. زمان تصمیم Rollback را از پیش تعیین کنید.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Upgrade | Secondary اول |
+| Rollback | Partition قبلی |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** checksum متفاوت: Secondary Config دستی خورده؛ `ha checksum recalculate`/Sync و Verify.
+
+**متوسط (Flap):** Primary هر ۲ دقیقه عوض می‌شود. شاهد: `ha history read` علت «link failure port2». مراحل: بررسی کابل/SFP و Monitor؛ تعویض؛ تثبیت. پاسخ: Monitor Interface ناپایدار.
+
+**سخت (Split-brain و Upgrade):** هر دو Primary پس از قطع HB. مراحل رفع: ۱) وصل HB. ۲) Reboot Secondary. ۳) Re-sync. ۴) Alert. سپس Upgrade برنامه‌ریزی‌شده: Secondary اول، Failover، Primary قبلی؛ معیار: قطع < 10 s؛ Rollback آزمون شده در Lab.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get system ha status
+diagnose sys ha history read
+diagnose sys ha checksum cluster
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Cluster سالم.
+- checksum یکسان.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Out-of-sync | checksum | Sync |
+| Flap | history | کابل/Monitor |
+| Split-brain | دو Primary | HB |
+
+### ۱۰) نکات امنیتی
+
+- Backup پیش از Upgrade.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- روش منظم.
+- Split-brain.
+- Upgrade Secondary اول.
+- Rollback.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Split-brain چیست؟ *(پاسخ: 22-4-ت1)*
+
+**ت2.** (ساده) ha history read؟ *(پاسخ: 22-4-ت2)*
+
+**ت3.** (متوسط) Out-of-sync علت؟ *(پاسخ: 22-4-ت3)*
+
+**ت4.** (متوسط) Upgrade ترتیب؟ *(پاسخ: 22-4-ت4)*
+
+**ت5.** (سخت) Split-brain رفع. *(پاسخ: 22-4-ت5)*
+
+**ت6.** (سخت، طراحی) برنامه Rollback. *(پاسخ: 22-4-ت6)*
+
+**Q1.** Quick quiz (English): Which command shows the reason for a recent HA failover? *(پاسخ: 22-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Split-brain | Split brain | دو Primary |
+
+- *Upgrade the secondary unit first.* ← ابتدا Secondary را ارتقا دهید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** عیب‌یابی HA (اجرا نشده). **Evidence:** `03-ops/ha-troubleshoot.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: HA troubleshooting; Upgrade
+
+<a id="l-22-5"></a>
+
+## درس 22-5 — آزمون عملی HA: طراحی، Failover، Split-brain کنترل‌شده، Upgrade و RCA — کلید پاسخ و Rubric
+
+**فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۱ تا ۲۲-۴ · ≈ 12 ساعت**
+
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. Cluster Active-Passive FGCP را با پارامترهای درست طراحی و Verify کند.
+2. Failover و Failback را اندازه‌گیری و Session Pickup را آزمون کند.
+3. Split-brain را در Lab کنترل‌شده تولید، تشخیص و رفع کند.
+4. Upgrade Cluster و Rollback را برنامه‌ریزی کند.
+5. RCA و گزارش تحویل دهد.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+HA مثل دو راننده‌ی هم‌ماشین است: یکی رانندگی می‌کند و دیگری آماده. اگر ارتباط بین دو راننده قطع شود (Heartbeat) و هر دو فکر کنند راننده‌اند، تصادف رخ می‌دهد: Split-brain. این Gate همین ریسک‌ها را آزمون می‌کند. HA به لایسنس/مدل وابسته است؛ در Lab VM لایسنس لازم است (Needs-License).
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) صورت مسئله
+
+دو FortiGate (FGT-A، FGT-B) هم‌مدل و هم‌نسخه 7.0.3. نیاز: Active-Passive؛ Failover زیر ۵ ثانیه؛ Session Pickup برای TCP؛ Heartbeat روی دو لینک جدا؛ Monitor روی WAN و LAN؛ Upgrade بدون قطع طولانی.
+
+#### ۲) طراحی
+
+| پارامتر | مقدار |
+|---|---|
+| Mode | a-p |
+| Group name / password | FGT-HA / از Vault |
+| hbdev | port3 (50)، port4 (100) |
+| Priority | A=200، B=100 |
+| override | disable (پیش‌فرض ایمن) |
+| session-pickup | enable |
+| monitor | port1 port2 |
+
+``` text
+config system ha
+ set group-name "FGT-HA"
+ set mode a-p
+ set password <FROM-VAULT>
+ set hbdev "port3" 50 "port4" 100
+ set priority 200
+ set session-pickup enable
+ set monitor "port1" "port2"
+ set override disable
+end
+```
+
+#### ۳) Verification
+
+``` text
+get system ha status
+diagnose sys ha status
+diagnose sys ha checksum cluster
+execute ha manage 1 admin
+```
+
+انتظار: دو عضو، Primary=A، checksum یکسان (in-sync).
+
+#### ۴) آزمون‌ها
+
+1. ping -t از LAN به اینترنت؛ Reboot Primary؛ شمارش بسته‌های گمشده؛ Failover.
+2. Session TCP (SSH) باز؛ Failover؛ ماندگاری Session با session-pickup.
+3. قطع یک لینک HB: Cluster باید هنوز یکپارچه (HB دوم).
+4. Split-brain کنترل‌شده: قطع هر دو HB؛ ثبت دو Primary.
+5. بازیابی: وصل HB؛ تعیین Primary؛ بررسی out-of-sync و Re-sync.
+
+#### ۵) Upgrade Cluster
+
+Path Tool؛ Backup هر دو؛ Upgrade Secondary؛ Failover؛ Upgrade Primary قبلی؛ تأیید checksum؛ Rollback: Partition قبلی.
+
+#### ۶) Rubric
+
+طراحی ۱۵، Verify ۱۵، Failover/Session ۲۵، Split-brain ۲۰، Upgrade/Rollback ۱۵، RCA ۱۰. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Heartbeat | دو لینک مستقل |
+| override | disable |
+| Session pickup | enable برای TCP مهم |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** `get system ha status` نشان می‌دهد دو عضو، Primary=FGT-A. checksum یکسان ⇒ هماهنگ.
+
+**متوسط (Failover):** ping -t با Interval 200 ms؛ Reboot Primary؛ ۱۲ بسته‌ی گمشده ⇒ ۲٫۴ ثانیه قطع؛ کمتر از ۵ ثانیه؛ پذیرفته. Session SSH با session-pickup باقی ماند.
+
+**سخت (Split-brain):** دو لینک HB هم‌زمان قطع شد؛ هر دو خود را Primary دیدند و IP/MAC یکسان روی شبکه آمد؛ ARP ناپایدار. اثبات: `get system ha status` در هر دو Primary. رفع: بازگرداندن HB؛ تعیین Primary با Priority و Reboot Secondary؛ پیشگیری: دو لینک HB مستقل، Monitor Interface و Alert. درس: Heartbeat تنها نقطه‌ی هماهنگی است.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. System → HA: Mode، Group name، Password، Heartbeat Interfaces، Priority.
+2. Monitor Interfaces را انتخاب کنید.
+3. System → Firmware برای Upgrade.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get system ha status
+diagnose sys ha status
+diagnose sys ha checksum cluster
+execute ha manage 1 admin
+```
+
+### ۸) Verification (اثبات صحت)
+
+- دو عضو و Primary درست.
+- checksum یکسان.
+- Failover < 5 s.
+- Session پایدار.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Out-of-sync | checksum | ha sync/ریبوت Secondary |
+| Split-brain | دو Primary | HB |
+| Failover طولانی | Monitor/Heartbeat | Interface |
+
+### ۱۰) نکات امنیتی
+
+- رمز HA در Vault.
+- HB را از شبکه‌ی کاربر جدا کنید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- HA=Heartbeat+Priority+Monitor.
+- Split-brain خطرناک.
+- Upgrade ثانویه اول.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Heartbeat چیست؟ *(پاسخ: 22-5-ت1)*
+
+**ت2.** (ساده) override disable چه می‌کند؟ *(پاسخ: 22-5-ت2)*
+
+**ت3.** (متوسط) چرا دو لینک HB؟ *(پاسخ: 22-5-ت3)*
+
+**ت4.** (متوسط) Session pickup چه می‌کند؟ *(پاسخ: 22-5-ت4)*
+
+**ت5.** (سخت) Split-brain را شرح و رفع کنید. *(پاسخ: 22-5-ت5)*
+
+**ت6.** (سخت، طراحی) برنامه‌ی Upgrade Cluster. *(پاسخ: 22-5-ت6)*
+
+**Q1.** Quick quiz (English): What causes a split-brain in an HA cluster? *(پاسخ: 22-5-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| FGCP | FortiGate Clustering Protocol | پروتکل خوشه‌بندی |
+| HB | Heartbeat | ضربان |
+
+- *Use two independent heartbeat links.* ← از دو لینک Heartbeat مستقل استفاده کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** آزمون HA (اجرا نشده؛ Needs-License). **Evidence:** `03-ops/g-ha.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: HA (FGCP)
+- FortiOS 7.0 HA guide
 
 ## پاسخ‌های فصل 22
 
@@ -35932,58 +36613,79 @@ execute backup config sftp pre-upgrade.conf 192.168.90.10 backup-user <PASSWORD>
 
 ### پاسخ‌های بازنویسی درس 22-2
 
-**22-2-ت1** — مدل، Firmware، نوع لایسنس، Group/Password/Mode و Hbdev سازگار.
 
-**22-2-ت2** — برای جلوگیری از Failback ناخواسته و Flap.
+### پاسخ‌های بازنویسی عمیق درس 22-2
 
-**22-2-ت3** — Monitor Interface نوسان‌دار، لینک/کابل، Hold-down؛ شاهد: ha history و Interface Errors.
+**22-2-ت1** — هم‌مدل، هم‌نسخه، لایسنس، Heartbeat، پورت‌های مشابه.
 
-**22-2-Q1** — diagnose sys ha checksum cluster.
+**22-2-ت2** — تا خرابی یک لینک Cluster را نشکند.
 
+**22-2-ت3** — پس از بازگشت عضو قوی‌تر، Primary تغییر نمی‌کند و Flap نمی‌شود.
+
+**22-2-ت4** — Config اعضا یکی نیست؛ checksum متفاوت.
+
+**22-2-ت5** — نسخه، Group، Password، لایسنس، HB.
+
+**22-2-ت6** — جدول بالا.
+
+**22-2-Q1** — Because configuration is synchronized from the primary to the secondary.
 
 ### پاسخ‌های بازنویسی درس 22-3
 
-**22-3-ت1** — Ping پیوسته با فاصله‌ی مشخص؛ قطع ≈ بسته‌های از دست‌رفته × فاصله.
 
-**22-3-ت2** — Session Pickup خاموش یا ترافیک UDP/IPsec یا تغییر Interface؛ بررسی Pickup.
+### پاسخ‌های بازنویسی عمیق درس 22-3
 
-**22-3-ت3** — قطع Primary، قطع Monitor، قطع یک HB، قطع هر دو HB (Lab)، بازگشت Primary، Session طولانی؛ هر کدام با انتظار و اندازه‌گیری.
+**22-3-ت1** — تعداد بسته‌ی گمشده × Interval.
 
-**22-3-Q1** — Count lost replies multiplied by the ping interval.
+**22-3-ت2** — همگام‌سازی Session.
+
+**22-3-ت3** — برخی UTM/Proxy.
+
+**22-3-ت4** — جلوگیری از Flap.
+
+**22-3-ت5** — Monitor/HB timers.
+
+**22-3-ت6** — ۵ آزمون.
+
+**22-3-Q1** — Lost packets multiplied by the ping interval.
+
+### پاسخ‌های بازنویسی عمیق درس 22-4
 
 
 ### پاسخ‌های بازنویسی عمیق درس 22-4
 
-**22-4-ت1** — مقایسه‌ی Config اعضا.
+**22-4-ت1** — دو عضو هر دو Primary شده‌اند.
 
-**22-4-ت2** — ممکن است ارتقای مستقیم پشتیبانی نشود و نسخه‌ی میانی لازم باشد.
+**22-4-ت2** — تاریخچه‌ی علل تغییر Primary.
 
-**22-4-ت3** — Cluster سالم، Checksum یکسان، HB، Backup، Alert.
+**22-4-ت3** — تغییر روی Secondary یا HB.
 
-**22-4-ت4** — Monitor/لینک/Override/HB.
+**22-4-ت4** — Secondary، Failover، Primary.
 
-**22-4-ت5** — Firmware+Config قبلی، Sync، تأیید.
+**22-4-ت5** — HB، Reboot، Re-sync.
 
-**22-4-ت6** — مراحل ۱–۶ با زمان و مسئول.
+**22-4-ت6** — Partition قبلی.
 
-**22-4-Q1** — The configuration of both members and information about licenses and certificates.
+**22-4-Q1** — diagnose sys ha history read.
+
+### پاسخ‌های بازنویسی عمیق درس 22-5
 
 
 ### پاسخ‌های بازنویسی عمیق درس 22-5
 
-**22-5-ت1** — Cluster، Failover، Split-brain، Upgrade، Evidence.
+**22-5-ت1** — ارتباط بین اعضا برای تشخیص سلامت و همگام‌سازی؛ قطع کامل آن Split-brain می‌سازد.
 
-**22-5-ت2** — قطعی شدید و Session/آدرس تکراری در تولید.
+**22-5-ت2** — پس از بازگشت عضو قوی‌تر، Primary فعلی را تغییر نمی‌دهد و از Flap جلوگیری می‌کند.
 
-**22-5-ت3** — ping پیوسته؛ lost×interval.
+**22-5-ت3** — تا خرابی یک لینک Cluster را Split نکند.
 
-**22-5-ت4** — Failover بی‌دلیل یا نبود Failover هنگام خرابی لینک.
+**22-5-ت4** — Sessionهای TCP را بین اعضا همگام می‌کند تا پس از Failover ادامه یابند.
 
-**22-5-ت5** — HB قطع؛ دو Primary؛ ریست یک عضو؛ HB Redundant.
+**22-5-ت5** — دو Primary؛ بازگرداندن HB؛ انتخاب Primary و Re-sync؛ پیشگیری با HB مضاعف و Monitor.
 
-**22-5-ت6** — HB اضافی، Alert، Pre-check.
+**22-5-ت6** — Path، Backup، Secondary اول، Failover، Primary قبلی، checksum، Rollback.
 
-**22-5-Q1** — By using redundant, preferably back-to-back, heartbeat links.
+**22-5-Q1** — Loss of all heartbeat links so both units think they are primary.
 
 ### پاسخ‌های درس افزوده‌ی 22-0 (فصل 22)
 
@@ -36594,116 +37296,143 @@ Policy drift check: diff(config firewall policy FW1, FW2) after each change wind
 
 <a id="l-23-4"></a>
 
-## درس 23-4 — آزمون معماری ۵: چندفایروالی و Asymmetric — صورت مسئله، کلید پاسخ و Rubric
+## درس 23-4 — آزمون معماری ۵: چندفایروالی و مسیر نامتقارن — صورت مسئله، کلید پاسخ و Rubric
 
-**فصل 23 · بازنویسی عمیق · پیش‌نیاز: ۲۳-۰ تا ۲۳-۳ · ≈ 8 ساعت**
+**فصل 23 · بازنویسی عمیق · پیش‌نیاز: ۲۳-۱ تا ۲۳-۳، ۱۰-۶ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. توپولوژی دو‌فایروالی با مسیر نامتقارن را بسازد و Drop را بازتولید کند.
-2. با Sniffer/Debug Flow/Session علت را اثبات کند.
-3. دو راه‌حل (Policy Route و متقارن‌سازی) را پیاده و مقایسه کند.
-4. RCA و Evidence را تحویل دهد.
+1. معماری سه‌فایروالی (Edge، Internal، DR) را با جدول مسیر طراحی کند.
+2. Asymmetric را تشخیص و با Capture دو سمتی اثبات کند.
+3. راه‌حل‌ها (Symmetric design، Session sync، PBR) را مقایسه و انتخاب کند.
+4. Failover بین فایروال‌ها را آزمون کند.
+5. گزارش و Rubric تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون عملی با تمرکز بر شواهد؛ کلید پاسخ پس از تلاش.
+با رشد سازمان یک مسیر دوم و فایروال دوم اضافه می‌شود. اگر مسیرها طراحی نشوند، بسته‌ی رفت از فایروال ۱ می‌رود و پاسخ از ۲ برمی‌گردد و Stateful آن را Drop می‌کند. معماری ۵ همین مسئله را در مقیاس چندفایروالی می‌سنجد.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-دو فایروال FW-A و FW-B با دو ISP؛ کلاینت 10.1.4.10 و سرور 203.0.113.80. مسیر برگشت به‌صورت عمدی نامتقارن (Route Upstream).
+سایت اصلی دو فایروال (FW1، FW2) پشت دو ISP؛ سایت DR یک فایروال. شبکه‌ی داخلی 10.0.0.0/8 با OSPF. نیاز: خروج اینترنت از FW1 (ISP-A) و FW2 (ISP-B)؛ هر Session باید Symmetric باشد؛ خرابی یک فایروال بدون قطع طولانی.
 
-1. بازتولید: اتصال TCP 443 ناموفق.
-2. اثبات علت: Sniffer دو فایروال، `session list`، Debug Flow.
-3. رفع: ابتدا Policy Route؛ سپس طراحی متقارن (Route برگشت).
-4. آزمون: ۲۰ اتصال موفق؛ آزمون منفی RPF.
-5. گزارش: RCA و Evidence Index.
+#### ۲) طراحی مرجع
 
-#### کلید پاسخ (خلاصه)
+| مسئله | تصمیم |
+|---|---|
+| تقسیم ترافیک | بر اساس Source: Users→FW1، Servers→FW2 (PBR/Policy Route) |
+| Return Path | NAT مبدأ در هر فایروال با IP خودش؛ برگشت خودکار از همان |
+| Failover | OSPF Default از هر دو با Cost متفاوت؛ BFD |
+| Asymmetric | آزمون Capture؛ Session sync فقط برای HA جفت |
 
-- Sniffer: A دارد SYN، B دارد SYN/ACK؛ session فقط در A.
-- Debug Flow B: reverse path check fail.
-- رفع ۱: Policy Route/SNAT؛ ریسک: Log مبهم.
-- رفع ۲ (ترجیحی): Route برگشت متقارن.
-- نتیجه: ۲۰/۲۰؛ آزمون منفی: بسته‌ی جعلی با Source نامعتبر Drop.
+``` text
+FW1 default originate cost 10 ; FW2 default originate cost 20
+Users 10.10.0.0/16 -> FW1 (PBR) ; Servers 10.20.0.0/16 -> FW2 (PBR)
+```
 
-#### Rubric
+#### ۳) خرابی‌ها و کلید
 
-بازتولید ۱۵؛ اثبات علت ۳۰؛ رفع و آزمون ۳۰؛ RCA/Evidence ۱۵؛ صداقت ۱۰.
+**A:** برخی Sessionها قطع. شاهد: Capture FW1 فقط SYN؛ FW2 فقط SYN-ACK. علت: Hash ECMP بین دو Default. رفع: PBR و Cost.
+
+**B:** پس از Failover FW1 همه‌ی Sessionها ریست. علت: Session sync نیست (فایروال‌ها Cluster نیستند). پذیرش: ریست قابل‌قبول؛ برای حساس‌ها FGCP A-P.
+
+**C:** ترافیک DR از مسیر اصلی می‌رود. علت: Cost OSPF. رفع: Policy Route و Cost.
+
+#### ۴) آزمون
+
+``` text
+diagnose sniffer packet any 'host 10.10.0.5 and tcp port 443' 4 20 l   (on FW1 and FW2)
+diagnose sys session list
+get router info routing-table all
+```
+
+#### ۵) Rubric
+
+طراحی ۲۰، جدول مسیر ۲۰، تشخیص ۳۰، Failover ۱۵، گزارش و صداقت ۱۵. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| تقسیم | Source-based |
+| Failover | BFD+OSPF |
+| Session sync | فقط جفت HA |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** بازتولید Drop.
+**ساده (حل‌شده):** Users از FW1: Session در FW1 با SNAT IP-A؛ برگشت همان؛ FW2 Session ندارد.
 
-**متوسط:** اثبات با سه شاهد.
+**متوسط (Asymmetric):** Capture: FW1 SYN، FW2 SYN-ACK. رفع: PBR Users→FW1 و OSPF Cost؛ Capture بعدی روی FW1 هر دو جهت.
 
-**سخت:** دو راه‌حل و مقایسه.
+**سخت (Failover):** FW1 خاموش: Users باید به FW2 بروند. مراحل: BFD تشخیص ۳ ثانیه؛ OSPF Default از FW2؛ Sessionهای فعال ریست؛ Sessionهای جدید از FW2؛ معیار: بازگشت سرویس < 10 ثانیه. ریسک: SNAT IP-B؛ لیست‌های مجاز مقصد باید IP-B را هم بپذیرند.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
-diagnose sniffer packet any "host 203.0.113.80 and port 443" 4 20 l
+get router info routing-table all
 diagnose sys session list
-diagnose debug flow filter addr 203.0.113.80
-diagnose debug flow trace start 20
+diagnose firewall proute list
 ```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence Index A5؛ ۲۰ اتصال؛ آزمون منفی.
+- Capture Symmetric.
+- Failover < 10 s.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| اثبات ناقص | Sniffer یک‌طرفه | دو نقطه |
-| رفع ناپایدار | Session | Clear/Hash |
+| Session قطع | Capture | PBR |
+| DR از مسیر اصلی | Cost | Policy Route |
 
 ### ۱۰) نکات امنیتی
 
-- آزمون فقط Lab.
+- SNAT دو IP را در لیست مجاز ثبت کنید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- آزمون: بازتولید، اثبات، رفع، RCA.
+- Symmetric با طراحی.
+- Failover BFD.
+- Capture اثبات.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) سه شاهد اثبات Asymmetric؟ *(پاسخ: 23-4-ت1)*
+**ت1.** (ساده) چرا Source-based؟ *(پاسخ: 23-4-ت1)*
 
-**ت2.** (ساده) چرا آزمون منفی RPF لازم است؟ *(پاسخ: 23-4-ت2)*
+**ت2.** (ساده) BFD چه می‌کند؟ *(پاسخ: 23-4-ت2)*
 
-**ت3.** (متوسط) مقایسه‌ی Policy Route و Route متقارن. *(پاسخ: 23-4-ت3)*
+**ت3.** (متوسط) علت قطع Session پس از Failover؟ *(پاسخ: 23-4-ت3)*
 
-**ت4.** (متوسط) چرا ۲۰ اتصال و نه ۱؟ *(پاسخ: 23-4-ت4)*
+**ت4.** (متوسط) SNAT دوم چه ریسکی دارد؟ *(پاسخ: 23-4-ت4)*
 
-**ت5.** (سخت) RCA را بنویسید. *(پاسخ: 23-4-ت5)*
+**ت5.** (سخت) Capture دو سمتی. *(پاسخ: 23-4-ت5)*
 
-**ت6.** (سخت، طراحی) برنامه‌ی پیشگیری از تکرار. *(پاسخ: 23-4-ت6)*
+**ت6.** (سخت، طراحی) سه‌فایروالی. *(پاسخ: 23-4-ت6)*
 
-**Q1.** Quick quiz (English): Which command output proves that only one firewall owns the session? *(پاسخ: 23-4-Q1)*
+**Q1.** Quick quiz (English): How can you prove asymmetric routing with captures? *(پاسخ: 23-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| A5 | Architecture 5 | معماری ۵ |
+| BFD | Bidirectional Forwarding Detection | تشخیص دوطرفه |
 
-- *Verify the fix with captures and a session list.* ← رفع را با Capture و session list تأیید کنید.
+- *Keep each session on one firewall.* ← هر Session را روی یک فایروال نگه دارید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** A5. **Evidence:** `03-ops/a5.md`.
+**کارت Lab:** معماری ۵ (اجرا نشده). **Evidence:** `03-ops/arch5.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۳-۱ تا ۲۳-۳
+- Fortinet FortiOS 7.0 Administration Guide: Routing; Session
 
 ## پاسخ‌های فصل 23
 
@@ -36763,19 +37492,22 @@ diagnose debug flow trace start 20
 
 ### پاسخ‌های بازنویسی عمیق درس 23-4
 
-**23-4-ت1** — Sniffer دو فایروال (SYN در یکی/SYN-ACK در دیگری)، session list فقط در یکی، Debug Flow RPF/Policy 0.
 
-**23-4-ت2** — تا نشان دهد بررسی ضدجعل هنوز فعال است و رفع آن را خنثی نکرده.
+### پاسخ‌های بازنویسی عمیق درس 23-4
 
-**23-4-ت3** — Policy Route سریع ولی بدهی (Log، پیچیدگی)؛ Route متقارن ریشه‌ای و ترجیحی.
+**23-4-ت1** — تا هر Session روی یک فایروال بماند.
 
-**23-4-ت4** — تا Hash/تصادفی بودن Asymmetric دیده شود؛ نتیجه‌ی ۲۰/۲۰ اطمینان می‌دهد.
+**23-4-ت2** — تشخیص سریع خرابی مسیر.
 
-**23-4-ت5** — علامت: TCP 443 ناموفق؛ شواهد: Sniffer/session/Debug؛ علت: Route برگشت Upstream به ISP2؛ رفع: Route/Policy Route؛ پیشگیری: چک‌لیست Route برگشت.
+**23-4-ت3** — Sync نیست.
 
-**23-4-ت6** — طراحی Route متقارن، Test Matrix دوره‌ای، Alert بر RPF Drop، Change Canary.
+**23-4-ت4** — لیست مجاز مقصد.
 
-**23-4-Q1** — The session list shows the session only on the firewall that saw the first packet.
+**23-4-ت5** — فیلتر Host روی هر دو.
+
+**23-4-ت6** — جدول.
+
+**23-4-Q1** — By capturing on both firewalls and showing each sees only one direction.
 
 ### پاسخ‌های درس افزوده‌ی 23-0 (فصل 23)
 
@@ -36969,482 +37701,669 @@ end
 
 - Fortinet Docs: [Inter-VDOM routing](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/335646/inter-vdom-routing)، [Global and per-VDOM resources](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/538256/global-and-per-vdom-resources).
 
-## درس 24-1 — East-West و Segmentation: طراحی Zone، Trust Level، Flow Discovery و Policy Matrix
+## درس 24-1 — East-West و Segmentation: Zone، Trust Level، Flow Discovery و Policy Matrix
 
-**فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۰، ۲۴-۰، ۱۲-۰ · ≈ 8 ساعت**
+**فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۲، ۱۵-۴ · ≈ 11 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ HA/VDOM Needs-License؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده»؛ HA/VDOM وابسته به مدل/لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. East-West را تحلیل و Zoneها/Trust Levelها را طراحی کند.
-2. Flow Discovery (Inventory جریان‌ها) را با Log/Learning انجام دهد.
-3. Policy Matrix داده‌محور بنویسد.
-4. Micro-segmentation را مفهومی بشناسد.
-5. Logging/Detection East-West را طراحی کند.
+1. تفاوت North-South و East-West را بگوید و ریسک East-West را توضیح دهد.
+2. Zoneها و Trust Level را برای DC طراحی کند.
+3. Flow Discovery را با Log و Sniffer اجرا و Matrix واقعی بسازد.
+4. Policy Matrix حداقلی بنویسد و Rollout تدریجی را برنامه‌ریزی کند.
+5. Evidence و ریسک‌ها را مستند کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-بعد از نفوذ اولیه، مهاجم از طریق East-West حرکت می‌کند. Segmentation بدون «شناخت جریان‌ها» قطع سرویس می‌سازد؛ پس باید ابتدا جریان‌ها را کشف کرد.
+بیشتر ترافیک DC شرق-غربی است (سرور به سرور)، نه از اینترنت. حمله‌های واقعی بعد از ورود از وب‌سرور به سمت سرورهای دیگر حرکت می‌کنند. Segmentation همان دیوارهای داخلی است. ولی نوشتن Policy قبل از دانستن جریان‌ها یعنی قطع سرویس؛ پس اول کشف (Flow Discovery) و بعد سیاست.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) مراحل
+#### ۱) North-South در برابر East-West
 
-1. Inventory: سرویس‌ها، پورت‌ها، وابستگی‌ها.
-2. Flow Discovery: Policy موقت Allow+Log (Learning) و جمع‌آوری ۲–۴ هفته.
-3. گروه‌بندی بر اساس نقش/حساسیت.
-4. Matrix حداقلی + Deny+Log.
-5. Cutover مرحله‌ای (Monitor→Enforce).
-6. بازبینی Hit Count.
+North-South: ورود/خروج DC. East-West: بین سرورهای داخلی. فایروال لبه East-West را نمی‌بیند؛ Segmentation داخلی لازم است.
 
-#### ۲) Trust Level
+#### ۲) Zone و Trust
 
-Management > DB > App > Web > Users > Guest؛ جهت ممنوع/مجاز و Inspection.
+| Zone | Trust | نمونه |
+|---|---|---|
+| WEB | کم | وب‌سرور |
+| APP | متوسط | App |
+| DB | بالا | پایگاه داده |
+| MGMT | بالا | مدیریت |
+| BACKUP | بالا | Backup |
 
-#### ۳) Matrix نمونه
+#### ۳) Flow Discovery
 
 ``` text
-WEB -> APP : 8080   APP -> DB : 1433   MGMT -> all : SSH/HTTPS (jump)
-WEB -> DB : none    USERS -> DB : none BACKUP -> DB : 1433 (restricted source/time)
+# 1) turn on logging all on a permissive 'discovery' policy for 14 days
+# 2) export unique src/dst/port from logs
+# 3) classify: needed / unknown / suspicious
 ```
 
-#### ۴) Micro-segmentation
+نمونه خروجی:
 
-کنترل در سطح میزبان/VM (فایروال میزبان/SDN) برای Flowهای داخل یک Zone؛ فراتر از این Lab ولی هدف نهایی.
+``` text
+WEB -> APP : tcp/8443 (2.1M sessions)
+APP -> DB  : tcp/1433 (900k)
+WEB -> DB  : tcp/1433 (12)   <- suspicious, investigate
+```
 
-#### ۵) Detection
+#### ۴) Matrix حداقلی
 
-Deny بین Zoneهای داخلی، Scan داخلی، Flowهای جدید، حجم غیرعادی.
+| از ↓ به → | WEB | APP | DB | MGMT |
+|---|---|---|---|---|
+| Internet | 443 | - | - | - |
+| WEB | - | 8443 | - | - |
+| APP | - | - | 1433 | - |
+| MGMT | SSH | SSH | SSH | - |
+
+#### ۵) Rollout
+
+مرحله‌ای: ابتدا Policy Allow با Log (Monitor)، بعد Deny با Log فقط برای «suspicious»، سپس Default Deny. هر مرحله یک هفته و Rollback آماده.
+
+#### ۶) ریسک
+
+قطع سرویس ناشناخته (Batch شبانه، Backup)؛ پوشش با Log ۳۰ روزه و مشورت مالکان.
 
 ### ۴) طراحی و تصمیم‌گیری
 
 | سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Learning | قبل از Enforce |
-| Zone | نقش/حساسیت |
+| Rollout | Monitor → Deny → Default Deny |
+| Log | ۳۰ روز |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Zoneهای WEB/APP/DB و Matrix.
+**ساده (حل‌شده):** Log: WEB→DB 12 Session؛ مشکوک؛ بررسی: اسکریپت قدیمی؛ حذف دسترسی و مستندسازی.
 
-**متوسط (تحلیل):** Backup Server به همه دسترسی داشت: محدودسازی منبع/زمان؛ Zone جدا.
+**متوسط (Matrix):** از Log ۱۴ روزه: ۴ مسیر مجاز؛ Matrix 4 خانه؛ بقیه Deny با Log؛ هفته‌ی اول فقط Monitor.
 
-**سخت (Learning):** Enforce روزِ اول باعث قطع ERP شد؛ Flow کشف‌نشده (Batch شبانه). راه: Learning ۴ هفته (شامل پایان ماه)، سپس Enforce مرحله‌ای.
+**سخت (Backup شبانه):** پس از Deny، Backup شبانه قطع شد. مراحل: ۱) Log deny: BACKUP→DB 445 ساعت 02:00. ۲) در Discovery ۱۴ روز ثبت نشده بود (Backup هفتگی). ۳) افزودن Policy. درس: Log حداقل ۳۰ روز و مشورت مالک.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+execute log filter field srcintf WEB
+execute log display
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Matrix + آزمون منفی.
+- Matrix با Log.
+- آزمون منفی.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| سرویس قطع | Log Deny | Flow ناشناخته |
+| سرویس قطع | Log deny | افزودن Policy |
 
 ### ۱۰) نکات امنیتی
 
-- Least Privilege.
+- Default Deny با Log.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- Inventory→Learning→Matrix→Enforce.
+- East-West ریسک اصلی.
+- Flow Discovery.
+- Rollout مرحله‌ای.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) East-West؟ *(پاسخ: 24-1-ت1)*
+**ت1.** (ساده) East-West چیست؟ *(پاسخ: 24-1-ت1)*
 
-**ت2.** (ساده) چرا Learning؟ *(پاسخ: 24-1-ت2)*
+**ت2.** (ساده) چرا Flow Discovery؟ *(پاسخ: 24-1-ت2)*
 
-**ت3.** (متوسط) چرا Backup محدود؟ *(پاسخ: 24-1-ت3)*
+**ت3.** (متوسط) چرا Rollout مرحله‌ای؟ *(پاسخ: 24-1-ت3)*
 
-**ت4.** (متوسط) چرا Learning شامل پایان ماه؟ *(پاسخ: 24-1-ت4)*
+**ت4.** (متوسط) WEB→DB مشکوک؟ *(پاسخ: 24-1-ت4)*
 
-**ت5.** (سخت) Enforce باعث قطع شد؛ تحلیل. *(پاسخ: 24-1-ت5)*
+**ت5.** (سخت) Backup شبانه قطع شد. *(پاسخ: 24-1-ت5)*
 
-**ت6.** (سخت، طراحی) برنامه‌ی Segmentation. *(پاسخ: 24-1-ت6)*
+**ت6.** (سخت، طراحی) Matrix DC. *(پاسخ: 24-1-ت6)*
 
-**Q1.** Quick quiz (English): Why use a learning phase before enforcing segmentation? *(پاسخ: 24-1-Q1)*
+**Q1.** Quick quiz (English): Why is east-west traffic a major risk in data centers? *(پاسخ: 24-1-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Micro-segmentation | Micro-segmentation | تقسیم ریز |
-| Hit count | Hit count | تعداد Match |
+| Lateral movement | Lateral movement | حرکت جانبی |
 
-- *Learn flows before blocking.* ← قبل از Block جریان‌ها را بشناسید.
+- *Discover flows before enforcing policies.* ← قبل از اعمال Policy جریان‌ها را کشف کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Zone. **Evidence:** `02-design/dc-zones.md`.
+**کارت Lab:** Segmentation (اجرا نشده). **Evidence:** `02-design/dc-matrix.md`.
 
 ### ۱۵) منابع
 
-- NIST SP 800-41
-- MITRE ATT&CK Lateral Movement
+- Fortinet FortiOS 7.0 Administration Guide: Firewall policies
+- NIST SP 800-125B
 
 <a id="l-24-2"></a>
 
 ## درس 24-2 — Policy حداقلی Web/App/DB: ماتریس، پیاده‌سازی و آزمون Isolation
 
-**فصل ۲۴ · بازنویسی عمیق · پیش‌نیاز: ۱۱-۰، ۲۴-۱، ۱۲-۰ · ≈ ۶ ساعت**
+**فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۲۴-۱، ۱۵-۴ · ≈ 11 ساعت**
 
-> **وضعیت (7.0.3):** سینتکس `Unverified`؛ Lab «اجرا نشده».
-
-### ۱) هدف آموزشی
-
-سه لایه‌ی Web/App/DB را با Zone و Policy حداقلی پیاده‌سازی و **Isolation** را با آزمون منفی (nmap) اثبات کند.
-
-### ۲) ماتریس Policy
-
-``` text
-Users -> WEB : TCP 443              accept + UTM + log
-WEB   -> APP : TCP 8080             accept + log
-APP   -> DB  : TCP 1433             accept + log
-WEB   -> DB  : none                 deny + log
-Users -> DB  : none                 deny + log
-DB    -> any : only updates (opt)   restricted
-any   -> any : implicit deny + log
-```
-
-### ۳) پیاده‌سازی
-
-**GUI:** Network → Interfaces → Zone (ZN-WEB، ZN-APP، ZN-DB)؛ Policy & Objects → Addresses/Services (TCP-8080، TCP-1433)؛ Firewall Policy برای هر ردیف؛ Log همه.
-
-**CLI (`Unverified`):**
-
-``` text
-config system zone
-    edit "ZN-WEB"
-        set interface "vlan10"
-    next
-    edit "ZN-APP"
-        set interface "vlan20"
-    next
-    edit "ZN-DB"
-        set interface "vlan30"
-    next
-end
-config firewall service custom
-    edit "TCP-8080"
-        set tcp-portrange 8080
-    next
-    edit "TCP-1433"
-        set tcp-portrange 1433
-    next
-end
-config firewall policy
-    edit 30
-        set name "WEB-to-APP"
-        set srcintf "ZN-WEB"
-        set dstintf "ZN-APP"
-        set srcaddr "WEB-SRV"
-        set dstaddr "APP-SRV"
-        set action accept
-        set schedule "always"
-        set service "TCP-8080"
-        set logtraffic all
-    next
-    edit 31
-        set name "APP-to-DB"
-        set srcintf "ZN-APP"
-        set dstintf "ZN-DB"
-        set srcaddr "APP-SRV"
-        set dstaddr "DB-SRV"
-        set action accept
-        set schedule "always"
-        set service "TCP-1433"
-        set logtraffic all
-    next
-end
-```
-
-### ۴) آزمون Isolation (مثبت/منفی)
-
-``` text
-# positive
-from WEB: nc -zv APP-SRV 8080     -> open
-from APP: nc -zv DB-SRV 1433      -> open
-# negative
-from WEB: nc -zv DB-SRV 1433      -> filtered/timeout
-from WEB: nmap -Pn -p 1-1024 DB-SRV -> all filtered
-from Users: nc -zv DB-SRV 1433    -> filtered
-```
-
-ثبت: Log Deny و Hit Count؛ هر آزمون منفی که «باز» شد = شکست طراحی.
-
-### ۵) مثال‌ها
-
-**ساده:** WEB→APP 8080 موفق؛ WEB→APP 22 رد.
-
-**متوسط:** APP به DB نمی‌رسد: Debug Flow: Denied policy 0 چون Service Object اشتباه (UDP)؛ اصلاح.
-
-**سخت:** پس از Compromise WEB، مهاجم Scan می‌کند: Log Deny WEB→DB و WEB→APP (پورت‌های دیگر) → Alert؛ Containment: Quarantine WEB (۲۹-۰).
-
-### ۶) Troubleshooting
-
-| علامت | علت |
-|---|---|
-| سرویس کار نمی‌کند | Service/Zone اشتباه |
-| دسترسی غیرمجاز | Policy گسترده یا Shadow |
-| Log کم | logtraffic |
-
-### ۷) نکات امنیتی
-
-- Default Deny؛ هر Policy Source/Destination مشخص.
-- بازبینی Hit Count و حذف Policy بی‌استفاده.
-
-### ۸) جمع‌بندی
-
-- Zone + Policy حداقلی + Log.
-- Isolation را با آزمون منفی اثبات کنید.
-
-### ۹) تمرین و ارزیابی
-
-**ت1.** (ساده) چرا WEB→DB ممنوع است؟ *(پاسخ: 24-2-ت1)*
-
-**ت2.** (متوسط) آزمون منفی چیست؟ *(پاسخ: 24-2-ت2)*
-
-**ت3.** (سخت) APP به DB نمی‌رسد؛ مراحل بررسی. *(پاسخ: 24-2-ت3)*
-
-**Q1.** Quick quiz (English): Why must isolation be proven with a negative test? *(پاسخ: 24-2-Q1)*
-
-### ۱۰) اصطلاحات و English Corner
-
-| مخفف | شکل کامل | معنی |
-|---|---|---|
-| Tier | Application tier | لایه‌ی برنامه |
-| Negative test | Negative test | آزمون ممنوعیت |
-| Hit count | Policy hit count | تعداد Match |
-
-- *Prove isolation with negative tests.* ← جداسازی را با آزمون منفی اثبات کنید.
-
-### ۱۱) Lab
-
-**کارت Lab:** Policy لایه‌ای. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/dc-policy.md`.
-
-### ۱۲) منابع
-
-- Fortinet Docs: FortiOS 7.0 Administration Guide — Firewall policy، Zones؛ NIST SP 800-41.
-
-<a id="l-24-3"></a>
-
-## درس 24-3 — Lab عملی VDOM: ساخت، Inter-VDOM Link، Policy و محدودیت منابع
-
-**فصل ۲۴ · بازنویسی عمیق · پیش‌نیاز: ۲۴-۰ (معماری)، ۱۲-۰ · ≈ ۶ ساعت**
-
-> **وضعیت (7.0.3):** Needs-License/محدودیت VM (`Unverified`)؛ فعال‌سازی Multi VDOM **فقط پس از Backup و تأیید کاربر**؛ Lab «اجرا نشده».
-
-### ۱) هدف آموزشی
-
-یک Lab دو-VDOM بسازد: فعال‌سازی Multi-VDOM، ساخت VDOM، Link، Route، Policy و Resource Limit؛ و جداسازی را آزمایش کند.
-
-### ۲) طرح
-
-``` text
-root     : Internet, management, shared services
-CUST-A   : 10.1.0.0/24 (port2)         link A-ROOT
-CUST-B   : 10.1.0.0/24 (port3)         link B-ROOT   (overlapping on purpose)
-NAT/Internet in root; no direct A<->B path
-```
-
-### ۳) مراحل
-
-1. Backup. فعال‌سازی: System → Settings → Virtual Domains → Multi VDOM (CLI: `config system global; set vdom-mode multi-vdom`).
-2. System → VDOM → Create New: CUST-A، CUST-B.
-3. تخصیص Interface: port2→CUST-A، port3→CUST-B.
-4. Inter-VDOM Link: Network → Interfaces → Create New → VDOM Link (A-ROOT، B-ROOT).
-5. در هر VDOM: IP Link، Route Default به root، Policy LAN→Link.
-6. در root: Route به Subnet هر مشتری، Policy Link→WAN با NAT (جدا برای هر Link).
-7. System → Global Resources/VDOM: سقف Session برای CUST-B.
-
-``` text
-config global
-    config system vdom-link
-        edit "A-ROOT"
-            set type ethernet
-        next
-    end
-end
-config vdom
-    edit CUST-A
-        config router static
-            edit 1
-                set gateway 172.31.1.1
-                set device "A-ROOT0"
-            next
-        end
-    next
-end
-```
-
-(ساختار نمونه؛ نام Interface لینک (`A-ROOT0/A-ROOT1`) و سینتکس `Unverified`.)
-
-### ۴) آزمون
-
-- Client-A و Client-B با IP هم‌پوشان هر دو اینترنت دارند (NAT در root).
-- Client-A به Client-B نمی‌رسد (آزمون منفی).
-- CUST-B سیل Session می‌فرستد؛ فقط CUST-B محدود می‌شود (Resource Limit).
-- `diagnose sys session list` در هر VDOM جدا (`config vdom; edit CUST-A`).
-
-### ۵) مثال‌ها
-
-**ساده:** Ping از Client-A به Internet موفق.
-
-**متوسط:** Client-A به اینترنت می‌رود ولی B نه: Policy/Route در root برای Link B ناقص.
-
-**سخت:** هر دو مشتری 10.1.0.0/24؛ در root Route برگشت ابهام دارد. **رفع:** Route به Link خاص هر Subnet از طریق Interface Link (نه فقط Subnet) یا NAT در VDOM مشتری قبل از ورود به root (Source NAT به IP یکتای Link).
-
-### ۶) Troubleshooting
-
-| علامت | علت |
-|---|---|
-| Policy اثر ندارد | VDOM اشتباه |
-| ping بین VDOM | Link/Route/Policy یک سمت |
-| منابع بی‌حد | Limit تنظیم نشده |
-| دستور CLI کار نمی‌کند | داخل `config vdom` نیست |
-
-### ۷) نکات امنیتی
-
-- Admin هر مشتری محدود به VDOM.
-- Super Admin فقط Global.
-- Log هر VDOM جدا.
-
-### ۸) جمع‌بندی
-
-- VDOM = Routing/Policy/Admin/منابع جدا.
-- Link + Route + Policy هر دو سمت.
-- Overlap با NAT/Route دقیق.
-
-### ۹) تمرین و ارزیابی
-
-**ت1.** (ساده) برای ارتباط VDOMها چه لازم است؟ *(پاسخ: 24-3-ت1)*
-
-**ت2.** (متوسط) چرا Overlap مشکل Route برگشت می‌سازد؟ *(پاسخ: 24-3-ت2)*
-
-**ت3.** (سخت) آزمون جداسازی A و B را بنویسید. *(پاسخ: 24-3-ت3)*
-
-**Q1.** Quick quiz (English): Where do CLI commands for a specific VDOM have to be run? *(پاسخ: 24-3-Q1)*
-
-### ۱۰) اصطلاحات و English Corner
-
-| مخفف | شکل کامل | معنی |
-|---|---|---|
-| VDOM link | Inter-VDOM link | اتصال VDOMها |
-| Global | Global scope | تنظیمات سراسری |
-| root | root VDOM | VDOM پیش‌فرض |
-
-- *Run VDOM-specific commands inside the VDOM context.* ← دستورهای اختصاصی VDOM را در Context همان VDOM اجرا کنید.
-
-### ۱۱) Lab
-
-**کارت Lab:** VDOM. **وضعیت:** اجرا نشده (Needs-License؛ تأیید کاربر). **Evidence:** `03-ops/vdom-lab.md`.
-
-### ۱۲) منابع
-
-- Fortinet Docs: [Inter-VDOM routing](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/335646/inter-vdom-routing)، [Global and per-VDOM resources](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/538256/global-and-per-vdom-resources).
-
-<a id="l-24-4"></a>
-
-## درس 24-4 — Logging Data Center و Gate G9: اثبات Isolation، آزمون منفی، Alert و مستندسازی
-
-**فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۲۴-۰ تا ۲۴-۳، ۲۷-۰ · ≈ 8 ساعت**
-
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ HA/VDOM Needs-License؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده»؛ HA/VDOM وابسته به مدل/لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Logging East-West را طراحی کند.
-2. G9 را اجرا کند و Isolation را با آزمون منفی ثابت کند.
-3. Alert بر Deny غیرعادی را بسازد.
-4. Evidence و RCA ارائه دهد.
+1. Policyهای حداقلی بین سه لایه را با Object و Service مشخص بنویسد.
+2. Deny صریح با Log را بین لایه‌ها بسازد.
+3. آزمون مثبت/منفی را اجرا و Evidence کند.
+4. Hit Count و Log را برای ممیزی بخواند.
+5. خطاهای رایج را عیب‌یابی کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-اثبات Segmentation = آزمون منفی + Log + Alert.
+ماتریس روی کاغذ تا وقتی Policy نشده تأثیری ندارد. این درس ماتریس ۲۴-۱ را به Policy تبدیل می‌کند و ثابت می‌کند Isolation واقعی است.
 
 ### ۳) توضیح عمیق فنی
 
-#### وظایف G9
+#### ۱) Objectها
 
-1. سه Zone + Policy.
-2. nmap منفی از هر Zone (فقط Lab).
-3. Log Deny و Alert نمونه.
-4. VDOM مفهومی/Lab (لایسنس).
-5. Evidence.
+``` text
+config firewall address
+ edit "SRV-WEB"
+  set subnet 10.30.1.10 255.255.255.255
+ next
+ edit "SRV-APP"
+  set subnet 10.30.2.10 255.255.255.255
+ next
+ edit "SRV-DB"
+  set subnet 10.30.3.10 255.255.255.255
+ next
+end
+config firewall service custom
+ edit "TCP-8443"
+  set tcp-portrange 8443
+ next
+end
+```
 
-#### کلید
+#### ۲) Policyها
 
-- نتیجه‌ی nmap WEB→DB: filtered؛ APP→DB 1433 open.
-- Log: Deny policyid=0 برای اسکن.
-- Alert: >50 Deny از یک srcip به DB.
+``` text
+config firewall policy
+ edit 50
+  set name "WEB-to-APP"
+  set srcintf "ZN-WEB"
+  set dstintf "ZN-APP"
+  set srcaddr "SRV-WEB"
+  set dstaddr "SRV-APP"
+  set action accept
+  set schedule "always"
+  set service "TCP-8443"
+  set logtraffic all
+ next
+ edit 60
+  set name "APP-to-DB"
+  set srcintf "ZN-APP"
+  set dstintf "ZN-DB"
+  set srcaddr "SRV-APP"
+  set dstaddr "SRV-DB"
+  set action accept
+  set schedule "always"
+  set service "MS-SQL"
+  set logtraffic all
+ next
+ edit 61
+  set name "DENY-WEB-to-DB"
+  set srcintf "ZN-WEB"
+  set dstintf "ZN-DB"
+  set srcaddr "all"
+  set dstaddr "all"
+  set action deny
+  set logtraffic all
+ next
+end
+```
 
-#### Rubric
+#### ۳) آزمون
 
-Policy ۲۵؛ Isolation ۳۰؛ Log/Alert ۲۰؛ VDOM ۱۰؛ Evidence ۱۰؛ صداقت ۵.
+| # | آزمون | انتظار |
+|---|---|---|
+| 1 | WEB→APP 8443 | Accept (50) |
+| 2 | APP→DB 1433 | Accept (60) |
+| 3 | WEB→DB 1433 | Deny (61) |
+| 4 | WEB→APP 22 | Deny (Default) |
+| 5 | DB→Internet | Deny |
+
+``` text
+diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
+```
+
+#### ۴) Evidence
+
+برای هر آزمون: دستور، نتیجه، Log (policyid، action)، زمان.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Deny صریح | برای Alert |
+| Object | Host-level |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Zoneها.
+**ساده (حل‌شده):** WEB→DB: Lookup policy 61؛ telnet Timeout؛ Log deny.
 
-**متوسط:** nmap.
+**متوسط (Shadow):** Policy 61 زیر ALL قدیمی؛ Lookup ID قدیمی؛ جابه‌جایی؛ آزمون منفی.
 
-**سخت:** Policy باز و رفع.
+**سخت (ممیزی):** Hit Count: Policy 50 با ۲M، 60 با ۹۰۰k، 61 با ۱۲ (تلاش‌ها). ۱۲ تلاش با Source مشخص بررسی؛ نتیجه: اسکریپت قدیمی؛ مستند.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+show firewall policy 61
+diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence G9.
+- آزمون ۵‌گانه.
+- Log.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Isolation شکست | nmap | Policy |
+| Web به DB می‌رسد | Lookup | Policy ALL |
 
 ### ۱۰) نکات امنیتی
 
-- nmap فقط Lab.
+- Least privilege.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- آزمون منفی + Log.
+- Policy از ماتریس.
+- Deny صریح.
+- Evidence.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) وظایف G9؟ *(پاسخ: 24-4-ت1)*
+**ت1.** (ساده) چرا Object Host-level؟ *(پاسخ: 24-2-ت1)*
 
-**ت2.** (ساده) آزمون منفی چیست؟ *(پاسخ: 24-4-ت2)*
+**ت2.** (ساده) Deny صریح؟ *(پاسخ: 24-2-ت2)*
 
-**ت3.** (متوسط) Alert چه آستانه‌ای؟ *(پاسخ: 24-4-ت3)*
+**ت3.** (متوسط) آزمون منفی؟ *(پاسخ: 24-2-ت3)*
 
-**ت4.** (متوسط) nmap WEB→DB باز بود؛ رفع. *(پاسخ: 24-4-ت4)*
+**ت4.** (متوسط) Lookup؟ *(پاسخ: 24-2-ت4)*
 
-**ت5.** (سخت) RCA Policy باز. *(پاسخ: 24-4-ت5)*
+**ت5.** (سخت) Hit Count ۱۲؟ *(پاسخ: 24-2-ت5)*
 
-**ت6.** (سخت، طراحی) بازبینی ماهانه. *(پاسخ: 24-4-ت6)*
+**ت6.** (سخت، طراحی) Policy سه‌لایه. *(پاسخ: 24-2-ت6)*
 
-**Q1.** Quick quiz (English): How is isolation proven? *(پاسخ: 24-4-Q1)*
+**Q1.** Quick quiz (English): Why use host-level address objects between tiers? *(پاسخ: 24-2-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| G9 | Gate 9 | دروازه ۹ |
+| Least privilege | Least privilege | حداقل دسترسی |
 
-- *Prove isolation with evidence.* ← جداسازی را با شاهد ثابت کنید.
+- *Test the denied flows too.* ← جریان‌های ردشده را هم آزمون کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** G9. **Evidence:** `03-ops/g9.md`.
+**کارت Lab:** Policy سه‌لایه (اجرا نشده). **Evidence:** `02-design/dc-policy.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۴-۰ تا ۲۴-۳
+- Fortinet FortiOS 7.0 Administration Guide: Firewall policies
+
+<a id="l-24-3"></a>
+
+## درس 24-3 — Lab عملی VDOM: ساخت، Inter-VDOM Link، Policy و محدودیت منابع
+
+**فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۲۴-۱، ۲۴-۲ · ≈ 11 ساعت**
+
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده»؛ HA/VDOM وابسته به مدل/لایسنس (Needs-License).
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. VDOM را فعال و VDOM جدید بسازد (Multi-VDOM).
+2. Inter-VDOM Link را بسازد و Routing/Policy بین VDOMها بنویسد.
+3. Resource Limit (Session، Policy) برای هر VDOM تنظیم کند.
+4. Management VDOM و Global را تفکیک کند.
+5. محدودیت‌های لایسنس و خطاهای رایج را بداند.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+VDOM (Virtual Domain) یک فایروال فیزیکی را به چند فایروال مجازی مستقل تقسیم می‌کند؛ هر VDOM Interface، Route و Policy خودش را دارد. استفاده: جداسازی مشتری یا بخش (DMZ، Internal). هزینه: پیچیدگی و محدودیت لایسنس (Needs-License؛ پیش‌فرض ۱۰ VDOM در بسیاری مدل‌ها).
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) فعال‌سازی
+
+``` text
+config system global
+ set vdom-mode multi-vdom
+end
+```
+
+فعال‌سازی سرویس را برای لحظه‌ای قطع و GUI را ریست می‌کند؛ در Window.
+
+#### ۲) ساخت VDOM
+
+``` text
+config vdom
+ edit "DMZ"
+ next
+ edit "INT"
+ next
+end
+config global
+ config system interface
+  edit "port3"
+   set vdom "DMZ"
+  next
+  edit "port2"
+   set vdom "INT"
+  next
+ end
+end
+```
+
+#### ۳) Inter-VDOM Link
+
+``` text
+config global
+ config system vdom-link
+  edit "vlk"
+   set type ethernet
+  next
+ end
+ config system interface
+  edit "vlk0"
+   set vdom "DMZ"
+   set ip 10.255.1.1 255.255.255.252
+  next
+  edit "vlk1"
+   set vdom "INT"
+   set ip 10.255.1.2 255.255.255.252
+  next
+ end
+end
+```
+
+(در 7.0 ساختار `vdom-link` با Type Ethernet/PPP؛ `Unverified`.)
+
+#### ۴) Routing و Policy
+
+در هر VDOM Route به شبکه‌ی VDOM دیگر از طریق vlk و Policy مربوطه. بین VDOMها Policy برای هر دو جهت.
+
+#### ۵) Resource Limit
+
+``` text
+config global
+ config system vdom-property
+  edit "DMZ"
+   set session 200000
+   set policy 500
+  next
+ end
+end
+```
+
+#### ۶) Management
+
+Management VDOM (معمولاً root) برای Admin/FortiGuard؛ ترافیک سرویس‌ها از آن VDOM. Admin per-VDOM با Profile محدود.
+
+#### ۷) خطاها
+
+- Interface در VDOM اشتباه ⇒ Policy پیدا نمی‌شود.
+- DNS/FortiGuard از VDOM غیر Management کار نمی‌کند.
+- لایسنس VDOM محدود.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| VDOM | فقط در صورت نیاز جداسازی |
+| Resource | Limit هر VDOM |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** DMZ و INT ساخته؛ port3 به DMZ، port2 به INT؛ `get system status` Virtual domain: enable.
+
+**متوسط (Inter-VDOM):** DMZ→INT ping ندارد. مراحل: ۱) vlk0 در DMZ و vlk1 در INT IP دارند. ۲) Route در هر VDOM. ۳) Policy هر دو جهت. ۴) ping ok.
+
+**سخت (Resource):** VDOM DMZ تمام Session را مصرف می‌کند. مراحل: ۱) `vdom-property` session 200000. ۲) آزمون بار. ۳) هشدار Resource. معیار: INT تحت‌تأثیر نیست.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. System → Settings: Virtual Domains Enable.
+2. Global → Virtual Domains → Create New.
+3. Network → Interfaces → Inter-VDOM Link.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+config global
+ config system vdom-link
+  edit "vlk"
+  next
+ end
+end
+get system status
+```
+
+### ۸) Verification (اثبات صحت)
+
+- VDOMها و Interfaceها.
+- ping بین VDOMها.
+- Limit.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Policy پیدا نمی‌شود | VDOM Interface | اصلاح |
+| FortiGuard کار نمی‌کند | Management VDOM | root |
+
+### ۱۰) نکات امنیتی
+
+- Admin per-VDOM.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- VDOM=فایروال مجازی.
+- Inter-VDOM Link.
+- Limit.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) VDOM چیست؟ *(پاسخ: 24-3-ت1)*
+
+**ت2.** (ساده) Inter-VDOM Link؟ *(پاسخ: 24-3-ت2)*
+
+**ت3.** (متوسط) چرا Resource Limit؟ *(پاسخ: 24-3-ت3)*
+
+**ت4.** (متوسط) Management VDOM؟ *(پاسخ: 24-3-ت4)*
+
+**ت5.** (سخت) ping بین VDOM ندارد. *(پاسخ: 24-3-ت5)*
+
+**ت6.** (سخت، طراحی) دو VDOM. *(پاسخ: 24-3-ت6)*
+
+**Q1.** Quick quiz (English): What is the purpose of an inter-VDOM link? *(پاسخ: 24-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| VDOM | Virtual Domain | دامنه‌ی مجازی |
+
+- *Limit the resources of each VDOM.* ← منابع هر VDOM را محدود کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** VDOM (اجرا نشده؛ Needs-License). **Evidence:** `02-design/vdom-lab.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Virtual Domains
+
+<a id="l-24-4"></a>
+
+## درس 24-4 — Logging Data Center و Gate G9: اثبات Isolation، آزمون منفی، Alert و مستندسازی
+
+**فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۲۴-۱ تا ۲۴-۳ · ≈ 12 ساعت**
+
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. Logging Policy برای DC (Forward Traffic، Event، UTM) را طراحی کند.
+2. آزمون Isolation مثبت/منفی را اجرا و از Log اثبات کند.
+3. Alert برای تلاش‌های ممنوع بسازد.
+4. گزارش Evidence و Rubric G9 را تحویل دهد.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+امنیت Data Center بدون Log اثبات‌پذیر نیست. ادعای «وب به DB دسترسی ندارد» تا وقتی Log آزمون منفی را نشان ندهد، فقط ادعاست. G9 همین اثبات را می‌خواهد.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) صورت مسئله
+
+DC با Zoneهای WEB، APP، DB و MGMT. نیاز: Policy حداقلی، آزمون Isolation، Log متمرکز (Syslog/FortiAnalyzer)، Alert روی Deny بین لایه‌ها، گزارش.
+
+#### ۲) Logging
+
+``` text
+config log syslogd setting
+ set status enable
+ set server 10.99.0.20
+ set port 514
+ set facility local7
+end
+config firewall policy
+ edit 61
+  set logtraffic all
+ next
+end
+```
+
+(`Unverified`.) برای FortiAnalyzer: `config log fortianalyzer setting` (Needs-License اگر Appliance/VM).
+
+#### ۳) ماتریس آزمون (مثبت/منفی)
+
+| # | آزمون | انتظار | Log |
+|---|---|---|---|
+| 1 | Internet→WEB 443 | Accept | policyid VIP |
+| 2 | WEB→APP 8443 | Accept | policy 50 |
+| 3 | APP→DB 1433 | Accept | policy 60 |
+| 4 | WEB→DB 1433 | Deny | policy Deny |
+| 5 | DB→Internet | Deny | policy Deny |
+| 6 | MGMT→WEB SSH | Accept | policy 70 |
+| 7 | WEB→MGMT | Deny | policy Deny |
+
+#### ۴) Alert
+
+``` text
+Alert: action=deny and (srcintf=WEB and dstintf=DB) count>=5 in 5 min -> notify SOC
+```
+
+#### ۵) نمونه Log
+
+``` text
+date=2026-11-26 time=11:02:10 type="traffic" subtype="forward" srcip=10.30.1.10 dstip=10.30.3.10 dstport=1433 policyid=61 action="deny"
+```
+
+#### ۶) Rubric
+
+طراحی Log ۱۵، آزمون ۷ مورد ۳۰، Alert ۲۰، Evidence ۲۰، گزارش و صداقت ۱۵. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Log | Deny همیشه؛ Accept حساس |
+| Alert | روی Deny بین لایه‌ها |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** آزمون ۴: telnet 10.30.3.10 1433 از WEB؛ Timeout؛ Log: action=deny policyid=61؛ ثبت Evidence.
+
+**متوسط (Alert):** ۶ تلاش WEB→DB در ۲ دقیقه؛ Alert ارسال؛ SOC بررسی؛ تشخیص Scan؛ Quarantine وب‌سرور؛ زمان تشخیص ۳ دقیقه.
+
+**سخت (Log ناقص):** Log Deny DB→Internet نیست. مراحل: ۱) Policy Deny صریح با Log ندارد. ۲) Implicit Deny بی‌Log. ۳) افزودن Policy Deny با Log. ۴) آزمون ۵ دوباره Log دارد. درس: Implicit Deny Log ندارد.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+execute log filter field policyid 61
+execute log display
+```
+
+### ۸) Verification (اثبات صحت)
+
+- هر ۷ آزمون Log دارد.
+- Alert ارسال شد.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Log Deny نیست | Policy Deny صریح | Log |
+| Alert نمی‌آید | فیلتر/Threshold | اصلاح |
+
+### ۱۰) نکات امنیتی
+
+- Log را متمرکز کنید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Isolation با Log اثبات می‌شود.
+- Alert روی Deny.
+- Evidence.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا Deny صریح با Log؟ *(پاسخ: 24-4-ت1)*
+
+**ت2.** (ساده) Isolation را چگونه اثبات می‌کنید؟ *(پاسخ: 24-4-ت2)*
+
+**ت3.** (متوسط) Alert چه شرطی دارد؟ *(پاسخ: 24-4-ت3)*
+
+**ت4.** (متوسط) Log کجا؟ *(پاسخ: 24-4-ت4)*
+
+**ت5.** (سخت) Log ناقص. *(پاسخ: 24-4-ت5)*
+
+**ت6.** (سخت، طراحی) ماتریس آزمون DC. *(پاسخ: 24-4-ت6)*
+
+**Q1.** Quick quiz (English): Why is a negative test needed to prove isolation? *(پاسخ: 24-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| SOC | Security Operations Center | مرکز عملیات امنیت |
+
+- *Isolation must be proven with logs.* ← ایزولاسیون باید با Log اثبات شود.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** G9 (اجرا نشده). **Evidence:** `03-ops/g9-dc.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Logging
 
 ## پاسخ‌های فصل 24
 
@@ -37453,57 +38372,79 @@ Policy ۲۵؛ Isolation ۳۰؛ Log/Alert ۲۰؛ VDOM ۱۰؛ Evidence ۱۰؛ صد
 
 ### پاسخ‌های بازنویسی عمیق درس 24-1
 
-**24-1-ت1** — ترافیک داخلی.
 
-**24-1-ت2** — کشف Flowهای ناشناخته پیش از Block.
+### پاسخ‌های بازنویسی عمیق درس 24-1
 
-**24-1-ت3** — دسترسی گسترده ریسک حرکت جانبی.
+**24-1-ت1** — ترافیک بین سرورهای داخلی.
 
-**24-1-ت4** — Jobهای دوره‌ای دیده شوند.
+**24-1-ت2** — تا Policy روی جریان واقعی باشد.
 
-**24-1-ت5** — Flow ناشناخته؛ Log Deny؛ افزودن Rule و Monitor.
+**24-1-ت3** — جلوگیری از قطع سرویس ناشناخته.
 
-**24-1-ت6** — Inventory، Learning، Matrix، Cutover، بازبینی.
+**24-1-ت4** — مسیر ممنوع طراحی.
 
-**24-1-Q1** — To discover legitimate flows and avoid outages.
+**24-1-ت5** — Log طولانی‌تر و مالک.
+
+**24-1-ت6** — جدول.
+
+**24-1-Q1** — Because attackers move laterally between servers once inside.
 
 ### پاسخ‌های بازنویسی درس 24-2
 
-**24-2-ت1** — Web نباید مستقیم به DB برسد؛ فقط App مجاز است تا حرکت جانبی محدود شود.
 
-**24-2-ت2** — آزمونی که باید شکست بخورد (مثل WEB→DB) تا جداسازی ثابت شود.
+### پاسخ‌های بازنویسی عمیق درس 24-2
 
-**24-2-ت3** — Debug Flow (Policy 0؟)، Service/Zone، Route، Log Deny، Hit Count.
+**24-2-ت1** — Least privilege.
 
-**24-2-Q1** — Because only a failed forbidden connection proves the boundary actually blocks it.
+**24-2-ت2** — Log و Alert.
 
+**24-2-ت3** — WEB→DB.
+
+**24-2-ت4** — Policy مطابق.
+
+**24-2-ت5** — تلاش‌های ممنوع؛ بررسی.
+
+**24-2-ت6** — طبق متن.
+
+**24-2-Q1** — To grant only the minimum necessary access.
 
 ### پاسخ‌های بازنویسی درس 24-3
 
-**24-3-ت1** — Inter-VDOM Link، Route و Policy در هر دو VDOM.
 
-**24-3-ت2** — Subnet یکسان در دو VDOM باعث ابهام Routeهای برگشت در root می‌شود؛ باید Route به Link/NAT یکتا.
+### پاسخ‌های بازنویسی عمیق درس 24-3
 
-**24-3-ت3** — Client-A به Client-B ping/nc باید رد شود؛ Log Deny؛ Session جدا در هر VDOM؛ Resource Limit فقط B را محدود کند.
+**24-3-ت1** — فایروال مجازی مستقل.
 
-**24-3-Q1** — Inside the config vdom / edit <name> context of that VDOM.
+**24-3-ت2** — لینک منطقی بین دو VDOM.
+
+**24-3-ت3** — جلوگیری از مصرف همه‌ی منابع.
+
+**24-3-ت4** — VDOM سرویس‌های سیستمی.
+
+**24-3-ت5** — IP، Route، Policy دو جهت.
+
+**24-3-ت6** — DMZ/INT.
+
+**24-3-Q1** — To route traffic between two virtual domains.
+
+### پاسخ‌های بازنویسی عمیق درس 24-4
 
 
 ### پاسخ‌های بازنویسی عمیق درس 24-4
 
-**24-4-ت1** — Zone/Policy، nmap، Log/Alert، VDOM، Evidence.
+**24-4-ت1** — Implicit Deny Log ندارد.
 
-**24-4-ت2** — اتصالی که باید بلاک شود.
+**24-4-ت2** — آزمون منفی و Log Deny.
 
-**24-4-ت3** — >50 Deny از یک srcip به DB در ۵ دقیقه.
+**24-4-ت3** — تعداد Deny بین WEB و DB در بازه.
 
-**24-4-ت4** — Policy گسترده؛ محدودسازی.
+**24-4-ت4** — Syslog/FortiAnalyzer.
 
-**24-4-ت5** — Any-Any موقت؛ حذف و آزمون.
+**24-4-ت5** — Deny صریح با Log.
 
-**24-4-ت6** — Hit Count.
+**24-4-ت6** — ۷ آزمون.
 
-**24-4-Q1** — By negative tests showing blocked connections plus deny logs.
+**24-4-Q1** — Because isolation is proven by showing that forbidden traffic is denied and logged.
 
 ### پاسخ‌های درس افزوده‌ی 24-0 (فصل 24)
 
@@ -37774,102 +38715,155 @@ FortiGate: Network → OSPF/BGP؛ VPN → IPsec Tunnels. CSR: CLI. **Verificatio
 
 ## درس 25-1 — نگاشت مفاهیم Cisco و Fortinet: برگه‌ی تطبیق دستورها و مدل‌های پردازش
 
-**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۰، ۱۲-۰ · ≈ 5 ساعت**
+**فصل 25 · بازنویسی عمیق · پیش‌نیاز: فصل ۲ تا ۱۵ · ≈ 11 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 و CSR1000v 17.03.02 (بوت‌نشده/اجرا نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. مدل پردازش بسته را در IOS-XE و FortiOS مقایسه کند.
-2. برگه‌ی تطبیق دستورها (نمایش/تنظیم/عیب‌یابی) را بسازد.
-3. تفاوت‌های مدل (ACL در برابر Policy، Zone) را در طراحی لحاظ کند.
+1. مدل پردازش Cisco (ACL/Route/NAT) و Fortinet (Policy/Route/Session) را مقایسه کند.
+2. برگه‌ی تطبیق دستورها (show ↔ get/diagnose) را بسازد.
+3. تفاوت‌های مفهومی (Stateless ACL در برابر Stateful Policy) را درست بفهمد.
+4. برای هر وظیفه دستور معادل را بنویسد.
+5. خطاهای ناشی از «ترجمه‌ی کورکورانه» را بشناسد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-مهندس چندسازنده باید «ترجمه‌ی مفهومی» بلد باشد، نه فقط دستور. تفاوت اصلی: Cisco روتر/سوئیچ‌محور با ACL/NAT/Zone-Based Firewall؛ Fortinet فایروال‌محور با Policy و Session.
+مهندسی که فقط Cisco بلد است FortiGate را با نگاه سیسکویی می‌خواند: «ACL کجاست؟». ولی در FortiGate مفهوم ACL جایش را به Policy داده و مسیر پردازش فرق دارد. نگاشت مفاهیم سریع‌ترین راه یادگیری است، به شرط اینکه تفاوت‌ها را هم بدانید.
 
 ### ۳) توضیح عمیق فنی
 
-#### تطبیق
+#### ۱) نگاشت مفهومی
 
-| کار | Cisco IOS-XE | FortiOS |
+| مفهوم | Cisco IOS | FortiGate |
 |---|---|---|
-| جدول مسیر | show ip route | get router info routing-table all |
-| Interface | show ip interface brief | get system interface physical / show system interface |
-| ARP | show ip arp | get system arp |
-| Session/NAT | show ip nat translations | diagnose sys session list |
-| Policy/ACL | show access-lists | show firewall policy |
-| OSPF | show ip ospf neighbor | get router info ospf neighbor |
-| BGP | show ip bgp summary | get router info bgp summary |
-| IPsec | show crypto ikev2 sa | diagnose vpn ike gateway list |
-| Sniffer | monitor capture | diagnose sniffer packet |
-| Debug flow | debug ip packet (خطرناک) | diagnose debug flow |
-| Backup | copy running-config tftp | execute backup config tftp |
-| CLI mode | enable/conf t | config / edit / next / end |
+| فیلتر | ACL (Stateless، ترتیبی) | Firewall Policy (Stateful) |
+| NAT | `ip nat inside/outside` | NAT در Policy / VIP / IP Pool |
+| Interface منطقی | Sub-interface / SVI | VLAN interface / Zone |
+| مسیر | `ip route` | `config router static` |
+| جدول مسیر | `show ip route` | `get router info routing-table all` |
+| ARP | `show ip arp` | `diagnose ip arp list` |
+| Session | NAT translations | `diagnose sys session list` |
+| Debug | `debug ip ...` | `diagnose debug flow` |
+| Capture | EPC/SPAN | `diagnose sniffer packet` |
+| ذخیره | `copy run start` | تغییرات خودکار ذخیره می‌شود |
 
-#### مدل‌ها
+#### ۲) تفاوت‌های مهم
 
-- IOS: ACL روی Interface (in/out)؛ NAT ip nat inside/outside؛ Stateful فقط با ZBFW/Inspect.
-- FortiOS: Policy بین Interface/Zone؛ Stateful پیش‌فرض؛ NAT در Policy؛ Session Table مرکز تصمیم.
+- IOS: Config در RAM تا ذخیره. FortiOS: هر تغییر بلافاصله ذخیره (Revision).
+- ACL Stateless و Policy Stateful.
+- Policy در FortiGate بین **جفت Interface/Zone** است.
+- Default Deny ضمنی در FortiGate (Implicit Deny) و در ACL هم، ولی رفتار Log متفاوت.
+
+#### ۳) مثال معادل
+
+``` text
+! Cisco
+ip access-list extended OUT
+ permit tcp 10.10.0.0 0.0.0.255 any eq 443
+interface Gi0/1
+ ip access-group OUT in
+```
+
+``` text
+! FortiGate
+config firewall policy
+ edit 10
+  set srcintf "port2"
+  set dstintf "port1"
+  set srcaddr "NET-USERS"
+  set dstaddr "all"
+  set action accept
+  set schedule "always"
+  set service "HTTPS"
+  set nat enable
+ next
+end
+```
+
+#### ۴) خطاهای ترجمه
+
+- فرض «ACL ورودی روی Interface» ⇒ Policy باید جفت Interface باشد.
+- فراموشی `nat enable`.
+- انتظار `copy run start`.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| ترجمه | مفهومی نه خط‌به‌خط |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** `show ip route` ⇄ `get router info routing-table all`.
+**ساده (حل‌شده):** `show ip route` ⇒ `get router info routing-table all`.
 
-**متوسط:** ACL ورودی IOS ⇄ Policy با srcintf در FortiOS؛ تفاوت: Implicit deny و Stateful.
+**متوسط (تفاوت):** ACL Cisco باید برگشت را هم مجاز کند (یا established)؛ Policy Fortinet برگشت را خودکار می‌پذیرد.
 
-**سخت:** انتقال یک ACL با ۴۰ خط و NAT به Policy: ترتیب NAT/ACL در IOS با FortiOS فرق دارد؛ تست رفتاری لازم است.
+**سخت (ترجمه‌ی Config):** ACL 10 خطی را به Policy تبدیل: هر خط به یک یا چند Policy با Object؛ ادغام ردیف‌های مشابه؛ Log؛ آزمون با Lookup. ریسک: ترتیب و Implicit Deny.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get router info routing-table all
+diagnose ip arp list
+diagnose sys session list
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- برگه‌ی تطبیق در Lab امتحان شود.
+- جدول تطبیق.
+- آزمون Lookup.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| دستور شناخته نمی‌شود | پیام CLI | Syntax برند |
+| ترافیک رد می‌شود | Policy جفت Interface | Zone/Interface |
 
 ### ۱۰) نکات امنیتی
 
-- Backup از هر دو.
+- Default Deny در هر دو.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- ترجمه‌ی مفهومی؛ مدل پردازش متفاوت.
+- نگاشت+تفاوت.
+- Stateless/Stateful.
+- خودکار ذخیره.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) معادل show ip arp؟ *(پاسخ: 25-1-ت1)*
+**ت1.** (ساده) معادل show ip route؟ *(پاسخ: 25-1-ت1)*
 
-**ت2.** (ساده) معادل ACL؟ *(پاسخ: 25-1-ت2)*
+**ت2.** (ساده) ACL در FortiGate؟ *(پاسخ: 25-1-ت2)*
 
-**ت3.** (متوسط) تفاوت Stateful؟ *(پاسخ: 25-1-ت3)*
+**ت3.** (متوسط) تفاوت ذخیره؟ *(پاسخ: 25-1-ت3)*
 
-**ت4.** (سخت) انتقال ACL+NAT. *(پاسخ: 25-1-ت4)*
+**ت4.** (متوسط) برگشت ترافیک؟ *(پاسخ: 25-1-ت4)*
 
-**ت5.** (سخت، طراحی) برگه‌ی تطبیق ۱۵ سطری. *(پاسخ: 25-1-ت5)*
+**ت5.** (سخت) ACL را به Policy ببرید. *(پاسخ: 25-1-ت5)*
 
-**Q1.** Quick quiz (English): What is the FortiOS equivalent of an interface ACL? *(پاسخ: 25-1-Q1)*
+**ت6.** (سخت، طراحی) برگه‌ی تطبیق. *(پاسخ: 25-1-ت6)*
+
+**Q1.** Quick quiz (English): What is the FortiGate equivalent of a Cisco ACL? *(پاسخ: 25-1-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| ZBFW | Zone-Based Policy Firewall | فایروال مبتنی بر Zone سیسکو |
+| ACL | Access Control List | فهرست کنترل دسترسی |
 
-- *Translate concepts, not just commands.* ← مفاهیم را ترجمه کنید نه فقط دستورها.
+- *Do not translate configs line by line.* ← Config را خط‌به‌خط ترجمه نکنید.
 
 ### ۱۴) کارت Lab
 
-**Lab:** جدول معادل. **Evidence:** `02-design/vendor-map.md`.
+**کارت Lab:** نگاشت Cisco–Fortinet (اجرا نشده). **Evidence:** `02-design/mapping-sheet.md`.
 
 ### ۱۵) منابع
 
-- Cisco IOS XE Command Reference
-- Fortinet CLI Reference 7.0
+- Cisco IOS docs
+- Fortinet FortiOS 7.0 Administration Guide
 
 <a id="l-25-2"></a>
 
@@ -38074,223 +39068,315 @@ MTU (Exstart)، Network Type (DR/BDR در یک سر)، Auth، Hello/Dead، Timer
 
 ## درس 25-3 — IPsec چندسازنده: روش مقایسه‌ی Debug، جدول مغایرت و Interop آزمایشی FGT–CSR
 
-**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۰، ۱۸-۰، ۱۸-۳ · ≈ 8 ساعت**
+**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۳، ۲۵-۱، ۲۵-۲ · ≈ 11 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 و CSR1000v 17.03.02 (IOS-XE)؛ بوت‌نشده؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Tunnel IKEv2 بین FGT و CSR را با برگه‌ی پارامتر مشترک بسازد.
-2. Debug هر دو سر را هم‌زمان بگیرد و اولین مغایرت را بیابد.
-3. پیام‌های خطا را بین دو سازنده نگاشت کند.
-4. Rekey/DPD/NAT-T/MTU را آزمایش کند.
-5. گزارش Interop (پارامتر، نتیجه، محدودیت) بنویسد.
+1. پارامترهای دو سازنده را در جدول مغایرت (Mismatch) مقایسه کند.
+2. Debug دو سمت را هم‌زمان بخواند و خط متناظر را بیابد.
+3. تفاوت پیش‌فرض‌ها (DH، Lifetime، PFS، DPD) را بشناسد.
+4. Interop آزمایشی را با Test Plan اجرا کند.
+5. نتیجه را مستند و سازگاری را ارزیابی کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-در Interop، هر سازنده خطا را به زبان خودش گزارش می‌کند. «روش مقایسه‌ی دو Debug» سریع‌ترین راه برای پیدا کردن مغایرت است.
+وقتی دو دستگاه از دو سازنده IPsec می‌زنند، هر کدام «پیش‌فرض‌های» خودشان را دارند و Debug هرکدام به زبان خودش حرف می‌زند. مقایسه‌ی منظم دو سمت، سریع‌ترین راه برای پیدا کردن Mismatch است.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) روش
+#### ۱) جدول مغایرت
 
-``` text
-1 Same time window: start debug on both peers; trigger negotiation (clear SA / ping)
-2 Save logs; align by timestamp
-3 Find first divergence: the message where one side rejects/aborts
-4 Map to parameter: proposal, DH, PRF, ID, selectors, lifetime, PFS
-5 Change ONE parameter; repeat
-```
-
-#### ۲) نگاشت پیام‌ها
-
-| وضعیت | CSR (IOS-XE) | FortiGate | علت |
+| پارامتر | FortiGate | Cisco CSR | بررسی |
 |---|---|---|---|
-| Proposal ناسازگار | `no matching proposal` | `NO_PROPOSAL_CHOSEN` | Cipher/PRF/DH |
-| Auth | `AUTH FAILED` | `AUTH_FAILED` | PSK/ID |
-| Selector | `TS unacceptable` | `TS_UNACCEPTABLE` | Selector |
-| DH | `INVALID_KE_PAYLOAD` | `INVALID_KE_PAYLOAD` | گروه DH |
-| پایان | `SA deleted` | `delete` | Lifetime/DPD |
+| IKE version | `ike-version 2` | `crypto ikev2` | هر دو v2 |
+| Encryption | `proposal aes256-sha256` | `encryption aes-cbc-256` | یکسان |
+| Integrity | sha256 | `integrity sha256` | یکسان |
+| DH | `dhgrp 14` | `group 14` | یکسان |
+| PFS | `pfs enable` + dhgrp | `set pfs group14` | هر دو |
+| Lifetime P1 | `keylife` 86400 | `lifetime 86400` | یکسان یا نزدیک |
+| Selector | Subnet | ACL | آینه |
+| DPD | `dpd on-idle` | `dpd 10 3 on-demand` | سازگار |
+| NAT-T | enable | خودکار | UDP 4500 |
 
-#### ۳) آزمون‌های Interop
+#### ۲) Debug دو سمت
 
-- Rekey: Lifetime کوتاه (مثلاً 600 s) و مشاهده‌ی Rekey بدون قطع.
-- DPD: قطع یک سر؛ زمان کشف.
-- NAT-T: Peer پشت NAT.
-- MTU: ping DF بزرگ.
-- PFS: Group یکسان.
+| لحظه | FGT | CSR |
+|---|---|---|
+| شروع | `ike ... initiator: ... SA_INIT` | `IKEv2:Received Packet [From ...] ... IKE_SA_INIT` |
+| پیشنهاد | `proposal ...` | `Proposal received` |
+| خطا | `no suitable proposal` | `NO_PROPOSAL_CHOSEN` |
 
-``` text
-CSR: show crypto ikev2 sa detailed ; show crypto ipsec sa
-FGT: diagnose vpn ike gateway list ; diagnose vpn tunnel list
-```
+نکته: زمان هر دو با NTP هماهنگ باشد تا خطوط متناظر پیدا شوند.
+
+#### ۳) Test Plan Interop
+
+| # | آزمون | معیار |
+|---|---|---|
+| I-01 | Establish IKEv2 | SA ready |
+| I-02 | ping LAN↔LAN | 0٪ Loss |
+| I-03 | Rekey P1/P2 | بدون قطع > 1 s |
+| I-04 | DPD: قطع یک سر | تشخیص < 60 s |
+| I-05 | MTU/MSS | دانلود 100MB |
+| I-06 | Failover (در صورت دو WAN) | بازگشت |
+
+#### ۴) ارزیابی
+
+اگر I-03 قطع طولانی: Lifetime/Rekey Margin. I-04 کند: DPD interval.
+
+#### ۵) مستندسازی
+
+برای هر Mismatch: شاهد (خط Debug هر دو سمت)، علت، رفع، تاریخ.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Test Plan | ۶ آزمون |
+| Debug | همزمان |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Up با AES-GCM-256، DH 20؛ `show crypto ipsec sa` pkts encaps/decaps هر دو افزایش.
+**ساده (حل‌شده):** Mismatch DH: FGT 14، CSR 5؛ شاهد در هر دو سمت؛ یکسان‌سازی.
 
-**متوسط (تحلیل):** Phase 2 شکست: CSR `TS unacceptable`، FGT `TS_UNACCEPTABLE`؛ Selector CSR 10.10.0.0/16↔10.20.0.0/16 و FGT 0.0.0.0/0؛ رفع: any/any روی هر دو (Route-based) یا آینه‌کردن.
+**متوسط (Rekey):** پس از ۱ ساعت تونل ۸ ثانیه قطع شد. علت: Lifetime P2 در CSR 3600 و FGT 43200؛ Rekey نامتقارن. رفع: یکسان‌سازی؛ آزمون I-03.
 
-**سخت (قطع دوره‌ای):** Tunnel هر ~۶۰ دقیقه قطع می‌شود: CSR Lifetime IPsec 3600 s و FGT 43200؛ هنگام Rekey با Proposal/PFS متفاوت شکست. شواهد: Log هر دو؛ رفع: یکسان‌سازی Lifetime/PFS؛ آزمون ۴ ساعته.
+**سخت (DPD):** قطع سر CSR؛ FGT تا ۵ دقیقه تونل را زنده می‌بیند. مراحل: DPD FGT on-idle با interval 10 و retry 3؛ CSR on-demand؛ آزمون: تشخیص ۳۰ ثانیه. درس: DPD دو سر.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose vpn ike gateway list
+show crypto ikev2 sa
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence Interop: پارامتر/خروجی/نتیجه.
-- Rekey بدون قطع.
-- DPD آزمایشی.
+- I-01..I-06.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Phase1 شکست | Debug | Proposal/DH/PSK |
-| Phase2 شکست | Debug | Selector/PFS |
-| قطع دوره‌ای | Log | Lifetime |
-| یک جهت | counters | Policy/Route |
+| Rekey قطع | Lifetime | یکسان |
 
 ### ۱۰) نکات امنیتی
 
-- PSK قوی؛ الگوریتم‌های ضعیف ممنوع.
+- PSK در Vault.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- مقایسه‌ی Debug دو سر.
-- نگاشت پیام‌ها.
-- آزمون Rekey/DPD/NAT-T/MTU.
+- جدول مغایرت.
+- Debug دو سمت.
+- Test Plan.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) معادل NO_PROPOSAL_CHOSEN در CSR؟ *(پاسخ: 25-3-ت1)*
+**ت1.** (ساده) Mismatch رایج؟ *(پاسخ: 25-3-ت1)*
 
-**ت2.** (ساده) چرا Debug هم‌زمان؟ *(پاسخ: 25-3-ت2)*
+**ت2.** (ساده) چرا NTP؟ *(پاسخ: 25-3-ت2)*
 
-**ت3.** (متوسط) TS unacceptable چگونه رفع می‌شود؟ *(پاسخ: 25-3-ت3)*
+**ت3.** (متوسط) Rekey قطع؟ *(پاسخ: 25-3-ت3)*
 
-**ت4.** (متوسط) آزمون Rekey چگونه؟ *(پاسخ: 25-3-ت4)*
+**ت4.** (متوسط) DPD؟ *(پاسخ: 25-3-ت4)*
 
-**ت5.** (سخت) Tunnel هر ساعت قطع می‌شود؛ تحلیل. *(پاسخ: 25-3-ت5)*
+**ت5.** (سخت) DPD کند. *(پاسخ: 25-3-ت5)*
 
-**ت6.** (سخت، طراحی) گزارش Interop. *(پاسخ: 25-3-ت6)*
+**ت6.** (سخت، طراحی) Test Plan. *(پاسخ: 25-3-ت6)*
 
-**Q1.** Quick quiz (English): How do you locate the cause of an interop IKE failure efficiently? *(پاسخ: 25-3-Q1)*
+**Q1.** Quick quiz (English): Why synchronize clocks when comparing debugs from two vendors? *(پاسخ: 25-3-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Divergence | First divergence point | اولین نقطه‌ی اختلاف |
-| PRF | Pseudo-random function | تابع شبه‌تصادفی |
+| DPD | Dead Peer Detection | تشخیص همتای مرده |
 
-- *Debug both peers in the same time window.* ← هر دو Peer را در یک بازه‌ی زمانی Debug کنید.
+- *Compare both sides with synchronized clocks.* ← دو سمت را با ساعت‌های هماهنگ مقایسه کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** IPsec FGT–CSR. **Evidence:** `03-ops/ipsec-mv.md`.
+**کارت Lab:** Interop FGT–CSR (اجرا نشده). **Evidence:** `03-ops/interop.md`.
 
 ### ۱۵) منابع
 
-- RFC 7296
-- Cisco IKEv2 guides
-- Fortinet IPsec CLI Reference 7.0
+- Fortinet FortiOS 7.0 Administration Guide: IPsec
+- Cisco IOS-XE IKEv2
 
 <a id="l-25-4"></a>
 
-## درس 25-4 — آزمون معماری ۶ (FGT+CSR): صورت مسئله، کلید پاسخ و Rubric
+## درس 25-4 — آزمون معماری ۶ (FGT+CSR): IPsec چندسازنده، مقایسه‌ی Debug و جدول مغایرت — کلید پاسخ و Rubric
 
-**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۰ تا ۲۵-۳ · ≈ 8 ساعت**
+**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۱ تا ۲۵-۳ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 و CSR1000v 17.03.02 (IOS-XE)؛ بوت‌نشده؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. اتصال FGT–CSR با Routing و IPsec را با شواهد تحویل دهد.
-2. سه عیب تزریق‌شده (MTU، Proposal، Redistribution) را رفع کند.
-3. Failover و Backup هر دو سازنده را انجام دهد.
-4. گزارش Interop و RCA ارائه دهد.
+1. تونل IKEv2 بین FortiGate و Cisco CSR1000v را طراحی کند.
+2. پارامترهای معادل (Proposal، DH، PFS، Lifetime، Selector) را جدول‌بندی کند.
+3. Debug هر دو سمت را مقایسه و Mismatch را بیابد.
+4. سه خرابی تزریق‌شده را رفع کند.
+5. گزارش و Rubric تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون جامع چندسازنده با شواهد. کلید پاسخ پس از تلاش.
+در دنیای واقعی طرف مقابل تونل همیشه Fortinet نیست. اشتباه رایج: فرض اینکه «همه IPsec هستند». ولی نام پارامترها، پیش‌فرض‌ها و Selector (Cisco با ACL، Fortinet با Subnet) متفاوت است. این آزمون مهارت مقایسه‌ی دو CLI را می‌سنجد.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-HQ: CSR؛ شعبه: FGT؛ دو لینک (WAN1/WAN2). نیاز: OSPF داخلی، eBGP لبه، IPsec IKEv2 روی هر دو لینک، Failover < ۱۰ ثانیه، Backup هر دو.
+FGT (198.51.100.2، LAN 10.10.0.0/16) و CSR1000v (203.0.113.2، LAN 10.20.0.0/16). IKEv2، AES-256، SHA-256، DH 14، PFS DH 14، Lifetime P1 86400، P2 3600.
 
-عیب‌ها: ۱) MTU Tunnel ناهمسان؛ ۲) PFS Group متفاوت؛ ۳) Redistribution بدون Tag.
+#### ۲) جدول معادل
 
-#### کلید پاسخ (خلاصه)
+| مفهوم | FortiGate | Cisco CSR |
+|---|---|---|
+| Proposal P1 | `set proposal aes256-sha256` | `crypto ikev2 proposal P1 ; encryption aes-cbc-256 ; integrity sha256 ; group 14` |
+| Auth | `psksecret` | `crypto ikev2 keyring` |
+| Selector | `src-subnet/dst-subnet` | ACL (`access-list` crypto) |
+| P2 | `phase2-interface` | `crypto ipsec transform-set esp-aes 256 esp-sha256-hmac` |
+| PFS | `set pfs enable` | `set pfs group14` |
+| Lifetime | `keylife` | `lifetime` |
 
-- OSPF Exstart ← MTU؛ IPsec Phase2 ← PFS؛ Flap ← Tag.
-- Failover با BFD/Local-pref؛ اندازه‌گیری ≈ ۶ ثانیه.
-- Backup: `copy running-config` و `execute backup config`.
+#### ۳) CSR نمونه
 
-#### Rubric
+``` text
+crypto ikev2 proposal P1
+ encryption aes-cbc-256
+ integrity sha256
+ group 14
+crypto ikev2 policy POL1
+ proposal P1
+crypto ikev2 keyring KR
+ peer FGT
+  address 198.51.100.2
+  pre-shared-key <FROM-VAULT>
+crypto ikev2 profile PROF
+ match identity remote address 198.51.100.2 255.255.255.255
+ authentication remote pre-share
+ authentication local pre-share
+ keyring local KR
+crypto ipsec transform-set TS esp-aes 256 esp-sha256-hmac
+ mode tunnel
+ip access-list extended VPN-ACL
+ permit ip 10.20.0.0 0.0.255.255 10.10.0.0 0.0.255.255
+crypto map CM 10 ipsec-isakmp
+ set peer 198.51.100.2
+ set transform-set TS
+ set pfs group14
+ set ikev2-profile PROF
+ match address VPN-ACL
+interface GigabitEthernet1
+ crypto map CM
+```
 
-اتصال ۲۵؛ عیب‌یابی ۳۰؛ Failover ۱۵؛ Backup ۱۰؛ گزارش/Evidence ۱۵؛ صداقت ۵.
+(`Unverified` در IOS-XE 17.03؛ نام دستورها را با help بررسی.)
+
+#### ۴) خرابی‌ها و کلید
+
+**A:** DH گروه 14 در FGT و 5 در CSR (پیش‌فرض). شاهد CSR: `debug crypto ikev2` NO_PROPOSAL؛ FGT: `no proposal chosen`. رفع: `group 14`.
+
+**B:** Selector نامتقارن: ACL /24 و FGT /16. شاهد: P2 down. رفع: ACL و Selector یکسان.
+
+**C:** Lifetime متفاوت؛ rekey با Flap کوتاه. رفع: یکسان یا Lifetime کوچک‌تر ابتکار.
+
+#### ۵) Verification
+
+``` text
+FGT: diagnose vpn ike gateway list ; diagnose vpn tunnel list
+CSR: show crypto ikev2 sa ; show crypto ipsec sa
+```
+
+#### ۶) Rubric
+
+طراحی جدول ۲۰، پیکربندی ۲۵، تشخیص ۳ خرابی ۳۰، Verify دوطرفه ۱۵، Evidence و صداقت ۱۰. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| IKE | v2 |
+| Selector | آینه‌ی دقیق |
+| مقایسه Debug | هر دو سمت همزمان |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Up و Route‌ها.
+**ساده (حل‌شده):** جدول معادل: Proposal FGT=aes256-sha256؛ CSR=aes-cbc-256+sha256+group14؛ برابر.
 
-**متوسط:** سه عیب رفع.
+**متوسط (خرابی A):** DH متفاوت: FGT group14، CSR پیش‌فرض group5. شاهد در هر دو سمت NO_PROPOSAL. با `group 14` تونل up و `show crypto ikev2 sa` READY.
 
-**سخت:** Failover و گزارش.
+**سخت (Selector):** P1 up ولی ping نه. مراحل: ۱) `diagnose vpn tunnel list` SA صفر. ۲) CSR: `show crypto ipsec sa` بدون SA. ۳) ACL /24 ≠ /16. ۴) یکسان‌سازی. ۵) ping ok. درس: Selector باید آینه‌ی دقیق باشد.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose vpn ike gateway list
+diagnose vpn tunnel list
+show crypto ikev2 sa
+show crypto ipsec sa
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence A6.
+- P1 و P2 در هر دو سمت up.
+- ping بین LANها.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Failover کند | Timer | BFD |
+| NO_PROPOSAL | DH/Proposal | group |
+| P2 down | Selector/ACL | آینه‌ی دقیق |
 
 ### ۱۰) نکات امنیتی
 
-- Secret پاک.
+- PSK در Vault.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- آزمون با شواهد.
+- جدول معادل.
+- Selector آینه.
+- Debug دو سمت.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) سه عیب آزمون؟ *(پاسخ: 25-4-ت1)*
+**ت1.** (ساده) Selector در Cisco چیست؟ *(پاسخ: 25-4-ت1)*
 
-**ت2.** (ساده) Backup هر دو سازنده چگونه؟ *(پاسخ: 25-4-ت2)*
+**ت2.** (ساده) DH گروه 14 یعنی؟ *(پاسخ: 25-4-ت2)*
 
-**ت3.** (متوسط) چگونه Failover < ۱۰ s را اثبات می‌کنید؟ *(پاسخ: 25-4-ت3)*
+**ت3.** (متوسط) P1 up و P2 down؛ علت؟ *(پاسخ: 25-4-ت3)*
 
-**ت4.** (متوسط) عیب PFS را از Debug چگونه می‌فهمید؟ *(پاسخ: 25-4-ت4)*
+**ت4.** (متوسط) Debug کجا؟ *(پاسخ: 25-4-ت4)*
 
-**ت5.** (سخت) RCA برای Flap Redistribution. *(پاسخ: 25-4-ت5)*
+**ت5.** (سخت) rekey Flap. *(پاسخ: 25-4-ت5)*
 
-**ت6.** (سخت، طراحی) برنامه‌ی بهبود. *(پاسخ: 25-4-ت6)*
+**ت6.** (سخت، طراحی) جدول معادل. *(پاسخ: 25-4-ت6)*
 
-**Q1.** Quick quiz (English): What artifacts must be backed up in a multi-vendor design? *(پاسخ: 25-4-Q1)*
+**Q1.** Quick quiz (English): Why must crypto ACL and FortiGate selectors mirror each other? *(پاسخ: 25-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| A6 | Architecture 6 | معماری ۶ |
+| DH | Diffie-Hellman | تبادل کلید |
 
-- *Back up both vendors.* ← از هر دو سازنده Backup بگیرید.
+- *Compare both sides debug output.* ← خروجی Debug دو سمت را مقایسه کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** A6. **Evidence:** `03-ops/a6.md`.
+**کارت Lab:** معماری ۶ (اجرا نشده). **Evidence:** `03-ops/arch6.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۵-۱ تا ۲۵-۳
+- Cisco IOS-XE IKEv2 guide
+- Fortinet FortiOS 7.0 Administration Guide: IPsec
 
 ## پاسخ‌های فصل 25
 
@@ -38299,18 +39385,22 @@ HQ: CSR؛ شعبه: FGT؛ دو لینک (WAN1/WAN2). نیاز: OSPF داخلی،
 
 ### پاسخ‌های بازنویسی درس 25-1
 
-**25-1-ت1** — get system arp.
+
+### پاسخ‌های بازنویسی عمیق درس 25-1
+
+**25-1-ت1** — get router info routing-table all.
 
 **25-1-ت2** — Firewall Policy.
 
-**25-1-ت3** — FortiOS پیش‌فرض Stateful؛ ACL ساده نه.
+**25-1-ت3** — Cisco دستی؛ Fortinet خودکار.
 
-**25-1-ت4** — تست رفتاری.
+**25-1-ت4** — Fortinet Stateful.
 
-**25-1-ت5** — جدول بالا بسط داده شود.
+**25-1-ت5** — Object، Policy، Log.
 
-**25-1-Q1** — A firewall policy between interfaces or zones.
+**25-1-ت6** — جدول.
 
+**25-1-Q1** — A firewall policy.
 
 ### پاسخ‌های بازنویسی عمیق درس 25-2
 
@@ -38331,36 +39421,41 @@ HQ: CSR؛ شعبه: FGT؛ دو لینک (WAN1/WAN2). نیاز: OSPF داخلی،
 
 ### پاسخ‌های بازنویسی عمیق درس 25-3
 
-**25-3-ت1** — `no matching proposal`.
 
-**25-3-ت2** — هر سمت بخش دیگری از مذاکره را می‌بیند؛ مقایسه اولین مغایرت را نشان می‌دهد.
+### پاسخ‌های بازنویسی عمیق درس 25-3
 
-**25-3-ت3** — Selector آینه یا any/any در Route-based.
+**25-3-ت1** — DH، Selector، Lifetime.
 
-**25-3-ت4** — Lifetime کوتاه و ping پیوسته؛ باید بدون قطع Rekey شود.
+**25-3-ت2** — تطبیق خطوط Debug.
 
-**25-3-ت5** — Lifetime/PFS ناهمسان؛ Log دو سر؛ یکسان‌سازی؛ آزمون طولانی.
+**25-3-ت3** — Lifetime نامتقارن.
 
-**25-3-ت6** — جدول پارامتر/نتیجه/محدودیت/تاریخ/نسخه.
+**25-3-ت4** — تشخیص همتای مرده.
 
-**25-3-Q1** — Capture debug from both peers in the same time window and find the first diverging message.
+**25-3-ت5** — interval/retry دو سر.
+
+**25-3-ت6** — جدول.
+
+**25-3-Q1** — To match corresponding events across both logs.
+
+### پاسخ‌های بازنویسی عمیق درس 25-4
 
 
 ### پاسخ‌های بازنویسی عمیق درس 25-4
 
-**25-4-ت1** — MTU ناهمسان، PFS Group متفاوت، Redistribution بدون Tag.
+**25-4-ت1** — ACL crypto.
 
-**25-4-ت2** — CSR: copy running-config tftp/scp؛ FGT: execute backup config tftp/sftp.
+**25-4-ت2** — ۲۰۴۸ بیت MODP.
 
-**25-4-ت3** — قطع لینک و ping پیوسته؛ شمارش بسته‌ها × فاصله؛ ثبت.
+**25-4-ت3** — Selector/PFS/Transform.
 
-**25-4-ت4** — `INVALID_KE_PAYLOAD`/`NO_PROPOSAL_CHOSEN` در Phase 2؛ مقایسه‌ی PFS Group دو سر.
+**25-4-ت4** — هر دو سمت.
 
-**25-4-ت5** — علامت: Flap Prefix؛ شواهد: Path/Route؛ علت: Loop بدون Tag؛ رفع: Tag؛ پیشگیری: استاندارد Route-map.
+**25-4-ت5** — Lifetime.
 
-**25-4-ت6** — برگه‌ی پارامتر مشترک، استاندارد MTU، قالب Redistribution با Tag، BFD، آزمون دوره‌ای.
+**25-4-ت6** — طبق جدول.
 
-**25-4-Q1** — Configurations of both vendors, including routing and VPN settings, stored without secrets in version control.
+**25-4-Q1** — Because mismatched selectors prevent phase 2 from negotiating.
 
 ### پاسخ‌های درس افزوده‌ی 25-0 (فصل 25)
 
@@ -39026,116 +40121,134 @@ git diff HEAD~1 -- fgt-A.sanitized.conf
 
 ## درس 26-4 — طراحی معماری ۹ (مدیریت مرکزی و عملیات): RBAC، Change، Audit و آزمون با Rubric
 
-**فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۱ تا ۲۶-۳ · ≈ 8 ساعت**
+**فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۱ تا ۲۶-۳، ۳۲-۱ · ≈ 11 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 / FortiManager-FortiAnalyzer 7.0 (Needs-License؛ بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. معماری مدیریت مرکزی (FMG یا جایگزین) را از نیازمندی تا طرح اجرایی تولید کند.
-2. RBAC (Super، Operator، Auditor، Read-only) و Separation of Duties را بنویسد.
-3. فرایند Change/Approval/Audit را با ابزار انتخابی هماهنگ کند.
-4. ریسک‌ها، Break-glass و DR را طراحی کند.
-5. طرح را ارائه و با Rubric ارزیابی کند.
+1. معماری مدیریت مرکزی (FortiManager، FortiAnalyzer، ADOM) را طراحی کند.
+2. RBAC چندسطحی (Super، Network، ReadOnly، Auditor) را مدل کند.
+3. فرایند Change از طریق Policy Package و Revision را بنویسد.
+4. Audit و Alert روی تغییر Config را طراحی کند.
+5. آزمون و Rubric را تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون طراحی معماری ۹: «چه ابزار، با چه نقش‌ها، چه فرایند و چه شواهد». کلید پاسخ پس از تلاش.
+با ۲۰ فایروال، ورود دستی به هر کدام ناممکن و ناهمگن می‌شود. مدیریت مرکزی یک منبع حقیقت می‌دهد: Policy Package، Revision و Audit. ولی همین مرکز، هدف جذاب مهاجم است؛ پس RBAC و Hardening آن حیاتی است. FMG/FAZ وابسته به لایسنس هستند (Needs-License).
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) معماری
 
-شرکت: HQ + ۱۲ شعبه، ۱۵ FortiGate، دو تیم (شبکه، امنیت)، Audit فصلی، بودجه محدود. نیازمندی‌ها:
-- R1: Policy یکسان و Audit تغییر.
-- R2: Log ۱۸۰ روزه و Alert.
-- R3: Backup/Restore و DR.
-- R4: جداسازی نقش‌ها.
-- R5: ریسک مرکزی‌سازی مدیریت.
+``` text
+FortiManager (policy, device DB, revisions)  --FGFM-->  FGT-1..N
+FortiAnalyzer (logs, reports, events)        <--logs--  FGT-1..N
+ADOM: per region / per customer
+```
 
-#### خروجی‌ها
+#### ۲) RBAC
 
-ADR ابزار، نمودار، جدول RBAC، فرایند Change، برنامه‌ی Audit، Break-glass، آزمون Restore.
+| نقش | دسترسی |
+|---|---|
+| Super | همه (۲ نفر، MFA) |
+| Network Admin | Policy Package ADOM خود |
+| ReadOnly (NOC) | مشاهده |
+| Auditor | Log و Revision خواندنی |
 
-#### کلید پاسخ (خلاصه‌ی مورد انتظار)
+#### ۳) فرایند Change
 
-- ابزار: FMG برای Policy مرکزی (۱۵ دستگاه) + Syslog/SIEM برای Log یا FAZ؛ جایگزین: Ansible+Git+rsyslog؛ تصمیم با هزینه/ریسک.
-- RBAC: Super (۲ نفر، MFA)، Operator (Policy در ADOM)، Auditor (Read-only)، Network (Interface/Routing).
-- Change: Ticket→Review→Install Preview→Window→Post-check→Close.
-- Audit: Revision diff ماهانه، Drift، Admin log.
-- Break-glass: حساب محلی با رمز Vault و MFA فیزیکی.
-- DR: HA/Backup رمزشده، آزمون فصلی.
+1. ایجاد Revision/Backup. 2. ویرایش Policy Package. 3. Review (Workflow Session). 4. Install Preview. 5. Install در Window. 6. Verify. 7. Close.
 
-#### Rubric (۱۰۰)
+#### ۴) Audit
 
-ADR/تصمیم ۲۰؛ RBAC ۲۰؛ Change/Audit ۲۰؛ ریسک/DR ۲۰؛ شواهد ۱۰؛ صداقت (لایسنس/Unverified) ۱۰.
+Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ سال.
+
+#### ۵) Hardening مدیریت مرکزی
+
+شبکه‌ی Mgmt جدا؛ Trusted host؛ MFA؛ Backup FMG؛ HA.
+
+#### ۶) آزمون و Rubric
+
+سناریو: افزودن Policy به ۵ شعبه با CHG؛ Install Preview؛ Rollback به Revision قبلی. Rubric: معماری ۲۰، RBAC ۲۰، Change ۲۰، Audit ۲۰، آزمون و صداقت ۲۰.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| ADOM | بر اساس منطقه |
+| RBAC | حداقل |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** جدول RBAC چهارنقشه.
+**ساده (حل‌شده):** ADOM-EU و ADOM-US؛ Network Admin هر ADOM فقط ADOM خودش.
 
-**متوسط:** فرایند Change با Preview.
+**متوسط (Change):** Install Preview نشان داد Policy ۶۲ در ۵ دستگاه؛ Install در Window؛ Verify؛ Revision ثبت.
 
-**سخت:** ریسک مرکزی‌سازی و Break-glass.
+**سخت (Rollback):** Install باعث قطع VPN شد. مراحل: Revision قبلی؛ Install مجدد؛ ۸ دقیقه؛ RCA: Object مشترک تغییر کرده بود؛ اقدام: Preview با Diff و آزمون در Lab.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+! FMG/FAZ operations are mostly GUI; verify license (Needs-License)
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- سند A9.
-- آزمون Revert/Restore در Lab (در صورت لایسنس).
+- Revision.
+- Audit Alert.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| دسترسی بیش‌ازحد | RBAC | Least privilege |
-| Audit ناقص | Revision | Diff/Log |
+| Install شکست | Preview/Connectivity | FGFM |
 
 ### ۱۰) نکات امنیتی
 
-- MFA Admin؛ Break-glass در Vault؛ OOB.
+- MFA.
+- Mgmt جدا.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- معماری = ابزار + نقش + فرایند + شواهد.
-- Separation of Duties.
-- ریسک مرکزی‌سازی را بپذیرید و کنترل کنید.
+- مرکز=منبع حقیقت.
+- RBAC.
+- Revision و Rollback.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Separation of Duties چیست؟ *(پاسخ: 26-4-ت1)*
+**ت1.** (ساده) ADOM؟ *(پاسخ: 26-4-ت1)*
 
-**ت2.** (ساده) Break-glass برای چیست؟ *(پاسخ: 26-4-ت2)*
+**ت2.** (ساده) چرا Revision؟ *(پاسخ: 26-4-ت2)*
 
-**ت3.** (متوسط) چرا Auditor باید Read-only باشد؟ *(پاسخ: 26-4-ت3)*
+**ت3.** (متوسط) Install Preview؟ *(پاسخ: 26-4-ت3)*
 
-**ت4.** (متوسط) مراحل Change با FMG؟ *(پاسخ: 26-4-ت4)*
+**ت4.** (متوسط) چرا مرکز هدف است؟ *(پاسخ: 26-4-ت4)*
 
-**ت5.** (سخت) ریسک‌های مرکزی‌سازی را با کنترل‌ها بنویسید. *(پاسخ: 26-4-ت5)*
+**ت5.** (سخت) Install قطع کرد؛ رفع. *(پاسخ: 26-4-ت5)*
 
-**ت6.** (سخت، طراحی) طرح کامل برای ۱۵ فایروال. *(پاسخ: 26-4-ت6)*
+**ت6.** (سخت، طراحی) RBAC چهارسطحی. *(پاسخ: 26-4-ت6)*
 
-**Q1.** Quick quiz (English): Why is a break-glass account required in a centrally managed environment? *(پاسخ: 26-4-Q1)*
+**Q1.** Quick quiz (English): Why use install preview before pushing a policy package? *(پاسخ: 26-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| A9 | Architecture 9 | معماری ۹ |
-| SoD | Separation of Duties | تفکیک وظایف |
-| ADR | Architecture Decision Record | ثبت تصمیم معماری |
+| ADOM | Administrative Domain | دامنه‌ی مدیریتی |
 
-- *Design central management with least privilege and audit trails.* ← مدیریت مرکزی را با حداقل دسترسی و ردپای Audit طراحی کنید.
+- *Review the diff before installing.* ← قبل از Install تفاوت‌ها را بازبینی کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** A9. **وضعیت:** طراحی. **Evidence:** `02-design/a9.md`.
+**کارت Lab:** معماری ۹ (اجرا نشده؛ Needs-License). **Evidence:** `02-design/arch9.md`.
 
 ### ۱۵) منابع
 
-- NIST SP 800-53 (AC، AU، CM)
-- درس‌های ۲۶-۱ تا ۲۶-۳
+- Fortinet FortiManager Administration Guide
+- FortiAnalyzer Administration Guide
 
 ## پاسخ‌های فصل 26
 
@@ -39195,19 +40308,22 @@ ADR/تصمیم ۲۰؛ RBAC ۲۰؛ Change/Audit ۲۰؛ ریسک/DR ۲۰؛ شوا�
 
 ### پاسخ‌های بازنویسی عمیق درس 26-4
 
-**26-4-ت1** — تفکیک نقش‌ها تا یک نفر هم درخواست‌دهنده و هم تأییدکننده/Auditor نباشد.
 
-**26-4-ت2** — دسترسی اضطراری وقتی ابزار مرکزی در دسترس نیست؛ با کنترل و Audit شدید.
+### پاسخ‌های بازنویسی عمیق درس 26-4
 
-**26-4-ت3** — تا بتواند Audit کند بدون امکان تغییر و محو شواهد.
+**26-4-ت1** — دامنه‌ی مدیریتی جدا.
 
-**26-4-ت4** — Ticket، Review، Install Preview، Window، Install، Post-check، Close.
+**26-4-ت2** — Rollback.
 
-**26-4-ت5** — هدف حمله/SPOF: OOB، MFA، RBAC، HA/Backup، Patch، Break-glass؛ خطای گسترده: Preview/Canary/Revert.
+**26-4-ت3** — نمایش تغییرات پیش از اعمال.
 
-**26-4-ت6** — ADR، RBAC جدول، Change/Audit، Log (FAZ/Syslog)، Backup/DR، آزمون‌ها و ریسک.
+**26-4-ت4** — دسترسی به همه‌ی دستگاه‌ها.
 
-**26-4-Q1** — So devices can still be managed if the central manager or its authentication is unavailable.
+**26-4-ت5** — Revision قبلی.
+
+**26-4-ت6** — جدول.
+
+**26-4-Q1** — To review the changes that will be applied and avoid unintended impact.
 
 ### پاسخ‌های درس افزوده‌ی 26-0 (فصل 26)
 
@@ -40026,105 +41142,161 @@ execute backup config sftp hardening-test.conf 192.168.90.10 backup-user <PASSWO
 
 <a id="l-27-5"></a>
 
-## درس 27-5 — Gate G10: آزمون عملی Logging، Monitoring، Hardening و Backup — صورت مسئله، کلید و Rubric
+## درس 27-5 — Gate G10: آزمون عملی Logging، Monitoring، Hardening و Backup — کلید پاسخ کامل و Rubric
 
-**فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰ تا ۲۷-۷ · ≈ 8 ساعت**
+**فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۱ تا ۲۷-۴ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ Log/Syslog از مستند 7.0؛ SNMPv3 و REST API روی 7.0.3 `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Syslog مرکزی، Baseline/Trigger، Hardening و Backup/Restore را با شواهد تحویل دهد.
-2. سه عیب (Log نمی‌رسد، Alert کاذب، Restore ناقص) را رفع کند.
-3. Detection یک رویداد (Login ناموفق مکرر) را از Log تا Alert نشان دهد.
-4. Evidence و RCA ارائه دهد.
+1. Syslog/FortiAnalyzer، SNMPv3 و Alert را پیکربندی و Verify کند.
+2. Hardening مدیریتی را چک‌لیست و Evidence کند.
+3. Backup/Restore را اجرا و Hash ثبت کند.
+4. سه خرابی (Log نمی‌رسد، SNMP، Backup) را رفع کند.
+5. گزارش و Rubric تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون جامع عملیات. کلید پاسخ پس از تلاش.
+نظارت بدون Log و Hardening بدون Backup نصفه است. G10 چهار پایه‌ی عملیات را با هم می‌سنجد: دیدن (Log)، شنیدن (Monitoring)، سخت‌کردن (Hardening) و بازگشت (Backup).
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-1. Syslog reliable از FGT به rsyslog؛ فایل روزانه.
-2. Baseline ۷ روز (شبیه‌سازی) و ۶ Trigger با Hysteresis.
-3. Hardening: ۱۰ کنترل با آزمون منفی.
-4. Backup→Sanitize→Git→Restore در Lab، RTO.
-5. Detection: ۲۰ Login ناموفق ⇒ Alert.
+FortiGate Edge باید: Syslog به 10.99.0.20؛ SNMPv3 به NMS؛ Alert روی ورود ناموفق Admin؛ Hardening طبق چک‌لیست؛ Backup روزانه و آزمون Restore.
 
-عیب‌ها (مربی): Route Syslog اشتباه؛ Trigger CPU بدون Baseline؛ Restore بدون گواهی.
+#### ۲) پیکربندی مرجع
 
-#### کلید (خلاصه)
+``` text
+config log syslogd setting
+ set status enable
+ set server 10.99.0.20
+ set port 514
+end
+config system snmp sysinfo
+ set status enable
+end
+config system snmp user
+ edit "nms"
+  set security-level auth-priv
+  set auth-proto sha256
+  set priv-proto aes256
+  set auth-pwd <FROM-VAULT>
+  set priv-pwd <FROM-VAULT>
+ next
+end
+config system global
+ set admintimeout 10
+ set admin-lockout-threshold 3
+end
+```
 
-- عیب ۱: `execute ping` از source-ip و Sniffer؛ رفع Route.
-- عیب ۲: آستانه=Baseline×1.3 و Maintenance window.
-- عیب ۳: Runbook Secrets/گواهی.
-- Detection: Alert بر 20 ناموفق/5m؛ Block مشروط.
+(`Unverified`؛ نام پارامترهای SNMPv3 با CLI help تأیید شود.)
 
-#### Rubric (۱۰۰)
+#### ۳) خرابی‌ها و کلید
 
-Log ۲۰؛ Monitoring ۲۵؛ Hardening ۲۰؛ Backup/Restore ۲۰؛ Detection/RCA ۵؛ صداقت ۱۰.
+**A: Log نمی‌رسد.** شاهد: Sniffer روی port مدیریت: UDP 514 خارج می‌شود ولی سرور نمی‌گیرد؛ Firewall سرور یا Route. رفع: Policy/Route و `source-ip`.
+
+**B: SNMP Timeout.** شاهد: `snmpwalk` timeout؛ علت: `allowaccess snmp` روی Interface نیست یا Host مجاز نیست. رفع.
+
+**C: Backup ناقص.** فایل ۰ بایت؛ علت: TFTP سرور/Route. رفع و Hash.
+
+#### ۴) چک‌لیست Hardening
+
+MFA، Trusted host، TLS 1.2+، Telnet/HTTP off، Timeout/Lockout، Backup رمزگذاری، Log خارجی.
+
+#### ۵) آزمون
+
+``` text
+execute log filter category 1
+execute log display
+snmpwalk -v3 -l authPriv -u nms <fgt-ip>
+execute backup config tftp f.conf 10.99.0.5
+sha256sum f.conf
+```
+
+#### ۶) Rubric
+
+Logging ۲۰، Monitoring ۲۰، Hardening ۲۰، Backup/Restore ۲۰، تشخیص ۳ خرابی و Evidence ۲۰. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| SNMP | v3 authPriv |
+| Backup | رمزگذاری و Hash |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Syslog و فایل.
+**ساده (حل‌شده):** Syslog: Event ورود Admin در سرور دیده می‌شود با زمان صحیح (NTP).
 
-**متوسط:** Trigger و Hardening.
+**متوسط (SNMP):** snmpwalk Timeout. مراحل: ۱) `show system interface mgmt` allowaccess بدون snmp. ۲) افزودن snmp و Host مجاز. ۳) snmpwalk موفق. پاسخ: allowaccess و Host.
 
-**سخت:** Restore و RCA.
+**سخت (Restore):** Restore در Lab: Backup گرفته؛ Config عمدی خراب؛ Restore؛ بوت؛ مقایسه Policy count و Hash اولیه. معیار: همه‌ی Policyها و Routeها بازگردانده؛ زمان Restore ثبت. ریسک: Backup حاوی رمز؛ رمزگذاری.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+execute log filter category 1
+execute log display
+execute backup config tftp f.conf 10.99.0.5
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence G10: جدول دستور/خروجی/نتیجه.
+- Log در سرور.
+- SNMP پاسخ.
+- Backup و Hash.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Alert نیامد | Syslog/Trigger | مسیر/آستانه |
+| Log نمی‌رسد | Sniffer | Route/Policy |
+| SNMP timeout | allowaccess | snmp |
 
 ### ۱۰) نکات امنیتی
 
-- Secret در Evidence نیست.
+- رمزها در Vault.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- آزمون عملیات = Log + Monitoring + Hardening + Restore + Detection.
+- Log+Monitoring+Hardening+Backup.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) شواهد لازم برای Log مرکزی؟ *(پاسخ: 27-5-ت1)*
+**ت1.** (ساده) چرا SNMPv3؟ *(پاسخ: 27-5-ت1)*
 
-**ت2.** (ساده) چرا Trigger باید Baseline داشته باشد؟ *(پاسخ: 27-5-ت2)*
+**ت2.** (ساده) چرا Hash Backup؟ *(پاسخ: 27-5-ت2)*
 
-**ت3.** (متوسط) عیب Route Syslog را چگونه کشف می‌کنید؟ *(پاسخ: 27-5-ت3)*
+**ت3.** (متوسط) Log نمی‌رسد؛ مراحل. *(پاسخ: 27-5-ت3)*
 
-**ت4.** (متوسط) RTO را چگونه گزارش می‌کنید؟ *(پاسخ: 27-5-ت4)*
+**ت4.** (متوسط) allowaccess snmp؟ *(پاسخ: 27-5-ت4)*
 
-**ت5.** (سخت) Detection Brute-force از Log تا Alert را شرح دهید. *(پاسخ: 27-5-ت5)*
+**ت5.** (سخت) Restore آزمایشی. *(پاسخ: 27-5-ت5)*
 
-**ت6.** (سخت، طراحی) برنامه‌ی بهبود پس از آزمون. *(پاسخ: 27-5-ت6)*
+**ت6.** (سخت، طراحی) چک‌لیست G10. *(پاسخ: 27-5-ت6)*
 
-**Q1.** Quick quiz (English): What evidence proves central logging works? *(پاسخ: 27-5-Q1)*
+**Q1.** Quick quiz (English): Why should backups be encrypted? *(پاسخ: 27-5-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| G10 | Gate 10 | دروازه ۱۰ |
+| NMS | Network Management System | سامانه‌ی مدیریت |
 
-- *Collect evidence for every gate.* ← برای هر Gate شاهد جمع کنید.
+- *Test the restore, not only the backup.* ← Restore را هم آزمون کنید نه فقط Backup.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** G10. **Evidence:** `03-ops/g10.md`.
+**کارت Lab:** G10 (اجرا نشده). **Evidence:** `03-ops/g10.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۷-۰ تا ۲۷-۷
+- Fortinet FortiOS 7.0 Administration Guide: Logging; SNMP; Backup
 
 ## درس 27-7 — Hardening، Backup/Restore و API: امن‌سازی مدیریتی و بازیابی قابل‌اثبات
 
@@ -40316,19 +41488,22 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 
 ### پاسخ‌های بازنویسی عمیق درس 27-5
 
-**27-5-ت1** — فایل Log روزانه روی سرور با رویداد آزمایشی و tcpdump TCP 514.
 
-**27-5-ت2** — تا آستانه با رفتار عادی تنظیم شود و Alert کاذب کم شود.
+### پاسخ‌های بازنویسی عمیق درس 27-5
 
-**27-5-ت3** — `execute ping` با source-ip، Sniffer روی Interface خروجی، tcpdump سرور.
+**27-5-ت1** — احراز هویت و رمزگذاری.
 
-**27-5-ت4** — زمان‌بندی مراحل Restore و Verification؛ مقایسه با هدف؛ Gap.
+**27-5-ت2** — تأیید صحت.
 
-**27-5-ت5** — Event Login failed در Syslog؛ Parser؛ Trigger 20/5m؛ Alert؛ Playbook Block؛ ثبت.
+**27-5-ت3** — Sniffer، Route، Policy، سرور.
 
-**27-5-ت6** — Alert Dependency، HA Syslog، Restore خودکار، Drift report.
+**27-5-ت4** — لازم برای پاسخ SNMP.
 
-**27-5-Q1** — A log file on the server containing a test event, plus a packet capture of the syslog session.
+**27-5-ت5** — Backup، خراب، Restore، مقایسه.
+
+**27-5-ت6** — ۷ مورد.
+
+**27-5-Q1** — Because they contain passwords and keys.
 
 ### پاسخ‌های درس افزوده‌ی 27-0 (فصل 27)
 
@@ -41220,102 +42395,142 @@ get system performance status
 
 <a id="l-28-5"></a>
 
-## درس 28-5 — آزمون عملی فصل ۲۸: تحلیل سه PCAP و RCA — صورت مسئله، کلید و Rubric
+## درس 28-5 — آزمون عملی فصل ۲۸: تحلیل سه PCAP و RCA — صورت مسئله، کلید پاسخ و Rubric
 
-**فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۱ تا ۲۸-۴ · ≈ 8 ساعت**
+**فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۱ تا ۲۸-۴، ۱۴-۲ · ≈ 12 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. سه PCAP را تحلیل و علت هرکدام را با شواهد بیان کند.
-2. RCA و رفع/پیشگیری بنویسد.
-3. محاسبات کمی (RTT، Retrans، BDP) را انجام دهد.
-4. گزارش آزمون را در قالب TS Block تحویل دهد.
+1. سه PCAP را با Display Filter تحلیل کند.
+2. الگوهای SYN-بی‌پاسخ، Retransmission/MTU و DNS/TLS شکست را تشخیص دهد.
+3. برای هر PCAP RCA بنویسد.
+4. رفع پیشنهادی و آزمون تأیید را بنویسد.
+5. Evidence با شماره‌ی بسته ثبت کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون عملی با سه پرونده. کلید پاسخ پس از تلاش.
+PCAP بی‌طرف‌ترین شاهد است. دو مهندس بر سر علت بحث می‌کنند؛ یک فایل PCAP حکم می‌دهد. ولی تنها وقتی که بدانید چه را در آن ببینید. این آزمون سه الگوی کلاسیک را می‌سنجد.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-PCAP-1: دانلود بزرگ روی Tunnel که می‌ایستد.
-PCAP-2: برنامه‌ی دسکتاپ فقط پشت فایروال خطای TLS می‌دهد.
-PCAP-3: اتصال وب به یک سرور ناموفق؛ سرور از جای دیگری پاسخ می‌دهد.
+سه فایل: `case1.pcap` (سایت باز نمی‌شود)، `case2.pcap` (دانلود می‌ایستد)، `case3.pcap` (HTTPS خطا). برای هرکدام: الگو، علت، رفع، آزمون.
 
-برای هر PCAP: الگو، محاسبه، علت، رفع، تأیید، پیشگیری.
+#### ۲) فیلترهای پایه
 
-#### کلید پاسخ
+``` text
+tcp.flags.syn==1 && tcp.flags.ack==0
+tcp.analysis.retransmission
+tcp.flags.reset==1
+icmp.type==3 && icmp.code==4
+dns.flags.rcode != 0
+tls.alert_message
+```
 
-- PCAP-1: Retransmission بسته‌های ≥ 1400 B؛ نبود ICMP 3/4؛ MTU/PMTUD Black hole؛ رفع MSS Clamp و ICMP.
-- PCAP-2: Alert unknown_ca/Issuer فایروال؛ CA در Store برنامه نیست یا Pinning؛ رفع: نصب CA/Exemption.
-- PCAP-3: SYN در یک Interface و SYN/ACK در دیگری؛ Asymmetric؛ رفع Route/Policy Route.
+#### ۳) کلید
 
-#### Rubric
+**Case 1:** ۵ بسته SYN از کلاینت با Retransmit (۱، ۳، ۷ ثانیه) و هیچ SYN-ACK. علت: مقصد/Firewall سرور SYN را نمی‌پذیرد یا مسیر برگشت. رفع: بررسی Policy/Route/سرور؛ Capture در مقصد.
 
-تحلیل ۳۰؛ محاسبات ۱۵؛ RCA ۲۵؛ رفع/پیشگیری ۱۵؛ قالب/صداقت ۱۵.
+**Case 2:** Handshake و چند بسته‌ی کوچک ok؛ بسته‌ی بزرگ (1514 بایت) Retransmit مکرر؛ ICMP نوع 3 کد 4 در جهت مخالف یا غایب. علت: MTU مسیر کمتر. رفع: MSS-clamp/اجازه‌ی ICMP.
+
+**Case 3:** TLS Handshake: ClientHello سپس Alert (fatal) `certificate_unknown` یا `handshake_failure`. علت: گواهی نامعتبر/Inspection/SNI. رفع: گواهی CA مورد اعتماد کلاینت، یا Exempt در SSL Inspection.
+
+#### ۴) قالب Evidence
+
+``` text
+case: 2
+frames: 41-58 (large segments retransmitted), 60 (ICMP 3/4)
+finding: PMTU 1400 ; MSS 1460
+fix: tcp-mss 1360 ; allow ICMP frag-needed
+verify: download 100MB x3 without retransmission
+```
+
+#### ۵) Rubric
+
+الگوی هر Case ۱۵×۳، RCA ۲۰، رفع و آزمون ۱۵، Evidence با شماره‌ی بسته ۱۵، صداقت ۵. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| فیلتر | دقیق |
+| ثبت | شماره بسته |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**PCAP-1:** MTU/PMTUD.
+**ساده (حل‌شده):** Case 1: فقط SYN. نتیجه: پاسخی نیامده؛ مسیر/سرور.
 
-**PCAP-2:** CA/Pinning.
+**متوسط (Case 2):** بسته‌ی ۱۵۱۴ بایتی با DF Retransmit؛ بسته‌های ≤ ۱۴۰۰ می‌رسد؛ PMTU≈1400؛ رفع MSS 1360؛ آزمون دانلود.
 
-**PCAP-3:** Asymmetric.
+**سخت (Case 3):** TLS Alert certificate_unknown پس از ServerHello/Certificate. مراحل: ۱) Certificate در frame 12؛ Issuer ناشناخته. ۲) علت: SSL Inspection با CA داخلی که روی کلاینت نصب نیست. ۳) رفع: نصب CA یا Exempt. ۴) آزمون: Handshake کامل.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+tcp.flags.syn==1 && tcp.flags.ack==0
+tcp.analysis.retransmission
+tls.alert_message
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- گزارش سه TS Block.
+- شماره بسته‌ها در Evidence.
+- آزمون پس از رفع.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| تحلیل ناقص | Rubric | کسری |
+| SYN بی‌پاسخ | مقصد/Firewall | Capture دو سمت |
+| بزرگ می‌ایستد | MTU | MSS |
+| TLS alert | گواهی | CA/Exempt |
 
 ### ۱۰) نکات امنیتی
 
-- PCAP امن.
+- PCAP حاوی داده‌ی حساس است.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- سه پرونده با RCA.
+- سه الگو.
+- Evidence با شماره بسته.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) PCAP-1: کدام الگو MTU را نشان می‌دهد؟ *(پاسخ: 28-5-ت1)*
+**ت1.** (ساده) SYN بدون SYN-ACK؟ *(پاسخ: 28-5-ت1)*
 
-**ت2.** (ساده) PCAP-2: Issuer چه می‌گوید؟ *(پاسخ: 28-5-ت2)*
+**ت2.** (ساده) ICMP 3/4؟ *(پاسخ: 28-5-ت2)*
 
-**ت3.** (متوسط) PCAP-3: چگونه Asymmetric را ثابت می‌کنید؟ *(پاسخ: 28-5-ت3)*
+**ت3.** (متوسط) Retransmission بزرگ؟ *(پاسخ: 28-5-ت3)*
 
-**ت4.** (متوسط) محاسبه کنید: Window 128 KB، RTT 50 ms؛ حد Throughput. *(پاسخ: 28-5-ت4)*
+**ت4.** (متوسط) TLS alert certificate_unknown؟ *(پاسخ: 28-5-ت4)*
 
-**ت5.** (سخت) RCA کامل برای PCAP-1. *(پاسخ: 28-5-ت5)*
+**ت5.** (سخت) Case 3 را رفع کنید. *(پاسخ: 28-5-ت5)*
 
-**ت6.** (سخت، طراحی) برنامه‌ی پیشگیری برای هر سه پرونده. *(پاسخ: 28-5-ت6)*
+**ت6.** (سخت، طراحی) قالب Evidence. *(پاسخ: 28-5-ت6)*
 
-**Q1.** Quick quiz (English): What distinguishes an MTU problem in a capture? *(پاسخ: 28-5-Q1)*
+**Q1.** Quick quiz (English): Which wireshark filter finds retransmissions? *(پاسخ: 28-5-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| RCA | Root Cause Analysis | تحلیل علت ریشه‌ای |
+| PCAP | Packet capture | فایل Capture |
 
-- *Attach evidence to every conclusion.* ← هر نتیجه شاهد داشته باشد.
+- *Cite frame numbers as evidence.* ← شماره‌ی فریم‌ها را به‌عنوان Evidence ذکر کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** آزمون TS. **Evidence:** `03-ops/ts-exam.md`.
+**کارت Lab:** آزمون PCAP (اجرا نشده). **Evidence:** `03-ops/pcap-rca.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۲۸-۱ تا ۲۸-۴
+- Wireshark User Guide
+- RFC 1191
 
 ## پاسخ‌های فصل 28
 
@@ -41392,19 +42607,22 @@ PCAP-3: اتصال وب به یک سرور ناموفق؛ سرور از جای �
 
 ### پاسخ‌های بازنویسی عمیق درس 28-5
 
-**28-5-ت1** — Retransmission بسته‌های بزرگ و نبود ICMP Frag Needed.
 
-**28-5-ت2** — اگر Issuer فایروال باشد Deep Inspection فعال است؛ خطا یعنی CA در Store برنامه نیست یا Pinning.
+### پاسخ‌های بازنویسی عمیق درس 28-5
 
-**28-5-ت3** — SYN در یک Interface/فایروال و SYN/ACK در دیگری؛ session فقط یکجا.
+**28-5-ت1** — مقصد/مسیر پاسخ نمی‌دهد.
 
-**28-5-ت4** — 128 KB/0.05 s ≈ 2.56 MB/s ≈ 20.5 Mbit/s.
+**28-5-ت2** — Fragmentation needed.
 
-**28-5-ت5** — علامت: دانلود می‌ایستد؛ شواهد: Retrans بسته‌های بزرگ، بدون ICMP؛ علت: MTU Tunnel+PMTUD Black hole؛ رفع: MSS Clamp 1360 و ICMP؛ تأیید: دانلود کامل؛ پیشگیری: استاندارد MTU.
+**28-5-ت3** — MTU/Loss.
 
-**28-5-ت6** — MTU استاندارد/ICMP، CA مدیریت‌شده و Exemption لیست، Route متقارن و Alert RPF.
+**28-5-ت4** — گواهی ناشناخته.
 
-**28-5-Q1** — Large packets are retransmitted while smaller packets pass, often without ICMP fragmentation-needed messages.
+**28-5-ت5** — CA یا Exempt.
+
+**28-5-ت6** — frames، finding، fix، verify.
+
+**28-5-Q1** — tcp.analysis.retransmission.
 
 ### پاسخ‌های درس افزوده‌ی 28-0 (فصل 28)
 
@@ -41985,111 +43203,141 @@ execute backup config sftp pre-patch.conf 192.168.90.10 backup-user <PASSWORD>
 
 <a id="l-29-4"></a>
 
-## درس 29-4 — گزارش حادثه (PIR) و آزمون عملی Blue Team: سناریوی چندمرحله‌ای با Rubric
+## درس 29-4 — گزارش حادثه (PIR) و آزمون عملی Blue Team: سناریوی چندمرحله‌ای با کلید و Rubric
 
-**فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰ تا ۲۹-۳ · ≈ 8 ساعت**
+**فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۱ تا ۲۹-۳ · ≈ 12 ساعت**
 
-> **وضعیت:** مفهومی؛ فقط Lab ایزوله و مجاز؛ FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. سناریوی چندمرحله‌ای (Scan→Brute-force→ورود→حرکت جانبی) را Detect و Contain کند.
-2. PIR بدون سرزنش با Timeline و اقدام‌های قابل‌پیگیری بنویسد.
-3. معیارهای MTTD/MTTR و کیفیت Detection را ارزیابی کند.
-4. Playbookها را بر پایه‌ی درس‌آموخته به‌روز کند.
+1. یک حادثه‌ی چندمرحله‌ای (Brute-force → دسترسی → حرکت جانبی) را از Log بازسازی کند.
+2. Timeline، Containment، Eradication و Recovery را بنویسد.
+3. MTTD/MTTR را محاسبه کند.
+4. PIR بی‌ملامت (Blameless) با اقدام پیشگیرانه بنویسد.
+5. آزمون را با Rubric تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون عملی بر پایه‌ی سناریوی مجاز در Lab. کلید پاسخ پس از تلاش.
+حادثه‌ی واقعی هیچ‌وقت با برچسب «حمله‌ی چندمرحله‌ای» نمی‌آید. چند هشدار پراکنده می‌آید و مهندس باید آن‌ها را به یک داستان وصل کند. PIR (Post-Incident Review) آموختن از آن داستان است، نه تقصیر.
 
 ### ۳) توضیح عمیق فنی
 
-#### سناریو (Lab مجاز)
+#### ۱) سناریو
 
-۱) Scan از Attacker-Lab؛ ۲) ۲۰ Login ناموفق VPN؛ ۳) ورود موفق؛ ۴) تلاش دسترسی DMZ→DB (Deny).
+ساعت 02:10 Alert: ۴۰ ورود ناموفق SSH به FGT از IP 192.0.2.77. 02:14 ورود موفق admin. 02:20 تغییر Policy و ایجاد حساب `svc-tmp`. 02:35 اتصال از FGT به 10.20.0.10:445 (Scan). 03:05 SOC متوجه می‌شود.
 
-#### وظایف
+#### ۲) Timeline
 
-Detect، Triage، Contain (Block+Clear+Lock)، Scope، RCA، PIR، بهبود Detection.
+| ساعت | رویداد | منبع |
+|---|---|---|
+| 02:10 | Brute-force SSH | Event log |
+| 02:14 | ورود موفق | Event log |
+| 02:20 | ساخت `svc-tmp` | Config change log |
+| 02:35 | Scan داخلی | Forward traffic |
+| 03:05 | کشف | SOC |
 
-#### قالب PIR
+MTTD = 03:05 − 02:10 = 55 دقیقه.
+
+#### ۳) پاسخ
+
+**Containment:** Block IP با Local-in، غیرفعال کردن admin و `svc-tmp`، جدا کردن Mgmt، کنسول. **Eradication:** حذف حساب‌ها، تغییر رمزها/کلیدها، بررسی Config Diff با Backup، پچ. **Recovery:** Restore Config پاک، Monitoring تشدید.
+
+#### ۴) ریشه
+
+SSH روی WAN باز و بدون MFA/Trusted host؛ رمز ضعیف.
+
+#### ۵) اقدام پیشگیرانه
+
+حذف SSH از WAN، MFA، Trusted host، Alert بر Brute-force، بازبینی Config روزانه (Diff)، آموزش.
+
+#### ۶) PIR (قالب)
 
 ``` text
-Summary / Impact / Timeline (UTC) / Detection / Containment / Root cause
-What went well / What went poorly / Actions (owner, date) / Metrics (MTTD, MTTR)
+Summary / Impact / Timeline / Root cause / What went well / What failed / Actions (owner, due) / Lessons
 ```
 
-#### کلید (خلاصه)
+#### ۷) Rubric
 
-- Detect: Alert Scan، Brute-force، Correlation ورود موفق.
-- Contain: Block IP، Lock کاربر، پایان Session؛ Evidence قبلی.
-- RCA: نبود MFA/Rate limit؛ Local-in.
-- Actions: MFA، Alert Correlation، Segmentation DMZ→DB.
+Timeline ۲۰، Containment/Eradication ۲۰، ریشه ۲۰، اقدام ۲۰، PIR و MTTD/MTTR ۱۵، صداقت ۵. قبولی ۷۵.
 
-#### Rubric (۱۰۰)
+### ۴) طراحی و تصمیم‌گیری
 
-Detection ۲۵؛ مهار ۲۵؛ RCA ۲۰؛ PIR ۲۰؛ صداقت ۱۰.
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Containment | اول جلوگیری |
+| PIR | Blameless |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Timeline.
+**ساده (حل‌شده):** MTTD = 03:05 − 02:10 = ۵۵ دقیقه؛ MTTR (تا Containment 03:25) = ۷۵ دقیقه از شروع.
 
-**متوسط:** مهار و Scope.
+**متوسط (Containment):** اول IP مهاجم را Block و Admin/svc-tmp را غیرفعال؛ سپس Config را با Backup مقایسه؛ برای جلوگیری از حذف شواهد Log را ذخیره.
 
-**سخت:** PIR و اقدام‌ها.
+**سخت (PIR):** نوشتن PIR کامل: خلاصه، اثر (دسترسی به Config، Scan داخلی بدون نفوذ به سرور)، Timeline، ریشه (SSH WAN + رمز ضعیف)، موفق (Alert دریافت شد)، شکست (۵۵ دقیقه تأخیر)، اقدام‌ها با مالک و تاریخ.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+execute log filter category 1
+execute log display
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- PIR تکمیل.
+- Timeline با Log.
+- اقدام‌ها مالک دارند.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Detection دیر | Metrics | آستانه |
+| Timeline ناقص | Log | NTP/Log متمرکز |
 
 ### ۱۰) نکات امنیتی
 
-- Lab.
+- شواهد را حفظ کنید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- PIR بدون سرزنش.
+- از Alert به داستان.
+- Containment.
+- Blameless PIR.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) PIR شامل چه بخش‌هایی است؟ *(پاسخ: 29-4-ت1)*
+**ت1.** (ساده) MTTD چیست؟ *(پاسخ: 29-4-ت1)*
 
-**ت2.** (ساده) Blameless یعنی چه؟ *(پاسخ: 29-4-ت2)*
+**ت2.** (ساده) Containment؟ *(پاسخ: 29-4-ت2)*
 
-**ت3.** (متوسط) MTTD و MTTR را در سناریو چگونه محاسبه می‌کنید؟ *(پاسخ: 29-4-ت3)*
+**ت3.** (متوسط) اولین اقدام؟ *(پاسخ: 29-4-ت3)*
 
-**ت4.** (متوسط) چرا Correlation ورود موفق مهم است؟ *(پاسخ: 29-4-ت4)*
+**ت4.** (متوسط) ریشه؟ *(پاسخ: 29-4-ت4)*
 
-**ت5.** (سخت) سه اقدام پیشگیرانه از PIR. *(پاسخ: 29-4-ت5)*
+**ت5.** (سخت) PIR بنویسید. *(پاسخ: 29-4-ت5)*
 
-**ت6.** (سخت، طراحی) به‌روزرسانی Playbook پس از درس‌آموخته. *(پاسخ: 29-4-ت6)*
+**ت6.** (سخت، طراحی) اقدام پیشگیرانه. *(پاسخ: 29-4-ت6)*
 
-**Q1.** Quick quiz (English): Which metrics summarize detection and response performance? *(پاسخ: 29-4-Q1)*
+**Q1.** Quick quiz (English): What does MTTD measure? *(پاسخ: 29-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| PIR | Post-incident review | بازبینی پس از حادثه |
+| PIR | Post-Incident Review | بازبینی پس از حادثه |
+| MTTD | Mean Time To Detect | میانگین زمان کشف |
 
-- *Write a blameless post-incident review.* ← PIR بدون سرزنش بنویسید.
+- *A blameless review focuses on process, not people.* ← بازبینی بی‌ملامت روی فرایند است نه افراد.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Incident. **Evidence:** `03-ops/incident.md`.
+**کارت Lab:** آزمون Blue Team (اجرا نشده). **Evidence:** `03-ops/pir-29.md`.
 
 ### ۱۵) منابع
 
-- NIST SP 800-61
-- Google SRE Book (Postmortem culture)
+- NIST SP 800-61 Rev.2
 
 ## پاسخ‌های فصل 29
 
@@ -42149,19 +43397,22 @@ Detection ۲۵؛ مهار ۲۵؛ RCA ۲۰؛ PIR ۲۰؛ صداقت ۱۰.
 
 ### پاسخ‌های بازنویسی عمیق درس 29-4
 
-**29-4-ت1** — خلاصه، اثر، Timeline، Detection، مهار، علت، خوب/بد، اقدام و Metrics.
 
-**29-4-ت2** — تمرکز بر فرایند و سیستم نه سرزنش افراد.
+### پاسخ‌های بازنویسی عمیق درس 29-4
 
-**29-4-ت3** — MTTD = زمان کشف − شروع حمله؛ MTTR = زمان بازیابی/بسته‌شدن − زمان کشف.
+**29-4-ت1** — زمان تا کشف.
 
-**29-4-ت4** — نشان می‌دهد Brute-force موفق بوده و اولویت را بالا می‌برد.
+**29-4-ت2** — جلوگیری از گسترش.
 
-**29-4-ت5** — MFA الزامی، Alert Correlation، Segmentation DMZ→DB و Local-in.
+**29-4-ت3** — Block و غیرفعال حساب.
 
-**29-4-ت6** — افزودن گام Evidence، آستانه‌ی جدید، مسئول‌ها، آزمون دوره‌ای.
+**29-4-ت4** — SSH WAN و رمز.
 
-**29-4-Q1** — Mean time to detect and mean time to restore (MTTD and MTTR).
+**29-4-ت5** — قالب.
+
+**29-4-ت6** — حذف SSH WAN، MFA، Alert.
+
+**29-4-Q1** — The mean time between the start of an incident and its detection.
 
 ### پاسخ‌های درس افزوده‌ی 29-0 (فصل 29)
 
@@ -42599,231 +43850,287 @@ get system status
 
 ## درس 30-3 — تست پیش/پس Migration و Evidence: Test Matrix، مقایسه‌ی Session/Log، RCA اختلاف‌ها
 
-**فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰ تا ۳۰-۲، ۲۸-۰ · ≈ 8 ساعت**
+**فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۱، ۳۰-۲ · ≈ 11 ساعت**
 
-> **وضعیت:** روش‌شناسی مستقل از برند؛ نگاشت ASA→FortiGate مفهومی/`Unverified`؛ فقط Lab/Change مجاز؛ FortiOS 7.0.3 (بوت‌نشده).
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Test Matrix جامع (مثبت/منفی/عملکرد/Failover) بنویسد.
-2. قبل و بعد را با داده (Session، NAT، Log، Latency) مقایسه کند.
-3. اختلاف‌ها را RCA و رفع کند.
-4. Evidence را بسته‌بندی و Sign-off بگیرد.
-5. Hypercare Metrics را پیگیری کند.
+1. Test Matrix پیش و پس را با معیار عددی بنویسد.
+2. Session، Route، Policy hit و Log را قبل/بعد مقایسه کند.
+3. اختلاف‌ها را دسته‌بندی (قابل‌قبول/نیازمند رفع) و RCA کند.
+4. Evidence را سازمان‌دهی کند.
+5. تصمیم Go/No-Go بگیرد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-برابری رفتاری باید اثبات شود، نه فرض. Test Matrix + مقایسه‌ی داده + رفع اختلاف = اثبات.
+پس از Migration می‌پرسند «همه‌چیز مثل قبل است؟». بدون Baseline نمی‌توانید جواب دهید. این درس نشان می‌دهد چه چیزهایی را قبل از تغییر اندازه بگیرید تا پس از آن با عدد جواب دهید.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) ساختار Test Matrix
-
-| ID | سرویس | مبدأ | مقصد | انتظار | قبل (مرجع) | بعد | وضعیت |
-|---|---|---|---|---|---|---|---|
-| T1 | وب | Users | Internet | OK | ✓ | ✓ | Pass |
-| T2 | ERP | Users | SRV | OK | ✓ | ✓ | Pass |
-| T3 | ممنوع | Guest | SRV | Block | ✓ | ✓ | Pass |
-| T4 | VPN | Branch | HQ | OK | ✓ | ✓ | Pass |
-| T5 | NAT/IP ثابت | SRV | Partner | IP صحیح | ✓ | ✗ | Fail |
-
-#### ۲) مقایسه‌ی داده
-
-- Session count و CPS قبل/بعد (ظرفیت).
-- NAT: IP مبدأ دیده‌شده توسط Partner.
-- Log: توزیع Policy/Deny غیرعادی.
-- Latency/Throughput.
-
-#### ۳) RCA اختلاف
+#### ۱) Baseline
 
 ``` text
-T5 fail: Partner sees new IP -> cause: SNAT pool differs -> fix: IP Pool = old public IP -> verify T5
+get system status
+diagnose sys session stat
+get router info routing-table all
+diagnose firewall iprope list (summary)   Unverified
+policy hit counts (top 20)
+IPsec: get vpn ipsec tunnel summary
 ```
 
-#### ۴) Evidence و Sign-off
+#### ۲) Test Matrix
 
-بسته‌ی Evidence: Matrix، Log، Capture، Config نهایی (Sanitized)، امضا مالکان سرویس.
+| # | آزمون | قبل | بعد | معیار |
+|---|---|---|---|---|
+| 1 | ping/DNS | ok | ok | برابر |
+| 2 | HTTPS خروج | ok | ok | برابر |
+| 3 | VIP وب | ok | ok | برابر |
+| 4 | IPsec | up | up | برابر |
+| 5 | تعداد Session | 41k | 39k | ±10٪ |
+| 6 | Routeها | N | N | برابر |
+| 7 | Policy hit | baseline | مقایسه | روند مشابه |
+| 8 | Log | ok | ok | ورود Log |
 
-#### ۵) Hypercare Metrics
+#### ۳) دسته‌بندی اختلاف
 
-Ticket مرتبط، Deny غیرعادی، CPU/Session، شکایت کاربران؛ آستانه‌ی خروج از Hypercare.
+| اختلاف | دسته | اقدام |
+|---|---|---|
+| Session 5٪ کمتر | قابل‌قبول | ثبت |
+| IPsec down | بحرانی | RCA و رفع |
+| Policy hit صفر | بررسی | Mapping |
+
+#### ۴) RCA نمونه
+
+IPsec down: Proposal پیش‌فرض نسخه‌ی جدید تغییر کرده؛ شاهد Debug؛ رفع صریح؛ پیشگیری: Config صریح (نه اتکا به پیش‌فرض).
+
+#### ۵) Go/No-Go
+
+Go اگر همه‌ی بحرانی‌ها OK و اختلاف قابل‌قبول؛ No-Go ⇒ Rollback.
 
 ### ۴) طراحی و تصمیم‌گیری
 
 | سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Matrix | مثبت/منفی/Performance/Failover |
-| Sign-off | مالک سرویس |
+| Baseline | قبل از تغییر |
+| Go/No-Go | معیار عددی |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Matrix ۱۰ سطری؛ همه Pass؛ Evidence.
+**ساده (حل‌شده):** Session قبل 41k، بعد 39k ⇒ −۴٫۹٪ ⇒ قابل‌قبول.
 
-**متوسط (تحلیل):** T5 Fail: Partner IP جدید می‌بیند؛ RCA: IP Pool؛ رفع؛ Pass؛ ثبت.
+**متوسط (Policy hit):** Policy 20 قبل Hit 1M، بعد 0. علت: Interface Mapping اشتباه (port2 ↔ port3). رفع: Mapping؛ Hit بازگشت.
 
-**سخت (ظرفیت):** پس از Cutover CPU 85٪ (قبلاً 40٪): UTM روی همه. تحلیل: Profile پیش‌فرض/Deep؛ رفع: Profile انتخابی؛ مقایسه‌ی Baseline؛ Hypercare. درس: Test Matrix باید Performance هم داشته باشد.
+**سخت (Go/No-Go):** IPsec up ولی دانلود می‌ایستد، Log ingestion قطع. تصمیم: No-Go؛ Rollback ظرف ۱۰ دقیقه؛ RCA در Lab (MTU/Log setting)؛ اقدام: آزمون کامل پیش از تلاش دوم.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
 diagnose sys session stat
-get system performance status
-diagnose sys session list
+get vpn ipsec tunnel summary
 ```
 
 ### ۸) Verification (اثبات صحت)
 
-- Matrix کامل.
-- مقایسه‌ی قبل/بعد.
-- Sign-off.
+- Test Matrix.
+- Evidence.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Fail | RCA | NAT/Policy |
-| Performance | CPU | Profile |
+| Session کم | Timeout | session-ttl |
 
 ### ۱۰) نکات امنیتی
 
-- Evidence بدون Secret.
+- Evidence بدون رمز.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- اثبات برابری رفتاری.
-- مقایسه‌ی داده.
-- RCA اختلاف.
-- Sign-off.
+- Baseline.
+- Matrix.
+- RCA.
+- Go/No-Go.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) چرا Matrix؟ *(پاسخ: 30-3-ت1)*
+**ت1.** (ساده) چرا Baseline؟ *(پاسخ: 30-3-ت1)*
 
-**ت2.** (ساده) چرا Performance در Matrix؟ *(پاسخ: 30-3-ت2)*
+**ت2.** (ساده) ±۱۰٪؟ *(پاسخ: 30-3-ت2)*
 
-**ت3.** (متوسط) T5 Fail: Partner IP جدید می‌بیند؛ تحلیل. *(پاسخ: 30-3-ت3)*
+**ت3.** (متوسط) Policy hit صفر؟ *(پاسخ: 30-3-ت3)*
 
-**ت4.** (متوسط) Sign-off از چه کسی؟ *(پاسخ: 30-3-ت4)*
+**ت4.** (متوسط) دسته‌بندی؟ *(پاسخ: 30-3-ت4)*
 
-**ت5.** (سخت) CPU از 40٪ به 85٪ رسید؛ تحلیل. *(پاسخ: 30-3-ت5)*
+**ت5.** (سخت) No-Go چه می‌کنید؟ *(پاسخ: 30-3-ت5)*
 
-**ت6.** (سخت، طراحی) Matrix ۱۵ سطری برای سازمان. *(پاسخ: 30-3-ت6)*
+**ت6.** (سخت، طراحی) Test Matrix. *(پاسخ: 30-3-ت6)*
 
-**Q1.** Quick quiz (English): What does a before/after test matrix demonstrate? *(پاسخ: 30-3-Q1)*
+**Q1.** Quick quiz (English): Why must you collect a baseline before migration? *(پاسخ: 30-3-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Sign-off | Sign-off | تأیید نهایی |
+| Baseline | Baseline measurement | اندازه‌ی مبنا |
 
-- *Compare before and after with data.* ← قبل و بعد را با داده مقایسه کنید.
+- *Compare before and after with evidence.* ← قبل و بعد را با شواهد مقایسه کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Matrix. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/mig-test.md`.
+**کارت Lab:** تست Migration (اجرا نشده). **Evidence:** `03-ops/migration-tests.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۳۰-۰ تا ۳۰-۲
+- Fortinet FortiOS 7.0 Administration Guide: Upgrade
 
 <a id="l-30-4"></a>
 
-## درس 30-4 — Gate G11: آزمون عملی Migration — صورت مسئله، کلید و Rubric
+## درس 30-4 — Gate G11: آزمون عملی Migration — صورت مسئله، کلید پاسخ کامل و Rubric
 
-**فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰ تا ۳۰-۳ · ≈ 8 ساعت**
+**فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۱ تا ۳۰-۳ · ≈ 12 ساعت**
 
-> **وضعیت:** روش‌شناسی مستقل از برند؛ نگاشت ASA→FortiGate مفهومی/`Unverified`؛ فقط Lab/Change مجاز؛ FortiOS 7.0.3 (بوت‌نشده).
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Inventory/Hygiene، Plan/Rollback، Cutover Lab و Test Matrix را تحویل دهد.
-2. یک اختلاف تزریق‌شده (NAT/Implicit rule) را RCA و رفع کند.
-3. Rollback را در Lab آزمایش کند.
-4. Evidence و Sign-off ارائه دهد.
+1. برنامه‌ی Migration (Plan، Pre-check، Cutover، Post-check، Rollback) را بنویسد.
+2. Test Matrix پیش/پس را اجرا و مقایسه کند.
+3. اختلاف‌ها را با RCA تحلیل کند.
+4. Rollback را در Lab آزمون کند.
+5. گزارش و Rubric را تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون عملی جامع مهاجرت.
+Migration یعنی تعویض فایروال قدیمی با جدید بدون قطع طولانی. خطر اصلی «کار می‌کرد، حالا نه» است؛ پس باید از قبل بدانید چه چیزی کار می‌کرد (Baseline) و پس از آن همان را اندازه بگیرید. این Gate سنجش همین انضباط است.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-مبدأ: فایروال قدیمی با ۲۰۰ Rule و NAT. هدف: FortiGate. دو اختلاف تزریق‌شده: (۱) Implicit rule؛ (۲) IP Pool.
+جایگزینی FGT-OLD (v6.4) با FGT-NEW (v7.0.3) در Lab. نیاز: Config تبدیل‌شده، Policyها هم‌ارز، Cutover در Window ۶۰ دقیقه‌ای، Rollback زیر ۱۰ دقیقه.
 
-#### کلید
+#### ۲) Plan
 
-- Hygiene: حذف Rule صفر-Hit؛ Mapping.
-- Implicit: Policy صریح؛ آزمون.
-- Pool: IP قبلی.
-- Rollback آزمایش‌شده ≤ ۱۵ دقیقه.
+``` text
+T-7d  inventory, baseline, backup
+T-3d  convert config, review diff, lab test
+T-1d  dry run in Lab, rollback test
+T0    cutover (change window 60 min)
+T+1h  post-check
+T+1d  monitoring review, close CHG
+```
 
-#### Rubric
+#### ۳) Test Matrix
 
-Inventory/Hygiene ۲۰؛ Plan/Rollback ۲۵؛ Cutover و Matrix ۳۰؛ RCA ۱۵؛ صداقت ۱۰.
+| # | آزمون | قبل | بعد |
+|---|---|---|---|
+| 1 | ping GW و DNS | ok | ok |
+| 2 | HTTPS خروج | ok | ok |
+| 3 | VIP وب | ok | ok |
+| 4 | IPsec Site-to-Site | up | up |
+| 5 | Session count | N | ≈N |
+| 6 | Policy hit counts | baseline | مقایسه |
+| 7 | Log ingestion | ok | ok |
+
+#### ۴) Cutover و Rollback
+
+``` text
+1 backup OLD and NEW
+2 move cables or VIP in documented order
+3 run test matrix (items 1-7)
+4 if any critical fail within 15 min -> rollback: restore cabling/IP, verify OLD
+```
+
+#### ۵) مقایسه‌ی اختلاف‌ها
+
+- Session count بعد ۱۰٪ کمتر: Timeout یا offload متفاوت؛ بررسی `get system session-ttl`.
+- IPsec up نمی‌شود: Proposal پیش‌فرض نسخه‌ی جدید عوض شده؛ مقایسه با Release Notes.
+- Policy hit صفر: ترتیب/Interface نگاشت اشتباه.
+
+#### ۶) Rubric
+
+Plan ۲۰، Test Matrix ۲۵، Cutover/Rollback ۲۰، اختلاف‌ها و RCA ۲۰، Evidence و صداقت ۱۵. قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Window | ۶۰ دقیقه با Rollback |
+| Baseline | قبل از تغییر |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** Inventory.
+**ساده (حل‌شده):** Test Matrix ردیف ۱–۳ قبل از Cutover ok؛ بعد ok؛ ثبت زمان و خروجی.
 
-**متوسط:** Cutover Lab.
+**متوسط (اختلاف):** IPsec پس از Cutover down. مراحل: ۱) Debug IKE: NO_PROPOSAL. ۲) نسخه‌ی جدید Proposal پیش‌فرض متفاوت. ۳) تنظیم صریح Proposal. ۴) up. RCA: وابستگی به پیش‌فرض نسخه.
 
-**سخت:** RCA و Rollback.
+**سخت (Rollback):** ۱۵ دقیقه پس از Cutover VIP وب کار نمی‌کند و علت نامشخص. تصمیم: Rollback طبق Plan: بازگرداندن کابل/IP، تأیید Test Matrix روی OLD (۸ دقیقه). پس از آن RCA در Lab. درس: Rollback بر اساس زمان از پیش تعیین‌شده است نه عجله.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose sys session stat
+get system session-ttl
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence G11.
+- Test Matrix همه‌ی ردیف‌ها.
+- Rollback آزمون شده.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| ناقص | Rubric | کسری |
+| Session کمتر | Timeout | session-ttl |
+| IPsec down | Proposal | تنظیم صریح |
 
 ### ۱۰) نکات امنیتی
 
-- Lab.
+- Backup رمزگذاری.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- شواهد.
+- Baseline.
+- Test Matrix.
+- Rollback زمان‌دار.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) وظایف G11؟ *(پاسخ: 30-4-ت1)*
+**ت1.** (ساده) چرا Baseline؟ *(پاسخ: 30-4-ت1)*
 
-**ت2.** (ساده) چرا Rollback آزمایش می‌شود؟ *(پاسخ: 30-4-ت2)*
+**ت2.** (ساده) Rollback کی؟ *(پاسخ: 30-4-ت2)*
 
-**ت3.** (متوسط) اختلاف Implicit rule چگونه کشف می‌شود؟ *(پاسخ: 30-4-ت3)*
+**ت3.** (متوسط) IPsec down پس از Cutover؛ علت؟ *(پاسخ: 30-4-ت3)*
 
-**ت4.** (متوسط) رفع IP Pool؟ *(پاسخ: 30-4-ت4)*
+**ت4.** (متوسط) Session کمتر؟ *(پاسخ: 30-4-ت4)*
 
-**ت5.** (سخت) RCA کامل یک اختلاف. *(پاسخ: 30-4-ت5)*
+**ت5.** (سخت) Rollback را آزمون کنید. *(پاسخ: 30-4-ت5)*
 
-**ت6.** (سخت، طراحی) بهبود پس از آزمون. *(پاسخ: 30-4-ت6)*
+**ت6.** (سخت، طراحی) Plan T-7d تا T+1d. *(پاسخ: 30-4-ت6)*
 
-**Q1.** Quick quiz (English): What must a G11 submission include? *(پاسخ: 30-4-Q1)*
+**Q1.** Quick quiz (English): Why must the rollback plan be tested before cutover? *(پاسخ: 30-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| G11 | Gate 11 | دروازه ۱۱ |
+| CHG | Change request | درخواست تغییر |
 
-- *A plan without rollback is incomplete.* ← Plan بدون Rollback ناقص است.
+- *Test the rollback before the cutover.* ← Rollback را پیش از Cutover آزمون کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** G11. **Evidence:** `03-ops/g11.md`.
+**کارت Lab:** G11 (اجرا نشده). **Evidence:** `03-ops/g11-migration.md`.
 
 ### ۱۵) منابع
 
-- درس‌های ۳۰-۰ تا ۳۰-۳
+- Fortinet FortiOS 7.0 Administration Guide: Upgrade and migration
 
 ## پاسخ‌های فصل 30
 
@@ -42866,36 +44173,41 @@ Inventory/Hygiene ۲۰؛ Plan/Rollback ۲۵؛ Cutover و Matrix ۳۰؛ RCA ۱۵�
 
 ### پاسخ‌های بازنویسی عمیق درس 30-3
 
-**30-3-ت1** — تا آزمون‌ها سیستماتیک و قابل‌ردیابی باشند.
 
-**30-3-ت2** — تا ظرفیت و افت کارایی پس از مهاجرت دیده شود.
+### پاسخ‌های بازنویسی عمیق درس 30-3
 
-**30-3-ت3** — SNAT/Pool متفاوت؛ IP Pool مطابق IP قبلی؛ آزمون مجدد.
+**30-3-ت1** — برای مقایسه.
 
-**30-3-ت4** — مالک سرویس/کسب‌وکار و مسئول امنیت.
+**30-3-ت2** — حد قابل‌قبول Session.
 
-**30-3-ت5** — Profile UTM/Deep؛ Sensor انتخابی؛ Baseline؛ Hypercare.
+**30-3-ت3** — Mapping اشتباه.
 
-**30-3-ت6** — سرویس‌ها/ممنوعات/VPN/NAT/Performance/Failover.
+**30-3-ت4** — قابل‌قبول/بحرانی.
 
-**30-3-Q1** — That service behavior and security controls are equivalent after the migration.
+**30-3-ت5** — Rollback و RCA.
+
+**30-3-ت6** — جدول.
+
+**30-3-Q1** — To compare the state before and after the change with numbers.
+
+### پاسخ‌های بازنویسی عمیق درس 30-4
 
 
 ### پاسخ‌های بازنویسی عمیق درس 30-4
 
-**30-4-ت1** — Inventory/Hygiene، Plan/Rollback، Cutover Lab، Matrix، RCA.
+**30-4-ت1** — برای مقایسه‌ی قبل/بعد.
 
-**30-4-ت2** — تا اطمینان باشد در شرایط واقعی کار می‌کند.
+**30-4-ت2** — طبق زمان و معیار از پیش تعیین‌شده.
 
-**30-4-ت3** — Test Matrix: ترافیکی که در مبدأ بود و در مقصد Block است؛ Debug Flow Policy 0.
+**30-4-ت3** — Proposal پیش‌فرض متفاوت.
 
-**30-4-ت4** — Pool مطابق IP قبلی؛ آزمون مجدد T5.
+**30-4-ت4** — Timeout/Offload.
 
-**30-4-ت5** — علامت، شواهد، علت (Implicit/NAT)، رفع، تأیید، پیشگیری.
+**30-4-ت5** — در Lab: بازگرداندن کابل/IP و Test Matrix.
 
-**30-4-ت6** — استخراج Implicit rules، قالب Mapping، Test Matrix استاندارد.
+**30-4-ت6** — طبق متن.
 
-**30-4-Q1** — Inventory, a plan with tested rollback, cutover evidence and a before/after matrix with root-cause analysis of differences.
+**30-4-Q1** — To be sure the old state can be restored within the change window.
 
 ### پاسخ‌های درس افزوده‌ی 30-0 (فصل 30)
 
@@ -43045,100 +44357,151 @@ Inventory/Hygiene ۲۰؛ Plan/Rollback ۲۵؛ Cutover و Matrix ۳۰؛ RCA ۱۵�
 
 ## درس 31-0 — Capstone: روش طراحی، معیار پذیرش و ارزیابی قابل‌اندازه‌گیری
 
-**فصل ۳۱ · درس افزوده (پیش‌درس ۳۱-۱) · پیش‌نیاز: همه‌ی Gateها · ≈ ۴ ساعت**
+**فصل 31 · بازنویسی عمیق · پیش‌نیاز: فصل ۱ تا ۳۰ · ≈ 11 ساعت**
 
-> **وضعیت:** قالب ارزیابی؛ بدون شاهد واقعی «اجرا نشده».
+> **وضعیت:** پروژه‌ی Capstone روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ همه‌ی دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
-دانشجو بتواند پروژه‌ی جامع را از **نیازمندی** تا **تحویل** با معیار پذیرش قابل‌اندازه‌گیری، ریسک‌ها و Evidence انجام دهد و کار خود را با **Rubric** ارزیابی کند.
+در پایان این درس باید بتوانید:
 
-### ۲) مفهوم پایه
+1. نیازمندی‌های کسب‌وکار را به نیازمندی فنی قابل‌اندازه‌گیری تبدیل کند.
+2. مراحل پروژه (Requirements، HLD، LLD، Build، Test، Handover) را با خروجی هر مرحله بشناسد.
+3. معیار پذیرش (Acceptance Criteria) SMART بنویسد.
+4. ماتریس ردیابی نیازمندی ← طراحی ← آزمون را بسازد.
+5. ریسک‌ها و محدودیت‌های Lab (اجرا نشده) را صادقانه ثبت کند.
+6. Rubric ارزیابی Capstone را بفهمد.
 
-Capstone یادگیری جدید نیست؛ **اثبات تسلط** است. مهندس را با «چه ساختی» نمی‌سنجند، با «ثابت کن کار می‌کند، امن است، قابل‌عیب‌یابی است و می‌شود تحویل داد».
+### ۲) مفهوم پایه: چیست و چرا؟
+
+تا اینجا هر فصل یک مهارت بود. Capstone یعنی «حالا یک سازمان کوچک را از صفر طراحی کن و ثابت کن کار می‌کند». تفاوت مهندس با کسی که فقط دستور بلد است، همین است: او می‌پرسد «چه چیزی را باید ثابت کنم؟» پیش از اینکه اولین دستور را بزند.
+
+در این درس روش را یاد می‌گیرید، نه فقط موضوع را: چطور نیاز مبهم («اینترنت پایدار می‌خواهیم») به معیار اندازه‌گیری‌شده («Failover زیر ۱۰ ثانیه، ۹۹٫۹٪ در ماه») تبدیل می‌شود و چطور هر معیار به یک آزمون و یک Evidence وصل می‌شود.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۳-۱) نیازمندی‌ها
+#### ۱) مراحل پروژه
 
-- عملکردی: سرویس‌ها، کاربران، مکان‌ها.
-- غیرعملکردی: دسترس‌پذیری (RTO/RPO)، Performance، امنیت، انطباق.
-- محدودیت‌ها: بودجه، لایسنس، زمان، تجهیزات Lab.
-
-``` text
-Availability % = (uptime / total time) x 100
-Allowed downtime per year (99.9%) = 8.76 hours
-```
-
-#### ۳-۲) معیار پذیرش (SMART)
-
-هر نیاز → معیار قابل‌آزمایش: «کاربر Finance فقط به SRV-FIN:443 دسترسی دارد؛ آزمون مثبت/منفی؛ Evidence = Log + Capture».
-
-#### ۳-۳) ماتریس ردیابی
-
-``` text
-Requirement -> Design element -> Config object -> Test case -> Evidence
-```
-
-#### ۳-۴) Rubric ارزیابی (۱۰۰ امتیاز)
-
-| معیار | وزن | سطح عالی |
+| مرحله | خروجی | ابزار |
 |---|---|---|
-| طراحی و IP Plan | 15 | بدون Overlap، توضیح تصمیم‌ها |
-| Routing/Segmentation | 15 | Failover و Zone درست |
-| Policy/Security | 20 | Least Privilege، UTM مناسب |
-| VPN/SD-WAN/HA | 15 | رفتار خرابی اثبات‌شده |
-| Troubleshooting | 15 | RCA با شواهد |
-| مستندسازی/Runbook | 10 | تکرارپذیر |
-| صداقت (Unverified/اجرا نشده) | 10 | هیچ ادعای بدون شاهد |
+| Requirements | فهرست نیازمندی (R-01...) | مصاحبه، جدول |
+| HLD | نمودار، Zoneها، IP Plan | draw.io، جدول |
+| LLD | Interface/Route/Policy/VPN دقیق | جدول، Config |
+| Build | Config و Runbook | CLI/GUI |
+| Test | آزمون و Evidence | ماتریس آزمون |
+| Handover | As-Built، Runbook، آموزش | سند |
 
-#### ۳-۵) ریسک و سناریوهای خرابی
+#### ۲) نیاز به معیار (SMART)
 
-برای هر جزء: «اگر خراب شود؟» (ISP، فایروال، Tunnel، DC، DNS). تست حداقل ۳ خرابی با Evidence.
+| نیاز مبهم | نیازمندی SMART | معیار پذیرش |
+|---|---|---|
+| اینترنت پایدار | R-01: Failover ISP < 10 s | آزمون قطع ISP-A: بسته‌ی گمشده × 0.2 s < 10 |
+| امنیت DMZ | R-02: DMZ→DB ممنوع | ۱۰ آزمون منفی همه Deny و Log |
+| دورکاری امن | R-03: MFA برای ۱۰۰٪ کاربران | آزمون ورود بدون OTP رد |
+| قابل‌نگهداری | R-04: Backup روزانه + Restore آزمون‌شده | فایل + Hash + Restore در Lab |
 
-### ۴) مثال حل‌شده
+#### ۳) ماتریس ردیابی
 
-**نیاز:** شعبه‌ی جدید با دسترسی به ERP؛ 99.9٪. معیار: Tunnel + Failover < 30 s؛ ERP فقط 443؛ Guest ایزوله. ماتریس: Req-3 (Failover) → Dual-ISP SD-WAN → config sdwan → Test: قطع WAN1 → Evidence: ping + Log SLA. نمره‌دهی: Rubric.
+``` text
+R-01 -> HLD §3.2 (Dual-ISP SD-WAN) -> LLD table SDWAN -> Test T-05 -> Evidence E-05
+R-02 -> HLD §4.1 (DMZ zone) -> LLD Policy 61 -> Test T-09..T-18 -> Evidence E-09..E-18
+```
 
-**مثال سخت:** طراحی تضاد دارد: Backhaul (UTM مرکزی) در برابر Breakout (Latency). تصمیم با ADR (Architecture Decision Record): گزینه‌ها، معیار، انتخاب، ریسک.
+هر نیازمندی بدون آزمون «ادعا» است و هر آزمون بدون نیازمندی «کار اضافه».
 
-### ۵) GUI و CLI
+#### ۴) صداقت در Lab
 
-برای هر آزمون، هر دو مسیر (GUI و CLI) مستند؛ Evidence با خروجی خام.
+چون Labها اجرا نشده‌اند، هر آزمون در گزارش یکی از وضعیت‌ها را دارد: **طراحی‌شده**، **اجرا نشده**، **اجراشده با شاهد**. ادعای «موفق» بدون Evidence ممنوع است.
 
-### ۶) نکات امنیتی
+#### ۵) ریسک‌ها
 
-- Secret در تحویل پاک شود.
-- هر استثنای امنیتی با تاریخ بازبینی.
+| ریسک | احتمال | اثر | کاهش |
+|---|---|---|---|
+| ناسازگاری Image/لایسنس | متوسط | بالا | Probe پیش از Build |
+| زمان ناکافی | بالا | متوسط | اولویت‌بندی R-01..R-04 |
+| دستور Unverified | بالا | متوسط | تأیید در Lab پیش از ادعا |
 
-### ۷) جمع‌بندی
+#### ۶) Rubric کلی Capstone
 
-- نیاز → معیار → ماتریس ردیابی → آزمون → Evidence.
-- Rubric شفاف؛ صداقت بخشی از نمره.
+نیازمندی و ردیابی ۱۵، طراحی HLD/LLD ۲۵، پیاده‌سازی/Config ۱۵، آزمون و Evidence ۲۵، Runbook و Handover ۱۰، صداقت ۱۰.
 
-### ۸) تمرین و ارزیابی
+### ۴) طراحی و تصمیم‌گیری
 
-**ت1.** (ساده) 99.9٪ چقدر Downtime سالانه می‌دهد؟ *(پاسخ: 31-0-ت1)*
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| شروع | نیازمندی نه دستور |
+| ردیابی | هر R به T و E |
 
-**ت2.** (متوسط) ماتریس ردیابی چیست؟ *(پاسخ: 31-0-ت2)*
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ت3.** (سخت) برای ۵ نیاز، معیار پذیرش و Evidence بنویسید. *(پاسخ: 31-0-ت3)*
+**ساده (حل‌شده):** نیاز «اینترنت پایدار» ⇒ R-01 Failover < 10 s؛ معیار: آزمون قطع ISP با Ping 200 ms و شمارش بسته.
 
-**Q1.** Quick quiz (English): What is an acceptance criterion? *(پاسخ: 31-0-Q1)*
+**متوسط (ماتریس):** برای R-03 (MFA) جدول ردیابی بنویسید: HLD §5 دسترسی راه‌دور؛ LLD Policy گروه‌ها و FortiToken؛ Test T-12 ورود بدون OTP رد؛ Evidence E-12 Log و تصویر.
 
-### ۹) اصطلاحات و English Corner
+**سخت (ریسک و اولویت):** زمان ۴ هفته است و ۱۲ نیازمندی داریم. مراحل: ۱) اهمیت×ریسک. ۲) R-01..R-04 «باید» و بقیه «بهتر است». ۳) برنامه‌ی هفتگی. ۴) هر هفته Evidence. معیار پذیرش: همه‌ی «باید»ها آزمون شده، بقیه در گزارش با وضعیت صادقانه.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+! no CLI: process lesson; commands appear in LLD (lesson 31-2)
+```
+
+### ۸) Verification (اثبات صحت)
+
+- ماتریس ردیابی کامل.
+- معیارها قابل‌اندازه‌گیری.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| معیار مبهم | SMART نیست | عدد و روش اندازه‌گیری |
+| آزمون بی‌نیاز | ردیابی | حذف یا نیازمندی |
+
+### ۱۰) نکات امنیتی
+
+- اطلاعات حساس در Evidence نرود.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- نیاز → معیار → آزمون → Evidence.
+- ردیابی.
+- صداقت.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) SMART یعنی چه؟ *(پاسخ: 31-0-ت1)*
+
+**ت2.** (ساده) چرا ماتریس ردیابی؟ *(پاسخ: 31-0-ت2)*
+
+**ت3.** (متوسط) «امنیت خوب» را به معیار تبدیل کنید. *(پاسخ: 31-0-ت3)*
+
+**ت4.** (متوسط) وضعیت آزمون‌های اجرانشده؟ *(پاسخ: 31-0-ت4)*
+
+**ت5.** (سخت) ۱۲ نیازمندی در ۴ هفته؛ اولویت‌بندی. *(پاسخ: 31-0-ت5)*
+
+**ت6.** (سخت، طراحی) Rubric خودارزیابی. *(پاسخ: 31-0-ت6)*
+
+**Q1.** Quick quiz (English): Why must each requirement have a test and evidence? *(پاسخ: 31-0-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| ADR | Architecture Decision Record | ثبت تصمیم معماری |
-| RTO/RPO | Recovery Time/Point Objective | هدف زمان/نقطه‌ی بازیابی |
-| Rubric | Rubric | ماتریس ارزیابی |
+| HLD | High-Level Design | طراحی سطح بالا |
+| LLD | Low-Level Design | طراحی تفصیلی |
+| SMART | SMART criteria | معیار هوشمند |
 
-- *Every requirement needs a testable acceptance criterion.* ← هر نیاز معیار پذیرش قابل‌آزمایش می‌خواهد.
+- *Every requirement must be traceable to a test.* ← هر نیازمندی باید به یک آزمون قابل‌ردیابی باشد.
 
-### ۱۰) منابع
+### ۱۴) کارت Lab
 
-- ISO/IEC/IEEE 29148 (Requirements)؛ Google SRE Book (SLO/Availability)؛ ADR (M. Nygard).
+**کارت Lab:** نیازمندی و ردیابی (اجرا نشده). **Evidence:** `02-design/capstone-requirements.md`.
+
+### ۱۵) منابع
+
+- درس‌های فصل ۱ تا ۳۰
+- ISO/IEC/IEEE 29148
 
 ## درس 31-1 — Capstone I: نیازمندی‌ها و سند طراحی سطح بالا (HLD) — با نمونه‌ی کامل
 
@@ -43277,113 +44640,151 @@ Consequences: need UTM at branch; central logging required; review quarterly
 
 ## درس 31-2 — Capstone I: طراحی تفصیلی (LLD) — جدول Interface/Route/Policy/VPN و ماتریس ردیابی
 
-**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۱ · ≈ 8 ساعت**
+**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰، ۳۱-۱ · ≈ 11 ساعت**
 
-> **وضعیت:** پروژه‌ی Capstone (HQ + ۳ شعبه)؛ FortiOS 7.0.3 و Cisco (بوت‌نشده)؛ بدون شاهد واقعی «اجرا نشده»؛ دستورها `Unverified`.
+> **وضعیت:** پروژه‌ی Capstone روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ همه‌ی دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. LLD قابل‌اجرا (جداول Interface، Route، Policy، VPN، HA/SD-WAN، Object) بنویسد.
-2. Test Plan با آزمون‌های مثبت/منفی/عملکرد/Failover بنویسد.
-3. ماتریس ردیابی Req→Design→Config→Test→Evidence بسازد.
-4. خروجی را با مهندس دیگر بازبینی (Peer Review) کند.
+1. LLD کامل (آدرس‌دهی، Interface، Route، Policy، VPN، SD-WAN، Logging) را در جداول بنویسد.
+2. هر ردیف را به نیازمندی وصل کند.
+3. Configهای نمونه را بدون رمز تولید کند.
+4. LLD را برای بازبینی همکار آماده کند.
+5. ناسازگاری‌ها (Overlap، Asymmetric) را بیابد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-LLD باید طوری باشد که مهندس دیگری بتواند فقط با آن بسازد، بدون حدس.
+HLD می‌گوید «چه»؛ LLD می‌گوید «دقیقاً چطور»: کدام IP روی کدام Interface، کدام Policy با کدام Service. اگر LLD دقیق باشد، Build مکانیکی است و اگر مبهم باشد، هر مهندس چیزی متفاوت می‌سازد. این درس LLD نمونه‌ی Capstone را کامل می‌چیند.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) جدول Interface (نمونه)
+#### ۱) آدرس‌دهی
 
-| دستگاه | Interface | Zone | IP | نقش |
-|---|---|---|---|---|
-| FGT-HQ1 | port1 | WAN1 | 203.0.113.1/29 | ISP1 |
-| FGT-HQ1 | port2 | LAN | 10.0.0.1/24 | Users |
-| FGT-HQ1 | port3 | HA-HB | — | Heartbeat |
-| FGT-A | wan1 | WAN | 198.51.100.2/30 | ISP1 |
-| FGT-A | lan | LAN | 10.1.4.1/24 | Branch A |
+| شبکه | آدرس | استفاده |
+|---|---|---|
+| WAN-A | 198.51.100.0/30 | ISP-A |
+| WAN-B | 203.0.113.0/30 | ISP-B |
+| Transit Edge–Int | 10.255.0.0/30 | .1 Edge، .2 Internal |
+| DMZ | 10.30.0.0/24 | وب |
+| Users | 10.10.0.0/24 | کاربران |
+| Servers | 10.20.0.0/24 | App/DB |
+| Mgmt | 10.99.0.0/24 | مدیریت |
+| VPN pool | 10.212.134.0/24 | دورکاری |
 
-#### ۲) Policy Matrix (نمونه)
+#### ۲) Interfaceها (Edge)
+
+| Interface | IP | Role | allowaccess |
+|---|---|---|---|
+| port1 | 198.51.100.2/30 | wan | - |
+| port4 | 203.0.113.2/30 | wan | - |
+| port2 | 10.255.0.1/30 | lan | ping |
+| port3 | 10.30.0.1/24 | dmz | ping |
+| mgmt | 10.99.0.1/24 | lan | https ssh |
+
+#### ۳) Route
+
+| مقصد | Next-hop | Interface | توضیح |
+|---|---|---|---|
+| 0.0.0.0/0 | SD-WAN | virtual-wan-link | ISP-A/B |
+| 10.10.0.0/24 | 10.255.0.2 | port2 | Users |
+| 10.20.0.0/24 | 10.255.0.2 | port2 | Servers |
+
+#### ۴) Policy (Edge)
+
+| ID | از | به | Src | Dst | Service | NAT | Log | نیازمندی |
+|---|---|---|---|---|---|---|---|---|
+| 1 | port2 | SD-WAN | NET-INTERNAL | all | HTTP/S/DNS | بله | Sec | R-01 |
+| 2 | SD-WAN | DMZ | all | VIP-WEB | HTTPS | DNAT | All | R-05 |
+| 3 | DMZ | port2 | SRV-WEB | SRV-APP | TCP-8443 | - | All | R-02 |
+| 99 | any | any | all | all | ALL | - | All | R-02 |
+
+#### ۵) VPN
+
+Site-to-Site IKEv2 AES256-SHA256 DH14 PFS؛ Dial-up با MFA (R-03).
+
+#### ۶) Logging
+
+Syslog 10.99.0.20؛ Retention ۹۰ روز؛ Alert: Deny WEB→DB.
+
+#### ۷) بازبینی LLD
+
+چک‌لیست: Overlap نیست؛ هر Interface Role و allowaccess دارد؛ هر Policy نیازمندی دارد؛ NAT فقط Edge؛ هیچ رمزی در سند.
+
+#### ۸) Config نمونه
 
 ``` text
-Users->Internet : HTTP/HTTPS/DNS accept + UTM + log
-Users->ERP      : TCP 443 to 10.0.20.10 accept + log
-BranchA->ERP    : via IPsec TO-HUB accept + log
-Guest->Internet : HTTP/HTTPS/DNS only, no internal
-any->any        : deny + log
-```
-
-#### ۳) VPN/Routing
-
-IKEv2 AES-GCM-256، DH20، PFS؛ iBGP RR در Hub؛ Local-pref Hub1 200/Hub2 100؛ Prefix-list؛ MTU 1400/MSS 1360؛ BFD 300×3.
-
-#### ۴) Test Plan
-
-| ID | Req | آزمون | نوع | معیار |
-|---|---|---|---|---|
-| T1 | R1 | TCP 443 A→ERP | مثبت | Latency < 40 ms |
-| T2 | R3 | nmap Guest→Internal | منفی | filtered |
-| T3 | R2 | قطع Hub1 | Failover | < 10 s |
-| T4 | R4 | VPN بدون OTP | منفی | Reject |
-| T5 | R6 | Restore Lab | RTO | ≤ 30 min |
-
-#### ۵) ماتریس ردیابی
-
-``` text
-R1 -> HLD §5 overlay -> FGT-A tunnel+policy 120 -> T1 -> evidence E-01
+config system interface
+ edit "port3"
+  set ip 10.30.0.1 255.255.255.0
+  set allowaccess ping
+  set role dmz
+ next
+end
 ```
 
 ### ۴) طراحی و تصمیم‌گیری
 
 | سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| سطح جزئیات | قابل‌اجرا |
-| Review | Peer |
+| NAT | فقط Edge |
+| VPN pool | بدون Overlap |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** جدول Interface برای ۲ دستگاه.
+**ساده (حل‌شده):** ردیف Policy 3: DMZ→Internal فقط TCP 8443؛ نیازمندی R-02؛ Log All؛ آزمون T-10.
 
-**متوسط (تحلیل):** Review: Policy بدون Log و Matrix با any؛ اصلاح؛ ثبت.
+**متوسط (Overlap):** VPN pool 10.20.0.0/24 با Servers هم‌پوشانی دارد. شاهد: ماتریس آدرس. رفع: Pool 10.212.134.0/24. درس: LLD را با جدول آدرس بازبینی کنید.
 
-**سخت (کامل):** LLD کامل HQ+۳ شعبه با ۵ جدول و Test Plan؛ Peer Review؛ ردیابی ۶ نیاز.
+**سخت (ناسازگاری Asymmetric):** طراحی دو مسیر Default بدون SD-WAN باعث Asymmetric. مراحل: ۱) ماتریس Route را با Policy تطبیق. ۲) Failover با SD-WAN Zone. ۳) آزمون Capture. معیار: Symmetric و Failover<10s.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+config system interface
+ edit "port3"
+  set ip 10.30.0.1 255.255.255.0
+ next
+end
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- LLD بازبینی‌شده.
+- بازبینی همکار.
+- هر ردیف نیازمندی دارد.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| ناقص | Review | تکمیل |
+| Overlap | جدول آدرس | تغییر Pool |
 
 ### ۱۰) نکات امنیتی
 
-- Least privilege.
+- بدون رمز در LLD.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- LLD جداول+Test Plan+ردیابی.
+- LLD دقیق.
+- ردیابی.
+- بازبینی همکار.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) LLD چیست؟ *(پاسخ: 31-2-ت1)*
+**ت1.** (ساده) LLD چه تفاوتی با HLD؟ *(پاسخ: 31-2-ت1)*
 
-**ت2.** (ساده) ماتریس ردیابی چه چیزهایی را وصل می‌کند؟ *(پاسخ: 31-2-ت2)*
+**ت2.** (ساده) چرا ردیف Policy نیازمندی دارد؟ *(پاسخ: 31-2-ت2)*
 
-**ت3.** (متوسط) چرا Test Plan در LLD؟ *(پاسخ: 31-2-ت3)*
+**ت3.** (متوسط) Overlap pool VPN؟ *(پاسخ: 31-2-ت3)*
 
-**ت4.** (متوسط) چرا Peer Review؟ *(پاسخ: 31-2-ت4)*
+**ت4.** (متوسط) NAT کجا؟ *(پاسخ: 31-2-ت4)*
 
-**ت5.** (سخت) Policy Matrix برای ۵ جریان بنویسید. *(پاسخ: 31-2-ت5)*
+**ت5.** (سخت) Asymmetric در LLD. *(پاسخ: 31-2-ت5)*
 
-**ت6.** (سخت، طراحی) LLD کامل پروژه. *(پاسخ: 31-2-ت6)*
+**ت6.** (سخت، طراحی) LLD Internal. *(پاسخ: 31-2-ت6)*
 
-**Q1.** Quick quiz (English): What is the purpose of a traceability matrix? *(پاسخ: 31-2-Q1)*
+**Q1.** Quick quiz (English): Why should every policy row reference a requirement? *(پاسخ: 31-2-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
@@ -43391,15 +44792,15 @@ R1 -> HLD §5 overlay -> FGT-A tunnel+policy 120 -> T1 -> evidence E-01
 |---|---|---|
 | LLD | Low-Level Design | طراحی تفصیلی |
 
-- *Write the test plan together with the design.* ← Test Plan را همراه طراحی بنویسید.
+- *The LLD must contain exact values.* ← LLD باید مقادیر دقیق داشته باشد.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** LLD. **Evidence:** `02-design/capstone-lld.md`.
+**کارت Lab:** LLD (اجرا نشده). **Evidence:** `02-design/capstone-lld.md`.
 
 ### ۱۵) منابع
 
-- ISO/IEC/IEEE 29148
+- درس‌های ۱۵-۱ تا ۱۵-۶، ۲۱-۱
 
 <a id="l-31-3"></a>
 
@@ -43561,327 +44962,411 @@ git add -A && git commit -m "S3 firewall done" && git tag s3
 
 ## درس 31-4 — Capstone II: آزمون کامل، Evidence Index نمونه‌ی پر، تحلیل سه خرابی و Sign-off
 
-**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۳ · ≈ 8 ساعت**
+**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰ تا ۳۱-۳ · ≈ 11 ساعت**
 
-> **وضعیت:** پروژه‌ی Capstone (HQ + ۳ شعبه)؛ FortiOS 7.0.3 و Cisco (بوت‌نشده)؛ بدون شاهد واقعی «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** پروژه‌ی Capstone روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ همه‌ی دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Test Plan را کامل اجرا و Evidence Index (≥ ۲۰ ردیف) بسازد.
-2. سه خرابی (ISP، Tunnel/Hub، فایروال HQ) را زمان‌سنجی و تحلیل کند.
-3. انحراف از معیار را RCA و اصلاح کند.
-4. Sign-off با مالکان نیاز بگیرد.
-5. محدودیت‌ها و «اجرا نشده»ها را صریح اعلام کند.
+1. ماتریس آزمون کامل (مثبت/منفی/خرابی) را اجرا و Evidence Index را پر کند.
+2. سه خرابی تزریق‌شده را تحلیل و RCA کند.
+3. معیار Sign-off و صورت‌جلسه را بنویسد.
+4. وضعیت آزمون‌ها را صادقانه گزارش کند.
+5. Gap و اقدام باقی‌مانده را ثبت کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-Evidence Index قلب ارزیابی است: هر ادعا به یک آزمون و یک خروجی خام وصل است. اگر ردیفی خالی است، یعنی آن ادعا هنوز تأییدنشده است.
+آزمون بدون Evidence هنگام بازرسی بی‌ارزش است. در این درس ماتریس آزمون را می‌چینید، یک Evidence Index نمونه را می‌پرید و Sign-off را شبیه مشتری واقعی می‌نویسید.
 
 ### ۳) توضیح عمیق فنی
 
-#### Evidence Index (نمونه‌ی پر)
+#### ۱) ماتریس آزمون
+
+| # | نیازمندی | آزمون | روش | معیار |
+|---|---|---|---|---|
+| T-01 | R-05 | Internet→VIP HTTPS | curl | 200 OK |
+| T-05 | R-01 | قطع ISP-A | Ping 200 ms | قطع < 10 s |
+| T-09 | R-02 | WEB→DB 1433 | telnet | Timeout، Log deny |
+| T-12 | R-03 | VPN بدون OTP | کلاینت | رد |
+| T-15 | R-04 | Restore | Lab | Policy count برابر |
+
+#### ۲) Evidence Index (نمونه‌ی پر)
+
+| E | آزمون | فایل | زمان | نتیجه | وضعیت |
+|---|---|---|---|---|---|
+| E-01 | T-01 | e01_curl.txt | 10:05 | 200 | اجراشده با شاهد |
+| E-05 | T-05 | e05_ping.txt | 10:30 | قطع 2.4 s | اجراشده با شاهد |
+| E-09 | T-09 | e09_log.txt | 10:50 | deny policyid 61 | اجراشده با شاهد |
+| E-12 | T-12 | - | - | - | اجرا نشده |
+| E-15 | T-15 | - | - | - | اجرا نشده |
+
+#### ۳) سه خرابی
+
+**F1:** VIP کار نمی‌کند (Policy dst اشتباه). **F2:** Failover ۱۲ ثانیه (Health-check روی Gateway). **F3:** MTU تونل. برای هرکدام: شاهد، علت، رفع، آزمون.
+
+#### ۴) Sign-off
 
 ``` text
-ID    Req Test                           Command/Capture                     Result      P/F  File     Time
-E-01  R1  Branch A -> ERP TCP 443        curl -w "%{time_connect}" ...       31 ms       P    e01.txt  19:30
-E-02  R3  Guest -> Internal (negative)   nmap -Pn -p 1-1024 10.0.20.10       filtered    P    e02.txt  19:34
-E-03  R2  Cut Hub1 (continuous ping)     ping -i 0.2 + timestamps            lost 31 pk  P    e03.txt  19:42   (6.2 s)
-E-04  R4  VPN login without OTP          FortiClient attempt                 rejected    P    e04.png  19:50
-E-05  R5  Syslog 180d / alert test       tail + alert screenshot             received    P    e05.txt  19:55
-E-06  R6  Restore in lab                 execute restore ... stopwatch       27 min      P    e06.txt  20:20
-E-07  R2  Cut ISP1 at Branch A           SD-WAN health-check + ping          8.4 s       P    e07.txt  20:31
-E-08  R2  HQ FW1 power-off               ha status + ping                    4.1 s       P    e08.txt  20:40
+Project: Capstone I
+Date: ...
+Accepted: R-01, R-02, R-05 (evidence E-01, E-05, E-09)
+Not accepted / deferred: R-03 (E-12 not executed), R-04 (E-15 not executed)
+Known risks: commands Unverified until lab run
+Signed: ___ (owner)  ___ (engineer)
 ```
 
-#### سه خرابی
+#### ۵) Gap
 
-| خرابی | زمان | Session | اثر | Log |
-|---|---|---|---|---|
-| ISP1 شعبه A | 8.4 s | TCP قدیمی قفل ⇒ Clear | ERP | SLA event |
-| Hub1 | 6.2 s | iBGP Reconverge | Spoke-to-Spoke | BGP reset |
-| FW1 HQ | 4.1 s | Pickup TCP | ERP | HA event |
+آنچه اجرا نشده با دلیل و برنامه‌ی تکمیل.
 
-#### انحراف و RCA
+### ۴) طراحی و تصمیم‌گیری
 
-اگر E-03 = 14 s (>10 s): علت BGP Hold 180؛ BFD 300×3 و MRAI؛ تکرار؛ ثبت دو آزمون.
-
-#### Sign-off
-
-مالک نیاز (ERP)، امنیت، شبکه؛ امضا با تاریخ.
-
-#### محدودیت‌ها
-
-فهرست آنچه اجرا نشده (مثلاً HA چون Needs-License)؛ آن ردیف‌ها «اجرا نشده» و Pass نیستند.
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| وضعیت | اجراشده با شاهد/اجرا نشده |
+| Sign-off | مشروط اگر Gap |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** E-01..E-08 همه Pass.
+**ساده (حل‌شده):** E-05: Ping 200 ms، ۱۲ بسته گمشده = 2٫4 s؛ معیار < 10 s ⇒ قبول.
 
-**متوسط (تحلیل):** E-03 = 14 s: علت Hold؛ BFD؛ E-03b = 6.2 s.
+**متوسط (F2):** Failover ۱۲ ثانیه: Health-check روی Gateway؛ تغییر به 8.8.8.8؛ اندازه‌گیری ۴ ثانیه؛ E-05 به‌روز.
 
-**سخت (جامع):** تفکیک «Pass» با شاهد از «اجرا نشده»؛ ۲ ردیف HA اجرا نشده (لایسنس)؛ گزارش صادقانه و ریسک باقی‌مانده.
+**سخت (Sign-off با Gap):** دو آزمون اجرا نشده؛ تصمیم: «پذیرفته‌ی مشروط» با فهرست Gap و تاریخ؛ نه «کامل». درس: Sign-off صادقانه از اعتبار می‌سازد.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Index کامل؛ Sign-off.
+- Evidence Index.
+- Sign-off.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| شاهد ناقص | Index | تکمیل |
+| Evidence ناقص | Index | تکمیل |
 
 ### ۱۰) نکات امنیتی
 
-- Secret.
+- Evidence بدون رمز.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- شاهد و RCA و Sign-off.
+- ماتریس+Index+Sign-off.
+- صداقت.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Evidence Index چه ستون‌هایی دارد؟ *(پاسخ: 31-4-ت1)*
+**ت1.** (ساده) Evidence Index چیست؟ *(پاسخ: 31-4-ت1)*
 
-**ت2.** (ساده) ردیف بدون خروجی چه وضعیتی دارد؟ *(پاسخ: 31-4-ت2)*
+**ت2.** (ساده) وضعیت اجرا نشده؟ *(پاسخ: 31-4-ت2)*
 
-**ت3.** (متوسط) E-03=14 s؛ اقدام؟ *(پاسخ: 31-4-ت3)*
+**ت3.** (متوسط) Sign-off مشروط؟ *(پاسخ: 31-4-ت3)*
 
-**ت4.** (متوسط) چرا Sign-off؟ *(پاسخ: 31-4-ت4)*
+**ت4.** (متوسط) F2؟ *(پاسخ: 31-4-ت4)*
 
-**ت5.** (سخت) HA اجرا نشده؛ چگونه گزارش می‌کنید؟ *(پاسخ: 31-4-ت5)*
+**ت5.** (سخت) دو آزمون اجرا نشده. *(پاسخ: 31-4-ت5)*
 
-**ت6.** (سخت، طراحی) Index ۲۰ ردیفی برای پروژه. *(پاسخ: 31-4-ت6)*
+**ت6.** (سخت، طراحی) Evidence Index. *(پاسخ: 31-4-ت6)*
 
-**Q1.** Quick quiz (English): What status should an untested requirement receive in the evidence index? *(پاسخ: 31-4-Q1)*
+**Q1.** Quick quiz (English): What does a conditional sign-off mean? *(پاسخ: 31-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Sign-off | Acceptance sign-off | تأیید پذیرش |
+| Sign-off | Acceptance sign-off | تأیید نهایی |
 
-- *Report untested items as not executed.* ← موارد آزمون‌نشده را «اجرا نشده» گزارش کنید.
+- *Record untested items honestly.* ← موارد آزمون‌نشده را صادقانه ثبت کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Evidence. **Evidence:** `03-ops/capstone-evidence.md`.
+**کارت Lab:** آزمون Capstone (اجرا نشده). **Evidence:** `03-ops/capstone-evidence.md`.
 
 ### ۱۵) منابع
 
-- درس ۳۱-۰
+- درس‌های فصل ۲۱ و ۳۰
 
 <a id="l-31-5"></a>
 
 ## درس 31-5 — Capstone II: Runbook کامل نمونه، Handover و آزمون Runbook توسط همکار
 
-**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۴ · ≈ 8 ساعت**
+**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۴ · ≈ 11 ساعت**
 
-> **وضعیت:** پروژه‌ی Capstone (HQ + ۳ شعبه)؛ FortiOS 7.0.3 و Cisco (بوت‌نشده)؛ بدون شاهد واقعی «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** پروژه‌ی Capstone روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ همه‌ی دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Runbook ۳ سرویس (VPN شعبه، فایروال HQ/HA، Log/Backup) با قالب کامل بنویسد.
-2. جلسه‌ی Handover را برنامه‌ریزی و اجرا کند.
-3. Runbook را با «آزمون همکار» اعتبارسنجی کند.
-4. Escalation و تماس‌ها را مشخص کند.
+1. Runbook عملیاتی (روزانه، حادثه، تغییر) را با قالب استاندارد بنویسد.
+2. Handover را با مستندات و آموزش انجام دهد.
+3. Runbook را توسط همکار آزمون کند و بازخورد بگیرد.
+4. وضعیت مستندات را به‌روز نگه دارد.
+5. Runbook را برای شرایط استرس ساده کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-Runbook خوب یعنی کسی که طراح نبوده بتواند عیب را در ساعت ۳ بامداد رفع کند. معیار کیفیت: «آزمون همکار».
+ساعت ۳ شب مهندس شب‌کار با Alert «Failover رخ داد» روبه‌رو می‌شود. اگر Runbook ندارد، تصمیم می‌گیرد؛ اگر دارد، قدم‌ها را دنبال می‌کند. Runbook خوب برای «آدم خسته در ساعت ۳ شب» نوشته می‌شود.
 
 ### ۳) توضیح عمیق فنی
 
-#### Runbook نمونه: VPN شعبه A
+#### ۱) قالب Runbook
 
 ``` text
-SERVICE: Branch-A VPN to Hub (TO-HUB1/TO-HUB2)
-Owner: net-team   On-call: +98-xxx   Escalation: L1 net-ops -> L2 senior -> vendor TAC
-HEALTHY: IKE SA established; tunnel counters rising; BGP Established; latency <40 ms to ERP
-VERIFY:
-  get router info bgp summary
-  diagnose vpn tunnel list
-  execute ping 10.0.20.10
-COMMON FAILURES:
-  Symptom                     Check                         Fix
-  Tunnel down                 diagnose vpn ike gateway list ISP/NAT-T/PSK -> see TS-VPN-01
-  Up but no traffic           debug flow, policy            policy both ways -> TS-VPN-02
-  Large transfers hang        ping DF 1372                  MSS clamp 1360 -> TS-VPN-03
-ROLLBACK: restore tag s4 (git) ; expected 10 min
-BACKUP/RESTORE: nightly sftp; restore procedure RB-02
-CHANGE: CHG ticket required; window Tue 22:00
+Title / Owner / Last review
+Trigger: what alert or symptom
+Impact: who is affected
+Steps (numbered, one action each, with expected output)
+Verification: how to confirm fixed
+Escalation: who, when, how
+Rollback
 ```
 
-#### آزمون همکار
+#### ۲) نمونه: «Failover ISP»
 
-دریافت‌کننده یک عیب تزریق‌شده (مثلاً Policy حذف‌شده) را فقط با Runbook رفع می‌کند؛ زمان و نقطه‌های مبهم ثبت می‌شود؛ Runbook اصلاح می‌شود.
+1. Alert دریافت: SD-WAN Member port1 Dead.
+2. بررسی: `diagnose sys sdwan member` ⇒ port1 dead؟ انتظار: dead.
+3. بررسی لینک: `get system interface physical` port1 up؟
+4. اگر لینک up و Dead: Health-check: `diagnose sys sdwan health-check` loss.
+5. تماس با ISP-A (شماره، Circuit ID).
+6. Verify: ترافیک از port4؛ Ping.
+7. Escalate: اگر > 30 دقیقه مدیر شبکه.
+8. Failback: پس از 30 دقیقه پایداری A به‌صورت خودکار؛ بررسی.
 
-#### Handover (۹۰ دقیقه)
+#### ۳) Handover
 
-۱۰ دقیقه معماری، ۲۰ Runbook، ۳۰ Demo دو عیب، ۲۰ آزمون همکار، ۱۰ پرسش‌وپاسخ.
+- As-Built، LLD، Runbook، Inventory، Evidence Index.
+- جلسه‌ی ۲ ساعته با مرور و Q&A.
+- دسترسی‌ها و Vault.
+
+#### ۴) آزمون Runbook
+
+یک همکار که پروژه را نمی‌شناسد Runbook را روی سناریو اجرا می‌کند؛ هر جا گیر کرد = نقص Runbook.
+
+#### ۵) نگهداری
+
+بازبینی فصلی؛ پس از هر حادثه به‌روزرسانی.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Runbook | یک اقدام در هر گام |
+| آزمون | همکار ناآشنا |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Runbook VPN بالا.
+**ساده (حل‌شده):** Runbook Failover: ۸ گام با خروجی مورد انتظار؛ همکار در ۱۲ دقیقه تمام کرد.
 
-**متوسط (تحلیل):** همکار گام «Policy دوطرفه» را نفهمید؛ اصلاح با دستور دقیق و خروجی انتظار.
+**متوسط (نقص):** همکار در گام ۴ گیر کرد: دستور `health-check` نبود. اصلاح و آزمون دوباره.
 
-**سخت (سه سرویس):** Runbookهای VPN، HA، Log/Backup با لینک TS؛ آزمون همکار: ۳ عیب، زمان رفع ۸/۱۲/۱۵ دقیقه؛ بازخورد و نسخه‌ی ۲.
+**سخت (Handover):** تحویل به تیم NOC: ۲ ساعت جلسه، Runbookها، دسترسی Read-only؛ ارزیابی: ۳ سناریو را موفق اجرا کردند؛ Gap: Restore نیاز به آموزش بیشتر.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose sys sdwan member
+diagnose sys sdwan health-check
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Runbook آزمون‌شده.
+- Runbook اجراشده توسط همکار.
+- Handover مستند.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| ناقص | آزمون همکار | تکمیل |
+| همکار گیر کرد | گام مبهم | بازنویسی |
 
 ### ۱۰) نکات امنیتی
 
-- Secret در Runbook نیست.
+- Runbook بدون رمز.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- Runbook = قابل‌انتقال و آزمون‌شده.
+- Runbook برای ساعت ۳ شب.
+- Handover.
+- آزمون Runbook.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Healthy state چرا؟ *(پاسخ: 31-5-ت1)*
+**ت1.** (ساده) Runbook چیست؟ *(پاسخ: 31-5-ت1)*
 
-**ت2.** (ساده) Escalation؟ *(پاسخ: 31-5-ت2)*
+**ت2.** (ساده) چرا هر گام یک اقدام؟ *(پاسخ: 31-5-ت2)*
 
-**ت3.** (متوسط) آزمون همکار چیست؟ *(پاسخ: 31-5-ت3)*
+**ت3.** (متوسط) چرا همکار ناآشنا؟ *(پاسخ: 31-5-ت3)*
 
-**ت4.** (متوسط) چه چیزی Runbook را بد می‌کند؟ *(پاسخ: 31-5-ت4)*
+**ت4.** (متوسط) محتوای Handover؟ *(پاسخ: 31-5-ت4)*
 
-**ت5.** (سخت) Runbook HA را بنویسید. *(پاسخ: 31-5-ت5)*
+**ت5.** (سخت) Runbook Failover ISP بنویسید. *(پاسخ: 31-5-ت5)*
 
-**ت6.** (سخت، طراحی) برنامه‌ی Handover. *(پاسخ: 31-5-ت6)*
+**ت6.** (سخت، طراحی) برنامه‌ی نگهداری Runbook. *(پاسخ: 31-5-ت6)*
 
-**Q1.** Quick quiz (English): How do you validate that a runbook is usable? *(پاسخ: 31-5-Q1)*
+**Q1.** Quick quiz (English): Why should a runbook be tested by someone who did not write it? *(پاسخ: 31-5-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Runbook | Operational runbook | دستور عملیاتی |
+| Runbook | Operational runbook | راهنمای عملیاتی |
 
-- *Hand over a tested runbook.* ← Runbook آزمون‌شده را تحویل دهید.
+- *Write runbooks for tired people at 3 AM.* ← Runbook را برای آدم خسته‌ی ساعت ۳ شب بنویسید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Runbook. **Evidence:** `03-ops/capstone-runbook.md`.
+**کارت Lab:** Runbook (اجرا نشده). **Evidence:** `03-ops/capstone-runbook.md`.
 
 ### ۱۵) منابع
 
-- Google SRE Book
+- درس‌های ۲۷-۱، ۳۱-۴
 
 <a id="l-31-6"></a>
 
 ## درس 31-6 — ارزیابی Capstone I و II: ارائه، Q&A، سؤال‌های دفاع و Rubric تفصیلی
 
-**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۱ تا ۳۱-۵ · ≈ 8 ساعت**
+**فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰ تا ۳۱-۵ · ≈ 11 ساعت**
 
-> **وضعیت:** پروژه‌ی Capstone (HQ + ۳ شعبه)؛ FortiOS 7.0.3 و Cisco (بوت‌نشده)؛ بدون شاهد واقعی «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** پروژه‌ی Capstone روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ همه‌ی دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. ارائه‌ی ۱۵ دقیقه‌ای ساختارمند انجام دهد.
-2. سؤال‌های دفاع (طراحی، ریسک، شاهد، محدودیت) را پاسخ دهد.
-3. Rubric تفصیلی را خودارزیابی کند.
-4. برنامه‌ی بهبود از بازخورد بنویسد.
+1. ارائه‌ی ۱۵ دقیقه‌ای (مسئله، طراحی، آزمون، Gap) را آماده کند.
+2. به سؤال‌های دفاع پاسخ قابل‌اثبات بدهد.
+3. خود را با Rubric تفصیلی نمره‌دهی کند.
+4. نقاط ضعف را صادقانه بپذیرد و برنامه‌ی بهبود بنویسد.
+5. بازخورد را به اقدام تبدیل کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-ارزیابی نهایی بخش اول؛ هدف سنجش فهم، شاهد و صداقت است.
+در ممیزی واقعی کسی دستور شما را نمی‌خواند؛ از شما می‌پرسد «چرا؟ چطور ثابت می‌کنید؟». این درس شما را برای همین مرحله آماده می‌کند.
 
 ### ۳) توضیح عمیق فنی
 
-#### ساختار ارائه
+#### ۱) ساختار ارائه (۱۵ دقیقه)
 
-نیاز/معیار (۲) → معماری (۳) → ADR (۲) → ساخت/Evidence (۳) → خرابی/RCA (۳) → محدودیت‌ها و «اجرا نشده» (۱) → درس‌آموخته (۱).
+1. مسئله و نیازمندی‌ها (۲ دقیقه). 2. HLD (۳). 3. LLD و تصمیم‌های کلیدی (۳). 4. آزمون و Evidence (۴). 5. Gap و ریسک (۲). 6. جمع‌بندی (۱).
 
-#### Rubric تفصیلی (۱۰۰)
+#### ۲) سؤال‌های دفاع و پاسخ نمونه
 
-| معیار | وزن | عالی | ضعیف |
-|---|---|---|---|
-| طراحی/ADR | 15 | تصمیم با معیار و ریسک | بدون دلیل |
-| Routing/Segmentation | 15 | Failover/Zone اثبات‌شده | فقط پیکربندی |
-| Policy/Security | 20 | Least privilege + منفی | any-any |
-| VPN/SD-WAN/HA | 15 | زمان‌سنجی | ادعا |
-| Troubleshooting | 15 | RCA با شاهد | حدس |
-| مستندات | 10 | Runbook آزمون‌شده | ناقص |
-| صداقت | 10 | «اجرا نشده» صریح | ادعای بی‌شاهد |
+| سؤال | پاسخ قابل‌اثبات |
+|---|---|
+| چرا NAT فقط Edge؟ | رد‌یابی، جلوگیری از NAT دوباره؛ Evidence Session دو فایروال |
+| چرا DMZ→DB ممنوع؟ | محدود کردن حرکت جانبی؛ آزمون منفی T-09 و Log |
+| Failover را چطور اندازه گرفتید؟ | Ping 200 ms و شمارش بسته؛ E-05 |
+| چه چیزی را ثابت نکرده‌اید؟ | دستورهای Unverified و T-12/T-15؛ در Gap |
+| اگر ISP-A و B هم‌زمان قطع شوند؟ | خارج از طراحی؛ ریسک پذیرفته؛ پیشنهاد: LTE (هزینه) |
 
-#### سؤال‌های دفاع
+#### ۳) Rubric تفصیلی (۱۰۰)
 
-۱) چرا Breakout فقط برای SaaS؟ ۲) اگر Hub1 آسیب‌پذیر شود؟ ۳) کدام ادعا شاهد ندارد؟ ۴) هزینه‌ی HA در برابر ریسک؟ ۵) اگر ISP1 و ISP2 هم‌زمان قطع شوند؟
+| معیار | امتیاز | توضیح |
+|---|---|---|
+| نیازمندی/ردیابی | 15 | SMART و ماتریس |
+| طراحی | 25 | HLD/LLD صحیح و بدون Overlap |
+| پیاده‌سازی | 15 | Config بدون رمز |
+| آزمون و Evidence | 25 | مثبت/منفی/خرابی |
+| Runbook/Handover | 10 | آزمون توسط همکار |
+| دفاع و ارائه | 5 | روشن و صادق |
+| صداقت | 5 | Unverified و Gap |
+
+قبولی ۷۵ با حداقل ۲۰ در Evidence.
+
+#### ۴) خودارزیابی نمونه
+
+``` text
+Requirements 13/15 ; Design 22/25 ; Build 10/15 ; Test 15/25 (2 tests not run)
+Runbook 8/10 ; Defense 4/5 ; Honesty 5/5  => 77/100 (conditional)
+Improvement: run T-12/T-15 in lab; verify commands
+```
+
+#### ۵) بازخورد به اقدام
+
+هر بازخورد = اقدام با مالک و تاریخ.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| ارائه | ۱۵ دقیقه |
+| دفاع | با Evidence |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** ارائه ۱۰ دقیقه.
+**ساده (حل‌شده):** پاسخ به «چرا NAT فقط Edge؟» با Evidence Session دو فایروال.
 
-**متوسط:** پاسخ به ۳ سؤال.
+**متوسط (خودارزیابی):** آزمون ۱۵/۲۵ چون ۲ آزمون اجرا نشده؛ نمره‌ی کل ۷۷؛ پذیرفته‌ی مشروط.
 
-**سخت:** دفاع از ADR با ریسک.
+**سخت (پرسش غیرمنتظره):** «اگر دو ISP قطع شود؟» پاسخ صادقانه: خارج از طراحی؛ ریسک؛ پیشنهاد LTE با هزینه؛ تصمیم مالک.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+! no CLI: evaluation lesson
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- نمره.
+- Rubric نمره‌دهی شده.
+- اقدام‌های بهبود.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| کسری | Rubric | برنامه‌ی بهبود |
+| پاسخ بدون Evidence | ادعا | ارجاع به E |
 
 ### ۱۰) نکات امنیتی
 
-- Secret.
+- در ارائه رمز نشان ندهید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- ارائه، دفاع، صداقت.
+- ارائه ساختاریافته.
+- دفاع با Evidence.
+- صداقت.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) بخش‌های ارائه؟ *(پاسخ: 31-6-ت1)*
+**ت1.** (ساده) ساختار ارائه؟ *(پاسخ: 31-6-ت1)*
 
-**ت2.** (ساده) چرا صداقت وزن دارد؟ *(پاسخ: 31-6-ت2)*
+**ت2.** (ساده) نمره‌ی قبولی؟ *(پاسخ: 31-6-ت2)*
 
-**ت3.** (متوسط) پاسخ به «اگر Hub1 آسیب‌پذیر شود؟» *(پاسخ: 31-6-ت3)*
+**ت3.** (متوسط) پاسخ به «چه چیزی ثابت نکرده‌اید؟» *(پاسخ: 31-6-ت3)*
 
-**ت4.** (متوسط) پاسخ به «اگر هر دو ISP قطع شوند؟» *(پاسخ: 31-6-ت4)*
+**ت4.** (متوسط) خودارزیابی؟ *(پاسخ: 31-6-ت4)*
 
-**ت5.** (سخت) کدام ادعاها شاهد ندارند؟ *(پاسخ: 31-6-ت5)*
+**ت5.** (سخت) «اگر دو ISP قطع شود؟» *(پاسخ: 31-6-ت5)*
 
-**ت6.** (سخت، طراحی) برنامه‌ی بهبود از Rubric. *(پاسخ: 31-6-ت6)*
+**ت6.** (سخت، طراحی) برنامه‌ی بهبود. *(پاسخ: 31-6-ت6)*
 
-**Q1.** Quick quiz (English): What is the purpose of the defense questions? *(پاسخ: 31-6-Q1)*
+**Q1.** Quick quiz (English): Why is honesty about unverified items part of the rubric? *(پاسخ: 31-6-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Rubric | Scoring rubric | ماتریس ارزیابی |
+| Q&A | Questions and Answers | پرسش و پاسخ |
 
-- *Be honest about what is not verified.* ← درباره‌ی آنچه تأیید نشده صادق باشید.
+- *Back every claim with evidence.* ← هر ادعا را با شاهد پشتیبانی کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** ارزیابی. **Evidence:** `03-ops/capstone-eval.md`.
+**کارت Lab:** ارزیابی Capstone (اجرا نشده). **Evidence:** `03-ops/capstone-eval.md`.
 
 ### ۱۵) منابع
 
-- درس ۳۱-۰
+- درس‌های ۳۱-۰ تا ۳۱-۵
 
 ## پاسخ‌های فصل 31
 
@@ -43907,20 +45392,22 @@ CHANGE: CHG ticket required; window Tue 22:00
 
 ### پاسخ‌های بازنویسی عمیق درس 31-2
 
-**31-2-ت1** — طراحی تفصیلی قابل‌اجرا.
 
-**31-2-ت2** — نیاز، طراحی، Config، آزمون، Evidence.
+### پاسخ‌های بازنویسی عمیق درس 31-2
 
-**31-2-ت3** — تا ساخت با آزمون هم‌راستا باشد.
+**31-2-ت1** — HLD ساختار؛ LLD مقادیر دقیق.
 
-**31-2-ت4** — کشف ابهام و خطا پیش از ساخت.
+**31-2-ت2** — برای ردیابی و ممیزی.
 
-**31-2-ت5** — طبق نمونه با Log و Deny پایانی.
+**31-2-ت3** — تغییر Pool.
 
-**31-2-ت6** — جداول Interface/Route/Policy/VPN/Test.
+**31-2-ت4** — Edge.
 
-**31-2-Q1** — To show that every requirement is designed, built, tested and evidenced.
+**31-2-ت5** — SD-WAN و Capture.
 
+**31-2-ت6** — جدول.
+
+**31-2-Q1** — For traceability and audit.
 
 ### پاسخ‌های بازنویسی عمیق درس 31-3
 
@@ -43941,63 +45428,79 @@ CHANGE: CHG ticket required; window Tue 22:00
 
 ### پاسخ‌های بازنویسی عمیق درس 31-4
 
-**31-4-ت1** — ID، Req، Test، دستور، نتیجه، Pass/Fail، فایل، زمان.
 
-**31-4-ت2** — تأییدنشده/اجرا نشده.
+### پاسخ‌های بازنویسی عمیق درس 31-4
 
-**31-4-ت3** — RCA (BGP Hold)، BFD، تکرار و ثبت.
+**31-4-ت1** — فهرست شاهدها با شناسه، فایل، زمان و نتیجه.
 
-**31-4-ت4** — تا مالکان نیاز پذیرش را تأیید کنند.
+**31-4-ت2** — صادقانه ثبت.
 
-**31-4-ت5** — صریحاً «اجرا نشده (لایسنس)»، نه Pass؛ ریسک باقی‌مانده و برنامه.
+**31-4-ت3** — با Gap و تاریخ.
 
-**31-4-ت6** — طبق نمونه.
+**31-4-ت4** — Health-check.
 
-**31-4-Q1** — Not executed/unverified, never pass.
+**31-4-ت5** — پذیرفته‌ی مشروط.
+
+**31-4-ت6** — جدول.
+
+**31-4-Q1** — Acceptance with documented gaps that must be closed later.
+
+### پاسخ‌های بازنویسی عمیق درس 31-5
 
 
 ### پاسخ‌های بازنویسی عمیق درس 31-5
 
-**31-5-ت1** — تعریف حالت عادی برای مقایسه.
+**31-5-ت1** — مجموعه‌ی گام‌های مستند برای وضعیت مشخص.
 
-**31-5-ت2** — مسیر ارجاع.
+**31-5-ت2** — برای کاهش خطا.
 
-**31-5-ت3** — حل عیب تزریق‌شده فقط با Runbook.
+**31-5-ت3** — نقص‌های مبهم آشکار می‌شود.
 
-**31-5-ت4** — گام مبهم، بدون خروجی انتظار، Secret.
+**31-5-ت4** — As-Built، LLD، Runbook، دسترسی.
 
-**31-5-ت5** — Healthy/Verify/Failures/Rollback/Escalation.
+**31-5-ت5** — قالب بالا.
 
-**31-5-ت6** — ۹۰ دقیقه.
+**31-5-ت6** — فصلی و پس از حادثه.
 
-**31-5-Q1** — By having someone else resolve an injected fault using only the runbook.
+**31-5-Q1** — To reveal ambiguous or missing steps.
+
+### پاسخ‌های بازنویسی عمیق درس 31-6
 
 
 ### پاسخ‌های بازنویسی عمیق درس 31-6
 
-**31-6-ت1** — نیاز، معماری، ADR، ساخت/Evidence، خرابی/RCA، محدودیت، درس‌آموخته.
+**31-6-ت1** — مسئله، HLD، LLD، آزمون، Gap، جمع‌بندی.
 
-**31-6-ت2** — ادعای بی‌شاهد خطرناک است.
+**31-6-ت2** — ۷۵ با حداقل ۲۰ در Evidence.
 
-**31-6-ت3** — Patch/Source Restriction/Hub دوم/Segmentation/Detection.
+**31-6-ت3** — فهرست Unverified و آزمون اجرانشده.
 
-**31-6-ت4** — Failover به Backhaul/LTE (در صورت وجود)، هشدار، پذیرش ریسک.
+**31-6-ت4** — نمره با دلیل.
 
-**31-6-ت5** — Labهای اجرا نشده/HA/Unverified.
+**31-6-ت5** — خارج از طراحی؛ ریسک؛ پیشنهاد.
 
-**31-6-ت6** — معیارهای ضعیف→اقدام→مسئول→تاریخ.
+**31-6-ت6** — اقدام، مالک، تاریخ.
 
-**31-6-Q1** — To verify understanding, risk awareness and honesty about what is proven.
+**31-6-Q1** — Because claiming unverified results undermines trust and can cause real outages.
 
 ### پاسخ‌های درس افزوده‌ی 31-0 (فصل 31)
 
-**31-0-ت1** — ۸٫۷۶ ساعت در سال.
 
-**31-0-ت2** — جدولی که هر نیاز را به عنصر طراحی، Config، آزمون و Evidence وصل می‌کند.
+### پاسخ‌های بازنویسی عمیق درس 31-0
 
-**31-0-ت3** — مثال: Finance→SRV-FIN:443 (Evidence: Log+Capture)؛ Guest ایزوله (nmap)؛ Failover<30s (ping+Log SLA)؛ Backup (Restore)؛ MFA (Login test).
+**31-0-ت1** — Specific, Measurable, Achievable, Relevant, Time-bound؛ مشخص، قابل‌اندازه‌گیری، شدنی، مرتبط، زمان‌دار.
 
-**31-0-Q1** — A testable condition that must be met for a requirement to be considered satisfied.
+**31-0-ت2** — تا هر نیازمندی آزمون و Evidence داشته باشد و هیچ آزمون بی‌هدف نماند.
+
+**31-0-ت3** — مثلاً R-02: DMZ→DB ممنوع با ۱۰ آزمون منفی Deny و Log.
+
+**31-0-ت4** — «طراحی‌شده/اجرا نشده»، نه «موفق».
+
+**31-0-ت5** — اهمیت×ریسک؛ «باید»ها اول؛ Evidence هفتگی.
+
+**31-0-ت6** — جدول بالا با امتیاز و شواهد.
+
+**31-0-Q1** — Because without a test and evidence the requirement is only an unverified claim.
 
 # فصل 32 — Capstone III و IV: عملیات، حادثه و ارزیابی نهایی
 
@@ -44019,230 +45522,301 @@ CHANGE: CHG ticket required; window Tue 22:00
 
 <a id="l-32-1"></a>
 
-## درس 32-0 — عملیات واقعی: Change Management، ITIL و شبیه‌سازی حادثه (Capstone III/IV)
+## درس 32-0 — عملیات واقعی: Change Management، ITIL و شبیه‌سازی حادثه (مقدمه‌ی Capstone III/IV)
 
-**فصل ۳۲ · درس افزوده (پیش‌درس ۳۲-۱) · پیش‌نیاز: ۲۹-۰، ۳۰-۰، ۳۱-۰ · ≈ ۴ ساعت**
+**فصل 32 · بازنویسی عمیق · پیش‌نیاز: فصل ۲۷ تا ۳۱ · ≈ 11 ساعت**
 
-> **وضعیت:** قالب عملیات؛ حادثه فقط در Lab شبیه‌سازی؛ نتیجه بدون شاهد «اجرا نشده».
-
-### ۱) هدف آموزشی
-
-1. فرایند **Change** (Standard/Normal/Emergency) و ۱۰ مرحله‌ی تغییر را اجرا کند.
-2. **Incident، Problem، Change، Release** را در چرخه‌ی ITIL تفکیک کند.
-3. حادثه‌ی شبیه‌سازی‌شده را از Detection تا Post-Incident Review (PIR) بدون سرزنش اجرا کند.
-4. معیارهای عملیاتی (MTTD، MTTR، Change Failure Rate) را اندازه بگیرد.
-5. Runbook و Handover بنویسد.
-
-### ۲) مفهوم پایه
-
-بیشتر قطعی‌ها از **تغییر** می‌آیند، نه سخت‌افزار. عملیات حرفه‌ای = تغییر کنترل‌شده + پاسخ سریع + یادگیری. ITIL زبان مشترک است؛ هدف اجرای سبک و موثر است نه بروکراسی.
-
-### ۳) توضیح عمیق فنی
-
-#### ۳-۱) انواع Change
-
-| نوع | مثال | تأیید |
-|---|---|---|
-| Standard | افزودن Address Object تأییدشده | از پیش تأیید |
-| Normal | Policy جدید، تغییر Route | CAB/مدیر + Window |
-| Emergency | رفع قطعی/حمله | سریع + ثبت بعدی |
-
-#### ۳-۲) ده مرحله‌ی تغییر
-
-``` text
-1 Request   2 Risk/Impact   3 Plan (steps, tests, rollback)   4 Approve
-5 Schedule  6 Pre-checks+Backup   7 Implement   8 Post-checks (positive/negative)
-9 Close + evidence   10 Review (PIR if failed)
-```
-
-#### ۳-۳) Incident در برابر Problem
-
-- **Incident:** اختلال فعلی؛ هدف بازگرداندن سرویس سریع.
-- **Problem:** ریشه‌ی تکرارشونده؛ هدف حذف علت (RCA).
-- Incident Priority = Impact × Urgency.
-
-#### ۳-۴) معیارها
-
-``` text
-MTTD = mean time to detect
-MTTR = mean time to restore
-Change failure rate = failed changes / total changes
-```
-
-#### ۳-۵) PIR (بدون سرزنش)
-
-Timeline، اثر، علت‌های مؤثر (فرایند/ابزار/انسان)، چه خوب بود، چه بد، اقدام (Owner، تاریخ). تمرکز بر سیستم، نه فرد.
-
-#### ۳-۶) Runbook/Handover
-
-برای هر سرویس: وضعیت سالم، Verificationها، خطاهای رایج، Rollback، تماس، Escalation.
-
-### ۴) مثال حل‌شده
-
-**Change:** افزودن Policy برای سرور جدید. Plan: Backup، Policy با Source دقیق، Log، Window، Rollback = حذف Policy؛ Pre-check: Route/DNS؛ Post-check: مثبت (443 OK) و منفی (22 Block)؛ Evidence: Log+Capture؛ Close.
-
-**Incident (Lab):** تزریق عیب: Policy اشتباه Deny. Detection: Alert کاربران؛ Triage: Sev2؛ Debug Flow: Denied policy؛ رفع: Rollback؛ MTTR=۱۸ دقیقه؛ PIR: نبود Post-check منفی؛ اقدام: چک‌لیست Post-check.
-
-**مثال سخت:** Emergency Change هنگام حمله: Block IP بدون CAB؛ ثبت بعدی ظرف ۲۴ ساعت؛ بازبینی؛ PIR.
-
-### ۵) GUI و CLI
-
-GUI/CLI برای Evidence؛ Ticketing؛ Config diff (`show full-configuration` و Diff).
-
-### ۶) نکات امنیتی
-
-- Emergency Change سوءاستفاده نشود؛ بازبینی اجباری.
-- Secret در Ticket/Runbook ذخیره نشود.
-
-### ۷) جمع‌بندی
-
-- تغییر کنترل‌شده، ۱۰ مرحله، Rollback.
-- Incident بازگرداندن؛ Problem ریشه‌کنی.
-- معیارها و PIR بدون سرزنش.
-
-### ۸) تمرین و ارزیابی
-
-**ت1.** (ساده) Incident و Problem چه فرقی دارند؟ *(پاسخ: 32-0-ت1)*
-
-**ت2.** (متوسط) ۱۰ مرحله‌ی تغییر را بنویسید. *(پاسخ: 32-0-ت2)*
-
-**ت3.** (سخت) PIR برای حادثه‌ی نمونه بنویسید. *(پاسخ: 32-0-ت3)*
-
-**Q1.** Quick quiz (English): Why is a blameless post-incident review recommended? *(پاسخ: 32-0-Q1)*
-
-### ۹) اصطلاحات و English Corner
-
-| مخفف | شکل کامل | معنی |
-|---|---|---|
-| CAB | Change Advisory Board | هیئت تأیید تغییر |
-| MTTR | Mean Time To Restore | میانگین زمان بازیابی |
-| PIR | Post-Incident Review | بازبینی پس از حادثه |
-| ITIL | IT Infrastructure Library | چارچوب مدیریت خدمات IT |
-
-- *A blameless review focuses on process, not individuals.* ← بازبینی بدون سرزنش روی فرایند تمرکز می‌کند نه افراد.
-
-### ۱۰) منابع
-
-- ITIL 4 Foundation؛ Google SRE Book (Postmortem Culture)؛ NIST SP 800-61.
-
-## درس 32-1 — Capstone III: عملیات روزانه و Change Management (ITIL) — فرایند، قالب CHG و مثال کامل
-
-**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۰، ۳۱-۵، ۲۷-۷ · ≈ 8 ساعت**
-
-> **وضعیت:** عملیات و Capstone III/IV؛ حادثه فقط در Lab شبیه‌سازی؛ FortiOS 7.0.3 (بوت‌نشده)؛ بدون شاهد «اجرا نشده».
+> **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. انواع Change (Standard/Normal/Emergency) و فرایند ده‌مرحله‌ای را اجرا کند.
-2. CHG کامل (ریسک، Plan، Pre/Post-check، Rollback) بنویسد.
-3. CAB/Approval و Window را مدیریت کند.
-4. معیارها (Change Failure Rate، Lead time) را اندازه بگیرد.
-5. Emergency Change و بازبینی پس از آن را درست انجام دهد.
+1. تفاوت «ساختن شبکه» و «اداره‌ی شبکه» را بگوید.
+2. فرایندهای ITIL (Incident، Problem، Change، Release) را در یک سازمان شبکه‌ای نگاشت کند.
+3. انواع تغییر (Standard، Normal، Emergency) را تفکیک کند.
+4. شاخص‌های عملیات (MTTD، MTTR، Change Success Rate) را محاسبه کند.
+5. نقش‌ها (Owner، Implementer، Reviewer، CAB) را بشناسد.
+6. مسیر چهار Capstone را بفهمد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-بیشتر قطعی‌های شبکه از تغییرات است. Change Management یعنی هر تغییر قابل‌پیش‌بینی، آزمون‌شده و برگشت‌پذیر باشد. هدف ITIL «سنگین‌کردن» نیست؛ «ایمن و سریع‌کردن» است.
+ساختن شبکه یک پروژه است و تمام می‌شود؛ اداره‌ی آن هر روز ادامه دارد. در سازمان‌های واقعی بیشترین قطعی‌ها بعد از «تغییر» رخ می‌دهد، نه به‌دلیل خرابی سخت‌افزار. پس مهارت اصلی مهندس عملیات این است که تغییر را کنترل‌شده، قابل‌برگشت و مستند انجام دهد و در حادثه آرام و روشمند عمل کند.
+
+این درس چارچوب را می‌دهد و Capstone III (عملیات روزانه و Change، حادثه) و IV (Migration/Upgrade) را معرفی می‌کند.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) انواع Change
+#### ۱) ITIL در یک نگاه
 
-| نوع | مثال | تأیید |
+| فرایند | هدف | نمونه در شبکه |
 |---|---|---|
-| Standard | افزودن Address Object تأییدشده | از پیش تأیید |
-| Normal | Policy جدید، Route | Review/CAB + Window |
-| Emergency | Block IP در حمله | سریع؛ ثبت و بازبینی پس از آن |
+| Incident | بازگرداندن سرویس سریع | قطع ISP |
+| Problem | یافتن ریشه و جلوگیری از تکرار | Flap تکراری لینک |
+| Change | تغییر کنترل‌شده | افزودن Policy |
+| Release | استقرار نسخه | Upgrade FortiOS |
+| Configuration Mgmt | دانستن وضعیت | As-Built، Git |
 
-#### ۲) ده مرحله
+#### ۲) انواع Change
 
-Request → Risk/Impact → Plan (مراحل، آزمون، Rollback) → Approve → Schedule → Pre-check+Backup → Implement → Post-check (مثبت/منفی) → Close → Review.
+| نوع | ویژگی | مثال |
+|---|---|---|
+| Standard | از پیش تأییدشده، کم‌ریسک | افزودن Address Object |
+| Normal | بررسی و تأیید | Policy جدید |
+| Emergency | فوری، با ثبت بعدی | رفع قطعی |
 
-#### ۳) قالب CHG (نمونه‌ی پر)
-
-``` text
-CHG-0042  Add policy for new ERP server 10.0.20.11
-Risk: low (single host, TCP 443)   Impact: ERP users
-Plan: 1 backup  2 add address  3 add policy (log all)  4 test  5 close
-Pre-check: policy list diff clean ; backup ok
-Post-check positive: users->10.0.20.11:443 OK ; negative: guest->10.0.20.11 blocked
-Rollback: delete policy 142 ; restore tag pre-CHG-0042
-Window: Tue 22:00-22:30 ; Owner: net-team ; Approver: sec-lead
-```
-
-#### ۴) معیارها
+#### ۳) شاخص‌ها
 
 ``` text
-Change failure rate = failed changes / total changes
-Lead time = implement date - request date
+MTTD = detection time - incident start
+MTTR = recovery time - incident start
+Change Success Rate = successful changes / total changes x 100
+Example: 47 / 50 = 94 %
 ```
 
-#### ۵) Emergency
+#### ۴) نقش‌ها
 
-اقدام فوری برای مهار (Block)، ثبت CHG پس از آن ظرف ۲۴ ساعت، بازبینی و حذف Ruleهای موقت.
+Owner (مالک سرویس)، Implementer (مجری)، Reviewer (بازبین فنی)، CAB (هیئت تأیید تغییر) برای تغییرات پرریسک.
+
+#### ۵) چهار Capstone
+
+| Capstone | موضوع |
+|---|---|
+| I | طراحی و ساخت |
+| II | آزمون و Runbook |
+| III | عملیات روزانه، Change، حادثه |
+| IV | Migration/Upgrade |
+
+#### ۶) اصل مهم
+
+«قابل‌برگشت»: هیچ تغییری بدون Rollback Plan و Backup. و «قابل‌مشاهده»: پیش‌ و پس‌ از تغییر شاخص‌ها اندازه گرفته شود.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| نوع Change | طبق ریسک |
+| Rollback | اجباری |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** CHG Standard افزودن Address.
+**ساده (حل‌شده):** افزودن Address Object ⇒ Standard Change؛ ثبت در سیستم؛ بدون CAB.
 
-**متوسط (تحلیل):** Normal Change با Post-check منفی شکست خورد (Guest دسترسی داشت)؛ Rollback؛ RCA: Source=all؛ اصلاح؛ CHG جدید.
+**متوسط (شاخص):** ۵۰ تغییر، ۳ ناموفق: Change Success Rate = ۴۷/۵۰ = ۹۴٪. تحلیل: علت ۳ شکست؟ الگوی مشترک (مثلاً بدون Pre-check)؟ اقدام: چک‌لیست.
 
-**سخت (Emergency):** حمله‌ی Brute-force؛ Block IP فوری؛ ثبت بعدی؛ Rule موقت با انقضا؛ بازبینی؛ درس: Playbook.
+**سخت (Emergency):** قطع ISP ساعت ۲ بامداد؛ تغییر Emergency برای Failover دستی. مراحل: تصمیم Owner، ثبت لحظه‌ای، اجرا، Verify، ثبت رسمی تا ۲۴ ساعت، Review بعدی. ریسک: دور زدن فرایند؛ جبران: Review اجباری.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
-execute backup config sftp pre-CHG-0042.conf 192.168.90.10 backup-user <PASSWORD>
-show firewall policy 142
+! process lesson
 ```
 
 ### ۸) Verification (اثبات صحت)
 
-- CHG امضا‌شده؛ Post-check.
+- شاخص‌ها محاسبه شد.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Change خراب | Post-check | Rollback |
+| تغییرات ناموفق | Pre-check | چک‌لیست |
 
 ### ۱۰) نکات امنیتی
 
-- Emergency بازبینی.
+- تغییر بدون تأیید ممنوع.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- ده مرحله + قالب + معیار.
+- ساختن ≠ اداره.
+- ITIL.
+- Rollback و Verify.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Standard Change؟ *(پاسخ: 32-1-ت1)*
+**ت1.** (ساده) Standard Change چیست؟ *(پاسخ: 32-0-ت1)*
 
-**ت2.** (ساده) Post-check منفی چیست؟ *(پاسخ: 32-1-ت2)*
+**ت2.** (ساده) MTTR؟ *(پاسخ: 32-0-ت2)*
 
-**ت3.** (متوسط) Change failure rate؟ *(پاسخ: 32-1-ت3)*
+**ت3.** (متوسط) Change Success Rate برای ۴۷ از ۵۰؟ *(پاسخ: 32-0-ت3)*
 
-**ت4.** (متوسط) چرا Emergency بازبینی دارد؟ *(پاسخ: 32-1-ت4)*
+**ت4.** (متوسط) CAB چیست؟ *(پاسخ: 32-0-ت4)*
 
-**ت5.** (سخت) CHG را برای Policy جدید بنویسید. *(پاسخ: 32-1-ت5)*
+**ت5.** (سخت) Emergency Change در بامداد. *(پاسخ: 32-0-ت5)*
 
-**ت6.** (سخت، طراحی) Pre-check خودکار. *(پاسخ: 32-1-ت6)*
+**ت6.** (سخت، طراحی) فرایند Change. *(پاسخ: 32-0-ت6)*
 
-**Q1.** Quick quiz (English): What distinguishes an emergency change? *(پاسخ: 32-1-Q1)*
+**Q1.** Quick quiz (English): What is an emergency change? *(پاسخ: 32-0-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| CAB | Change Advisory Board | هیئت تأیید |
-| CHG | Change request | درخواست تغییر |
+| ITIL | Information Technology Infrastructure Library | چارچوب مدیریت سرویس |
+| CAB | Change Advisory Board | هیئت مشاور تغییر |
 
-- *Plan every change with rollback.* ← هر Change را با Rollback برنامه‌ریزی کنید.
+- *Every change needs a rollback plan.* ← هر تغییر نیاز به Rollback Plan دارد.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Change. **Evidence:** `03-ops/chg-01.md`.
+**کارت Lab:** مقدمه‌ی عملیات (اجرا نشده). **Evidence:** `03-ops/ops-intro.md`.
+
+### ۱۵) منابع
+
+- ITIL 4 Foundation
+- NIST SP 800-61
+
+## درس 32-1 — Capstone III: عملیات روزانه و Change Management (ITIL) — فرایند، قالب CHG و مثال کامل
+
+**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۰ · ≈ 11 ساعت**
+
+> **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. فرایند Change را از ثبت تا Close اجرا کند.
+2. قالب CHG کامل (دلیل، اثر، Pre/Post-check، Rollback) را بنویسد.
+3. عملیات روزانه (Health Check، Backup، Review Log) را چک‌لیست کند.
+4. مثال کامل CHG برای افزودن Policy را بنویسد.
+5. ریسک و Window را درست انتخاب کند.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+عملیات روزانه خسته‌کننده است ولی همان چیزی است که قطعی را جلوگیری می‌کند. سه چیز را هر روز می‌پرسید: «همه‌چیز سالم است؟ Backup گرفته شد؟ Log غیرعادی هست؟» و برای هر تغییر یک CHG می‌نویسید.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) چک‌لیست روزانه
+
+| زمان | کار | ابزار |
+|---|---|---|
+| 08:00 | Health Check (CPU، Session، HA) | `get system performance status` |
+| 08:15 | بررسی Alertهای شبانه | Log/FAZ |
+| 08:30 | تأیید Backup دیشب | فایل + Hash |
+| 09:00 | Review Deny غیرعادی | Log |
+| هفتگی | Hit Count و Policy Review | GUI |
+
+#### ۲) قالب CHG
+
+``` text
+CHG-0123
+Title: Allow APP-to-DB 1433 for new reporting server
+Requester / Owner / Implementer / Reviewer
+Reason: business request REQ-456
+Risk: Low   Impact: DB zone
+Window: 2026-12-03 22:00-22:30
+Pre-check: backup, policy lookup, confirm IPs
+Steps: 1) create address SRV-RPT 2) policy 62 APP->DB 1433 log all 3) verify
+Post-check: lookup, hit count, test connection, log
+Rollback: disable policy 62 ; restore backup if needed
+Approval: Owner (done) / CAB (not required, standard-low)
+```
+
+#### ۳) مثال کامل (CLI Unverified)
+
+``` text
+config firewall address
+ edit "SRV-RPT"
+  set subnet 10.30.2.50 255.255.255.255
+ next
+end
+config firewall policy
+ edit 62
+  set name "RPT-to-DB"
+  set srcintf "ZN-APP"
+  set dstintf "ZN-DB"
+  set srcaddr "SRV-RPT"
+  set dstaddr "SRV-DB"
+  set action accept
+  set schedule "always"
+  set service "MS-SQL"
+  set logtraffic all
+ next
+end
+```
+
+Post-check: `diagnose firewall iprope lookup 10.30.2.50 40000 10.30.3.10 1433 tcp ZN-APP` ⇒ policy 62.
+
+#### ۴) انتخاب Window
+
+کمترین ترافیک؛ نه آخر هفته‌ی مالی؛ با تیم آماده؛ Rollback < 10 دقیقه.
+
+#### ۵) بستن CHG
+
+نتیجه (موفق/ناموفق)، زمان واقعی، شاخص‌ها، درس‌ها.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Window | کم‌ترافیک |
+| Rollback | <10 دقیقه |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Health Check ساعت ۸: CPU 22٪، Session 41k، HA in-sync؛ ثبت.
+
+**متوسط (CHG):** CHG برای Policy 62 نوشته شد؛ Post-check: Lookup=62، Hit افزایش؛ Close موفق؛ ثبت زمان واقعی ۱۸ دقیقه.
+
+**سخت (ناموفق):** پس از اعمال، DB به App سرور نمی‌رسد. مراحل: Post-check Lookup=61 (Deny بالاتر)؛ Rollback: غیرفعال 62؛ تحلیل: ترتیب Policy؛ CHG بسته با «ناموفق + درس»؛ CHG جدید با ترتیب درست.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get system performance status
+diagnose firewall iprope lookup 10.30.2.50 40000 10.30.3.10 1433 tcp ZN-APP
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Post-check کامل.
+- CHG بسته.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| تغییر اثر ندارد | Lookup | ترتیب |
+
+### ۱۰) نکات امنیتی
+
+- تغییر فقط با تأیید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- چک‌لیست روزانه.
+- CHG کامل.
+- Post-check.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چه چیزی هر روز بررسی می‌شود؟ *(پاسخ: 32-1-ت1)*
+
+**ت2.** (ساده) Pre-check؟ *(پاسخ: 32-1-ت2)*
+
+**ت3.** (متوسط) CHG ناموفق چطور بسته می‌شود؟ *(پاسخ: 32-1-ت3)*
+
+**ت4.** (متوسط) Window مناسب؟ *(پاسخ: 32-1-ت4)*
+
+**ت5.** (سخت) Post-check Lookup=61. *(پاسخ: 32-1-ت5)*
+
+**ت6.** (سخت، طراحی) قالب CHG. *(پاسخ: 32-1-ت6)*
+
+**Q1.** Quick quiz (English): What should a post-check confirm after a change? *(پاسخ: 32-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| CHG | Change request | درخواست تغییر |
+
+- *Always verify after the change.* ← پس از تغییر همیشه تأیید کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** عملیات روزانه (اجرا نشده). **Evidence:** `03-ops/chg-0123.md`.
 
 ### ۱۵) منابع
 
@@ -44252,416 +45826,549 @@ show firewall policy 142
 
 ## درس 32-2 — Capstone III: شبیه‌سازی حادثه کامل — سناریو، نقش‌ها، Timeline نمونه، MTTD/MTTR و PIR
 
-**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰ تا ۲۹-۴، ۳۲-۱ · ≈ 8 ساعت**
+**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۰، ۲۹-۴ · ≈ 11 ساعت**
 
-> **وضعیت:** عملیات و Capstone III/IV؛ حادثه فقط در Lab؛ FortiOS 7.0.3 (بوت‌نشده)؛ بدون شاهد «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. حادثه‌ی دومرحله‌ای را در Lab اجرا و با نقش‌های IC/Operator/Comms/Scribe مدیریت کند.
-2. Timeline، MTTD/MTTR و کیفیت Detection را اندازه بگیرد.
-3. RCA و PIR بدون سرزنش با اقدام‌های قابل‌پیگیری بنویسد.
-4. Playbookها را به‌روز کند.
+1. سناریوی حادثه را با نقش‌ها (Incident Commander، Operator، Scribe، Communicator) اجرا کند.
+2. Timeline را لحظه‌ای ثبت و MTTD/MTTR را محاسبه کند.
+3. ارتباط‌رسانی (Status Update) را درست انجام دهد.
+4. PIR بی‌ملامت و اقدام پیشگیرانه بنویسد.
+5. درس‌ها را به Runbook برگرداند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-حادثه را باید «تمرین» کرد تا زیر فشار واقعی اشتباه نشود. این درس یک سناریوی کامل با Timeline نمونه می‌دهد.
+حادثه با آرامش حل می‌شود. در شبیه‌سازی (Game Day) تمرین می‌کنید که چه کسی تصمیم می‌گیرد، چه کسی ثبت می‌کند و چه کسی به مدیریت گزارش می‌دهد، تا در حادثه‌ی واقعی همه بدانند چه کار کنند.
 
 ### ۳) توضیح عمیق فنی
 
-#### سناریو (Lab)
+#### ۱) سناریو
 
-Inject 1 (T0): Change اشتباه، Policy Deny ERP.
-Inject 2 (T0+10): Scan خارجی و ۲۰ Login ناموفق VPN.
+ساعت 10:00 کاربران شعبه اینترنت ندارند. Alert: SD-WAN Member port1 Dead. در 10:12 مشخص می‌شود ISP-B هم کند است (Loss 30٪).
 
-#### نقش‌ها
+#### ۲) نقش‌ها
 
-IC (تصمیم/اولویت)، Operator (دستورها)، Comms (ارتباطات)، Scribe (Timeline).
+| نقش | وظیفه |
+|---|---|
+| Incident Commander | تصمیم و هماهنگی |
+| Operator | اجرای دستورها |
+| Scribe | ثبت Timeline |
+| Communicator | به‌روزرسانی مدیریت/کاربران |
 
-#### Timeline نمونه
+#### ۳) Timeline نمونه
+
+| ساعت | رویداد |
+|---|---|
+| 10:00 | شروع قطع (طبق Log) |
+| 10:04 | Alert دریافت (MTTD=4 min) |
+| 10:06 | IC تعیین؛ Operator: sdwan member |
+| 10:12 | ISP-A قطع؛ ISP-B Loss 30٪ |
+| 10:20 | تماس ISP-A (Ticket) |
+| 10:30 | تصمیم: ترافیک حیاتی با PBR به ISP-B؛ Teams از LTE (در دسترس) |
+| 10:45 | سرویس حیاتی برگشت (MTTR=45 min) |
+| 12:10 | ISP-A برگشت؛ Failback پس از ۳۰ دقیقه |
+
+#### ۴) ارتباط‌رسانی
 
 ``` text
-19:00 T0   Change CHG-0050 applied (policy 150 deny)
-19:04      users report ERP down (detect via ticket)        MTTD = 4 min
-19:06      IC assigns Sev1; Operator runs debug flow -> "Denied policy 150"
-19:09      Rollback of CHG-0050 (tag pre-CHG-0050)
-19:11      ERP verified (positive+negative tests)             MTTR = 7 min from detect
-19:10      Alert: 20 failed VPN logins from 198.51.100.7 -> block IP (Sev3) after ERP restored
-19:30      Close; PIR scheduled in 48 h
+10:08 Status: investigating internet outage at branch; ETA next update 10:30
+10:30 Status: ISP-A down, mitigation in progress (critical services via ISP-B)
+10:45 Status: critical services restored; root cause ISP-A fiber cut (ticket 7712)
 ```
+
+#### ۵) شاخص‌ها
 
 ``` text
-MTTD = detect - fault start = 4 min ; MTTR = restore - detect = 7 min
+MTTD = 10:04 - 10:00 = 4 min
+MTTR (critical) = 10:45 - 10:00 = 45 min
 ```
 
-#### PIR (نمونه)
+#### ۶) PIR
 
-علت‌ها: نبود Post-check منفی/مثبت در CHG؛ Alert ERP وجود نداشت (کشف از Ticket). اقدام: Alert Synthetic Test ERP (Owner، تاریخ)، چک‌لیست Post-check، آموزش.
+ریشه: وابستگی به یک ISP برای Failover با کیفیت؛ ISP-B ضعیف. اقدام: ISP-B با کیفیت بهتر/LTE Backup، Alert روی Loss، Runbook به‌روز.
 
-#### اولویت‌بندی
+### ۴) طراحی و تصمیم‌گیری
 
-دو رویداد: اثر کسب‌وکار (ERP) Sev1 اول؛ Scan Sev3 بعد.
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| نقش | چهار نقش |
+| Status | دوره‌ای |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Rollback و بازگشت ERP؛ MTTD 4، MTTR 7.
+**ساده (حل‌شده):** MTTD=4 دقیقه، MTTR=45 دقیقه.
 
-**متوسط (تحلیل):** دو رویداد هم‌زمان: تصمیم IC بر پایه‌ی اثر؛ ثبت دلیل.
+**متوسط (ارتباط‌رسانی):** Status Update هر ۲۰ تا ۳۰ دقیقه حتی بدون خبر جدید؛ مدیریت می‌داند وضعیت چیست؛ جلوگیری از تماس‌های پراکنده.
 
-**سخت (بهبود):** MTTD بالاست چون کشف با Ticket؛ اقدام: Synthetic monitoring ERP هر ۱ دقیقه؛ هدف MTTD ≤ 1 min.
+**سخت (PIR):** PIR: ریشه (وابستگی)، تصمیم‌ها (PBR برای حیاتی)، چه خوب بود (Alert سریع، نقش‌ها)، چه بد بود (ISP-B ضعیف، Runbook قدیمی)، اقدام‌ها با مالک/تاریخ؛ بدون سرزنش.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose sys sdwan member
+diagnose sys sdwan health-check
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- PIR تکمیل.
+- Timeline کامل.
+- PIR.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| MTTD بالا | Timeline | Alert/Synthetic |
+| بی‌نظمی | نقش مبهم | IC تعیین |
 
 ### ۱۰) نکات امنیتی
 
-- Lab فقط.
+- اطلاعات حساس در Status نیاید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- تمرین IR + Metrics + PIR.
+- نقش‌ها.
+- Timeline.
+- Status.
+- PIR.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) MTTD و MTTR در Timeline مثال؟ *(پاسخ: 32-2-ت1)*
+**ت1.** (ساده) Incident Commander؟ *(پاسخ: 32-2-ت1)*
 
-**ت2.** (ساده) نقش Scribe؟ *(پاسخ: 32-2-ت2)*
+**ت2.** (ساده) MTTD؟ *(پاسخ: 32-2-ت2)*
 
-**ت3.** (متوسط) چرا ERP قبل از Scan؟ *(پاسخ: 32-2-ت3)*
+**ت3.** (متوسط) چرا Status دوره‌ای؟ *(پاسخ: 32-2-ت3)*
 
-**ت4.** (متوسط) چه اقدامی MTTD را کم می‌کند؟ *(پاسخ: 32-2-ت4)*
+**ت4.** (متوسط) Scribe؟ *(پاسخ: 32-2-ت4)*
 
-**ت5.** (سخت) PIR مثال را بنویسید. *(پاسخ: 32-2-ت5)*
+**ت5.** (سخت) PIR بنویسید. *(پاسخ: 32-2-ت5)*
 
-**ت6.** (سخت، طراحی) سناریوی دوم (Tunnel+Policy). *(پاسخ: 32-2-ت6)*
+**ت6.** (سخت، طراحی) Game Day. *(پاسخ: 32-2-ت6)*
 
-**Q1.** Quick quiz (English): Why are roles such as incident commander assigned during an incident? *(پاسخ: 32-2-Q1)*
+**Q1.** Quick quiz (English): Why do we assign explicit roles during an incident? *(پاسخ: 32-2-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
 | IC | Incident Commander | فرمانده‌ی حادثه |
-| Synthetic monitoring | Synthetic monitoring | پایش با آزمون مصنوعی |
 
-- *Learn from every incident.* ← از هر حادثه بیاموزید.
+- *Communicate regularly during an incident.* ← در حادثه به‌طور منظم اطلاع‌رسانی کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Incident. **Evidence:** `03-ops/incident-lab.md`.
+**کارت Lab:** شبیه‌سازی حادثه (اجرا نشده). **Evidence:** `03-ops/incident-sim.md`.
 
 ### ۱۵) منابع
 
-- NIST SP 800-61
-- Google SRE Book (Incident management)
+- NIST SP 800-61 Rev.2
+- Google SRE: Incident response
 
 <a id="l-32-3"></a>
 
 ## درس 32-3 — Capstone IV: مهاجرت/ارتقای کامل در Lab — Plan زمان‌بندی‌شده، Post-check، Rollback و گزارش
 
-**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰ تا ۳۰-۴، ۳۲-۱ · ≈ 8 ساعت**
+**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۱ تا ۳۰-۴، ۳۲-۱ · ≈ 11 ساعت**
 
-> **وضعیت:** عملیات و Capstone III/IV؛ حادثه فقط در Lab؛ FortiOS 7.0.3 (بوت‌نشده)؛ بدون شاهد «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Plan Cutover را دقیقه‌به‌دقیقه اجرا کند.
-2. Post-check Matrix را اجرا و اختلاف‌ها را RCA کند.
-3. Rollback آزمایشی را زمان‌سنجی کند.
-4. گزارش نهایی مهاجرت و Hypercare بنویسد.
+1. Plan زمان‌بندی‌شده‌ی Upgrade/Migration (T-7d تا T+1d) بنویسد.
+2. Pre-check و Baseline را جمع کند.
+3. Cutover را مرحله‌ای با Checkpoint اجرا (طراحی) کند.
+4. Post-check و مقایسه با Baseline را انجام دهد.
+5. Rollback را در Lab آزمون و گزارش نهایی بنویسد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آخرین Capstone: یک مهاجرت/ارتقا را مثل تولید اجرا کنید: Plan، Go/No-Go، Cutover، Post-check، Rollback، گزارش.
+Upgrade یا Migration بزرگ‌ترین ریسک عملیاتی است. «قطع در ساعت ۲ بامداد برای Upgrade» داستان آشنایی است. چاره، Plan دقیق، Baseline و Rollback آزمون‌شده است.
 
 ### ۳) توضیح عمیق فنی
 
-#### Plan زمان‌بندی‌شده (نمونه)
+#### ۱) Plan زمانی
+
+| زمان | کار |
+|---|---|
+| T-7d | Inventory، Baseline، Backup، Release Notes، Path |
+| T-3d | Lab dry-run، Rollback test، CAB |
+| T-1d | تأیید Window، اطلاع‌رسانی |
+| T0 22:00 | Backup، Upgrade Secondary |
+| 22:20 | Failover، Upgrade Primary |
+| 22:50 | Post-check |
+| T+1d | مانیتورینگ و Close |
+
+#### ۲) Baseline
 
 ``` text
-T-60  Go/No-Go (backup ok, OOB ok, team, test matrix)
-T-30  final backups both devices, tag pre-cutover
-T+00  announce start
-T+05  switch gateway/route to new FGT
-T+10  smoke tests (3 critical services)
-T+20  full test matrix (15 tests)
-T+35  decision: continue / rollback (criteria: any critical test fails after fix attempt 10 min)
-T+45  monitoring + comms
-T+60  close window / hypercare start
+get system status
+diagnose sys session stat
+get router info routing-table all  (summary)
+policy hit counts (top 20)
 ```
 
-#### Post-check
+#### ۳) Checkpoint
 
-Matrix ۱۵ آزمون + Session/Log/CPU؛ مقایسه با Baseline.
+| Checkpoint | شرط ادامه |
+|---|---|
+| C1: Backup | فایل+Hash |
+| C2: Secondary upgraded | cluster in-sync |
+| C3: Failover | سرویس بدون قطع طولانی |
+| C4: Primary upgraded | checksum |
+| C5: Post-check | معیارها OK |
 
-#### Rollback آزمایشی
+اگر C3 شکست: Rollback.
+
+#### ۴) Post-check
+
+مقایسه‌ی Session count (±10٪)، Routeها، IPsec up، Policy hit، Log ingestion، آزمون‌های Test Matrix.
+
+#### ۵) گزارش
 
 ``` text
-restore tag pre-cutover on old path -> run smoke tests -> record time (<= 15 min)
+Result: successful ; duration 55 min (plan 60)
+Deviations: HA sync slow (6 min)
+Lessons: wait for in-sync before failover
 ```
 
-#### گزارش
+### ۴) طراحی و تصمیم‌گیری
 
-خلاصه، Timeline، نتایج Matrix، اختلاف‌ها و RCA، Rollback time، Hypercare plan (۷ روز)، درس‌آموخته.
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Window | ۶۰ دقیقه+Rollback |
+| Baseline | قبل |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Cutover موفق؛ همه‌ی Smoke Pass.
+**ساده (حل‌شده):** Baseline: Session 41k؛ Post: 39k (−5٪) در حد قابل‌قبول.
 
-**متوسط (تحلیل):** T+20: ۲ آزمون Fail (NAT Partner)؛ ۱۰ دقیقه رفع؛ Pass.
+**متوسط (Checkpoint):** C2 رد شد (out-of-sync). تصمیم: توقف تا Sync؛ سپس ادامه؛ تأخیر ۶ دقیقه در Window.
 
-**سخت (تصمیم):** پس از ۱۰ دقیقه یک آزمون حیاتی هنوز Fail ⇒ طبق Trigger Rollback؛ زمان ۱۲ دقیقه؛ RCA بعد از Window.
+**سخت (Rollback):** پس از C4 IPsec بالا نمی‌آید. زمان تصمیم ۱۵ دقیقه؛ Debug نشان Proposal؛ Rollback به Partition قبلی ۸ دقیقه؛ RCA در Lab؛ CHG ناموفق با درس.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get system status
+diagnose sys session stat
+diagnose sys ha checksum cluster
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- گزارش و Evidence.
+- Checkpointها.
+- Post-check.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| شکست | Post-check | Rollback |
+| out-of-sync | checksum | Sync |
 
 ### ۱۰) نکات امنیتی
 
-- Change.
+- Backup رمزگذاری.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- Plan زمان‌بندی‌شده + Post-check + Rollback.
+- Plan.
+- Checkpoint.
+- Rollback.
+- گزارش.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Go/No-Go چه زمانی؟ *(پاسخ: 32-3-ت1)*
+**ت1.** (ساده) Baseline؟ *(پاسخ: 32-3-ت1)*
 
-**ت2.** (ساده) Trigger Rollback مثال؟ *(پاسخ: 32-3-ت2)*
+**ت2.** (ساده) Checkpoint؟ *(پاسخ: 32-3-ت2)*
 
-**ت3.** (متوسط) چرا Rollback آزمایشی؟ *(پاسخ: 32-3-ت3)*
+**ت3.** (متوسط) چرا Rollback زمان‌دار؟ *(پاسخ: 32-3-ت3)*
 
-**ت4.** (متوسط) Hypercare چیست؟ *(پاسخ: 32-3-ت4)*
+**ت4.** (متوسط) Session count ±؟ *(پاسخ: 32-3-ت4)*
 
-**ت5.** (سخت) Plan زمان‌بندی را بنویسید. *(پاسخ: 32-3-ت5)*
+**ت5.** (سخت) IPsec بعد Upgrade down؛ تصمیم. *(پاسخ: 32-3-ت5)*
 
-**ت6.** (سخت، طراحی) گزارش نهایی. *(پاسخ: 32-3-ت6)*
+**ت6.** (سخت، طراحی) Plan T-7d تا T+1d. *(پاسخ: 32-3-ت6)*
 
-**Q1.** Quick quiz (English): Why define the rollback trigger before the cutover begins? *(پاسخ: 32-3-Q1)*
+**Q1.** Quick quiz (English): Why define a rollback time limit before the change window? *(پاسخ: 32-3-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Hypercare | Hypercare | پایش ویژه |
+| Cutover | Cutover | لحظه‌ی انتقال |
 
-- *Test the rollback path.* ← مسیر Rollback را آزمایش کنید.
+- *Define checkpoints with go/no-go criteria.* ← Checkpoint با معیار ادامه/توقف تعریف کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Cutover. **Evidence:** `03-ops/cutover-lab.md`.
+**کارت Lab:** Capstone IV (اجرا نشده). **Evidence:** `03-ops/capstone-iv.md`.
 
 ### ۱۵) منابع
 
-- درس ۳۰-۲
+- Fortinet Upgrade Path Tool
+- FortiOS 7.0 Release Notes
 
 <a id="l-32-4"></a>
 
 ## درس 32-4 — ارزیابی نهایی و Portfolio: ماتریس مهارت، تحلیل شکاف، نگاشت نقش و نمونه‌ی Portfolio
 
-**فصل 32 · بازنویسی عمیق · پیش‌نیاز: همه‌ی Gateها · ≈ 8 ساعت**
+**فصل 32 · بازنویسی عمیق · پیش‌نیاز: کل دوره · ≈ 11 ساعت**
 
-> **وضعیت:** عملیات و Capstone III/IV؛ حادثه فقط در Lab؛ FortiOS 7.0.3 (بوت‌نشده)؛ بدون شاهد «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Portfolio قابل‌ارائه با شواهد بسازد.
-2. ماتریس مهارت و Gap Analysis را صادقانه بنویسد.
+1. ماتریس مهارت (سطح ۱ تا ۴) را صادقانه پر کند.
+2. شکاف‌ها را با شواهد تحلیل کند.
 3. مهارت‌ها را به نقش‌های شغلی نگاشت کند.
+4. Portfolio حرفه‌ای (پروژه، Evidence، Runbook) بسازد.
+5. برنامه‌ی تکمیل شکاف بنویسد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-Portfolio، نمونه‌کار با شاهد است؛ Gap Analysis نشان می‌دهد کدام ادعاها هنوز شاهد ندارند.
+پایان دوره یعنی «حالا چه کاری می‌توانم انجام دهم و چه چیزی را نمی‌دانم؟». ارزیابی صادقانه ارزشمندتر از ادعای بزرگ است؛ همان چیزی که در مصاحبه و ممیزی هم دیده می‌شود.
 
 ### ۳) توضیح عمیق فنی
 
-#### ساختار Portfolio
+#### ۱) سطح‌ها
 
-``` text
-01-overview.md        architecture summary (1 page)
-02-design/            HLD, LLD, IP plan, ADRs
-03-ops/               runbooks, change records, RCAs, PIR
-04-evidence/          evidence index + raw files (sanitized)
-05-gates/             G1..G11 status (verified/partial/not executed)
-06-limitations.md     Unverified / not executed / license-dependent
-```
+| سطح | معنی |
+|---|---|
+| 1 | آشنا (می‌دانم چیست) |
+| 2 | با راهنما انجام می‌دهم |
+| 3 | مستقل و با شاهد |
+| 4 | آموزش می‌دهم و طراحی می‌کنم |
 
-#### ماتریس مهارت
+#### ۲) ماتریس نمونه
 
-| حوزه | سطح ادعایی | شاهد | Gap |
-|---|---|---|---|
-| Switching/STP | L3 | G1–G2 | — |
-| Routing | L3 | G3/A4 | BGP Lab |
-| Firewall/NAT | L3 | G5/G6 | FortiGate اجرا نشده |
-| UTM | L2 | طراحی | Needs-License |
-| VPN/SD-WAN | L3 | G7/G8 | Lab اجرا نشده |
-| HA | L2 | طراحی | لایسنس |
-| Ops/IR | L3 | G10/IR Lab | — |
+| مهارت | سطح | شاهد |
+|---|---|---|
+| Subnetting/VLSM | 3 | آزمون ۲-۱ |
+| STP/L2 Security | 3 | Lab 4 (طراحی) |
+| OSPF | 2 | Lab 5 (اجرا نشده) |
+| FortiGate Policy/NAT | 2 | طراحی؛ Lab اجرا نشده |
+| IPsec/SD-WAN | 2 | طراحی |
+| Troubleshooting | 3 | پرونده‌های حل‌شده |
+| Automation | 2 | Netmiko read-only |
 
-#### نگاشت نقش
+#### ۳) تحلیل شکاف
 
-Network Engineer: Routing/Switching/VPN؛ Security Engineer: Firewall/UTM/IR؛ SOC L1/L2: Detection/Response؛ Architect: HLD/ADR/Risk.
+- شکاف ۱: Labهای اجرا نشده ⇒ شواهد عملی نداریم.
+- شکاف ۲: دستورهای Unverified.
+- برنامه: اجرای Labها با اجازه، ثبت Evidence.
+
+#### ۴) نگاشت نقش
+
+| نقش | مهارت کلیدی | آمادگی |
+|---|---|---|
+| Network Admin | VLAN، OSPF، ACL | خوب |
+| Firewall Engineer | FortiGate Policy، VPN، HA | متوسط (Lab لازم) |
+| NOC Engineer | عیب‌یابی، Log | خوب |
+| Security Analyst (Blue) | Log، PCAP، PIR | متوسط |
+
+#### ۵) Portfolio
+
+شامل: ۳ پروژه (Lab A، Capstone I، Capstone III)، Evidence Index، Runbook نمونه، PIR نمونه، توضیح شکاف‌ها (صادقانه)، بدون اطلاعات حساس.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| سطح | با شاهد |
+| Portfolio | صادقانه |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Portfolio با ۶ پوشه.
+**ساده (حل‌شده):** OSPF سطح ۲ چون Lab اجرا نشده؛ نه ۳.
 
-**متوسط (تحلیل):** Gap: FortiGate اجرا نشده؛ سطح ادعا از L3 به L2؛ برنامه‌ی Lab.
+**متوسط (شکاف):** شکاف FortiGate: طراحی داریم ولی اجرا نه؛ برنامه: اجرای Lab‌ها با اجازه‌ی صریح و ثبت Evidence.
 
-**سخت (قضاوت):** کارفرما می‌پرسد «HA کار می‌کند؟»؛ پاسخ صادقانه: طراحی/مفهومی با منبع؛ اجرا نشده؛ برنامه‌ی آزمون.
+**سخت (Portfolio):** Portfolio برای نقش Firewall Engineer: Capstone I و Runbook؛ با برچسب «طراحی؛ Lab اجرا نشده»؛ مصاحبه‌گر صداقت را می‌بیند.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+! no CLI: evaluation lesson
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Portfolio کامل.
+- ماتریس با شاهد.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| شاهد کم | Index | Lab بیشتر |
+| ادعا بدون شاهد | ماتریس | کاهش سطح |
 
 ### ۱۰) نکات امنیتی
 
-- Secret پاک.
+- Portfolio بدون اطلاعات حساس.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- Portfolio + Gap + نقش.
+- صداقت.
+- شکاف.
+- Portfolio.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Portfolio شامل چیست؟ *(پاسخ: 32-4-ت1)*
+**ت1.** (ساده) سطح ۳ یعنی؟ *(پاسخ: 32-4-ت1)*
 
-**ت2.** (ساده) Gap چیست؟ *(پاسخ: 32-4-ت2)*
+**ت2.** (ساده) شکاف چیست؟ *(پاسخ: 32-4-ت2)*
 
-**ت3.** (متوسط) چرا فایل محدودیت‌ها؟ *(پاسخ: 32-4-ت3)*
+**ت3.** (متوسط) چرا Lab اجرا نشده سطح را کم می‌کند؟ *(پاسخ: 32-4-ت3)*
 
-**ت4.** (متوسط) FortiGate اجرا نشده؛ سطح ادعا؟ *(پاسخ: 32-4-ت4)*
+**ت4.** (متوسط) محتوای Portfolio؟ *(پاسخ: 32-4-ت4)*
 
-**ت5.** (سخت) پاسخ به «HA کار می‌کند؟» *(پاسخ: 32-4-ت5)*
+**ت5.** (سخت) Portfolio برای Firewall Engineer. *(پاسخ: 32-4-ت5)*
 
-**ت6.** (سخت، طراحی) ماتریس مهارت. *(پاسخ: 32-4-ت6)*
+**ت6.** (سخت، طراحی) برنامه‌ی پر کردن شکاف. *(پاسخ: 32-4-ت6)*
 
-**Q1.** Quick quiz (English): Why include a limitations file in a portfolio? *(پاسخ: 32-4-Q1)*
+**Q1.** Quick quiz (English): Why is honest self-assessment valuable? *(پاسخ: 32-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Gap analysis | Gap analysis | تحلیل شکاف |
+| Portfolio | Portfolio | نمونه‌کارها |
 
-- *Be transparent about limitations.* ← درباره‌ی محدودیت‌ها شفاف باشید.
+- *Show evidence for every skill you claim.* ← برای هر مهارتی که ادعا می‌کنید شاهد نشان دهید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Portfolio. **Evidence:** `03-ops/portfolio.md`.
+**کارت Lab:** ارزیابی نهایی (اجرا نشده). **Evidence:** `03-ops/skill-matrix.md`.
 
 ### ۱۵) منابع
 
-- درس ۳۲-۰
+- درس‌های کل دوره
 
 <a id="l-32-5"></a>
 
 ## درس 32-5 — Roadmap یادگیری بعدی: مسیر گواهی، Labهای اجرا نشده، Automation و برنامه‌ی ۶ ماهه
 
-**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۴ · ≈ 8 ساعت**
+**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۴ · ≈ 11 ساعت**
 
-> **وضعیت:** عملیات و Capstone III/IV؛ حادثه فقط در Lab؛ FortiOS 7.0.3 (بوت‌نشده)؛ بدون شاهد «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Roadmap ۶ ماهه با اولویت از Gap بنویسد.
-2. مسیر گواهی/تخصص را انتخاب کند.
-3. Labهای اجرا نشده را زمان‌بندی کند.
+1. مسیرهای گواهی (Cisco، Fortinet، امنیت) را با پیش‌نیاز مقایسه کند.
+2. برنامه‌ی ۶ ماهه با هدف، زمان و Evidence بنویسد.
+3. Labهای اجرا نشده را اولویت‌بندی کند.
+4. Automation و Observability را در برنامه جای دهد.
+5. معیار موفقیت اندازه‌گیری‌پذیر تعیین کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-برنامه‌ی ادامه باید از Gap شروع شود: اول آنچه شاهد ندارد.
+دوره پایان یافت ولی یادگیری نه. بدون برنامه، «بعداً Lab می‌زنم» هرگز اتفاق نمی‌افتد. این درس برنامه‌ی ۶ ماهه‌ی واقع‌بینانه می‌دهد.
 
 ### ۳) توضیح عمیق فنی
 
-#### برنامه‌ی ۶ ماهه (قالب)
+#### ۱) مسیر گواهی (نمونه؛ شرایط را از وب‌سایت رسمی تأیید کنید)
 
-| ماه | هدف | خروجی/شاهد |
+| مسیر | محتوا | پیش‌نیاز |
 |---|---|---|
-| ۱ | اجرای Labهای اجرا نشده (FortiGate Boot با تأیید، Packet Flow Debug) | Evidence G5/G6 |
-| ۲ | VPN/SD-WAN واقعی | G7/G8 |
-| ۳ | Automation (Ansible/Python) روی Lab | CP1+ |
-| ۴ | گواهی هدف (مثلاً Fortinet NSE 4 یا Cisco CCNA) | آزمون |
-| ۵ | Blue Team/Detection پروژه | Playbook+PIR |
-| ۶ | پروژه‌ی واقعی/مشارکت + بازنگری Portfolio | Portfolio نسخه 2 |
+| Cisco CCNA | شبکه‌ی پایه تا Automation | فصل ۱ تا ۸ |
+| Fortinet NSE 4 | FortiGate Security | فصل ۱۲ تا ۲۲ |
+| Fortinet NSE 5/6 | FortiAnalyzer/FortiManager | فصل ۲۴، ۲۶ |
+| Security (Blue Team) | Log، PCAP، PIR | فصل ۲۸، ۲۹ |
 
-#### مسیرها
+(نام و سطح گواهی‌ها ممکن است تغییر کند؛ `Unverified`.)
 
-Fortinet NSE 4/5/6، Cisco CCNA→CCNP ENCOR (در صورت نیاز)، Linux/Windows Admin، Python/Ansible، SIEM/SOC.
+#### ۲) اولویت Labها
 
-#### معیار پیشرفت
+1. Phase 0B (Lab ایزوله) با اجازه.
+2. FortiGate: Interface/Policy/NAT (فصل ۱۳).
+3. IPsec و SD-WAN (فصل ۱۸، ۲۱).
+4. HA (در صورت لایسنس).
 
-هر ماه: شاهد جدید در Portfolio و کاهش Gap.
+#### ۳) برنامه‌ی ۶ ماهه
+
+| ماه | هدف | Evidence |
+|---|---|---|
+| 1 | اجرای Lab فصل ۱ تا ۴ | Config + خروجی |
+| 2 | OSPF/HSRP Lab | As-Built |
+| 3 | FortiGate Policy/NAT/VIP | Evidence Index |
+| 4 | IPsec/SD-WAN | Debug |
+| 5 | Logging/Monitoring/Automation | Git repo |
+| 6 | Capstone و مرور | Portfolio |
+
+#### ۴) Automation
+
+از Read-only (Netmiko) به Ansible `--check` و Git؛ هیچ تغییر خودکار بدون Pilot.
+
+#### ۵) معیار موفقیت
+
+«تا پایان ماه ۳، حداقل ۱۰ Lab با Evidence»؛ «تا پایان ماه ۶، Portfolio با ۳ پروژه».
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| برنامه | ۱۰ ساعت هفتگی |
+| Evidence | هر ماه |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Roadmap جدول.
+**ساده (حل‌شده):** ماه ۱: ۴ Lab فصل ۱ تا ۴ با خروجی؛ معیار: ۴ فایل Evidence.
 
-**متوسط (تحلیل):** وقت محدود؛ اولویت با Gap بیشترین ریسک (VPN/HA).
+**متوسط (اولویت):** منابع محدود؛ FortiGate اول چون هدف شغلی؛ سپس OSPF؛ برنامه‌ی هفتگی ۱۰ ساعت.
 
-**سخت (بودجه):** بدون گواهی پولی: Labهای رایگان + Evidence؛ جایگزین: پروژه‌ی متن‌باز.
+**سخت (شکست برنامه):** ماه ۳ نیمه‌کاره ماند؛ تحلیل: ساعت ناکافی؛ برنامه‌ی ماه ۴ با ۶ ساعت هفتگی و کاهش دامنه؛ معیار جدید.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+! planning lesson
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Roadmap.
+- برنامه با معیار.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| مبهم | بازبینی | اولویت |
+| عقب‌افتادن | دامنه | کاهش |
 
 ### ۱۰) نکات امنیتی
 
-- —
+- Labها فقط در محیط ایزوله.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- Roadmap از Gap.
+- برنامه‌ی ۶ ماهه.
+- Evidence.
+- Automation امن.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Roadmap از کجا شروع می‌شود؟ *(پاسخ: 32-5-ت1)*
+**ت1.** (ساده) چرا برنامه‌ی ۶ ماهه؟ *(پاسخ: 32-5-ت1)*
 
-**ت2.** (ساده) معیار پیشرفت؟ *(پاسخ: 32-5-ت2)*
+**ت2.** (ساده) معیار موفقیت؟ *(پاسخ: 32-5-ت2)*
 
-**ت3.** (متوسط) اولویت‌بندی با وقت محدود؟ *(پاسخ: 32-5-ت3)*
+**ت3.** (متوسط) اولویت Lab؟ *(پاسخ: 32-5-ت3)*
 
-**ت4.** (متوسط) چرا Labهای اجرا نشده اول؟ *(پاسخ: 32-5-ت4)*
+**ت4.** (متوسط) Automation امن؟ *(پاسخ: 32-5-ت4)*
 
-**ت5.** (سخت) برنامه‌ی ۶ ماهه. *(پاسخ: 32-5-ت5)*
+**ت5.** (سخت) برنامه شکست خورد. *(پاسخ: 32-5-ت5)*
 
-**ت6.** (سخت، طراحی) بدون بودجه‌ی گواهی چه؟ *(پاسخ: 32-5-ت6)*
+**ت6.** (سخت، طراحی) برنامه‌ی ۶ ماهه. *(پاسخ: 32-5-ت6)*
 
-**Q1.** Quick quiz (English): How should the roadmap prioritize topics? *(پاسخ: 32-5-Q1)*
+**Q1.** Quick quiz (English): Why should a learning plan include measurable evidence? *(پاسخ: 32-5-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
@@ -44669,114 +46376,153 @@ Fortinet NSE 4/5/6، Cisco CCNA→CCNP ENCOR (در صورت نیاز)، Linux/Wi
 |---|---|---|
 | NSE | Network Security Expert | برنامه‌ی گواهی Fortinet |
 
-- *Plan your next learning steps.* ← گام‌های بعدی را برنامه‌ریزی کنید.
+- *Set measurable goals for each month.* ← برای هر ماه هدف قابل‌اندازه‌گیری تعیین کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Roadmap. **Evidence:** `03-ops/roadmap.md`.
+**کارت Lab:** Roadmap (اجرا نشده). **Evidence:** `03-ops/roadmap.md`.
 
 ### ۱۵) منابع
 
-- Fortinet Training Institute
-- Cisco Learning Network
+- صفحه‌ی رسمی گواهی Cisco و Fortinet (تأیید در زمان استفاده)
 
 <a id="l-32-6"></a>
 
 ## درس 32-6 — آزمون نهایی دوره: سناریوی جامع، صورت مسئله، کلید پاسخ و Rubric
 
-**فصل 32 · بازنویسی عمیق · پیش‌نیاز: همه · ≈ 8 ساعت**
+**فصل 32 · بازنویسی عمیق · پیش‌نیاز: کل دوره · ≈ 12 ساعت**
 
-> **وضعیت:** عملیات و Capstone III/IV؛ حادثه فقط در Lab؛ FortiOS 7.0.3 (بوت‌نشده)؛ بدون شاهد «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. سناریوی جامع را از طراحی تا عیب‌یابی حل کند.
-2. سه عیب چندلایه را با روش فرضیه‌محور رفع کند.
-3. Evidence و RCA ارائه دهد.
-4. صادقانه محدودیت‌ها را اعلام کند.
+1. سناریوی جامع (Edge، Internal، VPN، SD-WAN، Logging) را تحلیل کند.
+2. سه خرابی چندلایه را با روش ۱۰ گامی رفع کند.
+3. طراحی، Policy و آزمون را با Evidence بنویسد.
+4. گزارش حادثه و CHG را تحویل دهد.
+5. با Rubric نمره‌دهی و صادقانه Gap را بنویسد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون نهایی همه‌ی مهارت‌ها.
+آزمون نهایی همه‌ی مهارت‌ها را در یک سناریو می‌سنجد. در دنیای واقعی خرابی تک‌علتی کم است؛ معمولاً دو علت با هم می‌آیند. روش و صبر مهم‌تر از سرعت است.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-سازمان: HQ + ۳ شعبه، دو ISP، IPsec، SD-WAN، HA، UTM، Auth (LDAP/MFA)، Log/Monitoring، Backup.
+شعبه با Edge FW (دو ISP، SD-WAN)، Internal FW، DMZ وب، IPsec به HQ، دورکاری، Syslog. گزارش: «بعضی کاربران اینترنت ندارند، VPN به HQ گاهی قطع می‌شود، وب از بیرون باز نمی‌شود.»
 
-بخش ۱ طراحی (HLD/IP Plan/ADR). بخش ۲ پیاده‌سازی (Evidence). بخش ۳ سه عیب تزریق‌شده: (۱) MTU/Policy VPN؛ (۲) Asymmetric یا Prefix-list BGP؛ (۳) Auth/Policy گروهی. بخش ۴ IR کوتاه. بخش ۵ گزارش و محدودیت‌ها.
+#### ۲) کلید
 
-#### کلید (خلاصه)
+**علت ۱ (اینترنت):** Health-check فقط Gateway ISP-A. ISP-A قطع ولی Gateway زنده ⇒ Failover نمی‌شود. رفع: Server خارجی 8.8.8.8.
 
-- عیب ۱: ping DF/Debug Flow؛ MSS/Policy.
-- عیب ۲: Sniffer دو‌نقطه‌ای/advertised-routes.
-- عیب ۳: `authserver`، fsso list، Debug Flow.
-- IR: Detect، Contain، Evidence، PIR.
+**علت ۲ (VPN):** MTU/MSS تونل؛ دانلود می‌ایستد. PMTU 1400 ⇒ MSS 1360. رفع: MSS-clamp.
 
-#### Rubric (۱۰۰)
+**علت ۳ (وب):** Policy dst=IP داخلی نه VIP. رفع: dst=VIP.
 
-طراحی ۲۰؛ پیاده‌سازی ۲۵؛ عیب‌یابی ۳۰؛ مستندات ۱۵؛ صداقت ۱۰.
+#### ۳) روش
+
+``` text
+1 define symptom 2 route 3 policy 4 NAT 5 session 6 DNS 7 MTU 8 logs 9 sniffer+debug 10 verify
+```
+
+#### ۴) خروجی‌های لازم
+
+- جدول علت/شاهد/رفع.
+- CHG برای رفع‌ها (ترتیب، Window، Rollback).
+- PIR کوتاه.
+- Evidence Index.
+
+#### ۵) Rubric (۱۰۰)
+
+| معیار | امتیاز |
+|---|---|
+| تشخیص ۳ علت با شاهد | 30 |
+| رفع و آزمون مثبت/منفی | 20 |
+| CHG و Rollback | 15 |
+| PIR و شاخص‌ها | 15 |
+| Evidence Index | 10 |
+| صداقت (Unverified، Gap) | 10 |
+
+قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| ترتیب رفع | لایه‌ی پایین‌تر اول |
+| CHG | یک CHG با سه مرحله |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** طراحی.
+**ساده (حل‌شده):** علت ۳: Lookup=0 (no policy)؛ Policy dst=VIP؛ آزمون: HTTPS از بیرون 200.
 
-**متوسط:** پیاده‌سازی.
+**متوسط (چندعلتی):** ابتدا علت ۱ (اینترنت) رفع؛ سپس علت ۳؛ هر رفع جدا آزمون؛ در پایان VPN.
 
-**سخت:** سه عیب و IR.
+**سخت (کامل):** CHG-0301: ۱) Health-check ۲) Policy VIP ۳) MSS. Window شبانه؛ Rollback: Config قبلی. Post-check: Failover 4 s، وب 200، دانلود VPN ۱۰۰MB ok. PIR: ریشه‌ها، MTTD/MTTR، اقدام: چک‌لیست Health-check و MSS استاندارد.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose sys sdwan health-check
+diagnose firewall iprope lookup 203.0.113.10 40000 10.30.0.10 443 tcp port1
+execute ping-options df-bit yes
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence.
+- هر علت Evidence دارد.
+- آزمون منفی.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| ناقص | Rubric | کسری |
+| چندعلتی | تفکیک | یکی‌یکی |
 
 ### ۱۰) نکات امنیتی
 
-- Secret.
+- رمز در گزارش نیاید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- آزمون جامع.
+- روش ۱۰ گامی.
+- چندعلتی.
+- CHG/PIR.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) بخش‌های آزمون؟ *(پاسخ: 32-6-ت1)*
+**ت1.** (ساده) علت ۱ چیست؟ *(پاسخ: 32-6-ت1)*
 
-**ت2.** (ساده) Rubric وزن عیب‌یابی؟ *(پاسخ: 32-6-ت2)*
+**ت2.** (ساده) علت ۳؟ *(پاسخ: 32-6-ت2)*
 
-**ت3.** (متوسط) عیب ۱ را چگونه جداسازی می‌کنید؟ *(پاسخ: 32-6-ت3)*
+**ت3.** (متوسط) ترتیب رفع؟ *(پاسخ: 32-6-ت3)*
 
-**ت4.** (متوسط) عیب ۳ را چگونه؟ *(پاسخ: 32-6-ت4)*
+**ت4.** (متوسط) MSS؟ *(پاسخ: 32-6-ت4)*
 
-**ت5.** (سخت) سه عیب را با RCA کوتاه بنویسید. *(پاسخ: 32-6-ت5)*
+**ت5.** (سخت) CHG بنویسید. *(پاسخ: 32-6-ت5)*
 
-**ت6.** (سخت، طراحی) گزارش نهایی با محدودیت‌ها. *(پاسخ: 32-6-ت6)*
+**ت6.** (سخت، طراحی) PIR. *(پاسخ: 32-6-ت6)*
 
-**Q1.** Quick quiz (English): What will the final exam evaluate? *(پاسخ: 32-6-Q1)*
+**Q1.** Quick quiz (English): Why fix multi-cause failures one at a time? *(پاسخ: 32-6-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Final | Final exam | آزمون نهایی |
+| PIR | Post-Incident Review | بازبینی پس از حادثه |
 
-- *Review all gates before the final exam.* ← قبل از آزمون نهایی همه‌ی Gateها را مرور کنید.
+- *Isolate the layers and test after each fix.* ← لایه‌ها را جدا کنید و پس از هر رفع آزمون کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** آزمون نهایی. **Evidence:** `03-ops/final.md`.
+**کارت Lab:** آزمون نهایی (اجرا نشده). **Evidence:** `03-ops/final-exam.md`.
 
 ### ۱۵) منابع
 
-- همه‌ی فصل‌ها
+- کل دوره
 
 ## پاسخ‌های فصل 32
 
@@ -44785,114 +46531,136 @@ Fortinet NSE 4/5/6، Cisco CCNA→CCNP ENCOR (در صورت نیاز)، Linux/Wi
 
 ### پاسخ‌های بازنویسی عمیق درس 32-1
 
-**32-1-ت1** — تغییر کم‌ریسک از پیش تأییدشده.
 
-**32-1-ت2** — آزمون مسدود بودن ترافیک غیرمجاز.
+### پاسخ‌های بازنویسی عمیق درس 32-1
 
-**32-1-ت3** — نسبت Changeهای ناموفق به کل.
+**32-1-ت1** — سلامت، Alert، Backup، Log غیرعادی.
 
-**32-1-ت4** — برای جلوگیری از سوءاستفاده و حذف Ruleهای موقت.
+**32-1-ت2** — Backup و بررسی‌های قبل.
 
-**32-1-ت5** — قالب بالا.
+**32-1-ت3** — Rollback، ثبت علت و درس.
 
-**32-1-ت6** — Diff Policy، Backup، Health.
+**32-1-ت4** — کم‌ترافیک با تیم آماده.
 
-**32-1-Q1** — It is applied urgently and documented/reviewed afterwards.
+**32-1-ت5** — ترتیب Policy؛ Rollback؛ CHG جدید.
+
+**32-1-ت6** — قالب بالا.
+
+**32-1-Q1** — That the change works as intended and nothing else broke.
+
+### پاسخ‌های بازنویسی عمیق درس 32-2
 
 
 ### پاسخ‌های بازنویسی عمیق درس 32-2
 
-**32-2-ت1** — MTTD=4 دقیقه، MTTR=7 دقیقه.
+**32-2-ت1** — تصمیم‌گیر و هماهنگ‌کننده.
 
-**32-2-ت2** — ثبت Timeline و تصمیم‌ها.
+**32-2-ت2** — زمان تا کشف.
 
-**32-2-ت3** — اثر کسب‌وکار بالاتر (Sev1).
+**32-2-ت3** — اطمینان مدیریت و کاهش تماس‌ها.
 
-**32-2-ت4** — Synthetic monitoring/Alert خودکار.
+**32-2-ت4** — ثبت Timeline.
 
-**32-2-ت5** — خلاصه، Timeline، علت‌ها، خوب/بد، اقدام Owner/Date، Metrics.
+**32-2-ت5** — قالب.
 
-**32-2-ت6** — Inject، Detect، Contain، Fix، PIR.
+**32-2-ت6** — سناریو و نقش‌ها.
 
-**32-2-Q1** — To avoid confusion and ensure decisions, actions, communication and records are handled in parallel.
+**32-2-Q1** — To avoid confusion and ensure decisions, actions and records are handled.
+
+### پاسخ‌های بازنویسی عمیق درس 32-3
 
 
 ### پاسخ‌های بازنویسی عمیق درس 32-3
 
-**32-3-ت1** — قبل از شروع (T-60).
+**32-3-ت1** — وضعیت پیش از تغییر.
 
-**32-3-ت2** — آزمون حیاتی پس از ۱۰ دقیقه رفع همچنان Fail.
+**32-3-ت2** — نقطه‌ی تصمیم.
 
-**32-3-ت3** — اثبات مسیر بازگشت.
+**32-3-ت3** — برای تصمیم به‌موقع.
 
-**32-3-ت4** — پایش تشدیدشده پس از تغییر.
+**32-3-ت4** — حدود ±۱۰٪.
 
-**32-3-ت5** — طبق بالا.
+**32-3-ت5** — Debug سریع؛ Rollback اگر در زمان.
 
-**32-3-ت6** — بخش‌های بالا.
+**32-3-ت6** — جدول.
 
-**32-3-Q1** — So the decision is objective and not influenced by pressure during the change.
+**32-3-Q1** — To avoid delaying the decision and extending the outage.
+
+### پاسخ‌های بازنویسی عمیق درس 32-4
 
 
 ### پاسخ‌های بازنویسی عمیق درس 32-4
 
-**32-4-ت1** — طراحی، عملیات، Evidence، Gateها، محدودیت‌ها.
+**32-4-ت1** — مستقل و با شاهد.
 
-**32-4-ت2** — فاصله‌ی ادعا با شاهد.
+**32-4-ت2** — تفاوت سطح فعلی با هدف.
 
-**32-4-ت3** — صداقت و جلوگیری از ادعای بی‌شاهد.
+**32-4-ت3** — شاهد عملی نیست.
 
-**32-4-ت4** — کاهش به L2 تا آزمون اجرا شود.
+**32-4-ت4** — پروژه، Evidence، Runbook، PIR.
 
-**32-4-ت5** — صادقانه: اجرا نشده؛ طراحی با مرجع؛ برنامه‌ی آزمون.
+**32-4-ت5** — Capstone I، Runbook، برچسب صادقانه.
 
-**32-4-ت6** — جدول.
+**32-4-ت6** — Lab، شاهد، زمان.
 
-**32-4-Q1** — To be transparent about what is unverified and avoid unsupported claims.
+**32-4-Q1** — It shows real skill level and guides focused improvement.
+
+### پاسخ‌های بازنویسی عمیق درس 32-5
 
 
 ### پاسخ‌های بازنویسی عمیق درس 32-5
 
-**32-5-ت1** — از Gap.
+**32-5-ت1** — تا یادگیری به عمل تبدیل شود.
 
-**32-5-ت2** — شاهد جدید.
+**32-5-ت2** — اندازه‌گیری‌پذیر.
 
-**32-5-ت3** — بیشترین ریسک/Gap.
+**32-5-ت3** — هدف شغلی.
 
-**32-5-ت4** — تا ادعاها شاهد داشته باشند.
+**32-5-ت4** — Read-only و Pilot.
 
-**32-5-ت5** — جدول.
+**32-5-ت5** — کاهش دامنه.
 
-**32-5-ت6** — Lab/پروژه/Evidence.
+**32-5-ت6** — جدول.
 
-**32-5-Q1** — By the largest gaps between claimed skills and available evidence.
+**32-5-Q1** — To verify real progress rather than assumed progress.
+
+### پاسخ‌های بازنویسی عمیق درس 32-6
 
 
 ### پاسخ‌های بازنویسی عمیق درس 32-6
 
-**32-6-ت1** — طراحی، پیاده‌سازی، سه عیب، IR، گزارش.
+**32-6-ت1** — Health-check روی Gateway.
 
-**32-6-ت2** — ۳۰.
+**32-6-ت2** — dst=IP داخلی.
 
-**32-6-ت3** — ping DF برای MTU و Debug Flow برای Policy.
+**32-6-ت3** — لایه‌ی پایین‌تر اول.
 
-**32-6-ت4** — `authserver`، `fsso list`، Debug Flow.
+**32-6-ت4** — PMTU−40.
 
-**32-6-ت5** — علامت/شاهد/علت/رفع.
+**32-6-ت5** — سه مرحله با Rollback.
 
-**32-6-ت6** — بخش‌های Portfolio.
+**32-6-ت6** — ریشه، شاخص، اقدام.
 
-**32-6-Q1** — Design, implementation, troubleshooting, documentation and honesty.
+**32-6-Q1** — To know which change solved which problem.
 
 ### پاسخ‌های درس افزوده‌ی 32-0 (فصل 32)
 
-**32-0-ت1** — Incident بازگرداندن سرویس؛ Problem حذف علت ریشه‌ای تکرارشونده.
 
-**32-0-ت2** — Request، Risk، Plan، Approve، Schedule، Pre-check+Backup، Implement، Post-check، Close، Review.
+### پاسخ‌های بازنویسی عمیق درس 32-0
 
-**32-0-ت3** — Timeline، اثر، علت (نبود Post-check منفی)، چه خوب/بد، اقدام با Owner و تاریخ.
+**32-0-ت1** — تغییر کم‌ریسک و از پیش تأییدشده.
 
-**32-0-Q1** — Because it exposes process weaknesses without people hiding information.
+**32-0-ت2** — میانگین زمان بازیابی.
+
+**32-0-ت3** — ۹۴٪.
+
+**32-0-ت4** — هیئت تأیید تغییرات پرریسک.
+
+**32-0-ت5** — ثبت، تأیید Owner، اجرا، Verify، ثبت رسمی.
+
+**32-0-ت6** — ثبت، ارزیابی، تأیید، اجرا، Verify، Close.
+
+**32-0-Q1** — An urgent change to restore service that is documented and reviewed afterwards.
 
 # پایان بخش ۱۱ (فصل‌های ۳۱ تا ۳۲)
 

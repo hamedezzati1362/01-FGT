@@ -177,102 +177,155 @@ FortiGate: Network → OSPF/BGP؛ VPN → IPsec Tunnels. CSR: CLI. **Verificatio
 
 ## درس 25-1 — نگاشت مفاهیم Cisco و Fortinet: برگه‌ی تطبیق دستورها و مدل‌های پردازش
 
-**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۰، ۱۲-۰ · ≈ 5 ساعت**
+**فصل 25 · بازنویسی عمیق · پیش‌نیاز: فصل ۲ تا ۱۵ · ≈ 11 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 و CSR1000v 17.03.02 (بوت‌نشده/اجرا نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. مدل پردازش بسته را در IOS-XE و FortiOS مقایسه کند.
-2. برگه‌ی تطبیق دستورها (نمایش/تنظیم/عیب‌یابی) را بسازد.
-3. تفاوت‌های مدل (ACL در برابر Policy، Zone) را در طراحی لحاظ کند.
+1. مدل پردازش Cisco (ACL/Route/NAT) و Fortinet (Policy/Route/Session) را مقایسه کند.
+2. برگه‌ی تطبیق دستورها (show ↔ get/diagnose) را بسازد.
+3. تفاوت‌های مفهومی (Stateless ACL در برابر Stateful Policy) را درست بفهمد.
+4. برای هر وظیفه دستور معادل را بنویسد.
+5. خطاهای ناشی از «ترجمه‌ی کورکورانه» را بشناسد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-مهندس چندسازنده باید «ترجمه‌ی مفهومی» بلد باشد، نه فقط دستور. تفاوت اصلی: Cisco روتر/سوئیچ‌محور با ACL/NAT/Zone-Based Firewall؛ Fortinet فایروال‌محور با Policy و Session.
+مهندسی که فقط Cisco بلد است FortiGate را با نگاه سیسکویی می‌خواند: «ACL کجاست؟». ولی در FortiGate مفهوم ACL جایش را به Policy داده و مسیر پردازش فرق دارد. نگاشت مفاهیم سریع‌ترین راه یادگیری است، به شرط اینکه تفاوت‌ها را هم بدانید.
 
 ### ۳) توضیح عمیق فنی
 
-#### تطبیق
+#### ۱) نگاشت مفهومی
 
-| کار | Cisco IOS-XE | FortiOS |
+| مفهوم | Cisco IOS | FortiGate |
 |---|---|---|
-| جدول مسیر | show ip route | get router info routing-table all |
-| Interface | show ip interface brief | get system interface physical / show system interface |
-| ARP | show ip arp | get system arp |
-| Session/NAT | show ip nat translations | diagnose sys session list |
-| Policy/ACL | show access-lists | show firewall policy |
-| OSPF | show ip ospf neighbor | get router info ospf neighbor |
-| BGP | show ip bgp summary | get router info bgp summary |
-| IPsec | show crypto ikev2 sa | diagnose vpn ike gateway list |
-| Sniffer | monitor capture | diagnose sniffer packet |
-| Debug flow | debug ip packet (خطرناک) | diagnose debug flow |
-| Backup | copy running-config tftp | execute backup config tftp |
-| CLI mode | enable/conf t | config / edit / next / end |
+| فیلتر | ACL (Stateless، ترتیبی) | Firewall Policy (Stateful) |
+| NAT | `ip nat inside/outside` | NAT در Policy / VIP / IP Pool |
+| Interface منطقی | Sub-interface / SVI | VLAN interface / Zone |
+| مسیر | `ip route` | `config router static` |
+| جدول مسیر | `show ip route` | `get router info routing-table all` |
+| ARP | `show ip arp` | `diagnose ip arp list` |
+| Session | NAT translations | `diagnose sys session list` |
+| Debug | `debug ip ...` | `diagnose debug flow` |
+| Capture | EPC/SPAN | `diagnose sniffer packet` |
+| ذخیره | `copy run start` | تغییرات خودکار ذخیره می‌شود |
 
-#### مدل‌ها
+#### ۲) تفاوت‌های مهم
 
-- IOS: ACL روی Interface (in/out)؛ NAT ip nat inside/outside؛ Stateful فقط با ZBFW/Inspect.
-- FortiOS: Policy بین Interface/Zone؛ Stateful پیش‌فرض؛ NAT در Policy؛ Session Table مرکز تصمیم.
+- IOS: Config در RAM تا ذخیره. FortiOS: هر تغییر بلافاصله ذخیره (Revision).
+- ACL Stateless و Policy Stateful.
+- Policy در FortiGate بین **جفت Interface/Zone** است.
+- Default Deny ضمنی در FortiGate (Implicit Deny) و در ACL هم، ولی رفتار Log متفاوت.
+
+#### ۳) مثال معادل
+
+``` text
+! Cisco
+ip access-list extended OUT
+ permit tcp 10.10.0.0 0.0.0.255 any eq 443
+interface Gi0/1
+ ip access-group OUT in
+```
+
+``` text
+! FortiGate
+config firewall policy
+ edit 10
+  set srcintf "port2"
+  set dstintf "port1"
+  set srcaddr "NET-USERS"
+  set dstaddr "all"
+  set action accept
+  set schedule "always"
+  set service "HTTPS"
+  set nat enable
+ next
+end
+```
+
+#### ۴) خطاهای ترجمه
+
+- فرض «ACL ورودی روی Interface» ⇒ Policy باید جفت Interface باشد.
+- فراموشی `nat enable`.
+- انتظار `copy run start`.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| ترجمه | مفهومی نه خط‌به‌خط |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** `show ip route` ⇄ `get router info routing-table all`.
+**ساده (حل‌شده):** `show ip route` ⇒ `get router info routing-table all`.
 
-**متوسط:** ACL ورودی IOS ⇄ Policy با srcintf در FortiOS؛ تفاوت: Implicit deny و Stateful.
+**متوسط (تفاوت):** ACL Cisco باید برگشت را هم مجاز کند (یا established)؛ Policy Fortinet برگشت را خودکار می‌پذیرد.
 
-**سخت:** انتقال یک ACL با ۴۰ خط و NAT به Policy: ترتیب NAT/ACL در IOS با FortiOS فرق دارد؛ تست رفتاری لازم است.
+**سخت (ترجمه‌ی Config):** ACL 10 خطی را به Policy تبدیل: هر خط به یک یا چند Policy با Object؛ ادغام ردیف‌های مشابه؛ Log؛ آزمون با Lookup. ریسک: ترتیب و Implicit Deny.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get router info routing-table all
+diagnose ip arp list
+diagnose sys session list
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- برگه‌ی تطبیق در Lab امتحان شود.
+- جدول تطبیق.
+- آزمون Lookup.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| دستور شناخته نمی‌شود | پیام CLI | Syntax برند |
+| ترافیک رد می‌شود | Policy جفت Interface | Zone/Interface |
 
 ### ۱۰) نکات امنیتی
 
-- Backup از هر دو.
+- Default Deny در هر دو.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- ترجمه‌ی مفهومی؛ مدل پردازش متفاوت.
+- نگاشت+تفاوت.
+- Stateless/Stateful.
+- خودکار ذخیره.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) معادل show ip arp؟ *(پاسخ: 25-1-ت1)*
+**ت1.** (ساده) معادل show ip route؟ *(پاسخ: 25-1-ت1)*
 
-**ت2.** (ساده) معادل ACL؟ *(پاسخ: 25-1-ت2)*
+**ت2.** (ساده) ACL در FortiGate؟ *(پاسخ: 25-1-ت2)*
 
-**ت3.** (متوسط) تفاوت Stateful؟ *(پاسخ: 25-1-ت3)*
+**ت3.** (متوسط) تفاوت ذخیره؟ *(پاسخ: 25-1-ت3)*
 
-**ت4.** (سخت) انتقال ACL+NAT. *(پاسخ: 25-1-ت4)*
+**ت4.** (متوسط) برگشت ترافیک؟ *(پاسخ: 25-1-ت4)*
 
-**ت5.** (سخت، طراحی) برگه‌ی تطبیق ۱۵ سطری. *(پاسخ: 25-1-ت5)*
+**ت5.** (سخت) ACL را به Policy ببرید. *(پاسخ: 25-1-ت5)*
 
-**Q1.** Quick quiz (English): What is the FortiOS equivalent of an interface ACL? *(پاسخ: 25-1-Q1)*
+**ت6.** (سخت، طراحی) برگه‌ی تطبیق. *(پاسخ: 25-1-ت6)*
+
+**Q1.** Quick quiz (English): What is the FortiGate equivalent of a Cisco ACL? *(پاسخ: 25-1-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| ZBFW | Zone-Based Policy Firewall | فایروال مبتنی بر Zone سیسکو |
+| ACL | Access Control List | فهرست کنترل دسترسی |
 
-- *Translate concepts, not just commands.* ← مفاهیم را ترجمه کنید نه فقط دستورها.
+- *Do not translate configs line by line.* ← Config را خط‌به‌خط ترجمه نکنید.
 
 ### ۱۴) کارت Lab
 
-**Lab:** جدول معادل. **Evidence:** `02-design/vendor-map.md`.
+**کارت Lab:** نگاشت Cisco–Fortinet (اجرا نشده). **Evidence:** `02-design/mapping-sheet.md`.
 
 ### ۱۵) منابع
 
-- Cisco IOS XE Command Reference
-- Fortinet CLI Reference 7.0
+- Cisco IOS docs
+- Fortinet FortiOS 7.0 Administration Guide
 
 <a id="l-25-2"></a>
 
@@ -477,126 +530,143 @@ MTU (Exstart)، Network Type (DR/BDR در یک سر)، Auth، Hello/Dead، Timer
 
 ## درس 25-3 — IPsec چندسازنده: روش مقایسه‌ی Debug، جدول مغایرت و Interop آزمایشی FGT–CSR
 
-**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۲۵-۰، ۱۸-۰، ۱۸-۳ · ≈ 8 ساعت**
+**فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۳، ۲۵-۱، ۲۵-۲ · ≈ 11 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 و CSR1000v 17.03.02 (IOS-XE)؛ بوت‌نشده؛ دستورها `Unverified`؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Tunnel IKEv2 بین FGT و CSR را با برگه‌ی پارامتر مشترک بسازد.
-2. Debug هر دو سر را هم‌زمان بگیرد و اولین مغایرت را بیابد.
-3. پیام‌های خطا را بین دو سازنده نگاشت کند.
-4. Rekey/DPD/NAT-T/MTU را آزمایش کند.
-5. گزارش Interop (پارامتر، نتیجه، محدودیت) بنویسد.
+1. پارامترهای دو سازنده را در جدول مغایرت (Mismatch) مقایسه کند.
+2. Debug دو سمت را هم‌زمان بخواند و خط متناظر را بیابد.
+3. تفاوت پیش‌فرض‌ها (DH، Lifetime، PFS، DPD) را بشناسد.
+4. Interop آزمایشی را با Test Plan اجرا کند.
+5. نتیجه را مستند و سازگاری را ارزیابی کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-در Interop، هر سازنده خطا را به زبان خودش گزارش می‌کند. «روش مقایسه‌ی دو Debug» سریع‌ترین راه برای پیدا کردن مغایرت است.
+وقتی دو دستگاه از دو سازنده IPsec می‌زنند، هر کدام «پیش‌فرض‌های» خودشان را دارند و Debug هرکدام به زبان خودش حرف می‌زند. مقایسه‌ی منظم دو سمت، سریع‌ترین راه برای پیدا کردن Mismatch است.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) روش
+#### ۱) جدول مغایرت
 
-``` text
-1 Same time window: start debug on both peers; trigger negotiation (clear SA / ping)
-2 Save logs; align by timestamp
-3 Find first divergence: the message where one side rejects/aborts
-4 Map to parameter: proposal, DH, PRF, ID, selectors, lifetime, PFS
-5 Change ONE parameter; repeat
-```
-
-#### ۲) نگاشت پیام‌ها
-
-| وضعیت | CSR (IOS-XE) | FortiGate | علت |
+| پارامتر | FortiGate | Cisco CSR | بررسی |
 |---|---|---|---|
-| Proposal ناسازگار | `no matching proposal` | `NO_PROPOSAL_CHOSEN` | Cipher/PRF/DH |
-| Auth | `AUTH FAILED` | `AUTH_FAILED` | PSK/ID |
-| Selector | `TS unacceptable` | `TS_UNACCEPTABLE` | Selector |
-| DH | `INVALID_KE_PAYLOAD` | `INVALID_KE_PAYLOAD` | گروه DH |
-| پایان | `SA deleted` | `delete` | Lifetime/DPD |
+| IKE version | `ike-version 2` | `crypto ikev2` | هر دو v2 |
+| Encryption | `proposal aes256-sha256` | `encryption aes-cbc-256` | یکسان |
+| Integrity | sha256 | `integrity sha256` | یکسان |
+| DH | `dhgrp 14` | `group 14` | یکسان |
+| PFS | `pfs enable` + dhgrp | `set pfs group14` | هر دو |
+| Lifetime P1 | `keylife` 86400 | `lifetime 86400` | یکسان یا نزدیک |
+| Selector | Subnet | ACL | آینه |
+| DPD | `dpd on-idle` | `dpd 10 3 on-demand` | سازگار |
+| NAT-T | enable | خودکار | UDP 4500 |
 
-#### ۳) آزمون‌های Interop
+#### ۲) Debug دو سمت
 
-- Rekey: Lifetime کوتاه (مثلاً 600 s) و مشاهده‌ی Rekey بدون قطع.
-- DPD: قطع یک سر؛ زمان کشف.
-- NAT-T: Peer پشت NAT.
-- MTU: ping DF بزرگ.
-- PFS: Group یکسان.
+| لحظه | FGT | CSR |
+|---|---|---|
+| شروع | `ike ... initiator: ... SA_INIT` | `IKEv2:Received Packet [From ...] ... IKE_SA_INIT` |
+| پیشنهاد | `proposal ...` | `Proposal received` |
+| خطا | `no suitable proposal` | `NO_PROPOSAL_CHOSEN` |
 
-``` text
-CSR: show crypto ikev2 sa detailed ; show crypto ipsec sa
-FGT: diagnose vpn ike gateway list ; diagnose vpn tunnel list
-```
+نکته: زمان هر دو با NTP هماهنگ باشد تا خطوط متناظر پیدا شوند.
+
+#### ۳) Test Plan Interop
+
+| # | آزمون | معیار |
+|---|---|---|
+| I-01 | Establish IKEv2 | SA ready |
+| I-02 | ping LAN↔LAN | 0٪ Loss |
+| I-03 | Rekey P1/P2 | بدون قطع > 1 s |
+| I-04 | DPD: قطع یک سر | تشخیص < 60 s |
+| I-05 | MTU/MSS | دانلود 100MB |
+| I-06 | Failover (در صورت دو WAN) | بازگشت |
+
+#### ۴) ارزیابی
+
+اگر I-03 قطع طولانی: Lifetime/Rekey Margin. I-04 کند: DPD interval.
+
+#### ۵) مستندسازی
+
+برای هر Mismatch: شاهد (خط Debug هر دو سمت)، علت، رفع، تاریخ.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Test Plan | ۶ آزمون |
+| Debug | همزمان |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Up با AES-GCM-256، DH 20؛ `show crypto ipsec sa` pkts encaps/decaps هر دو افزایش.
+**ساده (حل‌شده):** Mismatch DH: FGT 14، CSR 5؛ شاهد در هر دو سمت؛ یکسان‌سازی.
 
-**متوسط (تحلیل):** Phase 2 شکست: CSR `TS unacceptable`، FGT `TS_UNACCEPTABLE`؛ Selector CSR 10.10.0.0/16↔10.20.0.0/16 و FGT 0.0.0.0/0؛ رفع: any/any روی هر دو (Route-based) یا آینه‌کردن.
+**متوسط (Rekey):** پس از ۱ ساعت تونل ۸ ثانیه قطع شد. علت: Lifetime P2 در CSR 3600 و FGT 43200؛ Rekey نامتقارن. رفع: یکسان‌سازی؛ آزمون I-03.
 
-**سخت (قطع دوره‌ای):** Tunnel هر ~۶۰ دقیقه قطع می‌شود: CSR Lifetime IPsec 3600 s و FGT 43200؛ هنگام Rekey با Proposal/PFS متفاوت شکست. شواهد: Log هر دو؛ رفع: یکسان‌سازی Lifetime/PFS؛ آزمون ۴ ساعته.
+**سخت (DPD):** قطع سر CSR؛ FGT تا ۵ دقیقه تونل را زنده می‌بیند. مراحل: DPD FGT on-idle با interval 10 و retry 3؛ CSR on-demand؛ آزمون: تشخیص ۳۰ ثانیه. درس: DPD دو سر.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose vpn ike gateway list
+show crypto ikev2 sa
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence Interop: پارامتر/خروجی/نتیجه.
-- Rekey بدون قطع.
-- DPD آزمایشی.
+- I-01..I-06.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Phase1 شکست | Debug | Proposal/DH/PSK |
-| Phase2 شکست | Debug | Selector/PFS |
-| قطع دوره‌ای | Log | Lifetime |
-| یک جهت | counters | Policy/Route |
+| Rekey قطع | Lifetime | یکسان |
 
 ### ۱۰) نکات امنیتی
 
-- PSK قوی؛ الگوریتم‌های ضعیف ممنوع.
+- PSK در Vault.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- مقایسه‌ی Debug دو سر.
-- نگاشت پیام‌ها.
-- آزمون Rekey/DPD/NAT-T/MTU.
+- جدول مغایرت.
+- Debug دو سمت.
+- Test Plan.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) معادل NO_PROPOSAL_CHOSEN در CSR؟ *(پاسخ: 25-3-ت1)*
+**ت1.** (ساده) Mismatch رایج؟ *(پاسخ: 25-3-ت1)*
 
-**ت2.** (ساده) چرا Debug هم‌زمان؟ *(پاسخ: 25-3-ت2)*
+**ت2.** (ساده) چرا NTP؟ *(پاسخ: 25-3-ت2)*
 
-**ت3.** (متوسط) TS unacceptable چگونه رفع می‌شود؟ *(پاسخ: 25-3-ت3)*
+**ت3.** (متوسط) Rekey قطع؟ *(پاسخ: 25-3-ت3)*
 
-**ت4.** (متوسط) آزمون Rekey چگونه؟ *(پاسخ: 25-3-ت4)*
+**ت4.** (متوسط) DPD؟ *(پاسخ: 25-3-ت4)*
 
-**ت5.** (سخت) Tunnel هر ساعت قطع می‌شود؛ تحلیل. *(پاسخ: 25-3-ت5)*
+**ت5.** (سخت) DPD کند. *(پاسخ: 25-3-ت5)*
 
-**ت6.** (سخت، طراحی) گزارش Interop. *(پاسخ: 25-3-ت6)*
+**ت6.** (سخت، طراحی) Test Plan. *(پاسخ: 25-3-ت6)*
 
-**Q1.** Quick quiz (English): How do you locate the cause of an interop IKE failure efficiently? *(پاسخ: 25-3-Q1)*
+**Q1.** Quick quiz (English): Why synchronize clocks when comparing debugs from two vendors? *(پاسخ: 25-3-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Divergence | First divergence point | اولین نقطه‌ی اختلاف |
-| PRF | Pseudo-random function | تابع شبه‌تصادفی |
+| DPD | Dead Peer Detection | تشخیص همتای مرده |
 
-- *Debug both peers in the same time window.* ← هر دو Peer را در یک بازه‌ی زمانی Debug کنید.
+- *Compare both sides with synchronized clocks.* ← دو سمت را با ساعت‌های هماهنگ مقایسه کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** IPsec FGT–CSR. **Evidence:** `03-ops/ipsec-mv.md`.
+**کارت Lab:** Interop FGT–CSR (اجرا نشده). **Evidence:** `03-ops/interop.md`.
 
 ### ۱۵) منابع
 
-- RFC 7296
-- Cisco IKEv2 guides
-- Fortinet IPsec CLI Reference 7.0
+- Fortinet FortiOS 7.0 Administration Guide: IPsec
+- Cisco IOS-XE IKEv2
 
 <a id="l-25-4"></a>
 
@@ -777,18 +847,22 @@ show crypto ipsec sa
 
 ### پاسخ‌های بازنویسی درس 25-1
 
-**25-1-ت1** — get system arp.
+
+### پاسخ‌های بازنویسی عمیق درس 25-1
+
+**25-1-ت1** — get router info routing-table all.
 
 **25-1-ت2** — Firewall Policy.
 
-**25-1-ت3** — FortiOS پیش‌فرض Stateful؛ ACL ساده نه.
+**25-1-ت3** — Cisco دستی؛ Fortinet خودکار.
 
-**25-1-ت4** — تست رفتاری.
+**25-1-ت4** — Fortinet Stateful.
 
-**25-1-ت5** — جدول بالا بسط داده شود.
+**25-1-ت5** — Object، Policy، Log.
 
-**25-1-Q1** — A firewall policy between interfaces or zones.
+**25-1-ت6** — جدول.
 
+**25-1-Q1** — A firewall policy.
 
 ### پاسخ‌های بازنویسی عمیق درس 25-2
 
@@ -809,20 +883,22 @@ show crypto ipsec sa
 
 ### پاسخ‌های بازنویسی عمیق درس 25-3
 
-**25-3-ت1** — `no matching proposal`.
 
-**25-3-ت2** — هر سمت بخش دیگری از مذاکره را می‌بیند؛ مقایسه اولین مغایرت را نشان می‌دهد.
+### پاسخ‌های بازنویسی عمیق درس 25-3
 
-**25-3-ت3** — Selector آینه یا any/any در Route-based.
+**25-3-ت1** — DH، Selector، Lifetime.
 
-**25-3-ت4** — Lifetime کوتاه و ping پیوسته؛ باید بدون قطع Rekey شود.
+**25-3-ت2** — تطبیق خطوط Debug.
 
-**25-3-ت5** — Lifetime/PFS ناهمسان؛ Log دو سر؛ یکسان‌سازی؛ آزمون طولانی.
+**25-3-ت3** — Lifetime نامتقارن.
 
-**25-3-ت6** — جدول پارامتر/نتیجه/محدودیت/تاریخ/نسخه.
+**25-3-ت4** — تشخیص همتای مرده.
 
-**25-3-Q1** — Capture debug from both peers in the same time window and find the first diverging message.
+**25-3-ت5** — interval/retry دو سر.
 
+**25-3-ت6** — جدول.
+
+**25-3-Q1** — To match corresponding events across both logs.
 
 ### پاسخ‌های بازنویسی عمیق درس 25-4
 
@@ -1507,116 +1583,134 @@ git diff HEAD~1 -- fgt-A.sanitized.conf
 
 ## درس 26-4 — طراحی معماری ۹ (مدیریت مرکزی و عملیات): RBAC، Change، Audit و آزمون با Rubric
 
-**فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۱ تا ۲۶-۳ · ≈ 8 ساعت**
+**فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۱ تا ۲۶-۳، ۳۲-۱ · ≈ 11 ساعت**
 
-> **وضعیت:** FortiOS 7.0.3 / FortiManager-FortiAnalyzer 7.0 (Needs-License؛ بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. معماری مدیریت مرکزی (FMG یا جایگزین) را از نیازمندی تا طرح اجرایی تولید کند.
-2. RBAC (Super، Operator، Auditor، Read-only) و Separation of Duties را بنویسد.
-3. فرایند Change/Approval/Audit را با ابزار انتخابی هماهنگ کند.
-4. ریسک‌ها، Break-glass و DR را طراحی کند.
-5. طرح را ارائه و با Rubric ارزیابی کند.
+1. معماری مدیریت مرکزی (FortiManager، FortiAnalyzer، ADOM) را طراحی کند.
+2. RBAC چندسطحی (Super، Network، ReadOnly، Auditor) را مدل کند.
+3. فرایند Change از طریق Policy Package و Revision را بنویسد.
+4. Audit و Alert روی تغییر Config را طراحی کند.
+5. آزمون و Rubric را تحویل دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون طراحی معماری ۹: «چه ابزار، با چه نقش‌ها، چه فرایند و چه شواهد». کلید پاسخ پس از تلاش.
+با ۲۰ فایروال، ورود دستی به هر کدام ناممکن و ناهمگن می‌شود. مدیریت مرکزی یک منبع حقیقت می‌دهد: Policy Package، Revision و Audit. ولی همین مرکز، هدف جذاب مهاجم است؛ پس RBAC و Hardening آن حیاتی است. FMG/FAZ وابسته به لایسنس هستند (Needs-License).
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) معماری
 
-شرکت: HQ + ۱۲ شعبه، ۱۵ FortiGate، دو تیم (شبکه، امنیت)، Audit فصلی، بودجه محدود. نیازمندی‌ها:
-- R1: Policy یکسان و Audit تغییر.
-- R2: Log ۱۸۰ روزه و Alert.
-- R3: Backup/Restore و DR.
-- R4: جداسازی نقش‌ها.
-- R5: ریسک مرکزی‌سازی مدیریت.
+``` text
+FortiManager (policy, device DB, revisions)  --FGFM-->  FGT-1..N
+FortiAnalyzer (logs, reports, events)        <--logs--  FGT-1..N
+ADOM: per region / per customer
+```
 
-#### خروجی‌ها
+#### ۲) RBAC
 
-ADR ابزار، نمودار، جدول RBAC، فرایند Change، برنامه‌ی Audit، Break-glass، آزمون Restore.
+| نقش | دسترسی |
+|---|---|
+| Super | همه (۲ نفر، MFA) |
+| Network Admin | Policy Package ADOM خود |
+| ReadOnly (NOC) | مشاهده |
+| Auditor | Log و Revision خواندنی |
 
-#### کلید پاسخ (خلاصه‌ی مورد انتظار)
+#### ۳) فرایند Change
 
-- ابزار: FMG برای Policy مرکزی (۱۵ دستگاه) + Syslog/SIEM برای Log یا FAZ؛ جایگزین: Ansible+Git+rsyslog؛ تصمیم با هزینه/ریسک.
-- RBAC: Super (۲ نفر، MFA)، Operator (Policy در ADOM)، Auditor (Read-only)، Network (Interface/Routing).
-- Change: Ticket→Review→Install Preview→Window→Post-check→Close.
-- Audit: Revision diff ماهانه، Drift، Admin log.
-- Break-glass: حساب محلی با رمز Vault و MFA فیزیکی.
-- DR: HA/Backup رمزشده، آزمون فصلی.
+1. ایجاد Revision/Backup. 2. ویرایش Policy Package. 3. Review (Workflow Session). 4. Install Preview. 5. Install در Window. 6. Verify. 7. Close.
 
-#### Rubric (۱۰۰)
+#### ۴) Audit
 
-ADR/تصمیم ۲۰؛ RBAC ۲۰؛ Change/Audit ۲۰؛ ریسک/DR ۲۰؛ شواهد ۱۰؛ صداقت (لایسنس/Unverified) ۱۰.
+Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ سال.
+
+#### ۵) Hardening مدیریت مرکزی
+
+شبکه‌ی Mgmt جدا؛ Trusted host؛ MFA؛ Backup FMG؛ HA.
+
+#### ۶) آزمون و Rubric
+
+سناریو: افزودن Policy به ۵ شعبه با CHG؛ Install Preview؛ Rollback به Revision قبلی. Rubric: معماری ۲۰، RBAC ۲۰، Change ۲۰، Audit ۲۰، آزمون و صداقت ۲۰.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| ADOM | بر اساس منطقه |
+| RBAC | حداقل |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** جدول RBAC چهارنقشه.
+**ساده (حل‌شده):** ADOM-EU و ADOM-US؛ Network Admin هر ADOM فقط ADOM خودش.
 
-**متوسط:** فرایند Change با Preview.
+**متوسط (Change):** Install Preview نشان داد Policy ۶۲ در ۵ دستگاه؛ Install در Window؛ Verify؛ Revision ثبت.
 
-**سخت:** ریسک مرکزی‌سازی و Break-glass.
+**سخت (Rollback):** Install باعث قطع VPN شد. مراحل: Revision قبلی؛ Install مجدد؛ ۸ دقیقه؛ RCA: Object مشترک تغییر کرده بود؛ اقدام: Preview با Diff و آزمون در Lab.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+! FMG/FAZ operations are mostly GUI; verify license (Needs-License)
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- سند A9.
-- آزمون Revert/Restore در Lab (در صورت لایسنس).
+- Revision.
+- Audit Alert.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| دسترسی بیش‌ازحد | RBAC | Least privilege |
-| Audit ناقص | Revision | Diff/Log |
+| Install شکست | Preview/Connectivity | FGFM |
 
 ### ۱۰) نکات امنیتی
 
-- MFA Admin؛ Break-glass در Vault؛ OOB.
+- MFA.
+- Mgmt جدا.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- معماری = ابزار + نقش + فرایند + شواهد.
-- Separation of Duties.
-- ریسک مرکزی‌سازی را بپذیرید و کنترل کنید.
+- مرکز=منبع حقیقت.
+- RBAC.
+- Revision و Rollback.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Separation of Duties چیست؟ *(پاسخ: 26-4-ت1)*
+**ت1.** (ساده) ADOM؟ *(پاسخ: 26-4-ت1)*
 
-**ت2.** (ساده) Break-glass برای چیست؟ *(پاسخ: 26-4-ت2)*
+**ت2.** (ساده) چرا Revision؟ *(پاسخ: 26-4-ت2)*
 
-**ت3.** (متوسط) چرا Auditor باید Read-only باشد؟ *(پاسخ: 26-4-ت3)*
+**ت3.** (متوسط) Install Preview؟ *(پاسخ: 26-4-ت3)*
 
-**ت4.** (متوسط) مراحل Change با FMG؟ *(پاسخ: 26-4-ت4)*
+**ت4.** (متوسط) چرا مرکز هدف است؟ *(پاسخ: 26-4-ت4)*
 
-**ت5.** (سخت) ریسک‌های مرکزی‌سازی را با کنترل‌ها بنویسید. *(پاسخ: 26-4-ت5)*
+**ت5.** (سخت) Install قطع کرد؛ رفع. *(پاسخ: 26-4-ت5)*
 
-**ت6.** (سخت، طراحی) طرح کامل برای ۱۵ فایروال. *(پاسخ: 26-4-ت6)*
+**ت6.** (سخت، طراحی) RBAC چهارسطحی. *(پاسخ: 26-4-ت6)*
 
-**Q1.** Quick quiz (English): Why is a break-glass account required in a centrally managed environment? *(پاسخ: 26-4-Q1)*
+**Q1.** Quick quiz (English): Why use install preview before pushing a policy package? *(پاسخ: 26-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| A9 | Architecture 9 | معماری ۹ |
-| SoD | Separation of Duties | تفکیک وظایف |
-| ADR | Architecture Decision Record | ثبت تصمیم معماری |
+| ADOM | Administrative Domain | دامنه‌ی مدیریتی |
 
-- *Design central management with least privilege and audit trails.* ← مدیریت مرکزی را با حداقل دسترسی و ردپای Audit طراحی کنید.
+- *Review the diff before installing.* ← قبل از Install تفاوت‌ها را بازبینی کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** A9. **وضعیت:** طراحی. **Evidence:** `02-design/a9.md`.
+**کارت Lab:** معماری ۹ (اجرا نشده؛ Needs-License). **Evidence:** `02-design/arch9.md`.
 
 ### ۱۵) منابع
 
-- NIST SP 800-53 (AC، AU، CM)
-- درس‌های ۲۶-۱ تا ۲۶-۳
+- Fortinet FortiManager Administration Guide
+- FortiAnalyzer Administration Guide
 
 ## پاسخ‌های فصل 26
 
@@ -1676,19 +1770,22 @@ ADR/تصمیم ۲۰؛ RBAC ۲۰؛ Change/Audit ۲۰؛ ریسک/DR ۲۰؛ شوا�
 
 ### پاسخ‌های بازنویسی عمیق درس 26-4
 
-**26-4-ت1** — تفکیک نقش‌ها تا یک نفر هم درخواست‌دهنده و هم تأییدکننده/Auditor نباشد.
 
-**26-4-ت2** — دسترسی اضطراری وقتی ابزار مرکزی در دسترس نیست؛ با کنترل و Audit شدید.
+### پاسخ‌های بازنویسی عمیق درس 26-4
 
-**26-4-ت3** — تا بتواند Audit کند بدون امکان تغییر و محو شواهد.
+**26-4-ت1** — دامنه‌ی مدیریتی جدا.
 
-**26-4-ت4** — Ticket، Review، Install Preview، Window، Install، Post-check، Close.
+**26-4-ت2** — Rollback.
 
-**26-4-ت5** — هدف حمله/SPOF: OOB، MFA، RBAC، HA/Backup، Patch، Break-glass؛ خطای گسترده: Preview/Canary/Revert.
+**26-4-ت3** — نمایش تغییرات پیش از اعمال.
 
-**26-4-ت6** — ADR، RBAC جدول، Change/Audit، Log (FAZ/Syslog)، Backup/DR، آزمون‌ها و ریسک.
+**26-4-ت4** — دسترسی به همه‌ی دستگاه‌ها.
 
-**26-4-Q1** — So devices can still be managed if the central manager or its authentication is unavailable.
+**26-4-ت5** — Revision قبلی.
+
+**26-4-ت6** — جدول.
+
+**26-4-Q1** — To review the changes that will be applied and avoid unintended impact.
 
 ### پاسخ‌های درس افزوده‌ی 26-0 (فصل 26)
 
