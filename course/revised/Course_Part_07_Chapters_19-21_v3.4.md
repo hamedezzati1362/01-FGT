@@ -39,7 +39,7 @@
 
 <a id="ch19"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.3):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۰-۷، ۲۱-۷ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.4):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۰-۷، ۲۱-۷ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 19 — Hub-and-Spoke، OSPF/BGP روی FortiGate و Local Breakout
 
@@ -2142,52 +2142,31 @@ end
 
 <a id="l-21-2"></a>
 
-## درس 21-2 — SD-WAN: Zone، Member و Health-check
+## درس 21-2 — ساخت SD-WAN عملی: Zone، Member، Health-check، Route و Policy
 
-**فصل 21 - روز 2 · پیش‌نیاز: درس ۲۱-۰ · ۶ ساعت**
+**فصل ۲۱ · بازنویسی عمیق · پیش‌نیاز: ۲۱-۷ (مفاهیم)، ۲۱-۱، ۱۲-۰ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (FortiOS 7.0.3):** سینتکس 7.0 (`mode load-balance` برای Maximize Bandwidth)؛ `Unverified` روی Image؛ Lab «اجرا نشده».
 
-SD-WAN چند WAN را یک Interface منطقی می‌کند.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+SD-WAN را از صفر بسازد: انتقال Interface از Policy/Route قدیمی به Zone، تعریف Member، Health-check، Default Route، Policy روی Zone؛ و مهاجرت **بدون قطع** را برنامه‌ریزی کند.
 
-درس ۲۱-۰
+### ۲) پیش‌نیاز مهاجرت (بسیار مهم)
 
-### ۳) توضیح مفهومی
+Interface که عضو SD-WAN می‌شود **نباید در Policy/Route/Object دیگری** مرجع باشد؛ پس: (۱) Policyهای قدیمی که به wan1/wan2 اشاره دارند، (۲) Static Routeهای wan1/wan2، (۳) VIP/DHCP روی این Interfaceها را فهرست و به Zone منتقل کنید. Backup بگیرید.
 
-- `config system sdwan`: Zone، Members.
-- Health-check (ping/http) با SLA.
-- Policy روی Zone.
-- Route: Default Route روی sdwan.
-- تأیید: `diagnose sys sdwan health-check`.
+### ۳) مراحل
 
-### ۴) مثال ساده
+1. Backup پیکربندی.
+2. Network → SD-WAN → Create New Member: wan1 (Gateway)، wan2.
+3. Zone: virtual-wan-link.
+4. Performance SLA: HC-DNS (ping 8.8.8.8 و ۱.۱.۱.۱)، interval/failtime/recoverytime.
+5. Static Route: 0.0.0.0/0 → Interface SD-WAN Zone.
+6. Firewall Policy: LAN → SD-WAN Zone (NAT enable).
+7. SD-WAN Rule (در ۲۱-۳).
 
-دو اینترنت؛ یکی قطع شود دیگری کار کند.
-
-### ۵) مثال سازمانی
-
-سازمان: SD-WAN با SLA برای VoIP.
-
-### ۶) تصویر و توپولوژی
-
-```text
-LAN -> FGT (WAN1 | WAN2)
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Network > SD-WAN: Zones، Members، Performance SLA.
-2. Policy: Destination=virtual-wan-link.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
 config system sdwan
     set status enable
     config zone
@@ -2205,220 +2184,245 @@ config system sdwan
         next
     end
     config health-check
-        edit "HC1"
-            set server "8.8.8.8"
+        edit "HC-DNS"
+            set server "8.8.8.8" "1.1.1.1"
+            set protocol ping
+            set interval 1000
+            set failtime 5
+            set recoverytime 10
             set members 1 2
         next
     end
 end
-diagnose sys sdwan health-check
+config router static
+    edit 1
+        set sdwan-zone "virtual-wan-link"
+    next
+end
+config firewall policy
+    edit 10
+        set srcintf "port2"
+        set dstintf "virtual-wan-link"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set nat enable
+    next
+end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+(نام فیلد `sdwan-zone` و ساختار `server` چندگانه با CLI Reference 7.0 تطبیق شود؛ `Unverified`.)
 
-- `Unverified`.
-- نام Zone ممکن است در نسخه متفاوت.
+### ۴) Verification
 
-### ۸) تست عملکرد
+``` text
+diagnose sys sdwan health-check
+diagnose sys sdwan member
+get router info routing-table all
+diagnose sys session filter dst 8.8.8.8
+diagnose sys session list
+```
 
-- Health-check وضعیت Alive.
+GUI: Network → SD-WAN → Performance SLAs (نمودار Latency/Jitter/Loss).
 
-### ۹) عیب‌یابی
+### ۵) مثال‌ها
 
-| بخش | شرح |
+**ساده:** هر دو Member Alive؛ ترافیک بین هر دو بر اساس Hash (Implicit rule).
+
+**متوسط:** قطع wan1 (Shutdown در Lab): Health-check پس از ≈ 5 ثانیه Dead؛ ترافیک جدید از wan2؛ Session قدیمی روی wan1 تا Clear می‌ماند (۱۳-۷).
+
+**سخت:** Member همیشه Dead با اینکه اینترنت کار می‌کند: Policy Local-out Probe یا Route Probe؛ Server روی مسیر اشتباه؛ `execute ping-options source` با IP همان WAN؛ شواهد: Sniffer روی wan1: ICMP خارج می‌شود ولی پاسخ نمی‌آید (ISP Block ICMP) → از `protocol dns/http` استفاده کنید.
+
+### ۶) Troubleshooting
+
+| علامت | علت |
 |---|---|
-| Symptom | Member Dead |
-| شواهد/دستور | health-check |
-| علت | Server در دسترس نیست |
-| رفع | سرور مناسب |
+| Interface قابل افزودن نیست | هنوز در Policy/Route مرجع دارد |
+| ترافیک از Zone نمی‌رود | Default Route روی Zone نیست |
+| Member Dead | Probe/Server/Policy |
+| Failover بدون اثر | Session قدیمی |
 
-### ۱۰) تمرین مستقل
+### ۷) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- Probe روی Local-out؛ Server مورد اعتماد.
+- Policy روی Zone؛ همه‌ی مسیرها Inspect شوند.
 
-**ت1.** SD-WAN؟ *(پاسخ: 21-2-ت1)*
+### ۸) جمع‌بندی
 
-**ت2.** SLA؟ *(پاسخ: 21-2-ت2)*
+- پیش‌نیاز: خالی‌کردن مرجع‌های Interface.
+- Zone/Member/HC/Route/Policy.
+- Verification: HC، Member، Routing، Session.
 
-### ۱۱) مرور و ارزیابی
+### ۹) تمرین و ارزیابی
 
-**م1.** چرا Zone؟ *(پاسخ: 21-2-م1)*
+**ت1.** (ساده) چرا Interface قبل از افزودن به SD-WAN باید از Policyها آزاد شود؟ *(پاسخ: 21-2-ت1)*
 
-**م2.** سناریو: Member همیشه Dead؛ علت؟ *(پاسخ: 21-2-م2)*
+**ت2.** (متوسط) Default Route در SD-WAN روی چه Interface است؟ *(پاسخ: 21-2-ت2)*
 
-**معیار تسلط:** ساخت Dual-ISP و SD-WAN.
+**ت3.** (سخت) Member Dead با اینترنت سالم؛ تحلیل. *(پاسخ: 21-2-ت3)*
 
-**اشتباهات رایج:** Health-check نادرست.
+**ت4.** (سخت، طراحی) برنامه‌ی مهاجرت بدون قطع از Dual-ISP کلاسیک به SD-WAN. *(پاسخ: 21-2-ت4)*
 
-### ۱۲) واژگان و English Corner
+**Q1.** Quick quiz (English): Where is the default route attached in an SD-WAN design? *(پاسخ: 21-2-Q1)*
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| SD-WAN | Software-Defined WAN | WAN نرم‌افزاری | WAN |
-| SLA | Service Level Agreement | تعهد کیفیت | SD-WAN |
+### ۱۰) اصطلاحات و English Corner
 
-| English sentence | ترجمه |
-|---|---|
-| Define health checks against reliable targets. | Health-check را روی هدف‌های قابل‌اتکا تعریف کنید. |
-
-#### کارت Lab — درس 21-2
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | SD-WAN |
-| 2 | پیش‌نیاز | درس ۲۱-۰ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Dual-ISP |
-| 8 | صورت مسئله | SD-WAN |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | health-check |
-| 11 | سناریوی خرابی | Member Dead |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Alive |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/sdwan.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| Member | SD-WAN member | عضو Zone |
+| Zone | SD-WAN zone | گروه منطقی لینک‌ها |
+| Probe | Health-check probe | بسته‌ی سنجش کیفیت |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Remove interface references before adding it to SD-WAN.* ← قبل از افزودن Interface به SD-WAN مرجع‌های آن را بردارید.
 
----
+### ۱۱) Lab
+
+**کارت Lab:** SD-WAN. **وضعیت:** اجرا نشده. **Rollback:** بازگشت Config. **Evidence:** `03-ops/sdwan.md`.
+
+### ۱۲) منابع
+
+- Fortinet Docs: [SD-WAN](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/19246/sd-wan)، [config system sdwan](https://docs.fortinet.com/document/fortigate/7.0.1/cli-reference/94620/config-system-sdwan).
 
 <a id="l-21-3"></a>
 
-## درس 21-3 — SD-WAN Rule و Performance SLA
+## درس 21-3 — SD-WAN Rule و Performance SLA: انتخاب مسیر بر اساس برنامه و کیفیت
 
-**فصل 21 - روز 3 · پیش‌نیاز: درس ۲۱-۱ · ۶ ساعت**
+**فصل ۲۱ · بازنویسی عمیق · پیش‌نیاز: ۲۱-۲، ۲۱-۷ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (7.0.3):** `mode sla`/`load-balance`/`manual` مطابق مستند 7.0؛ سینتکس `Unverified`؛ Lab «اجرا نشده».
 
-قوانین انتخاب مسیر بر اساس برنامه/کیفیت.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+1. برای هر نوع ترافیک (VoIP، ERP، Backup) استراتژی و SLA مناسب انتخاب کند.
+2. Rule ایجاد و **ترتیب Ruleها** (First Match) را درست بچیند.
+3. رفتار Rule در Failover/Failback را پیش‌بینی و آزمایش کند.
+4. با Log/`diagnose` اثبات کند ترافیک از کدام Member رفت.
 
-درس ۲۱-۱
+### ۲) توضیح فنی
 
-### ۳) توضیح مفهومی
+- Rule شامل **Match** (Source، Destination، Service، Application/Internet Service) و **Strategy** (`mode`) و **priority-members** است.
+- ارزیابی **بالا به پایین**؛ اولین Rule مطابق برنده؛ اگر هیچ Rule مطابق نشد → Implicit Rule (Load-balance پیش‌فرض).
+- `mode sla`: اولین Member (به ترتیب priority-members) که SLA Health-check را برآورده کند.
+- `mode load-balance`: همه‌ی Memberهای دارای SLA، با Hash.
+- `mode manual`: Member ثابت.
 
-- Rule: Source/Destination/Service.
-- Strategy: Lowest Cost، Best Quality، Manual، SLA.
-- VoIP روی بهترین Latency.
-- Bulk روی ISP ارزان.
-- Log Rule.
-
-### ۴) مثال ساده
-
-دو اینترنت؛ یکی قطع شود دیگری کار کند.
-
-### ۵) مثال سازمانی
-
-سازمان: SD-WAN با SLA برای VoIP.
-
-### ۶) تصویر و توپولوژی
-
-```text
-LAN -> FGT (WAN1 | WAN2)
+``` text
+Rule order example
+1 VOIP  (UDP 5060, RTP)         mode sla         members 1 2   sla HC-DNS latency<80 jitter<20
+2 ERP   (dst 10.50.0.0/16)      mode sla         members 2 1
+3 BACKUP(service FTP,SFTP)      mode load-balance members 1 2
+4 default                       implicit
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+### ۳) پیاده‌سازی
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+**GUI:** Network → SD-WAN → SD-WAN Rules → Create New: Name، Source/Destination، Internet Service/Application، Strategy (Lowest Cost (SLA)/Best Quality/Maximize Bandwidth/Manual)، Interface preference، Required SLA target.
 
-#### روش گرافیکی (GUI)
+**CLI (`Unverified`):**
 
-1. Network > SD-WAN > SD-WAN Rules > Create New.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
 config system sdwan
+    config health-check
+        edit "HC-VOIP"
+            set server "8.8.8.8"
+            set protocol ping
+            set interval 500
+            set failtime 3
+            set recoverytime 20
+            set members 1 2
+            config sla
+                edit 1
+                    set latency-threshold 80
+                    set jitter-threshold 20
+                    set packetloss-threshold 1
+                next
+            end
+        next
+    end
     config service
         edit 1
             set name "VOIP"
             set mode sla
             set dst "all"
+            set protocol 17
+            set start-port 5060
+            set end-port 5060
             config sla
-                edit "HC1"
+                edit "HC-VOIP"
                     set id 1
                 next
             end
+            set priority-members 1 2
+        next
+        edit 3
+            set name "BACKUP"
+            set mode load-balance
+            set dst "all"
             set priority-members 1 2
         next
     end
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۴) مثال‌ها
 
-- `Unverified`.
+**ساده:** VoIP روی wan1 (Latency 30 ms)؛ wan2 رزرو.
 
-### ۸) تست عملکرد
+**متوسط:** Latency wan1 به 150 ms می‌رسد؛ SLA نقض؛ VoIP به wan2؛ پس از بازگشت Latency (recoverytime ۲۰×۵۰۰ms=۱۰s) به wan1 برمی‌گردد؛ ثبت Log SLA.
 
-- تست انتقال ترافیک با شکست SLA.
+**سخت:** Rule اول «all» گذاشته‌اید؛ Ruleهای VOIP/ERP هرگز Match نمی‌شوند. شاهد: `diagnose sys sdwan service`: Hit فقط Rule 1. **رفع:** ترتیب (مشخص‌ترها بالا).
 
-### ۹) عیب‌یابی
+### ۵) Troubleshooting
 
-| بخش | شرح |
+| علامت | علت |
 |---|---|
-| Symptom | Rule اثر ندارد |
-| شواهد/دستور | diagnose sys sdwan service |
-| علت | ترتیب/Match |
-| رفع | اصلاح |
+| Rule Hit ندارد | ترتیب/Match |
+| VoIP قطع‌ووصل | آستانه‌ی بدون Hysteresis، recoverytime کم |
+| Backup همه‌ی پهنا را می‌خورد | load-balance بدون Shaping |
+| Session بعد از Failover قفل | Session قدیمی (۱۳-۷) |
 
-### ۱۰) تمرین مستقل
+### ۶) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- هر مسیر پشتیبان باید Policy/UTM یکسان داشته باشد.
+- Internet Service/Application نیاز FortiGuard (Needs-License).
 
-**ت1.** Strategy؟ *(پاسخ: 21-3-ت1)*
+### ۷) جمع‌بندی
 
-**ت2.** SLA؟ *(پاسخ: 21-3-ت2)*
+- First Match؛ مشخص‌ها بالا.
+- SLA برای Real-time؛ load-balance برای حجم.
+- اثبات با `diagnose sys sdwan service` و Log.
 
-### ۱۱) مرور و ارزیابی
+### ۸) تمرین و ارزیابی
 
-**م1.** چرا Rule؟ *(پاسخ: 21-3-م1)*
+**ت1.** (ساده) ترتیب ارزیابی Ruleها؟ *(پاسخ: 21-3-ت1)*
 
-**م2.** سناریو: VoIP قطع؛ چه می‌کنید؟ *(پاسخ: 21-3-م2)*
+**ت2.** (متوسط) فرق `mode sla` و `load-balance`؟ *(پاسخ: 21-3-ت2)*
 
-**معیار تسلط:** ساخت Dual-ISP و SD-WAN.
+**ت3.** (سخت) چرا Rule VoIP هیچ Hit ندارد؟ *(پاسخ: 21-3-ت3)*
 
-**اشتباهات رایج:** Health-check نادرست.
+**ت4.** (سخت، طراحی) سه Rule برای VoIP/ERP/Backup با SLA بنویسید. *(پاسخ: 21-3-ت4)*
 
-### ۱۲) واژگان و English Corner
+**Q1.** Quick quiz (English): What happens when no SD-WAN rule matches? *(پاسخ: 21-3-Q1)*
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Rule | SD-WAN rule | قانون مسیر | SD-WAN |
+### ۹) اصطلاحات و English Corner
 
-| English sentence | ترجمه |
-|---|---|
-| Route voice over the lowest-latency link. | صدا را روی کم‌تأخیرترین Link ببرید. |
-
-#### کارت Lab — درس 21-3
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | SD-WAN Rule |
-| 2 | پیش‌نیاز | درس ۲۱-۱ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | SD-WAN |
-| 8 | صورت مسئله | Rule |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | تست |
-| 11 | سناریوی خرابی | Rule اثر ندارد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | انتقال |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/sdwan-rule.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| Rule/Service | SD-WAN rule (service) | قانون انتخاب مسیر |
+| Implicit rule | Implicit SD-WAN rule | قانون پیش‌فرض |
+| Hysteresis | Hysteresis | تأخیر برای جلوگیری از نوسان |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Put the most specific rules first.* ← مشخص‌ترین Ruleها را اول بگذارید.
 
----
+### ۱۰) Lab
+
+**کارت Lab:** SD-WAN Rule. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/sdwan-rule.md`.
+
+### ۱۱) منابع
+
+- Fortinet Docs: [Maximize bandwidth (SLA) strategy](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/708464/maximize-bandwidth-sla-strategy)، [config system sdwan](https://docs.fortinet.com/document/fortigate/7.0.1/cli-reference/94620/config-system-sdwan).
 
 <a id="l-21-4"></a>
 
@@ -2750,6 +2754,10 @@ Recovery time ~= interval x recoverytime
 
 Tunnelهای IPsec (۱۸-۰) به‌عنوان Member عضو Zone می‌شوند؛ Health-check از طریق Tunnel برای مسیرهای Overlay. ترکیب: Underlay (ISPها) + Overlay (Tunnelها).
 
+![شکل: اجزای SD-WAN و ارتباط Rule، Policy و Health-check.](../figures/ch21-l7-fig1.svg)
+
+*شکل: اجزای SD-WAN و ارتباط Rule، Policy و Health-check.*
+
 ### ۵) مثال حل‌شده
 
 **هدف:** VoIP روی لینک با Latency < 80 ms و Jitter < 20 ms؛ سایر ترافیک Load-balance.
@@ -2915,37 +2923,31 @@ get router info routing-table all
 
 نبود Monitor.
 
-**21-2-ت1** — SD-WAN؟
 
-چند WAN منطقی.
+### پاسخ‌های بازنویسی درس 21-2
 
-**21-2-ت2** — SLA؟
+**21-2-ت1** — چون Interface عضو SD-WAN نباید مستقیم در Policy/Route/Object مرجع داشته باشد.
 
-آستانه‌ی کیفیت.
+**21-2-ت2** — روی Zone SD-WAN.
 
-**21-2-م1** — چرا Zone؟
+**21-2-ت3** — Server/Protocol Probe، ICMP توسط ISP بلاک؛ Route/Source Probe؛ شاهد Sniffer؛ رفع: dns/http Probe.
 
-Policy ساده.
+**21-2-ت4** — Backup، فهرست مرجع‌ها، ساخت Zone/Member، انتقال Policy/Route به Zone در Change Window، آزمون و Rollback.
 
-**21-2-م2** — سناریو: Member همیشه Dead؛ علت؟
+**21-2-Q1** — On the SD-WAN zone interface.
 
-Server/Policy.
 
-**21-3-ت1** — Strategy؟
+### پاسخ‌های بازنویسی درس 21-3
 
-روش انتخاب.
+**21-3-ت1** — بالا به پایین؛ اولین Rule مطابق.
 
-**21-3-ت2** — SLA؟
+**21-3-ت2** — sla: اولین عضو دارای SLA؛ load-balance: توزیع بین همه‌ی اعضای دارای SLA.
 
-معیار.
+**21-3-ت3** — Rule عمومی بالاتر Match می‌شود؛ ترتیب را اصلاح کنید.
 
-**21-3-م1** — چرا Rule؟
+**21-3-ت4** — VoIP: sla با Latency<80/Jitter<20؛ ERP: sla با ترجیح لینک پایدار؛ Backup: load-balance.
 
-انتخاب هوشمند.
-
-**21-3-م2** — سناریو: VoIP قطع؛ چه می‌کنید؟
-
-SLA Latency.
+**21-3-Q1** — Traffic is handled by the implicit rule, which load-balances across members.
 
 **21-4-ت1** — Session پس از Failover؟
 

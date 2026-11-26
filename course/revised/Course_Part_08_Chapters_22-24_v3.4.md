@@ -36,7 +36,7 @@
 
 <a id="ch22"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.3):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۲-۰، ۲۴-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.4):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۲-۰، ۲۴-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 22 — High Availability: FGCP، Session Sync و Failover
 
@@ -141,6 +141,10 @@ With override enabled: monitored interfaces -> priority -> uptime -> serial
 #### ۴-۷) Failover time
 
 Failover معمولاً چند ثانیه (Detect + Election + ARP/MAC Update): بعد از Failover Primary جدید **Gratuitous ARP** می‌فرستد و MAC مجازی Cluster به Primary جدید منتقل می‌شود تا سوئیچ‌ها یاد بگیرند. نتیجه: چند ثانیه قطعی؛ Sessionها فقط با Pickup می‌مانند.
+
+![شکل: HA، Heartbeat، Election و Split-brain.](../figures/ch22-l0-fig1.svg)
+
+*شکل: HA، Heartbeat، Election و Split-brain.*
 
 ### ۵) مثال حل‌شده
 
@@ -372,258 +376,215 @@ get system ha status
 
 <a id="l-22-2"></a>
 
-## درس 22-2 — پیکربندی HA Active-Passive
+## درس 22-2 — پیکربندی HA Active-Passive: برگه‌ی طراحی، GUI، CLI و Verification
 
-**فصل 22 - روز 2 · پیش‌نیاز: درس ۲۲-۰ · ۶ ساعت**
+**فصل ۲۲ · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰ (FGCP، Election، Heartbeat) · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (7.0.3):** Needs-License (دو VM با لایسنس معتبر)؛ سینتکس `Unverified`؛ Lab «اجرا نشده». **هر Boot/تغییر فقط با تأیید کاربر.**
 
-پیکربندی دو دستگاه.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+Cluster Active-Passive را با برگه‌ی طراحی، Heartbeat Redundant، Monitor Interface و Session Pickup بسازد و Verification/Backup/Rollback را اجرا کند.
 
-درس ۲۲-۰
+### ۲) برگه‌ی طراحی
 
-### ۳) توضیح مفهومی
-
-- `config system ha`: group-name، mode a-p، password.
-- Priority: Primary بالاتر.
-- Heartbeat Interface.
-- Monitor Interface.
-- Firmware یکسان.
-
-### ۴) مثال ساده
-
-دو دستگاه؛ یکی بمیرد دیگری ادامه دهد.
-
-### ۵) مثال سازمانی
-
-سازمان: HA برای فایروال لبه بدون قطع بلندمدت.
-
-### ۶) تصویر و توپولوژی
-
-```text
-FGT-1 (Primary) <-HB-> FGT-2 (Secondary)
+``` text
+Units      : FGT-1 (priority 200), FGT-2 (priority 100); same model, same FortiOS, same license type
+Group      : name FGT-HA-LAB, mode a-p, password <HA-PASSWORD>
+Heartbeat  : port3 (priority 100), port4 (priority 50) back-to-back, no switch
+Monitor    : port1 (WAN), port2 (LAN)
+Session    : session-pickup enable (TCP)
+Override   : disable (prevent flap)  [decision: failback manual]
+Mgmt       : dedicated management interface per unit (reserved mgmt ip)
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+### ۳) مراحل
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+1. Backup هر دو. بررسی نسخه/Serial.
+2. تنظیم HA روی FGT-1 (Primary) سپس FGT-2.
+3. اتصال Heartbeat Back-to-back.
+4. صبر برای Sync؛ بررسی Checksum.
 
-#### روش گرافیکی (GUI)
+**GUI:** System → HA → Mode Active-Passive؛ Device Priority؛ Group Name؛ Password؛ Heartbeat Interfaces (port3 100، port4 50)؛ Monitor Interfaces (port1، port2)؛ Session Pickup.
 
-1. System > HA: Mode Active-Passive؛ Group Name؛ Password؛ Heartbeat Interfaces؛ Monitor Interfaces.
+**CLI (`Unverified`):**
 
-#### روش خط فرمان (CLI)
-
-```text
+``` text
 config system ha
-    set group-name "FGT-HA"
+    set group-name "FGT-HA-LAB"
     set mode a-p
     set password <HA-PASSWORD>
-    set hbdev "port3" 50
+    set hbdev "port3" 100 "port4" 50
     set monitor "port1" "port2"
     set priority 200
-end
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- `Unverified`.
-- Password نمونه.
-- Priority دستگاه دوم کمتر.
-
-### ۸) تست عملکرد
-
-- Cluster با دو عضو.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Secondary Sync نمی‌شود |
-| شواهد/دستور | HA status |
-| علت | Firmware/Config |
-| رفع | تطبیق |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Priority؟ *(پاسخ: 22-2-ت1)*
-
-**ت2.** Monitor؟ *(پاسخ: 22-2-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Firmware یکسان؟ *(پاسخ: 22-2-م1)*
-
-**م2.** سناریو: Secondary Out-of-sync؛ علت؟ *(پاسخ: 22-2-م2)*
-
-**معیار تسلط:** ساخت HA و تست Failover.
-
-**اشتباهات رایج:** Heartbeat و Override.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Priority | HA priority | اولویت | HA |
-
-| English sentence | ترجمه |
-|---|---|
-| Run the same firmware on both members. | روی هر دو عضو Firmware یکسان اجرا کنید. |
-
-#### کارت Lab — درس 22-2
-
-| # | فیلد | محتوا |
-|---|---|---|
-| 1 | عنوان و هدف | HA A-P |
-| 2 | پیش‌نیاز | درس ۲۲-۰ |
-| 3 | توپولوژی | FGT-1+FGT-2 |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | HA |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | get ha |
-| 11 | سناریوی خرابی | Secondary Sync نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Cluster |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/ha-ap.md` |
-| 16 | Cleanup و بازگردانی | حذف |
-
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
-
----
-
-<a id="l-22-3"></a>
-
-## درس 22-3 — تست Failover و Session Sync
-
-**فصل 22 - روز 3 · پیش‌نیاز: درس ۲۲-۱ · ۶ ساعت**
-
-### ۱) معرفی درس
-
-Failover واقعی و حفظ Session.
-
-### ۲) پیش‌نیازها
-
-درس ۲۲-۱
-
-### ۳) توضیح مفهومی
-
-- Failover با Shutdown Interface/دستگاه.
-- Session Pickup برای حفظ Session.
-- Override و Preemption.
-- زمان قطع (چند ثانیه).
-- Log رویداد HA.
-
-### ۴) مثال ساده
-
-دو دستگاه؛ یکی بمیرد دیگری ادامه دهد.
-
-### ۵) مثال سازمانی
-
-سازمان: HA برای فایروال لبه بدون قطع بلندمدت.
-
-### ۶) تصویر و توپولوژی
-
-```text
-FGT-1 (Primary) <-HB-> FGT-2 (Secondary)
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. System > HA > Session Pickup.
-2. Log & Report > Events > HA.
-
-#### روش خط فرمان (CLI)
-
-```text
-config system ha
     set session-pickup enable
     set override disable
 end
-diagnose sys ha status
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+FGT-2 همان ولی `priority 100`.
 
-- `Unverified`.
-- Override با احتیاط.
+### ۴) Verification
 
-### ۸) تست عملکرد
+``` text
+get system ha status
+diagnose sys ha status
+diagnose sys ha checksum cluster
+diagnose sys ha history read
+```
 
-- ping پیوسته هنگام Failover.
+انتظار: دو عضو، Primary/Secondary، Checksum یکسان، Heartbeat هر دو لینک Up.
 
-### ۹) عیب‌یابی
+### ۵) مثال‌ها
 
-| بخش | شرح |
+**ساده:** `ha status`: FGT-1 Primary؛ Hostname و Serial هر دو.
+
+**متوسط:** Secondary «out of sync»: مقایسه‌ی Firmware/Config؛ `checksum cluster` مغایر؛ علت: نسخه‌ی متفاوت؛ رفع: ارتقای یکسان.
+
+**سخت (Flap):** Cluster بین دو عضو سوئیچ می‌کند: History: Monitor Interface خراب مکرر؛ لینک port2 نوسان؛ شواهد Interface Errors؛ رفع: کابل/Duplex، Hold-down، `override disable`.
+
+### ۶) Troubleshooting
+
+| علامت | علت |
 |---|---|
-| Symptom | Session قطع می‌شود |
-| شواهد/دستور | ping |
-| علت | Pickup خاموش |
-| رفع | فعال‌سازی |
+| Cluster تشکیل نمی‌شود | Group/Password/Mode/HB |
+| Secondary Sync نمی‌شود | Firmware/Config |
+| Flap | Monitor/لینک |
+| Split-brain | HB قطع |
 
-### ۱۰) تمرین مستقل
+### ۷) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- Password قوی؛ HB جدا از شبکه‌ی کاربران.
+- Reserved Mgmt IP برای دسترسی به هر عضو.
 
-**ت1.** Session Pickup؟ *(پاسخ: 22-3-ت1)*
+### ۸) جمع‌بندی
 
-**ت2.** Override؟ *(پاسخ: 22-3-ت2)*
+- برگه‌ی طراحی؛ Heartbeat Redundant؛ Monitor مناسب.
+- Firmware یکسان.
+- Verification: status/checksum/history.
 
-### ۱۱) مرور و ارزیابی
+### ۹) تمرین و ارزیابی
 
-**م1.** چرا Override خاموش؟ *(پاسخ: 22-3-م1)*
+**ت1.** (ساده) چه چیزی در دو عضو باید یکسان باشد؟ *(پاسخ: 22-2-ت1)*
 
-**م2.** سناریو: دو Failover پشت‌سرهم؛ علت؟ *(پاسخ: 22-3-م2)*
+**ت2.** (متوسط) چرا `override disable`؟ *(پاسخ: 22-2-ت2)*
 
-**معیار تسلط:** ساخت HA و تست Failover.
+**ت3.** (سخت) Cluster Flap می‌کند؛ تحلیل. *(پاسخ: 22-2-ت3)*
 
-**اشتباهات رایج:** Heartbeat و Override.
+**Q1.** Quick quiz (English): Which command compares configuration consistency between cluster members? *(پاسخ: 22-2-Q1)*
 
-### ۱۲) واژگان و English Corner
+### ۱۰) اصطلاحات و English Corner
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Pickup | Session pickup | حفظ Session | HA |
-
-| English sentence | ترجمه |
-|---|---|
-| Keep override disabled to avoid flapping. | برای جلوگیری از Flap، Override را خاموش نگه دارید. |
-
-#### کارت Lab — درس 22-3
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | Failover |
-| 2 | پیش‌نیاز | درس ۲۲-۱ |
-| 3 | توپولوژی | FGT-1+FGT-2 |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | HA |
-| 8 | صورت مسئله | Failover |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping |
-| 11 | سناریوی خرابی | Session قطع می‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | قطع کوتاه |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/ha-fail.md` |
-| 16 | Cleanup و بازگردانی | — |
+| hbdev | Heartbeat device | Interface نبض |
+| Reserved mgmt | Reserved management interface | مدیریت جدا برای هر عضو |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Use identical firmware on all cluster members.* ← روی همه‌ی اعضا Firmware یکسان استفاده کنید.
 
----
+### ۱۱) Lab
+
+**کارت Lab:** HA A-P. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ha-ap.md`.
+
+### ۱۲) منابع
+
+- Fortinet Docs: [FGCP](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/62403/fgcp).
+
+<a id="l-22-3"></a>
+
+## درس 22-3 — آزمون Failover/Failback و Session Pickup: طراحی تست، اندازه‌گیری و تحلیل
+
+**فصل ۲۲ · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰، ۲۲-۲ · ≈ ۶ ساعت**
+
+> **وضعیت:** آزمون فقط در Lab با تأیید؛ اعداد نمونه؛ `Unverified`.
+
+### ۱) هدف آموزشی
+
+آزمون Failover را برنامه‌ریزی (سناریو، معیار، اندازه‌گیری) و نتایج را تحلیل کند؛ اثر Session Pickup، VPN و ARP را ببیند.
+
+### ۲) ماتریس آزمون
+
+| # | سناریو | انتظار | اندازه‌گیری |
+|---|---|---|---|
+| 1 | قطع Primary (Power off) | Failover چند ثانیه | بسته‌های از دست‌رفته |
+| 2 | قطع port1 (Monitor) | Failover | زمان |
+| 3 | قطع یک Heartbeat | Cluster باقی | بدون Failover |
+| 4 | قطع هر دو Heartbeat | Split-brain (آزمون کنترل‌شده) | ثبت رفتار |
+| 5 | بازگشت Primary | بدون Failback (override disable) | تأیید |
+| 6 | Session TCP طولانی (SSH) | با Pickup ادامه | Session |
+
+### ۳) روش اندازه‌گیری
+
+``` text
+# client A (continuous)
+ping -i 0.2 192.168.20.5 | ts
+# session test
+ssh user@192.168.20.5   (keep typing)
+# FGT
+get system ha status
+diagnose sys ha history read
+diagnose sys session list
+```
+
+``` text
+Packet loss time ~= lost packets x ping interval
+```
+
+### ۴) مثال حل‌شده
+
+**آزمون ۱:** ۱۵ بسته از دست رفته با فاصله 0.2 s = ≈ ۳ ثانیه قطع. SSH با Pickup ادامه یافت یا قطع شد: اگر قطع شد، Pickup/Hash/Interface Monitor را بررسی. **درس:** قطع ۳ ثانیه با Pickup معمولاً برای TCP قابل‌تحمل است؛ UDP/IPsec ممکن است Renegotiate کند.
+
+**آزمون ۴ (Split-brain):** با قطع هر دو HB: هر دو Primary؛ ARP: دو MAC؛ ping ناپایدار. **اقدام:** وصل HB، ریست یک عضو، بررسی Checksum و Config. **پیشگیری:** HB Redundant/Back-to-back.
+
+**مثال سخت:** پس از Failover VPN دوباره برقرار نمی‌شود: بررسی IKE: Peer SPI قدیمی؛ DPD/Rekey؛ در صورت لزوم `diagnose vpn ike gateway clear` (با احتیاط). ثبت.
+
+### ۵) Troubleshooting
+
+| علامت | علت |
+|---|---|
+| Failover کند | Heartbeat/Lost interval |
+| Session قطع | Pickup خاموش/UDP |
+| دو Primary | HB قطع |
+| بعد از Failover VPN قطع | Renegotiate |
+
+### ۶) نکات امنیتی
+
+- آزمون Split-brain فقط Lab.
+- Change و Rollback.
+
+### ۷) جمع‌بندی
+
+- آزمون Failover = سناریو + معیار + اندازه‌گیری.
+- Pickup TCP را حفظ می‌کند.
+- Split-brain را عمداً فقط در Lab بیازمایید.
+
+### ۸) تمرین و ارزیابی
+
+**ت1.** (ساده) چگونه زمان قطع را اندازه می‌گیرید؟ *(پاسخ: 22-3-ت1)*
+
+**ت2.** (متوسط) SSH پس از Failover قطع شد؛ چرا؟ *(پاسخ: 22-3-ت2)*
+
+**ت3.** (سخت) ماتریس آزمون ۶ سناریویی را با انتظار بنویسید. *(پاسخ: 22-3-ت3)*
+
+**Q1.** Quick quiz (English): How do you measure failover time with a continuous ping? *(پاسخ: 22-3-Q1)*
+
+### ۹) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Failover | Failover | انتقال به عضو دوم |
+| Failback | Failback | بازگشت |
+| Hold-down | Hold-down timer | تأخیر پیش از تغییر |
+
+- *Test every failure mode and record the measured downtime.* ← هر حالت خرابی را تست و زمان قطع را ثبت کنید.
+
+### ۱۰) Lab
+
+**کارت Lab:** Failover. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ha-fail.md`.
+
+### ۱۱) منابع
+
+- Fortinet Docs: [Troubleshoot an HA formation](https://docs.fortinet.com/document/fortigate/7.4.0/administration-guide/946059/troubleshoot-an-ha-formation) (مفهوم؛ نسخه‌ی 7.0 را بررسی کنید).
 
 <a id="l-22-4"></a>
 
@@ -888,37 +849,27 @@ get system ha status
 
 قطع Heartbeat.
 
-**22-2-ت1** — Priority؟
 
-بالاتر Primary.
+### پاسخ‌های بازنویسی درس 22-2
 
-**22-2-ت2** — Monitor؟
+**22-2-ت1** — مدل، Firmware، نوع لایسنس، Group/Password/Mode و Hbdev سازگار.
 
-قطع Interface Failover.
+**22-2-ت2** — برای جلوگیری از Failback ناخواسته و Flap.
 
-**22-2-م1** — چرا Firmware یکسان؟
+**22-2-ت3** — Monitor Interface نوسان‌دار، لینک/کابل، Hold-down؛ شاهد: ha history و Interface Errors.
 
-Sync.
+**22-2-Q1** — diagnose sys ha checksum cluster.
 
-**22-2-م2** — سناریو: Secondary Out-of-sync؛ علت؟
 
-نسخه.
+### پاسخ‌های بازنویسی درس 22-3
 
-**22-3-ت1** — Session Pickup؟
+**22-3-ت1** — Ping پیوسته با فاصله‌ی مشخص؛ قطع ≈ بسته‌های از دست‌رفته × فاصله.
 
-حفظ Session.
+**22-3-ت2** — Session Pickup خاموش یا ترافیک UDP/IPsec یا تغییر Interface؛ بررسی Pickup.
 
-**22-3-ت2** — Override؟
+**22-3-ت3** — قطع Primary، قطع Monitor، قطع یک HB، قطع هر دو HB (Lab)، بازگشت Primary، Session طولانی؛ هر کدام با انتظار و اندازه‌گیری.
 
-بازگرداندن Primary.
-
-**22-3-م1** — چرا Override خاموش؟
-
-جلوگیری از Flap.
-
-**22-3-م2** — سناریو: دو Failover پشت‌سرهم؛ علت؟
-
-Flap/Override.
+**22-3-Q1** — Count lost replies multiplied by the ping interval.
 
 **22-4-ت1** — Checksum؟
 
@@ -1991,258 +1942,264 @@ end
 
 <a id="l-24-2"></a>
 
-## درس 24-2 — Policy حداقلی Web/App/DB
+## درس 24-2 — Policy حداقلی Web/App/DB: ماتریس، پیاده‌سازی و آزمون Isolation
 
-**فصل 24 - روز 2 · پیش‌نیاز: درس ۲۴-۰ · ۶ ساعت**
+**فصل ۲۴ · بازنویسی عمیق · پیش‌نیاز: ۱۱-۰، ۲۴-۱، ۱۲-۰ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (7.0.3):** سینتکس `Unverified`؛ Lab «اجرا نشده».
 
-فقط پورت لازم بین لایه‌ها.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+سه لایه‌ی Web/App/DB را با Zone و Policy حداقلی پیاده‌سازی و **Isolation** را با آزمون منفی (nmap) اثبات کند.
 
-درس ۲۴-۰
+### ۲) ماتریس Policy
 
-### ۳) توضیح مفهومی
-
-- Web->App پورت 8080.
-- App->DB پورت 1433/3306.
-- Deny بقیه.
-- Log همه‌ی Deny.
-- تست با nmap.
-
-### ۴) مثال ساده
-
-اتاق سرور با بخش‌های جدا.
-
-### ۵) مثال سازمانی
-
-سازمان: Web/App/DB جدا با Policy حداقلی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Web -> App -> DB (only required ports)
+``` text
+Users -> WEB : TCP 443              accept + UTM + log
+WEB   -> APP : TCP 8080             accept + log
+APP   -> DB  : TCP 1433             accept + log
+WEB   -> DB  : none                 deny + log
+Users -> DB  : none                 deny + log
+DB    -> any : only updates (opt)   restricted
+any   -> any : implicit deny + log
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+### ۳) پیاده‌سازی
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+**GUI:** Network → Interfaces → Zone (ZN-WEB، ZN-APP، ZN-DB)؛ Policy & Objects → Addresses/Services (TCP-8080، TCP-1433)؛ Firewall Policy برای هر ردیف؛ Log همه.
 
-#### روش گرافیکی (GUI)
+**CLI (`Unverified`):**
 
-1. Policy & Objects > Firewall Policy.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
+config system zone
+    edit "ZN-WEB"
+        set interface "vlan10"
+    next
+    edit "ZN-APP"
+        set interface "vlan20"
+    next
+    edit "ZN-DB"
+        set interface "vlan30"
+    next
+end
+config firewall service custom
+    edit "TCP-8080"
+        set tcp-portrange 8080
+    next
+    edit "TCP-1433"
+        set tcp-portrange 1433
+    next
+end
 config firewall policy
     edit 30
+        set name "WEB-to-APP"
         set srcintf "ZN-WEB"
         set dstintf "ZN-APP"
-        set srcaddr "all"
-        set dstaddr "all"
+        set srcaddr "WEB-SRV"
+        set dstaddr "APP-SRV"
         set action accept
+        set schedule "always"
         set service "TCP-8080"
+        set logtraffic all
+    next
+    edit 31
+        set name "APP-to-DB"
+        set srcintf "ZN-APP"
+        set dstintf "ZN-DB"
+        set srcaddr "APP-SRV"
+        set dstaddr "DB-SRV"
+        set action accept
+        set schedule "always"
+        set service "TCP-1433"
         set logtraffic all
     next
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۴) آزمون Isolation (مثبت/منفی)
 
-- `Unverified`.
-- سرویس نمونه.
+``` text
+# positive
+from WEB: nc -zv APP-SRV 8080     -> open
+from APP: nc -zv DB-SRV 1433      -> open
+# negative
+from WEB: nc -zv DB-SRV 1433      -> filtered/timeout
+from WEB: nmap -Pn -p 1-1024 DB-SRV -> all filtered
+from Users: nc -zv DB-SRV 1433    -> filtered
+```
 
-### ۸) تست عملکرد
+ثبت: Log Deny و Hit Count؛ هر آزمون منفی که «باز» شد = شکست طراحی.
 
-- nmap: فقط پورت مجاز باز.
+### ۵) مثال‌ها
 
-### ۹) عیب‌یابی
+**ساده:** WEB→APP 8080 موفق؛ WEB→APP 22 رد.
 
-| بخش | شرح |
+**متوسط:** APP به DB نمی‌رسد: Debug Flow: Denied policy 0 چون Service Object اشتباه (UDP)؛ اصلاح.
+
+**سخت:** پس از Compromise WEB، مهاجم Scan می‌کند: Log Deny WEB→DB و WEB→APP (پورت‌های دیگر) → Alert؛ Containment: Quarantine WEB (۲۹-۰).
+
+### ۶) Troubleshooting
+
+| علامت | علت |
 |---|---|
-| Symptom | پورت اضافه باز |
-| شواهد/دستور | nmap |
-| علت | Policy گسترده |
-| رفع | محدود |
+| سرویس کار نمی‌کند | Service/Zone اشتباه |
+| دسترسی غیرمجاز | Policy گسترده یا Shadow |
+| Log کم | logtraffic |
 
-### ۱۰) تمرین مستقل
+### ۷) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- Default Deny؛ هر Policy Source/Destination مشخص.
+- بازبینی Hit Count و حذف Policy بی‌استفاده.
 
-**ت1.** حداقلی؟ *(پاسخ: 24-2-ت1)*
+### ۸) جمع‌بندی
 
-**ت2.** Log؟ *(پاسخ: 24-2-ت2)*
+- Zone + Policy حداقلی + Log.
+- Isolation را با آزمون منفی اثبات کنید.
 
-### ۱۱) مرور و ارزیابی
+### ۹) تمرین و ارزیابی
 
-**م1.** چرا Deny Log؟ *(پاسخ: 24-2-م1)*
+**ت1.** (ساده) چرا WEB→DB ممنوع است؟ *(پاسخ: 24-2-ت1)*
 
-**م2.** سناریو: Web به DB؛ چه؟ *(پاسخ: 24-2-م2)*
+**ت2.** (متوسط) آزمون منفی چیست؟ *(پاسخ: 24-2-ت2)*
 
-**معیار تسلط:** Segmentation و تست.
+**ت3.** (سخت) APP به DB نمی‌رسد؛ مراحل بررسی. *(پاسخ: 24-2-ت3)*
 
-**اشتباهات رایج:** any-any.
+**Q1.** Quick quiz (English): Why must isolation be proven with a negative test? *(پاسخ: 24-2-Q1)*
 
-### ۱۲) واژگان و English Corner
+### ۱۰) اصطلاحات و English Corner
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Least privilege | Least privilege | حداقل دسترسی | امنیت |
-
-| English sentence | ترجمه |
-|---|---|
-| Apply least privilege between tiers. | بین لایه‌ها حداقل دسترسی اعمال کنید. |
-
-#### کارت Lab — درس 24-2
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | Policy لایه |
-| 2 | پیش‌نیاز | درس ۲۴-۰ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Zone |
-| 8 | صورت مسئله | Policy |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | nmap |
-| 11 | سناریوی خرابی | پورت اضافه باز |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | فقط مجاز |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/dc-policy.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| Tier | Application tier | لایه‌ی برنامه |
+| Negative test | Negative test | آزمون ممنوعیت |
+| Hit count | Policy hit count | تعداد Match |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Prove isolation with negative tests.* ← جداسازی را با آزمون منفی اثبات کنید.
 
----
+### ۱۱) Lab
+
+**کارت Lab:** Policy لایه‌ای. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/dc-policy.md`.
+
+### ۱۲) منابع
+
+- Fortinet Docs: FortiOS 7.0 Administration Guide — Firewall policy، Zones؛ NIST SP 800-41.
 
 <a id="l-24-3"></a>
 
-## درس 24-3 — VDOM و VRF (مفهومی)
+## درس 24-3 — Lab عملی VDOM: ساخت، Inter-VDOM Link، Policy و محدودیت منابع
 
-**فصل 24 - روز 3 · پیش‌نیاز: درس ۲۴-۱ · ۶ ساعت**
+**فصل ۲۴ · بازنویسی عمیق · پیش‌نیاز: ۲۴-۰ (معماری)، ۱۲-۰ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (7.0.3):** Needs-License/محدودیت VM (`Unverified`)؛ فعال‌سازی Multi VDOM **فقط پس از Backup و تأیید کاربر**؛ Lab «اجرا نشده».
 
-جداسازی کامل مجازی.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+یک Lab دو-VDOM بسازد: فعال‌سازی Multi-VDOM، ساخت VDOM، Link، Route، Policy و Resource Limit؛ و جداسازی را آزمایش کند.
 
-درس ۲۴-۱
+### ۲) طرح
 
-### ۳) توضیح مفهومی
-
-- VDOM: فایروال مجازی (لایسنس).
-- VRF: جداسازی Routing.
-- Inter-VDOM Link.
-- مقایسه با Zone.
-- `Unverified`.
-
-### ۴) مثال ساده
-
-اتاق سرور با بخش‌های جدا.
-
-### ۵) مثال سازمانی
-
-سازمان: Web/App/DB جدا با Policy حداقلی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Web -> App -> DB (only required ports)
+``` text
+root     : Internet, management, shared services
+CUST-A   : 10.1.0.0/24 (port2)         link A-ROOT
+CUST-B   : 10.1.0.0/24 (port3)         link B-ROOT   (overlapping on purpose)
+NAT/Internet in root; no direct A<->B path
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+### ۳) مراحل
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+1. Backup. فعال‌سازی: System → Settings → Virtual Domains → Multi VDOM (CLI: `config system global; set vdom-mode multi-vdom`).
+2. System → VDOM → Create New: CUST-A، CUST-B.
+3. تخصیص Interface: port2→CUST-A، port3→CUST-B.
+4. Inter-VDOM Link: Network → Interfaces → Create New → VDOM Link (A-ROOT، B-ROOT).
+5. در هر VDOM: IP Link، Route Default به root، Policy LAN→Link.
+6. در root: Route به Subnet هر مشتری، Policy Link→WAN با NAT (جدا برای هر Link).
+7. System → Global Resources/VDOM: سقف Session برای CUST-B.
 
-#### روش گرافیکی (GUI)
-
-1. System > VDOM.
-
-#### روش خط فرمان (CLI)
-
-```text
-config system vdom
-    edit "DMZ-VD"
+``` text
+config global
+    config system vdom-link
+        edit "A-ROOT"
+            set type ethernet
+        next
+    end
+end
+config vdom
+    edit CUST-A
+        config router static
+            edit 1
+                set gateway 172.31.1.1
+                set device "A-ROOT0"
+            next
+        end
     next
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+(ساختار نمونه؛ نام Interface لینک (`A-ROOT0/A-ROOT1`) و سینتکس `Unverified`.)
 
-- Needs-License؛ مفهومی.
+### ۴) آزمون
 
-### ۸) تست عملکرد
+- Client-A و Client-B با IP هم‌پوشان هر دو اینترنت دارند (NAT در root).
+- Client-A به Client-B نمی‌رسد (آزمون منفی).
+- CUST-B سیل Session می‌فرستد؛ فقط CUST-B محدود می‌شود (Resource Limit).
+- `diagnose sys session list` در هر VDOM جدا (`config vdom; edit CUST-A`).
 
-- مقایسه را بنویسید.
+### ۵) مثال‌ها
 
-### ۹) عیب‌یابی
+**ساده:** Ping از Client-A به Internet موفق.
 
-| بخش | شرح |
+**متوسط:** Client-A به اینترنت می‌رود ولی B نه: Policy/Route در root برای Link B ناقص.
+
+**سخت:** هر دو مشتری 10.1.0.0/24؛ در root Route برگشت ابهام دارد. **رفع:** Route به Link خاص هر Subnet از طریق Interface Link (نه فقط Subnet) یا NAT در VDOM مشتری قبل از ورود به root (Source NAT به IP یکتای Link).
+
+### ۶) Troubleshooting
+
+| علامت | علت |
 |---|---|
-| Symptom | VDOM ساخته نمی‌شود |
-| شواهد/دستور | پیام |
-| علت | لایسنس |
-| رفع | Zone |
+| Policy اثر ندارد | VDOM اشتباه |
+| ping بین VDOM | Link/Route/Policy یک سمت |
+| منابع بی‌حد | Limit تنظیم نشده |
+| دستور CLI کار نمی‌کند | داخل `config vdom` نیست |
 
-### ۱۰) تمرین مستقل
+### ۷) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- Admin هر مشتری محدود به VDOM.
+- Super Admin فقط Global.
+- Log هر VDOM جدا.
 
-**ت1.** VDOM؟ *(پاسخ: 24-3-ت1)*
+### ۸) جمع‌بندی
 
-**ت2.** VRF؟ *(پاسخ: 24-3-ت2)*
+- VDOM = Routing/Policy/Admin/منابع جدا.
+- Link + Route + Policy هر دو سمت.
+- Overlap با NAT/Route دقیق.
 
-### ۱۱) مرور و ارزیابی
+### ۹) تمرین و ارزیابی
 
-**م1.** چرا VDOM؟ *(پاسخ: 24-3-م1)*
+**ت1.** (ساده) برای ارتباط VDOMها چه لازم است؟ *(پاسخ: 24-3-ت1)*
 
-**م2.** سناریو: لایسنس ندارید؛ چه؟ *(پاسخ: 24-3-م2)*
+**ت2.** (متوسط) چرا Overlap مشکل Route برگشت می‌سازد؟ *(پاسخ: 24-3-ت2)*
 
-**معیار تسلط:** Segmentation و تست.
+**ت3.** (سخت) آزمون جداسازی A و B را بنویسید. *(پاسخ: 24-3-ت3)*
 
-**اشتباهات رایج:** any-any.
+**Q1.** Quick quiz (English): Where do CLI commands for a specific VDOM have to be run? *(پاسخ: 24-3-Q1)*
 
-### ۱۲) واژگان و English Corner
+### ۱۰) اصطلاحات و English Corner
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| VDOM | Virtual Domain | دامنه‌ی مجازی | FGT |
-| VRF | Virtual Routing and Forwarding | Routing مجازی | Routing |
-
-| English sentence | ترجمه |
-|---|---|
-| VDOM may require a license. | VDOM ممکن است به لایسنس نیاز داشته باشد. |
-
-#### کارت Lab — درس 24-3
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | مقایسه VDOM |
-| 2 | پیش‌نیاز | درس ۲۴-۱ |
-| 3 | توپولوژی | — |
-| 4 | تجهیزات | — |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | سند |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | VDOM ساخته نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | جدول |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `02-design/vdom.md` |
-| 16 | Cleanup و بازگردانی | — |
+| VDOM link | Inter-VDOM link | اتصال VDOMها |
+| Global | Global scope | تنظیمات سراسری |
+| root | root VDOM | VDOM پیش‌فرض |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Run VDOM-specific commands inside the VDOM context.* ← دستورهای اختصاصی VDOM را در Context همان VDOM اجرا کنید.
 
----
+### ۱۱) Lab
+
+**کارت Lab:** VDOM. **وضعیت:** اجرا نشده (Needs-License؛ تأیید کاربر). **Evidence:** `03-ops/vdom-lab.md`.
+
+### ۱۲) منابع
+
+- Fortinet Docs: [Inter-VDOM routing](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/335646/inter-vdom-routing)، [Global and per-VDOM resources](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/538256/global-and-per-vdom-resources).
 
 <a id="l-24-4"></a>
 
@@ -2386,37 +2343,27 @@ execute backup config tftp fgt-g9.conf 192.168.90.10
 
 Policy حداقلی.
 
-**24-2-ت1** — حداقلی؟
 
-فقط لازم.
+### پاسخ‌های بازنویسی درس 24-2
 
-**24-2-ت2** — Log؟
+**24-2-ت1** — Web نباید مستقیم به DB برسد؛ فقط App مجاز است تا حرکت جانبی محدود شود.
 
-برای Deny.
+**24-2-ت2** — آزمونی که باید شکست بخورد (مثل WEB→DB) تا جداسازی ثابت شود.
 
-**24-2-م1** — چرا Deny Log؟
+**24-2-ت3** — Debug Flow (Policy 0؟)، Service/Zone، Route، Log Deny، Hit Count.
 
-ردیابی.
+**24-2-Q1** — Because only a failed forbidden connection proves the boundary actually blocks it.
 
-**24-2-م2** — سناریو: Web به DB؛ چه؟
 
-Deny+Log.
+### پاسخ‌های بازنویسی درس 24-3
 
-**24-3-ت1** — VDOM؟
+**24-3-ت1** — Inter-VDOM Link، Route و Policy در هر دو VDOM.
 
-فایروال مجازی.
+**24-3-ت2** — Subnet یکسان در دو VDOM باعث ابهام Routeهای برگشت در root می‌شود؛ باید Route به Link/NAT یکتا.
 
-**24-3-ت2** — VRF؟
+**24-3-ت3** — Client-A به Client-B ping/nc باید رد شود؛ Log Deny؛ Session جدا در هر VDOM؛ Resource Limit فقط B را محدود کند.
 
-Routing جدا.
-
-**24-3-م1** — چرا VDOM؟
-
-جداسازی کامل.
-
-**24-3-م2** — سناریو: لایسنس ندارید؛ چه؟
-
-Zone.
+**24-3-Q1** — Inside the config vdom / edit <name> context of that VDOM.
 
 **24-4-ت1** — G9؟
 

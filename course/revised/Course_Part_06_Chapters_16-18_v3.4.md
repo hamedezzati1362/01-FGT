@@ -41,7 +41,7 @@
 
 <a id="ch16"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.3):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۶-۰، ۱۶-۷، ۱۸-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.4):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۶-۰، ۱۶-۷، ۱۸-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 16 — UTM: آنتی‌ویروس، IPS، Application Control، Web Filter و SSL Inspection
 
@@ -427,57 +427,83 @@ get system fortiguard-service status
 
 <a id="l-16-2"></a>
 
-## درس 16-2 — Web Filter و DNS Filter (Static و Category)
+## درس 16-2 — Web Filter و DNS Filter: Static URL، Category، FQDN و عیب‌یابی HTTPS
 
-**فصل 16 - روز 2 · پیش‌نیاز: درس ۱۶-۱ · ۶ ساعت**
+**فصل ۱۶ · بازنویسی عمیق (جایگزین نسخه‌ی فشرده) · پیش‌نیاز: ۱۶-۰، ۱۶-۱، ۱۲-۰ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (FortiOS 7.0.3):** Static URL Filter بدون لایسنس FortiGuard کار می‌کند؛ Category/Rating **Needs-License**. سینتکس `Unverified` روی Image. Lab «اجرا نشده».
 
-کنترل دسترسی وب: Category (نیاز لایسنس) یا Static URL/FQDN (بدون لایسنس).
+### ۱) هدف آموزشی
+
+دانشجو بتواند:
+
+1. توضیح دهد Web Filter چگونه تصمیم می‌گیرد (Static URL، Category، Safe Search، Quota) و ترتیب ارزیابی چیست.
+2. تفاوت **FQDN Filter** (در Policy/Address) با **Web Filter Profile** را بگوید.
+3. بداند در HTTPS بدون Deep Inspection چه چیزی دیده می‌شود (SNI) و چه نه (مسیر URL).
+4. **DNS Filter** را با Web Filter مقایسه و محدودیت‌اش (DoH) را بشناسد.
+5. یک Profile بسازد، به Policy وصل کند و **با آزمون مثبت/منفی و Log** ثابت کند کار می‌کند.
 
 ### ۲) پیش‌نیازها
 
-درس ۱۶-۱
+Flow/Proxy و TLS (۱۶-۰)، Packet Flow (۱۲-۰)، Policy (فصل ۱۳).
 
-### ۳) توضیح مفهومی
+### ۳) مفهوم پایه
 
-- Static URL Filter: `simple`/`wildcard`/`regex` با action `block`/`allow`.
-- Category Filter: نیاز به Rating (Needs-License).
-- DNS Filter: بلاک بر اساس دامنه/Category.
-- ترتیب: Static URL پیش از Category.
-- Log Web Filter: category، action، URL.
+دسترسی وب مهم‌ترین مسیر ورود بدافزار و نشت داده است. Web Filter می‌پرسد: «این مقصد برای این کاربر مجاز است؟». سه منبع تصمیم: (۱) فهرست دستی شما (Static)، (۲) دسته‌بندی FortiGuard (Category؛ لایسنس)، (۳) رفتار (Quota، Safe Search).
 
-### ۴) مثال ساده
+### ۴) توضیح عمیق فنی
 
-یک Profile ساده روی Policy کاربران.
+#### ۴-۱) ترتیب ارزیابی (مفهومی)
 
-### ۵) مثال سازمانی
-
-سازمان: Profile استاندارد برای هر گروه (کاربران، سرورها، مهمان).
-
-### ۶) تصویر و توپولوژی
-
-```text
-Policy -> [Profile: AV/IPS/Web/App/SSL] -> accept/block
+``` text
+1. Static URL filter entries (first match: allow / block / monitor / exempt)
+2. FortiGuard category filter (needs rating service)
+3. Other options (safe search, quota, content checks)
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+اگر Static URL «Exempt» بزنید، بقیه‌ی بررسی‌ها برای آن مقصد رد می‌شوند؛ پس Exempt را با احتیاط استفاده کنید.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۴-۲) انواع ورودی Static URL
 
-#### روش گرافیکی (GUI)
+- `simple`: مطابقت ساده‌ی دامنه/URL.
+- `wildcard`: الگوی `*.example.com`.
+- `regex`: عبارت منظم (قدرت زیاد، خطای زیاد، CPU بیشتر).
+- Action: `allow`, `block`, `monitor`, `exempt`.
 
-1. Security Profiles > Web Filter > Static URL Filter فعال > Create New.
-2. URL badsite.example، Type Simple، Action Block.
-3. Policy > Web Filter = WF-STD.
-4. Log & Report > Web Filter.
+#### ۴-۳) HTTPS: چه چیزی دیده می‌شود؟
 
-#### روش خط فرمان (CLI)
+| حالت | دید | نتیجه |
+|---|---|---|
+| HTTP | URL کامل | فیلتر کامل |
+| HTTPS + Certificate Inspection | دامنه (SNI/گواهی) | فیلتر بر اساس دامنه/Category؛ نه مسیر |
+| HTTPS + Deep Inspection | URL کامل پس از رمزگشایی | فیلتر کامل؛ نیاز CA (۱۶-۰) |
 
-```text
+مثال: بلاک `example.com/private` فقط با Deep Inspection ممکن است؛ بلاک `example.com` با SNI ممکن است.
+
+#### ۴-۴) DNS Filter
+
+فایروال Query را قبل از اتصال کنترل می‌کند: دامنه‌ی مخرب → NXDOMAIN/Redirect به Block Page. نقاط ضعف: **DoH/DoT** (DNS رمز) و IP مستقیم؛ راه‌حل: Application Control برای DoH + Deep Inspection + فقط DNS داخلی (Policy: DNS فقط به سرور شما).
+
+#### ۴-۵) Block Page و Log
+
+Block Page (Replacement Message) کاربر را مطلع می‌کند. Log: `action=blocked`، `catdesc`/`url`. برای عیب‌یابی، **Log Web Filter** اولین شاهد است.
+
+### ۵) پیاده‌سازی: GUI و CLI
+
+**GUI:**
+
+1. Security Profiles → Web Filter → Create New (Name: WF-STD).
+2. FortiGuard Category Based Filter (اگر لایسنس) یا خاموش.
+3. Static URL Filter: Enable → Create New: URL `badsite.example`، Type Simple، Action Block.
+4. Policy & Objects → Firewall Policy → Users-to-Internet → Security Profiles: Web Filter = WF-STD؛ SSL Inspection = certificate-inspection.
+5. Log & Report → Web Filter.
+
+**CLI:**
+
+``` text
 config webfilter urlfilter
     edit 1
-        set name "URLF-STATIC"
+        set name "URLF-LAB"
         config entries
             edit 1
                 set url "badsite.example"
@@ -494,491 +520,520 @@ config webfilter profile
         end
     next
 end
+config firewall policy
+    edit 10
+        set utm-status enable
+        set webfilter-profile "WF-STD"
+        set ssl-ssh-profile "certificate-inspection"
+    next
+end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+(سینتکس `Unverified` روی 7.0.3؛ فیلدهای `utm-status` و ساختار `config web` را با CLI Reference تطبیق دهید.)
 
-- `type simple`: مطابقت ساده‌ی دامنه.
-- Profile به Policy وصل می‌شود (درس قبل).
-- راستی‌آزمایی: مرورگر Block Page؛ Log.
-- بازگشت: حذف ورودی/Profile.
+### ۶) مثال‌ها
 
-### ۸) تست عملکرد
+**ساده:** بلاک `badsite.example`. کلاینت: `curl -I http://badsite.example` → Block Page؛ `curl -I http://good.example` → OK.
 
-- دسترسی به badsite.example مسدود و دیگری مجاز.
+**متوسط:** بلاک فقط `social.example/games` با HTTPS: با Certificate Inspection ممکن نیست؛ دو راه: Deep Inspection با Exemption مناسب، یا بلاک کل دامنه برای ساعات کاری با Schedule.
 
-### ۹) عیب‌یابی
+**سخت (تحلیل خطا):** URL بلاک شده ولی کاربر باز می‌کند. فرضیه‌ها به ترتیب: (۱) Profile به Policy وصل نیست؛ (۲) Policy دیگری بالاتر Match شده؛ (۳) HTTPS و ورودی نیازمند مسیر کامل؛ (۴) QUIC دور می‌زند؛ (۵) DoH/IP مستقیم؛ (۶) Exempt قبلی. شواهد: Debug Flow (Policy ID)، Log Web Filter، Capture (UDP 443).
 
-| بخش | شرح |
-|---|---|
-| Symptom | Block کار نمی‌کند |
-| شواهد/دستور | Log نیست؛ HTTPS بدون SSL Inspection |
-| علت | HTTPS رمز است |
-| رفع | فعال‌کردن SSL Inspection یا FQDN در Policy |
+### ۷) Troubleshooting
 
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Static URL نیاز لایسنس دارد؟ *(پاسخ: 16-2-ت1)*
-
-**ت2.** چرا HTTPS مشکل می‌سازد؟ *(پاسخ: 16-2-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Static URL را ابتدا امتحان می‌کنیم؟ *(پاسخ: 16-2-م1)*
-
-**م2.** سناریو: دامنه‌ی HTTPS مسدود نشد؛ چرا؟ *(پاسخ: 16-2-م2)*
-
-**معیار تسلط:** ساخت Profile، اتصال به Policy، اثبات با Log/تست.
-
-**اشتباهات رایج:** فعال‌کردن بی‌برنامه؛ نادیده‌گرفتن لایسنس.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| URL filter | Web URL filter | فیلتر URL | Web |
-| Category | Web category | دسته‌ی وب | Needs-License |
-| SNI | Server Name Indication | نام سرور در TLS | فیلتر HTTPS |
-
-| English sentence | ترجمه |
-|---|---|
-| Static URL filters work without a subscription. | فیلترهای URL ایستا بدون اشتراک کار می‌کنند. |
-| HTTPS needs SSL inspection for full filtering. | HTTPS برای فیلتر کامل به SSL Inspection نیاز دارد. |
-
-#### کارت Lab — درس 16-2
-
-| # | فیلد | محتوا |
+| علامت | شاهد | علت |
 |---|---|---|
-| 1 | عنوان و هدف | Static URL Filter |
-| 2 | پیش‌نیاز | درس ۱۶-۱ |
-| 3 | توپولوژی | FGT + Client |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Policy v1 |
-| 8 | صورت مسئله | Block یک دامنه |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | مرورگر |
-| 11 | سناریوی خرابی | Block کار نمی‌کند |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Block Page |
-| 14 | معیار پذیرش | Log |
-| 15 | مستندات نهایی | `03-ops/webfilter-static.md` |
-| 16 | Cleanup و بازگردانی | حذف Profile |
+| Block نمی‌شود | Log خالی | Profile وصل نیست/Policy دیگر |
+| HTTPS مسیر بلاک نمی‌شود | Log فقط دامنه | Certificate Inspection |
+| Block Page خطای گواهی می‌دهد | مرورگر | CA نصب نیست |
+| QUIC دور می‌زند | Capture UDP 443 | بلاک QUIC |
+| Category کار نمی‌کند | Log: rating error | لایسنس/ارتباط FortiGuard |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۸) نکات امنیتی
 
----
+- Exempt/Allow را محدود و مستند کنید.
+- Safe Search و بلاک Proxy/Anonymizer Category (در صورت لایسنس).
+- Web Filter جایگزین Patch/EDR نیست.
+
+### ۹) جمع‌بندی
+
+- ترتیب: Static → Category → سایر؛ Exempt همه چیز بعدی را رد می‌کند.
+- HTTPS بدون Deep فقط دامنه؛ با Deep مسیر کامل.
+- DNS Filter قبل از اتصال؛ ضعف DoH.
+- آزمون مثبت/منفی و Log.
+
+### ۱۰) تمرین و ارزیابی
+
+**ت1.** (ساده) Static URL با Category چه فرقی دارد؟ *(پاسخ: 16-2-ت1)*
+
+**ت2.** (ساده) Exempt چه می‌کند؟ *(پاسخ: 16-2-ت2)*
+
+**ت3.** (متوسط) چرا بلاک مسیر در HTTPS نیاز به Deep دارد؟ *(پاسخ: 16-2-ت3)*
+
+**ت4.** (متوسط) DNS Filter چه نقطه‌ضعفی دارد؟ *(پاسخ: 16-2-ت4)*
+
+**ت5.** (سخت) فرضیه‌های «URL بلاک‌شده باز می‌شود» را به ترتیب و با شاهد بنویسید. *(پاسخ: 16-2-ت5)*
+
+**ت6.** (سخت، طراحی) سیاست وب برای ۳ گروه (کارمند، مهمان، سرور) طراحی کنید. *(پاسخ: 16-2-ت6)*
+
+**Q1.** Quick quiz (English): What does an exempt action in a static URL filter do? *(پاسخ: 16-2-Q1)*
+
+### ۱۱) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Static URL | Static URL filter | فیلتر دستی URL |
+| FQDN | Fully Qualified Domain Name | نام کامل دامنه |
+| DoH | DNS over HTTPS | DNS رمزشده |
+| Safe Search | Safe search enforcement | اجبار جست‌وجوی امن |
+
+- *HTTPS without deep inspection reveals only the domain name.* ← HTTPS بدون Deep فقط نام دامنه را نشان می‌دهد.
+
+### ۱۲) Lab
+
+**کارت Lab:** Static URL Filter. **هدف:** بلاک یک دامنه و اثبات با Log. **توپولوژی:** Client → FGT → Web Lab. **وضعیت:** اجرا نشده. **مراحل:** مطابق بخش ۵. **Verification:** مثبت/منفی؛ Log. **Rollback:** حذف Profile از Policy. **Evidence:** `03-ops/webfilter-static.md`.
+
+### ۱۳) منابع
+
+- Fortinet Docs: FortiOS 7.0 Administration Guide — Web filter، DNS filter؛ [Inspection modes](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/721410/inspection-modes).
 
 <a id="l-16-3"></a>
 
-## درس 16-3 — Antivirus و File Filter
+## درس 16-3 — Antivirus و File Filter: سازوکار، حالت‌ها و تست امن
 
-**فصل 16 - روز 3 · پیش‌نیاز: درس ۱۶-۲ · ۶ ساعت**
+**فصل ۱۶ · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰، ۱۶-۲ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (FortiOS 7.0.3):** AV Signature **Needs-License**؛ File Filter بدون لایسنس. گزینه‌های Flow/Proxy از جدول مقایسه‌ی رسمی ([Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison)). Lab «اجرا نشده».
 
-AV فایل‌های آلوده را در HTTP/FTP/SMTP... بررسی می‌کند؛ File Filter بر اساس نوع/پسوند.
+### ۱) هدف آموزشی
+
+1. بداند AV چه چیزی را کشف می‌کند (Signature، Heuristic) و چه چیزی را نه (Zero-day، فایل رمزدار، ترافیک رمز بدون Deep).
+2. تفاوت AV در Flow و Proxy را بداند و انتخاب کند.
+3. **File Filter** را به‌عنوان لایه‌ی مکمل بدون لایسنس طراحی کند.
+4. با **فایل EICAR** تست امن انجام دهد و نتیجه‌ی واقعی ثبت کند.
+5. FP/FN و اثر Performance را ارزیابی کند.
 
 ### ۲) پیش‌نیازها
 
-درس ۱۶-۲
+۱۶-۰ (Flow/Proxy، TLS)، ۱۶-۷ (FP/FN).
 
-### ۳) توضیح مفهومی
+### ۳) مفهوم پایه
 
-- AV: نیازمند Signature DB (FortiGuard).
-- **File Filter:** بلاک بر اساس نوع/پسوند بدون لایسنس.
-- تست استاندارد: فایل EICAR (فایل تست بی‌خطر) — نتیجه در Lab ایزوله `Unverified`.
-- حالت Flow در برابر Proxy برای AV.
-- Log: virus, action.
+بدافزار معمولاً به‌صورت فایل از وب/ایمیل/اشتراک می‌رسد. AV فایل را (یا جریان را) با پایگاه Signature می‌سنجد. اما هر امضا از گذشته می‌آید؛ بدافزار جدید یا رمزدار را نمی‌گیرد. پس AV **یک لایه** است، نه راه‌حل کامل.
 
-### ۴) مثال ساده
+### ۴) توضیح عمیق فنی
 
-یک Profile ساده روی Policy کاربران.
+#### ۴-۱) AV چگونه کار می‌کند
 
-### ۵) مثال سازمانی
+- **Flow-based:** بسته‌ها در جریان اسکن می‌شوند؛ سریع؛ بدون بازسازی کامل فایل؛ گزینه‌ها کمتر.
+- **Proxy-based:** فایل کامل Buffer می‌شود و پس از اسکن به کاربر می‌رسد؛ دقیق‌تر و گزینه‌های بیشتر (مثلاً محدودیت اندازه‌ی Buffer، Content Disarm بسته به نسخه)؛ تأخیر و مصرف حافظه بیشتر.
+- سقف اندازه‌ی فایل: فایل بزرگ‌تر از Threshold اسکن نمی‌شود (Pass یا Block طبق تنظیم) — **این یک نقطه‌ی کور است**.
 
-سازمان: Profile استاندارد برای هر گروه (کاربران، سرورها، مهمان).
+#### ۴-۲) چه چیزی دیده نمی‌شود
 
-### ۶) تصویر و توپولوژی
+| مورد | علت |
+|---|---|
+| Zero-day | Signature ندارد (نیاز Sandbox) |
+| فایل رمزدار (zip با رمز) | محتوا قابل اسکن نیست |
+| HTTPS بدون Deep | محتوا رمز است |
+| فایل بزرگ‌تر از سقف | اسکن نمی‌شود |
+| پروتکل غیراسکن‌شده | AV روی پروتکل‌های انتخاب‌شده کار می‌کند |
 
-```text
-Policy -> [Profile: AV/IPS/Web/App/SSL] -> accept/block
-```
+#### ۴-۳) File Filter
 
-### ۷) پیکربندی (GUI و CLI)
+کنترل بر اساس **نوع/پسوند** (و Magic bytes در صورت پشتیبانی) و جهت (Upload/Download). مثال: بلاک `exe, scr, js, vbs` از اینترنت؛ بلاک فایل رمزدار. مزیت: بدون لایسنس، سبک؛ ضعف: پسوند جعل‌شدنی، محتوای مخرب در نوع مجاز.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۴-۴) EICAR
 
-#### روش گرافیکی (GUI)
+فایل متنی استاندارد بی‌خطر که همه‌ی AVها به‌عنوان «ویروس تست» می‌شناسند؛ برای آزمون زنجیره (Policy→Profile→Inspection→Log). **نتیجه‌ی آزمون باید ثبت شود؛ اگر Signature در Lab نیست، «اجرا نشده/ناموفق» بنویسید، نه «کار می‌کند».**
 
-1. Security Profiles > AntiVirus > Create New؛ Inspect HTTP/…؛ Action Block.
-2. Security Profiles > File Filter: پسوند exe را بلاک کنید.
-3. Policy: AV و File Filter را فعال.
-4. Log & Report > AntiVirus.
+### ۵) پیاده‌سازی: GUI و CLI
 
-#### روش خط فرمان (CLI)
+**GUI:**
 
-```text
+1. Security Profiles → AntiVirus → Create New (AV-STD): Inspected Protocols: HTTP/FTP/SMTP/... ؛ Action Block.
+2. Security Profiles → File Filter → Create New (FF-STD): Rule: File types exe/script؛ Direction Incoming؛ Action Block.
+3. Policy: AntiVirus = AV-STD؛ File Filter = FF-STD؛ SSL Inspection (مناسب).
+4. Log & Report → AntiVirus / Security Events.
+
+**CLI (ساختار؛ `Unverified`):**
+
+``` text
 config antivirus profile
     edit "AV-STD"
+        set comment "lab"
     next
 end
-! file filter (no subscription): see GUI path
+config file-filter profile
+    edit "FF-STD"
+        config rules
+            edit "block-exe"
+                set protocol http ftp
+                set action block
+                set file-type "exe"
+            next
+        end
+    next
+end
+config firewall policy
+    edit 10
+        set av-profile "AV-STD"
+        set file-filter-profile "FF-STD"
+    next
+end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۶) مثال‌ها
 
-- جزئیات Option برای 7.0.3 را در GUI مقایسه کنید (`Unverified`).
-- راستی‌آزمایی: دانلود EICAR مسدود/Log.
-- بازگشت: حذف Profile.
+**ساده:** دانلود EICAR از وب: Block + Log AV.
 
-### ۸) تست عملکرد
+**متوسط:** `setup.exe` بلاک می‌شود با File Filter در حالی‌که AV لایسنس ندارد؛ درس: لایه‌ی بدون لایسنس مفید است.
 
-- دانلود EICAR و ثبت نتیجه واقعی.
+**سخت:** مهاجم zip رمزدار می‌فرستد؛ AV نمی‌بیند؛ File Filter رمزدار را بلاک می‌کند اگر پشتیبانی شود؛ سیاست: بلاک آرشیو رمزدار از منبع ناشناس + آموزش + Sandbox (در صورت لایسنس). **FN را بپذیرید و مستند کنید.**
 
-### ۹) عیب‌یابی
+### ۷) Troubleshooting
 
-| بخش | شرح |
+| علامت | علت |
 |---|---|
-| Symptom | EICAR رد می‌شود |
-| شواهد/دستور | Log AV نیست |
-| علت | DB/لایسنس نیست |
-| رفع | ثبت محدودیت؛ استفاده از File Filter |
+| EICAR رد می‌شود | Profile وصل نیست/لایسنس/DB نیست/HTTPS بدون Deep |
+| فایل بزرگ اسکن نمی‌شود | سقف اندازه |
+| کندی دانلود | Proxy Buffer |
+| FP | Signature/استثنا |
 
-### ۱۰) تمرین مستقل
+### ۸) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- EICAR فقط برای تست؛ بدافزار واقعی ممنوع.
+- Exception محدود.
+- ترکیب با Patch/EDR.
 
-**ت1.** EICAR چیست؟ *(پاسخ: 16-3-ت1)*
+### ۹) جمع‌بندی
 
-**ت2.** File Filter لایسنس دارد؟ *(پاسخ: 16-3-ت2)*
+- AV Signature؛ Zero-day و رمزدار نه.
+- Flow سریع/Proxy دقیق.
+- File Filter لایه‌ی بدون لایسنس.
+- نتیجه‌ی واقعی ثبت شود.
 
-### ۱۱) مرور و ارزیابی
+### ۱۰) تمرین و ارزیابی
 
-**م1.** چرا نتیجه‌ی AV را ثبت می‌کنیم؟ *(پاسخ: 16-3-م1)*
+**ت1.** (ساده) EICAR چیست؟ *(پاسخ: 16-3-ت1)*
 
-**م2.** سناریو: exe بلاک نمی‌شود؛ چرا؟ *(پاسخ: 16-3-م2)*
+**ت2.** (ساده) AV چه چیزی را نمی‌بیند؟ *(پاسخ: 16-3-ت2)*
 
-**معیار تسلط:** ساخت Profile، اتصال به Policy، اثبات با Log/تست.
+**ت3.** (متوسط) تفاوت AV در Flow و Proxy؟ *(پاسخ: 16-3-ت3)*
 
-**اشتباهات رایج:** فعال‌کردن بی‌برنامه؛ نادیده‌گرفتن لایسنس.
+**ت4.** (متوسط) چرا سقف اندازه‌ی فایل نقطه‌ی کور است؟ *(پاسخ: 16-3-ت4)*
 
-### ۱۲) واژگان و English Corner
+**ت5.** (سخت) سیاست دفاع از zip رمزدار را طراحی کنید. *(پاسخ: 16-3-ت5)*
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| AV | Antivirus | ضدویروس | UTM |
-| EICAR | EICAR test file | فایل تست | تست |
-| File filter | File filter | فیلتر نوع فایل | UTM |
+**Q1.** Quick quiz (English): Why can't antivirus inspect a password-protected archive? *(پاسخ: 16-3-Q1)*
 
-| English sentence | ترجمه |
-|---|---|
-| Use the EICAR file to test antivirus safely. | برای تست ایمن ضدویروس از فایل EICAR استفاده کنید. |
-| A file filter blocks by file type. | File Filter بر اساس نوع فایل مسدود می‌کند. |
+### ۱۱) اصطلاحات و English Corner
 
-#### کارت Lab — درس 16-3
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | AV/File Filter |
-| 2 | پیش‌نیاز | درس ۱۶-۲ |
-| 3 | توپولوژی | FGT + Client + Web |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Policy v1 |
-| 8 | صورت مسئله | EICAR و exe |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | دانلود |
-| 11 | سناریوی خرابی | EICAR رد می‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Block/نتیجه ثبت |
-| 14 | معیار پذیرش | نتیجه‌ی واقعی ثبت |
-| 15 | مستندات نهایی | `03-ops/av-notes.md` |
-| 16 | Cleanup و بازگردانی | حذف Profile |
+| AV | Antivirus | ضدویروس |
+| Heuristic | Heuristic detection | تشخیص رفتاری/الگویی |
+| Sandbox | Sandbox | محیط اجرای ایزوله |
+| Magic bytes | File magic bytes | امضای ابتدای فایل |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Antivirus is one layer, not a complete defense.* ← ضدویروس یک لایه است، نه دفاع کامل.
 
----
+### ۱۲) Lab
+
+**کارت Lab:** AV/File Filter. **هدف:** EICAR و بلاک exe. **وضعیت:** اجرا نشده. **Verification:** Log AV/File Filter. **Rollback:** حذف Profile. **Evidence:** `03-ops/av-notes.md` (نتیجه‌ی واقعی).
+
+### ۱۳) منابع
+
+- Fortinet Docs: [Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison)؛ EICAR (eicar.org).
 
 <a id="l-16-4"></a>
 
-## درس 16-4 — IPS، DoS و Application Control
+## درس 16-4 — IPS، DoS Policy و Application Control: سازوکار، تنظیم و FP
 
-**فصل 16 - روز 4 · پیش‌نیاز: درس ۱۶-۳ · ۶ ساعت**
+**فصل ۱۶ · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰، ۱۶-۷، ۱۱-۷ · ≈ ۷ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (FortiOS 7.0.3):** Signature IPS و DB برنامه **Needs-License**؛ DoS Policy و Custom Signature بدون لایسنس. سینتکس `Unverified`. تست حمله فقط در Lab ایزوله و مجاز. Lab «اجرا نشده».
 
-IPS حملات شناخته‌شده را با Signature می‌گیرد؛ DoS Policy جلوی سیل را؛ Application Control برنامه‌ها را می‌شناسد.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+1. IPS (Signature، Severity، Target، Action) و تفاوت **Monitor/Block** را توضیح دهد.
+2. **DoS Policy** (Anomaly: SYN Flood، UDP Flood، Port Scan، Session Limit) را به Threshold درست تبدیل کند.
+3. **Application Control** را (Category، Application، Action، QUIC/DoH) به کار ببرد.
+4. اثر Performance و FP را بسنجد و **Exception دقیق** بنویسد.
+5. در Lab با ابزار مجاز تست و نتیجه را ثبت کند.
 
-درس ۱۶-۳
+### ۲) مفهوم پایه
 
-### ۳) توضیح مفهومی
+- **IPS:** الگوی اکسپلویت را در ترافیک می‌شناسد (مثل «آنتی‌ویروس برای حمله»).
+- **DoS Policy:** حجم/نرخ غیرعادی را می‌گیرد، بدون نیاز به شناخت محتوا.
+- **Application Control:** می‌پرسد «این چه برنامه‌ای است؟» حتی روی پورت غیرمعمول.
 
-- IPS: Sensor با Signatureهای FortiGuard (Needs-License) و **Custom Signature** محلی.
-- **DoS Policy:** آستانه‌ی Session/Packet روی Interface (بدون لایسنس).
-- Application Control: DB App (Needs-License)؛ بدون آن فقط Port/Protocol.
-- Action: monitor/block/reset.
-- اثر Performance: IPS روی CPU.
+### ۳) توضیح عمیق فنی
 
-### ۴) مثال ساده
+#### ۳-۱) IPS Sensor
 
-یک Profile ساده روی Policy کاربران.
+Sensor مجموعه‌ای از Filter/Signature است: انتخاب بر اساس **Severity** (Critical تا Info)، **Target** (Server/Client)، **OS**، **Protocol**. Action: `pass`, `monitor`, `block`, `reset`, `quarantine`. اصول: ابتدا Monitor؛ برای سرور مشخص (Target=Server) Signatureهای مرتبط؛ Severity High/Critical Block؛ کم‌اهمیت‌ها Monitor. **Virtual Patching:** Signature آسیب‌پذیری را تا Patch سرور بلاک می‌کند.
 
-### ۵) مثال سازمانی
+#### ۳-۲) DoS Policy
 
-سازمان: Profile استاندارد برای هر گروه (کاربران، سرورها، مهمان).
-
-### ۶) تصویر و توپولوژی
-
-```text
-Policy -> [Profile: AV/IPS/Web/App/SSL] -> accept/block
+``` text
+Threshold examples (tune from baseline, not copied):
+tcp_syn_flood   : 2000 pkts/s per source
+udp_flood       : 2000 pkts/s
+ip_src_session  : 5000 sessions per source
+tcp_port_scan   : 1000 pkts/s
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+اعداد را از **Baseline** (۲۷-۰) بسازید؛ Threshold کم = FP برای کاربران واقعی؛ زیاد = ناکارآمد. DoS Policy **قبل از Firewall Policy** (در مسیر سریع Ingress) اعمال می‌شود و ارزان است؛ روی Interface WAN.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۳-۳) Application Control
 
-#### روش گرافیکی (GUI)
+Signature برنامه‌ها (Teams، Dropbox، BitTorrent، DoH ...). Action: Allow/Monitor/Block/Quarantine. نکات: (۱) **QUIC:** بلاک تا ترافیک به TCP/TLS برگردد و Inspection ممکن شود. (۲) **DoH:** بلاک برنامه‌ی DoH یا Policy DNS فقط به سرور داخلی. (۳) Deep Inspection برای شناسایی دقیق‌تر در HTTPS. (۴) بدون لایسنس: Port-based/Service-based.
 
-1. Policy & Objects > DoS Policy > Create New: Interface port1، All.
-2. Anomalies: آستانه‌ی SYN Flood را تنظیم.
-3. Security Profiles > Intrusion Prevention: Sensor با Severity High/Critical (اگر لایسنس).
-4. Security Profiles > Application Control.
+#### ۳-۴) Performance
 
-#### روش خط فرمان (CLI)
+IPS/App بازرسی محتوایی است: CPU↑ و Offload↓ (۱۲-۹). راه: Sensor انتخابی روی Policyهای مهم؛ DoS ارزان‌تر؛ Baseline قبل/بعد.
 
-```text
+### ۴) پیاده‌سازی: GUI و CLI
+
+**GUI:** Policy & Objects → DoS Policy → Create New (Incoming: port1؛ Source/Dest: all؛ Service ALL؛ Anomaly: Threshold). Security Profiles → Intrusion Prevention → Create New (Filters: Severity High, Critical؛ Action Block). Security Profiles → Application Control → Create New (Category Proxy/P2P: Block؛ QUIC: Block). Policy: فعال‌سازی هر دو.
+
+**CLI (`Unverified`):**
+
+``` text
 config firewall DoS-policy
     edit 1
-        set name "DOS-WAN"
         set interface "port1"
         set srcaddr "all"
         set dstaddr "all"
         set service "ALL"
+        config anomaly
+            edit "tcp_syn_flood"
+                set status enable
+                set threshold 2000
+                set action block
+            next
+        end
     next
 end
-! thresholds under config anomaly (see GUI)
+config ips sensor
+    edit "IPS-LAB"
+        config entries
+            edit 1
+                set severity high critical
+                set action block
+            next
+        end
+    next
+end
+config application list
+    edit "APP-LAB"
+        config entries
+            edit 1
+                set category 2
+                set action block
+            next
+        end
+    next
+end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۵) مثال‌ها
 
-- `DoS-policy` روی WAN؛ آستانه‌ها در GUI تنظیم شوند.
-- Custom IPS: نیاز به آزمایش؛ `Unverified`.
-- راستی‌آزمایی: Log anomaly.
-- بازگشت: حذف Policy.
+**ساده:** SYN Flood آزمایشی (hping3 در Lab) با 5000 pkt/s؛ DoS Policy Block؛ Log anomaly.
 
-### ۸) تست عملکرد
+**متوسط:** FP: سامانه‌ی مالی با Signature اشتباه قطع شد؛ Log IPS → Signature ID؛ Exception فقط برای آن Signature و آن سرور؛ تاریخ بازبینی.
 
-- تولید ترافیک زیاد (hping/ab) و دیدن Log anomaly؛ نتیجه واقعی ثبت.
+**سخت:** CPU ۹۰٪ پس از فعال‌کردن IPS روی همه‌ی ترافیک؛ تحلیل: `diagnose sys top` (ipsengine)، Offload کم. راه: Sensor انتخابی (Target=Server، Severity High+) و Monitor برای بقیه؛ اندازه‌گیری مجدد.
 
-### ۹) عیب‌یابی
+### ۶) Troubleshooting
 
-| بخش | شرح |
+| علامت | علت |
 |---|---|
-| Symptom | DoS Policy اثر ندارد |
-| شواهد/دستور | Log نیست |
-| علت | Interface اشتباه |
-| رفع | Interface ورودی درست |
+| DoS اثر ندارد | Interface اشتباه، Threshold بالا |
+| FP کاربران | Threshold کم |
+| IPS بلاک نمی‌کند | Action=monitor/لایسنس/Profile وصل نیست |
+| QUIC دور می‌زند | بلاک نشده |
+| CPU زیاد | Sensor گسترده |
 
-### ۱۰) تمرین مستقل
+### ۷) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- آزمون حمله فقط در Lab ایزوله و مجاز.
+- IPS جایگزین Patch نیست.
+- Exception با تاریخ بازبینی.
 
-**ت1.** DoS Policy چه می‌کند؟ *(پاسخ: 16-4-ت1)*
+### ۸) جمع‌بندی
 
-**ت2.** IPS Needs-License؟ *(پاسخ: 16-4-ت2)*
+- IPS بر اساس Signature؛ ابتدا Monitor؛ Virtual Patching.
+- DoS Policy با Baseline؛ ارزان و Ingress.
+- App Control با QUIC/DoH.
+- Performance را اندازه بگیرید.
 
-### ۱۱) مرور و ارزیابی
+### ۹) تمرین و ارزیابی
 
-**م1.** چرا DoS روی WAN؟ *(پاسخ: 16-4-م1)*
+**ت1.** (ساده) IPS و DoS Policy چه فرقی دارند؟ *(پاسخ: 16-4-ت1)*
 
-**م2.** سناریو: CPU بالا؛ علت محتمل IPS؟ *(پاسخ: 16-4-م2)*
+**ت2.** (ساده) Virtual Patching یعنی چه؟ *(پاسخ: 16-4-ت2)*
 
-**معیار تسلط:** ساخت Profile، اتصال به Policy، اثبات با Log/تست.
+**ت3.** (متوسط) Threshold DoS را چگونه تعیین می‌کنید؟ *(پاسخ: 16-4-ت3)*
 
-**اشتباهات رایج:** فعال‌کردن بی‌برنامه؛ نادیده‌گرفتن لایسنس.
+**ت4.** (متوسط) چرا QUIC بلاک می‌شود؟ *(پاسخ: 16-4-ت4)*
 
-### ۱۲) واژگان و English Corner
+**ت5.** (سخت) پس از IPS، CPU ۹۰٪ شد؛ تحلیل و رفع. *(پاسخ: 16-4-ت5)*
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| IPS | Intrusion Prevention System | جلوگیری از نفوذ | UTM |
-| DoS | Denial of Service | محدودسازی سیل | WAN |
-| App control | Application control | کنترل برنامه | UTM |
+**Q1.** Quick quiz (English): Why start an IPS sensor in monitor mode? *(پاسخ: 16-4-Q1)*
 
-| English sentence | ترجمه |
-|---|---|
-| Protect the WAN interface with a DoS policy. | Interface WAN را با DoS Policy محافظت کنید. |
-| IPS consumes CPU; apply it selectively. | IPS CPU مصرف می‌کند؛ انتخابی اعمال کنید. |
+### ۱۰) اصطلاحات و English Corner
 
-#### کارت Lab — درس 16-4
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | DoS و IPS |
-| 2 | پیش‌نیاز | درس ۱۶-۳ |
-| 3 | توپولوژی | FGT + Client + Attacker-Lab |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Policy v1 |
-| 8 | صورت مسئله | DoS ساده |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | hping/ab |
-| 11 | سناریوی خرابی | DoS Policy اثر ندارد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Log anomaly |
-| 14 | معیار پذیرش | ثبت نتیجه |
-| 15 | مستندات نهایی | `03-ops/ips-dos.md` |
-| 16 | Cleanup و بازگردانی | حذف Policy |
+| IPS | Intrusion Prevention System | جلوگیری از نفوذ |
+| DoS | Denial of Service | انکار سرویس |
+| Anomaly | Anomaly threshold | آستانه‌ی ناهنجاری |
+| Virtual patching | Virtual patching | وصله‌ی مجازی |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Tune thresholds from your own baseline.* ← آستانه‌ها را از Baseline خودتان تنظیم کنید.
 
----
+### ۱۱) Lab
+
+**کارت Lab:** DoS و IPS. **وضعیت:** اجرا نشده. **Verification:** Log anomaly/IPS، `sys top`. **Rollback:** حذف Policy/Profile. **Evidence:** `03-ops/ips-dos.md`.
+
+### ۱۲) منابع
+
+- Fortinet Docs: FortiOS 7.0 Administration Guide — DoS policy، Intrusion prevention، Application control.
 
 <a id="l-16-5"></a>
 
-## درس 16-5 — SSL/SSH Inspection: Certificate و CA
+## درس 16-5 — SSL Inspection عملی: ساخت CA، نصب، Exemption و آزمون
 
-**فصل 16 - روز 5 · پیش‌نیاز: درس ۱۶-۴ · ۶ ساعت**
+**فصل ۱۶ · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰ (مفاهیم TLS/CA)، ۱۶-۲ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (FortiOS 7.0.3):** پروفایل‌های `certificate-inspection`/`deep-inspection` طبق مستند. سینتکس `Unverified`. Lab «اجرا نشده».
 
-Inspection ترافیک HTTPS بدون رمزگشایی ممکن نیست. گواهی CA، Exemption و اثر Performance را باید بدانید.
+### ۱) هدف آموزشی
+
+1. پروفایل SSL سفارشی (Deep) بسازد، CA را Export و روی کلاینت نصب کند.
+2. **Exemption** درست (Category، FQDN، Address) تعریف کند.
+3. رفتار گواهی نامعتبر (Block/Allow/Warn) را تنظیم کند.
+4. نتیجه را با مرورگر/`openssl s_client`/Capture اثبات کند.
+5. مشکلات Pinning، Firefox Trust Store و QUIC را عیب‌یابی کند.
 
 ### ۲) پیش‌نیازها
 
-درس ۱۶-۴
+۱۶-۰ (TLS، Chain، Deep vs Certificate).
 
-### ۳) توضیح مفهومی
+### ۳) توضیح عمیق فنی
 
-- **Certificate Inspection:** فقط SNI/گواهی را می‌بیند (بدون رمزگشایی).
-- **Deep Inspection:** رمزگشایی و رمزگذاری مجدد؛ نیاز به نصب CA فایروال روی کلاینت.
-- Exemption: بانک/Update/حریم خصوصی از Inspection مستثنا.
-- خطاهای Certificate در کلاینت = CA نصب نیست.
-- Performance: Deep Inspection سنگین است.
+#### ۳-۱) تفاوت CA صادرکننده
 
-### ۴) مثال ساده
+فایروال برای هر سایت گواهی جدید با همان Subject/SAN می‌سازد و با **CA فایروال** امضا می‌کند. اگر CA فایروال Self-signed پیش‌فرض باشد، باید روی همه‌ی کلاینت‌ها دستی/GPO نصب شود. بهتر: **Intermediate CA سازمانی** (ADCS) به فایروال بدهید تا زنجیره به Root سازمان برسد و Trust از قبل موجود باشد.
 
-یک Profile ساده روی Policy کاربران.
+#### ۳-۲) گواهی نامعتبر (Untrusted)
 
-### ۵) مثال سازمانی
+فایروال گواهی سرور مقصد را اعتبارسنجی می‌کند. اگر نامعتبر/منقضی/Self-signed بود، باید به کلاینت **گواهی ناموثق** بدهد (CA جداگانه‌ی Untrusted) تا مرورگر هشدار بدهد؛ نه گواهی معتبر صادر کند. تنظیم Action برای گواهی نامعتبر: Block (امن‌تر برای کاربران عادی) یا Allow/Ignore (خطرناک).
 
-سازمان: Profile استاندارد برای هر گروه (کاربران، سرورها، مهمان).
+#### ۳-۳) Exemption
 
-### ۶) تصویر و توپولوژی
+- **Category:** Finance/Health (حریم خصوصی).
+- **FQDN/Address:** Update سرویس‌های Pinned.
+- **Policy جدا:** سرورها با Certificate Inspection.
+اصل: Exemption کمترین گستره + مستند + بازبینی.
 
-```text
-Policy -> [Profile: AV/IPS/Web/App/SSL] -> accept/block
-```
+#### ۳-۴) Trust Storeها
 
-### ۷) پیکربندی (GUI و CLI)
+Windows/Chrome/Edge: Store سیستم. **Firefox:** Store مستقل (یا `security.enterprise_roots.enabled`). **Java/Python/curl:** Store/Bundle خودشان (`curl --cacert`، `REQUESTS_CA_BUNDLE`). **موبایل:** MDM. خطای «فقط یک برنامه» معمولاً Trust Store جدا است.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+### ۴) پیاده‌سازی: GUI و CLI
 
-#### روش گرافیکی (GUI)
+**GUI:**
 
-1. Security Profiles > SSL/SSH Inspection > Create New: Deep Inspection.
-2. System > Certificates: CA فایروال را Export و روی کلاینت نصب کنید.
-3. Exempt: Addresses/Categories.
-4. Policy: SSL Inspection را انتخاب.
+1. Security Profiles → SSL/SSH Inspection → Create New (Deep-Lab): Inspection Method Full SSL Inspection؛ CA Certificate انتخاب؛ Untrusted SSL Certificates: Block؛ Exempt: Web Categories و Addresses.
+2. System → Certificates → CA مربوطه → Download (برای نصب).
+3. Policy: SSL Inspection = Deep-Lab.
+4. Log & Report → Forward Traffic.
 
-#### روش خط فرمان (CLI)
+**CLI (`Unverified`):**
 
-```text
+``` text
 config firewall ssl-ssh-profile
-    edit "SSL-DEEP-LAB"
+    edit "Deep-Lab"
         config https
             set ports 443
             set status deep-inspection
         end
+        set untrusted-caname "Fortinet_CA_Untrusted"
+        config ssl-exempt
+            edit 1
+                set type fortiguard-category
+                set category 31
+            next
+        end
     next
 end
-! use only in lab; install the FortiGate CA on the client first
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۵) مثال‌ها
 
-- Deep Inspection فقط پس از نصب CA روی کلاینت.
-- `status deep-inspection` روی HTTPS.
-- راستی‌آزمایی: گواهی مرورگر توسط CA فایروال امضا شده.
-- بازگشت: Profile را `certificate-inspection` کنید.
-- هشدار: شکستن TLS مسائل حریم خصوصی/Pinning دارد.
+**ساده:** مرورگر روی `https://example.com`؛ گواهی Issuer = CA فایروال؛ بدون خطا (CA نصب‌شده).
 
-### ۸) تست عملکرد
+**متوسط:** `openssl s_client -connect example.com:443 -servername example.com | openssl x509 -noout -issuer` در کلاینت: Issuer فایروال؛ مقایسه با خارج از فایروال: Issuer واقعی.
 
-- در کلاینت گواهی سایت را بررسی کنید.
+**سخت:** بعد از Deep Inspection، `git` و `pip` در Linux خطای گواهی می‌دهند: Trust Store سیستم و Bundle را به‌روز کنید؛ برای Updaterهای Pinned Exemption بگذارید؛ مستند کنید.
 
-### ۹) عیب‌یابی
+### ۶) Troubleshooting
 
-| بخش | شرح |
+| علامت | علت |
 |---|---|
-| Symptom | خطای گواهی در مرورگر |
-| شواهد/دستور | Issuer = فایروال؛ مرورگر آن را نمی‌شناسد |
-| علت | CA نصب نیست |
-| رفع | نصب CA یا Exempt |
+| خطای گواهی همه‌ی سایت‌ها | CA نصب نیست |
+| فقط Firefox | Trust Store جدا |
+| بعضی برنامه‌ها | Pinning/Bundle |
+| کندی | Deep روی ترافیک سنگین |
+| سایت باز نمی‌شود | گواهی مقصد نامعتبر + Block |
 
-### ۱۰) تمرین مستقل
+### ۷) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- کلید خصوصی CA را حفاظت کنید.
+- Exemption برای حریم خصوصی/قانون.
+- ثبت رضایت/سیاست رمزگشایی.
 
-**ت1.** Deep و Certificate Inspection؟ *(پاسخ: 16-5-ت1)*
+### ۸) جمع‌بندی
 
-**ت2.** چرا CA لازم؟ *(پاسخ: 16-5-ت2)*
+- Deep = CA فایروال + نصب + Exemption.
+- گواهی نامعتبر باید به کاربر منتقل شود.
+- Trust Storeهای متعدد.
+- اثبات با openssl/مرورگر.
 
-### ۱۱) مرور و ارزیابی
+### ۹) تمرین و ارزیابی
 
-**م1.** چرا بانک‌ها Exempt؟ *(پاسخ: 16-5-م1)*
+**ت1.** (ساده) چرا Intermediate CA سازمانی بهتر است؟ *(پاسخ: 16-5-ت1)*
 
-**م2.** سناریو: برنامه خطای TLS می‌دهد؛ چه می‌کنید؟ *(پاسخ: 16-5-م2)*
+**ت2.** (ساده) کاربر Firefox خطا می‌بیند؛ چرا؟ *(پاسخ: 16-5-ت2)*
 
-**معیار تسلط:** ساخت Profile، اتصال به Policy، اثبات با Log/تست.
+**ت3.** (متوسط) گواهی Untrusted چه نقشی دارد؟ *(پاسخ: 16-5-ت3)*
 
-**اشتباهات رایج:** فعال‌کردن بی‌برنامه؛ نادیده‌گرفتن لایسنس.
+**ت4.** (سخت) با `openssl s_client` اثبات کنید Deep Inspection فعال است. *(پاسخ: 16-5-ت4)*
 
-### ۱۲) واژگان و English Corner
+**ت5.** (سخت، طراحی) برنامه‌ی Exemption برای یک سازمان بنویسید. *(پاسخ: 16-5-ت5)*
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| SSL inspection | SSL/SSH inspection | بازرسی TLS | UTM |
-| CA | Certificate Authority | مرجع گواهی | TLS |
-| Pinning | Certificate pinning | پین‌کردن گواهی | — |
+**Q1.** Quick quiz (English): How can openssl s_client show that traffic is being inspected? *(پاسخ: 16-5-Q1)*
 
-| English sentence | ترجمه |
-|---|---|
-| Install the firewall CA on every client before deep inspection. | قبل از Deep Inspection CA فایروال را روی همه‌ی کلاینت‌ها نصب کنید. |
-| Exempt sensitive categories from deep inspection. | دسته‌های حساس را از Deep Inspection مستثنا کنید. |
+### ۱۰) اصطلاحات و English Corner
 
-#### کارت Lab — درس 16-5
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | SSL Inspection |
-| 2 | پیش‌نیاز | درس ۱۶-۴ |
-| 3 | توپولوژی | FGT + Client |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Policy v1 |
-| 8 | صورت مسئله | Deep + CA |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | مرورگر |
-| 11 | سناریوی خرابی | خطای گواهی در مرورگر |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | گواهی فایروال |
-| 14 | معیار پذیرش | بدون خطا |
-| 15 | مستندات نهایی | `03-ops/ssl-inspection.md` |
-| 16 | Cleanup و بازگردانی | بازگشت Profile |
+| ADCS | Active Directory Certificate Services | سرویس گواهی AD |
+| Trust store | Certificate trust store | مخزن CAهای معتبر |
+| Exemption | SSL exemption | استثنای Inspection |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Verify inspection by comparing the certificate issuer.* ← با مقایسه‌ی Issuer گواهی، Inspection را اثبات کنید.
 
----
+### ۱۱) Lab
+
+**کارت Lab:** SSL Inspection. **وضعیت:** اجرا نشده. **Verification:** Issuer گواهی، Log. **Rollback:** بازگشت به certificate-inspection. **Evidence:** `03-ops/ssl-inspection.md`.
+
+### ۱۲) منابع
+
+- Fortinet Docs: [SSL & SSH Inspection](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/929997/ssl-ssh-inspection)؛ OpenSSL s_client manual.
 
 <a id="l-16-6"></a>
 
@@ -1341,69 +1396,67 @@ Static URL، Custom IPS، DoS.
 
 لایسنس/DB.
 
-**16-2-ت1** — Static URL نیاز لایسنس دارد؟
 
-خیر.
+### پاسخ‌های بازنویسی درس 16-2
 
-**16-2-ت2** — چرا HTTPS مشکل می‌سازد؟
+**16-2-ت1** — Static دستی و بدون لایسنس؛ Category بر پایه‌ی رتبه‌بندی FortiGuard (Needs-License).
 
-محتوا رمز است؛ نیاز SSL Inspection.
+**16-2-ت2** — Exempt مقصد را از بقیه‌ی بررسی‌های Web Filter معاف می‌کند.
 
-**16-2-م1** — چرا Static URL را ابتدا امتحان می‌کنیم؟
+**16-2-ت3** — مسیر URL داخل HTTPS رمزشده است؛ فقط با رمزگشایی (Deep) دیده می‌شود.
 
-بدون لایسنس کار می‌کند.
+**16-2-ت4** — DoH/DoT و IP مستقیم دور می‌زنند.
 
-**16-2-م2** — سناریو: دامنه‌ی HTTPS مسدود نشد؛ چرا؟
+**16-2-ت5** — Profile وصل نیست؛ Policy دیگر بالاتر؛ HTTPS و نیاز مسیر؛ QUIC؛ DoH؛ Exempt. شاهد: Debug Flow، Log، Capture.
 
-SSL Inspection/SNI.
+**16-2-ت6** — کارمند: Category+Static+Deep با Exemption؛ مهمان: سخت‌گیرانه با Safe Search؛ سرور: فقط FQDN مجاز Update.
 
-**16-3-ت1** — EICAR چیست؟
+**16-2-Q1** — It exempts the matching destination from the remaining web filter checks.
 
-فایل تست استاندارد بی‌خطر.
 
-**16-3-ت2** — File Filter لایسنس دارد؟
+### پاسخ‌های بازنویسی درس 16-3
 
-خیر.
+**16-3-ت1** — فایل تست استاندارد بی‌خطر که ضدویروس‌ها آن را ویروس تست می‌شناسند.
 
-**16-3-م1** — چرا نتیجه‌ی AV را ثبت می‌کنیم؟
+**16-3-ت2** — Zero-day، آرشیو رمزدار، HTTPS بدون Deep و فایل بزرگ‌تر از سقف.
 
-Unverified در Lab.
+**16-3-ت3** — Flow در جریان و سبک؛ Proxy فایل را کامل بازسازی می‌کند و دقیق‌تر ولی سنگین‌تر است.
 
-**16-3-م2** — سناریو: exe بلاک نمی‌شود؛ چرا؟
+**16-3-ت4** — فایل بزرگ‌تر از سقف اسکن نمی‌شود و ممکن است عبور کند.
 
-Profile روی Policy نیست.
+**16-3-ت5** — File Filter برای آرشیو رمزدار، Sandbox (لایسنس)، محدودسازی منبع، آموزش کاربر و Monitor.
 
-**16-4-ت1** — DoS Policy چه می‌کند؟
+**16-3-Q1** — Because its contents are encrypted and cannot be read by the scanner.
 
-محدود/مسدودکردن سیل.
 
-**16-4-ت2** — IPS Needs-License؟
+### پاسخ‌های بازنویسی درس 16-4
 
-Signature رسمی بله؛ Custom خیر.
+**16-4-ت1** — IPS بر اساس Signature حمله‌ی شناخته‌شده؛ DoS Policy بر اساس حجم/نرخ غیرعادی.
 
-**16-4-م1** — چرا DoS روی WAN؟
+**16-4-ت2** — بلاک اکسپلویت آسیب‌پذیری تا Patch سرور با Signature IPS.
 
-ورودی حمله از اینترنت.
+**16-4-ت3** — از Baseline حجم عادی؛ آستانه کمی بالاتر از پیک عادی و آزمون با ترافیک واقعی.
 
-**16-4-م2** — سناریو: CPU بالا؛ علت محتمل IPS؟
+**16-4-ت4** — QUIC با TLS1.3 روی UDP قابل Inspection عمیق نیست؛ بلاک آن ترافیک را به TCP/TLS برمی‌گرداند.
 
-Inspection سنگین/Profile گسترده.
+**16-4-ت5** — `sys top` فرایند ipsengine، Sensor گسترده؛ رفع: Sensor انتخابی (Target=Server، Severity High+)، Monitor برای بقیه و اندازه‌گیری مجدد.
 
-**16-5-ت1** — Deep و Certificate Inspection؟
+**16-4-Q1** — To measure false positives before blocking and avoid business disruption.
 
-Deep رمزگشایی؛ Certificate فقط گواهی.
 
-**16-5-ت2** — چرا CA لازم؟
+### پاسخ‌های بازنویسی درس 16-5
 
-تا مرورگر گواهی فایروال را بپذیرد.
+**16-5-ت1** — Trust از قبل برقرار است و نصب دستی روی کلاینت‌ها کم می‌شود.
 
-**16-5-م1** — چرا بانک‌ها Exempt؟
+**16-5-ت2** — Firefox Trust Store جدا دارد.
 
-حریم خصوصی/Pinning.
+**16-5-ت3** — به کلاینت گواهی ناموثق می‌دهد تا گواهی نامعتبر مقصد دیده شود.
 
-**16-5-م2** — سناریو: برنامه خطای TLS می‌دهد؛ چه می‌کنید؟
+**16-5-ت4** — `openssl s_client -connect host:443 -servername host` و مقایسه‌ی Issuer با CA فایروال.
 
-Exempt یا نصب CA.
+**16-5-ت5** — Exemption برای Finance/Health، Pinned Updaterها، سرورهای داخلی؛ حداقل گستره، مستند و بازبینی دوره‌ای.
+
+**16-5-Q1** — The certificate issuer is the firewall CA instead of the real public CA.
 
 **16-6-ت1** — چرا UTM CPU می‌خورد؟
 
@@ -1554,6 +1607,10 @@ LDAP پروتکل پرس‌وجو از Directory است (AD یک Directory اس�
 #### ۴-۶) Policy مبتنی بر هویت
 
 Policy Source = User/Group (FSSO) به‌علاوه‌ی Subnet برای دقت. ترتیب: Policy مبتنی بر هویت وقتی Match می‌شود که نگاشت IP→User موجود باشد؛ در غیر این صورت Policy بعدی (یا Captive Portal) مطابق می‌شود.
+
+![شکل: حالت‌های FSSO.](../figures/ch17-l0-fig1.svg)
+
+*شکل: حالت‌های FSSO.*
 
 ### ۵) مثال حل‌شده
 
@@ -2826,6 +2883,10 @@ Phase 2 / Child SA: negotiate IPsec proposal and traffic selectors, derive keys 
 
 سربار ESP/UDP (تقریباً ۵۰ تا ۸۰ بایت بسته به الگوریتم و NAT-T) اندازه‌ی مؤثر بسته را کم می‌کند. علامت: ping کوچک OK، دانلود بزرگ قفل (درس ۱۸-۴). راه‌حل: کاهش MTU Tunnel یا `tcp-mss-sender/receiver`.
 
+![شکل: مذاکره‌ی IKEv2 و خطاهای رایج.](../figures/ch18-l0-fig1.svg)
+
+*شکل: مذاکره‌ی IKEv2 و خطاهای رایج.*
+
 ### ۵) مثال حل‌شده (Route-based S2S)
 
 ``` text
@@ -3096,280 +3157,279 @@ diagnose vpn tunnel list
 
 <a id="l-18-2"></a>
 
-## درس 18-2 — ساخت Tunnel بین دو FortiGate (CLI و GUI)
+## درس 18-2 — ساخت Tunnel Site-to-Site بین دو FortiGate: طراحی، GUI، CLI و Verification
 
-**فصل 18 - روز 2 · پیش‌نیاز: درس ۱۸-۰ · ۶ ساعت**
+**فصل ۱۸ · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰ (IKE، Selector، PFS)، ۱۲-۰، فصل ۵ · ≈ ۷ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (FortiOS 7.0.3):** پیش‌فرض‌ها از CLI Reference 7.0؛ سینتکس `Unverified`؛ PSK نمونه؛ Lab «اجرا نشده».
 
-حالا Tunnel واقعی: Phase 1، Phase 2، Route، Policy.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+1. برگه‌ی طراحی Tunnel (IP Plan، Proposal، Selector، Route، Policy) را قبل از پیکربندی بنویسد.
+2. Tunnel Route-based را با **GUI و CLI** بسازد.
+3. سه چیز لازم (Route، Policy، Selector) را جداگانه بسنجد.
+4. با `diagnose vpn tunnel list`، Monitor و Ping Verification کند.
+5. Rollback و Backup را اجرا کند.
 
-درس ۱۸-۰
+### ۲) برگه‌ی طراحی
 
-### ۳) توضیح مفهومی
-
-- Phase 1: interface، remote-gw، PSK، proposal، IKEv2.
-- Phase 2: selector (src/dst)، proposal.
-- Static Route به Tunnel Interface.
-- Policy دوطرفه (LAN->Tunnel، Tunnel->LAN).
-- PSK نمونه؛ رمز واقعی در ریپو نیست.
-
-### ۴) مثال ساده
-
-دو دفتر با Tunnel رمزشده.
-
-### ۵) مثال سازمانی
-
-سازمان: شعبه به مرکز با IPsec و مسیر پشتیبان.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Site-A LAN -> FGT-A ==IPsec== FGT-B -> Site-B LAN
+``` text
+Site A: WAN 203.0.113.1  LAN 192.168.10.0/24   Tunnel if: TO-B
+Site B: WAN 203.0.113.2  LAN 192.168.20.0/24   Tunnel if: TO-A
+IKE: v2  Proposal: aes256gcm-prfsha256  DH 20  PFS on  DPD on-idle  NAT-T: auto
+Phase2 selectors: 0.0.0.0/0 <-> 0.0.0.0/0 (route-based)
+Routing: static 192.168.20.0/24 via TO-B (A) and 192.168.10.0/24 via TO-A (B)
+Policies: LAN->TO-B accept ; TO-B->LAN accept (both sides)
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+اصل: **دو سر آینه‌ی هم** (Proposal، DH، PFS، Lifetime، PSK، Selector).
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+### ۳) پیاده‌سازی
 
-#### روش گرافیکی (GUI)
+**GUI (Site A):**
 
-1. VPN > IPsec Tunnels > Create New > Custom: Name، Remote Gateway Static IP، Interface، PSK.
-2. Phase 1 Proposal: AES256-SHA256؛ IKE v2.
-3. Phase 2: Local/Remote Address Subnet.
-4. Network > Static Routes: مقصد LAN دیگر، Interface = Tunnel.
-5. Policy & Objects: دو Policy.
+1. VPN → IPsec Tunnels → Create New → Custom: Name TO-B.
+2. Network: Remote Gateway = Static IP 203.0.113.2؛ Interface = wan1؛ NAT Traversal = Enable.
+3. Authentication: Method Pre-shared Key؛ IKE Version 2.
+4. Phase 1 Proposal: Encryption AES256GCM؛ DH Group 20.
+5. Phase 2 Selectors: Local/Remote Address = 0.0.0.0/0؛ Phase 2 Proposal AES256GCM؛ Enable PFS (DH 20).
+6. Network → Static Routes → 192.168.20.0/24 → Interface TO-B.
+7. Policy & Objects → Firewall Policy: LAN→TO-B و TO-B→LAN (Accept، NAT خاموش).
 
-#### روش خط فرمان (CLI)
+**CLI (Site A):**
 
-```text
+``` text
 config vpn ipsec phase1-interface
-    edit "TO-SITE-B"
-        set interface "port1"
+    edit "TO-B"
+        set interface "wan1"
         set ike-version 2
         set remote-gw 203.0.113.2
+        set proposal aes256gcm-prfsha256
+        set dhgrp 20
+        set dpd on-idle
+        set nattraversal enable
         set psksecret <PSK-LAB>
-        set proposal aes256-sha256
     next
 end
 config vpn ipsec phase2-interface
-    edit "TO-SITE-B-P2"
-        set phase1name "TO-SITE-B"
-        set proposal aes256-sha256
-        set src-subnet 192.168.10.0 255.255.255.0
-        set dst-subnet 192.168.20.0 255.255.255.0
+    edit "TO-B-P2"
+        set phase1name "TO-B"
+        set proposal aes256gcm
+        set pfs enable
+        set dhgrp 20
+        set src-subnet 0.0.0.0 0.0.0.0
+        set dst-subnet 0.0.0.0 0.0.0.0
     next
 end
 config router static
-    edit 50
+    edit 100
         set dst 192.168.20.0 255.255.255.0
-        set device "TO-SITE-B"
+        set device "TO-B"
+    next
+end
+config firewall policy
+    edit 100
+        set name "LAN-to-B"
+        set srcintf "port2"
+        set dstintf "TO-B"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+    edit 101
+        set name "B-to-LAN"
+        set srcintf "TO-B"
+        set dstintf "port2"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
     next
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+(در تولید `service ALL` و `all` را محدود کنید؛ اینجا برای Lab اولیه است. سینتکس `Unverified`.) Site B آینه است.
 
-- Proposal دو طرف یکی.
-- Selector باید آینه‌ی هم باشد.
-- Policy جدا لازم است.
-- بازگشت: حذف phase2 سپس phase1.
+### ۴) Verification (سه سطح)
 
-### ۸) تست عملکرد
+``` text
+get vpn ipsec tunnel summary
+diagnose vpn ike gateway list
+diagnose vpn tunnel list
+execute ping-options source 192.168.10.1
+execute ping 192.168.20.1
+get router info routing-table details 192.168.20.5
+diagnose debug flow filter addr 192.168.20.5
+```
 
-- Tunnel در Monitor بالا.
+- **IKE SA:** Established.
+- **Child SA:** Bytes encrypt/decrypt هر دو رشد.
+- **داده:** ping کلاینت‌ها؛ Log Policy.
 
-### ۹) عیب‌یابی
+### ۵) مثال‌ها
 
-| بخش | شرح |
+**ساده:** ping 192.168.10.5 → 192.168.20.5 موفق؛ `tunnel list`: Encrypt/Decrypt افزایش.
+
+**متوسط:** فقط یک‌سو: Bytes out می‌رود، in صفر؛ بررسی Policy B→LAN و Route برگشت در B.
+
+**سخت:** Tunnel پس از ۸ ساعت یک لحظه قطع می‌شود: Rekey؛ بررسی Lifetime دو سر (۱۸-۰)، DPD، PFS Group ناهمسان؛ شاهد: Log VPN.
+
+### ۶) Troubleshooting
+
+| علامت | علت |
 |---|---|
-| Symptom | Tunnel بالا ولی ping نه |
-| شواهد/دستور | `diagnose sniffer`؛ Route/Policy |
-| علت | Route/Policy |
-| رفع | افزودن |
+| IKE برقرار نمی‌شود | Reachability، Proposal، PSK، ID |
+| Phase 2 شکست | Selector/PFS/DH |
+| Up ولی ping نه | Route/Policy/NAT-T |
+| ping کوچک OK و بزرگ نه | MTU/MSS |
 
-### ۱۰) تمرین مستقل
+### ۷) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- PSK قوی و منحصر؛ در ریپو نیست.
+- Policy حداقلی؛ ترافیک Tunnel هم Inspect شود.
+- `service ALL` فقط Lab.
 
-**ت1.** چرا Static Route لازم؟ *(پاسخ: 18-2-ت1)*
+### ۸) جمع‌بندی
 
-**ت2.** Selector؟ *(پاسخ: 18-2-ت2)*
+- برگه‌ی طراحی آینه‌ای.
+- Route + Policy + Selector.
+- Verification سه‌سطحی.
+- Backup قبل از تغییر.
 
-### ۱۱) مرور و ارزیابی
+### ۹) تمرین و ارزیابی
 
-**م1.** چرا دو Policy؟ *(پاسخ: 18-2-م1)*
+**ت1.** (ساده) سه چیز لازم برای ترافیک Tunnel Route-based؟ *(پاسخ: 18-2-ت1)*
 
-**م2.** سناریو: فقط یک سو کار می‌کند؛ علت؟ *(پاسخ: 18-2-م2)*
+**ت2.** (متوسط) چرا Policy دوطرفه لازم است؟ *(پاسخ: 18-2-ت2)*
 
-**معیار تسلط:** ساخت Tunnel، Route/Policy، اثبات با Ping و Diagnose.
+**ت3.** (متوسط) Verification سه‌سطحی را بنویسید. *(پاسخ: 18-2-ت3)*
 
-**اشتباهات رایج:** Proposal/Selector/Route.
+**ت4.** (سخت) فقط Bytes out رشد می‌کند؛ فرضیه‌ها و آزمون. *(پاسخ: 18-2-ت4)*
 
-### ۱۲) واژگان و English Corner
+**ت5.** (سخت، طراحی) Policy حداقلی برای دسترسی Site A به یک سرور در Site B. *(پاسخ: 18-2-ت5)*
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Phase1 | IKE Phase 1 | کانال کنترل | VPN |
-| Selector | Phase 2 selector | ترافیک مجاز | VPN |
+**Q1.** Quick quiz (English): Which three elements must be correct for route-based VPN traffic to flow? *(پاسخ: 18-2-Q1)*
 
-| English sentence | ترجمه |
-|---|---|
-| Create a policy for each direction. | برای هر جهت یک Policy بسازید. |
-| Selectors must mirror each other. | Selectorها باید آینه‌ی هم باشند. |
+### ۱۰) اصطلاحات و English Corner
 
-#### کارت Lab — درس 18-2
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | Tunnel S2S |
-| 2 | پیش‌نیاز | درس ۱۸-۰ |
-| 3 | توپولوژی | FGT-A + FGT-B |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | 203.0.113.1/2 |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Tunnel |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping 192.168.20.x |
-| 11 | سناریوی خرابی | Tunnel بالا ولی ping نه |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Reply |
-| 14 | معیار پذیرش | Monitor Up |
-| 15 | مستندات نهایی | `03-ops/s2s-a-b.md` |
-| 16 | Cleanup و بازگردانی | حذف phase2/1 |
+| Route-based | Route-based VPN | VPN مبتنی بر Interface و Route |
+| Mirror | Mirrored config | پیکربندی آینه‌ای |
+| Encrypt/Decrypt counters | SA counters | شمارنده‌ی SA |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Both peers must have mirrored proposals and selectors.* ← هر دو Peer باید Proposal و Selector آینه‌ای داشته باشند.
 
----
+### ۱۱) Lab
+
+**کارت Lab:** Tunnel S2S. **وضعیت:** اجرا نشده. **Verification:** مطابق بخش ۴. **Rollback:** حذف phase2/phase1/Route/Policy. **Evidence:** `03-ops/s2s-a-b.md`.
+
+### ۱۲) منابع
+
+- Fortinet Docs: [config vpn ipsec phase1-interface](https://docs.fortinet.com/document/fortigate/7.0.5/cli-reference/371620/config-vpn-ipsec-phase1-interface)، [phase2-interface](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/371620/config-vpn-ipsec-phase2-interface).
 
 <a id="l-18-3"></a>
 
-## درس 18-3 — عیب‌یابی IPsec: Phase 1/2 و Debug
+## درس 18-3 — عیب‌یابی IPsec با Debug IKE: خواندن پیام‌ها و تصمیم‌گیری لایه‌ای
 
-**فصل 18 - روز 3 · پیش‌نیاز: درس ۱۸-۱ · ۶ ساعت**
+**فصل ۱۸ · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۱۸-۲، ۱۴-۷ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** فرمت Debug نمونه‌ی آموزشی؛ روی Image `Unverified`؛ Lab «اجرا نشده».
 
-با ابزار تشخیص علت را پیدا کنید.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+1. Debug IKE را با Filter محدود اجرا و ایمن خاتمه دهد.
+2. پیام‌های رایج (NO_PROPOSAL_CHOSEN، AUTH_FAILED، TS_UNACCEPTABLE، INVALID_KE_PAYLOAD، timeout) را به علت نگاشت کند.
+3. «Up ولی ترافیک نه» را با شمارنده و Debug Flow تفکیک کند.
+4. RCA بنویسد.
 
-درس ۱۸-۱
+### ۲) روش
 
-### ۳) توضیح مفهومی
-
-- `diagnose vpn ike log filter`.
-- `diagnose debug application ike -1`.
-- `diagnose vpn tunnel list`: Bytes in/out.
-- علائم: Phase 1 down، Phase 2 down، Up بدون ترافیک.
-- Log رویدادهای VPN.
-
-### ۴) مثال ساده
-
-دو دفتر با Tunnel رمزشده.
-
-### ۵) مثال سازمانی
-
-سازمان: شعبه به مرکز با IPsec و مسیر پشتیبان.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Site-A LAN -> FGT-A ==IPsec== FGT-B -> Site-B LAN
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Log & Report > Events > VPN.
-2. Monitor > IPsec Monitor.
-
-#### روش خط فرمان (CLI)
-
-```text
-diagnose vpn ike log filter name TO-SITE-B
+``` text
+diagnose vpn ike log filter clear
+diagnose vpn ike log filter name TO-B
 diagnose debug application ike -1
 diagnose debug enable
+...trigger negotiation (ping across tunnel or clear SA)...
 diagnose debug disable
 diagnose debug reset
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+(Filter با نام Tunnel یا IP Peer؛ بدون Filter حجم زیاد و CPU.)
 
-- Debug را حتماً Disable کنید.
-- `Unverified` روی Image.
+### ۳) نقشه‌ی پیام → علت
 
-### ۸) تست عملکرد
-
-- یک عیب Proposal بسازید و Debug بخوانید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | NO_PROPOSAL_CHOSEN |
-| شواهد/دستور | Debug IKE |
-| علت | Proposal ناهمسان |
-| رفع | تطبیق Proposal |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Debug IKE؟ *(پاسخ: 18-3-ت1)*
-
-**ت2.** پایان Debug؟ *(پاسخ: 18-3-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Bytes in/out؟ *(پاسخ: 18-3-م1)*
-
-**م2.** سناریو: Bytes out بالا و in صفر؛ علت؟ *(پاسخ: 18-3-م2)*
-
-**معیار تسلط:** ساخت Tunnel، Route/Policy، اثبات با Ping و Diagnose.
-
-**اشتباهات رایج:** Proposal/Selector/Route.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
+| پیام | معنی | علت | رفع |
 |---|---|---|---|
-| NO_PROPOSAL_CHOSEN | No proposal chosen | Proposal ناهمسان | IKE |
+| NO_PROPOSAL_CHOSEN | Proposal مشترک نیست | الگوریتم/DH Phase 1 یا Child | تطبیق Proposal |
+| AUTH_FAILED | هویت رد شد | PSK، Peer ID، گواهی | PSK/ID |
+| TS_UNACCEPTABLE | Selectorها ناسازگار | Subnet/Selector | آینه‌کردن Selector |
+| INVALID_KE_PAYLOAD | DH Group متفاوت | DH/PFS | هم‌گروه‌کردن |
+| timeout/بدون پاسخ | Peer جواب نمی‌دهد | UDP 500/4500، Route، ACL | Sniffer/Firewall |
+| SA بالا، ESP صفر | NAT-T/ESP Block | UDP 4500/IP 50 | باز کردن |
 
-| English sentence | ترجمه |
-|---|---|
-| Run debug only briefly. | Debug را فقط کوتاه اجرا کنید. |
+### ۴) مثال‌های حل‌شده
 
-#### کارت Lab — درس 18-3
+**۱) Phase 1:** `negotiation failure... NO_PROPOSAL_CHOSEN`؛ مقایسه‌ی Proposal دو سر: یک سر AES256-SHA256 CBC، دیگری GCM. **رفع:** هماهنگی. **تأیید:** IKE SA Established.
 
-| # | فیلد | محتوا |
+**۲) Phase 2:** Phase 1 OK، سپس `TS_UNACCEPTABLE`: Site A Selector 192.168.10.0/24↔192.168.20.0/24، Site B 0.0.0.0/0. **رفع:** آینه‌کردن (یا هر دو 0.0.0.0/0 در Route-based).
+
+**۳) داده:** Tunnel Up، ping شکست؛ `tunnel list` Bytes out رشد، in صفر. Sniffer WAN سمت B: ESP/UDP 4500 می‌رسد ولی Debug Flow B «Denied policy 0». **رفع:** Policy B→LAN.
+
+**۴) سخت (دو علت هم‌زمان):** Tunnel بعد از Rekey ناپایدار است و دانلود بزرگ قفل می‌شود. علت ۱: Lifetime/DPD؛ علت ۲: MTU. شواهد جدا: Log VPN برای Rekey؛ `ping -f` برای MTU. رفع هر کدام جداگانه و اندازه‌گیری.
+
+### ۵) GUI
+
+Log & Report → Events → VPN؛ Monitor → IPsec Monitor (Bring Up/Down)؛ VPN → IPsec Tunnels (وضعیت).
+
+### ۶) نکات امنیتی
+
+- Debug IKE ممکن است هویت و اطلاعات حساس نشان دهد؛ فایل را حذف کنید.
+- Debug را همیشه Disable/Reset.
+
+### ۷) جمع‌بندی
+
+- Filter + محدودیت زمانی.
+- پیام → لایه → علت.
+- «Up ولی نه» با Counter + Policy/Route.
+- RCA مستند.
+
+### ۸) تمرین و ارزیابی
+
+**ت1.** (ساده) NO_PROPOSAL_CHOSEN یعنی چه؟ *(پاسخ: 18-3-ت1)*
+
+**ت2.** (ساده) چرا Filter در Debug لازم است؟ *(پاسخ: 18-3-ت2)*
+
+**ت3.** (متوسط) TS_UNACCEPTABLE را چگونه رفع می‌کنید؟ *(پاسخ: 18-3-ت3)*
+
+**ت4.** (سخت) Up ولی Bytes in صفر؛ ۴ فرضیه و آزمون. *(پاسخ: 18-3-ت4)*
+
+**ت5.** (سخت) RCA یک‌صفحه‌ای برای مثال ۴ بنویسید. *(پاسخ: 18-3-ت5)*
+
+**Q1.** Quick quiz (English): What does AUTH_FAILED usually indicate? *(پاسخ: 18-3-Q1)*
+
+### ۹) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | عیب Proposal |
-| 2 | پیش‌نیاز | درس ۱۸-۱ |
-| 3 | توپولوژی | FGT-A + FGT-B |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Tunnel |
-| 8 | صورت مسئله | عیب Proposal |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | debug |
-| 11 | سناریوی خرابی | NO_PROPOSAL_CHOSEN |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | RCA |
-| 14 | معیار پذیرش | رفع |
-| 15 | مستندات نهایی | `03-ops/rca-ike.md` |
-| 16 | Cleanup و بازگردانی | Disable debug |
+| TS | Traffic Selector | انتخاب‌گر ترافیک |
+| KE | Key Exchange payload | بخش تبادل کلید |
+| Rekey | SA rekey | تعویض کلید SA |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Filter the IKE debug to the peer under investigation.* ← Debug IKE را روی Peer مورد بررسی فیلتر کنید.
 
----
+### ۱۰) Lab
+
+**کارت Lab:** عیب Proposal/Selector. **وضعیت:** اجرا نشده. **Rollback:** Disable debug. **Evidence:** `03-ops/rca-ike.md`.
+
+### ۱۱) منابع
+
+- Fortinet Docs: FortiOS 7.0 Administration Guide — IPsec VPN troubleshooting؛ RFC 7296 (error notify types).
 
 <a id="l-18-4"></a>
 
@@ -3782,37 +3842,35 @@ UDP 4500.
 
 Selector/Proposal Phase 2.
 
-**18-2-ت1** — چرا Static Route لازم؟
 
-تا ترافیک وارد Tunnel شود.
+### پاسخ‌های بازنویسی درس 18-2
 
-**18-2-ت2** — Selector؟
+**18-2-ت1** — Route به Tunnel، Policy دوطرفه و Selector سازگار.
 
-مشخص‌کننده‌ی ترافیک مجاز.
+**18-2-ت2** — چون ترافیک در هر دو جهت باید اجازه داشته باشد و Stateful فقط جهت شروع را به Session می‌گذارد.
 
-**18-2-م1** — چرا دو Policy؟
+**18-2-ت3** — IKE SA Established؛ Child SA با شمارنده‌ی Encrypt/Decrypt؛ ping/Log داده.
 
-دو جهت.
+**18-2-ت4** — Policy سمت مقابل، Route برگشت، NAT-T/UDP 4500، Selector. شاهد: tunnel list، Sniffer، Debug Flow.
 
-**18-2-م2** — سناریو: فقط یک سو کار می‌کند؛ علت؟
+**18-2-ت5** — Source=Subnet/Host مجاز Site A، Destination=سرور خاص، Service=پورت لازم، Log فعال.
 
-Policy جهت مقابل.
+**18-2-Q1** — A route to the tunnel interface, policies in both directions, and compatible selectors.
 
-**18-3-ت1** — Debug IKE؟
 
-application ike -1.
+### پاسخ‌های بازنویسی درس 18-3
 
-**18-3-ت2** — پایان Debug؟
+**18-3-ت1** — هیچ Proposal مشترکی بین دو سر پیدا نشد.
 
-disable/reset.
+**18-3-ت2** — بدون Filter حجم Debug زیاد و CPU بالا می‌رود و خواندن سخت می‌شود.
 
-**18-3-م1** — چرا Bytes in/out؟
+**18-3-ت3** — Selectorها را آینه یا در Route-based هر دو را 0.0.0.0/0 کنید.
 
-وجود/نبود ترافیک.
+**18-3-ت4** — Policy مقابل، Route برگشت، NAT-T/ESP، Selector؛ آزمون: Debug Flow سمت مقابل، Sniffer، tunnel list.
 
-**18-3-م2** — سناریو: Bytes out بالا و in صفر؛ علت؟
+**18-3-ت5** — عنوان، Timeline، شواهد (Log Rekey، ping -f)، علت‌ها (Lifetime/DPD و MTU)، اقدام، پیشگیری.
 
-سمت مقابل Policy/Route ندارد.
+**18-3-Q1** — Authentication failure: wrong PSK, peer ID mismatch or invalid certificate.
 
 **18-4-ت1** — MSS؟
 

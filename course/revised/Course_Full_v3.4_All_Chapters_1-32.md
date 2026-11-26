@@ -53,7 +53,7 @@
 ---
 <a id="ch1"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.3):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲-۰ (فصل ۲). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.4):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲-۰ (فصل ۲). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 1 — زیرساخت Lab، کشف وضع موجود و تغییر ایمن
 
@@ -5144,7 +5144,7 @@ Symptom, Scope, Hypothesis, Test, Fix and Verify.
 
 <a id="ch4"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.3؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_02_Chapters_04-06.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۵-۰ و ۵-۷ (فصل ۵). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.4؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_02_Chapters_04-06.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۵-۰ و ۵-۷ (فصل ۵). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 4 — Switching II: STP، EtherChannel و امنیت L2
 
@@ -8830,6 +8830,10 @@ IP SLA detect time ~= frequency x consecutive failures
 Example: 5 s x 3 = 15 s
 ```
 
+![شکل: چهار مرحله‌ی Convergence؛ Detect معمولاً غالب است.](../figures/ch05-l7-fig1.svg)
+
+*شکل: چهار مرحله‌ی Convergence؛ Detect معمولاً غالب است.*
+
 ### ۵) مثال حل‌شده
 
 **شرایط:** R1—SW—R2 (سوئیچ لایه ۲ بین آن‌ها)، OSPF Area 0، Hello 10/Dead 40. پورت سوئیچ سمت R2 کابلش کشیده می‌شود. R1 همچنان Up می‌بیند.
@@ -11073,7 +11077,7 @@ Lab A و سوییچ‌ها؛ OSPF؛ آماده‌بودن Image CSR/IOSv برا�
 
 <a id="ch7"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.3؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_03_Chapters_07-09.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۹-۰ و ۹-۷ (فصل ۹). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.4؛ شامل دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_03_Chapters_07-09.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۹-۰ و ۹-۷ (فصل ۹). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 7 — IP Services: DHCP، DNS، NTP، NAT، ACL، Syslog و QoS
 
@@ -15715,6 +15719,10 @@ Router(config-router)# neighbor 203.0.113.1 prefix-list TO-ISP out
 
 > **توجه:** رمزها در مثال‌ها فرضی‌اند و در ریپو ذخیره نمی‌شوند.
 
+![شکل: ترتیب انتخاب بهترین مسیر BGP؛ اولین مرحله‌ی تعیین‌کننده برنده است.](../figures/ch09-l7-fig1.svg)
+
+*شکل: ترتیب انتخاب بهترین مسیر BGP؛ اولین مرحله‌ی تعیین‌کننده برنده است.*
+
 ### ۵) مثال حل‌شده (سناریوی Route Leak)
 
 سازمان ما (AS 65010) به ISP-A و ISP-B وصل است. بدون Prefix-List خروجی، همه‌ی مسیرهایی که از ISP-A یاد می‌گیریم به ISP-B هم اعلام می‌شود (به‌شرطی که پیش‌فرض‌های BGP و Policy آن را بدهند).
@@ -16133,7 +16141,7 @@ BGP عملی روی دو vIOS؛ آماده‌بودن Image دوم برای ISP-
 
 > **نسخه‌ی اصلاح‌شده (v3.1، دسته B):** این فایل نسخه‌ی توسعه‌یافته‌ی `course/Course_Part_04_Chapters_10-12.md` است؛ فایل اصلی حفظ شده است. درس‌های افزوده: ۱۰-۸ و ۱۰-۹ (فصل ۱۰). پاسخ‌های آن‌ها در «پاسخ‌های فصل» همان فصل است.
 
-> **نسخه‌ی اصلاح‌شده (v3.3):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۰-۸، ۱۰-۹، ۱۱-۰، ۱۱-۷، ۱۲-۰، ۱۲-۸، ۱۲-۹ (دسته‌های B و A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.4):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۰-۸، ۱۰-۹، ۱۱-۰، ۱۱-۷، ۱۲-۰، ۱۲-۸، ۱۲-۹ (دسته‌های B و A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 10 — Redistribution، ECMP، PBR، VRF-lite و Asymmetric Routing
 
@@ -20983,7 +20991,7 @@ Console + بازگرداندن Route.
 
 <a id="ch13"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.3):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۳-۷، ۱۴-۷ (دسته A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.4):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۳-۷، ۱۴-۷ (دسته A). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 13 — FortiGate II: Policy، Session، NAT، VIP، IP Pool و Central NAT (تک‌فایروالی کامل)
 
@@ -23523,6 +23531,10 @@ Internet --- [FW-EDGE] --- DMZ switch --- [FW-INT] --- Internal LAN
 
 Management VLAN جدا، Admin روی هر دو فقط از مدیریت، Syslog مرکزی از هر دو، تغییرات هماهنگ (Change مشترک)، Backup هر دو.
 
+![شکل: دوفایروال با DMZ.](../figures/ch15-l0-fig1.svg)
+
+*شکل: دوفایروال با DMZ.*
+
 ### ۵) مثال حل‌شده
 
 **نیاز:** وب‌سایت عمومی، API داخلی، DB. طراحی: Edge: VIP 203.0.113.50:443→10.10.10.20 (DMZ). Internal: DMZ→10.20.20.5:8080 (App)؛ App→DB فقط داخل Internal. Policy Matrix:
@@ -24727,7 +24739,7 @@ Lab معماری ۲ ساخته و Backup؛ لایسنس UTM (Needs-License) بر
 
 <a id="ch16"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.3):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۶-۰، ۱۶-۷، ۱۸-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.4):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۱۶-۰، ۱۶-۷، ۱۸-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 16 — UTM: آنتی‌ویروس، IPS، Application Control، Web Filter و SSL Inspection
 
@@ -25113,57 +25125,83 @@ get system fortiguard-service status
 
 <a id="l-16-2"></a>
 
-## درس 16-2 — Web Filter و DNS Filter (Static و Category)
+## درس 16-2 — Web Filter و DNS Filter: Static URL، Category، FQDN و عیب‌یابی HTTPS
 
-**فصل 16 - روز 2 · پیش‌نیاز: درس ۱۶-۱ · ۶ ساعت**
+**فصل ۱۶ · بازنویسی عمیق (جایگزین نسخه‌ی فشرده) · پیش‌نیاز: ۱۶-۰، ۱۶-۱، ۱۲-۰ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (FortiOS 7.0.3):** Static URL Filter بدون لایسنس FortiGuard کار می‌کند؛ Category/Rating **Needs-License**. سینتکس `Unverified` روی Image. Lab «اجرا نشده».
 
-کنترل دسترسی وب: Category (نیاز لایسنس) یا Static URL/FQDN (بدون لایسنس).
+### ۱) هدف آموزشی
+
+دانشجو بتواند:
+
+1. توضیح دهد Web Filter چگونه تصمیم می‌گیرد (Static URL، Category، Safe Search، Quota) و ترتیب ارزیابی چیست.
+2. تفاوت **FQDN Filter** (در Policy/Address) با **Web Filter Profile** را بگوید.
+3. بداند در HTTPS بدون Deep Inspection چه چیزی دیده می‌شود (SNI) و چه نه (مسیر URL).
+4. **DNS Filter** را با Web Filter مقایسه و محدودیت‌اش (DoH) را بشناسد.
+5. یک Profile بسازد، به Policy وصل کند و **با آزمون مثبت/منفی و Log** ثابت کند کار می‌کند.
 
 ### ۲) پیش‌نیازها
 
-درس ۱۶-۱
+Flow/Proxy و TLS (۱۶-۰)، Packet Flow (۱۲-۰)، Policy (فصل ۱۳).
 
-### ۳) توضیح مفهومی
+### ۳) مفهوم پایه
 
-- Static URL Filter: `simple`/`wildcard`/`regex` با action `block`/`allow`.
-- Category Filter: نیاز به Rating (Needs-License).
-- DNS Filter: بلاک بر اساس دامنه/Category.
-- ترتیب: Static URL پیش از Category.
-- Log Web Filter: category، action، URL.
+دسترسی وب مهم‌ترین مسیر ورود بدافزار و نشت داده است. Web Filter می‌پرسد: «این مقصد برای این کاربر مجاز است؟». سه منبع تصمیم: (۱) فهرست دستی شما (Static)، (۲) دسته‌بندی FortiGuard (Category؛ لایسنس)، (۳) رفتار (Quota، Safe Search).
 
-### ۴) مثال ساده
+### ۴) توضیح عمیق فنی
 
-یک Profile ساده روی Policy کاربران.
+#### ۴-۱) ترتیب ارزیابی (مفهومی)
 
-### ۵) مثال سازمانی
-
-سازمان: Profile استاندارد برای هر گروه (کاربران، سرورها، مهمان).
-
-### ۶) تصویر و توپولوژی
-
-```text
-Policy -> [Profile: AV/IPS/Web/App/SSL] -> accept/block
+``` text
+1. Static URL filter entries (first match: allow / block / monitor / exempt)
+2. FortiGuard category filter (needs rating service)
+3. Other options (safe search, quota, content checks)
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+اگر Static URL «Exempt» بزنید، بقیه‌ی بررسی‌ها برای آن مقصد رد می‌شوند؛ پس Exempt را با احتیاط استفاده کنید.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۴-۲) انواع ورودی Static URL
 
-#### روش گرافیکی (GUI)
+- `simple`: مطابقت ساده‌ی دامنه/URL.
+- `wildcard`: الگوی `*.example.com`.
+- `regex`: عبارت منظم (قدرت زیاد، خطای زیاد، CPU بیشتر).
+- Action: `allow`, `block`, `monitor`, `exempt`.
 
-1. Security Profiles > Web Filter > Static URL Filter فعال > Create New.
-2. URL badsite.example، Type Simple، Action Block.
-3. Policy > Web Filter = WF-STD.
-4. Log & Report > Web Filter.
+#### ۴-۳) HTTPS: چه چیزی دیده می‌شود؟
 
-#### روش خط فرمان (CLI)
+| حالت | دید | نتیجه |
+|---|---|---|
+| HTTP | URL کامل | فیلتر کامل |
+| HTTPS + Certificate Inspection | دامنه (SNI/گواهی) | فیلتر بر اساس دامنه/Category؛ نه مسیر |
+| HTTPS + Deep Inspection | URL کامل پس از رمزگشایی | فیلتر کامل؛ نیاز CA (۱۶-۰) |
 
-```text
+مثال: بلاک `example.com/private` فقط با Deep Inspection ممکن است؛ بلاک `example.com` با SNI ممکن است.
+
+#### ۴-۴) DNS Filter
+
+فایروال Query را قبل از اتصال کنترل می‌کند: دامنه‌ی مخرب → NXDOMAIN/Redirect به Block Page. نقاط ضعف: **DoH/DoT** (DNS رمز) و IP مستقیم؛ راه‌حل: Application Control برای DoH + Deep Inspection + فقط DNS داخلی (Policy: DNS فقط به سرور شما).
+
+#### ۴-۵) Block Page و Log
+
+Block Page (Replacement Message) کاربر را مطلع می‌کند. Log: `action=blocked`، `catdesc`/`url`. برای عیب‌یابی، **Log Web Filter** اولین شاهد است.
+
+### ۵) پیاده‌سازی: GUI و CLI
+
+**GUI:**
+
+1. Security Profiles → Web Filter → Create New (Name: WF-STD).
+2. FortiGuard Category Based Filter (اگر لایسنس) یا خاموش.
+3. Static URL Filter: Enable → Create New: URL `badsite.example`، Type Simple، Action Block.
+4. Policy & Objects → Firewall Policy → Users-to-Internet → Security Profiles: Web Filter = WF-STD؛ SSL Inspection = certificate-inspection.
+5. Log & Report → Web Filter.
+
+**CLI:**
+
+``` text
 config webfilter urlfilter
     edit 1
-        set name "URLF-STATIC"
+        set name "URLF-LAB"
         config entries
             edit 1
                 set url "badsite.example"
@@ -25180,491 +25218,520 @@ config webfilter profile
         end
     next
 end
+config firewall policy
+    edit 10
+        set utm-status enable
+        set webfilter-profile "WF-STD"
+        set ssl-ssh-profile "certificate-inspection"
+    next
+end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+(سینتکس `Unverified` روی 7.0.3؛ فیلدهای `utm-status` و ساختار `config web` را با CLI Reference تطبیق دهید.)
 
-- `type simple`: مطابقت ساده‌ی دامنه.
-- Profile به Policy وصل می‌شود (درس قبل).
-- راستی‌آزمایی: مرورگر Block Page؛ Log.
-- بازگشت: حذف ورودی/Profile.
+### ۶) مثال‌ها
 
-### ۸) تست عملکرد
+**ساده:** بلاک `badsite.example`. کلاینت: `curl -I http://badsite.example` → Block Page؛ `curl -I http://good.example` → OK.
 
-- دسترسی به badsite.example مسدود و دیگری مجاز.
+**متوسط:** بلاک فقط `social.example/games` با HTTPS: با Certificate Inspection ممکن نیست؛ دو راه: Deep Inspection با Exemption مناسب، یا بلاک کل دامنه برای ساعات کاری با Schedule.
 
-### ۹) عیب‌یابی
+**سخت (تحلیل خطا):** URL بلاک شده ولی کاربر باز می‌کند. فرضیه‌ها به ترتیب: (۱) Profile به Policy وصل نیست؛ (۲) Policy دیگری بالاتر Match شده؛ (۳) HTTPS و ورودی نیازمند مسیر کامل؛ (۴) QUIC دور می‌زند؛ (۵) DoH/IP مستقیم؛ (۶) Exempt قبلی. شواهد: Debug Flow (Policy ID)، Log Web Filter، Capture (UDP 443).
 
-| بخش | شرح |
-|---|---|
-| Symptom | Block کار نمی‌کند |
-| شواهد/دستور | Log نیست؛ HTTPS بدون SSL Inspection |
-| علت | HTTPS رمز است |
-| رفع | فعال‌کردن SSL Inspection یا FQDN در Policy |
+### ۷) Troubleshooting
 
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Static URL نیاز لایسنس دارد؟ *(پاسخ: 16-2-ت1)*
-
-**ت2.** چرا HTTPS مشکل می‌سازد؟ *(پاسخ: 16-2-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Static URL را ابتدا امتحان می‌کنیم؟ *(پاسخ: 16-2-م1)*
-
-**م2.** سناریو: دامنه‌ی HTTPS مسدود نشد؛ چرا؟ *(پاسخ: 16-2-م2)*
-
-**معیار تسلط:** ساخت Profile، اتصال به Policy، اثبات با Log/تست.
-
-**اشتباهات رایج:** فعال‌کردن بی‌برنامه؛ نادیده‌گرفتن لایسنس.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| URL filter | Web URL filter | فیلتر URL | Web |
-| Category | Web category | دسته‌ی وب | Needs-License |
-| SNI | Server Name Indication | نام سرور در TLS | فیلتر HTTPS |
-
-| English sentence | ترجمه |
-|---|---|
-| Static URL filters work without a subscription. | فیلترهای URL ایستا بدون اشتراک کار می‌کنند. |
-| HTTPS needs SSL inspection for full filtering. | HTTPS برای فیلتر کامل به SSL Inspection نیاز دارد. |
-
-#### کارت Lab — درس 16-2
-
-| # | فیلد | محتوا |
+| علامت | شاهد | علت |
 |---|---|---|
-| 1 | عنوان و هدف | Static URL Filter |
-| 2 | پیش‌نیاز | درس ۱۶-۱ |
-| 3 | توپولوژی | FGT + Client |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Policy v1 |
-| 8 | صورت مسئله | Block یک دامنه |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | مرورگر |
-| 11 | سناریوی خرابی | Block کار نمی‌کند |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Block Page |
-| 14 | معیار پذیرش | Log |
-| 15 | مستندات نهایی | `03-ops/webfilter-static.md` |
-| 16 | Cleanup و بازگردانی | حذف Profile |
+| Block نمی‌شود | Log خالی | Profile وصل نیست/Policy دیگر |
+| HTTPS مسیر بلاک نمی‌شود | Log فقط دامنه | Certificate Inspection |
+| Block Page خطای گواهی می‌دهد | مرورگر | CA نصب نیست |
+| QUIC دور می‌زند | Capture UDP 443 | بلاک QUIC |
+| Category کار نمی‌کند | Log: rating error | لایسنس/ارتباط FortiGuard |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۸) نکات امنیتی
 
----
+- Exempt/Allow را محدود و مستند کنید.
+- Safe Search و بلاک Proxy/Anonymizer Category (در صورت لایسنس).
+- Web Filter جایگزین Patch/EDR نیست.
+
+### ۹) جمع‌بندی
+
+- ترتیب: Static → Category → سایر؛ Exempt همه چیز بعدی را رد می‌کند.
+- HTTPS بدون Deep فقط دامنه؛ با Deep مسیر کامل.
+- DNS Filter قبل از اتصال؛ ضعف DoH.
+- آزمون مثبت/منفی و Log.
+
+### ۱۰) تمرین و ارزیابی
+
+**ت1.** (ساده) Static URL با Category چه فرقی دارد؟ *(پاسخ: 16-2-ت1)*
+
+**ت2.** (ساده) Exempt چه می‌کند؟ *(پاسخ: 16-2-ت2)*
+
+**ت3.** (متوسط) چرا بلاک مسیر در HTTPS نیاز به Deep دارد؟ *(پاسخ: 16-2-ت3)*
+
+**ت4.** (متوسط) DNS Filter چه نقطه‌ضعفی دارد؟ *(پاسخ: 16-2-ت4)*
+
+**ت5.** (سخت) فرضیه‌های «URL بلاک‌شده باز می‌شود» را به ترتیب و با شاهد بنویسید. *(پاسخ: 16-2-ت5)*
+
+**ت6.** (سخت، طراحی) سیاست وب برای ۳ گروه (کارمند، مهمان، سرور) طراحی کنید. *(پاسخ: 16-2-ت6)*
+
+**Q1.** Quick quiz (English): What does an exempt action in a static URL filter do? *(پاسخ: 16-2-Q1)*
+
+### ۱۱) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Static URL | Static URL filter | فیلتر دستی URL |
+| FQDN | Fully Qualified Domain Name | نام کامل دامنه |
+| DoH | DNS over HTTPS | DNS رمزشده |
+| Safe Search | Safe search enforcement | اجبار جست‌وجوی امن |
+
+- *HTTPS without deep inspection reveals only the domain name.* ← HTTPS بدون Deep فقط نام دامنه را نشان می‌دهد.
+
+### ۱۲) Lab
+
+**کارت Lab:** Static URL Filter. **هدف:** بلاک یک دامنه و اثبات با Log. **توپولوژی:** Client → FGT → Web Lab. **وضعیت:** اجرا نشده. **مراحل:** مطابق بخش ۵. **Verification:** مثبت/منفی؛ Log. **Rollback:** حذف Profile از Policy. **Evidence:** `03-ops/webfilter-static.md`.
+
+### ۱۳) منابع
+
+- Fortinet Docs: FortiOS 7.0 Administration Guide — Web filter، DNS filter؛ [Inspection modes](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/721410/inspection-modes).
 
 <a id="l-16-3"></a>
 
-## درس 16-3 — Antivirus و File Filter
+## درس 16-3 — Antivirus و File Filter: سازوکار، حالت‌ها و تست امن
 
-**فصل 16 - روز 3 · پیش‌نیاز: درس ۱۶-۲ · ۶ ساعت**
+**فصل ۱۶ · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰، ۱۶-۲ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (FortiOS 7.0.3):** AV Signature **Needs-License**؛ File Filter بدون لایسنس. گزینه‌های Flow/Proxy از جدول مقایسه‌ی رسمی ([Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison)). Lab «اجرا نشده».
 
-AV فایل‌های آلوده را در HTTP/FTP/SMTP... بررسی می‌کند؛ File Filter بر اساس نوع/پسوند.
+### ۱) هدف آموزشی
+
+1. بداند AV چه چیزی را کشف می‌کند (Signature، Heuristic) و چه چیزی را نه (Zero-day، فایل رمزدار، ترافیک رمز بدون Deep).
+2. تفاوت AV در Flow و Proxy را بداند و انتخاب کند.
+3. **File Filter** را به‌عنوان لایه‌ی مکمل بدون لایسنس طراحی کند.
+4. با **فایل EICAR** تست امن انجام دهد و نتیجه‌ی واقعی ثبت کند.
+5. FP/FN و اثر Performance را ارزیابی کند.
 
 ### ۲) پیش‌نیازها
 
-درس ۱۶-۲
+۱۶-۰ (Flow/Proxy، TLS)، ۱۶-۷ (FP/FN).
 
-### ۳) توضیح مفهومی
+### ۳) مفهوم پایه
 
-- AV: نیازمند Signature DB (FortiGuard).
-- **File Filter:** بلاک بر اساس نوع/پسوند بدون لایسنس.
-- تست استاندارد: فایل EICAR (فایل تست بی‌خطر) — نتیجه در Lab ایزوله `Unverified`.
-- حالت Flow در برابر Proxy برای AV.
-- Log: virus, action.
+بدافزار معمولاً به‌صورت فایل از وب/ایمیل/اشتراک می‌رسد. AV فایل را (یا جریان را) با پایگاه Signature می‌سنجد. اما هر امضا از گذشته می‌آید؛ بدافزار جدید یا رمزدار را نمی‌گیرد. پس AV **یک لایه** است، نه راه‌حل کامل.
 
-### ۴) مثال ساده
+### ۴) توضیح عمیق فنی
 
-یک Profile ساده روی Policy کاربران.
+#### ۴-۱) AV چگونه کار می‌کند
 
-### ۵) مثال سازمانی
+- **Flow-based:** بسته‌ها در جریان اسکن می‌شوند؛ سریع؛ بدون بازسازی کامل فایل؛ گزینه‌ها کمتر.
+- **Proxy-based:** فایل کامل Buffer می‌شود و پس از اسکن به کاربر می‌رسد؛ دقیق‌تر و گزینه‌های بیشتر (مثلاً محدودیت اندازه‌ی Buffer، Content Disarm بسته به نسخه)؛ تأخیر و مصرف حافظه بیشتر.
+- سقف اندازه‌ی فایل: فایل بزرگ‌تر از Threshold اسکن نمی‌شود (Pass یا Block طبق تنظیم) — **این یک نقطه‌ی کور است**.
 
-سازمان: Profile استاندارد برای هر گروه (کاربران، سرورها، مهمان).
+#### ۴-۲) چه چیزی دیده نمی‌شود
 
-### ۶) تصویر و توپولوژی
+| مورد | علت |
+|---|---|
+| Zero-day | Signature ندارد (نیاز Sandbox) |
+| فایل رمزدار (zip با رمز) | محتوا قابل اسکن نیست |
+| HTTPS بدون Deep | محتوا رمز است |
+| فایل بزرگ‌تر از سقف | اسکن نمی‌شود |
+| پروتکل غیراسکن‌شده | AV روی پروتکل‌های انتخاب‌شده کار می‌کند |
 
-```text
-Policy -> [Profile: AV/IPS/Web/App/SSL] -> accept/block
-```
+#### ۴-۳) File Filter
 
-### ۷) پیکربندی (GUI و CLI)
+کنترل بر اساس **نوع/پسوند** (و Magic bytes در صورت پشتیبانی) و جهت (Upload/Download). مثال: بلاک `exe, scr, js, vbs` از اینترنت؛ بلاک فایل رمزدار. مزیت: بدون لایسنس، سبک؛ ضعف: پسوند جعل‌شدنی، محتوای مخرب در نوع مجاز.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۴-۴) EICAR
 
-#### روش گرافیکی (GUI)
+فایل متنی استاندارد بی‌خطر که همه‌ی AVها به‌عنوان «ویروس تست» می‌شناسند؛ برای آزمون زنجیره (Policy→Profile→Inspection→Log). **نتیجه‌ی آزمون باید ثبت شود؛ اگر Signature در Lab نیست، «اجرا نشده/ناموفق» بنویسید، نه «کار می‌کند».**
 
-1. Security Profiles > AntiVirus > Create New؛ Inspect HTTP/…؛ Action Block.
-2. Security Profiles > File Filter: پسوند exe را بلاک کنید.
-3. Policy: AV و File Filter را فعال.
-4. Log & Report > AntiVirus.
+### ۵) پیاده‌سازی: GUI و CLI
 
-#### روش خط فرمان (CLI)
+**GUI:**
 
-```text
+1. Security Profiles → AntiVirus → Create New (AV-STD): Inspected Protocols: HTTP/FTP/SMTP/... ؛ Action Block.
+2. Security Profiles → File Filter → Create New (FF-STD): Rule: File types exe/script؛ Direction Incoming؛ Action Block.
+3. Policy: AntiVirus = AV-STD؛ File Filter = FF-STD؛ SSL Inspection (مناسب).
+4. Log & Report → AntiVirus / Security Events.
+
+**CLI (ساختار؛ `Unverified`):**
+
+``` text
 config antivirus profile
     edit "AV-STD"
+        set comment "lab"
     next
 end
-! file filter (no subscription): see GUI path
+config file-filter profile
+    edit "FF-STD"
+        config rules
+            edit "block-exe"
+                set protocol http ftp
+                set action block
+                set file-type "exe"
+            next
+        end
+    next
+end
+config firewall policy
+    edit 10
+        set av-profile "AV-STD"
+        set file-filter-profile "FF-STD"
+    next
+end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۶) مثال‌ها
 
-- جزئیات Option برای 7.0.3 را در GUI مقایسه کنید (`Unverified`).
-- راستی‌آزمایی: دانلود EICAR مسدود/Log.
-- بازگشت: حذف Profile.
+**ساده:** دانلود EICAR از وب: Block + Log AV.
 
-### ۸) تست عملکرد
+**متوسط:** `setup.exe` بلاک می‌شود با File Filter در حالی‌که AV لایسنس ندارد؛ درس: لایه‌ی بدون لایسنس مفید است.
 
-- دانلود EICAR و ثبت نتیجه واقعی.
+**سخت:** مهاجم zip رمزدار می‌فرستد؛ AV نمی‌بیند؛ File Filter رمزدار را بلاک می‌کند اگر پشتیبانی شود؛ سیاست: بلاک آرشیو رمزدار از منبع ناشناس + آموزش + Sandbox (در صورت لایسنس). **FN را بپذیرید و مستند کنید.**
 
-### ۹) عیب‌یابی
+### ۷) Troubleshooting
 
-| بخش | شرح |
+| علامت | علت |
 |---|---|
-| Symptom | EICAR رد می‌شود |
-| شواهد/دستور | Log AV نیست |
-| علت | DB/لایسنس نیست |
-| رفع | ثبت محدودیت؛ استفاده از File Filter |
+| EICAR رد می‌شود | Profile وصل نیست/لایسنس/DB نیست/HTTPS بدون Deep |
+| فایل بزرگ اسکن نمی‌شود | سقف اندازه |
+| کندی دانلود | Proxy Buffer |
+| FP | Signature/استثنا |
 
-### ۱۰) تمرین مستقل
+### ۸) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- EICAR فقط برای تست؛ بدافزار واقعی ممنوع.
+- Exception محدود.
+- ترکیب با Patch/EDR.
 
-**ت1.** EICAR چیست؟ *(پاسخ: 16-3-ت1)*
+### ۹) جمع‌بندی
 
-**ت2.** File Filter لایسنس دارد؟ *(پاسخ: 16-3-ت2)*
+- AV Signature؛ Zero-day و رمزدار نه.
+- Flow سریع/Proxy دقیق.
+- File Filter لایه‌ی بدون لایسنس.
+- نتیجه‌ی واقعی ثبت شود.
 
-### ۱۱) مرور و ارزیابی
+### ۱۰) تمرین و ارزیابی
 
-**م1.** چرا نتیجه‌ی AV را ثبت می‌کنیم؟ *(پاسخ: 16-3-م1)*
+**ت1.** (ساده) EICAR چیست؟ *(پاسخ: 16-3-ت1)*
 
-**م2.** سناریو: exe بلاک نمی‌شود؛ چرا؟ *(پاسخ: 16-3-م2)*
+**ت2.** (ساده) AV چه چیزی را نمی‌بیند؟ *(پاسخ: 16-3-ت2)*
 
-**معیار تسلط:** ساخت Profile، اتصال به Policy، اثبات با Log/تست.
+**ت3.** (متوسط) تفاوت AV در Flow و Proxy؟ *(پاسخ: 16-3-ت3)*
 
-**اشتباهات رایج:** فعال‌کردن بی‌برنامه؛ نادیده‌گرفتن لایسنس.
+**ت4.** (متوسط) چرا سقف اندازه‌ی فایل نقطه‌ی کور است؟ *(پاسخ: 16-3-ت4)*
 
-### ۱۲) واژگان و English Corner
+**ت5.** (سخت) سیاست دفاع از zip رمزدار را طراحی کنید. *(پاسخ: 16-3-ت5)*
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| AV | Antivirus | ضدویروس | UTM |
-| EICAR | EICAR test file | فایل تست | تست |
-| File filter | File filter | فیلتر نوع فایل | UTM |
+**Q1.** Quick quiz (English): Why can't antivirus inspect a password-protected archive? *(پاسخ: 16-3-Q1)*
 
-| English sentence | ترجمه |
-|---|---|
-| Use the EICAR file to test antivirus safely. | برای تست ایمن ضدویروس از فایل EICAR استفاده کنید. |
-| A file filter blocks by file type. | File Filter بر اساس نوع فایل مسدود می‌کند. |
+### ۱۱) اصطلاحات و English Corner
 
-#### کارت Lab — درس 16-3
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | AV/File Filter |
-| 2 | پیش‌نیاز | درس ۱۶-۲ |
-| 3 | توپولوژی | FGT + Client + Web |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Policy v1 |
-| 8 | صورت مسئله | EICAR و exe |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | دانلود |
-| 11 | سناریوی خرابی | EICAR رد می‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Block/نتیجه ثبت |
-| 14 | معیار پذیرش | نتیجه‌ی واقعی ثبت |
-| 15 | مستندات نهایی | `03-ops/av-notes.md` |
-| 16 | Cleanup و بازگردانی | حذف Profile |
+| AV | Antivirus | ضدویروس |
+| Heuristic | Heuristic detection | تشخیص رفتاری/الگویی |
+| Sandbox | Sandbox | محیط اجرای ایزوله |
+| Magic bytes | File magic bytes | امضای ابتدای فایل |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Antivirus is one layer, not a complete defense.* ← ضدویروس یک لایه است، نه دفاع کامل.
 
----
+### ۱۲) Lab
+
+**کارت Lab:** AV/File Filter. **هدف:** EICAR و بلاک exe. **وضعیت:** اجرا نشده. **Verification:** Log AV/File Filter. **Rollback:** حذف Profile. **Evidence:** `03-ops/av-notes.md` (نتیجه‌ی واقعی).
+
+### ۱۳) منابع
+
+- Fortinet Docs: [Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison)؛ EICAR (eicar.org).
 
 <a id="l-16-4"></a>
 
-## درس 16-4 — IPS، DoS و Application Control
+## درس 16-4 — IPS، DoS Policy و Application Control: سازوکار، تنظیم و FP
 
-**فصل 16 - روز 4 · پیش‌نیاز: درس ۱۶-۳ · ۶ ساعت**
+**فصل ۱۶ · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰، ۱۶-۷، ۱۱-۷ · ≈ ۷ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (FortiOS 7.0.3):** Signature IPS و DB برنامه **Needs-License**؛ DoS Policy و Custom Signature بدون لایسنس. سینتکس `Unverified`. تست حمله فقط در Lab ایزوله و مجاز. Lab «اجرا نشده».
 
-IPS حملات شناخته‌شده را با Signature می‌گیرد؛ DoS Policy جلوی سیل را؛ Application Control برنامه‌ها را می‌شناسد.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+1. IPS (Signature، Severity، Target، Action) و تفاوت **Monitor/Block** را توضیح دهد.
+2. **DoS Policy** (Anomaly: SYN Flood، UDP Flood، Port Scan، Session Limit) را به Threshold درست تبدیل کند.
+3. **Application Control** را (Category، Application، Action، QUIC/DoH) به کار ببرد.
+4. اثر Performance و FP را بسنجد و **Exception دقیق** بنویسد.
+5. در Lab با ابزار مجاز تست و نتیجه را ثبت کند.
 
-درس ۱۶-۳
+### ۲) مفهوم پایه
 
-### ۳) توضیح مفهومی
+- **IPS:** الگوی اکسپلویت را در ترافیک می‌شناسد (مثل «آنتی‌ویروس برای حمله»).
+- **DoS Policy:** حجم/نرخ غیرعادی را می‌گیرد، بدون نیاز به شناخت محتوا.
+- **Application Control:** می‌پرسد «این چه برنامه‌ای است؟» حتی روی پورت غیرمعمول.
 
-- IPS: Sensor با Signatureهای FortiGuard (Needs-License) و **Custom Signature** محلی.
-- **DoS Policy:** آستانه‌ی Session/Packet روی Interface (بدون لایسنس).
-- Application Control: DB App (Needs-License)؛ بدون آن فقط Port/Protocol.
-- Action: monitor/block/reset.
-- اثر Performance: IPS روی CPU.
+### ۳) توضیح عمیق فنی
 
-### ۴) مثال ساده
+#### ۳-۱) IPS Sensor
 
-یک Profile ساده روی Policy کاربران.
+Sensor مجموعه‌ای از Filter/Signature است: انتخاب بر اساس **Severity** (Critical تا Info)، **Target** (Server/Client)، **OS**، **Protocol**. Action: `pass`, `monitor`, `block`, `reset`, `quarantine`. اصول: ابتدا Monitor؛ برای سرور مشخص (Target=Server) Signatureهای مرتبط؛ Severity High/Critical Block؛ کم‌اهمیت‌ها Monitor. **Virtual Patching:** Signature آسیب‌پذیری را تا Patch سرور بلاک می‌کند.
 
-### ۵) مثال سازمانی
+#### ۳-۲) DoS Policy
 
-سازمان: Profile استاندارد برای هر گروه (کاربران، سرورها، مهمان).
-
-### ۶) تصویر و توپولوژی
-
-```text
-Policy -> [Profile: AV/IPS/Web/App/SSL] -> accept/block
+``` text
+Threshold examples (tune from baseline, not copied):
+tcp_syn_flood   : 2000 pkts/s per source
+udp_flood       : 2000 pkts/s
+ip_src_session  : 5000 sessions per source
+tcp_port_scan   : 1000 pkts/s
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+اعداد را از **Baseline** (۲۷-۰) بسازید؛ Threshold کم = FP برای کاربران واقعی؛ زیاد = ناکارآمد. DoS Policy **قبل از Firewall Policy** (در مسیر سریع Ingress) اعمال می‌شود و ارزان است؛ روی Interface WAN.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۳-۳) Application Control
 
-#### روش گرافیکی (GUI)
+Signature برنامه‌ها (Teams، Dropbox، BitTorrent، DoH ...). Action: Allow/Monitor/Block/Quarantine. نکات: (۱) **QUIC:** بلاک تا ترافیک به TCP/TLS برگردد و Inspection ممکن شود. (۲) **DoH:** بلاک برنامه‌ی DoH یا Policy DNS فقط به سرور داخلی. (۳) Deep Inspection برای شناسایی دقیق‌تر در HTTPS. (۴) بدون لایسنس: Port-based/Service-based.
 
-1. Policy & Objects > DoS Policy > Create New: Interface port1، All.
-2. Anomalies: آستانه‌ی SYN Flood را تنظیم.
-3. Security Profiles > Intrusion Prevention: Sensor با Severity High/Critical (اگر لایسنس).
-4. Security Profiles > Application Control.
+#### ۳-۴) Performance
 
-#### روش خط فرمان (CLI)
+IPS/App بازرسی محتوایی است: CPU↑ و Offload↓ (۱۲-۹). راه: Sensor انتخابی روی Policyهای مهم؛ DoS ارزان‌تر؛ Baseline قبل/بعد.
 
-```text
+### ۴) پیاده‌سازی: GUI و CLI
+
+**GUI:** Policy & Objects → DoS Policy → Create New (Incoming: port1؛ Source/Dest: all؛ Service ALL؛ Anomaly: Threshold). Security Profiles → Intrusion Prevention → Create New (Filters: Severity High, Critical؛ Action Block). Security Profiles → Application Control → Create New (Category Proxy/P2P: Block؛ QUIC: Block). Policy: فعال‌سازی هر دو.
+
+**CLI (`Unverified`):**
+
+``` text
 config firewall DoS-policy
     edit 1
-        set name "DOS-WAN"
         set interface "port1"
         set srcaddr "all"
         set dstaddr "all"
         set service "ALL"
+        config anomaly
+            edit "tcp_syn_flood"
+                set status enable
+                set threshold 2000
+                set action block
+            next
+        end
     next
 end
-! thresholds under config anomaly (see GUI)
+config ips sensor
+    edit "IPS-LAB"
+        config entries
+            edit 1
+                set severity high critical
+                set action block
+            next
+        end
+    next
+end
+config application list
+    edit "APP-LAB"
+        config entries
+            edit 1
+                set category 2
+                set action block
+            next
+        end
+    next
+end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۵) مثال‌ها
 
-- `DoS-policy` روی WAN؛ آستانه‌ها در GUI تنظیم شوند.
-- Custom IPS: نیاز به آزمایش؛ `Unverified`.
-- راستی‌آزمایی: Log anomaly.
-- بازگشت: حذف Policy.
+**ساده:** SYN Flood آزمایشی (hping3 در Lab) با 5000 pkt/s؛ DoS Policy Block؛ Log anomaly.
 
-### ۸) تست عملکرد
+**متوسط:** FP: سامانه‌ی مالی با Signature اشتباه قطع شد؛ Log IPS → Signature ID؛ Exception فقط برای آن Signature و آن سرور؛ تاریخ بازبینی.
 
-- تولید ترافیک زیاد (hping/ab) و دیدن Log anomaly؛ نتیجه واقعی ثبت.
+**سخت:** CPU ۹۰٪ پس از فعال‌کردن IPS روی همه‌ی ترافیک؛ تحلیل: `diagnose sys top` (ipsengine)، Offload کم. راه: Sensor انتخابی (Target=Server، Severity High+) و Monitor برای بقیه؛ اندازه‌گیری مجدد.
 
-### ۹) عیب‌یابی
+### ۶) Troubleshooting
 
-| بخش | شرح |
+| علامت | علت |
 |---|---|
-| Symptom | DoS Policy اثر ندارد |
-| شواهد/دستور | Log نیست |
-| علت | Interface اشتباه |
-| رفع | Interface ورودی درست |
+| DoS اثر ندارد | Interface اشتباه، Threshold بالا |
+| FP کاربران | Threshold کم |
+| IPS بلاک نمی‌کند | Action=monitor/لایسنس/Profile وصل نیست |
+| QUIC دور می‌زند | بلاک نشده |
+| CPU زیاد | Sensor گسترده |
 
-### ۱۰) تمرین مستقل
+### ۷) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- آزمون حمله فقط در Lab ایزوله و مجاز.
+- IPS جایگزین Patch نیست.
+- Exception با تاریخ بازبینی.
 
-**ت1.** DoS Policy چه می‌کند؟ *(پاسخ: 16-4-ت1)*
+### ۸) جمع‌بندی
 
-**ت2.** IPS Needs-License؟ *(پاسخ: 16-4-ت2)*
+- IPS بر اساس Signature؛ ابتدا Monitor؛ Virtual Patching.
+- DoS Policy با Baseline؛ ارزان و Ingress.
+- App Control با QUIC/DoH.
+- Performance را اندازه بگیرید.
 
-### ۱۱) مرور و ارزیابی
+### ۹) تمرین و ارزیابی
 
-**م1.** چرا DoS روی WAN؟ *(پاسخ: 16-4-م1)*
+**ت1.** (ساده) IPS و DoS Policy چه فرقی دارند؟ *(پاسخ: 16-4-ت1)*
 
-**م2.** سناریو: CPU بالا؛ علت محتمل IPS؟ *(پاسخ: 16-4-م2)*
+**ت2.** (ساده) Virtual Patching یعنی چه؟ *(پاسخ: 16-4-ت2)*
 
-**معیار تسلط:** ساخت Profile، اتصال به Policy، اثبات با Log/تست.
+**ت3.** (متوسط) Threshold DoS را چگونه تعیین می‌کنید؟ *(پاسخ: 16-4-ت3)*
 
-**اشتباهات رایج:** فعال‌کردن بی‌برنامه؛ نادیده‌گرفتن لایسنس.
+**ت4.** (متوسط) چرا QUIC بلاک می‌شود؟ *(پاسخ: 16-4-ت4)*
 
-### ۱۲) واژگان و English Corner
+**ت5.** (سخت) پس از IPS، CPU ۹۰٪ شد؛ تحلیل و رفع. *(پاسخ: 16-4-ت5)*
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| IPS | Intrusion Prevention System | جلوگیری از نفوذ | UTM |
-| DoS | Denial of Service | محدودسازی سیل | WAN |
-| App control | Application control | کنترل برنامه | UTM |
+**Q1.** Quick quiz (English): Why start an IPS sensor in monitor mode? *(پاسخ: 16-4-Q1)*
 
-| English sentence | ترجمه |
-|---|---|
-| Protect the WAN interface with a DoS policy. | Interface WAN را با DoS Policy محافظت کنید. |
-| IPS consumes CPU; apply it selectively. | IPS CPU مصرف می‌کند؛ انتخابی اعمال کنید. |
+### ۱۰) اصطلاحات و English Corner
 
-#### کارت Lab — درس 16-4
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | DoS و IPS |
-| 2 | پیش‌نیاز | درس ۱۶-۳ |
-| 3 | توپولوژی | FGT + Client + Attacker-Lab |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Policy v1 |
-| 8 | صورت مسئله | DoS ساده |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | hping/ab |
-| 11 | سناریوی خرابی | DoS Policy اثر ندارد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Log anomaly |
-| 14 | معیار پذیرش | ثبت نتیجه |
-| 15 | مستندات نهایی | `03-ops/ips-dos.md` |
-| 16 | Cleanup و بازگردانی | حذف Policy |
+| IPS | Intrusion Prevention System | جلوگیری از نفوذ |
+| DoS | Denial of Service | انکار سرویس |
+| Anomaly | Anomaly threshold | آستانه‌ی ناهنجاری |
+| Virtual patching | Virtual patching | وصله‌ی مجازی |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Tune thresholds from your own baseline.* ← آستانه‌ها را از Baseline خودتان تنظیم کنید.
 
----
+### ۱۱) Lab
+
+**کارت Lab:** DoS و IPS. **وضعیت:** اجرا نشده. **Verification:** Log anomaly/IPS، `sys top`. **Rollback:** حذف Policy/Profile. **Evidence:** `03-ops/ips-dos.md`.
+
+### ۱۲) منابع
+
+- Fortinet Docs: FortiOS 7.0 Administration Guide — DoS policy، Intrusion prevention، Application control.
 
 <a id="l-16-5"></a>
 
-## درس 16-5 — SSL/SSH Inspection: Certificate و CA
+## درس 16-5 — SSL Inspection عملی: ساخت CA، نصب، Exemption و آزمون
 
-**فصل 16 - روز 5 · پیش‌نیاز: درس ۱۶-۴ · ۶ ساعت**
+**فصل ۱۶ · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰ (مفاهیم TLS/CA)، ۱۶-۲ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (FortiOS 7.0.3):** پروفایل‌های `certificate-inspection`/`deep-inspection` طبق مستند. سینتکس `Unverified`. Lab «اجرا نشده».
 
-Inspection ترافیک HTTPS بدون رمزگشایی ممکن نیست. گواهی CA، Exemption و اثر Performance را باید بدانید.
+### ۱) هدف آموزشی
+
+1. پروفایل SSL سفارشی (Deep) بسازد، CA را Export و روی کلاینت نصب کند.
+2. **Exemption** درست (Category، FQDN، Address) تعریف کند.
+3. رفتار گواهی نامعتبر (Block/Allow/Warn) را تنظیم کند.
+4. نتیجه را با مرورگر/`openssl s_client`/Capture اثبات کند.
+5. مشکلات Pinning، Firefox Trust Store و QUIC را عیب‌یابی کند.
 
 ### ۲) پیش‌نیازها
 
-درس ۱۶-۴
+۱۶-۰ (TLS، Chain، Deep vs Certificate).
 
-### ۳) توضیح مفهومی
+### ۳) توضیح عمیق فنی
 
-- **Certificate Inspection:** فقط SNI/گواهی را می‌بیند (بدون رمزگشایی).
-- **Deep Inspection:** رمزگشایی و رمزگذاری مجدد؛ نیاز به نصب CA فایروال روی کلاینت.
-- Exemption: بانک/Update/حریم خصوصی از Inspection مستثنا.
-- خطاهای Certificate در کلاینت = CA نصب نیست.
-- Performance: Deep Inspection سنگین است.
+#### ۳-۱) تفاوت CA صادرکننده
 
-### ۴) مثال ساده
+فایروال برای هر سایت گواهی جدید با همان Subject/SAN می‌سازد و با **CA فایروال** امضا می‌کند. اگر CA فایروال Self-signed پیش‌فرض باشد، باید روی همه‌ی کلاینت‌ها دستی/GPO نصب شود. بهتر: **Intermediate CA سازمانی** (ADCS) به فایروال بدهید تا زنجیره به Root سازمان برسد و Trust از قبل موجود باشد.
 
-یک Profile ساده روی Policy کاربران.
+#### ۳-۲) گواهی نامعتبر (Untrusted)
 
-### ۵) مثال سازمانی
+فایروال گواهی سرور مقصد را اعتبارسنجی می‌کند. اگر نامعتبر/منقضی/Self-signed بود، باید به کلاینت **گواهی ناموثق** بدهد (CA جداگانه‌ی Untrusted) تا مرورگر هشدار بدهد؛ نه گواهی معتبر صادر کند. تنظیم Action برای گواهی نامعتبر: Block (امن‌تر برای کاربران عادی) یا Allow/Ignore (خطرناک).
 
-سازمان: Profile استاندارد برای هر گروه (کاربران، سرورها، مهمان).
+#### ۳-۳) Exemption
 
-### ۶) تصویر و توپولوژی
+- **Category:** Finance/Health (حریم خصوصی).
+- **FQDN/Address:** Update سرویس‌های Pinned.
+- **Policy جدا:** سرورها با Certificate Inspection.
+اصل: Exemption کمترین گستره + مستند + بازبینی.
 
-```text
-Policy -> [Profile: AV/IPS/Web/App/SSL] -> accept/block
-```
+#### ۳-۴) Trust Storeها
 
-### ۷) پیکربندی (GUI و CLI)
+Windows/Chrome/Edge: Store سیستم. **Firefox:** Store مستقل (یا `security.enterprise_roots.enabled`). **Java/Python/curl:** Store/Bundle خودشان (`curl --cacert`، `REQUESTS_CA_BUNDLE`). **موبایل:** MDM. خطای «فقط یک برنامه» معمولاً Trust Store جدا است.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+### ۴) پیاده‌سازی: GUI و CLI
 
-#### روش گرافیکی (GUI)
+**GUI:**
 
-1. Security Profiles > SSL/SSH Inspection > Create New: Deep Inspection.
-2. System > Certificates: CA فایروال را Export و روی کلاینت نصب کنید.
-3. Exempt: Addresses/Categories.
-4. Policy: SSL Inspection را انتخاب.
+1. Security Profiles → SSL/SSH Inspection → Create New (Deep-Lab): Inspection Method Full SSL Inspection؛ CA Certificate انتخاب؛ Untrusted SSL Certificates: Block؛ Exempt: Web Categories و Addresses.
+2. System → Certificates → CA مربوطه → Download (برای نصب).
+3. Policy: SSL Inspection = Deep-Lab.
+4. Log & Report → Forward Traffic.
 
-#### روش خط فرمان (CLI)
+**CLI (`Unverified`):**
 
-```text
+``` text
 config firewall ssl-ssh-profile
-    edit "SSL-DEEP-LAB"
+    edit "Deep-Lab"
         config https
             set ports 443
             set status deep-inspection
         end
+        set untrusted-caname "Fortinet_CA_Untrusted"
+        config ssl-exempt
+            edit 1
+                set type fortiguard-category
+                set category 31
+            next
+        end
     next
 end
-! use only in lab; install the FortiGate CA on the client first
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۵) مثال‌ها
 
-- Deep Inspection فقط پس از نصب CA روی کلاینت.
-- `status deep-inspection` روی HTTPS.
-- راستی‌آزمایی: گواهی مرورگر توسط CA فایروال امضا شده.
-- بازگشت: Profile را `certificate-inspection` کنید.
-- هشدار: شکستن TLS مسائل حریم خصوصی/Pinning دارد.
+**ساده:** مرورگر روی `https://example.com`؛ گواهی Issuer = CA فایروال؛ بدون خطا (CA نصب‌شده).
 
-### ۸) تست عملکرد
+**متوسط:** `openssl s_client -connect example.com:443 -servername example.com | openssl x509 -noout -issuer` در کلاینت: Issuer فایروال؛ مقایسه با خارج از فایروال: Issuer واقعی.
 
-- در کلاینت گواهی سایت را بررسی کنید.
+**سخت:** بعد از Deep Inspection، `git` و `pip` در Linux خطای گواهی می‌دهند: Trust Store سیستم و Bundle را به‌روز کنید؛ برای Updaterهای Pinned Exemption بگذارید؛ مستند کنید.
 
-### ۹) عیب‌یابی
+### ۶) Troubleshooting
 
-| بخش | شرح |
+| علامت | علت |
 |---|---|
-| Symptom | خطای گواهی در مرورگر |
-| شواهد/دستور | Issuer = فایروال؛ مرورگر آن را نمی‌شناسد |
-| علت | CA نصب نیست |
-| رفع | نصب CA یا Exempt |
+| خطای گواهی همه‌ی سایت‌ها | CA نصب نیست |
+| فقط Firefox | Trust Store جدا |
+| بعضی برنامه‌ها | Pinning/Bundle |
+| کندی | Deep روی ترافیک سنگین |
+| سایت باز نمی‌شود | گواهی مقصد نامعتبر + Block |
 
-### ۱۰) تمرین مستقل
+### ۷) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- کلید خصوصی CA را حفاظت کنید.
+- Exemption برای حریم خصوصی/قانون.
+- ثبت رضایت/سیاست رمزگشایی.
 
-**ت1.** Deep و Certificate Inspection؟ *(پاسخ: 16-5-ت1)*
+### ۸) جمع‌بندی
 
-**ت2.** چرا CA لازم؟ *(پاسخ: 16-5-ت2)*
+- Deep = CA فایروال + نصب + Exemption.
+- گواهی نامعتبر باید به کاربر منتقل شود.
+- Trust Storeهای متعدد.
+- اثبات با openssl/مرورگر.
 
-### ۱۱) مرور و ارزیابی
+### ۹) تمرین و ارزیابی
 
-**م1.** چرا بانک‌ها Exempt؟ *(پاسخ: 16-5-م1)*
+**ت1.** (ساده) چرا Intermediate CA سازمانی بهتر است؟ *(پاسخ: 16-5-ت1)*
 
-**م2.** سناریو: برنامه خطای TLS می‌دهد؛ چه می‌کنید؟ *(پاسخ: 16-5-م2)*
+**ت2.** (ساده) کاربر Firefox خطا می‌بیند؛ چرا؟ *(پاسخ: 16-5-ت2)*
 
-**معیار تسلط:** ساخت Profile، اتصال به Policy، اثبات با Log/تست.
+**ت3.** (متوسط) گواهی Untrusted چه نقشی دارد؟ *(پاسخ: 16-5-ت3)*
 
-**اشتباهات رایج:** فعال‌کردن بی‌برنامه؛ نادیده‌گرفتن لایسنس.
+**ت4.** (سخت) با `openssl s_client` اثبات کنید Deep Inspection فعال است. *(پاسخ: 16-5-ت4)*
 
-### ۱۲) واژگان و English Corner
+**ت5.** (سخت، طراحی) برنامه‌ی Exemption برای یک سازمان بنویسید. *(پاسخ: 16-5-ت5)*
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| SSL inspection | SSL/SSH inspection | بازرسی TLS | UTM |
-| CA | Certificate Authority | مرجع گواهی | TLS |
-| Pinning | Certificate pinning | پین‌کردن گواهی | — |
+**Q1.** Quick quiz (English): How can openssl s_client show that traffic is being inspected? *(پاسخ: 16-5-Q1)*
 
-| English sentence | ترجمه |
-|---|---|
-| Install the firewall CA on every client before deep inspection. | قبل از Deep Inspection CA فایروال را روی همه‌ی کلاینت‌ها نصب کنید. |
-| Exempt sensitive categories from deep inspection. | دسته‌های حساس را از Deep Inspection مستثنا کنید. |
+### ۱۰) اصطلاحات و English Corner
 
-#### کارت Lab — درس 16-5
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | SSL Inspection |
-| 2 | پیش‌نیاز | درس ۱۶-۴ |
-| 3 | توپولوژی | FGT + Client |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Policy v1 |
-| 8 | صورت مسئله | Deep + CA |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | مرورگر |
-| 11 | سناریوی خرابی | خطای گواهی در مرورگر |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | گواهی فایروال |
-| 14 | معیار پذیرش | بدون خطا |
-| 15 | مستندات نهایی | `03-ops/ssl-inspection.md` |
-| 16 | Cleanup و بازگردانی | بازگشت Profile |
+| ADCS | Active Directory Certificate Services | سرویس گواهی AD |
+| Trust store | Certificate trust store | مخزن CAهای معتبر |
+| Exemption | SSL exemption | استثنای Inspection |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Verify inspection by comparing the certificate issuer.* ← با مقایسه‌ی Issuer گواهی، Inspection را اثبات کنید.
 
----
+### ۱۱) Lab
+
+**کارت Lab:** SSL Inspection. **وضعیت:** اجرا نشده. **Verification:** Issuer گواهی، Log. **Rollback:** بازگشت به certificate-inspection. **Evidence:** `03-ops/ssl-inspection.md`.
+
+### ۱۲) منابع
+
+- Fortinet Docs: [SSL & SSH Inspection](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/929997/ssl-ssh-inspection)؛ OpenSSL s_client manual.
 
 <a id="l-16-6"></a>
 
@@ -26027,69 +26094,67 @@ Static URL، Custom IPS، DoS.
 
 لایسنس/DB.
 
-**16-2-ت1** — Static URL نیاز لایسنس دارد؟
 
-خیر.
+### پاسخ‌های بازنویسی درس 16-2
 
-**16-2-ت2** — چرا HTTPS مشکل می‌سازد؟
+**16-2-ت1** — Static دستی و بدون لایسنس؛ Category بر پایه‌ی رتبه‌بندی FortiGuard (Needs-License).
 
-محتوا رمز است؛ نیاز SSL Inspection.
+**16-2-ت2** — Exempt مقصد را از بقیه‌ی بررسی‌های Web Filter معاف می‌کند.
 
-**16-2-م1** — چرا Static URL را ابتدا امتحان می‌کنیم؟
+**16-2-ت3** — مسیر URL داخل HTTPS رمزشده است؛ فقط با رمزگشایی (Deep) دیده می‌شود.
 
-بدون لایسنس کار می‌کند.
+**16-2-ت4** — DoH/DoT و IP مستقیم دور می‌زنند.
 
-**16-2-م2** — سناریو: دامنه‌ی HTTPS مسدود نشد؛ چرا؟
+**16-2-ت5** — Profile وصل نیست؛ Policy دیگر بالاتر؛ HTTPS و نیاز مسیر؛ QUIC؛ DoH؛ Exempt. شاهد: Debug Flow، Log، Capture.
 
-SSL Inspection/SNI.
+**16-2-ت6** — کارمند: Category+Static+Deep با Exemption؛ مهمان: سخت‌گیرانه با Safe Search؛ سرور: فقط FQDN مجاز Update.
 
-**16-3-ت1** — EICAR چیست؟
+**16-2-Q1** — It exempts the matching destination from the remaining web filter checks.
 
-فایل تست استاندارد بی‌خطر.
 
-**16-3-ت2** — File Filter لایسنس دارد؟
+### پاسخ‌های بازنویسی درس 16-3
 
-خیر.
+**16-3-ت1** — فایل تست استاندارد بی‌خطر که ضدویروس‌ها آن را ویروس تست می‌شناسند.
 
-**16-3-م1** — چرا نتیجه‌ی AV را ثبت می‌کنیم؟
+**16-3-ت2** — Zero-day، آرشیو رمزدار، HTTPS بدون Deep و فایل بزرگ‌تر از سقف.
 
-Unverified در Lab.
+**16-3-ت3** — Flow در جریان و سبک؛ Proxy فایل را کامل بازسازی می‌کند و دقیق‌تر ولی سنگین‌تر است.
 
-**16-3-م2** — سناریو: exe بلاک نمی‌شود؛ چرا؟
+**16-3-ت4** — فایل بزرگ‌تر از سقف اسکن نمی‌شود و ممکن است عبور کند.
 
-Profile روی Policy نیست.
+**16-3-ت5** — File Filter برای آرشیو رمزدار، Sandbox (لایسنس)، محدودسازی منبع، آموزش کاربر و Monitor.
 
-**16-4-ت1** — DoS Policy چه می‌کند؟
+**16-3-Q1** — Because its contents are encrypted and cannot be read by the scanner.
 
-محدود/مسدودکردن سیل.
 
-**16-4-ت2** — IPS Needs-License؟
+### پاسخ‌های بازنویسی درس 16-4
 
-Signature رسمی بله؛ Custom خیر.
+**16-4-ت1** — IPS بر اساس Signature حمله‌ی شناخته‌شده؛ DoS Policy بر اساس حجم/نرخ غیرعادی.
 
-**16-4-م1** — چرا DoS روی WAN؟
+**16-4-ت2** — بلاک اکسپلویت آسیب‌پذیری تا Patch سرور با Signature IPS.
 
-ورودی حمله از اینترنت.
+**16-4-ت3** — از Baseline حجم عادی؛ آستانه کمی بالاتر از پیک عادی و آزمون با ترافیک واقعی.
 
-**16-4-م2** — سناریو: CPU بالا؛ علت محتمل IPS؟
+**16-4-ت4** — QUIC با TLS1.3 روی UDP قابل Inspection عمیق نیست؛ بلاک آن ترافیک را به TCP/TLS برمی‌گرداند.
 
-Inspection سنگین/Profile گسترده.
+**16-4-ت5** — `sys top` فرایند ipsengine، Sensor گسترده؛ رفع: Sensor انتخابی (Target=Server، Severity High+)، Monitor برای بقیه و اندازه‌گیری مجدد.
 
-**16-5-ت1** — Deep و Certificate Inspection؟
+**16-4-Q1** — To measure false positives before blocking and avoid business disruption.
 
-Deep رمزگشایی؛ Certificate فقط گواهی.
 
-**16-5-ت2** — چرا CA لازم؟
+### پاسخ‌های بازنویسی درس 16-5
 
-تا مرورگر گواهی فایروال را بپذیرد.
+**16-5-ت1** — Trust از قبل برقرار است و نصب دستی روی کلاینت‌ها کم می‌شود.
 
-**16-5-م1** — چرا بانک‌ها Exempt؟
+**16-5-ت2** — Firefox Trust Store جدا دارد.
 
-حریم خصوصی/Pinning.
+**16-5-ت3** — به کلاینت گواهی ناموثق می‌دهد تا گواهی نامعتبر مقصد دیده شود.
 
-**16-5-م2** — سناریو: برنامه خطای TLS می‌دهد؛ چه می‌کنید؟
+**16-5-ت4** — `openssl s_client -connect host:443 -servername host` و مقایسه‌ی Issuer با CA فایروال.
 
-Exempt یا نصب CA.
+**16-5-ت5** — Exemption برای Finance/Health، Pinned Updaterها، سرورهای داخلی؛ حداقل گستره، مستند و بازبینی دوره‌ای.
+
+**16-5-Q1** — The certificate issuer is the firewall CA instead of the real public CA.
 
 **16-6-ت1** — چرا UTM CPU می‌خورد؟
 
@@ -26240,6 +26305,10 @@ LDAP پروتکل پرس‌وجو از Directory است (AD یک Directory اس�
 #### ۴-۶) Policy مبتنی بر هویت
 
 Policy Source = User/Group (FSSO) به‌علاوه‌ی Subnet برای دقت. ترتیب: Policy مبتنی بر هویت وقتی Match می‌شود که نگاشت IP→User موجود باشد؛ در غیر این صورت Policy بعدی (یا Captive Portal) مطابق می‌شود.
+
+![شکل: حالت‌های FSSO.](../figures/ch17-l0-fig1.svg)
+
+*شکل: حالت‌های FSSO.*
 
 ### ۵) مثال حل‌شده
 
@@ -27512,6 +27581,10 @@ Phase 2 / Child SA: negotiate IPsec proposal and traffic selectors, derive keys 
 
 سربار ESP/UDP (تقریباً ۵۰ تا ۸۰ بایت بسته به الگوریتم و NAT-T) اندازه‌ی مؤثر بسته را کم می‌کند. علامت: ping کوچک OK، دانلود بزرگ قفل (درس ۱۸-۴). راه‌حل: کاهش MTU Tunnel یا `tcp-mss-sender/receiver`.
 
+![شکل: مذاکره‌ی IKEv2 و خطاهای رایج.](../figures/ch18-l0-fig1.svg)
+
+*شکل: مذاکره‌ی IKEv2 و خطاهای رایج.*
+
 ### ۵) مثال حل‌شده (Route-based S2S)
 
 ``` text
@@ -27782,280 +27855,279 @@ diagnose vpn tunnel list
 
 <a id="l-18-2"></a>
 
-## درس 18-2 — ساخت Tunnel بین دو FortiGate (CLI و GUI)
+## درس 18-2 — ساخت Tunnel Site-to-Site بین دو FortiGate: طراحی، GUI، CLI و Verification
 
-**فصل 18 - روز 2 · پیش‌نیاز: درس ۱۸-۰ · ۶ ساعت**
+**فصل ۱۸ · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰ (IKE، Selector، PFS)، ۱۲-۰، فصل ۵ · ≈ ۷ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (FortiOS 7.0.3):** پیش‌فرض‌ها از CLI Reference 7.0؛ سینتکس `Unverified`؛ PSK نمونه؛ Lab «اجرا نشده».
 
-حالا Tunnel واقعی: Phase 1، Phase 2، Route، Policy.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+1. برگه‌ی طراحی Tunnel (IP Plan، Proposal، Selector، Route، Policy) را قبل از پیکربندی بنویسد.
+2. Tunnel Route-based را با **GUI و CLI** بسازد.
+3. سه چیز لازم (Route، Policy، Selector) را جداگانه بسنجد.
+4. با `diagnose vpn tunnel list`، Monitor و Ping Verification کند.
+5. Rollback و Backup را اجرا کند.
 
-درس ۱۸-۰
+### ۲) برگه‌ی طراحی
 
-### ۳) توضیح مفهومی
-
-- Phase 1: interface، remote-gw، PSK، proposal، IKEv2.
-- Phase 2: selector (src/dst)، proposal.
-- Static Route به Tunnel Interface.
-- Policy دوطرفه (LAN->Tunnel، Tunnel->LAN).
-- PSK نمونه؛ رمز واقعی در ریپو نیست.
-
-### ۴) مثال ساده
-
-دو دفتر با Tunnel رمزشده.
-
-### ۵) مثال سازمانی
-
-سازمان: شعبه به مرکز با IPsec و مسیر پشتیبان.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Site-A LAN -> FGT-A ==IPsec== FGT-B -> Site-B LAN
+``` text
+Site A: WAN 203.0.113.1  LAN 192.168.10.0/24   Tunnel if: TO-B
+Site B: WAN 203.0.113.2  LAN 192.168.20.0/24   Tunnel if: TO-A
+IKE: v2  Proposal: aes256gcm-prfsha256  DH 20  PFS on  DPD on-idle  NAT-T: auto
+Phase2 selectors: 0.0.0.0/0 <-> 0.0.0.0/0 (route-based)
+Routing: static 192.168.20.0/24 via TO-B (A) and 192.168.10.0/24 via TO-A (B)
+Policies: LAN->TO-B accept ; TO-B->LAN accept (both sides)
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+اصل: **دو سر آینه‌ی هم** (Proposal، DH، PFS، Lifetime، PSK، Selector).
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+### ۳) پیاده‌سازی
 
-#### روش گرافیکی (GUI)
+**GUI (Site A):**
 
-1. VPN > IPsec Tunnels > Create New > Custom: Name، Remote Gateway Static IP، Interface، PSK.
-2. Phase 1 Proposal: AES256-SHA256؛ IKE v2.
-3. Phase 2: Local/Remote Address Subnet.
-4. Network > Static Routes: مقصد LAN دیگر، Interface = Tunnel.
-5. Policy & Objects: دو Policy.
+1. VPN → IPsec Tunnels → Create New → Custom: Name TO-B.
+2. Network: Remote Gateway = Static IP 203.0.113.2؛ Interface = wan1؛ NAT Traversal = Enable.
+3. Authentication: Method Pre-shared Key؛ IKE Version 2.
+4. Phase 1 Proposal: Encryption AES256GCM؛ DH Group 20.
+5. Phase 2 Selectors: Local/Remote Address = 0.0.0.0/0؛ Phase 2 Proposal AES256GCM؛ Enable PFS (DH 20).
+6. Network → Static Routes → 192.168.20.0/24 → Interface TO-B.
+7. Policy & Objects → Firewall Policy: LAN→TO-B و TO-B→LAN (Accept، NAT خاموش).
 
-#### روش خط فرمان (CLI)
+**CLI (Site A):**
 
-```text
+``` text
 config vpn ipsec phase1-interface
-    edit "TO-SITE-B"
-        set interface "port1"
+    edit "TO-B"
+        set interface "wan1"
         set ike-version 2
         set remote-gw 203.0.113.2
+        set proposal aes256gcm-prfsha256
+        set dhgrp 20
+        set dpd on-idle
+        set nattraversal enable
         set psksecret <PSK-LAB>
-        set proposal aes256-sha256
     next
 end
 config vpn ipsec phase2-interface
-    edit "TO-SITE-B-P2"
-        set phase1name "TO-SITE-B"
-        set proposal aes256-sha256
-        set src-subnet 192.168.10.0 255.255.255.0
-        set dst-subnet 192.168.20.0 255.255.255.0
+    edit "TO-B-P2"
+        set phase1name "TO-B"
+        set proposal aes256gcm
+        set pfs enable
+        set dhgrp 20
+        set src-subnet 0.0.0.0 0.0.0.0
+        set dst-subnet 0.0.0.0 0.0.0.0
     next
 end
 config router static
-    edit 50
+    edit 100
         set dst 192.168.20.0 255.255.255.0
-        set device "TO-SITE-B"
+        set device "TO-B"
+    next
+end
+config firewall policy
+    edit 100
+        set name "LAN-to-B"
+        set srcintf "port2"
+        set dstintf "TO-B"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+    edit 101
+        set name "B-to-LAN"
+        set srcintf "TO-B"
+        set dstintf "port2"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
     next
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+(در تولید `service ALL` و `all` را محدود کنید؛ اینجا برای Lab اولیه است. سینتکس `Unverified`.) Site B آینه است.
 
-- Proposal دو طرف یکی.
-- Selector باید آینه‌ی هم باشد.
-- Policy جدا لازم است.
-- بازگشت: حذف phase2 سپس phase1.
+### ۴) Verification (سه سطح)
 
-### ۸) تست عملکرد
+``` text
+get vpn ipsec tunnel summary
+diagnose vpn ike gateway list
+diagnose vpn tunnel list
+execute ping-options source 192.168.10.1
+execute ping 192.168.20.1
+get router info routing-table details 192.168.20.5
+diagnose debug flow filter addr 192.168.20.5
+```
 
-- Tunnel در Monitor بالا.
+- **IKE SA:** Established.
+- **Child SA:** Bytes encrypt/decrypt هر دو رشد.
+- **داده:** ping کلاینت‌ها؛ Log Policy.
 
-### ۹) عیب‌یابی
+### ۵) مثال‌ها
 
-| بخش | شرح |
+**ساده:** ping 192.168.10.5 → 192.168.20.5 موفق؛ `tunnel list`: Encrypt/Decrypt افزایش.
+
+**متوسط:** فقط یک‌سو: Bytes out می‌رود، in صفر؛ بررسی Policy B→LAN و Route برگشت در B.
+
+**سخت:** Tunnel پس از ۸ ساعت یک لحظه قطع می‌شود: Rekey؛ بررسی Lifetime دو سر (۱۸-۰)، DPD، PFS Group ناهمسان؛ شاهد: Log VPN.
+
+### ۶) Troubleshooting
+
+| علامت | علت |
 |---|---|
-| Symptom | Tunnel بالا ولی ping نه |
-| شواهد/دستور | `diagnose sniffer`؛ Route/Policy |
-| علت | Route/Policy |
-| رفع | افزودن |
+| IKE برقرار نمی‌شود | Reachability، Proposal، PSK، ID |
+| Phase 2 شکست | Selector/PFS/DH |
+| Up ولی ping نه | Route/Policy/NAT-T |
+| ping کوچک OK و بزرگ نه | MTU/MSS |
 
-### ۱۰) تمرین مستقل
+### ۷) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- PSK قوی و منحصر؛ در ریپو نیست.
+- Policy حداقلی؛ ترافیک Tunnel هم Inspect شود.
+- `service ALL` فقط Lab.
 
-**ت1.** چرا Static Route لازم؟ *(پاسخ: 18-2-ت1)*
+### ۸) جمع‌بندی
 
-**ت2.** Selector؟ *(پاسخ: 18-2-ت2)*
+- برگه‌ی طراحی آینه‌ای.
+- Route + Policy + Selector.
+- Verification سه‌سطحی.
+- Backup قبل از تغییر.
 
-### ۱۱) مرور و ارزیابی
+### ۹) تمرین و ارزیابی
 
-**م1.** چرا دو Policy؟ *(پاسخ: 18-2-م1)*
+**ت1.** (ساده) سه چیز لازم برای ترافیک Tunnel Route-based؟ *(پاسخ: 18-2-ت1)*
 
-**م2.** سناریو: فقط یک سو کار می‌کند؛ علت؟ *(پاسخ: 18-2-م2)*
+**ت2.** (متوسط) چرا Policy دوطرفه لازم است؟ *(پاسخ: 18-2-ت2)*
 
-**معیار تسلط:** ساخت Tunnel، Route/Policy، اثبات با Ping و Diagnose.
+**ت3.** (متوسط) Verification سه‌سطحی را بنویسید. *(پاسخ: 18-2-ت3)*
 
-**اشتباهات رایج:** Proposal/Selector/Route.
+**ت4.** (سخت) فقط Bytes out رشد می‌کند؛ فرضیه‌ها و آزمون. *(پاسخ: 18-2-ت4)*
 
-### ۱۲) واژگان و English Corner
+**ت5.** (سخت، طراحی) Policy حداقلی برای دسترسی Site A به یک سرور در Site B. *(پاسخ: 18-2-ت5)*
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Phase1 | IKE Phase 1 | کانال کنترل | VPN |
-| Selector | Phase 2 selector | ترافیک مجاز | VPN |
+**Q1.** Quick quiz (English): Which three elements must be correct for route-based VPN traffic to flow? *(پاسخ: 18-2-Q1)*
 
-| English sentence | ترجمه |
-|---|---|
-| Create a policy for each direction. | برای هر جهت یک Policy بسازید. |
-| Selectors must mirror each other. | Selectorها باید آینه‌ی هم باشند. |
+### ۱۰) اصطلاحات و English Corner
 
-#### کارت Lab — درس 18-2
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | Tunnel S2S |
-| 2 | پیش‌نیاز | درس ۱۸-۰ |
-| 3 | توپولوژی | FGT-A + FGT-B |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | 203.0.113.1/2 |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | Tunnel |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping 192.168.20.x |
-| 11 | سناریوی خرابی | Tunnel بالا ولی ping نه |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Reply |
-| 14 | معیار پذیرش | Monitor Up |
-| 15 | مستندات نهایی | `03-ops/s2s-a-b.md` |
-| 16 | Cleanup و بازگردانی | حذف phase2/1 |
+| Route-based | Route-based VPN | VPN مبتنی بر Interface و Route |
+| Mirror | Mirrored config | پیکربندی آینه‌ای |
+| Encrypt/Decrypt counters | SA counters | شمارنده‌ی SA |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Both peers must have mirrored proposals and selectors.* ← هر دو Peer باید Proposal و Selector آینه‌ای داشته باشند.
 
----
+### ۱۱) Lab
+
+**کارت Lab:** Tunnel S2S. **وضعیت:** اجرا نشده. **Verification:** مطابق بخش ۴. **Rollback:** حذف phase2/phase1/Route/Policy. **Evidence:** `03-ops/s2s-a-b.md`.
+
+### ۱۲) منابع
+
+- Fortinet Docs: [config vpn ipsec phase1-interface](https://docs.fortinet.com/document/fortigate/7.0.5/cli-reference/371620/config-vpn-ipsec-phase1-interface)، [phase2-interface](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/371620/config-vpn-ipsec-phase2-interface).
 
 <a id="l-18-3"></a>
 
-## درس 18-3 — عیب‌یابی IPsec: Phase 1/2 و Debug
+## درس 18-3 — عیب‌یابی IPsec با Debug IKE: خواندن پیام‌ها و تصمیم‌گیری لایه‌ای
 
-**فصل 18 - روز 3 · پیش‌نیاز: درس ۱۸-۱ · ۶ ساعت**
+**فصل ۱۸ · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۱۸-۲، ۱۴-۷ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** فرمت Debug نمونه‌ی آموزشی؛ روی Image `Unverified`؛ Lab «اجرا نشده».
 
-با ابزار تشخیص علت را پیدا کنید.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+1. Debug IKE را با Filter محدود اجرا و ایمن خاتمه دهد.
+2. پیام‌های رایج (NO_PROPOSAL_CHOSEN، AUTH_FAILED، TS_UNACCEPTABLE، INVALID_KE_PAYLOAD، timeout) را به علت نگاشت کند.
+3. «Up ولی ترافیک نه» را با شمارنده و Debug Flow تفکیک کند.
+4. RCA بنویسد.
 
-درس ۱۸-۱
+### ۲) روش
 
-### ۳) توضیح مفهومی
-
-- `diagnose vpn ike log filter`.
-- `diagnose debug application ike -1`.
-- `diagnose vpn tunnel list`: Bytes in/out.
-- علائم: Phase 1 down، Phase 2 down، Up بدون ترافیک.
-- Log رویدادهای VPN.
-
-### ۴) مثال ساده
-
-دو دفتر با Tunnel رمزشده.
-
-### ۵) مثال سازمانی
-
-سازمان: شعبه به مرکز با IPsec و مسیر پشتیبان.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Site-A LAN -> FGT-A ==IPsec== FGT-B -> Site-B LAN
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Log & Report > Events > VPN.
-2. Monitor > IPsec Monitor.
-
-#### روش خط فرمان (CLI)
-
-```text
-diagnose vpn ike log filter name TO-SITE-B
+``` text
+diagnose vpn ike log filter clear
+diagnose vpn ike log filter name TO-B
 diagnose debug application ike -1
 diagnose debug enable
+...trigger negotiation (ping across tunnel or clear SA)...
 diagnose debug disable
 diagnose debug reset
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+(Filter با نام Tunnel یا IP Peer؛ بدون Filter حجم زیاد و CPU.)
 
-- Debug را حتماً Disable کنید.
-- `Unverified` روی Image.
+### ۳) نقشه‌ی پیام → علت
 
-### ۸) تست عملکرد
-
-- یک عیب Proposal بسازید و Debug بخوانید.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | NO_PROPOSAL_CHOSEN |
-| شواهد/دستور | Debug IKE |
-| علت | Proposal ناهمسان |
-| رفع | تطبیق Proposal |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Debug IKE؟ *(پاسخ: 18-3-ت1)*
-
-**ت2.** پایان Debug؟ *(پاسخ: 18-3-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Bytes in/out؟ *(پاسخ: 18-3-م1)*
-
-**م2.** سناریو: Bytes out بالا و in صفر؛ علت؟ *(پاسخ: 18-3-م2)*
-
-**معیار تسلط:** ساخت Tunnel، Route/Policy، اثبات با Ping و Diagnose.
-
-**اشتباهات رایج:** Proposal/Selector/Route.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
+| پیام | معنی | علت | رفع |
 |---|---|---|---|
-| NO_PROPOSAL_CHOSEN | No proposal chosen | Proposal ناهمسان | IKE |
+| NO_PROPOSAL_CHOSEN | Proposal مشترک نیست | الگوریتم/DH Phase 1 یا Child | تطبیق Proposal |
+| AUTH_FAILED | هویت رد شد | PSK، Peer ID، گواهی | PSK/ID |
+| TS_UNACCEPTABLE | Selectorها ناسازگار | Subnet/Selector | آینه‌کردن Selector |
+| INVALID_KE_PAYLOAD | DH Group متفاوت | DH/PFS | هم‌گروه‌کردن |
+| timeout/بدون پاسخ | Peer جواب نمی‌دهد | UDP 500/4500، Route، ACL | Sniffer/Firewall |
+| SA بالا، ESP صفر | NAT-T/ESP Block | UDP 4500/IP 50 | باز کردن |
 
-| English sentence | ترجمه |
-|---|---|
-| Run debug only briefly. | Debug را فقط کوتاه اجرا کنید. |
+### ۴) مثال‌های حل‌شده
 
-#### کارت Lab — درس 18-3
+**۱) Phase 1:** `negotiation failure... NO_PROPOSAL_CHOSEN`؛ مقایسه‌ی Proposal دو سر: یک سر AES256-SHA256 CBC، دیگری GCM. **رفع:** هماهنگی. **تأیید:** IKE SA Established.
 
-| # | فیلد | محتوا |
+**۲) Phase 2:** Phase 1 OK، سپس `TS_UNACCEPTABLE`: Site A Selector 192.168.10.0/24↔192.168.20.0/24، Site B 0.0.0.0/0. **رفع:** آینه‌کردن (یا هر دو 0.0.0.0/0 در Route-based).
+
+**۳) داده:** Tunnel Up، ping شکست؛ `tunnel list` Bytes out رشد، in صفر. Sniffer WAN سمت B: ESP/UDP 4500 می‌رسد ولی Debug Flow B «Denied policy 0». **رفع:** Policy B→LAN.
+
+**۴) سخت (دو علت هم‌زمان):** Tunnel بعد از Rekey ناپایدار است و دانلود بزرگ قفل می‌شود. علت ۱: Lifetime/DPD؛ علت ۲: MTU. شواهد جدا: Log VPN برای Rekey؛ `ping -f` برای MTU. رفع هر کدام جداگانه و اندازه‌گیری.
+
+### ۵) GUI
+
+Log & Report → Events → VPN؛ Monitor → IPsec Monitor (Bring Up/Down)؛ VPN → IPsec Tunnels (وضعیت).
+
+### ۶) نکات امنیتی
+
+- Debug IKE ممکن است هویت و اطلاعات حساس نشان دهد؛ فایل را حذف کنید.
+- Debug را همیشه Disable/Reset.
+
+### ۷) جمع‌بندی
+
+- Filter + محدودیت زمانی.
+- پیام → لایه → علت.
+- «Up ولی نه» با Counter + Policy/Route.
+- RCA مستند.
+
+### ۸) تمرین و ارزیابی
+
+**ت1.** (ساده) NO_PROPOSAL_CHOSEN یعنی چه؟ *(پاسخ: 18-3-ت1)*
+
+**ت2.** (ساده) چرا Filter در Debug لازم است؟ *(پاسخ: 18-3-ت2)*
+
+**ت3.** (متوسط) TS_UNACCEPTABLE را چگونه رفع می‌کنید؟ *(پاسخ: 18-3-ت3)*
+
+**ت4.** (سخت) Up ولی Bytes in صفر؛ ۴ فرضیه و آزمون. *(پاسخ: 18-3-ت4)*
+
+**ت5.** (سخت) RCA یک‌صفحه‌ای برای مثال ۴ بنویسید. *(پاسخ: 18-3-ت5)*
+
+**Q1.** Quick quiz (English): What does AUTH_FAILED usually indicate? *(پاسخ: 18-3-Q1)*
+
+### ۹) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | عیب Proposal |
-| 2 | پیش‌نیاز | درس ۱۸-۱ |
-| 3 | توپولوژی | FGT-A + FGT-B |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Tunnel |
-| 8 | صورت مسئله | عیب Proposal |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | debug |
-| 11 | سناریوی خرابی | NO_PROPOSAL_CHOSEN |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | RCA |
-| 14 | معیار پذیرش | رفع |
-| 15 | مستندات نهایی | `03-ops/rca-ike.md` |
-| 16 | Cleanup و بازگردانی | Disable debug |
+| TS | Traffic Selector | انتخاب‌گر ترافیک |
+| KE | Key Exchange payload | بخش تبادل کلید |
+| Rekey | SA rekey | تعویض کلید SA |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Filter the IKE debug to the peer under investigation.* ← Debug IKE را روی Peer مورد بررسی فیلتر کنید.
 
----
+### ۱۰) Lab
+
+**کارت Lab:** عیب Proposal/Selector. **وضعیت:** اجرا نشده. **Rollback:** Disable debug. **Evidence:** `03-ops/rca-ike.md`.
+
+### ۱۱) منابع
+
+- Fortinet Docs: FortiOS 7.0 Administration Guide — IPsec VPN troubleshooting؛ RFC 7296 (error notify types).
 
 <a id="l-18-4"></a>
 
@@ -28468,37 +28540,35 @@ UDP 4500.
 
 Selector/Proposal Phase 2.
 
-**18-2-ت1** — چرا Static Route لازم؟
 
-تا ترافیک وارد Tunnel شود.
+### پاسخ‌های بازنویسی درس 18-2
 
-**18-2-ت2** — Selector؟
+**18-2-ت1** — Route به Tunnel، Policy دوطرفه و Selector سازگار.
 
-مشخص‌کننده‌ی ترافیک مجاز.
+**18-2-ت2** — چون ترافیک در هر دو جهت باید اجازه داشته باشد و Stateful فقط جهت شروع را به Session می‌گذارد.
 
-**18-2-م1** — چرا دو Policy؟
+**18-2-ت3** — IKE SA Established؛ Child SA با شمارنده‌ی Encrypt/Decrypt؛ ping/Log داده.
 
-دو جهت.
+**18-2-ت4** — Policy سمت مقابل، Route برگشت، NAT-T/UDP 4500، Selector. شاهد: tunnel list، Sniffer، Debug Flow.
 
-**18-2-م2** — سناریو: فقط یک سو کار می‌کند؛ علت؟
+**18-2-ت5** — Source=Subnet/Host مجاز Site A، Destination=سرور خاص، Service=پورت لازم، Log فعال.
 
-Policy جهت مقابل.
+**18-2-Q1** — A route to the tunnel interface, policies in both directions, and compatible selectors.
 
-**18-3-ت1** — Debug IKE؟
 
-application ike -1.
+### پاسخ‌های بازنویسی درس 18-3
 
-**18-3-ت2** — پایان Debug؟
+**18-3-ت1** — هیچ Proposal مشترکی بین دو سر پیدا نشد.
 
-disable/reset.
+**18-3-ت2** — بدون Filter حجم Debug زیاد و CPU بالا می‌رود و خواندن سخت می‌شود.
 
-**18-3-م1** — چرا Bytes in/out؟
+**18-3-ت3** — Selectorها را آینه یا در Route-based هر دو را 0.0.0.0/0 کنید.
 
-وجود/نبود ترافیک.
+**18-3-ت4** — Policy مقابل، Route برگشت، NAT-T/ESP، Selector؛ آزمون: Debug Flow سمت مقابل، Sniffer، tunnel list.
 
-**18-3-م2** — سناریو: Bytes out بالا و in صفر؛ علت؟
+**18-3-ت5** — عنوان، Timeline، شواهد (Log Rekey، ping -f)، علت‌ها (Lifetime/DPD و MTU)، اقدام، پیشگیری.
 
-سمت مقابل Policy/Route ندارد.
+**18-3-Q1** — Authentication failure: wrong PSK, peer ID mismatch or invalid certificate.
 
 **18-4-ت1** — MSS؟
 
@@ -28689,7 +28759,7 @@ Tunnel S2S پایدار و Backup؛ آشنایی با OSPF/BGP؛ برنامه‌
 
 <a id="ch19"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.3):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۰-۷، ۲۱-۷ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.4):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۰-۷، ۲۱-۷ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 19 — Hub-and-Spoke، OSPF/BGP روی FortiGate و Local Breakout
 
@@ -30792,52 +30862,31 @@ end
 
 <a id="l-21-2"></a>
 
-## درس 21-2 — SD-WAN: Zone، Member و Health-check
+## درس 21-2 — ساخت SD-WAN عملی: Zone، Member، Health-check، Route و Policy
 
-**فصل 21 - روز 2 · پیش‌نیاز: درس ۲۱-۰ · ۶ ساعت**
+**فصل ۲۱ · بازنویسی عمیق · پیش‌نیاز: ۲۱-۷ (مفاهیم)، ۲۱-۱، ۱۲-۰ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (FortiOS 7.0.3):** سینتکس 7.0 (`mode load-balance` برای Maximize Bandwidth)؛ `Unverified` روی Image؛ Lab «اجرا نشده».
 
-SD-WAN چند WAN را یک Interface منطقی می‌کند.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+SD-WAN را از صفر بسازد: انتقال Interface از Policy/Route قدیمی به Zone، تعریف Member، Health-check، Default Route، Policy روی Zone؛ و مهاجرت **بدون قطع** را برنامه‌ریزی کند.
 
-درس ۲۱-۰
+### ۲) پیش‌نیاز مهاجرت (بسیار مهم)
 
-### ۳) توضیح مفهومی
+Interface که عضو SD-WAN می‌شود **نباید در Policy/Route/Object دیگری** مرجع باشد؛ پس: (۱) Policyهای قدیمی که به wan1/wan2 اشاره دارند، (۲) Static Routeهای wan1/wan2، (۳) VIP/DHCP روی این Interfaceها را فهرست و به Zone منتقل کنید. Backup بگیرید.
 
-- `config system sdwan`: Zone، Members.
-- Health-check (ping/http) با SLA.
-- Policy روی Zone.
-- Route: Default Route روی sdwan.
-- تأیید: `diagnose sys sdwan health-check`.
+### ۳) مراحل
 
-### ۴) مثال ساده
+1. Backup پیکربندی.
+2. Network → SD-WAN → Create New Member: wan1 (Gateway)، wan2.
+3. Zone: virtual-wan-link.
+4. Performance SLA: HC-DNS (ping 8.8.8.8 و ۱.۱.۱.۱)، interval/failtime/recoverytime.
+5. Static Route: 0.0.0.0/0 → Interface SD-WAN Zone.
+6. Firewall Policy: LAN → SD-WAN Zone (NAT enable).
+7. SD-WAN Rule (در ۲۱-۳).
 
-دو اینترنت؛ یکی قطع شود دیگری کار کند.
-
-### ۵) مثال سازمانی
-
-سازمان: SD-WAN با SLA برای VoIP.
-
-### ۶) تصویر و توپولوژی
-
-```text
-LAN -> FGT (WAN1 | WAN2)
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Network > SD-WAN: Zones، Members، Performance SLA.
-2. Policy: Destination=virtual-wan-link.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
 config system sdwan
     set status enable
     config zone
@@ -30855,220 +30904,245 @@ config system sdwan
         next
     end
     config health-check
-        edit "HC1"
-            set server "8.8.8.8"
+        edit "HC-DNS"
+            set server "8.8.8.8" "1.1.1.1"
+            set protocol ping
+            set interval 1000
+            set failtime 5
+            set recoverytime 10
             set members 1 2
         next
     end
 end
-diagnose sys sdwan health-check
+config router static
+    edit 1
+        set sdwan-zone "virtual-wan-link"
+    next
+end
+config firewall policy
+    edit 10
+        set srcintf "port2"
+        set dstintf "virtual-wan-link"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set nat enable
+    next
+end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+(نام فیلد `sdwan-zone` و ساختار `server` چندگانه با CLI Reference 7.0 تطبیق شود؛ `Unverified`.)
 
-- `Unverified`.
-- نام Zone ممکن است در نسخه متفاوت.
+### ۴) Verification
 
-### ۸) تست عملکرد
+``` text
+diagnose sys sdwan health-check
+diagnose sys sdwan member
+get router info routing-table all
+diagnose sys session filter dst 8.8.8.8
+diagnose sys session list
+```
 
-- Health-check وضعیت Alive.
+GUI: Network → SD-WAN → Performance SLAs (نمودار Latency/Jitter/Loss).
 
-### ۹) عیب‌یابی
+### ۵) مثال‌ها
 
-| بخش | شرح |
+**ساده:** هر دو Member Alive؛ ترافیک بین هر دو بر اساس Hash (Implicit rule).
+
+**متوسط:** قطع wan1 (Shutdown در Lab): Health-check پس از ≈ 5 ثانیه Dead؛ ترافیک جدید از wan2؛ Session قدیمی روی wan1 تا Clear می‌ماند (۱۳-۷).
+
+**سخت:** Member همیشه Dead با اینکه اینترنت کار می‌کند: Policy Local-out Probe یا Route Probe؛ Server روی مسیر اشتباه؛ `execute ping-options source` با IP همان WAN؛ شواهد: Sniffer روی wan1: ICMP خارج می‌شود ولی پاسخ نمی‌آید (ISP Block ICMP) → از `protocol dns/http` استفاده کنید.
+
+### ۶) Troubleshooting
+
+| علامت | علت |
 |---|---|
-| Symptom | Member Dead |
-| شواهد/دستور | health-check |
-| علت | Server در دسترس نیست |
-| رفع | سرور مناسب |
+| Interface قابل افزودن نیست | هنوز در Policy/Route مرجع دارد |
+| ترافیک از Zone نمی‌رود | Default Route روی Zone نیست |
+| Member Dead | Probe/Server/Policy |
+| Failover بدون اثر | Session قدیمی |
 
-### ۱۰) تمرین مستقل
+### ۷) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- Probe روی Local-out؛ Server مورد اعتماد.
+- Policy روی Zone؛ همه‌ی مسیرها Inspect شوند.
 
-**ت1.** SD-WAN؟ *(پاسخ: 21-2-ت1)*
+### ۸) جمع‌بندی
 
-**ت2.** SLA؟ *(پاسخ: 21-2-ت2)*
+- پیش‌نیاز: خالی‌کردن مرجع‌های Interface.
+- Zone/Member/HC/Route/Policy.
+- Verification: HC، Member، Routing، Session.
 
-### ۱۱) مرور و ارزیابی
+### ۹) تمرین و ارزیابی
 
-**م1.** چرا Zone؟ *(پاسخ: 21-2-م1)*
+**ت1.** (ساده) چرا Interface قبل از افزودن به SD-WAN باید از Policyها آزاد شود؟ *(پاسخ: 21-2-ت1)*
 
-**م2.** سناریو: Member همیشه Dead؛ علت؟ *(پاسخ: 21-2-م2)*
+**ت2.** (متوسط) Default Route در SD-WAN روی چه Interface است؟ *(پاسخ: 21-2-ت2)*
 
-**معیار تسلط:** ساخت Dual-ISP و SD-WAN.
+**ت3.** (سخت) Member Dead با اینترنت سالم؛ تحلیل. *(پاسخ: 21-2-ت3)*
 
-**اشتباهات رایج:** Health-check نادرست.
+**ت4.** (سخت، طراحی) برنامه‌ی مهاجرت بدون قطع از Dual-ISP کلاسیک به SD-WAN. *(پاسخ: 21-2-ت4)*
 
-### ۱۲) واژگان و English Corner
+**Q1.** Quick quiz (English): Where is the default route attached in an SD-WAN design? *(پاسخ: 21-2-Q1)*
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| SD-WAN | Software-Defined WAN | WAN نرم‌افزاری | WAN |
-| SLA | Service Level Agreement | تعهد کیفیت | SD-WAN |
+### ۱۰) اصطلاحات و English Corner
 
-| English sentence | ترجمه |
-|---|---|
-| Define health checks against reliable targets. | Health-check را روی هدف‌های قابل‌اتکا تعریف کنید. |
-
-#### کارت Lab — درس 21-2
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | SD-WAN |
-| 2 | پیش‌نیاز | درس ۲۱-۰ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Dual-ISP |
-| 8 | صورت مسئله | SD-WAN |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | health-check |
-| 11 | سناریوی خرابی | Member Dead |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Alive |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/sdwan.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| Member | SD-WAN member | عضو Zone |
+| Zone | SD-WAN zone | گروه منطقی لینک‌ها |
+| Probe | Health-check probe | بسته‌ی سنجش کیفیت |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Remove interface references before adding it to SD-WAN.* ← قبل از افزودن Interface به SD-WAN مرجع‌های آن را بردارید.
 
----
+### ۱۱) Lab
+
+**کارت Lab:** SD-WAN. **وضعیت:** اجرا نشده. **Rollback:** بازگشت Config. **Evidence:** `03-ops/sdwan.md`.
+
+### ۱۲) منابع
+
+- Fortinet Docs: [SD-WAN](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/19246/sd-wan)، [config system sdwan](https://docs.fortinet.com/document/fortigate/7.0.1/cli-reference/94620/config-system-sdwan).
 
 <a id="l-21-3"></a>
 
-## درس 21-3 — SD-WAN Rule و Performance SLA
+## درس 21-3 — SD-WAN Rule و Performance SLA: انتخاب مسیر بر اساس برنامه و کیفیت
 
-**فصل 21 - روز 3 · پیش‌نیاز: درس ۲۱-۱ · ۶ ساعت**
+**فصل ۲۱ · بازنویسی عمیق · پیش‌نیاز: ۲۱-۲، ۲۱-۷ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (7.0.3):** `mode sla`/`load-balance`/`manual` مطابق مستند 7.0؛ سینتکس `Unverified`؛ Lab «اجرا نشده».
 
-قوانین انتخاب مسیر بر اساس برنامه/کیفیت.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+1. برای هر نوع ترافیک (VoIP، ERP، Backup) استراتژی و SLA مناسب انتخاب کند.
+2. Rule ایجاد و **ترتیب Ruleها** (First Match) را درست بچیند.
+3. رفتار Rule در Failover/Failback را پیش‌بینی و آزمایش کند.
+4. با Log/`diagnose` اثبات کند ترافیک از کدام Member رفت.
 
-درس ۲۱-۱
+### ۲) توضیح فنی
 
-### ۳) توضیح مفهومی
+- Rule شامل **Match** (Source، Destination، Service، Application/Internet Service) و **Strategy** (`mode`) و **priority-members** است.
+- ارزیابی **بالا به پایین**؛ اولین Rule مطابق برنده؛ اگر هیچ Rule مطابق نشد → Implicit Rule (Load-balance پیش‌فرض).
+- `mode sla`: اولین Member (به ترتیب priority-members) که SLA Health-check را برآورده کند.
+- `mode load-balance`: همه‌ی Memberهای دارای SLA، با Hash.
+- `mode manual`: Member ثابت.
 
-- Rule: Source/Destination/Service.
-- Strategy: Lowest Cost، Best Quality، Manual، SLA.
-- VoIP روی بهترین Latency.
-- Bulk روی ISP ارزان.
-- Log Rule.
-
-### ۴) مثال ساده
-
-دو اینترنت؛ یکی قطع شود دیگری کار کند.
-
-### ۵) مثال سازمانی
-
-سازمان: SD-WAN با SLA برای VoIP.
-
-### ۶) تصویر و توپولوژی
-
-```text
-LAN -> FGT (WAN1 | WAN2)
+``` text
+Rule order example
+1 VOIP  (UDP 5060, RTP)         mode sla         members 1 2   sla HC-DNS latency<80 jitter<20
+2 ERP   (dst 10.50.0.0/16)      mode sla         members 2 1
+3 BACKUP(service FTP,SFTP)      mode load-balance members 1 2
+4 default                       implicit
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+### ۳) پیاده‌سازی
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+**GUI:** Network → SD-WAN → SD-WAN Rules → Create New: Name، Source/Destination، Internet Service/Application، Strategy (Lowest Cost (SLA)/Best Quality/Maximize Bandwidth/Manual)، Interface preference، Required SLA target.
 
-#### روش گرافیکی (GUI)
+**CLI (`Unverified`):**
 
-1. Network > SD-WAN > SD-WAN Rules > Create New.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
 config system sdwan
+    config health-check
+        edit "HC-VOIP"
+            set server "8.8.8.8"
+            set protocol ping
+            set interval 500
+            set failtime 3
+            set recoverytime 20
+            set members 1 2
+            config sla
+                edit 1
+                    set latency-threshold 80
+                    set jitter-threshold 20
+                    set packetloss-threshold 1
+                next
+            end
+        next
+    end
     config service
         edit 1
             set name "VOIP"
             set mode sla
             set dst "all"
+            set protocol 17
+            set start-port 5060
+            set end-port 5060
             config sla
-                edit "HC1"
+                edit "HC-VOIP"
                     set id 1
                 next
             end
+            set priority-members 1 2
+        next
+        edit 3
+            set name "BACKUP"
+            set mode load-balance
+            set dst "all"
             set priority-members 1 2
         next
     end
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۴) مثال‌ها
 
-- `Unverified`.
+**ساده:** VoIP روی wan1 (Latency 30 ms)؛ wan2 رزرو.
 
-### ۸) تست عملکرد
+**متوسط:** Latency wan1 به 150 ms می‌رسد؛ SLA نقض؛ VoIP به wan2؛ پس از بازگشت Latency (recoverytime ۲۰×۵۰۰ms=۱۰s) به wan1 برمی‌گردد؛ ثبت Log SLA.
 
-- تست انتقال ترافیک با شکست SLA.
+**سخت:** Rule اول «all» گذاشته‌اید؛ Ruleهای VOIP/ERP هرگز Match نمی‌شوند. شاهد: `diagnose sys sdwan service`: Hit فقط Rule 1. **رفع:** ترتیب (مشخص‌ترها بالا).
 
-### ۹) عیب‌یابی
+### ۵) Troubleshooting
 
-| بخش | شرح |
+| علامت | علت |
 |---|---|
-| Symptom | Rule اثر ندارد |
-| شواهد/دستور | diagnose sys sdwan service |
-| علت | ترتیب/Match |
-| رفع | اصلاح |
+| Rule Hit ندارد | ترتیب/Match |
+| VoIP قطع‌ووصل | آستانه‌ی بدون Hysteresis، recoverytime کم |
+| Backup همه‌ی پهنا را می‌خورد | load-balance بدون Shaping |
+| Session بعد از Failover قفل | Session قدیمی (۱۳-۷) |
 
-### ۱۰) تمرین مستقل
+### ۶) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- هر مسیر پشتیبان باید Policy/UTM یکسان داشته باشد.
+- Internet Service/Application نیاز FortiGuard (Needs-License).
 
-**ت1.** Strategy؟ *(پاسخ: 21-3-ت1)*
+### ۷) جمع‌بندی
 
-**ت2.** SLA؟ *(پاسخ: 21-3-ت2)*
+- First Match؛ مشخص‌ها بالا.
+- SLA برای Real-time؛ load-balance برای حجم.
+- اثبات با `diagnose sys sdwan service` و Log.
 
-### ۱۱) مرور و ارزیابی
+### ۸) تمرین و ارزیابی
 
-**م1.** چرا Rule؟ *(پاسخ: 21-3-م1)*
+**ت1.** (ساده) ترتیب ارزیابی Ruleها؟ *(پاسخ: 21-3-ت1)*
 
-**م2.** سناریو: VoIP قطع؛ چه می‌کنید؟ *(پاسخ: 21-3-م2)*
+**ت2.** (متوسط) فرق `mode sla` و `load-balance`؟ *(پاسخ: 21-3-ت2)*
 
-**معیار تسلط:** ساخت Dual-ISP و SD-WAN.
+**ت3.** (سخت) چرا Rule VoIP هیچ Hit ندارد؟ *(پاسخ: 21-3-ت3)*
 
-**اشتباهات رایج:** Health-check نادرست.
+**ت4.** (سخت، طراحی) سه Rule برای VoIP/ERP/Backup با SLA بنویسید. *(پاسخ: 21-3-ت4)*
 
-### ۱۲) واژگان و English Corner
+**Q1.** Quick quiz (English): What happens when no SD-WAN rule matches? *(پاسخ: 21-3-Q1)*
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Rule | SD-WAN rule | قانون مسیر | SD-WAN |
+### ۹) اصطلاحات و English Corner
 
-| English sentence | ترجمه |
-|---|---|
-| Route voice over the lowest-latency link. | صدا را روی کم‌تأخیرترین Link ببرید. |
-
-#### کارت Lab — درس 21-3
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | SD-WAN Rule |
-| 2 | پیش‌نیاز | درس ۲۱-۱ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | SD-WAN |
-| 8 | صورت مسئله | Rule |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | تست |
-| 11 | سناریوی خرابی | Rule اثر ندارد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | انتقال |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/sdwan-rule.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| Rule/Service | SD-WAN rule (service) | قانون انتخاب مسیر |
+| Implicit rule | Implicit SD-WAN rule | قانون پیش‌فرض |
+| Hysteresis | Hysteresis | تأخیر برای جلوگیری از نوسان |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Put the most specific rules first.* ← مشخص‌ترین Ruleها را اول بگذارید.
 
----
+### ۱۰) Lab
+
+**کارت Lab:** SD-WAN Rule. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/sdwan-rule.md`.
+
+### ۱۱) منابع
+
+- Fortinet Docs: [Maximize bandwidth (SLA) strategy](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/708464/maximize-bandwidth-sla-strategy)، [config system sdwan](https://docs.fortinet.com/document/fortigate/7.0.1/cli-reference/94620/config-system-sdwan).
 
 <a id="l-21-4"></a>
 
@@ -31400,6 +31474,10 @@ Recovery time ~= interval x recoverytime
 
 Tunnelهای IPsec (۱۸-۰) به‌عنوان Member عضو Zone می‌شوند؛ Health-check از طریق Tunnel برای مسیرهای Overlay. ترکیب: Underlay (ISPها) + Overlay (Tunnelها).
 
+![شکل: اجزای SD-WAN و ارتباط Rule، Policy و Health-check.](../figures/ch21-l7-fig1.svg)
+
+*شکل: اجزای SD-WAN و ارتباط Rule، Policy و Health-check.*
+
 ### ۵) مثال حل‌شده
 
 **هدف:** VoIP روی لینک با Latency < 80 ms و Jitter < 20 ms؛ سایر ترافیک Load-balance.
@@ -31565,37 +31643,31 @@ get router info routing-table all
 
 نبود Monitor.
 
-**21-2-ت1** — SD-WAN؟
 
-چند WAN منطقی.
+### پاسخ‌های بازنویسی درس 21-2
 
-**21-2-ت2** — SLA؟
+**21-2-ت1** — چون Interface عضو SD-WAN نباید مستقیم در Policy/Route/Object مرجع داشته باشد.
 
-آستانه‌ی کیفیت.
+**21-2-ت2** — روی Zone SD-WAN.
 
-**21-2-م1** — چرا Zone؟
+**21-2-ت3** — Server/Protocol Probe، ICMP توسط ISP بلاک؛ Route/Source Probe؛ شاهد Sniffer؛ رفع: dns/http Probe.
 
-Policy ساده.
+**21-2-ت4** — Backup، فهرست مرجع‌ها، ساخت Zone/Member، انتقال Policy/Route به Zone در Change Window، آزمون و Rollback.
 
-**21-2-م2** — سناریو: Member همیشه Dead؛ علت؟
+**21-2-Q1** — On the SD-WAN zone interface.
 
-Server/Policy.
 
-**21-3-ت1** — Strategy؟
+### پاسخ‌های بازنویسی درس 21-3
 
-روش انتخاب.
+**21-3-ت1** — بالا به پایین؛ اولین Rule مطابق.
 
-**21-3-ت2** — SLA؟
+**21-3-ت2** — sla: اولین عضو دارای SLA؛ load-balance: توزیع بین همه‌ی اعضای دارای SLA.
 
-معیار.
+**21-3-ت3** — Rule عمومی بالاتر Match می‌شود؛ ترتیب را اصلاح کنید.
 
-**21-3-م1** — چرا Rule؟
+**21-3-ت4** — VoIP: sla با Latency<80/Jitter<20؛ ERP: sla با ترجیح لینک پایدار؛ Backup: load-balance.
 
-انتخاب هوشمند.
-
-**21-3-م2** — سناریو: VoIP قطع؛ چه می‌کنید؟
-
-SLA Latency.
+**21-3-Q1** — Traffic is handled by the implicit rule, which load-balances across members.
 
 **21-4-ت1** — Session پس از Failover؟
 
@@ -31765,7 +31837,7 @@ Dual-ISP پایدار؛ آشنایی با HA؛ لایسنس HA بررسی.
 
 <a id="ch22"></a>
 
-> **نسخه‌ی اصلاح‌شده (v3.3):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۲-۰، ۲۴-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
+> **نسخه‌ی اصلاح‌شده (v3.4):** نسخه‌ی توسعه‌یافته‌ی فایل اصلی؛ درس‌های افزوده: ۲۲-۰، ۲۴-۰ (دسته C). فایل اصلی در `course/` حفظ شده است. پاسخ‌های درس‌های افزوده در «پاسخ‌های فصل» همان فصل است.
 
 # فصل 22 — High Availability: FGCP، Session Sync و Failover
 
@@ -31870,6 +31942,10 @@ With override enabled: monitored interfaces -> priority -> uptime -> serial
 #### ۴-۷) Failover time
 
 Failover معمولاً چند ثانیه (Detect + Election + ARP/MAC Update): بعد از Failover Primary جدید **Gratuitous ARP** می‌فرستد و MAC مجازی Cluster به Primary جدید منتقل می‌شود تا سوئیچ‌ها یاد بگیرند. نتیجه: چند ثانیه قطعی؛ Sessionها فقط با Pickup می‌مانند.
+
+![شکل: HA، Heartbeat، Election و Split-brain.](../figures/ch22-l0-fig1.svg)
+
+*شکل: HA، Heartbeat، Election و Split-brain.*
 
 ### ۵) مثال حل‌شده
 
@@ -32101,258 +32177,215 @@ get system ha status
 
 <a id="l-22-2"></a>
 
-## درس 22-2 — پیکربندی HA Active-Passive
+## درس 22-2 — پیکربندی HA Active-Passive: برگه‌ی طراحی، GUI، CLI و Verification
 
-**فصل 22 - روز 2 · پیش‌نیاز: درس ۲۲-۰ · ۶ ساعت**
+**فصل ۲۲ · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰ (FGCP، Election، Heartbeat) · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (7.0.3):** Needs-License (دو VM با لایسنس معتبر)؛ سینتکس `Unverified`؛ Lab «اجرا نشده». **هر Boot/تغییر فقط با تأیید کاربر.**
 
-پیکربندی دو دستگاه.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+Cluster Active-Passive را با برگه‌ی طراحی، Heartbeat Redundant، Monitor Interface و Session Pickup بسازد و Verification/Backup/Rollback را اجرا کند.
 
-درس ۲۲-۰
+### ۲) برگه‌ی طراحی
 
-### ۳) توضیح مفهومی
-
-- `config system ha`: group-name، mode a-p، password.
-- Priority: Primary بالاتر.
-- Heartbeat Interface.
-- Monitor Interface.
-- Firmware یکسان.
-
-### ۴) مثال ساده
-
-دو دستگاه؛ یکی بمیرد دیگری ادامه دهد.
-
-### ۵) مثال سازمانی
-
-سازمان: HA برای فایروال لبه بدون قطع بلندمدت.
-
-### ۶) تصویر و توپولوژی
-
-```text
-FGT-1 (Primary) <-HB-> FGT-2 (Secondary)
+``` text
+Units      : FGT-1 (priority 200), FGT-2 (priority 100); same model, same FortiOS, same license type
+Group      : name FGT-HA-LAB, mode a-p, password <HA-PASSWORD>
+Heartbeat  : port3 (priority 100), port4 (priority 50) back-to-back, no switch
+Monitor    : port1 (WAN), port2 (LAN)
+Session    : session-pickup enable (TCP)
+Override   : disable (prevent flap)  [decision: failback manual]
+Mgmt       : dedicated management interface per unit (reserved mgmt ip)
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+### ۳) مراحل
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+1. Backup هر دو. بررسی نسخه/Serial.
+2. تنظیم HA روی FGT-1 (Primary) سپس FGT-2.
+3. اتصال Heartbeat Back-to-back.
+4. صبر برای Sync؛ بررسی Checksum.
 
-#### روش گرافیکی (GUI)
+**GUI:** System → HA → Mode Active-Passive؛ Device Priority؛ Group Name؛ Password؛ Heartbeat Interfaces (port3 100، port4 50)؛ Monitor Interfaces (port1، port2)؛ Session Pickup.
 
-1. System > HA: Mode Active-Passive؛ Group Name؛ Password؛ Heartbeat Interfaces؛ Monitor Interfaces.
+**CLI (`Unverified`):**
 
-#### روش خط فرمان (CLI)
-
-```text
+``` text
 config system ha
-    set group-name "FGT-HA"
+    set group-name "FGT-HA-LAB"
     set mode a-p
     set password <HA-PASSWORD>
-    set hbdev "port3" 50
+    set hbdev "port3" 100 "port4" 50
     set monitor "port1" "port2"
     set priority 200
-end
-```
-
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
-
-- `Unverified`.
-- Password نمونه.
-- Priority دستگاه دوم کمتر.
-
-### ۸) تست عملکرد
-
-- Cluster با دو عضو.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
-|---|---|
-| Symptom | Secondary Sync نمی‌شود |
-| شواهد/دستور | HA status |
-| علت | Firmware/Config |
-| رفع | تطبیق |
-
-### ۱۰) تمرین مستقل
-
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
-
-**ت1.** Priority؟ *(پاسخ: 22-2-ت1)*
-
-**ت2.** Monitor؟ *(پاسخ: 22-2-ت2)*
-
-### ۱۱) مرور و ارزیابی
-
-**م1.** چرا Firmware یکسان؟ *(پاسخ: 22-2-م1)*
-
-**م2.** سناریو: Secondary Out-of-sync؛ علت؟ *(پاسخ: 22-2-م2)*
-
-**معیار تسلط:** ساخت HA و تست Failover.
-
-**اشتباهات رایج:** Heartbeat و Override.
-
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Priority | HA priority | اولویت | HA |
-
-| English sentence | ترجمه |
-|---|---|
-| Run the same firmware on both members. | روی هر دو عضو Firmware یکسان اجرا کنید. |
-
-#### کارت Lab — درس 22-2
-
-| # | فیلد | محتوا |
-|---|---|---|
-| 1 | عنوان و هدف | HA A-P |
-| 2 | پیش‌نیاز | درس ۲۲-۰ |
-| 3 | توپولوژی | FGT-1+FGT-2 |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Baseline |
-| 8 | صورت مسئله | HA |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | get ha |
-| 11 | سناریوی خرابی | Secondary Sync نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Cluster |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/ha-ap.md` |
-| 16 | Cleanup و بازگردانی | حذف |
-
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
-
----
-
-<a id="l-22-3"></a>
-
-## درس 22-3 — تست Failover و Session Sync
-
-**فصل 22 - روز 3 · پیش‌نیاز: درس ۲۲-۱ · ۶ ساعت**
-
-### ۱) معرفی درس
-
-Failover واقعی و حفظ Session.
-
-### ۲) پیش‌نیازها
-
-درس ۲۲-۱
-
-### ۳) توضیح مفهومی
-
-- Failover با Shutdown Interface/دستگاه.
-- Session Pickup برای حفظ Session.
-- Override و Preemption.
-- زمان قطع (چند ثانیه).
-- Log رویداد HA.
-
-### ۴) مثال ساده
-
-دو دستگاه؛ یکی بمیرد دیگری ادامه دهد.
-
-### ۵) مثال سازمانی
-
-سازمان: HA برای فایروال لبه بدون قطع بلندمدت.
-
-### ۶) تصویر و توپولوژی
-
-```text
-FGT-1 (Primary) <-HB-> FGT-2 (Secondary)
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. System > HA > Session Pickup.
-2. Log & Report > Events > HA.
-
-#### روش خط فرمان (CLI)
-
-```text
-config system ha
     set session-pickup enable
     set override disable
 end
-diagnose sys ha status
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+FGT-2 همان ولی `priority 100`.
 
-- `Unverified`.
-- Override با احتیاط.
+### ۴) Verification
 
-### ۸) تست عملکرد
+``` text
+get system ha status
+diagnose sys ha status
+diagnose sys ha checksum cluster
+diagnose sys ha history read
+```
 
-- ping پیوسته هنگام Failover.
+انتظار: دو عضو، Primary/Secondary، Checksum یکسان، Heartbeat هر دو لینک Up.
 
-### ۹) عیب‌یابی
+### ۵) مثال‌ها
 
-| بخش | شرح |
+**ساده:** `ha status`: FGT-1 Primary؛ Hostname و Serial هر دو.
+
+**متوسط:** Secondary «out of sync»: مقایسه‌ی Firmware/Config؛ `checksum cluster` مغایر؛ علت: نسخه‌ی متفاوت؛ رفع: ارتقای یکسان.
+
+**سخت (Flap):** Cluster بین دو عضو سوئیچ می‌کند: History: Monitor Interface خراب مکرر؛ لینک port2 نوسان؛ شواهد Interface Errors؛ رفع: کابل/Duplex، Hold-down، `override disable`.
+
+### ۶) Troubleshooting
+
+| علامت | علت |
 |---|---|
-| Symptom | Session قطع می‌شود |
-| شواهد/دستور | ping |
-| علت | Pickup خاموش |
-| رفع | فعال‌سازی |
+| Cluster تشکیل نمی‌شود | Group/Password/Mode/HB |
+| Secondary Sync نمی‌شود | Firmware/Config |
+| Flap | Monitor/لینک |
+| Split-brain | HB قطع |
 
-### ۱۰) تمرین مستقل
+### ۷) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- Password قوی؛ HB جدا از شبکه‌ی کاربران.
+- Reserved Mgmt IP برای دسترسی به هر عضو.
 
-**ت1.** Session Pickup؟ *(پاسخ: 22-3-ت1)*
+### ۸) جمع‌بندی
 
-**ت2.** Override؟ *(پاسخ: 22-3-ت2)*
+- برگه‌ی طراحی؛ Heartbeat Redundant؛ Monitor مناسب.
+- Firmware یکسان.
+- Verification: status/checksum/history.
 
-### ۱۱) مرور و ارزیابی
+### ۹) تمرین و ارزیابی
 
-**م1.** چرا Override خاموش؟ *(پاسخ: 22-3-م1)*
+**ت1.** (ساده) چه چیزی در دو عضو باید یکسان باشد؟ *(پاسخ: 22-2-ت1)*
 
-**م2.** سناریو: دو Failover پشت‌سرهم؛ علت؟ *(پاسخ: 22-3-م2)*
+**ت2.** (متوسط) چرا `override disable`؟ *(پاسخ: 22-2-ت2)*
 
-**معیار تسلط:** ساخت HA و تست Failover.
+**ت3.** (سخت) Cluster Flap می‌کند؛ تحلیل. *(پاسخ: 22-2-ت3)*
 
-**اشتباهات رایج:** Heartbeat و Override.
+**Q1.** Quick quiz (English): Which command compares configuration consistency between cluster members? *(پاسخ: 22-2-Q1)*
 
-### ۱۲) واژگان و English Corner
+### ۱۰) اصطلاحات و English Corner
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Pickup | Session pickup | حفظ Session | HA |
-
-| English sentence | ترجمه |
-|---|---|
-| Keep override disabled to avoid flapping. | برای جلوگیری از Flap، Override را خاموش نگه دارید. |
-
-#### کارت Lab — درس 22-3
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | Failover |
-| 2 | پیش‌نیاز | درس ۲۲-۱ |
-| 3 | توپولوژی | FGT-1+FGT-2 |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | HA |
-| 8 | صورت مسئله | Failover |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping |
-| 11 | سناریوی خرابی | Session قطع می‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | قطع کوتاه |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/ha-fail.md` |
-| 16 | Cleanup و بازگردانی | — |
+| hbdev | Heartbeat device | Interface نبض |
+| Reserved mgmt | Reserved management interface | مدیریت جدا برای هر عضو |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Use identical firmware on all cluster members.* ← روی همه‌ی اعضا Firmware یکسان استفاده کنید.
 
----
+### ۱۱) Lab
+
+**کارت Lab:** HA A-P. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ha-ap.md`.
+
+### ۱۲) منابع
+
+- Fortinet Docs: [FGCP](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/62403/fgcp).
+
+<a id="l-22-3"></a>
+
+## درس 22-3 — آزمون Failover/Failback و Session Pickup: طراحی تست، اندازه‌گیری و تحلیل
+
+**فصل ۲۲ · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰، ۲۲-۲ · ≈ ۶ ساعت**
+
+> **وضعیت:** آزمون فقط در Lab با تأیید؛ اعداد نمونه؛ `Unverified`.
+
+### ۱) هدف آموزشی
+
+آزمون Failover را برنامه‌ریزی (سناریو، معیار، اندازه‌گیری) و نتایج را تحلیل کند؛ اثر Session Pickup، VPN و ARP را ببیند.
+
+### ۲) ماتریس آزمون
+
+| # | سناریو | انتظار | اندازه‌گیری |
+|---|---|---|---|
+| 1 | قطع Primary (Power off) | Failover چند ثانیه | بسته‌های از دست‌رفته |
+| 2 | قطع port1 (Monitor) | Failover | زمان |
+| 3 | قطع یک Heartbeat | Cluster باقی | بدون Failover |
+| 4 | قطع هر دو Heartbeat | Split-brain (آزمون کنترل‌شده) | ثبت رفتار |
+| 5 | بازگشت Primary | بدون Failback (override disable) | تأیید |
+| 6 | Session TCP طولانی (SSH) | با Pickup ادامه | Session |
+
+### ۳) روش اندازه‌گیری
+
+``` text
+# client A (continuous)
+ping -i 0.2 192.168.20.5 | ts
+# session test
+ssh user@192.168.20.5   (keep typing)
+# FGT
+get system ha status
+diagnose sys ha history read
+diagnose sys session list
+```
+
+``` text
+Packet loss time ~= lost packets x ping interval
+```
+
+### ۴) مثال حل‌شده
+
+**آزمون ۱:** ۱۵ بسته از دست رفته با فاصله 0.2 s = ≈ ۳ ثانیه قطع. SSH با Pickup ادامه یافت یا قطع شد: اگر قطع شد، Pickup/Hash/Interface Monitor را بررسی. **درس:** قطع ۳ ثانیه با Pickup معمولاً برای TCP قابل‌تحمل است؛ UDP/IPsec ممکن است Renegotiate کند.
+
+**آزمون ۴ (Split-brain):** با قطع هر دو HB: هر دو Primary؛ ARP: دو MAC؛ ping ناپایدار. **اقدام:** وصل HB، ریست یک عضو، بررسی Checksum و Config. **پیشگیری:** HB Redundant/Back-to-back.
+
+**مثال سخت:** پس از Failover VPN دوباره برقرار نمی‌شود: بررسی IKE: Peer SPI قدیمی؛ DPD/Rekey؛ در صورت لزوم `diagnose vpn ike gateway clear` (با احتیاط). ثبت.
+
+### ۵) Troubleshooting
+
+| علامت | علت |
+|---|---|
+| Failover کند | Heartbeat/Lost interval |
+| Session قطع | Pickup خاموش/UDP |
+| دو Primary | HB قطع |
+| بعد از Failover VPN قطع | Renegotiate |
+
+### ۶) نکات امنیتی
+
+- آزمون Split-brain فقط Lab.
+- Change و Rollback.
+
+### ۷) جمع‌بندی
+
+- آزمون Failover = سناریو + معیار + اندازه‌گیری.
+- Pickup TCP را حفظ می‌کند.
+- Split-brain را عمداً فقط در Lab بیازمایید.
+
+### ۸) تمرین و ارزیابی
+
+**ت1.** (ساده) چگونه زمان قطع را اندازه می‌گیرید؟ *(پاسخ: 22-3-ت1)*
+
+**ت2.** (متوسط) SSH پس از Failover قطع شد؛ چرا؟ *(پاسخ: 22-3-ت2)*
+
+**ت3.** (سخت) ماتریس آزمون ۶ سناریویی را با انتظار بنویسید. *(پاسخ: 22-3-ت3)*
+
+**Q1.** Quick quiz (English): How do you measure failover time with a continuous ping? *(پاسخ: 22-3-Q1)*
+
+### ۹) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| Failover | Failover | انتقال به عضو دوم |
+| Failback | Failback | بازگشت |
+| Hold-down | Hold-down timer | تأخیر پیش از تغییر |
+
+- *Test every failure mode and record the measured downtime.* ← هر حالت خرابی را تست و زمان قطع را ثبت کنید.
+
+### ۱۰) Lab
+
+**کارت Lab:** Failover. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ha-fail.md`.
+
+### ۱۱) منابع
+
+- Fortinet Docs: [Troubleshoot an HA formation](https://docs.fortinet.com/document/fortigate/7.4.0/administration-guide/946059/troubleshoot-an-ha-formation) (مفهوم؛ نسخه‌ی 7.0 را بررسی کنید).
 
 <a id="l-22-4"></a>
 
@@ -32617,37 +32650,27 @@ get system ha status
 
 قطع Heartbeat.
 
-**22-2-ت1** — Priority؟
 
-بالاتر Primary.
+### پاسخ‌های بازنویسی درس 22-2
 
-**22-2-ت2** — Monitor؟
+**22-2-ت1** — مدل، Firmware، نوع لایسنس، Group/Password/Mode و Hbdev سازگار.
 
-قطع Interface Failover.
+**22-2-ت2** — برای جلوگیری از Failback ناخواسته و Flap.
 
-**22-2-م1** — چرا Firmware یکسان؟
+**22-2-ت3** — Monitor Interface نوسان‌دار، لینک/کابل، Hold-down؛ شاهد: ha history و Interface Errors.
 
-Sync.
+**22-2-Q1** — diagnose sys ha checksum cluster.
 
-**22-2-م2** — سناریو: Secondary Out-of-sync؛ علت؟
 
-نسخه.
+### پاسخ‌های بازنویسی درس 22-3
 
-**22-3-ت1** — Session Pickup؟
+**22-3-ت1** — Ping پیوسته با فاصله‌ی مشخص؛ قطع ≈ بسته‌های از دست‌رفته × فاصله.
 
-حفظ Session.
+**22-3-ت2** — Session Pickup خاموش یا ترافیک UDP/IPsec یا تغییر Interface؛ بررسی Pickup.
 
-**22-3-ت2** — Override؟
+**22-3-ت3** — قطع Primary، قطع Monitor، قطع یک HB، قطع هر دو HB (Lab)، بازگشت Primary، Session طولانی؛ هر کدام با انتظار و اندازه‌گیری.
 
-بازگرداندن Primary.
-
-**22-3-م1** — چرا Override خاموش؟
-
-جلوگیری از Flap.
-
-**22-3-م2** — سناریو: دو Failover پشت‌سرهم؛ علت؟
-
-Flap/Override.
+**22-3-Q1** — Count lost replies multiplied by the ping interval.
 
 **22-4-ت1** — Checksum؟
 
@@ -33720,258 +33743,264 @@ end
 
 <a id="l-24-2"></a>
 
-## درس 24-2 — Policy حداقلی Web/App/DB
+## درس 24-2 — Policy حداقلی Web/App/DB: ماتریس، پیاده‌سازی و آزمون Isolation
 
-**فصل 24 - روز 2 · پیش‌نیاز: درس ۲۴-۰ · ۶ ساعت**
+**فصل ۲۴ · بازنویسی عمیق · پیش‌نیاز: ۱۱-۰، ۲۴-۱، ۱۲-۰ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (7.0.3):** سینتکس `Unverified`؛ Lab «اجرا نشده».
 
-فقط پورت لازم بین لایه‌ها.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+سه لایه‌ی Web/App/DB را با Zone و Policy حداقلی پیاده‌سازی و **Isolation** را با آزمون منفی (nmap) اثبات کند.
 
-درس ۲۴-۰
+### ۲) ماتریس Policy
 
-### ۳) توضیح مفهومی
-
-- Web->App پورت 8080.
-- App->DB پورت 1433/3306.
-- Deny بقیه.
-- Log همه‌ی Deny.
-- تست با nmap.
-
-### ۴) مثال ساده
-
-اتاق سرور با بخش‌های جدا.
-
-### ۵) مثال سازمانی
-
-سازمان: Web/App/DB جدا با Policy حداقلی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Web -> App -> DB (only required ports)
+``` text
+Users -> WEB : TCP 443              accept + UTM + log
+WEB   -> APP : TCP 8080             accept + log
+APP   -> DB  : TCP 1433             accept + log
+WEB   -> DB  : none                 deny + log
+Users -> DB  : none                 deny + log
+DB    -> any : only updates (opt)   restricted
+any   -> any : implicit deny + log
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+### ۳) پیاده‌سازی
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+**GUI:** Network → Interfaces → Zone (ZN-WEB، ZN-APP، ZN-DB)؛ Policy & Objects → Addresses/Services (TCP-8080، TCP-1433)؛ Firewall Policy برای هر ردیف؛ Log همه.
 
-#### روش گرافیکی (GUI)
+**CLI (`Unverified`):**
 
-1. Policy & Objects > Firewall Policy.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
+config system zone
+    edit "ZN-WEB"
+        set interface "vlan10"
+    next
+    edit "ZN-APP"
+        set interface "vlan20"
+    next
+    edit "ZN-DB"
+        set interface "vlan30"
+    next
+end
+config firewall service custom
+    edit "TCP-8080"
+        set tcp-portrange 8080
+    next
+    edit "TCP-1433"
+        set tcp-portrange 1433
+    next
+end
 config firewall policy
     edit 30
+        set name "WEB-to-APP"
         set srcintf "ZN-WEB"
         set dstintf "ZN-APP"
-        set srcaddr "all"
-        set dstaddr "all"
+        set srcaddr "WEB-SRV"
+        set dstaddr "APP-SRV"
         set action accept
+        set schedule "always"
         set service "TCP-8080"
+        set logtraffic all
+    next
+    edit 31
+        set name "APP-to-DB"
+        set srcintf "ZN-APP"
+        set dstintf "ZN-DB"
+        set srcaddr "APP-SRV"
+        set dstaddr "DB-SRV"
+        set action accept
+        set schedule "always"
+        set service "TCP-1433"
         set logtraffic all
     next
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+### ۴) آزمون Isolation (مثبت/منفی)
 
-- `Unverified`.
-- سرویس نمونه.
+``` text
+# positive
+from WEB: nc -zv APP-SRV 8080     -> open
+from APP: nc -zv DB-SRV 1433      -> open
+# negative
+from WEB: nc -zv DB-SRV 1433      -> filtered/timeout
+from WEB: nmap -Pn -p 1-1024 DB-SRV -> all filtered
+from Users: nc -zv DB-SRV 1433    -> filtered
+```
 
-### ۸) تست عملکرد
+ثبت: Log Deny و Hit Count؛ هر آزمون منفی که «باز» شد = شکست طراحی.
 
-- nmap: فقط پورت مجاز باز.
+### ۵) مثال‌ها
 
-### ۹) عیب‌یابی
+**ساده:** WEB→APP 8080 موفق؛ WEB→APP 22 رد.
 
-| بخش | شرح |
+**متوسط:** APP به DB نمی‌رسد: Debug Flow: Denied policy 0 چون Service Object اشتباه (UDP)؛ اصلاح.
+
+**سخت:** پس از Compromise WEB، مهاجم Scan می‌کند: Log Deny WEB→DB و WEB→APP (پورت‌های دیگر) → Alert؛ Containment: Quarantine WEB (۲۹-۰).
+
+### ۶) Troubleshooting
+
+| علامت | علت |
 |---|---|
-| Symptom | پورت اضافه باز |
-| شواهد/دستور | nmap |
-| علت | Policy گسترده |
-| رفع | محدود |
+| سرویس کار نمی‌کند | Service/Zone اشتباه |
+| دسترسی غیرمجاز | Policy گسترده یا Shadow |
+| Log کم | logtraffic |
 
-### ۱۰) تمرین مستقل
+### ۷) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- Default Deny؛ هر Policy Source/Destination مشخص.
+- بازبینی Hit Count و حذف Policy بی‌استفاده.
 
-**ت1.** حداقلی؟ *(پاسخ: 24-2-ت1)*
+### ۸) جمع‌بندی
 
-**ت2.** Log؟ *(پاسخ: 24-2-ت2)*
+- Zone + Policy حداقلی + Log.
+- Isolation را با آزمون منفی اثبات کنید.
 
-### ۱۱) مرور و ارزیابی
+### ۹) تمرین و ارزیابی
 
-**م1.** چرا Deny Log؟ *(پاسخ: 24-2-م1)*
+**ت1.** (ساده) چرا WEB→DB ممنوع است؟ *(پاسخ: 24-2-ت1)*
 
-**م2.** سناریو: Web به DB؛ چه؟ *(پاسخ: 24-2-م2)*
+**ت2.** (متوسط) آزمون منفی چیست؟ *(پاسخ: 24-2-ت2)*
 
-**معیار تسلط:** Segmentation و تست.
+**ت3.** (سخت) APP به DB نمی‌رسد؛ مراحل بررسی. *(پاسخ: 24-2-ت3)*
 
-**اشتباهات رایج:** any-any.
+**Q1.** Quick quiz (English): Why must isolation be proven with a negative test? *(پاسخ: 24-2-Q1)*
 
-### ۱۲) واژگان و English Corner
+### ۱۰) اصطلاحات و English Corner
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Least privilege | Least privilege | حداقل دسترسی | امنیت |
-
-| English sentence | ترجمه |
-|---|---|
-| Apply least privilege between tiers. | بین لایه‌ها حداقل دسترسی اعمال کنید. |
-
-#### کارت Lab — درس 24-2
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | Policy لایه |
-| 2 | پیش‌نیاز | درس ۲۴-۰ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | Zone |
-| 8 | صورت مسئله | Policy |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | nmap |
-| 11 | سناریوی خرابی | پورت اضافه باز |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | فقط مجاز |
-| 14 | معیار پذیرش | ثبت |
-| 15 | مستندات نهایی | `03-ops/dc-policy.md` |
-| 16 | Cleanup و بازگردانی | حذف |
+| Tier | Application tier | لایه‌ی برنامه |
+| Negative test | Negative test | آزمون ممنوعیت |
+| Hit count | Policy hit count | تعداد Match |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Prove isolation with negative tests.* ← جداسازی را با آزمون منفی اثبات کنید.
 
----
+### ۱۱) Lab
+
+**کارت Lab:** Policy لایه‌ای. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/dc-policy.md`.
+
+### ۱۲) منابع
+
+- Fortinet Docs: FortiOS 7.0 Administration Guide — Firewall policy، Zones؛ NIST SP 800-41.
 
 <a id="l-24-3"></a>
 
-## درس 24-3 — VDOM و VRF (مفهومی)
+## درس 24-3 — Lab عملی VDOM: ساخت، Inter-VDOM Link، Policy و محدودیت منابع
 
-**فصل 24 - روز 3 · پیش‌نیاز: درس ۲۴-۱ · ۶ ساعت**
+**فصل ۲۴ · بازنویسی عمیق · پیش‌نیاز: ۲۴-۰ (معماری)، ۱۲-۰ · ≈ ۶ ساعت**
 
-### ۱) معرفی درس
+> **وضعیت (7.0.3):** Needs-License/محدودیت VM (`Unverified`)؛ فعال‌سازی Multi VDOM **فقط پس از Backup و تأیید کاربر**؛ Lab «اجرا نشده».
 
-جداسازی کامل مجازی.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+یک Lab دو-VDOM بسازد: فعال‌سازی Multi-VDOM، ساخت VDOM، Link، Route، Policy و Resource Limit؛ و جداسازی را آزمایش کند.
 
-درس ۲۴-۱
+### ۲) طرح
 
-### ۳) توضیح مفهومی
-
-- VDOM: فایروال مجازی (لایسنس).
-- VRF: جداسازی Routing.
-- Inter-VDOM Link.
-- مقایسه با Zone.
-- `Unverified`.
-
-### ۴) مثال ساده
-
-اتاق سرور با بخش‌های جدا.
-
-### ۵) مثال سازمانی
-
-سازمان: Web/App/DB جدا با Policy حداقلی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Web -> App -> DB (only required ports)
+``` text
+root     : Internet, management, shared services
+CUST-A   : 10.1.0.0/24 (port2)         link A-ROOT
+CUST-B   : 10.1.0.0/24 (port3)         link B-ROOT   (overlapping on purpose)
+NAT/Internet in root; no direct A<->B path
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+### ۳) مراحل
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+1. Backup. فعال‌سازی: System → Settings → Virtual Domains → Multi VDOM (CLI: `config system global; set vdom-mode multi-vdom`).
+2. System → VDOM → Create New: CUST-A، CUST-B.
+3. تخصیص Interface: port2→CUST-A، port3→CUST-B.
+4. Inter-VDOM Link: Network → Interfaces → Create New → VDOM Link (A-ROOT، B-ROOT).
+5. در هر VDOM: IP Link، Route Default به root، Policy LAN→Link.
+6. در root: Route به Subnet هر مشتری، Policy Link→WAN با NAT (جدا برای هر Link).
+7. System → Global Resources/VDOM: سقف Session برای CUST-B.
 
-#### روش گرافیکی (GUI)
-
-1. System > VDOM.
-
-#### روش خط فرمان (CLI)
-
-```text
-config system vdom
-    edit "DMZ-VD"
+``` text
+config global
+    config system vdom-link
+        edit "A-ROOT"
+            set type ethernet
+        next
+    end
+end
+config vdom
+    edit CUST-A
+        config router static
+            edit 1
+                set gateway 172.31.1.1
+                set device "A-ROOT0"
+            next
+        end
     next
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+(ساختار نمونه؛ نام Interface لینک (`A-ROOT0/A-ROOT1`) و سینتکس `Unverified`.)
 
-- Needs-License؛ مفهومی.
+### ۴) آزمون
 
-### ۸) تست عملکرد
+- Client-A و Client-B با IP هم‌پوشان هر دو اینترنت دارند (NAT در root).
+- Client-A به Client-B نمی‌رسد (آزمون منفی).
+- CUST-B سیل Session می‌فرستد؛ فقط CUST-B محدود می‌شود (Resource Limit).
+- `diagnose sys session list` در هر VDOM جدا (`config vdom; edit CUST-A`).
 
-- مقایسه را بنویسید.
+### ۵) مثال‌ها
 
-### ۹) عیب‌یابی
+**ساده:** Ping از Client-A به Internet موفق.
 
-| بخش | شرح |
+**متوسط:** Client-A به اینترنت می‌رود ولی B نه: Policy/Route در root برای Link B ناقص.
+
+**سخت:** هر دو مشتری 10.1.0.0/24؛ در root Route برگشت ابهام دارد. **رفع:** Route به Link خاص هر Subnet از طریق Interface Link (نه فقط Subnet) یا NAT در VDOM مشتری قبل از ورود به root (Source NAT به IP یکتای Link).
+
+### ۶) Troubleshooting
+
+| علامت | علت |
 |---|---|
-| Symptom | VDOM ساخته نمی‌شود |
-| شواهد/دستور | پیام |
-| علت | لایسنس |
-| رفع | Zone |
+| Policy اثر ندارد | VDOM اشتباه |
+| ping بین VDOM | Link/Route/Policy یک سمت |
+| منابع بی‌حد | Limit تنظیم نشده |
+| دستور CLI کار نمی‌کند | داخل `config vdom` نیست |
 
-### ۱۰) تمرین مستقل
+### ۷) نکات امنیتی
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+- Admin هر مشتری محدود به VDOM.
+- Super Admin فقط Global.
+- Log هر VDOM جدا.
 
-**ت1.** VDOM؟ *(پاسخ: 24-3-ت1)*
+### ۸) جمع‌بندی
 
-**ت2.** VRF؟ *(پاسخ: 24-3-ت2)*
+- VDOM = Routing/Policy/Admin/منابع جدا.
+- Link + Route + Policy هر دو سمت.
+- Overlap با NAT/Route دقیق.
 
-### ۱۱) مرور و ارزیابی
+### ۹) تمرین و ارزیابی
 
-**م1.** چرا VDOM؟ *(پاسخ: 24-3-م1)*
+**ت1.** (ساده) برای ارتباط VDOMها چه لازم است؟ *(پاسخ: 24-3-ت1)*
 
-**م2.** سناریو: لایسنس ندارید؛ چه؟ *(پاسخ: 24-3-م2)*
+**ت2.** (متوسط) چرا Overlap مشکل Route برگشت می‌سازد؟ *(پاسخ: 24-3-ت2)*
 
-**معیار تسلط:** Segmentation و تست.
+**ت3.** (سخت) آزمون جداسازی A و B را بنویسید. *(پاسخ: 24-3-ت3)*
 
-**اشتباهات رایج:** any-any.
+**Q1.** Quick quiz (English): Where do CLI commands for a specific VDOM have to be run? *(پاسخ: 24-3-Q1)*
 
-### ۱۲) واژگان و English Corner
+### ۱۰) اصطلاحات و English Corner
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| VDOM | Virtual Domain | دامنه‌ی مجازی | FGT |
-| VRF | Virtual Routing and Forwarding | Routing مجازی | Routing |
-
-| English sentence | ترجمه |
-|---|---|
-| VDOM may require a license. | VDOM ممکن است به لایسنس نیاز داشته باشد. |
-
-#### کارت Lab — درس 24-3
-
-| # | فیلد | محتوا |
+| مخفف | شکل کامل | معنی |
 |---|---|---|
-| 1 | عنوان و هدف | مقایسه VDOM |
-| 2 | پیش‌نیاز | درس ۲۴-۱ |
-| 3 | توپولوژی | — |
-| 4 | تجهیزات | — |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | — |
-| 7 | وضعیت اولیه | — |
-| 8 | صورت مسئله | سند |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | — |
-| 11 | سناریوی خرابی | VDOM ساخته نمی‌شود |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | جدول |
-| 14 | معیار پذیرش | تأیید |
-| 15 | مستندات نهایی | `02-design/vdom.md` |
-| 16 | Cleanup و بازگردانی | — |
+| VDOM link | Inter-VDOM link | اتصال VDOMها |
+| Global | Global scope | تنظیمات سراسری |
+| root | root VDOM | VDOM پیش‌فرض |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+- *Run VDOM-specific commands inside the VDOM context.* ← دستورهای اختصاصی VDOM را در Context همان VDOM اجرا کنید.
 
----
+### ۱۱) Lab
+
+**کارت Lab:** VDOM. **وضعیت:** اجرا نشده (Needs-License؛ تأیید کاربر). **Evidence:** `03-ops/vdom-lab.md`.
+
+### ۱۲) منابع
+
+- Fortinet Docs: [Inter-VDOM routing](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/335646/inter-vdom-routing)، [Global and per-VDOM resources](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/538256/global-and-per-vdom-resources).
 
 <a id="l-24-4"></a>
 
@@ -34115,37 +34144,27 @@ execute backup config tftp fgt-g9.conf 192.168.90.10
 
 Policy حداقلی.
 
-**24-2-ت1** — حداقلی؟
 
-فقط لازم.
+### پاسخ‌های بازنویسی درس 24-2
 
-**24-2-ت2** — Log؟
+**24-2-ت1** — Web نباید مستقیم به DB برسد؛ فقط App مجاز است تا حرکت جانبی محدود شود.
 
-برای Deny.
+**24-2-ت2** — آزمونی که باید شکست بخورد (مثل WEB→DB) تا جداسازی ثابت شود.
 
-**24-2-م1** — چرا Deny Log؟
+**24-2-ت3** — Debug Flow (Policy 0؟)، Service/Zone، Route، Log Deny، Hit Count.
 
-ردیابی.
+**24-2-Q1** — Because only a failed forbidden connection proves the boundary actually blocks it.
 
-**24-2-م2** — سناریو: Web به DB؛ چه؟
 
-Deny+Log.
+### پاسخ‌های بازنویسی درس 24-3
 
-**24-3-ت1** — VDOM؟
+**24-3-ت1** — Inter-VDOM Link، Route و Policy در هر دو VDOM.
 
-فایروال مجازی.
+**24-3-ت2** — Subnet یکسان در دو VDOM باعث ابهام Routeهای برگشت در root می‌شود؛ باید Route به Link/NAT یکتا.
 
-**24-3-ت2** — VRF؟
+**24-3-ت3** — Client-A به Client-B ping/nc باید رد شود؛ Log Deny؛ Session جدا در هر VDOM؛ Resource Limit فقط B را محدود کند.
 
-Routing جدا.
-
-**24-3-م1** — چرا VDOM؟
-
-جداسازی کامل.
-
-**24-3-م2** — سناریو: لایسنس ندارید؛ چه؟
-
-Zone.
+**24-3-Q1** — Inside the config vdom / edit <name> context of that VDOM.
 
 **24-4-ت1** — G9؟
 
@@ -34297,7 +34316,7 @@ Backup همه‌ی Gateها؛ آشنایی با FortiManager/Analyzer (لایس�
 
 <a id="ch25"></a>
 
-> **نسخه v3.3:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.4:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 25 — Multi-Vendor: FortiGate در کنار Cisco CSR (معماری ۶)
 
@@ -36828,7 +36847,7 @@ Backup همه‌ی Gateها؛ Wireshark/Sniffer مسلط.
 
 <a id="ch28"></a>
 
-> **نسخه v3.3:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.4:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 28 — Packet Analysis و بلوک‌های عیب‌یابی
 
@@ -37740,6 +37759,10 @@ Severity = اثر × احتمال؛ پرسش‌ها: دارایی کدام اس�
 #### ۳-۵) مهار با Firewall
 
 Block IP (Address + Deny Policy بالای Policyها)، Quarantine، قطع VPN User، Clear Session (۱۳-۷). **قبل از مهار شواهد را ذخیره کنید** (Log، Capture).
+
+![شکل: چرخه‌ی پاسخ به حادثه.](../figures/ch29-l0-fig1.svg)
+
+*شکل: چرخه‌ی پاسخ به حادثه.*
 
 ### ۴) مثال حل‌شده
 
@@ -39179,7 +39202,7 @@ Plan+Rollback+Evidence.
 
 <a id="ch31"></a>
 
-> **نسخه v3.3:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
+> **نسخه v3.4:** این بخش در دسته‌های B/A/C بدون تغییر محتوایی است (فشرده‌تر از فصل‌های توسعه‌یافته؛ در دسته D بازنویسی می‌شود).
 
 # فصل 31 — Capstone I و II: طراحی و پیاده‌سازی شبکه‌ی سازمانی
 
