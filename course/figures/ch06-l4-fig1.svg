@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="topology" role="img" viewBox="0 0 720 250"><style>
+text{font-family:Tahoma,Arial,sans-serif;font-size:13px;fill:#1b2430}
+.cap{font-size:12px;fill:#5b687a}
+.bx{fill:#eef2f8;stroke:#9aa7b8}
+.net{fill:#7fb8f2}.hst{fill:#8fdcb8}.wrn{fill:#f3cf7a}
+.on{fill:#0b1018;font-weight:700}
+.ln{stroke:#5b687a;stroke-width:1.6;fill:none}
+.rq{stroke:#1d6fd8;stroke-width:2.2;fill:none}.rp{stroke:#0f9d6b;stroke-width:2.2;fill:none}
+text.on+text.cap{fill:#0b1018}
+</style><rect x="0" y="0" width="720" height="250" fill="#ffffff"/><path class="rp" d="M115 48 L365 48"></path><path class="ln" d="M115 48 L365 188"></path><path class="ln" d="M365 48 L605 118"></path><path class="ln" d="M365 188 L605 118"></path><path class="rq" d="M365 48 L365 188"></path><text class="cap" text-anchor="middle" x="365" y="112">hello</text><rect class="net" height="56" rx="8" width="150" x="40" y="20"></rect><text class="on" text-anchor="middle" x="115" y="46">PC</text><text class="cap" text-anchor="middle" x="115" y="62">GW = 10.10.20.254</text><rect class="hst" height="56" rx="8" width="150" x="290" y="20"></rect><text class="on" text-anchor="middle" x="365" y="46">Core-1</text><text class="cap" text-anchor="middle" x="365" y="62">Active, prio 110</text><rect class="wrn" height="56" rx="8" width="150" x="290" y="160"></rect><text class="on" text-anchor="middle" x="365" y="186">Core-2</text><text class="cap" text-anchor="middle" x="365" y="202">Standby, prio 100</text><rect class="bx" height="56" rx="8" width="170" x="520" y="90"></rect><text text-anchor="middle" x="605" y="116">Virtual IP</text><text class="cap" text-anchor="middle" x="605" y="132">10.10.20.254</text></svg>

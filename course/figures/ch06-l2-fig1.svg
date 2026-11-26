@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="topology" role="img" viewBox="0 0 720 260"><style>
+text{font-family:Tahoma,Arial,sans-serif;font-size:13px;fill:#1b2430}
+.cap{font-size:12px;fill:#5b687a}
+.bx{fill:#eef2f8;stroke:#9aa7b8}
+.net{fill:#7fb8f2}.hst{fill:#8fdcb8}.wrn{fill:#f3cf7a}
+.on{fill:#0b1018;font-weight:700}
+.ln{stroke:#5b687a;stroke-width:1.6;fill:none}
+.rq{stroke:#1d6fd8;stroke-width:2.2;fill:none}.rp{stroke:#0f9d6b;stroke-width:2.2;fill:none}
+text.on+text.cap{fill:#0b1018}
+</style><rect x="0" y="0" width="720" height="260" fill="#ffffff"/><path class="rq" d="M110 188 L290 115"></path><path class="rp" d="M290 115 L360 35"></path><path class="rp" d="M360 35 L470 115"></path><path class="rq" d="M470 115 L610 188"></path><rect class="net" height="56" rx="8" width="160" x="30" y="160"></rect><text class="on" text-anchor="middle" x="110" y="186">Area 1</text><text class="cap" text-anchor="middle" x="110" y="202">R1 LAN</text><rect class="wrn" height="50" rx="8" width="120" x="230" y="90"></rect><text class="on" text-anchor="middle" x="290" y="120">ABR</text><rect class="hst" height="50" rx="8" width="100" x="310" y="10"></rect><text class="on" text-anchor="middle" x="360" y="33">Area 0</text><text class="cap" text-anchor="middle" x="360" y="49">backbone</text><rect class="wrn" height="50" rx="8" width="120" x="410" y="90"></rect><text class="on" text-anchor="middle" x="470" y="120">ABR</text><rect class="net" height="56" rx="8" width="160" x="530" y="160"></rect><text class="on" text-anchor="middle" x="610" y="186">Area 2</text><text class="cap" text-anchor="middle" x="610" y="202">R3 LAN</text></svg>

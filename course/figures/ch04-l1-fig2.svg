@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="sequence" role="img" viewBox="0 0 720 260"><style>
+text{font-family:Tahoma,Arial,sans-serif;font-size:13px;fill:#1b2430}
+.cap{font-size:12px;fill:#5b687a}
+.bx{fill:#eef2f8;stroke:#9aa7b8}
+.net{fill:#7fb8f2}.hst{fill:#8fdcb8}.wrn{fill:#f3cf7a}
+.on{fill:#0b1018;font-weight:700}
+.ln{stroke:#5b687a;stroke-width:1.6;fill:none}
+.rq{stroke:#1d6fd8;stroke-width:2.2;fill:none}.rp{stroke:#0f9d6b;stroke-width:2.2;fill:none}
+text.on+text.cap{fill:#0b1018}
+</style><rect x="0" y="0" width="720" height="260" fill="#ffffff"/><rect class="bx" height="34" rx="8" width="130" x="25" y="10"></rect><text text-anchor="middle" x="90" y="32">Host A</text><path class="ln" d="M90 44 V254" stroke-dasharray="4 4"></path><rect class="bx" height="34" rx="8" width="130" x="205" y="10"></rect><text text-anchor="middle" x="270" y="32">SW-A</text><path class="ln" d="M270 44 V254" stroke-dasharray="4 4"></path><rect class="bx" height="34" rx="8" width="130" x="385" y="10"></rect><text text-anchor="middle" x="450" y="32">SW-B</text><path class="ln" d="M450 44 V254" stroke-dasharray="4 4"></path><rect class="bx" height="34" rx="8" width="130" x="565" y="10"></rect><text text-anchor="middle" x="630" y="32">SW-C</text><path class="ln" d="M630 44 V254" stroke-dasharray="4 4"></path><path class="rq" d="M90 75 H270"></path><path class="rq" d="M262 70 l8 5 l-8 5"></path><text class="cap" text-anchor="middle" x="180" y="67">broadcast frame</text><path class="rq" d="M270 113 H450"></path><path class="rq" d="M442 108 l8 5 l-8 5"></path><text class="cap" text-anchor="middle" x="360" y="105">flood</text><path class="rq" d="M450 151 H630"></path><path class="rq" d="M622 146 l8 5 l-8 5"></path><text class="cap" text-anchor="middle" x="540" y="143">flood</text><path class="rq" d="M630 189 H270"></path><path class="rq" d="M278 184 l-8 5 l8 5"></path><text class="cap" text-anchor="middle" x="450" y="181">flood again</text><path class="rq" d="M270 227 H450"></path><path class="rq" d="M442 222 l8 5 l-8 5"></path><text class="cap" text-anchor="middle" x="360" y="219">... forever (loop)</text></svg>

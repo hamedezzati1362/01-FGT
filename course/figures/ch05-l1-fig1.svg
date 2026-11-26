@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="topology" role="img" viewBox="0 0 720 260"><style>
+text{font-family:Tahoma,Arial,sans-serif;font-size:13px;fill:#1b2430}
+.cap{font-size:12px;fill:#5b687a}
+.bx{fill:#eef2f8;stroke:#9aa7b8}
+.net{fill:#7fb8f2}.hst{fill:#8fdcb8}.wrn{fill:#f3cf7a}
+.on{fill:#0b1018;font-weight:700}
+.ln{stroke:#5b687a;stroke-width:1.6;fill:none}
+.rq{stroke:#1d6fd8;stroke-width:2.2;fill:none}.rp{stroke:#0f9d6b;stroke-width:2.2;fill:none}
+text.on+text.cap{fill:#0b1018}
+</style><rect x="0" y="0" width="720" height="260" fill="#ffffff"/><path class="rq" d="M360 33 L360 116"></path><path class="rq" d="M360 116 L360 206"></path><path class="rp" d="M360 206 L115 206"></path><path class="ln" d="M360 206 L605 206"></path><rect class="bx" height="46" rx="8" width="220" x="250" y="10"></rect><text text-anchor="middle" x="360" y="31">Packet arrives</text><text class="cap" text-anchor="middle" x="360" y="47">dst IP = 10.1.1.77</text><rect class="wrn" height="52" rx="8" width="220" x="250" y="90"></rect><text class="on" text-anchor="middle" x="360" y="114">Routing table lookup</text><text class="cap" text-anchor="middle" x="360" y="130">all matching routes</text><rect class="net" height="52" rx="8" width="220" x="250" y="180"></rect><text class="on" text-anchor="middle" x="360" y="204">Longest prefix wins</text><text class="cap" text-anchor="middle" x="360" y="220">/24 beats /16 beats /0</text><rect class="bx" height="52" rx="8" width="170" x="520" y="180"></rect><text text-anchor="middle" x="605" y="204">No match</text><text class="cap" text-anchor="middle" x="605" y="220">default route or drop</text><rect class="hst" height="52" rx="8" width="170" x="30" y="180"></rect><text class="on" text-anchor="middle" x="115" y="204">Forward</text><text class="cap" text-anchor="middle" x="115" y="220">to next-hop / interface</text></svg>

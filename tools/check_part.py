@@ -15,7 +15,7 @@ print(f'anchors={len(ids)} internal_links={len(links)} broken={broken}'); bad +=
 imgs = re.findall(r'!\[[^\]]*\]\(([^)]+)\)', t)
 miss = [i for i in imgs if not os.path.exists(os.path.join(base, i))]
 print(f'images={len(imgs)} missing={miss}'); bad += len(miss)
-refs = set(re.findall(r'پاسخ: ([^ ]+) در بخش', t))
+refs = set(re.findall(r'پاسخ: ([^ ]+) در بخش', t)) | set(re.findall(r'\(پاسخ: ([^ )]+)\)', t))
 ans = set(re.findall(r'\*\*([^\s*]+-[تمQ]\d+)\*\*', t))
 print(f'answer_refs={len(refs)} answers={len(ans)} missing={sorted(refs-ans)}'); bad += len(refs-ans)
 html = {k: t.count(k) for k in ['<div', '<span', '<details', '<table', '<br', '<svg', 'FIGMARK', 'ZZFIG']}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="topology" role="img" viewBox="0 0 720 250"><style>
+text{font-family:Tahoma,Arial,sans-serif;font-size:13px;fill:#1b2430}
+.cap{font-size:12px;fill:#5b687a}
+.bx{fill:#eef2f8;stroke:#9aa7b8}
+.net{fill:#7fb8f2}.hst{fill:#8fdcb8}.wrn{fill:#f3cf7a}
+.on{fill:#0b1018;font-weight:700}
+.ln{stroke:#5b687a;stroke-width:1.6;fill:none}
+.rq{stroke:#1d6fd8;stroke-width:2.2;fill:none}.rp{stroke:#0f9d6b;stroke-width:2.2;fill:none}
+text.on+text.cap{fill:#0b1018}
+</style><rect x="0" y="0" width="720" height="250" fill="#ffffff"/><path class="rq" d="M105 128 L365 128"></path><path class="rq" d="M365 128 L630 56"></path><text class="cap" text-anchor="middle" x="497" y="86">deny</text><path class="rp" d="M365 128 L630 196"></path><text class="cap" text-anchor="middle" x="497" y="156">permit</text><rect class="wrn" height="56" rx="8" width="150" x="30" y="100"></rect><text class="on" text-anchor="middle" x="105" y="126">Guest VLAN 50</text><text class="cap" text-anchor="middle" x="105" y="142">10.10.50.0/24</text><rect class="bx" height="56" rx="8" width="150" x="290" y="100"></rect><text text-anchor="middle" x="365" y="126">Core SVI</text><text class="cap" text-anchor="middle" x="365" y="142">ACL in on Vlan50</text><rect class="hst" height="52" rx="8" width="140" x="560" y="30"></rect><text class="on" text-anchor="middle" x="630" y="54">Servers VLAN 30</text><text class="cap" text-anchor="middle" x="630" y="70">10.10.30.0/24</text><rect class="net" height="52" rx="8" width="140" x="560" y="170"></rect><text class="on" text-anchor="middle" x="630" y="194">Internet</text><text class="cap" text-anchor="middle" x="630" y="210">via Edge</text></svg>

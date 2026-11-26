@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="topology" role="img" viewBox="0 0 720 260"><style>
+text{font-family:Tahoma,Arial,sans-serif;font-size:13px;fill:#1b2430}
+.cap{font-size:12px;fill:#5b687a}
+.bx{fill:#eef2f8;stroke:#9aa7b8}
+.net{fill:#7fb8f2}.hst{fill:#8fdcb8}.wrn{fill:#f3cf7a}
+.on{fill:#0b1018;font-weight:700}
+.ln{stroke:#5b687a;stroke-width:1.6;fill:none}
+.rq{stroke:#1d6fd8;stroke-width:2.2;fill:none}.rp{stroke:#0f9d6b;stroke-width:2.2;fill:none}
+text.on+text.cap{fill:#0b1018}
+</style><rect x="0" y="0" width="720" height="260" fill="#ffffff"/><path class="ln" d="M115 58 L360 198"></path><path class="ln" d="M375 58 L360 198"></path><path class="ln" d="M605 58 L360 198"></path><rect class="bx" height="56" rx="8" width="150" x="40" y="30"></rect><text text-anchor="middle" x="115" y="56">R1</text><text class="cap" text-anchor="middle" x="115" y="72">DROther</text><rect class="hst" height="56" rx="8" width="150" x="300" y="30"></rect><text class="on" text-anchor="middle" x="375" y="56">R2</text><text class="cap" text-anchor="middle" x="375" y="72">DR</text><rect class="wrn" height="56" rx="8" width="150" x="530" y="30"></rect><text class="on" text-anchor="middle" x="605" y="56">R3</text><text class="cap" text-anchor="middle" x="605" y="72">BDR</text><rect class="bx" height="56" rx="8" width="150" x="285" y="170"></rect><text text-anchor="middle" x="360" y="196">Switch</text><text class="cap" text-anchor="middle" x="360" y="212">shared segment</text></svg>

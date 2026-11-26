@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="sequence" role="img" viewBox="0 0 720 222"><style>
+text{font-family:Tahoma,Arial,sans-serif;font-size:13px;fill:#1b2430}
+.cap{font-size:12px;fill:#5b687a}
+.bx{fill:#eef2f8;stroke:#9aa7b8}
+.net{fill:#7fb8f2}.hst{fill:#8fdcb8}.wrn{fill:#f3cf7a}
+.on{fill:#0b1018;font-weight:700}
+.ln{stroke:#5b687a;stroke-width:1.6;fill:none}
+.rq{stroke:#1d6fd8;stroke-width:2.2;fill:none}.rp{stroke:#0f9d6b;stroke-width:2.2;fill:none}
+text.on+text.cap{fill:#0b1018}
+</style><rect x="0" y="0" width="720" height="222" fill="#ffffff"/><rect class="bx" height="34" rx="8" width="130" x="55" y="10"></rect><text text-anchor="middle" x="120" y="32">Admin PC</text><path class="ln" d="M120 44 V216" stroke-dasharray="4 4"></path><rect class="bx" height="34" rx="8" width="130" x="295" y="10"></rect><text text-anchor="middle" x="360" y="32">Script</text><path class="ln" d="M360 44 V216" stroke-dasharray="4 4"></path><rect class="bx" height="34" rx="8" width="130" x="535" y="10"></rect><text text-anchor="middle" x="600" y="32">Device</text><path class="ln" d="M600 44 V216" stroke-dasharray="4 4"></path><path class="rq" d="M120 75 H360"></path><path class="rq" d="M352 70 l8 5 l-8 5"></path><text class="cap" text-anchor="middle" x="240" y="67">run backup.py</text><path class="rq" d="M360 113 H600"></path><path class="rq" d="M592 108 l8 5 l-8 5"></path><text class="cap" text-anchor="middle" x="480" y="105">SSH + show running-config</text><path class="rp" d="M600 151 H360"></path><path class="rp" d="M368 146 l-8 5 l8 5"></path><text class="cap" text-anchor="middle" x="480" y="143">output</text><path class="rp" d="M360 189 H120"></path><path class="rp" d="M128 184 l-8 5 l8 5"></path><text class="cap" text-anchor="middle" x="240" y="181">save file + git commit</text></svg>

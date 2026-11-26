@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="sequence" role="img" viewBox="0 0 720 298"><style>
+text{font-family:Tahoma,Arial,sans-serif;font-size:13px;fill:#1b2430}
+.cap{font-size:12px;fill:#5b687a}
+.bx{fill:#eef2f8;stroke:#9aa7b8}
+.net{fill:#7fb8f2}.hst{fill:#8fdcb8}.wrn{fill:#f3cf7a}
+.on{fill:#0b1018;font-weight:700}
+.ln{stroke:#5b687a;stroke-width:1.6;fill:none}
+.rq{stroke:#1d6fd8;stroke-width:2.2;fill:none}.rp{stroke:#0f9d6b;stroke-width:2.2;fill:none}
+text.on+text.cap{fill:#0b1018}
+</style><rect x="0" y="0" width="720" height="298" fill="#ffffff"/><rect class="bx" height="34" rx="8" width="130" x="115" y="10"></rect><text text-anchor="middle" x="180" y="32">Router A</text><path class="ln" d="M180 44 V292" stroke-dasharray="4 4"></path><rect class="bx" height="34" rx="8" width="130" x="475" y="10"></rect><text text-anchor="middle" x="540" y="32">Router B</text><path class="ln" d="M540 44 V292" stroke-dasharray="4 4"></path><path class="rq" d="M180 75 H540"></path><path class="rq" d="M532 70 l8 5 l-8 5"></path><text class="cap" text-anchor="middle" x="360" y="67">Hello (I know nobody)</text><path class="rp" d="M540 113 H180"></path><path class="rp" d="M188 108 l-8 5 l8 5"></path><text class="cap" text-anchor="middle" x="360" y="105">Hello (I saw A)</text><path class="rq" d="M180 151 H540"></path><path class="rq" d="M532 146 l8 5 l-8 5"></path><text class="cap" text-anchor="middle" x="360" y="143">DBD (database summary)</text><path class="rp" d="M540 189 H180"></path><path class="rp" d="M188 184 l-8 5 l8 5"></path><text class="cap" text-anchor="middle" x="360" y="181">DBD</text><path class="rq" d="M180 227 H540"></path><path class="rq" d="M532 222 l8 5 l-8 5"></path><text class="cap" text-anchor="middle" x="360" y="219">LSR / LSU (missing LSAs)</text><path class="rp" d="M540 265 H180"></path><path class="rp" d="M188 260 l-8 5 l8 5"></path><text class="cap" text-anchor="middle" x="360" y="257">LSAck -&gt; state FULL</text></svg>
