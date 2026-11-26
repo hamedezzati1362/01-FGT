@@ -4825,6 +4825,8 @@ Lesson   : always "add"; backup + review show before and after
 
 **3-1-ت1** — ۱ (ساده): سوییچ کدام MAC را یاد می‌گیرد: مبدأ یا مقصد؟
 
+سوییچ فقط MAC مبدأ (Source) را یاد می‌گیرد: برای هر فریم ورودی، آدرس مبدأ را همراه شماره‌ی پورت ورودی در جدول CAM ثبت می‌کند. MAC مقصد فقط جست‌وجو می‌شود تا پورت خروجی انتخاب شود. اگر مقصد در جدول نباشد (Unknown unicast) فریم Flood می‌شود. این قاعده توضیح می‌دهد چرا Broadcast (که فقط مقصد است) هرگز در جدول MAC نمی‌آید.
+
 ``` text
 Source MAC only.
 Destination MAC is only looked up, never learned.
@@ -4832,11 +4834,20 @@ Destination MAC is only looked up, never learned.
 
 **3-1-ت2** — ۲ (ساده): فریم با مقصد ff:ff:ff:ff:ff:ff چطور پخش می‌شود؟
 
+مقصد ff:ff:ff:ff:ff:ff آدرس Broadcast است؛ سوییچ آن را از همه‌ی پورت‌های همان VLAN به‌جز پورت ورودی (Flood) می‌فرستد. بنابراین Broadcast به همه‌ی Hostهای VLAN می‌رسد؛ همین دلیل محدودکردن VLAN و جلوگیری از Storm است. روتر آن را عبور نمی‌دهد.
+
 ``` text
 Flooded out of all ports except the ingress port.
 ```
 
 **3-1-ت3** — ۳ (متوسط): جدول خالی است. A (Gi0/1) به B (Gi0/2) و بعد B به A می‌فرستد. چند Flood رخ می‌دهد؟
+
+گام ۱: A به B می‌فرستد؛ سوییچ MAC-A را روی Gi0/1 یاد می‌گیرد ولی MAC-B را نمی‌شناسد ⇒ Flood (۱ بار). گام ۲: B به A می‌فرستد؛ سوییچ MAC-B را روی Gi0/2 یاد می‌گیرد و چون MAC-A قبلاً یاد گرفته شده، فریم فقط به Gi0/1 می‌رود ⇒ بدون Flood. از این به بعد ارتباط A↔B Unicast است.
+
+``` text
+A -> B : 1 flood (B unknown)
+B -> A : 0 floods (A learned)
+```
 
 ``` text
 1 flood  (A -> B: B unknown)
@@ -4845,11 +4856,15 @@ Flooded out of all ports except the ingress port.
 
 **3-1-ت4** — ۴ (متوسط): چرا ردیف یک MAC بعد از ۵ دقیقه ناپدید می‌شود؟
 
+ردیف CAM پس از انقضای Aging Time (پیش‌فرض ۳۰۰ ثانیه) بدون دیدن فریم جدید از آن MAC حذف می‌شود تا جدول از Hostهای رفته پر نشود. هر فریم جدید Timer را تازه می‌کند. با `show mac address-table aging-time` ببینید؛ Aging کوتاه‌تر جدول را سبک‌تر ولی Flood را بیشتر می‌کند.
+
 ``` text
 Aging time = 300 s. No frames from that MAC refresh the entry.
 ```
 
 **3-1-ت5** — ۵ (سخت): MACFLAP روی MAC-X بین Gi0/1 و Gi0/2؛ محتمل‌ترین علت؟
+
+MACFLAP یعنی یک MAC مرتب بین دو پورت جابه‌جا می‌شود. محتمل‌ترین علت حلقه‌ی لایه‌ی ۲ (STP خراب/خاموش) یا MAC تکراری (دو دستگاه با یک MAC، یا Virtual MAC/VM Migration) است. اقدام اول: یافتن و قطع حلقه (بررسی STP، کابل اضافی، سوییچ جعلی) و نه پاک‌کردن جدول؛ پاک‌کردن علامت را موقتاً پنهان می‌کند.
 
 ``` text
 A layer-2 loop (or a duplicated MAC).
@@ -4858,21 +4873,31 @@ First action: find the loop and cut it, not clear the table.
 
 **3-1-م1** — سوییچ چه چیزی را یاد می‌گیرد و از کجا؟
 
+سوییچ MAC مبدأ فریم و پورتی که فریم از آن وارد شده را یاد می‌گیرد (و VLAN). این جدول CAM است. چون یادگیری دینامیک است، ورودی‌ها با Aging پاک می‌شوند.
+
 MAC مبدأ فریم و پورتی که فریم از آن وارد شد.
 
 **3-1-م2** — چرا Broadcast هیچ‌وقت در جدول MAC دیده نمی‌شود؟
+
+چون Broadcast (ff:ff:ff:ff:ff:ff) آدرس مقصد است نه مبدأ؛ و سوییچ فقط Source MAC را یاد می‌گیرد. هیچ Host با MAC مبدأ Broadcast نمی‌فرستد.
 
 چون Broadcast فقط مقصد است، نه مبدأ.
 
 **3-1-م3** — Flooding یعنی چه؟
 
+Flooding یعنی ارسال فریم از همه‌ی پورت‌های هم‌VLAN به‌جز ورودی؛ برای Broadcast، Multicast ناشناخته و Unknown Unicast. زیاد بودن Flood نشانه‌ی جدول MAC ناقص، حلقه یا حمله‌ی MAC Flooding است.
+
 ارسال فریم از همه‌ی پورت‌ها به‌جز پورت ورودی.
 
 **3-1-Q1** — Quick quiz (answer in English): What does a switch do when the destination MAC is not in its table?
 
+پاسخ انگلیسی در پایین آمده است. نکته‌ی عملی: Unknown unicast flooding موقتی است و پس از اولین پاسخ، سوییچ مقصد را یاد می‌گیرد.
+
 It floods the frame out of all ports except the one it arrived on.
 
 **3-2-ت1** — ۱ (ساده): چرا VLAN باعث کاهش Broadcast می‌شود؟
+
+هر VLAN یک Broadcast Domain جداست؛ Broadcast (مثل ARP و DHCP Discover) فقط داخل همان VLAN می‌رود. با ۱۰۰ Host در یک VLAN هر Broadcast به همه می‌رسد؛ با شکستن به ۴ VLAN ۲۵تایی، ترافیک Broadcast هر Host حدود ۷۵٪ کم می‌شود و امنیت هم بهتر می‌شود.
 
 ``` text
 Each VLAN is a separate broadcast domain.
@@ -4881,11 +4906,23 @@ Broadcasts stay inside their VLAN.
 
 **3-2-ت2** — ۲ (ساده): دو کامپیوتر در VLAN های 20 و 30 بدون روتر ping می‌کنند؛ نتیجه؟
 
+بدون روتر/لایه‌ی ۳، دو کامپیوتر در VLAN 20 و 30 هم‌شبکه نیستند و ARP/ping شکست می‌خورد: Broadcast Domainها جدا و Gateway وجود ندارد. VLAN‌ها فقط با Inter-VLAN Routing (RoAS یا SVI) ارتباط می‌گیرند.
+
 ``` text
 Fails: different broadcast domains, no gateway.
 ```
 
 **3-2-ت3** — ۳ (متوسط): دستورهای لازم برای ساختن VLAN 40 با نام GUEST و قراردادن Gi0/6 در آن
+
+VLAN را بسازید، نام بدهید و پورت را Access کرده در VLAN قرار دهید. بررسی: `show vlan brief`. اگر VLAN نباشد، پورت در حالت Inactive می‌ماند.
+
+``` text
+vlan 40
+ name GUEST
+interface gi0/6
+ switchport mode access
+ switchport access vlan 40
+```
 
 ``` text
 vlan 40
@@ -4897,11 +4934,15 @@ interface gi0/6
 
 **3-2-ت4** — ۴ (متوسط): خروجی show vlan brief چه چیزی نشان می‌دهد؟
 
+`show vlan brief` شناسه‌ی VLAN، نام، وضعیت (active/act/unsup) و پورت‌های Access هر VLAN را نشان می‌دهد. پورت‌های Trunk در آن دیده نمی‌شوند؛ برای آن‌ها `show interfaces trunk`. اولین ابزار تأیید VLAN است.
+
 ``` text
 VLAN ID, Name, Status and the access ports of each VLAN.
 ```
 
 **3-2-ت5** — ۵ (سخت): کاربر در VLAN 20 است ولی به Gateway نمی‌رسد؛ سه علت محتمل
+
+سه علت: ۱) پورت کاربر در VLAN اشتباه است. ۲) VLAN ساخته نشده یا Shutdown است. ۳) IP/Mask/Gateway کامپیوتر اشتباه است (یا Trunk VLAN را عبور نمی‌دهد). بررسی به ترتیب: `show vlan brief`، `show interfaces switchport`، `ipconfig /all`، ping Gateway.
 
 ``` text
 1) Port is in the wrong VLAN
@@ -4911,23 +4952,37 @@ VLAN ID, Name, Status and the access ports of each VLAN.
 
 **3-2-م1** — VLAN چه فایده‌ای دارد؟
 
+VLAN Broadcast Domain را می‌شکند، ترافیک را جدا و امنیت و مقیاس‌پذیری را بهتر می‌کند؛ گروه‌بندی منطقی مستقل از مکان فیزیکی.
+
 جداسازی Broadcast Domain و امنیت بیشتر.
 
 **3-2-م2** — Access Port چیست؟
+
+Access Port پورتی است که فقط یک VLAN دارد و فریم‌ها بدون Tag می‌رود؛ دستگاه انتهایی (PC، چاپگر) به آن وصل می‌شود. برعکس Trunk که چند VLAN با Tag حمل می‌کند.
 
 پورتی که فقط عضو یک VLAN است و دستگاه انتهایی به آن وصل می‌شود.
 
 **3-2-Q1** — Quick quiz (answer in English): Why do hosts in different VLANs need a router?
 
+پاسخ انگلیسی در پایین آمده است. هر VLAN یک Subnet جدا دارد و برای عبور بین Subnetها Routing لازم است.
+
 Because each VLAN is a separate broadcast domain (separate subnet), so traffic must be routed between them.
 
 **3-3-ت1** — ۱ (ساده): چند بیت از Tag مخصوص VLAN ID است و چند VLAN قابل‌استفاده داریم؟
+
+فیلد VLAN ID در Tag 802.1Q دوازده بیتی است: ۲^۱۲ = ۴۰۹۶ مقدار. VLAN 0 و 4095 رزرو است، پس ۴۰۹۴ VLAN قابل‌استفاده (۱ تا ۴۰۹۴)؛ VLANهای ۱۰۰۲ تا ۱۰۰۵ برای Token Ring/FDDI رزرو است.
+
+``` text
+2^12 = 4096 ; minus 0 and 4095 -> 4094 usable IDs
+```
 
 ``` text
 12 bits -> 4096 values -> minus 2 reserved -> 4094 usable IDs (1..4094)
 ```
 
 **3-3-ت2** — ۲ (ساده): تفاوت allowed vlan 40 با allowed vlan add 40؟
+
+`switchport trunk allowed vlan 40` لیست را به‌طور کامل با «فقط 40» جایگزین می‌کند و سایر VLANها قطع می‌شوند. `allowed vlan add 40` فقط VLAN 40 را به لیست موجود اضافه می‌کند. روی Trunk زنده همیشه از add استفاده کنید.
 
 ``` text
 Without add: replaces the list.
@@ -4936,17 +4991,29 @@ With add: appends VLAN 40 to the existing list.
 
 **3-3-ت3** — ۳ (متوسط): Native Mismatch چه عارضه‌ای دارد؟
 
+عدم‌تطابق Native VLAN باعث هشدار CDP و Leak ترافیک Native به VLAN دیگر می‌شود (احتمال VLAN Hopping). باید Native در دو سر یکسان و ترجیحاً VLAN بلااستفاده (مثلاً 999) باشد.
+
 ``` text
 CDP warning and traffic of the native VLAN leaks into another VLAN (VLAN hopping risk).
 ```
 
 **3-3-ت4** — ۴ (متوسط): چرا nonegotiate را می‌زنیم؟
 
+`switchport nonegotiate` مذاکره‌ی DTP را غیرفعال می‌کند تا پورت به‌صورت ناخواسته Trunk نشود (مثلاً با سوییچ جعلی). پیکربندی صریح: `switchport mode trunk` + `nonegotiate` روی Uplink و `mode access` روی پورت کاربر.
+
 ``` text
 It disables DTP negotiation so the port cannot become a trunk unexpectedly.
 ```
 
 **3-3-ت5** — ۵ (سخت): روی Trunk هستید و VLAN 30 در show interfaces trunk در ستون allowed نیست؛ ۳ دستور رفع
+
+اگر VLAN 30 در ستون allowed نیست: ابتدا وضعیت را ببینید، سپس VLAN را اضافه کنید، سپس تأیید کنید. سه دستور:
+
+``` text
+show interfaces trunk
+switchport trunk allowed vlan add 30
+show interfaces trunk
+```
 
 ``` text
 show interfaces trunk
@@ -4956,17 +5023,25 @@ show interfaces trunk   (verify)
 
 **3-3-م1** — Trunk چه کاری می‌کند؟
 
+Trunk چند VLAN را با Tag 802.1Q روی یک لینک عبور می‌دهد تا برای هر VLAN کابل جدا لازم نباشد. بین سوییچ‌ها و سوییچ‌-روتر استفاده می‌شود.
+
 چند VLAN را با Tag روی یک لینک عبور می‌دهد.
 
 **3-3-م2** — Native VLAN چیست؟
+
+Native VLAN VLANی است که روی Trunk بدون Tag می‌رود (پیش‌فرض 1). برای امنیت باید تغییر کند و در دو سر یکسان باشد.
 
 VLANی که روی Trunk بدون Tag می‌رود.
 
 **3-3-Q1** — Quick quiz (answer in English): Why is "switchport trunk allowed vlan 40" dangerous on a live trunk?
 
+پاسخ انگلیسی در پایین آمده است؛ این خطا شایع‌ترین علت قطعی Trunk در Maintenance است: همیشه `add`.
+
 It replaces the entire allowed list, so all other VLANs lose connectivity.
 
 **3-4-ت1** — ۱ (ساده): چرا فقط یک کابل فیزیکی کافی است؟
+
+Trunk همه‌ی VLANها را با Tag می‌برد؛ روتر روی همان Interface فیزیکی چند Sub-interface (Gi0/0.10، .20، .30) می‌سازد و هر کدام Gateway یک VLAN است. پس یک کابل کافی است. ریسک: همان یک لینک گلوگاه است.
 
 ``` text
 The trunk carries all VLANs tagged; the router splits them into logical sub-interfaces.
@@ -4974,11 +5049,20 @@ The trunk carries all VLANs tagged; the router splits them into logical sub-inte
 
 **3-4-ت2** — ۲ (ساده): کدام آدرس IP روی Gi0/0.20 می‌نشیند؟
 
+Sub-interface Gi0/0.20 آدرس Gateway VLAN 20 را می‌گیرد؛ مثلاً 10.10.20.1/24 (اولین Host Subnet). این همان آدرسی است که کلاینت‌ها به‌عنوان Default Gateway دارند. دستور: `encapsulation dot1Q 20` و `ip address 10.10.20.1 255.255.255.0`.
+
 ``` text
 The default gateway of VLAN 20, e.g. 10.10.20.1/24 (first host of the subnet).
 ```
 
 **3-4-ت3** — ۳ (متوسط): در مسیر PC1 به Srv1 کدام فیلدها عوض می‌شوند و کدام نه؟
+
+در Routing بین VLAN: Source و Destination IP عوض نمی‌شود؛ ولی MAC مبدأ و مقصد در هر Hop عوض می‌شود (MAC روتر)، Tag VLAN تغییر می‌کند و TTL یک واحد کم می‌شود.
+
+``` text
+Unchanged: src IP, dst IP
+Changed: src MAC, dst MAC, VLAN tag, TTL-1
+```
 
 ``` text
 Unchanged: source IP, destination IP
@@ -4987,11 +5071,15 @@ Changed: destination MAC, source MAC, VLAN tag, TTL (-1)
 
 **3-4-ت4** — ۴ (متوسط): اگر encapsulation dot1Q 3 به‌جای 30 بزنیم چه می‌شود؟
 
+Sub-interface با `encapsulation dot1Q 3` فقط فریم Tag 3 را می‌پذیرد؛ سوییچ Tag 30 می‌فرستد و روتر آن را نادیده می‌گیرد، پس Hostهای VLAN 30 به Gateway نمی‌رسند. بررسی: `show interfaces trunk`، `show run interface Gi0/0.30`.
+
 ``` text
 R1 expects tag 3, but the switch sends tag 30 -> frames ignored -> VLAN 30 hosts cannot reach the gateway.
 ```
 
 **3-4-ت5** — ۵ (سخت): نقطه‌ضعف RoAS چیست؟
+
+نقطه‌ضعف RoAS: همه‌ی ترافیک بین VLANها روی یک لینک در هر دو جهت می‌رود (گلوگاه پهنای باند) و روتر نقطه‌ی شکست واحد است. برای Lab و شعبه‌ی کوچک کافی؛ برای کمپوس از SVI روی سوییچ L3 استفاده می‌شود.
 
 ``` text
 All inter-VLAN traffic crosses the single link both ways (bandwidth bottleneck) and the router is a single point of failure.
@@ -4999,23 +5087,33 @@ All inter-VLAN traffic crosses the single link both ways (bandwidth bottleneck) 
 
 **3-4-م1** — Sub-interface چیست؟
 
+Sub-interface Interface منطقی روی یک Interface فیزیکی است که به یک VLAN (با Tag) وصل می‌شود و آدرس Gateway همان VLAN را دارد.
+
 Interface منطقی روی یک Interface فیزیکی که به یک VLAN وصل است.
 
 **3-4-م2** — چرا Interface فیزیکی IP ندارد؟
+
+Interface فیزیکی فقط Trunk را حمل می‌کند و IP روی Sub-interfaceهاست؛ اگر IP هم روی فیزیکی بگذارید با Native VLAN تداخل می‌کند.
 
 چون فقط Trunk را حمل می‌کند؛ آدرس‌ها روی Sub-interfaceها هستند.
 
 **3-4-Q1** — Quick quiz (answer in English): What is the main drawback of router-on-a-stick?
 
+پاسخ انگلیسی در پایین آمده است؛ اگر ترافیک بین VLANها زیاد باشد، لینک اشباع می‌شود و تأخیر بالا می‌رود؛ راه‌حل SVI.
+
 All inter-VLAN traffic shares one link, creating a bandwidth bottleneck and a single point of failure.
 
 **3-5-ت1** — ۱ (ساده): ip routing برای چیست؟
+
+`ip routing` روی سوییچ L3 قابلیت مسیریابی را روشن می‌کند؛ بدون آن SVIها فقط Interface مدیریتی هستند و بین VLANها Route نمی‌شود. بعد از آن Routeهای Connected و Static/OSPF ساخته می‌شود.
 
 ``` text
 It enables layer-3 routing on the switch so it can route between SVIs.
 ```
 
 **3-5-ت2** — ۲ (ساده): سه شرط Up شدن SVI
+
+SVI وقتی Up می‌شود که: ۱) VLAN وجود داشته باشد، ۲) حداقل یک پورت فعال در VLAN باشد (Access یا Trunk مجاز)، ۳) SVI با `no shutdown` فعال باشد. هر کدام نباشد SVI در حالت down/down می‌ماند.
 
 ``` text
 1) VLAN exists
@@ -5025,11 +5123,15 @@ It enables layer-3 routing on the switch so it can route between SVIs.
 
 **3-5-ت3** — ۳ (متوسط): VLAN 40 ساخته‌ایم و SVI دارد ولی down/down است؛ علت؟
 
+VLAN 40 و SVI ساخته شده ولی down/down: هیچ پورت Up در VLAN 40 نیست و روی Trunk Up هم Allowed نیست. رفع: پورت Access به VLAN 40 اضافه یا `allowed vlan add 40` و بررسی `show vlan brief`.
+
 ``` text
 No active (up) port in VLAN 40 and it is not allowed on a trunk to an up port.
 ```
 
 **3-5-ت4** — ۴ (متوسط): چرا دو Gateway برای یک VLAN مشکل می‌سازد؟
+
+دو Gateway برای یک VLAN یعنی دو دستگاه با همان IP/MAC‌ یا IPهای متفاوت بدون FHRP: Duplicate IP، ARP ناپایدار و رفتار ناهماهنگ. راه درست: یک Gateway یا FHRP (HSRP/VRRP) با VIP مشترک.
 
 ``` text
 Duplicate IP/MAC confusion: hosts get inconsistent replies; traffic flaps.
@@ -5037,23 +5139,33 @@ Duplicate IP/MAC confusion: hosts get inconsistent replies; traffic flaps.
 
 **3-5-ت5** — ۵ (سخت): کدام روش برای ۱۰ گیگ ترافیک بین VLANها بهتر است و چرا؟
 
+برای ۱۰ گیگ ترافیک بین VLANها SVI روی سوییچ L3 مناسب است: Routing سخت‌افزاری (CEF/ASIC) بدون گلوگاه لینک تکی. RoAS محدود به پهنای یک لینک و CPU روتر است.
+
 ``` text
 SVI on a layer-3 switch: hardware routing, no single-link bottleneck.
 ```
 
 **3-5-م1** — SVI چیست؟
 
+SVI یک Interface مجازی لایه‌ی ۳ برای یک VLAN روی سوییچ L3 است و آدرس Gateway VLAN را می‌گیرد.
+
 Interface مجازی لایه ۳ برای یک VLAN روی سوییچ.
 
 **3-5-م2** — چرا SVI down/down می‌شود؟
+
+SVI down/down می‌شود چون VLAN ساخته نشده، پورت Up در VLAN نیست یا SVI shutdown است.
 
 چون VLAN پورت فعالی ندارد یا ساخته نشده یا SVI خاموش است.
 
 **3-5-Q1** — Quick quiz (answer in English): When does an SVI come up?
 
+پاسخ انگلیسی در پایین آمده است؛ هنگام عیب‌یابی سه شرط را به ترتیب بررسی کنید: VLAN، پورت، SVI.
+
 When the VLAN exists, at least one port in the VLAN is up, and the SVI is not shut down.
 
 **3-6-ت1** — ۱ (ساده): اولین لایه‌ای که چک می‌کنیم چیست؟
+
+ابتدا لایه‌ی ۱ (فیزیکی): کابل، لینک، LED، Speed/Duplex، Shutdown. چون لایه‌های بالاتر به آن وابسته‌اند؛ بدون لینک، بررسی VLAN/IP بی‌معناست. ابزار: `show interfaces status`، شمارنده‌ی خطا.
 
 ``` text
 Layer 1 (physical): cable, link, shutdown.
@@ -5061,17 +5173,23 @@ Layer 1 (physical): cable, link, shutdown.
 
 **3-6-ت2** — ۲ (ساده): پنج مرحله‌ی چارچوب عیب‌یابی را بنویس
 
+چارچوب عیب‌یابی: Symptom (علامت)، Scope (دامنه: چه کسی، کجا)، Hypothesis (فرضیه)، Test (آزمون)، Fix و Verify (رفع و تأیید). با ثبت هر مرحله، عیب‌یابی قابل‌تکرار و قابل‌ممیزی می‌شود.
+
 ``` text
 Symptom, Scope, Hypothesis, Test, Fix and Verify.
 ```
 
 **3-6-ت3** — ۳ (متوسط): «ping به Gateway OK ولی به اینترنت نه»؛ کدام لایه؟
 
+ping به Gateway موفق (L1/L2/L3 تا Gateway سالم) ولی اینترنت نه: مشکل لایه‌ی ۳ به بالا: Default Route، NAT، فایروال/ACL، DNS. بررسی: `traceroute`، `show ip route`، `nslookup`.
+
 ``` text
 Layer 3 or above: routing/default route/NAT/firewall (L1 and L2 are fine).
 ```
 
 **3-6-ت4** — ۴ (سخت): یک Trunk بعد از «allowed vlan 40» همه را قطع کرد؛ سه اقدام بعدی
+
+پس از `allowed vlan 40` که همه را قطع کرد: ۱) بازیابی از Backup (یا `rollback`). ۲) `allowed vlan add 10,20,30`. ۳) تأیید با `show interfaces trunk` و ping و نوشتن RCA (علت: فراموشی add).
 
 ``` text
 1) restore from backup
@@ -5081,20 +5199,25 @@ Layer 3 or above: routing/default route/NAT/firewall (L1 and L2 are fine).
 
 **3-6-م1** — چرا از لایه ۱ شروع می‌کنیم؟
 
+از لایه‌ی ۱ شروع می‌کنیم چون لایه‌های بالاتر بدون آن کار نمی‌کنند؛ بررسی پایین‌به‌بالا از هدررفتن وقت جلوگیری می‌کند.
+
 چون لایه‌های بالاتر به آن وابسته‌اند.
 
 **3-6-م2** — تفاوت TS04 و TS05؟
 
+TS04 حذف یک VLAN از لیست Trunk است (خطای Config)؛ TS05 جایگزینی کل لیست به‌خاطر اشتباه انسانی (فراموشی add). هر دو علامت مشابه (VLAN قطع) ولی علت و پیشگیری متفاوت.
+
 TS04 حذف یک VLAN از لیست است؛ TS05 جایگزینی کل لیست به‌خاطر اشتباه انسانی (فراموشی add).
 
 **3-6-Q1** — Quick quiz (answer in English): What are the five steps of the troubleshooting framework?
+
+پاسخ انگلیسی در پایین آمده است؛ ترتیب ثابت: Symptom، Scope، Hypothesis، Test، Fix&Verify.
 
 Symptom, Scope, Hypothesis, Test, Fix and Verify.
 
 ---
 
 <a id="end1"></a>
-
 
 ### پاسخ‌های درس افزوده‌ی 3-0 (فصل 3)
 
