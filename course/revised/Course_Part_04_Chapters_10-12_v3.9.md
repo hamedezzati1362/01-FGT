@@ -3391,830 +3391,1018 @@ show system global | grep hostname
 
 <a id="l-12-2"></a>
 
-## درس 12-2 — Interface، VLAN، Role و Administrative Access
+## درس 12-2 — Interface، VLAN، Role، Administrative Access و سخت‌سازی پورت‌های FortiGate
 
-**فصل 12 - روز 2 · پیش‌نیاز: درس ۱۲-۱ · ۶ ساعت**
+**فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۱، ۳-۱، ۴-۱ · ≈ 10 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-هر ارتباط از یک Interface شروع می‌شود. باید Interface فیزیکی، VLAN Sub-interface، Role و دسترسی مدیریتی (allowaccess) را درست تنظیم کنیم. Gateway هر VLAN در معماری اصلی ما روی FortiGate است.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۲-۱؛ VLAN/Trunk (فصل ۳).
+1. انواع Interface (Physical، VLAN، Aggregate/LACP، Loopback، Zone) را بشناسد و کاربرد هرکدام را بگوید.
+2. IP، Role، Alias و Allowaccess را درست پیکربندی کند.
+3. VLAN Sub-interface را با Trunk سوییچ هماهنگ کند.
+4. فقط سرویس‌های لازم را روی هر Interface باز و WAN را سخت‌سازی کند.
+5. Verification (وضعیت لینک، آمار خطا، ARP) را اجرا کند.
+6. خطاهای رایج (VLAN، Duplex، Allowaccess) را عیب‌یابی کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- `port1…` Interfaceهای فیزیکی؛ VLAN Interface روی یک Interface والد با `vlanid`.
-- Gateway هر VLAN = IP همان VLAN Interface (طبق طرح: `.254`).
-- **Role** (LAN/WAN/DMZ/Undefined) راهنمای GUI؛ **allowaccess** مشخص می‌کند چه سرویس مدیریتی روی Interface پاسخ دهد (ping/https/ssh…).
-- روی WAN فقط حداقل (ترجیحاً هیچ) allowaccess بگذارید.
-- Trunk از سوییچ Cisco به یک Interface فیزیکی FortiGate وصل می‌شود؛ VLANهای مجاز و Native باید یکسان باشد.
+FortiGate را به شبکه وصل می‌کنید و «کار نمی‌کند». ۷۰٪ مواقع علت در Interface است: کابل در پورت دیگر، VLAN ID اشتباه، یا Allowaccess بسته. و بدتر: مدیر برای راحتی HTTPS را روی WAN باز می‌گذارد و چند روز بعد پنل مدیریت از اینترنت Brute-force می‌شود.
 
-### ۴) مثال ساده
+Interface در FortiGate فقط پورت فیزیکی نیست؛ تعیین می‌کند چه کسی با دستگاه چه سرویسی صحبت کند، در چه Zoneای است و Policy به چه نامی به آن ارجاع می‌دهد.
 
-ساخت VLAN20 با آدرس 192.168.20.254/24 روی port2.
+### ۳) توضیح عمیق فنی
 
-### ۵) مثال سازمانی
+#### ۱) انواع Interface
 
-چند VLAN (۱۰ مدیریت، ۲۰ کاربران، ۹۰ سرور) روی یک Trunk به سوییچ هسته.
+| نوع | کاربرد |
+|---|---|
+| Physical | پورت واقعی (port1...) |
+| VLAN | Sub-interface با vlanid روی Physical/Aggregate |
+| Aggregate (LACP) | تجمیع چند لینک برای پهنای باند و افزونگی |
+| Loopback | آدرس پایدار برای مدیریت/BGP/IPsec |
+| Zone | گروه Interfaceها در Policy |
+| Software Switch | چند پورت در یک Bridge L2 |
 
-### ۶) تصویر و توپولوژی
+#### ۲) پیکربندی پایه
 
-```text
-Cisco Core --(802.1Q trunk)-- FGT port2
-  VLAN20 192.168.20.254/24 ; VLAN90 192.168.90.254/24
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Network > Interfaces > Create New > Interface.
-2. Name: VLAN20؛ Type: VLAN؛ Interface: port2؛ VLAN ID: 20.
-3. Role: LAN؛ Addressing mode: Manual؛ IP/Netmask: 192.168.20.254/255.255.255.0.
-4. Administrative Access: فقط PING را تیک بزنید.
-5. OK و سپس در لیست Interface وضعیت (Link up) را ببینید.
-6. برای port2: Edit و Role را LAN و Alias را TRUNK-CORE بگذارید.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
 config system interface
-    edit "port2"
-        set mode static
-        set allowaccess ping
-        set alias "TRUNK-CORE"
-        set role lan
-    next
-    edit "VLAN20"
-        set vdom "root"
-        set interface "port2"
-        set vlanid 20
-        set ip 192.168.20.254 255.255.255.0
-        set allowaccess ping
-        set role lan
-    next
+ edit "port1"
+  set alias "WAN-ISP-A"
+  set mode static
+  set ip 198.51.100.2 255.255.255.252
+  set allowaccess ping
+  set role wan
+  set description "To ISP-A circuit ID XYZ"
+ next
+ edit "port2"
+  set alias "LAN-TRUNK"
+  set mode static
+  set ip 10.10.0.1 255.255.255.0
+  set allowaccess ping
+  set role lan
+ next
+ edit "VLAN20"
+  set vdom "root"
+  set interface "port2"
+  set vlanid 20
+  set ip 10.20.0.1 255.255.255.0
+  set allowaccess ping
+  set role lan
+ next
 end
-! verify
-get system interface physical
-show system interface VLAN20
-diagnose ip address list
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+#### ۳) Role
 
-- `edit "VLAN20"`: نام اینترفیس VLAN؛ `set interface` والد؛ `set vlanid` شماره‌ی 802.1Q.
-- `set allowaccess ping`: فقط ping (بدون مدیریت) روی VLAN کاربران.
-- `get system interface physical`: وضعیت پورت‌ها (up/down، سرعت).
-- بازگشت: `delete "VLAN20"` (اگر Policy/Zone ارجاع ندهد).
-- نکته: حذف/تغییر Interface مورد ارجاع Policy خطا می‌دهد.
+Role (wan، lan، dmz، undefined) روی نمایش GUI، پیشنهادهای Policy و Security Fabric اثر دارد؛ بر مسیر بسته اثر ندارد. با این حال Role درست مستندسازی را آسان می‌کند.
 
-#### کارت قابلیت (۱۰ پرسش)
+#### ۴) Allowaccess (حیاتی)
 
-| # | پرسش | پاسخ |
-|---|---|---|
-| 1 | مفهوم | Interface/VLAN با IP و Role |
-| 2 | مشکلی که حل می‌کند | ورود ترافیک و Gateway هر VLAN |
-| 3 | چه زمانی استفاده شود | هر شبکه‌ای که از FGT عبور می‌کند |
-| 4 | چه زمانی استفاده نشود | Gateway روی سوییچ (Lab A) |
-| 5 | پیش‌نیازها | Trunk سوییچ و VLAN در Core |
-| 6 | وابستگی به Routing/Policy/NAT | Routing/Policy به همین IP وابسته‌اند |
-| 7 | پیاده‌سازی | GUI Network>Interfaces یا CLI config system interface |
-| 8 | راستی‌آزمایی | get system interface physical؛ ping |
-| 9 | عیب‌یابی | VLAN مجاز نیست؛ ID اشتباه |
-| 10 | خطاهای رایج | allowaccess روی WAN |
-
-### ۸) تست عملکرد
-
-- از Cisco Core ping 192.168.20.254؛ در FGT `get system arp` MAC کلاینت.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
+| سرویس | توصیه |
 |---|---|
-| Symptom | Gateway جواب نمی‌دهد |
-| شواهد/دستور | `get system interface physical` پورت down؛ Cisco: Trunk allowed VLAN 20؟ |
-| علت | VLAN مجاز نیست یا Native/ID اشتباه |
-| رفع | اصلاح Allowed/Native؛ `set vlanid` درست |
+| https، ssh | فقط Mgmt و با Trusted host |
+| ping | محدود (WAN فقط در صورت نیاز) |
+| http، telnet | غیرفعال |
+| snmp | فقط Mgmt و نسخه‌ی ۳ |
+| fgfm | فقط برای FortiManager |
+| fabric | فقط لینک Fabric |
 
-### ۱۰) تمرین مستقل
+``` text
+set allowaccess https ssh ping    ! only on MGMT interface
+```
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+#### ۵) VLAN و Trunk
 
-**ت1.** Gateway هر VLAN روی چیست؟ *(پاسخ: 12-2-ت1)*
+VLAN20 روی port2 فقط وقتی کار می‌کند که پورت سوییچ مقابل Trunk باشد و VLAN 20 را Allow کند. علامت خرابی: لینک up ولی ping به Gateway/کلاینت نه، و ARP incomplete.
 
-**ت2.** allowaccess چیست؟ *(پاسخ: 12-2-ت2)*
+#### ۶) Verification
 
-**ت3.** چرا WAN را سخت‌گیر می‌کنیم؟ *(پاسخ: 12-2-ت3)*
+``` text
+get system interface physical
+diagnose hardware deviceinfo nic port2
+diagnose ip arp list
+show system interface VLAN20
+```
 
-### ۱۱) مرور و ارزیابی
+شمارنده‌های خطا (CRC، collisions) و Speed/Duplex را بخوانید؛ عدم‌تطابق Duplex علامت «کند ولی up» است.
 
-**م1.** چرا VLAN باید در Trunk Cisco مجاز باشد؟ *(پاسخ: 12-2-م1)*
+#### ۷) Aggregate (LACP)
 
-**م2.** سناریو: ping از Core شکست؛ چه می‌بینید؟ *(پاسخ: 12-2-م2)*
+``` text
+config system interface
+ edit "agg1"
+  set type aggregate
+  set member "port5" "port6"
+  set lacp-mode active
+  set ip 10.50.0.1 255.255.255.0
+ next
+end
+```
 
-**معیار تسلط:** ساخت VLAN Interface با GUI و CLI و اثبات با ping/get system arp.
+سوییچ هم باید LACP active/passive باشد؛ عدم‌تطابق باعث Flap می‌شود.
 
-**اشتباهات رایج:** فعال‌کردن https روی WAN؛ ناهمسانی VLAN ID.
+### ۴) طراحی و تصمیم‌گیری
 
-### ۱۲) واژگان و English Corner
-
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| VLAN Interface | 802.1Q sub-interface | Interface مجازی هر VLAN | Gateway |
-| allowaccess | Administrative access | سرویس‌های مدیریتی مجاز | Hardening |
-| Role | Interface role | برچسب GUI | LAN/WAN |
-
-| English sentence | ترجمه |
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Set the interface role and restrict administrative access. | Role Interface را تنظیم و دسترسی مدیریتی را محدود کنید. |
-| Create a VLAN interface on the trunk port. | روی پورت Trunk یک VLAN Interface بسازید. |
+| Role | lan/wan/dmz |
+| Mgmt | Interface جدا |
+| Aggregate | برای لینک پرترافیک و افزونگی |
+| Alias/Description | شناسه‌ی مدار و مالک |
 
-#### کارت Lab — درس 12-2
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-| # | فیلد | محتوا |
+**ساده (حل‌شده):** ورودی: port2 با IP 10.10.0.1/24 و ping. مراحل: ۱) `edit port2`. ۲) `set ip ...`. ۳) `set allowaccess ping`. ۴) از PC با ping 10.10.0.1 آزمون. پاسخ: جواب می‌گیرید؛ ولی HTTPS باز نیست چون allowaccess ندارد (مطلوب).
+
+**متوسط (VLAN):** VLAN20 ساخته شد ولی ping به 10.20.0.1 از PC ناموفق. مراحل: ۱) `get system interface physical` لینک up. ۲) `diagnose ip arp list` برای 10.20.0.x ورودی ندارد. ۳) پورت سوییچ Access روی VLAN 1 است، نه Trunk. رفع: Trunk allowed 20. آزمون: ping و ARP.
+
+**سخت (سخت‌سازی WAN):** لاگ نشان می‌دهد صدها تلاش ورود به HTTPS از اینترنت. مراحل: ۱) `show system interface port1` allowaccess شامل https ssh. ۲) حذف به ping (یا هیچ). ۳) مدیریت فقط از Mgmt با Trusted host. ۴) Local-in policy برای تکمیل. ۵) آزمون: از اینترنت nmap پورت 443/22 بسته. ۶) Log تلاش‌ها کاهش. درس: WAN بدون مدیریت.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Network → Interfaces → Edit.
+2. IP/Netmask، Role، Alias و Administrative Access را تنظیم کنید.
+3. Create New → Interface → Type: VLAN، VLAN ID.
+4. Create New → Interface → Type: 802.3ad Aggregate.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+config system interface
+ edit "port2"
+  set ip 10.10.0.1 255.255.255.0
+  set allowaccess ping
+ next
+end
+get system interface physical
+diagnose ip arp list
+```
+
+### ۸) Verification (اثبات صحت)
+
+- لینک up، Speed/Duplex صحیح.
+- ping Gateway/کلاینت.
+- Allowaccess حداقل.
+- آزمون nmap از WAN.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | ساخت VLANهای 20 و 90 روی FGT |
-| 2 | پیش‌نیاز | درس ۱۲-۱ |
-| 3 | توپولوژی | Core Cisco ↔ FGT port2 |
-| 4 | تجهیزات | FGT + 1 سوییچ + VPCS |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | 192.168.20.0/24 و 192.168.90.0/24 |
-| 7 | وضعیت اولیه | port2 بدون IP |
-| 8 | صورت مسئله | دو VLAN Interface |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ping از VPCS |
-| 11 | سناریوی خرابی | Gateway جواب نمی‌دهد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Gateway ‌های .254 |
-| 14 | معیار پذیرش | ping Gateway موفق |
-| 15 | مستندات نهایی | `02-design/fgt-interfaces.md` |
-| 16 | Cleanup و بازگردانی | حذف VLAN Interfaceها |
+| VLAN کار نمی‌کند | Trunk/VLAN سوییچ | Trunk allowed |
+| کند ولی up | Duplex/CRC | Auto-neg/کابل |
+| GUI باز نمی‌شود | allowaccess/Trusted host | https روی Interface |
+| LACP flap | mode دو سر | active/passive |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- WAN: بدون مدیریت.
+- Trusted host برای Admin.
+- Telnet/HTTP غیرفعال.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Interface تعیین‌کننده‌ی مدیریت و Policy.
+- Allowaccess حداقل.
+- VLAN با Trunk.
+- Aggregate با LACP هماهنگ.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) allowaccess چیست؟ *(پاسخ: 12-2-ت1)*
+
+**ت2.** (ساده) VLAN Sub-interface چیست؟ *(پاسخ: 12-2-ت2)*
+
+**ت3.** (متوسط) چرا نباید https روی WAN باز باشد؟ *(پاسخ: 12-2-ت3)*
+
+**ت4.** (متوسط) لینک up ولی VLAN کار نمی‌کند؛ علت‌ها؟ *(پاسخ: 12-2-ت4)*
+
+**ت5.** (سخت) از اینترنت Brute-force می‌شود؛ طرح رفع. *(پاسخ: 12-2-ت5)*
+
+**ت6.** (سخت، طراحی) Interfaceهای یک شعبه با WAN، LAN، DMZ، Mgmt. *(پاسخ: 12-2-ت6)*
+
+**Q1.** Quick quiz (English): Which setting controls which management services are reachable on an interface? *(پاسخ: 12-2-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| LACP | Link Aggregation Control Protocol | پروتکل تجمیع لینک |
+| Trunk | 802.1Q trunk | لینک حامل چند VLAN |
+
+- *Never expose management services on the WAN interface.* ← هرگز سرویس‌های مدیریتی را روی Interface WAN باز نگذارید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Interface و VLAN (اجرا نشده). **Evidence:** `02-design/fgt-interfaces.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Interfaces
+- FortiOS 7.0 Hardening guide
 
 <a id="l-12-3"></a>
 
-## درس 12-3 — Zone و Objectها: Address، Service، Group و استاندارد نام‌گذاری
+## درس 12-3 — Zone و Objectها: Address، Service، Group، Schedule و استاندارد نام‌گذاری
 
-**فصل 12 - روز 3 · پیش‌نیاز: درس ۱۲-۲ · ۶ ساعت**
+**فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۲، ۱۱-۲ · ≈ 10 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-Objectها «قطعات سازنده»ی Policy هستند. نام‌گذاری و مدل منظم Object، مدیریت Policy و عیب‌یابی را ساده می‌کند. Zone چند Interface را در یک ناحیه‌ی اعتماد جمع می‌کند.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۲-۲؛ Zone/Trust (فصل ۱۱).
+1. Zone را بسازد و مزیت آن را بر Interface مستقل توضیح دهد.
+2. Address (Subnet، Range، FQDN، Geography)، Service و Group را بسازد.
+3. استاندارد نام‌گذاری و Comment را رعایت کند.
+4. Objectها را در Policy درست استفاده و بلااستفاده‌ها را پاک کند.
+5. تغییر Object را با اثر بر Policyها ارزیابی کند.
+6. Where-used را برای ممیزی به‌کار ببرد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- **Zone:** گروه Interface؛ Policy می‌تواند بین Zone ها نوشته شود. `intrazone` ترافیک درون Zone را کنترل می‌کند.
-- **Address:** Subnet/Range/FQDN؛ **Address Group**؛ **Service** (پورت‌ها) و Service Group.
-- **استاندارد نام:** `NET-<نام>-<VLAN>` ، `HOST-<نام>` ، `SRV-<سرویس>` ، `GRP-…` تا Policy خوانا بماند.
-- Object تکراری یا هم‌پوشان باعث خطای تحلیل می‌شود.
-- Object را قبل از Policy بسازید.
+Policy بدون Object مثل کدی با عددهای جادویی است: «10.20.0.10» در ۴۰ Policy پخش شده و وقتی سرور عوض شد، باید ۴۰ جا را پیدا کنید. با Object، فقط یک تعریف عوض می‌شود و همه‌ی Policyها به‌روز می‌شوند. Zone همین ایده برای Interfaceهاست.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-Address NET-USERS-20 و Zone ZN-USERS شامل VLAN20.
+#### ۱) Zone
 
-### ۵) مثال سازمانی
-
-سازمان: Zoneهای USERS، SERVERS، DMZ، WAN؛ Objectها با نام استاندارد.
-
-### ۶) تصویر و توپولوژی
-
-```text
-ZN-USERS = {VLAN20, VLAN30}
-NET-USERS-20 = 192.168.20.0/24
-GRP-INTERNAL = NET-USERS-20 + NET-SERVERS-90
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Network > Interfaces > Create New > Zone؛ Name: ZN-USERS؛ Interface Members: VLAN20.
-2. Policy & Objects > Addresses > Create New > Address: Name NET-USERS-20، Type Subnet، 192.168.20.0/24.
-3. Policy & Objects > Addresses > Create New > Address Group: GRP-INTERNAL.
-4. Policy & Objects > Services > Create New > Service: TCP-8443 (TCP 8443).
-5. هر Object را با «References» (آیکن) بررسی کنید.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
 config system zone
-    edit "ZN-USERS"
-        set interface "VLAN20"
-    next
-end
-config firewall address
-    edit "NET-USERS-20"
-        set subnet 192.168.20.0 255.255.255.0
-    next
-end
-config firewall addrgrp
-    edit "GRP-INTERNAL"
-        set member "NET-USERS-20"
-    next
-end
-config firewall service custom
-    edit "TCP-8443"
-        set tcp-portrange 8443
-    next
+ edit "ZN-SERVER"
+  set interface "port3" "VLAN20"
+  set intrazone deny
+ next
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+`intrazone deny` یعنی ترافیک بین اعضای همان Zone بدون Policy رد می‌شود (امن‌تر)؛ `allow` رفتار L2-ish.
 
-- Zone فقط Interfaceهای بدون Policy فعلی را می‌پذیرد (اگر خطا داد Policyهای ارجاع‌دهنده را بررسی کنید).
-- Address با `set subnet`؛ Group با `set member`.
-- Service سفارشی با `set tcp-portrange` (سینتکس `Unverified` در 7.0.3).
-- راستی‌آزمایی: `show firewall address` و GUI > Policy & Objects.
-- بازگشت: `delete` مورد نظر.
+نکته: Interface عضو Zone دیگر مستقیماً در Policy انتخاب نمی‌شود؛ Zone جایگزین است.
 
-#### کارت قابلیت (۱۰ پرسش)
+#### ۲) Address
 
-| # | پرسش | پاسخ |
+``` text
+config firewall address
+ edit "NET-USERS"
+  set subnet 10.10.0.0 255.255.255.0
+ next
+ edit "SRV-WEB"
+  set subnet 10.30.0.10 255.255.255.255
+ next
+ edit "RNG-GUEST"
+  set type iprange
+  set start-ip 10.60.0.10
+  set end-ip 10.60.0.200
+ next
+ edit "FQDN-UPDATE"
+  set type fqdn
+  set fqdn "update.vendor.com"
+ next
+end
+```
+
+FQDN به DNS وابسته است؛ در Policy خروجی مفید ولی خطای DNS = خطای Policy.
+
+#### ۳) Service
+
+``` text
+config firewall service custom
+ edit "TCP-8443"
+  set tcp-portrange 8443
+ next
+end
+config firewall service group
+ edit "GRP-WEB"
+  set member "HTTP" "HTTPS"
+ next
+end
+```
+
+#### ۴) Address Group
+
+``` text
+config firewall addrgrp
+ edit "GRP-SERVERS"
+  set member "SRV-WEB" "SRV-APP" "SRV-DB"
+ next
+end
+```
+
+#### ۵) استاندارد نام‌گذاری
+
+| نوع | الگو | نمونه |
 |---|---|---|
-| 1 | مفهوم | Zone/Object برای Policy |
-| 2 | مشکلی که حل می‌کند | ساده و خوانا کردن Policy |
-| 3 | چه زمانی استفاده شود | همیشه قبل از Policy |
-| 4 | چه زمانی استفاده نشود | با Object هم‌پوشان یا نامنظم |
-| 5 | پیش‌نیازها | Interfaceها |
-| 6 | وابستگی به Routing/Policy/NAT | Policy و Routing به Object ارجاع می‌دهند |
-| 7 | پیاده‌سازی | GUI Policy&Objects یا CLI config firewall |
-| 8 | راستی‌آزمایی | show firewall address |
-| 9 | عیب‌یابی | References؛ حذف نمی‌شود |
-| 10 | خطاهای رایج | نام‌گذاری ناهمگون |
+| Subnet | NET- | NET-USERS |
+| Host | SRV-/HOST- | SRV-DB |
+| Range | RNG- | RNG-GUEST |
+| FQDN | FQDN- | FQDN-UPDATE |
+| Service | TCP-/UDP- | TCP-8443 |
+| Group | GRP- | GRP-SERVERS |
+| Zone | ZN- | ZN-SERVER |
 
-### ۸) تست عملکرد
+هر Object Comment (مالک، دلیل) داشته باشد.
 
-- `show system zone`؛ `show firewall address` ورودی‌ها را نشان دهد.
+#### ۶) Where Used و پاک‌سازی
 
-### ۹) عیب‌یابی
+GUI: روی Object → Where Used. Object بدون مصرف و بدون Comment کاندید حذف. تغییر Object مشترک روی همه‌ی Policyها اثر می‌گذارد؛ قبل از تغییر Where Used را ببینید.
 
-| بخش | شرح |
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | نمی‌توان Interface را به Zone اضافه کرد |
-| شواهد/دستور | پیام «referenced by policy» |
-| علت | Interface در Policy استفاده شده |
-| رفع | Policyها را به Zone منتقل کنید یا Interface را آزاد کنید |
+| Zone یا Interface | Zone برای چند پورت هم‌نقش |
+| intrazone | deny |
+| FQDN | فقط جایی که DNS مطمئن است |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** NET-USERS=10.10.0.0/24 ساخته و در Policy 2 استفاده شد؛ بعداً شبکه به 10.11.0.0/24 تغییر کرد؛ فقط Object ویرایش شد و Policyها بدون تغییر ماندند.
 
-**ت1.** Zone چه فایده‌ای دارد؟ *(پاسخ: 12-3-ت1)*
+**متوسط (Zone):** Interface port3 در Zone ZN-SERVER است ولی در Policy قابل انتخاب نیست. علت: عضو Zone؛ رفع: Zone را انتخاب کنید یا Interface را از Zone خارج کنید. درس: Policy با Zone.
 
-**ت2.** چرا نام‌گذاری استاندارد؟ *(پاسخ: 12-3-ت2)*
+**سخت (ممیزی Object):** ۲۰۰ Object: ۵۰ بدون Where-used؛ ۱۰ با نام یکسان تکراری. برنامه: Export، تأیید مالکان، حذف بلااستفاده‌ها پس از Backup، ادغام تکراری‌ها (Policyها را به Object اصلی بردارید)، اعمال استاندارد نام. معیار: صفر Object بی‌مالک، صفر تکراری.
 
-**ت3.** intrazone؟ *(پاسخ: 12-3-ت3)*
+### ۶) پیاده‌سازی از مسیر GUI
 
-### ۱۱) مرور و ارزیابی
+1. Policy & Objects → Addresses → Create New.
+2. Services، Address Groups، Schedules.
+3. Network → Interfaces → Create New → Zone.
+4. روی Object → Where Used.
 
-**م1.** چرا Object هم‌پوشان خطرناک است؟ *(پاسخ: 12-3-م1)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-**م2.** سناریو: Interface در Zone اضافه نمی‌شود؛ چرا؟ *(پاسخ: 12-3-م2)*
+``` text
+config firewall address
+ edit "NET-USERS"
+  set subnet 10.10.0.0 255.255.255.0
+  set comment "User VLAN; owner NOC"
+ next
+end
+config system zone
+ edit "ZN-SERVER"
+  set interface "port3"
+ next
+end
+```
 
-**معیار تسلط:** ساخت Zone و Object با GUI/CLI و نام‌گذاری استاندارد.
+### ۸) Verification (اثبات صحت)
 
-**اشتباهات رایج:** Object بدون استاندارد؛ تداخل Subnet.
+- Where Used نشان می‌دهد Object استفاده شده.
+- Policy از Zone استفاده می‌کند.
+- نام‌ها مطابق استاندارد.
 
-### ۱۲) واژگان و English Corner
+### ۹) Troubleshooting
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Zone | Security zone | گروه Interface | Policy |
-| Address object | Firewall address | تعریف Subnet/Host | Policy |
-| Service | Firewall service | تعریف پورت/پروتکل | Policy |
-
-| English sentence | ترجمه |
-|---|---|
-| Use a consistent naming standard for all objects. | برای همه‌ی Objectها استاندارد نام‌گذاری ثابت به‌کار ببرید. |
-| Zones group interfaces with the same trust level. | Zoneها Interfaceهای هم‌سطح اعتماد را گروه می‌کنند. |
-
-#### کارت Lab — درس 12-3
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Zone و Objectهای استاندارد |
-| 2 | پیش‌نیاز | درس ۱۲-۲ |
-| 3 | توپولوژی | FGT |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | VLAN20/90 |
-| 7 | وضعیت اولیه | Interfaces موجود |
-| 8 | صورت مسئله | Zone/Address/Service |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `show firewall address` |
-| 11 | سناریوی خرابی | نمی‌توان Interface را به Zone اضافه کرد |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Objectها ساخته |
-| 14 | معیار پذیرش | نام‌ها استاندارد |
-| 15 | مستندات نهایی | `02-design/fgt-objects.md` |
-| 16 | Cleanup و بازگردانی | حذف Objectها |
+| Interface در Policy نیست | عضو Zone | Zone را انتخاب کنید |
+| Policy FQDN کار نمی‌کند | DNS | Resolver |
+| تغییر Object اثر ناخواسته | Where Used | قبل از تغییر بررسی |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Objectها را با Least Privilege.
+- FQDN را کنترل کنید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Object = یک نقطه‌ی تغییر.
+- Zone برای خوانایی.
+- نام‌گذاری و Comment.
+- Where Used قبل از تغییر.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) مزیت Address Object چیست؟ *(پاسخ: 12-3-ت1)*
+
+**ت2.** (ساده) intrazone deny چه می‌کند؟ *(پاسخ: 12-3-ت2)*
+
+**ت3.** (متوسط) چرا Interface عضو Zone در Policy قابل انتخاب نیست؟ *(پاسخ: 12-3-ت3)*
+
+**ت4.** (متوسط) خطر Object FQDN؟ *(پاسخ: 12-3-ت4)*
+
+**ت5.** (سخت) ۲۰۰ Object را ممیزی کنید. *(پاسخ: 12-3-ت5)*
+
+**ت6.** (سخت، طراحی) استاندارد نام‌گذاری شرکت. *(پاسخ: 12-3-ت6)*
+
+**Q1.** Quick quiz (English): Why use zones instead of individual interfaces in policies? *(پاسخ: 12-3-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| FQDN | Fully Qualified Domain Name | نام کامل دامنه |
+
+- *Use a naming standard for every object.* ← برای هر Object استاندارد نام‌گذاری بگذارید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Objectها (اجرا نشده). **Evidence:** `02-design/fgt-objects.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Firewall objects; Zones
 
 <a id="l-12-4"></a>
 
-## درس 12-4 — Static Route، Default Route و Policy Route
+## درس 12-4 — Static Route، Default Route، Policy Route، Distance/Priority و Failover
 
-**فصل 12 - روز 4 · پیش‌نیاز: درس ۱۲-۳ · ۶ ساعت**
+**فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۲، ۱۰-۴ · ≈ 10 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-FortiGate هم مثل روتر باید مسیر داشته باشد. Default به سمت ISP، Static برای شبکه‌های دور و Policy Route برای استثناها. تفاوت Distance و Priority را باید بدانید.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس‌های ۱۲-۲، ۱۲-۳؛ Routing (فصل‌های ۵ و ۱۰).
+1. Static و Default Route را بسازد و Distance/Priority را تفاوت بگذارد.
+2. ECMP و Failover دو ISP را با Link-monitor طراحی کند.
+3. Policy Route را به‌کار ببرد و ترتیبش با جدول مسیر را بداند.
+4. جدول مسیر را بخواند (all/details/database).
+5. RPF، Blackhole و Summary را بشناسد.
+6. خرابی‌های رایج مسیر را عیب‌یابی کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- **Static Route**: مقصد، Gateway، Interface خروجی.
-- **Distance** (AD) کمتر = بهتر؛ **Priority** برای انتخاب بین مسیرهای هم‌Distance (کمتر بهتر) — با Priority یکسان ECMP.
-- **Policy Route:** بر اساس مبدأ/سرویس، قبل از جدول معمولی (مثل PBR).
-- جدول مسیر واقعی: `get router info routing-table all` (فقط Active)؛ `show router static` (Config).
-- RPF/Asymmetric: مسیر برگشت را حتماً بررسی کنید (فصل ۱۰).
+Policy درست و ترافیک نمی‌رسد؟ اغلب Route است. در FortiGate Route قبل از Policy تصمیم می‌گیرد بسته از کدام Interface خارج شود؛ سپس Policy برای همان جفت (ورودی، خروجی) جست‌وجو می‌شود. پس Route اشتباه = Policy بی‌اثر.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-Default 0.0.0.0/0 به Gateway ISP 203.0.113.1 از port1.
+#### ۱) Static و Default
 
-### ۵) مثال سازمانی
-
-Static برای شبکه‌ی داخلی پشت Core؛ Default برای اینترنت.
-
-### ۶) تصویر و توپولوژی
-
-```text
-FGT port1(WAN) -> ISP 203.0.113.1
-FGT VLAN20 -> Core -> 10.20.0.0/16
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. Network > Static Routes > Create New.
-2. Destination: Subnet 0.0.0.0/0.0.0.0؛ Gateway Address: 203.0.113.1؛ Interface: port1؛ Administrative Distance 10؛ Priority 1.
-3. Comments: default-to-ISP؛ OK.
-4. Monitor > Routing Monitor: ردیف Static را ببینید.
-5. Network > Policy Routes (اگر لازم): Incoming Interface/Source/Destination و Gateway.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
 config router static
-    edit 1
-        set dst 0.0.0.0 0.0.0.0
-        set gateway 203.0.113.1
-        set device "port1"
-        set distance 10
-        set priority 1
-        set comment "default-to-ISP"
-    next
-    edit 2
-        set dst 10.20.0.0 255.255.0.0
-        set gateway 192.168.20.1
-        set device "VLAN20"
-    next
+ edit 1
+  set dst 0.0.0.0 0.0.0.0
+  set gateway 198.51.100.1
+  set device "port1"
+  set distance 10
+  set priority 1
+  set comment "ISP-A primary"
+ next
+ edit 2
+  set dst 0.0.0.0 0.0.0.0
+  set gateway 203.0.113.1
+  set device "port4"
+  set distance 10
+  set priority 10
+  set comment "ISP-B backup"
+ next
 end
-! verify
-get router info routing-table all
-get router info routing-table details 10.20.0.5
-show router static
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+#### ۲) Distance و Priority
 
-- `set dst`+`set gateway`+`set device`: مسیر.
-- `distance` و `priority`: انتخاب مسیر؛ مقدار کمتر بهتر.
-- راستی‌آزمایی: `routing-table all` ردیف `S*` برای Default.
-- بازگشت: `delete 1`.
-- هشدار: حذف Default از راه دور اتصال را قطع می‌کند.
-
-#### کارت قابلیت (۱۰ پرسش)
-
-| # | پرسش | پاسخ |
-|---|---|---|
-| 1 | مفهوم | Static/Default/Policy Route |
-| 2 | مشکلی که حل می‌کند | هدایت ترافیک به مقصد |
-| 3 | چه زمانی استفاده شود | هر FGT نیاز به Default/مسیر دارد |
-| 4 | چه زمانی استفاده نشود | وقتی Routing پویا مناسب‌تر است |
-| 5 | پیش‌نیازها | Interfaceهای بالا |
-| 6 | وابستگی به Routing/Policy/NAT | Policy و NAT بدون Route کار نمی‌کنند |
-| 7 | پیاده‌سازی | Network>Static Routes یا config router static |
-| 8 | راستی‌آزمایی | get router info routing-table all |
-| 9 | عیب‌یابی | Gateway ناقابل‌دسترس |
-| 10 | خطاهای رایج | Distance/Priority اشتباه |
-
-### ۸) تست عملکرد
-
-- `execute ping 8.8.8.8` از FGT؛ `execute traceroute`.
-
-### ۹) عیب‌یابی
-
-| بخش | شرح |
+| ویژگی | معنی |
 |---|---|
-| Symptom | Default در جدول نیست |
-| شواهد/دستور | `get router info routing-table all`: ردیف S* نیست |
-| علت | Interface خروجی down یا Gateway ناقابل‌دسترس |
-| رفع | اصلاح Gateway/Interface؛ `set distance` |
+| Distance | اعتبار منبع؛ کمتر بهتر؛ بین Routeهای متفاوت |
+| Priority | تعیین‌کننده بین Routeهای هم‌Distance به یک مقصد؛ کمتر ترجیح |
 
-### ۱۰) تمرین مستقل
+اگر Distance برابر و Priority متفاوت: مسیر با Priority کمتر Active (Primary) و دیگری آماده؛ اگر هر دو برابر: ECMP.
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+#### ۳) Failover با Link-monitor
 
-**ت1.** Distance و Priority؟ *(پاسخ: 12-4-ت1)*
+``` text
+config system link-monitor
+ edit "ISP-A-MON"
+  set srcintf "port1"
+  set server "8.8.8.8"
+  set gateway-ip 198.51.100.1
+  set interval 1000
+  set failtime 5
+  set recoverytime 5
+  set update-static-route enable
+ next
+end
+```
 
-**ت2.** کدام دستور جدول واقعی را می‌دهد؟ *(پاسخ: 12-4-ت2)*
+بدون Link-monitor، اگر Gateway زنده ولی ISP قطع باشد، Route فعال می‌ماند و ترافیک گم می‌شود. `Unverified` برای ثبات پارامترها در 7.0.3.
 
-**ت3.** Policy Route چه زمانی؟ *(پاسخ: 12-4-ت3)*
+#### ۴) Policy Route
 
-### ۱۱) مرور و ارزیابی
+``` text
+config router policy
+ edit 1
+  set input-device "port2"
+  set src "10.10.20.0/255.255.255.0"
+  set gateway 203.0.113.1
+  set output-device "port4"
+ next
+end
+```
 
-**م1.** چرا `show router static` همان جدول مسیر نیست؟ *(پاسخ: 12-4-م1)*
+Policy Route قبل از جدول مسیر؛ مسیر ترافیک مالی از ISP-B. اگر نیازی نیست، به‌جای آن SD-WAN (فصل ۱۶) بهتر است.
 
-**م2.** سناریو: Default Static هست ولی Down؛ چرا؟ *(پاسخ: 12-4-م2)*
+#### ۵) خواندن جدول
 
-**معیار تسلط:** تنظیم Default/Static با GUI و CLI و اثبات با routing-table و ping.
+``` text
+get router info routing-table all
+get router info routing-table details 8.8.8.8
+get router info routing-table database
+diagnose firewall proute list
+```
 
-**اشتباهات رایج:** اشتباه Distance/Priority؛ حذف Default.
+#### ۶) Blackhole و Summary
 
-### ۱۲) واژگان و English Corner
+``` text
+config router static
+ edit 10
+  set dst 10.0.0.0 255.0.0.0
+  set blackhole enable
+  set distance 254
+ next
+end
+```
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Distance | Administrative distance | اعتبار مسیر | انتخاب مسیر |
-| Priority | Route priority | تای‌بریک مسیرهای هم‌Distance | ECMP |
-| Policy route | Policy route | مسیر بر اساس سیاست | استثنا |
+Summary داخلی با Blackhole و Distance بالا مانع Leak به Default می‌شود.
 
-| English sentence | ترجمه |
+#### ۷) RPF
+
+FortiGate مسیر معکوس Source را چک می‌کند؛ اگر Route برگشت از Interface دیگری باشد بسته Drop می‌شود (`reverse path check fail`).
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Verify the active routing table, not only the configuration. | جدول مسیر فعال را بررسی کنید، نه فقط Config را. |
-| A lower distance wins. | Distance کمتر برنده است. |
+| Primary/Backup | Distance برابر، Priority متفاوت |
+| Failover | Link-monitor به مقصد مستقل (نه فقط Gateway) |
+| Summary | Blackhole |
 
-#### کارت Lab — درس 12-4
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-| # | فیلد | محتوا |
+**ساده (حل‌شده):** Default به ISP-A. `get router info routing-table all` نشان می‌دهد `S* 0.0.0.0/0 [10/0] via 198.51.100.1, port1`.
+
+**متوسط (Failover):** Primary ISP-A (priority 1) و Backup ISP-B (priority 10). مراحل: ۱) Link-monitor روی ISP-A. ۲) قطع ISP-A (نه فقط Gateway). ۳) Monitor ۵ بار شکست ⇒ Route ISP-A غیرفعال ⇒ ISP-B. ۴) آزمون traceroute. ۵) بازگشت: recoverytime. معیار: Failover < 10 s.
+
+**سخت (Policy Route + RPF):** پس از افزودن Policy Route برای 10.10.20.0/24 به ISP-B، برخی Sessionها قطع می‌شوند. مراحل: ۱) Debug flow: `reverse path check fail`. ۲) پاسخ از ISP-B می‌آید ولی Route برگشت Default ISP-A است. ۳) رفع: Policy برای Interface خروجی ISP-B با NAT صحیح و Route برگشت یا `set asymroute`(فقط موقت؛ امنیت کم). ۴) آزمون. درس: Policy Route باید با NAT و مسیر برگشت هماهنگ باشد.
+
+### ۶) پیاده‌سازی از مسیر GUI
+
+1. Network → Static Routes → Create New.
+2. Network → Policy Routes.
+3. Network → SD-WAN (در 7.0) برای Failover پیشرفته.
+4. Monitor → Routing Monitor.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+config router static
+ edit 1
+  set gateway 198.51.100.1
+  set device "port1"
+  set distance 10
+  set priority 1
+ next
+end
+get router info routing-table all
+get router info routing-table details 8.8.8.8
+diagnose firewall proute list
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Route Active در جدول.
+- traceroute از ISP درست.
+- Failover با قطع ISP.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Default و Static |
-| 2 | پیش‌نیاز | درس ۱۲-۳ |
-| 3 | توپولوژی | FGT + Core + ISP-Sim |
-| 4 | تجهیزات | FGT،R-ISP،Core |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | 203.0.113.0/30؛ 192.168.20.0/24 |
-| 7 | وضعیت اولیه | Interfaces بالا |
-| 8 | صورت مسئله | Default + Static |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `execute ping` |
-| 11 | سناریوی خرابی | Default در جدول نیست |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | S* در جدول |
-| 14 | معیار پذیرش | ping 8.8.8.8 از FGT |
-| 15 | مستندات نهایی | `02-design/fgt-routing.md` |
-| 16 | Cleanup و بازگردانی | حذف مسیرها |
+| Failover کار نمی‌کند | Link-monitor | Monitor به مقصد خارجی |
+| برخی Sessionها قطع | RPF | Route برگشت |
+| مسیر عجیب | proute | Policy Route |
+| Default غایب | database | Distance/Interface down |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Blackhole برای Summary.
+- Policy Route را مستند کنید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- Route قبل Policy.
+- Distance/Priority.
+- Link-monitor.
+- RPF.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) Distance چیست؟ *(پاسخ: 12-4-ت1)*
+
+**ت2.** (ساده) Priority چه فرقی با Distance دارد؟ *(پاسخ: 12-4-ت2)*
+
+**ت3.** (متوسط) چرا Link-monitor لازم است؟ *(پاسخ: 12-4-ت3)*
+
+**ت4.** (متوسط) Policy Route قبل یا بعد از جدول مسیر؟ *(پاسخ: 12-4-ت4)*
+
+**ت5.** (سخت) پس از Policy Route برخی Sessionها قطع می‌شوند؛ تحلیل. *(پاسخ: 12-4-ت5)*
+
+**ت6.** (سخت، طراحی) دو ISP با Primary/Backup. *(پاسخ: 12-4-ت6)*
+
+**Q1.** Quick quiz (English): Which attribute breaks the tie between static routes with equal distance? *(پاسخ: 12-4-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| RPF | Reverse Path Forwarding | بررسی مسیر معکوس |
+| Blackhole | Blackhole route | مسیر دورریز |
+
+- *A route decides the egress interface before the policy lookup.* ← Route قبل از Policy Interface خروجی را تعیین می‌کند.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Route و Failover (اجرا نشده). **Evidence:** `02-design/fgt-routing.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Static routing; Link monitor; Policy routes
 
 <a id="l-12-5"></a>
 
-## درس 12-5 — Admin، RBAC و سخت‌سازی مدیریت
+## درس 12-5 — Admin، RBAC، MFA و سخت‌سازی مدیریت FortiGate
 
-**فصل 12 - روز 5 · پیش‌نیاز: درس ۱۲-۴ · ۶ ساعت**
+**فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۲، ۱۲-۱ · ≈ 10 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-دسترسی مدیریتی به فایروال حساس‌ترین دسترسی است. با Admin Profile، Trusted Host، Timeout و محدودیت allowaccess آن را امن می‌کنیم. اشتباه می‌تواند خودتان را بیرون بگذارد.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس‌های ۱۲-۲، ۱۲-۴؛ AAA (فصل ۸).
+1. Admin Profile (RBAC) با حداقل دسترسی بسازد.
+2. Trusted host، Timeout، Lockout و TLS را تنظیم کند.
+3. MFA (FortiToken/Email) و حساب Break-glass را طراحی کند.
+4. Admin پیش‌فرض و Local-in/Management را محافظت کند.
+5. Audit ورود/تغییر را بخواند و Alert بسازد.
+6. چک‌لیست سخت‌سازی را اجرا و مستند کند.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- **Admin Profile (accprofile):** سطح دسترسی هر گروه (Read-only، Super-admin).
-- **Trusted Host:** فقط از آدرس‌های مشخص ورود مجاز است.
-- `admintimeout`، قفل بعد از تلاش‌های ناموفق (`admin-lockout-*`)، تغییر پورت/غیرفعال‌سازی HTTP.
-- **اصل حداقل دسترسی:** Admin روزمره Super-admin نباشد.
-- قبل از Trusted Host بکاپ + راه جایگزین (Console).
+اگر همه‌ی مدیران Super-admin باشند، یک رمز لورفته یعنی تسلط کامل: پاک‌کردن Policy، دریافت Config و حتی VPN backdoor. RBAC هر نفر را به اندازه‌ی کارش محدود می‌کند؛ MFA و Trusted host لایه‌ی بعدی‌اند.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-کاربر netadmin فقط از 192.168.100.0/24.
+#### ۱) Admin Profile
 
-### ۵) مثال سازمانی
-
-سازمان: گروه‌های NetAdmin، SecAdmin، ReadOnly؛ ۲FA مفهومی.
-
-### ۶) تصویر و توپولوژی
-
-```text
-Admin PC (192.168.100.x) --https/ssh--> FGT mgmt (trusted host only)
-```
-
-### ۷) پیکربندی (GUI و CLI)
-
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
-
-#### روش گرافیکی (GUI)
-
-1. System > Admin Profiles > Create New: PROF-READONLY با Read برای Network/Firewall/System/Log.
-2. System > Administrators > Create New > Administrator: Username auditor؛ Type Local User؛ Password نمونه؛ Administrator Profile PROF-READONLY.
-3. Restrict login to trusted hosts را فعال و 192.168.100.0/24 را وارد کنید.
-4. System > Settings: Idle timeout را 10 دقیقه کنید.
-5. با کاربر جدید از Subnet مجاز وارد و تغییر را امتحان کنید.
-
-#### روش خط فرمان (CLI)
-
-```text
+``` text
 config system accprofile
-    edit "PROF-READONLY"
-        set sysgrp read
-        set netgrp read
-        set fwgrp read
-        set loggrp read
-    next
-end
-config system admin
-    edit "auditor"
-        set accprofile "PROF-READONLY"
-        set trusthost1 192.168.100.0 255.255.255.0
-        set password <SAMPLE-PASSWORD>
-    next
-end
-config system global
-    set admintimeout 10
-    set admin-lockout-threshold 3
-    set admin-lockout-duration 300
+ edit "NOC-READONLY"
+  set secfabgrp read
+  set ftviewgrp read
+  set authgrp read
+  set sysgrp read
+  set netgrp read
+  set loggrp read
+  set fwgrp read
+  set vpngrp read
+  set utmgrp read
+ next
+ edit "NET-ENGINEER"
+  set sysgrp read
+  set netgrp read-write
+  set fwgrp read-write
+  set loggrp read
+ next
 end
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+#### ۲) Admin و Trusted host
 
-- Profile با گروه‌های مجوز (`sysgrp`, `netgrp`, `fwgrp` ...).
-- `trusthost1`: فقط آن Subnet؛ **هشدار:** اشتباه = قفل شدن؛ Console نجات می‌دهد.
-- `admintimeout 10`: خروج خودکار بعد از ۱۰ دقیقه.
-- راستی‌آزمایی: ورود با `auditor` از Subnet مجاز موفق و از دیگر شبکه‌ها ناموفق.
-- بازگشت: `delete "auditor"` و حذف trusthost.
+``` text
+config system admin
+ edit "noc01"
+  set accprofile "NOC-READONLY"
+  set trusthost1 10.99.0.0 255.255.255.0
+  set password <STRONG-PASSWORD>
+  set two-factor fortitoken
+ next
+end
+```
 
-#### کارت قابلیت (۱۰ پرسش)
+رمز واقعی هرگز در ریپو/اسناد نمی‌آید.
 
-| # | پرسش | پاسخ |
-|---|---|---|
-| 1 | مفهوم | Admin/Profile/Trusted Host |
-| 2 | مشکلی که حل می‌کند | کنترل دسترسی مدیریت |
-| 3 | چه زمانی استفاده شود | همیشه |
-| 4 | چه زمانی استفاده نشود | Super-admin روزمره |
-| 5 | پیش‌نیازها | Console برای نجات |
-| 6 | وابستگی به Routing/Policy/NAT | وابسته به allowaccess Interface |
-| 7 | پیاده‌سازی | GUI System>Administrators |
-| 8 | راستی‌آزمایی | ورود موفق/ناموفق |
-| 9 | عیب‌یابی | Trusted host اشتباه |
-| 10 | خطاهای رایج | رمز ضعیف |
+#### ۳) سخت‌سازی سراسری
 
-### ۸) تست عملکرد
+``` text
+config system global
+ set admintimeout 10
+ set admin-lockout-threshold 3
+ set admin-lockout-duration 300
+ set admin-https-ssl-versions tlsv1-2 tlsv1-3
+ set admin-ssh-v1 disable
+ set strong-crypto enable
+ set admin-port 8443
+ set admin-sport 8443
+end
+```
 
-- ورود SSH/GUI با کاربر read-only؛ تلاش تغییر باید رد شود.
+(پورت‌های مدیریت سفارشی کمک متوسط؛ Obscurity.) `Unverified`.
 
-### ۹) عیب‌یابی
+#### ۴) Password Policy
 
-| بخش | شرح |
+``` text
+config system password-policy
+ set status enable
+ set minimum-length 14
+ set min-lower-case-letter 1
+ set min-upper-case-letter 1
+ set min-number 1
+ set min-non-alphanumeric 1
+ set expire-status enable
+ set expire-day 90
+end
+```
+
+#### ۵) Break-glass
+
+یک حساب اضطراری با رمز طولانی در گاوصندوق، فقط برای زمان قطع SSO/MFA؛ هر استفاده Alert و Rotate.
+
+#### ۶) Audit
+
+``` text
+execute log filter category 1   ! event log
+execute log filter field logdesc "Admin login successful"
+execute log display
+```
+
+در FortiAnalyzer: Alert روی «Admin login failed» >5 در ۵ دقیقه و «Configuration changed».
+
+#### ۷) چک‌لیست
+
+1. admin پیش‌فرض: تغییر نام/غیرفعال. 2. MFA همه. 3. Trusted host. 4. فقط TLS 1.2+. 5. Telnet/HTTP off. 6. Timeout/Lockout. 7. Backup رمزگذاری. 8. Log به خارج.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | بعد از Trusted Host بیرون ماندم |
-| شواهد/دستور | ورود از آدرس دیگر رد می‌شود |
-| علت | Trusted Host فقط یک Subnet |
-| رفع | Console: `config system admin / edit X / unset trusthost1` |
+| سه سطح دسترسی | Super، Engineer، ReadOnly |
+| MFA | FortiToken/OTP برای همه |
+| Break-glass | گاوصندوق و Alert |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** Admin فقط‌خواندنی noc01 با Trusted host 10.99.0.0/24؛ ورود از شبکه‌ی دیگر رد می‌شود.
 
-**ت1.** Trusted Host چیست؟ *(پاسخ: 12-5-ت1)*
+**متوسط (Brute-force):** لاگ: ۲۰ ورود ناموفق از یک IP. مراحل: ۱) Lockout 3/300 فعال. ۲) IP در Local-in policy مسدود. ۳) Trusted host. ۴) Alert. نتیجه: تلاش‌ها پس از ۳ بار قفل می‌شود.
 
-**ت2.** چرا Admin روزمره Super-admin نباشد؟ *(پاسخ: 12-5-ت2)*
+**سخت (سه سطح + Break-glass):** طراحی: ۱) Super-admin ۲ نفر با MFA. ۲) Network engineer: fwgrp/netgrp رایت. ۳) NOC: فقط‌خواندنی. ۴) Break-glass در گاوصندوق. ۵) Alert روی ورود Break-glass و تغییر Config. ۶) آزمون: ورود با NOC و تلاش تغییر Policy ⇒ رد. معیار: هیچ حساب مشترک، هیچ رمز در ریپو.
 
-**ت3.** Profile چه می‌کند؟ *(پاسخ: 12-5-ت3)*
+### ۶) پیاده‌سازی از مسیر GUI
 
-### ۱۱) مرور و ارزیابی
+1. System → Admin Profiles → Create New.
+2. System → Administrators → Create New (Trusted hosts، Two-factor).
+3. System → Settings: Idle timeout، HTTPS ports.
+4. Security Fabric/Log برای Alert.
 
-**م1.** چرا قبل از Trusted Host راه جایگزین لازم است؟ *(پاسخ: 12-5-م1)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-**م2.** سناریو: auditor می‌تواند Config تغییر دهد؛ علت؟ *(پاسخ: 12-5-م2)*
+``` text
+config system global
+ set admintimeout 10
+ set admin-lockout-threshold 3
+ set admin-lockout-duration 300
+end
+show system admin
+```
 
-**معیار تسلط:** ساخت Admin محدود با GUI/CLI و اثبات عدم دسترسی خارج از Trusted Host.
+### ۸) Verification (اثبات صحت)
 
-**اشتباهات رایج:** قفل‌شدن؛ رمز ساده؛ ماندن روی Super-admin.
+- ورود با Trusted host.
+- Lockout پس از ۳ تلاش.
+- NOC تغییر Policy نمی‌تواند.
+- Alert ارسال می‌شود.
 
-### ۱۲) واژگان و English Corner
+### ۹) Troubleshooting
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Trusted host | Admin trusted host | آدرس مجاز ورود | مدیریت |
-| accprofile | Access profile | پروفایل مجوز | RBAC |
-| RBAC | Role-Based Access Control | دسترسی بر اساس نقش | Least privilege |
-
-| English sentence | ترجمه |
-|---|---|
-| Restrict administrator logins to trusted hosts. | ورود ادمین را به Trusted Hostها محدود کنید. |
-| Never use a super-admin account for daily work. | هرگز از حساب Super-admin برای کار روزمره استفاده نکنید. |
-
-#### کارت Lab — درس 12-5
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | Admin محدود |
-| 2 | پیش‌نیاز | درس ۱۲-۴ |
-| 3 | توپولوژی | FGT + PC |
-| 4 | تجهیزات | FGT |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | 192.168.100.0/24 |
-| 7 | وضعیت اولیه | Admin پیش‌فرض |
-| 8 | صورت مسئله | auditor read-only |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | ورود |
-| 11 | سناریوی خرابی | بعد از Trusted Host بیرون ماندم |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | دسترسی محدود |
-| 14 | معیار پذیرش | رد تغییر و رد آدرس نامجاز |
-| 15 | مستندات نهایی | `03-ops/fgt-admin-standard.md` (بدون رمز) |
-| 16 | Cleanup و بازگردانی | حذف کاربر |
+| Admin وارد نمی‌شود | Trusthost | آدرس مدیر |
+| MFA قفل | FortiToken | Break-glass |
+| Lockout زیاد | دور زدن | Trusted host/Local-in |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- MFA همه.
+- Break-glass.
+- رمز در ریپو ممنوع.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- RBAC.
+- Trusted host.
+- MFA.
+- Audit/Alert.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) RBAC چیست؟ *(پاسخ: 12-5-ت1)*
+
+**ت2.** (ساده) Trusted host چه می‌کند؟ *(پاسخ: 12-5-ت2)*
+
+**ت3.** (متوسط) Lockout چه فایده‌ای دارد؟ *(پاسخ: 12-5-ت3)*
+
+**ت4.** (متوسط) چرا Break-glass؟ *(پاسخ: 12-5-ت4)*
+
+**ت5.** (سخت) Brute-force از یک IP؛ پاسخ. *(پاسخ: 12-5-ت5)*
+
+**ت6.** (سخت، طراحی) سه سطح دسترسی و چک‌لیست. *(پاسخ: 12-5-ت6)*
+
+**Q1.** Quick quiz (English): What does a trusted host setting restrict? *(پاسخ: 12-5-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| MFA | Multi-Factor Authentication | احراز چندعاملی |
+| RBAC | Role-Based Access Control | کنترل دسترسی نقش‌محور |
+
+- *Apply least privilege to administrator accounts.* ← به حساب‌های Admin حداقل دسترسی بدهید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** سخت‌سازی Admin (اجرا نشده). **Evidence:** `03-ops/fgt-admin-standard.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Administrators; Hardening
+- FortiOS 7.0 Hardening guide
 
 <a id="l-12-6"></a>
 
-## درس 12-6 — Backup/Restore، Firmware و Lifecycle
+## درس 12-6 — Backup/Restore، Firmware Upgrade، Rollback و Lifecycle
 
-**فصل 12 - روز 6 · پیش‌نیاز: درس ۱۲-۴ · ۶ ساعت**
+**فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۱، ۱۲-۵ · ≈ 10 ساعت**
 
-### ۱) معرفی درس
+> **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-پیش از هر تغییر بکاپ و بعد از آن بازیابی آزموده‌شده. ارتقای Firmware و آسیب‌پذیری‌های نسخه‌ی ۷٫۰ را هم باید بشناسید. راهنمای شما در `phase0a/FortiGate_Backup_Restore_Runbook.md` است.
+### ۱) هدف آموزشی
 
-### ۲) پیش‌نیازها
+در پایان این درس باید بتوانید:
 
-درس ۱۲-۵.
+1. Backup کامل (Config، Certificates، License) را بگیرد و ایمن نگه دارد.
+2. Restore را در Lab اجرا و صحت آن را بررسی کند.
+3. Upgrade Path را از Fortinet تعیین و Window/Rollback را برنامه‌ریزی کند.
+4. قبل/بعد Upgrade چک‌لیست اجرا کند.
+5. Lifecycle (EoS/EoL، Release Notes) را ردیابی کند.
+6. برنامه‌ی تغییر (CHG) و Runbook بنویسد.
 
-### ۳) توضیح مفهومی
+### ۲) مفهوم پایه: چیست و چرا؟
 
-- **Backup**: GUI (Admin menu > Configuration > Backup) یا CLI `execute backup config ...`.
-- **Restore**: `execute restore config ...`؛ بعد از Restore دستگاه Reboot می‌شود.
-- Config شامل Hash رمز است؛ فایل را در جای امن و **بیرون Git** نگه دارید.
-- نسخه 7.0.3 در بازه‌ی چند CVE شناخته‌شده است (CVE-2022-40684، 2022-42475، 2023-27997) ← فقط Lab ایزوله.
-- قبل از ارتقا: Release Notes، Upgrade Path، Backup، Test Plan، Rollback Plan (`Unverified` مسیر دقیق).
+Upgrade بدون Backup مثل جراحی بدون رضایت‌نامه است. یک Upgrade ساده می‌تواند Config را خراب کند یا Boot loop بسازد. تفاوت مهندس حرفه‌ای با تازه‌کار: Backup، Path، Rollback و آزمون پس از تغییر.
 
-### ۴) مثال ساده
+### ۳) توضیح عمیق فنی
 
-بکاپ به TFTP و Restore.
+#### ۱) Backup
 
-### ۵) مثال سازمانی
-
-سازمان: بکاپ شبانه + بعد از هر Change + نسخه‌ی خارج از سایت.
-
-### ۶) تصویر و توپولوژی
-
-```text
-FGT --backup--> TFTP/USB/GUI download
-Restore -> reboot -> verify
+``` text
+execute backup config tftp fgt-edge-01_2026-11-26.conf 10.99.0.5
+execute backup config sftp fgt-edge-01.conf 10.99.0.5 backupuser
 ```
 
-### ۷) پیکربندی (GUI و CLI)
+GUI: User/Admin → Configuration → Backup (انتخاب Encrypt). Backup حاوی رمزها و کلیدهاست: رمزگذاری، دسترسی محدود، عدم نگهداری در ریپو عمومی.
 
-> نسخه‌ی هدف: FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`). دستورها/منوها از مستند عمومی FortiOS 7.0 و دانش مؤلف هستند و **روی Image شما هنوز آزمایش نشده‌اند**؛ در بوت اول مقایسه کنید.
+#### ۲) Restore
 
-#### روش گرافیکی (GUI)
-
-1. Admin menu (بالا-راست) > Configuration > Backup؛ Backup to: Local PC.
-2. نام فایل را دریافت و در مسیر امن (غیر Git) نگه دارید.
-3. Admin menu > Configuration > Restore برای بازیابی (Reboot می‌شود).
-4. System > Firmware: نسخه‌ی فعلی؛ **ارتقا را بدون بکاپ نزنید.**
-5. System > Config > Revisions (اگر فعال باشد) را بررسی کنید.
-
-#### روش خط فرمان (CLI)
-
-```text
-execute backup config tftp FGT-HQ-20261126-1000.conf 192.168.90.11
-! restore (WARNING: reboots; test in lab first)
-execute restore config tftp FGT-HQ-20261126-1000.conf 192.168.90.11
-! compare
-show full-configuration | grep -c config
+``` text
+execute restore config tftp fgt-edge-01_2026-11-26.conf 10.99.0.5
 ```
 
-**توضیح دستورها (چه / چرا / خروجی / راستی‌آزمایی / بازگشت):**
+دستگاه Reboot می‌کند؛ ابتدا در Lab تمرین کنید. پس از Restore: نسخه، Interface، Route و Policyها را مقایسه کنید.
 
-- `execute backup config tftp <file> <server>`: Config را روی سرور TFTP ذخیره می‌کند.
-- نام فایل = دستگاه + تاریخ + ساعت.
-- `execute restore config ...`: جایگزین‌کننده؛ **اثر:** Reboot و بازنویسی کامل Config؛ پیش‌نیاز: بکاپ از وضع فعلی.
-- راستی‌آزمایی: بعد از Restore `get system status` و بررسی Policyها.
-- بازگشت: Restore بکاپ قبلی.
+#### ۳) Upgrade Path
 
-#### کارت قابلیت (۱۰ پرسش)
+از Fortinet Upgrade Path Tool استفاده کنید: ممکن است نسخه‌ی میانی لازم باشد (مثلاً 6.4.x → 7.0.x). Release Notes نسخه‌ی مقصد برای Known Issues، تغییرات رفتاری و حداقل RAM.
 
-| # | پرسش | پاسخ |
-|---|---|---|
-| 1 | مفهوم | Backup/Restore/Firmware |
-| 2 | مشکلی که حل می‌کند | برگشت امن |
-| 3 | چه زمانی استفاده شود | قبل از هر تغییر و ارتقا |
-| 4 | چه زمانی استفاده نشود | Restore بدون بکاپ فعلی |
-| 5 | پیش‌نیازها | Backup سالم |
-| 6 | وابستگی به Routing/Policy/NAT | Config وابسته به نسخه |
-| 7 | پیاده‌سازی | GUI/CLI |
-| 8 | راستی‌آزمایی | Restore آزمایشی |
-| 9 | عیب‌یابی | Version mismatch |
-| 10 | خطاهای رایج | فایل بکاپ در Git |
+#### ۴) چک‌لیست قبل
 
-### ۸) تست عملکرد
+``` text
+1 Backup (config) + export of certificates
+2 Release Notes read, Known Issues vs our features
+3 Maintenance window + rollback plan + owner
+4 Current: get system status ; diagnose sys ha status
+5 Download image, verify checksum
+```
 
-- بکاپ بگیرید، یک Object تست بسازید، Restore کنید و ناپدید شدن Object را ثابت کنید.
+#### ۵) اجرای Upgrade
 
-### ۹) عیب‌یابی
+GUI: System → Firmware → File Upload (یا FortiGuard). یا CLI: `execute restore image tftp image.out 10.99.0.5`. HA: Cluster ابتدا Upgrade Secondary سپس Primary با Failover (فصل HA).
 
-| بخش | شرح |
+#### ۶) چک‌لیست بعد
+
+``` text
+get system status
+get router info routing-table all
+diagnose sys session stat
+execute ping 8.8.8.8
+verify VPN, policies hit counts, logs
+```
+
+#### ۷) Rollback
+
+اگر شکست: Boot از Partition قبلی (FortiGate دو Image دارد) یا Restore Config+Firmware قبلی از Backup. زمان تصمیم Rollback را پیش از شروع تعیین کنید (مثلاً بعد ۳۰ دقیقه).
+
+#### ۸) Lifecycle
+
+تاریخ EoS/EoL مدل و FortiOS، آسیب‌پذیری‌های PSIRT، برنامه‌ی جایگزینی؛ ثبت در Inventory.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
 |---|---|
-| Symptom | Restore ناموفق |
-| شواهد/دستور | Reboot ولی Config جدید نیست/خطای Version |
-| علت | نسخه‌ی فایل بکاپ سازگار نیست |
-| رفع | Restore روی همان نسخه؛ مراجعه به Release Notes |
+| Backup | قبل هر تغییر و روزانه خودکار |
+| Window | زمان کم‌ترافیک + Rollback |
+| HA | ابتدا Secondary |
 
-### ۱۰) تمرین مستقل
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-> پاسخ‌ها در بخش «پاسخ‌های فصل» انتهای فصل است؛ اول خودتان حل کنید.
+**ساده (حل‌شده):** Backup با TFTP؛ فایل ۳۰ KB؛ Hash ثبت؛ نگهداری در مخزن رمزگذاری‌شده.
 
-**ت1.** چرا فایل بکاپ را بیرون از Git می‌گذاریم؟ *(پاسخ: 12-6-ت1)*
+**متوسط (Upgrade Path):** میخواهیم 6.4.8 → 7.0.3. مراحل: ۱) Path Tool: ممکن است 6.4.8 → 7.0.x مستقیم باشد (باید از ابزار تأیید شود؛ ما ادعایی نمی‌کنیم). ۲) Backup. ۳) Upgrade. ۴) چک‌لیست بعد. معیار: همه‌ی Policyها و Routeها حفظ.
 
-**ت2.** Restore چه اثری دارد؟ *(پاسخ: 12-6-ت2)*
+**سخت (Rollback):** Upgrade با Boot loop. مراحل: ۱) کنسول. ۲) Boot از Partition قبلی (منوی بوت). ۳) نسخه‌ی قبلی بالا می‌آید. ۴) Restore Config. ۵) گزارش: علت (Known Issue)، تصمیم: عدم Upgrade تا رفع. درس: Window شامل زمان Rollback.
 
-**ت3.** چرا نسخه‌ی 7.0.3 فقط در Lab؟ *(پاسخ: 12-6-ت3)*
+### ۶) پیاده‌سازی از مسیر GUI
 
-### ۱۱) مرور و ارزیابی
+1. Dashboard → Admin → Configuration → Backup.
+2. System → Firmware.
+3. System → Config → Revisions.
 
-**م1.** چرا بکاپ آزموده‌نشده بکاپ نیست؟ *(پاسخ: 12-6-م1)*
+### ۷) پیاده‌سازی از مسیر CLI
 
-**م2.** سناریو: بعد از ارتقا مشکل؛ اولین اقدام؟ *(پاسخ: 12-6-م2)*
+``` text
+execute backup config tftp fgt-edge-01.conf 10.99.0.5
+get system status
+diagnose sys session stat
+```
 
-**معیار تسلط:** بکاپ/Restore موفق و ثبت مراحل؛ Plan ارتقا.
+### ۸) Verification (اثبات صحت)
 
-**اشتباهات رایج:** Restore بدون بکاپ از وضع فعلی؛ فایل بکاپ در Git.
+- فایل Backup + Hash.
+- نسخه جدید.
+- Policy/Route سالم.
 
-### ۱۲) واژگان و English Corner
+### ۹) Troubleshooting
 
-| واژه | شکل کامل | معنی | کاربرد واقعی |
-|---|---|---|---|
-| Backup | Configuration backup | ذخیره‌ی Config | Change |
-| Firmware | Firmware | نرم‌افزار دستگاه | Lifecycle |
-| PSIRT | Product Security Incident Response Team | هشدارهای امنیتی | Patch |
-
-| English sentence | ترجمه |
-|---|---|
-| Always back up the configuration before an upgrade. | همیشه قبل از ارتقا از Config بکاپ بگیرید. |
-| Test the restore procedure regularly. | روش Restore را مرتب آزمایش کنید. |
-
-#### کارت Lab — درس 12-6
-
-| # | فیلد | محتوا |
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| 1 | عنوان و هدف | بکاپ و Restore |
-| 2 | پیش‌نیاز | درس ۱۲-۴ |
-| 3 | توپولوژی | FGT + TFTP |
-| 4 | تجهیزات | FGT + Linux TFTP |
-| 5 | نسخه نرم‌افزار | FortiOS 7.0.3 (اسمی؛ از نام Image؛ بوت‌نشده؛ تأیید با `get system status`) |
-| 6 | IP Plan | 192.168.90.11 |
-| 7 | وضعیت اولیه | Baseline آماده |
-| 8 | صورت مسئله | بکاپ/Restore |
-| 9 | مراحل هدایت‌شده | بخش‌های ۷ و ۸ همین درس (گام‌به‌گام) |
-| 10 | تست عملکرد | `get system status` |
-| 11 | سناریوی خرابی | Restore ناموفق |
-| 12 | روش عیب‌یابی | بخش ۹ همین درس (لایه‌ای/با شواهد) |
-| 13 | نتیجه‌ی مورد انتظار | Object ناپدید می‌شود |
-| 14 | معیار پذیرش | Restore موفق |
-| 15 | مستندات نهایی | `03-ops/fgt-backup-log.md` |
-| 16 | Cleanup و بازگردانی | — |
+| Boot loop | کنسول | Partition قبلی |
+| Restore ناقص | نسخه/License | Config را مقایسه |
+| Upgrade مجاز نیست | Path | نسخه‌ی میانی |
 
-> **وضعیت راستی‌آزمایی (خارج از ۱۶ فیلد):** **اجرا نشده (فقط طراحی).** Image FortiGate هنوز بوت نشده؛ دستورها/منوها آزمایش‌نشده‌اند.
+### ۱۰) نکات امنیتی
 
----
+- Backup رمزگذاری و ایمن.
+- Checksum Firmware.
 
-<a id="l-12-7"></a>
+### ۱۱) جمع‌بندی مفهومی
+
+- Backup اول.
+- Path.
+- Rollback.
+- Lifecycle.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چرا Backup رمزگذاری شود؟ *(پاسخ: 12-6-ت1)*
+
+**ت2.** (ساده) Upgrade Path Tool چیست؟ *(پاسخ: 12-6-ت2)*
+
+**ت3.** (متوسط) قبل Upgrade چه بررسی می‌کنید؟ *(پاسخ: 12-6-ت3)*
+
+**ت4.** (متوسط) چرا HA ابتدا Secondary؟ *(پاسخ: 12-6-ت4)*
+
+**ت5.** (سخت) Boot loop بعد Upgrade؛ پاسخ. *(پاسخ: 12-6-ت5)*
+
+**ت6.** (سخت، طراحی) برنامه‌ی CHG برای Upgrade. *(پاسخ: 12-6-ت6)*
+
+**Q1.** Quick quiz (English): Why must you plan a rollback before upgrading firmware? *(پاسخ: 12-6-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| EoS | End of Support | پایان پشتیبانی |
+| CHG | Change request | درخواست تغییر |
+
+- *Back up before every change.* ← قبل از هر تغییر Backup بگیرید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** Backup/Restore (اجرا نشده). **Evidence:** `03-ops/fgt-backup-log.md`.
+
+### ۱۵) منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: Backup and restore; Firmware
+- Fortinet Upgrade Path Tool
 
 ## درس 12-8 — Transit، Local-in و Local-out: سه نوع ترافیک و سه مسیر پردازش
 
@@ -4589,6 +4777,8 @@ diagnose npu fastpath status
 - Fortinet Docs: [Debugging the packet flow](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/54688/debugging-the-packet-flow) و بخش Hardware acceleration در Administration Guide 7.0 (مدل خود را بررسی کنید).
 - Fortinet: FortiGate datasheet مدل مورد استفاده.
 
+<a id="l-12-7"></a>
+
 ## درس 12-7 — آزمون پایان فصل ۱۲ و تحلیل خطا (مدیریت قفل‌شده)
 
 **فصل 12 - روز 7 · پیش‌نیاز: درس‌های ۱۲-۱ تا ۱۲-۵ · ۶ ساعت**
@@ -4759,105 +4949,90 @@ get system status
 
 **12-1-Q1** — get system status.
 
-**12-2-ت1** — Gateway هر VLAN روی چیست؟
 
-روی VLAN Interface فایروال (معماری اصلی).
+### پاسخ‌های بازنویسی عمیق درس 12-2
 
-**12-2-ت2** — allowaccess چیست؟
+**12-2-ت1** — فهرست سرویس‌های مدیریتی/تشخیصی که روی آن Interface به خود FortiGate اجازه‌ی اتصال دارند (https، ssh، ping، ...). هرچه بیشتر، سطح حمله بیشتر.
 
-سرویس‌های مدیریتی مجاز روی آن Interface.
+**12-2-ت2** — Interface منطقی با vlanid که روی یک پورت فیزیکی/Aggregate ساخته می‌شود تا چند شبکه‌ی جدا روی یک لینک Trunk داشته باشیم.
 
-**12-2-ت3** — چرا WAN را سخت‌گیر می‌کنیم؟
+**12-2-ت3** — پنل مدیریت از اینترنت قابل Brute-force و سوءاستفاده از آسیب‌پذیری می‌شود؛ مدیریت باید فقط از شبکه‌ی Mgmt و با Trusted host باشد.
 
-سطح حمله به اینترنت.
+**12-2-ت4** — Trunk نبودن پورت سوییچ، VLAN غیرمجاز، vlanid اشتباه؛ شاهد: ARP incomplete.
 
-**12-2-م1** — چرا VLAN باید در Trunk Cisco مجاز باشد؟
+**12-2-ت5** — حذف https/ssh از WAN، Mgmt جدا، Trusted host، Local-in policy، MFA، بررسی Log و آزمون nmap.
 
-وگرنه فریم تگ‌دار نمی‌رسد.
+**12-2-ت6** — جدول: نام، IP، Role، allowaccess، VLAN، Zone؛ Mgmt فقط https/ssh با Trusted host.
 
-**12-2-م2** — سناریو: ping از Core شکست؛ چه می‌بینید؟
+**12-2-Q1** — allowaccess.
 
-Trunk/VLAN مجاز و وضعیت پورت FGT.
 
-**12-3-ت1** — Zone چه فایده‌ای دارد؟
+### پاسخ‌های بازنویسی عمیق درس 12-3
 
-سیاست‌گذاری گروهی بین ناحیه‌های اعتماد.
+**12-3-ت1** — یک نقطه‌ی تعریف؛ تغییر آدرس در یک جا همه‌ی Policyها را به‌روز می‌کند و Policy خوانا می‌شود.
 
-**12-3-ت2** — چرا نام‌گذاری استاندارد؟
+**12-3-ت2** — ترافیک بین Interfaceهای همان Zone را بدون Policy رد می‌کند.
 
-خوانایی Policy و کاهش خطا.
+**12-3-ت3** — چون Zone جایگزین آن Interface‌ها در Policy است.
 
-**12-3-ت3** — intrazone؟
+**12-3-ت4** — وابستگی به DNS؛ اگر DNS خراب شود Policy کار نمی‌کند.
 
-کنترل ترافیک بین Interfaceهای داخل یک Zone.
+**12-3-ت5** — Export، Where-used، تأیید مالک، Backup، حذف/ادغام، استاندارد نام.
 
-**12-3-م1** — چرا Object هم‌پوشان خطرناک است؟
+**12-3-ت6** — جدول پیشوندها، مالک، Comment، مثال.
 
-Match نامنتظر و تحلیل مبهم.
+**12-3-Q1** — Zones group interfaces with the same role so policies are shorter and easier to maintain.
 
-**12-3-م2** — سناریو: Interface در Zone اضافه نمی‌شود؛ چرا؟
 
-Policy به آن ارجاع دارد.
+### پاسخ‌های بازنویسی عمیق درس 12-4
 
-**12-4-ت1** — Distance و Priority؟
+**12-4-ت1** — اعتبار منبع Route؛ کمتر بهتر؛ بین Routeهای مختلف به یک مقصد انتخاب می‌کند.
 
-Distance بین منابع؛ Priority بین Staticهای هم‌Distance.
+**12-4-ت2** — Priority بین Routeهای هم‌Distance تعیین‌کننده است.
 
-**12-4-ت2** — کدام دستور جدول واقعی را می‌دهد؟
+**12-4-ت3** — Gateway ممکن است زنده باشد ولی ISP قطع؛ Monitor به مقصد خارجی Route را غیرفعال می‌کند.
 
-get router info routing-table all.
+**12-4-ت4** — قبل از جدول مسیر.
 
-**12-4-ت3** — Policy Route چه زمانی؟
+**12-4-ت5** — RPF و Route برگشت؛ هماهنگی NAT/Route؛ آزمون.
 
-استثنا بر اساس مبدأ/سرویس.
+**12-4-ت6** — Distance برابر، Priority 1/10، Link-monitor با failtime/recoverytime، آزمون قطع.
 
-**12-4-م1** — چرا `show router static` همان جدول مسیر نیست؟
+**12-4-Q1** — Priority.
 
-Config است؛ جدول واقعی فقط مسیرهای Active را دارد.
 
-**12-4-م2** — سناریو: Default Static هست ولی Down؛ چرا؟
+### پاسخ‌های بازنویسی عمیق درس 12-5
 
-Gateway/Interface ناقابل‌دسترس.
+**12-5-ت1** — کنترل دسترسی بر اساس نقش؛ هر مدیر فقط به اندازه‌ی نقشش دسترسی دارد.
 
-**12-5-ت1** — Trusted Host چیست؟
+**12-5-ت2** — ورود Admin را به آدرس‌های مشخص محدود می‌کند.
 
-محدودیت آدرس مبدأ ورود Admin.
+**12-5-ت3** — پس از چند تلاش ناموفق حساب/مبدأ را موقتاً قفل می‌کند و Brute-force را کند می‌کند.
 
-**12-5-ت2** — چرا Admin روزمره Super-admin نباشد؟
+**12-5-ت4** — دسترسی اضطراری وقتی MFA/SSO در دسترس نیست؛ با Alert و Rotate.
 
-Least Privilege.
+**12-5-ت5** — Lockout، Local-in، Trusted host، Alert و Log.
 
-**12-5-ت3** — Profile چه می‌کند؟
+**12-5-ت6** — طبق متن.
 
-سطح دسترسی هر ادمین.
+**12-5-Q1** — The source addresses from which an administrator may log in.
 
-**12-5-م1** — چرا قبل از Trusted Host راه جایگزین لازم است؟
 
-احتمال قفل‌شدن.
+### پاسخ‌های بازنویسی عمیق درس 12-6
 
-**12-5-م2** — سناریو: auditor می‌تواند Config تغییر دهد؛ علت؟
+**12-6-ت1** — حاوی رمزها و کلیدهاست و افشا یعنی نفوذ.
 
-Profile اشتباه/Super-admin.
+**12-6-ت2** — ابزار Fortinet که مسیر نسخه‌های پشتیبانی‌شده را می‌دهد.
 
-**12-6-ت1** — چرا فایل بکاپ را بیرون از Git می‌گذاریم؟
+**12-6-ت3** — Backup، Release Notes، Known Issues، Window، Rollback، نسخه‌ی فعلی.
 
-Hash رمز و کلیدها در آن است.
+**12-6-ت4** — تا سرویس با Failover حفظ شود.
 
-**12-6-ت2** — Restore چه اثری دارد؟
+**12-6-ت5** — کنسول، Partition قبلی، Restore، گزارش.
 
-بازنویسی کامل Config و Reboot.
+**12-6-ت6** — هدف، Window، Path، Backup، Rollback، آزمون، تأیید.
 
-**12-6-ت3** — چرا نسخه‌ی 7.0.3 فقط در Lab؟
-
-CVEهای شناخته‌شده.
-
-**12-6-م1** — چرا بکاپ آزموده‌نشده بکاپ نیست؟
-
-ممکن است Restore نشود.
-
-**12-6-م2** — سناریو: بعد از ارتقا مشکل؛ اولین اقدام؟
-
-Rollback به Firmware/Config قبلی طبق Plan.
+**12-6-Q1** — Because a failed upgrade can cause outage and you must restore service quickly.
 
 **12-7-ت1** — Baseline چیست؟
 
