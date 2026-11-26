@@ -1711,11 +1711,15 @@ show ntp associations
 
 **7-1-ت1** — ۱ (ساده): چرا آدرس Gateway را exclude می‌کنیم؟
 
+آدرس Gateway (مثلاً 10.10.20.1) به روتر/Interface اختصاص دارد. اگر DHCP همان را به کلاینتی بدهد، Conflict IP رخ می‌دهد: Gateway و کلاینت هر دو ARP پاسخ می‌دهند و ارتباط ناپایدار می‌شود. پس با `ip dhcp excluded-address 10.10.20.1 10.10.20.20` بازه‌ی ثابت‌ها (Gateway، سرورها، چاپگر) را از Pool خارج می‌کنیم.
+
 ``` text
 So the DHCP server never hands out the gateway address to a client.
 ```
 
 **7-1-ت2** — ۲ (ساده): DHCP Relay چه می‌کند؟
+
+DHCP Discover یک Broadcast است و روتر Broadcast را عبور نمی‌دهد. DHCP Relay (`ip helper-address 10.99.0.5` روی Interface/SVI کلاینت) درخواست را به Unicast به سرور تبدیل می‌کند و giaddr را با آدرس Interface خود پر می‌کند. نتیجه: یک سرور مرکزی برای چند VLAN.
 
 ``` text
 It converts the client broadcast into a unicast to a DHCP server on another subnet.
@@ -1723,11 +1727,19 @@ It converts the client broadcast into a unicast to a DHCP server on another subn
 
 **7-1-ت3** — ۳ (متوسط): giaddr برای چیست؟
 
+giaddr (Gateway IP Address) آدرس Interface Relay را در بسته‌ی DHCP می‌گذارد. سرور از giaddr می‌فهمد درخواست از کدام Subnet آمده و Scope مناسب را انتخاب می‌کند. اگر برای آن Subnet Scope تعریف نشده باشد، سرور جواب نمی‌دهد. پس Scope هر VLAN باید دقیقاً با Subnet Interface Relay هماهنگ باشد.
+
 ``` text
 It tells the server which subnet the request came from, so it picks the right scope.
 ```
 
 **7-1-ت4** — ۴ (متوسط): ۲۵۴ آدرس، ۲۰ مستثنا؛ حداکثر کلاینت؟
+
+از ۲۵۴ آدرس قابل‌استفاده‌ی یک /24، ۲۰ آدرس مستثنا (Gateway، سرورها) کم می‌شود و ۲۳۴ آدرس برای کلاینت می‌ماند. در طراحی واقعی حاشیه‌ی ۲۰٪ برای رشد بگذارید و Lease کوتاه (مثلاً ۸ ساعت) برای شبکه‌ی مهمان.
+
+``` text
+Usable = 254 - 20 = 234 clients
+```
 
 ``` text
 254 - 20 = 234
@@ -1735,23 +1747,33 @@ It tells the server which subnet the request came from, so it picks the right sc
 
 **7-1-ت5** — ۵ (سخت): کاربران VLAN 20 آدرس نمی‌گیرند ولی VLAN 10 می‌گیرد؛ علت محتمل؟
 
+VLAN 10 آدرس می‌گیرد ولی VLAN 20 نه: دو علت اصلی: ۱) `ip helper-address` روی SVI Vlan20 نیست، ۲) برای Subnet VLAN 20 Scope روی سرور وجود ندارد یا پر است. بررسی: `show run interface Vlan20`، `show ip dhcp pool`، و Capture. رفع: افزودن helper و Scope؛ آزمون `ipconfig /renew`.
+
 ``` text
 Missing ip helper-address on Vlan20 (or no scope for that subnet on the server).
 ```
 
 **7-1-م1** — DHCP Relay کی لازم است؟
 
+DHCP Relay وقتی لازم است که سرور DHCP در Subnet دیگری از کلاینت باشد؛ در معماری سازمانی تقریباً همیشه. در شبکه‌ی کوچک که روتر خودش DHCP Server است Relay لازم نیست.
+
 وقتی سرور DHCP در Subnet دیگری است.
 
 **7-1-م2** — Reservation چیست؟
+
+Reservation یعنی اختصاص دائمی یک آدرس به MAC مشخص داخل Pool: دستگاه همیشه همان IP را می‌گیرد ولی مدیریت مرکزی روی DHCP می‌ماند (مثلاً چاپگر). مزیت بر IP ثابت دستی: تغییر آدرس در یک نقطه و بدون Config دستگاه.
 
 اختصاص آدرس ثابت به یک MAC در Pool.
 
 **7-1-Q1** — Quick quiz (answer in English): Why does a DHCP request not cross a router by default?
 
+پاسخ انگلیسی در پایین آمده است. نکته‌ی عملی: Discover با مقصد 255.255.255.255 و Source 0.0.0.0 است؛ روتر Broadcast را Forward نمی‌کند، بنابراین Relay (helper) لازم است.
+
 Because it is a broadcast and routers do not forward broadcasts.
 
 **7-2-ت1** — ۱ (ساده): A و PTR چه فرقی دارند؟
+
+رکورد A نام را به IPv4 تبدیل می‌کند (www.example.com → 203.0.113.10)؛ AAAA برای IPv6؛ PTR برعکس (IP → نام) در ناحیه‌ی in-addr.arpa برای Reverse Lookup است. Logها، SSH و ابزارهای امنیتی از PTR برای نمایش نام استفاده می‌کنند. نبود PTR باعث کندی برخی سرویس‌ها (مثل SSH/Mail) می‌شود.
 
 ``` text
 A maps a name to an IP; PTR maps an IP back to a name (reverse lookup).
@@ -1759,11 +1781,15 @@ A maps a name to an IP; PTR maps an IP back to a name (reverse lookup).
 
 **7-2-ت2** — ۲ (ساده): Stratum 16 یعنی؟
 
+Stratum تعداد Hop تا منبع زمان مرجع است (۰ = ساعت اتمی/GPS، ۱ = سرور مستقیم به آن). Stratum 16 یعنی «Unsynchronized»: دستگاه هیچ منبع معتبر ندارد. در `show ntp status` پیام Clock is unsynchronized دیده می‌شود. بررسی: دسترسی UDP 123، Server درست، Authentication.
+
 ``` text
 The device is not synchronized (invalid time source).
 ```
 
 **7-2-ت3** — ۳ (متوسط): ping به IP می‌رسد ولی به نام نه؛ علت؟
+
+اگر ping IP موفق ولی ping نام ناموفق است: مشکل Resolve نام: DNS Server تنظیم‌نشده یا اشتباه، رکورد نبود، Policy/ACL که UDP/TCP 53 را می‌بندد، Suffix اشتباه. بررسی: `nslookup name`، `ipconfig /all`، تغییر DNS برای تست. این از «مشکل شبکه» جداست.
 
 ``` text
 DNS resolution failure (no/wrong DNS server, missing record).
@@ -1771,11 +1797,15 @@ DNS resolution failure (no/wrong DNS server, missing record).
 
 **7-2-ت4** — ۴ (متوسط): ساعت Windows 6 دقیقه عقب است؛ اثر؟
 
+Kerberos حداکثر اختلاف ساعت (Clock Skew) پیش‌فرض ۵ دقیقه را تحمل می‌کند. ساعت ۶ دقیقه عقب یعنی Ticket نامعتبر و ورود به دامنه/سرویس‌ها شکست می‌خورد (خطای KRB_AP_ERR_SKEW). راه: همگام‌سازی NTP (`w32tm /resync`)، تنظیم NTP Server درست و بررسی PDC Emulator.
+
 ``` text
 Kerberos authentication to the domain fails (allowed skew is about 5 minutes).
 ```
 
 **7-2-ت5** — ۵ (سخت): reach 0 در show ntp associations یعنی؟
+
+Reach مقدار هشت‌بیتی (octal) از آخرین هشت Poll است؛ reach 0 یعنی هیچ‌کدام موفق نبوده: سرور در دسترس نیست، UDP 123 فیلتر است، ACL/Firewall، یا Source اشتباه. رفع: ping/Route، Policy 123، `ntp source`. reach 377 یعنی هر هشت Poll موفق.
 
 ``` text
 None of the recent polls succeeded: server unreachable or filtered.
@@ -1783,17 +1813,25 @@ None of the recent polls succeeded: server unreachable or filtered.
 
 **7-2-م1** — DNS چه می‌کند؟
 
+DNS نام قابل‌خواندن را به IP (و برعکس) تبدیل می‌کند؛ همه‌ی سرویس‌ها از آن استفاده می‌کنند. Resolver محلی، Forwarder و Authoritative نقش‌های مختلف دارند؛ خرابی DNS شبیه «قطع اینترنت» دیده می‌شود.
+
 نام را به IP تبدیل می‌کند.
 
 **7-2-م2** — چرا NTP برای امنیت مهم است؟
+
+برای تحلیل Log و شناسایی حمله باید ترتیب رویدادها در همه‌ی دستگاه‌ها قابل‌مقایسه باشد؛ و Kerberos، گواهی TLS و احراز هویت به ساعت صحیح وابسته‌اند. همه‌ی دستگاه‌ها باید یک منبع NTP واحد و مطمئن داشته باشند.
 
 تحلیل Log و احراز هویت به ساعت صحیح وابسته است.
 
 **7-2-Q1** — Quick quiz (answer in English): Why do all devices need the same NTP source?
 
+پاسخ انگلیسی در پایین آمده است. نکته‌ی عملی: منبع مشترک Timestamp Correlation در SIEM را ممکن می‌کند؛ اختلاف چند ثانیه‌ای هم ترتیب رویدادها را به‌هم می‌ریزد.
+
 So timestamps in logs and certificates are consistent and events can be correlated.
 
 **7-3-ت1** — ۱ (ساده): PAT چه چیزی را علاوه بر IP تغییر می‌دهد؟
+
+PAT علاوه بر IP، پورت مبدأ را (و گاهی ICMP ID) تغییر می‌دهد تا چند Host داخلی با یک IP عمومی یکتا شناخته شوند؛ جدول NAT جفت (IP:Port داخلی ↔ IP:Port عمومی) نگه می‌دارد. ظرفیت حدود ۶۴ هزار پورت به‌ازای هر IP و مقصد است.
 
 ``` text
 The source port, so many hosts can share one public IP.
@@ -1801,11 +1839,15 @@ The source port, so many hosts can share one public IP.
 
 **7-3-ت2** — ۲ (ساده): Inside Global چیست؟
 
+Inside Global آدرس Host داخلی پس از ترجمه، آن‌طور که از بیرون دیده می‌شود (مثلاً 203.0.113.10)؛ Inside Local آدرس واقعی داخلی (10.10.0.5). Outside Local/Global برای مقصد. فهمیدن این چهار اصطلاح برای خواندن `show ip nat translations` ضروری است.
+
 ``` text
 The inside host's address as seen from outside after translation.
 ```
 
 **7-3-ت3** — ۳ (متوسط): دو دستور لازم برای NAT روی یک Interface؟
+
+دو دستور: `ip nat inside` روی Interface LAN و `ip nat outside` روی Interface WAN، به‌علاوه‌ی دستور `ip nat inside source list ACL interface WAN overload`. اگر Interface inside/outside را اشتباه بگذارید ترجمه رخ نمی‌دهد یا مسیر معکوس می‌شود.
 
 ``` text
 ip nat inside on the LAN interface and ip nat outside on the WAN interface.
@@ -1813,11 +1855,15 @@ ip nat inside on the LAN interface and ip nat outside on the WAN interface.
 
 **7-3-ت4** — ۴ (متوسط): چرا NAT امنیت نیست؟
 
+NAT فقط آدرس‌ها را پنهان می‌کند و ترافیک را فیلتر نمی‌کند؛ یعنی «امنیت از روی ابهام». حفاظت واقعی از ACL/Firewall Policy و Stateful Inspection می‌آید. به‌علاوه در IPv6 NAT معمولاً لازم نیست ولی Firewall لازم است. باور رایج «NAT = فایروال» اشتباه و خطرناک است.
+
 ``` text
 It only hides addresses; it does not filter traffic. A firewall policy provides the protection.
 ```
 
 **7-3-ت5** — ۵ (سخت): NAT دوگانه (Double NAT) چه مشکلی می‌سازد؟
+
+Double NAT یعنی ترجمه در دو دستگاه پشت‌سرهم (مثلاً روتر خانگی و روتر ISP): Port Forward ورودی از دستگاه بیرونی نمی‌رسد، IP واقعی کاربر در Log گم می‌شود، VPN/SIP/بازی دچار مشکل می‌شود و عیب‌یابی دشوار است. راه: NAT فقط یک نقطه (Edge) یا حالت Bridge روی دستگاه اول.
 
 ``` text
 Translations at two devices break inbound port forwards and complicate troubleshooting.
@@ -1825,17 +1871,25 @@ Translations at two devices break inbound port forwards and complicate troublesh
 
 **7-3-م1** — PAT چطور چند کاربر را با یک IP می‌برد؟
 
+PAT با تغییر پورت مبدأ برای هر ارتباط، چند کاربر را روی یک IP می‌برد؛ جدول ترجمه پاسخ برگشتی را به کاربر درست نگاشت می‌کند. محدودیت: تعداد پورت‌ها و Timeout جدول.
+
 با تغییر پورت مبدأ برای هر ارتباط.
 
 **7-3-م2** — Static NAT برای چیست؟
+
+Static NAT یک آدرس داخلی را به یک آدرس عمومی ثابت نگاشت می‌کند تا سرور (وب، Mail) از بیرون در دسترس باشد؛ ترجمه دوطرفه و پایدار است. حتماً با ACL/Policy همراه شود تا فقط پورت‌های لازم باز باشد.
 
 انتشار یک سرور داخلی با آدرس ثابت به بیرون.
 
 **7-3-Q1** — Quick quiz (answer in English): What does PAT add to the translation to keep sessions unique?
 
+پاسخ انگلیسی در پایین آمده است؛ شماره‌ی پورت مبدأ در جدول ترجمه ذخیره می‌شود و بسته‌ی برگشتی با همان پورت به کاربر درست نگاشت می‌شود.
+
 The source port number.
 
 **7-4-ت1** — ۱ (ساده): Implicit Deny چیست؟
+
+Implicit Deny یک «deny any» نامرئی در انتهای هر ACL است. اگر بسته با هیچ ردیفی مطابقت نکند رد می‌شود. پس ACLی که فقط deny دارد همه چیز را می‌بندد و باید permit صریح برای ترافیک لازم (مثلاً `permit ip any any` یا سرویس‌های مشخص) داشت.
 
 ``` text
 An invisible "deny any" at the end of every ACL.
@@ -1843,11 +1897,19 @@ An invisible "deny any" at the end of every ACL.
 
 **7-4-ت2** — ۲ (ساده): Extended را کجا می‌گذاریم؟
 
+Extended ACL (Source/Dest/Protocol/Port) نزدیک به مبدأ گذاشته می‌شود تا ترافیک نامطلوب زود بسته شود و پهنای باند هدر نرود. Standard ACL فقط Source را می‌بیند و نزدیک مقصد می‌گذارند تا ترافیک مشروع دیگر را از همان Source نبندد.
+
 ``` text
 Close to the source of the traffic.
 ```
 
 **7-4-ت3** — ۳ (متوسط): Wildcard برای 10.10.20.0/24؟
+
+Wildcard Mask معکوس Subnet Mask است: برای /24، Mask 255.255.255.0 و Wildcard برابر 0.0.0.255. از آن در `permit ip 10.10.20.0 0.0.0.255 any` استفاده می‌شود؛ صفر یعنی «باید مطابق باشد» و یک یعنی «اهمیت ندارد».
+
+``` text
+Wildcard = 255.255.255.255 - 255.255.255.0 = 0.0.0.255
+```
 
 ``` text
 0.0.0.255
@@ -1855,11 +1917,15 @@ Close to the source of the traffic.
 
 **7-4-ت4** — ۴ (متوسط): چرا ترتیب مهم است؟
 
+ACL از بالا به پایین بررسی می‌شود و در اولین تطابق متوقف می‌شود. اگر یک permit کلی بالای deny خاص باشد، deny هرگز اجرا نمی‌شود. بنابراین قواعد خاص‌تر بالا و عام‌تر پایین؛ و بررسی ترتیب با `show access-lists` و شمارنده‌ی Match.
+
 ``` text
 Evaluation stops at the first match; a broad permit above a deny makes the deny unreachable.
 ```
 
 **7-4-ت5** — ۵ (سخت): ACL روی VLAN مهمان هر چیزی را می‌بندد؛ چه چیزی فراموش شده؟
+
+ACL مهمان همه چیز را می‌بندد چون permit برای سرویس‌های لازم نداشته: DNS (UDP/53) و وب (TCP 80/443) و DHCP (UDP 67/68). به‌خاطر Implicit Deny هر چه صریحاً مجاز نشده رد می‌شود. رفع: permit برای DNS و وب و deny برای شبکه‌ی داخلی و permit نهایی برای اینترنت.
 
 ``` text
 A permit for DNS (udp/53) and required web ports, because of the implicit deny.
@@ -1867,17 +1933,25 @@ A permit for DNS (udp/53) and required web ports, because of the implicit deny.
 
 **7-4-م1** — اولین تطابق یعنی چه؟
 
+«اولین تطابق» یعنی بررسی از بالا به پایین و توقف در اولین ردیف مطابق؛ ردیف‌های بعدی نادیده گرفته می‌شود. ترتیب قواعد منطق ACL را تعیین می‌کند.
+
 بررسی از بالا به پایین و توقف در اولین قانون مطابق.
 
 **7-4-م2** — تفاوت Stateless و Stateful؟
+
+ACL استاندارد/Extended Stateless است: هر بسته را مستقل بررسی می‌کند و بسته‌ی برگشتی هم باید صریحاً مجاز شود (مگر `established`). Firewall Stateful وضعیت اتصال را نگه می‌دارد و برگشت را خودکار می‌پذیرد.
 
 Stateless هر بسته را مستقل بررسی می‌کند؛ Stateful وضعیت ارتباط را نگه می‌دارد.
 
 **7-4-Q1** — Quick quiz (answer in English): Where should a standard ACL be placed and why?
 
+پاسخ انگلیسی در پایین آمده است. توضیح: Standard ACL فقط Source را می‌سنجد؛ اگر نزدیک مبدأ باشد، ترافیک آن Source به مقاصد مشروع دیگر هم بسته می‌شود؛ پس نزدیک مقصد.
+
 Close to the destination, because it matches only the source address.
 
 **7-5-ت1** — ۱ (ساده): سطح Syslog برای «خطا»؟
+
+سطوح Syslog از ۰ تا ۷: 0 Emergency، 1 Alert، 2 Critical، 3 Error، 4 Warning، 5 Notice، 6 Informational، 7 Debug. سطح «خطا» برابر ۳ است. عدد کوچک‌تر یعنی شدیدتر.
 
 ``` text
 3 (Error)
@@ -1885,11 +1959,15 @@ Close to the destination, because it matches only the source address.
 
 **7-5-ت2** — ۲ (ساده): چرا v2c خطرناک است؟
 
+SNMP v2c رشته‌ی Community را به‌صورت متن ساده می‌فرستد و رمزگذاری و احراز هویت واقعی ندارد؛ هر کسی که Capture کند، Community را می‌بیند و می‌تواند (با write) Config را تغییر دهد. از v3 با authPriv (SHA/AES) استفاده کنید و ACL برای Managerها بگذارید.
+
 ``` text
 The community string is sent in clear text and there is no encryption.
 ```
 
 **7-5-ت3** — ۳ (متوسط): logging trap warnings چه سطح‌هایی را می‌فرستد؟
+
+`logging trap warnings` پیام‌های سطح ۰ تا ۴ (Emergency تا Warning) را به Syslog Server می‌فرستد؛ سطح ۵ تا ۷ نمی‌رود. انتخاب سطح تعادل بین اطلاعات و حجم Log است؛ Debug فقط برای Lab.
 
 ``` text
 Levels 0 to 4 (emergencies to warnings).
@@ -1897,11 +1975,15 @@ Levels 0 to 4 (emergencies to warnings).
 
 **7-5-ت4** — ۴ (متوسط): چرا source-interface loopback؟
 
+`logging source-interface Loopback0` باعث می‌شود Source IP پیام‌ها همیشه یکی و پایدار باشد حتی اگر Interface فیزیکی خراب شود؛ SIEM و ACL سرور بر اساس آن آدرس کار می‌کنند. این رویه برای SNMP، NTP و TACACS+ هم توصیه می‌شود.
+
 ``` text
 The log source address stays stable even if a physical interface fails.
 ```
 
 **7-5-ت5** — ۵ (سخت): Poll در برابر Trap؟
+
+Poll: سرور مدیریت (NMS) به‌صورت دوره‌ای از دستگاه می‌پرسد (مثلاً هر ۵ دقیقه)؛ Trap: دستگاه خودش هنگام رویداد (قطع لینک) پیام می‌فرستد. Poll پایش مداوم و روند را می‌دهد؛ Trap سرعت. بهترین حالت ترکیب هر دو.
 
 ``` text
 Poll: the server asks periodically. Trap: the device sends an event on its own.
@@ -1909,17 +1991,25 @@ Poll: the server asks periodically. Trap: the device sends an event on its own.
 
 **7-5-م1** — Syslog چیست؟
 
+Syslog ارسال پیام‌های رویداد دستگاه‌ها به یک سرور مرکزی است تا ذخیره، جست‌وجو، هشدار و ممیزی ممکن شود؛ بدون آن Log در خود دستگاه با Reload پاک می‌شود.
+
 ارسال پیام رویدادها به سرور مرکزی.
 
 **7-5-م2** — چرا SNMPv3؟
+
+SNMPv3 احراز هویت (کاربر/SHA) و رمزگذاری (AES) دارد و از Replay/Spoofing جلوگیری می‌کند؛ v2c فقط Community متنی دارد.
 
 احراز هویت و رمزگذاری دارد، برخلاف v2c.
 
 **7-5-Q1** — Quick quiz (answer in English): What does a lower syslog severity number mean?
 
+پاسخ انگلیسی در پایین آمده است؛ سطح ۰ شدیدترین و ۷ کم‌اهمیت‌ترین است؛ در `logging trap warnings` همه‌ی سطح‌های ≤۴ ارسال می‌شود.
+
 A more severe event (0 = emergency, 7 = debug).
 
 **7-6-ت1** — ۱ (ساده): DSCP چند بیت و چند مقدار؟
+
+DSCP شش بیت (۶ بیت) در فیلد ToS هدر IP است و ۶۴ مقدار (۰ تا ۶۳) دارد؛ مثال EF=46، AF41=34، CS1=8. دو بیت باقی‌مانده ECN است. Markرا باید در لبه‌ی اعتماد انجام داد و در شبکه Trust کرد.
 
 ``` text
 6 bits, 64 values.
@@ -1927,11 +2017,15 @@ A more severe event (0 = emergency, 7 = debug).
 
 **7-6-ت2** — ۲ (ساده): فرق Policing و Shaping؟
 
+Policing ترافیک مازاد بر نرخ را Drop یا Re-mark می‌کند؛ Shaping آن را در صف نگه می‌دارد و با تأخیر می‌فرستد تا نرخ هموار شود. Policing معمولاً ورودی و برای محافظت؛ Shaping خروجی و برای تطبیق با نرخ ISP.
+
 ``` text
 Policing drops/marks excess traffic; shaping buffers and delays it to smooth the rate.
 ```
 
 **7-6-ت3** — ۳ (متوسط): سه قدم MQC؟
+
+سه قدم MQC: `class-map` برای شناسایی ترافیک، `policy-map` برای تعیین عمل (priority، bandwidth، police)، و `service-policy` برای اعمال روی Interface (input/output). ترتیب را رعایت کنید و با `show policy-map interface` بررسی کنید.
 
 ``` text
 class-map, policy-map, service-policy
@@ -1939,11 +2033,15 @@ class-map, policy-map, service-policy
 
 **7-6-ت4** — ۴ (متوسط): DSCP صدا؟
 
+ترافیک صدای IP با DSCP برابر EF (۴۶) علامت‌گذاری می‌شود و در صف Priority (LLQ) قرار می‌گیرد تا تأخیر و Jitter کم باشد. سیگنالینگ (SIP) معمولاً CS3 و ویدئو AF41.
+
 ``` text
 EF (46).
 ```
 
 **7-6-ت5** — ۵ (سخت): چرا QoS را معمولاً روی خروجی اعمال می‌کنیم؟
+
+صف و ازدحام وقتی شکل می‌گیرد که ترافیک بیشتر از ظرفیت Interface خروجی باشد (مثلاً LAN سریع به WAN کند)؛ بنابراین Queuing و Shaping روی خروجی اعمال می‌شود. ورودی فقط Classification/Marking/Policing.
 
 ``` text
 Congestion (queues) forms when sending out a slower/limited interface, so queuing is applied on egress.
@@ -1951,20 +2049,25 @@ Congestion (queues) forms when sending out a slower/limited interface, so queuin
 
 **7-6-م1** — QoS برای چیست؟
 
+QoS هنگام کمبود پهنای باند ترافیک حساس (صدا، ویدئو، کنترل) را اولویت می‌دهد و ترافیک کم‌اهمیت (دانلود) را محدود می‌کند؛ ظرفیت اضافه نمی‌سازد.
+
 اولویت‌دهی ترافیک حساس هنگام کمبود پهنای باند.
 
 **7-6-م2** — DSCP چه می‌کند؟
 
+DSCP اولویت/کلاس سرویس بسته را در هدر IP علامت می‌زند تا تجهیزات مسیر بر اساس آن صف و Drop را تعیین کنند.
+
 اولویت ترافیک را در هدر IP علامت می‌زند.
 
 **7-6-Q1** — Quick quiz (answer in English): When does QoS actually make a difference?
+
+پاسخ انگلیسی در پایین آمده است؛ در لینک خالی QoS اثری ندارد؛ فقط وقتی ازدحام باشد صف‌بندی و اولویت معنی پیدا می‌کند.
 
 Only when there is congestion on a link.
 
 ---
 
 <a id="ch8"></a>
-
 
 ### پاسخ‌های درس افزوده‌ی 7-7 (فصل 7)
 
@@ -3525,11 +3628,15 @@ Action: rotate the community immediately, sanitize history, enable secret scanni
 
 **8-1-ت1** — ۱ (ساده): سه صفحه‌ی دستگاه؟
 
+هر دستگاه شبکه سه صفحه (Plane) دارد: Management (دسترسی مدیر: SSH، SNMP، Syslog)، Control (پروتکل‌های مسیریابی، STP، ARP)، Data (عبور ترافیک کاربر). Hardening باید هر سه را پوشش دهد: ACL روی VTY و CoPP برای Control و فیلتر/Port Security برای Data. مدیریت مهم‌ترین است چون کنترل کامل می‌دهد.
+
 ``` text
 Management, control and data plane.
 ```
 
 **8-1-ت2** — ۲ (ساده): چرا no ip http server؟
+
+`no ip http server` سرویس HTTP بدون رمزگذاری را می‌بندد و سطح حمله را کم می‌کند؛ هر سرویس اضافه آسیب‌پذیری بالقوه است. اگر GUI لازم است `ip http secure-server` با ACL و گواهی. قاعده: هر سرویس بی‌استفاده را خاموش کنید.
 
 ``` text
 To close an unnecessary management service and reduce the attack surface.
@@ -3537,11 +3644,15 @@ To close an unnecessary management service and reduce the attack surface.
 
 **8-1-ت3** — ۳ (متوسط): چرا پورت‌های خالی shutdown و VLAN 999؟
 
+پورت خالی با Shutdown و عضویت در VLAN بلااستفاده (مثلاً 999 بدون SVI) مانع می‌شود دستگاه جعلی با اتصال به پورت آزاد به شبکه دسترسی یابد. ترکیب: shutdown، VLAN مرده، BPDU Guard و Port Security. هنگام نیاز پورت با CHG فعال می‌شود.
+
 ``` text
 So that a rogue device plugged into an unused port gets no access.
 ```
 
 **8-1-ت4** — ۴ (متوسط): چرا CDP روی پورت کاربر خاموش؟
+
+CDP نام دستگاه، IP، نسخه‌ی IOS و Interface را برای هر Host مجاور افشا می‌کند؛ مهاجم می‌تواند از آن برای شناسایی هدف و آسیب‌پذیری استفاده کند. روی پورت کاربر `no cdp enable` (و LLDP مشابه) بگذارید؛ روی Uplink بین سوییچ‌ها لازم است.
 
 ``` text
 It leaks device information (name, IP, software) to any host.
@@ -3549,23 +3660,33 @@ It leaks device information (name, IP, software) to any host.
 
 **8-1-ت5** — ۵ (سخت): قبل از Hardening VTY از راه دور چه شبکه‌ی ایمنی می‌گذاریم؟
 
+پیش از Hardening از راه دور (مثلاً محدودکردن VTY) Backup بگیرید و `reload in 5` را اجرا کنید: اگر قفل شدید، پس از ۵ دقیقه دستگاه به Config ذخیره‌شده برمی‌گردد. پس از تأیید `reload cancel` و ذخیره. همچنین کنسول آماده نگه دارید.
+
 ``` text
 Backup the config and use "reload in 5" so a mistake does not lock you out.
 ```
 
 **8-1-م1** — Hardening چیست؟
 
+Hardening کاهش سطح حمله با بستن سرویس‌های اضافه، رمزنگاری مدیریت، ACL، AAA، Banner، Timeout و غیرفعال‌سازی پروتکل‌های ناامن (Telnet، HTTP، v2c) است. هدف: دستگاهی که حتی اگر در معرض شبکه باشد، سطح حمله‌ی کمی دارد.
+
 کاهش سطح حمله با بستن سرویس‌های اضافه و تنظیم امن.
 
 **8-1-م2** — چرا Management Plane مهم‌ترین است؟
+
+Management Plane دسترسی کامل به Config و کنترل دستگاه می‌دهد؛ مهاجمی که آن را بگیرد می‌تواند مسیر، ACL، VLAN و Log را تغییر دهد. پس پیش از هر چیز باید SSH، AAA، ACL مدیریت و Logging کنترل شود.
 
 کنترل کامل دستگاه را می‌دهد.
 
 **8-1-Q1** — Quick quiz (answer in English): Why is "enable secret" preferred over "enable password"?
 
+پاسخ انگلیسی در پایین آمده است. نکته‌ی عملی: `enable secret` از الگوریتم قوی (Type 5/8/9) و `enable password` متن ساده/Type 7 (قابل‌برگشت) استفاده می‌کند؛ هرگز password.
+
 Secret is stored as a strong hash; password is clear text or weak Type 7.
 
 **8-2-ت1** — ۱ (ساده): سه A؟
+
+AAA: Authentication (کیستی؟)، Authorization (چه کارهایی مجاز است؟)، Accounting (چه کرد؟ ثبت). با هم احراز هویت مرکزی، کنترل دسترسی دقیق و Audit را فراهم می‌کنند.
 
 ``` text
 Authentication, Authorization, Accounting.
@@ -3573,11 +3694,15 @@ Authentication, Authorization, Accounting.
 
 **8-2-ت2** — ۲ (ساده): TACACS+ چه پورتی؟
 
+TACACS+ روی TCP/49 کار می‌کند و کل بسته را رمز می‌کند؛ RADIUS روی UDP (1812/1813) و فقط رمز را. TCP به TACACS+ قابلیت اطمینان و Timeout واضح می‌دهد.
+
 ``` text
 TCP 49
 ```
 
 **8-2-ت3** — ۳ (متوسط): چرا Local را Fallback می‌گذاریم؟
+
+اگر AAA Server در دسترس نباشد، بدون Fallback محلی هیچ‌کس نمی‌تواند وارد دستگاه شود. با `aaa authentication login default group tacacs+ local` وقتی سرور پاسخ ندهد حساب محلی (Break-glass) استفاده می‌شود. حساب محلی باید رمز قوی و استفاده‌ی نادر داشته باشد.
 
 ``` text
 If the AAA server is unreachable you can still log in with a local account.
@@ -3585,11 +3710,15 @@ If the AAA server is unreachable you can still log in with a local account.
 
 **8-2-ت4** — ۴ (متوسط): Privilege 15 یعنی؟
 
+Privilege 15 دسترسی کامل مدیریتی (همه‌ی دستورها شامل Config) است؛ 1 فقط User EXEC. در عمل سطح‌های میانی (مثلاً 5 برای NOC با show و ping) تعریف و با TACACS+ Command Authorization کنترل می‌شود. اصل Least Privilege.
+
 ``` text
 Full administrative access.
 ```
 
 **8-2-ت5** — ۵ (سخت): TACACS+ در برابر RADIUS برای مدیریت دستگاه؟
+
+TACACS+ کل Payload را رمز می‌کند و Authorization دستور-به‌دستور (Command Authorization) دارد؛ RADIUS فقط رمز را رمز می‌کند و Authorization آن مناسب Network Access (VPN/802.1X). برای مدیریت دستگاه TACACS+ ترجیح داده می‌شود و برای VPN/Wi-Fi RADIUS.
 
 ``` text
 TACACS+ encrypts the whole packet and supports granular command authorization.
@@ -3597,17 +3726,25 @@ TACACS+ encrypts the whole packet and supports granular command authorization.
 
 **8-2-م1** — Authorization چیست؟
 
+Authorization تعیین می‌کند کاربر احراز‌شده چه کارهایی (دستور، Privilege، شبکه) مجاز است. مثال: کاربر NOC فقط show، مهندس شبکه Config، ممیز فقط خواندنی.
+
 تعیین اینکه کاربر چه کارهایی مجاز است.
 
 **8-2-م2** — چرا Accounting؟
+
+Accounting ثبت می‌کند چه کسی، چه زمانی، چه دستوری یا چه Session اجرا کرد؛ برای مسئولیت‌پذیری، Audit و تحقیق پس از حادثه ضروری است. بدون آن «کار چه کسی بود؟» جواب ندارد.
 
 ثبت اینکه چه کسی چه کرده؛ برای مسئولیت‌پذیری.
 
 **8-2-Q1** — Quick quiz (answer in English): What happens if you configure AAA with no local fallback and the server is down?
 
+پاسخ انگلیسی در پایین آمده است؛ بدون Fallback و با سرور قطع، همه قفل می‌شوند و فقط از کنسول با بازیابی رمز (Password Recovery) وارد می‌شوید؛ پس همیشه Local Fallback و Backup کنسول.
+
 Everyone is locked out of the device, except via console recovery.
 
 **8-3-ت1** — ۱ (ساده): تفاوت Object و Array؟
+
+Object مجموعه‌ی کلید/مقدار داخل { } است (مثل یک رکورد)، Array فهرست مرتب داخل [ ] (مثل چند دستگاه). JSON ترکیب این دو است؛ در YAML Object با «کلید: مقدار» و Array با «- » نمایش داده می‌شود.
 
 ``` text
 Object = key/value pairs in { }; Array = ordered list in [ ].
@@ -3615,11 +3752,15 @@ Object = key/value pairs in { }; Array = ordered list in [ ].
 
 **8-3-ت2** — ۲ (ساده): GET چه می‌کند؟
 
+GET منبع را بدون تغییر می‌خواند؛ Safe و Idempotent است. POST ایجاد، PUT جایگزینی کامل، PATCH تغییر جزئی، DELETE حذف. در API دستگاه شبکه ابتدا GET برای آزمون بگیرید.
+
 ``` text
 Reads a resource without changing it.
 ```
 
 **8-3-ت3** — ۳ (متوسط): کد 403 یعنی؟
+
+403 Forbidden یعنی هویت شما شناخته شد ولی اجازه‌ی دسترسی ندارید (Authorization)؛ 401 یعنی احراز هویت نشدید. 404 منبع نیست، 5xx خطای سرور. در API Fortinet/Cisco تفکیک 401/403 برای رفع مهم است.
 
 ``` text
 Forbidden: authenticated but not allowed.
@@ -3627,11 +3768,15 @@ Forbidden: authenticated but not allowed.
 
 **8-3-ت4** — ۴ (متوسط): چرا YAML با Tab خراب می‌شود؟
 
+در YAML ساختار با Indentation (فاصله) تعیین می‌شود و Tab مجاز نیست؛ استفاده از Tab Parser را خراب می‌کند یا ساختار را اشتباه می‌خواند. استاندارد: ۲ فاصله و ویرایشگر با نمایش Whitespace و Linter.
+
 ``` text
 Indentation defines structure and tabs are not allowed.
 ```
 
 **8-3-ت5** — ۵ (سخت): چرا Token در Git ممنوع؟
+
+Token/Password اگر در Git باشد، هر کس به Repo دسترسی دارد (و تاریخچه حتی پس از حذف) می‌تواند از آن استفاده کند. باید در متغیر محیطی یا Secret Store/Vault باشد و در `.gitignore`؛ و اگر لو رفت فوراً Rotate شود.
 
 ``` text
 Anyone with repo access could use it; it must come from a secret store or environment variable.
@@ -3639,17 +3784,25 @@ Anyone with repo access could use it; it must come from a secret store or enviro
 
 **8-3-م1** — REST چیست؟
 
+REST معماری API مبتنی بر HTTP است: هر منبع URL دارد و عمل با Method (GET/POST/PUT/DELETE) و نتیجه با کد وضعیت و بدنه‌ی JSON. بیشتر تجهیزات مدرن (FortiGate، Cisco DNA/RESTCONF) API مشابه دارند.
+
 API مبتنی بر HTTP که هر منبع یک URL دارد.
 
 **8-3-م2** — چرا YAML برای Ansible؟
+
+YAML خوانا، مناسب برای Config‌های انسانی و پایه‌ی Ansible (Playbook، Inventory) است. ولی به Indentation حساس است؛ پس Lint کنید.
 
 خوانا و برای تنظیمات مناسب است.
 
 **8-3-Q1** — Quick quiz (answer in English): What is the difference between PUT and PATCH?
 
+پاسخ انگلیسی در پایین آمده است؛ PUT منبع را کامل جایگزین می‌کند (فیلد جاافتاده حذف می‌شود)، PATCH فقط فیلدهای ارسالی را تغییر می‌دهد؛ برای تغییر کوچک PATCH امن‌تر است.
+
 PUT replaces the whole resource; PATCH modifies part of it.
 
 **8-4-ت1** — ۱ (ساده): چرا رمز در متغیر محیطی؟
+
+رمز در متغیر محیطی (`os.environ`) می‌ماند و در کد و Git نمی‌رود؛ با تغییر رمز فقط محیط عوض می‌شود. بهتر: Vault. هرگز رمز در اسکریپت، لاگ یا خروجی نمایش داده نشود.
 
 ``` text
 So the password never ends up in the source code or in Git.
@@ -3657,11 +3810,15 @@ So the password never ends up in the source code or in Git.
 
 **8-4-ت2** — ۲ (ساده): read-only یعنی چه؟
 
+Read-only یعنی اسکریپت فقط دستور show اجرا می‌کند و هیچ تغییری روی دستگاه نمی‌دهد؛ خطا فقط روی خروجی اثر دارد. شروع Automation از Read-only (Inventory، Backup، Audit) ریسک را کم می‌کند.
+
 ``` text
 The script only runs show commands and never changes the device.
 ```
 
 **8-4-ت3** — ۳ (متوسط): چرا try/except؟
+
+try/except اجازه می‌دهد اگر یک دستگاه خاموش/کند/Auth Fail باشد، اسکریپت برای بقیه‌ی دستگاه‌ها ادامه دهد و خطا را Log کند؛ وگرنه یک خطا کل اجرا را قطع می‌کند و نتیجه ناقص می‌ماند.
 
 ``` text
 So a failing device does not stop the run for the remaining devices.
@@ -3669,11 +3826,15 @@ So a failing device does not stop the run for the remaining devices.
 
 **8-4-ت4** — ۴ (متوسط): چرا اول روی یک دستگاه؟
 
+اجرا ابتدا روی یک دستگاه (Pilot) دامنه‌ی خطا (Blast radius) را کوچک می‌کند؛ اگر دستور اشتباه باشد فقط یک دستگاه آسیب می‌بیند. پس از تأیید، گروهی کوچک و سپس همه.
+
 ``` text
 To limit the blast radius of a mistake.
 ```
 
 **8-4-ت5** — ۵ (سخت): چه چیزی در خروجی show running-config حساس است؟
+
+`show running-config` شامل Hash رمزها، SNMP Community، کلیدهای TACACS/RADIUS، IPهای داخلی و ACL است؛ انتشار یا Commit آن در Git عمومی خطرناک است. فایل‌ها را رمزگذاری یا Sanitize کنید و دسترسی محدود.
 
 ``` text
 Password hashes, SNMP communities, keys; do not publish the files.
@@ -3681,17 +3842,25 @@ Password hashes, SNMP communities, keys; do not publish the files.
 
 **8-4-م1** — Netmiko چه می‌کند؟
 
+Netmiko کتابخانه‌ی پایتون است که با SSH به تجهیز شبکه وصل می‌شود، دستور اجرا می‌کند و خروجی را برمی‌گرداند؛ تفاوت Promptها و Paging را مدیریت می‌کند.
+
 با SSH به تجهیز شبکه وصل شده و دستور اجرا می‌کند.
 
 **8-4-م2** — چرا Read-only برای شروع؟
+
+Read-only ریسک کم و قابل‌برگشت دارد و ارزش بالا (Inventory، Backup، Audit) می‌دهد؛ اعتماد تیم را برای Automation تغییردهنده می‌سازد.
 
 ریسک کم و قابل‌بازگشت.
 
 **8-4-Q1** — Quick quiz (answer in English): Why is a read-only script a safe first step in network automation?
 
+پاسخ انگلیسی در پایین آمده است؛ اسکریپت Read-only حتی با باگ هم قطعی ایجاد نمی‌کند، پس برای شروع Automation امن‌ترین انتخاب است.
+
 It cannot change any device, so a bug cannot cause an outage.
 
 **8-5-ت1** — ۱ (ساده): Idempotency چیست؟
+
+Idempotency یعنی اجرای مجدد Playbook اگر وضعیت مطلوب برقرار باشد هیچ تغییری نمی‌دهد (changed=0). مزیت Ansible بر اسکریپت: امن برای تکرار و هم‌ترازکردن (Drift correction).
 
 ``` text
 Running the same playbook again changes nothing if the desired state is already in place.
@@ -3699,11 +3868,15 @@ Running the same playbook again changes nothing if the desired state is already 
 
 **8-5-ت2** — ۲ (ساده): --check چه می‌کند؟
 
+`--check` حالت Dry-run است: نشان می‌دهد چه چیزی تغییر می‌کرد بدون اعمال. همراه `--diff` تفاوت دقیق را می‌بینید. پیش از اجرای واقعی همیشه `--check` بزنید.
+
 ``` text
 A dry run: shows what would change without changing anything.
 ```
 
 **8-5-ت3** — ۳ (متوسط): چرا --limit؟
+
+`--limit sw-lab-01` اجرا را روی یک دستگاه (Pilot) محدود می‌کند تا خطا گسترده نشود. پس از اطمینان، `--limit` گروهی و سپس همه.
 
 ``` text
 To run on a single device first and limit the blast radius.
@@ -3711,11 +3884,15 @@ To run on a single device first and limit the blast radius.
 
 **8-5-ت4** — ۴ (متوسط): رمز را کجا نگه می‌داریم؟
 
+رمز در متغیر محیطی یا Ansible Vault (رمزگذاری‌شده) نگه داشته می‌شود، نه متن ساده در Git. Vault Password نیز جدا و محافظت‌شده باشد.
+
 ``` text
 Environment variables or Ansible Vault, never plain text in Git.
 ```
 
 **8-5-ت5** — ۵ (سخت): تفاوت ios_command و ios_config؟
+
+`ios_command` دستورهای Exec/show را اجرا می‌کند (خواندن)؛ `ios_config` خطوط پیکربندی را اعمال می‌کند (تغییر). برای Audit از ios_command و برای تغییر از ios_config (با `--check`).
 
 ``` text
 ios_command runs exec/show commands; ios_config pushes configuration lines.
@@ -3723,17 +3900,25 @@ ios_command runs exec/show commands; ios_config pushes configuration lines.
 
 **8-5-م1** — Ansible در چه چیزی بهتر از اسکریپت است؟
 
+Ansible برای تنظیم توصیفی (Desired State) و Idempotent روی چند دستگاه بهتر از اسکریپت است: Inventory، متغیرها، Roleها و گزارش changed.
+
 تنظیم توصیفی و Idempotent برای چند دستگاه.
 
 **8-5-م2** — --diff چه نشان می‌دهد؟
+
+`--diff` تفاوت پیکربندی قبل و بعد را نشان می‌دهد؛ برای ممیزی و تأیید تغییر پیش از اعمال.
 
 تفاوت پیکربندی قبل و بعد.
 
 **8-5-Q1** — Quick quiz (answer in English): What does changed=0 on a second run tell you?
 
+پاسخ انگلیسی در پایین آمده است؛ changed=0 در اجرای دوم یعنی دستگاه از قبل مطابق وضعیت مطلوب است و Playbook Idempotent است.
+
 The device already matches the desired state; the playbook is idempotent.
 
 **8-6-ت1** — ۱ (ساده): commit چیست؟
+
+commit یک Snapshot ثبت‌شده از فایل‌ها با پیام و شناسه است؛ تاریخچه و بازگشت را ممکن می‌کند. پیام باید دلیل را بگوید («اضافه‌کردن ACL مهمان – CHG123»).
 
 ``` text
 A recorded snapshot of the files with a message.
@@ -3741,11 +3926,15 @@ A recorded snapshot of the files with a message.
 
 **8-6-ت2** — ۲ (ساده): git diff چه می‌کند؟
 
+`git diff` تفاوت بین نسخه‌ها (یا Working tree و Commit) را نشان می‌دهد؛ برای بازبینی Config قبل از Commit/Push و مقایسه‌ی As-Built با وضعیت فعلی.
+
 ``` text
 Shows the differences between versions.
 ```
 
 **8-6-ت3** — ۳ (متوسط): چرا رمز را بعد از commit اشتباهی باید عوض کنیم؟
+
+پس از Commit اشتباه رمز، هر کس به Repo/تاریخچه دسترسی دارد می‌تواند آن را بخواند؛ حذف از Commit بعدی کافی نیست. باید رمز فوراً عوض (Rotate)، تاریخچه پاک‌سازی (filter-repo) و Secret Scanning فعال شود.
 
 ``` text
 Anyone with repository access (or history) could have already read it.
@@ -3753,11 +3942,15 @@ Anyone with repository access (or history) could have already read it.
 
 **8-6-ت4** — ۴ (متوسط): دستی یا خودکار برای ۵۰ دستگاه؟
 
+برای ۵۰ دستگاه و تغییر استاندارد تکرارشونده، خودکار (Ansible) با Check Mode و Pilot روی یک دستگاه بهتر است؛ دستی خطا و ناهمگونی می‌سازد. تغییرات یک‌باره و پیچیده را می‌توان دستی با CHG انجام داد.
+
 ``` text
 Automated for repeated standard changes, with check mode and a single-device pilot.
 ```
 
 **8-6-ت5** — ۵ (سخت): CP1 چه چیزی را می‌سنجد؟
+
+CP1 (Checkpoint 1) کامل‌بودن طراحی کمپوس سیسکو را می‌سنجد: اسناد (As-Built)، Lab A، Hardening، سرویس‌ها، Backup و Gateهای قبلی. هدف: آماده‌بودن برای ورود به فاز FortiGate.
 
 ``` text
 Completeness of the Cisco campus design: documents, Lab A, hardening, services, backup and gates.
@@ -3765,13 +3958,19 @@ Completeness of the Cisco campus design: documents, Lab A, hardening, services, 
 
 **8-6-م1** — Git برای Config چه فایده‌ای دارد؟
 
+Git برای Config تاریخچه، Diff و Rollback می‌دهد؛ می‌توانید ببینید چه کسی چه چیز را کی تغییر داد و در صورت خطا نسخه‌ی قبل را بازگردانید.
+
 تاریخچه، Diff و Rollback.
 
 **8-6-م2** — CP1 چیست؟
 
+CP1 نقطه‌ی بازبینی پایان فاز Cisco قبل از ورود به FortiGate است؛ مرزی برای اطمینان از کامل‌بودن مبانی.
+
 نقطه‌ی بازبینی پایان فاز Cisco قبل از FortiGate.
 
 **8-6-Q1** — Quick quiz (answer in English): What should you do if a secret was committed to the repository?
+
+پاسخ انگلیسی در پایین آمده است؛ ترتیب: Rotate، پاک‌سازی تاریخچه، Secret Scanning، بررسی لاگ دسترسی.
 
 Rotate the secret immediately, clean the history and enable secret scanning.
 
