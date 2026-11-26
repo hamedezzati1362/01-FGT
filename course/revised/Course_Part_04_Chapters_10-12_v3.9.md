@@ -1501,13 +1501,19 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 **10-1-ت1** — ۲۰ و نوع E2 (برای BGP مقدار ۱).
 
+هنگام Redistribution به OSPF، مسیرها به‌صورت External Type 2 (E2) با Metric ثابت ۲۰ وارد می‌شوند (برای BGP مقدار ۱). یعنی هر روتر OSPF هزینه‌ی خارجی ۲۰ را می‌بیند و هزینه‌ی داخلی تا ASBR را جمع نمی‌کند. با `metric` و `metric-type 1` می‌توان مقدار و نوع را تغییر داد.
+
 **10-1-ت2** — Metric OSPF/BGP قابل تبدیل نیست؛ نبود Metric یعنی بی‌نهایت و مسیر منتقل نمی‌شود؛ باید دستی بدهید.
 
 **10-1-ت3** — E2 فقط Metric خارجی؛ E1 هزینه‌ی داخلی تا ASBR را هم جمع می‌کند.
 
 **10-1-ت4** — فقط مسیرهای classful منتقل می‌شوند؛ زیرشبکه‌ها نمی‌روند.
 
+بدون کلمه‌ی `subnets` در `redistribute ... ospf`، فقط مسیرهای classful (مثلاً /8، /16، /24 کلاس‌دار) وارد OSPF می‌شوند و زیرشبکه‌ها (مثل 172.16.5.0/24) ناپدید می‌شوند؛ این شایع‌ترین علت «مسیر Redistribute نمی‌رسد» است. رفع: افزودن `subnets` و آزمون با `show ip route ospf`.
+
 **10-1-ت5** — E1 برای انتخاب نزدیک‌ترین ASBR؛ آزمون با traceroute.
+
+با چند ASBR، E2 همه‌ی روترهای OSPF را با Metric برابر می‌بیند و ممکن است ترافیک به ASBR دورتر برود. E1 هزینه‌ی داخلی تا ASBR را هم جمع می‌کند و نزدیک‌ترین ASBR را ترجیح می‌دهد. آزمون: traceroute از دو نقطه‌ی مختلف و مقایسه‌ی ASBR انتخاب‌شده.
 
 **10-1-ت6** — فقط Prefixهای لازم با Prefix-list+Route-map، Seed صریح، E1 در صورت چند ASBR و آزمون منفی روی Prefix غیرمجاز.
 
@@ -1518,15 +1524,27 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 **10-2-ت1** — مسیری که به پروتکل دیگر رفته دوباره به مبدأ برگردد.
 
+Route Feedback یعنی مسیری که از دامنه‌ی A به B تزریق شده، توسط ASBR دوم دوباره به A برگردانده شود. نتیجه: مسیر با AD بهتر ممکن است مسیر اصلی را بازنویسی کند و حلقه یا مسیر زیربهینه بسازد. این در Redistribution دوطرفه با دو ASBR رایج است.
+
 **10-2-ت2** — مبدأ مسیر را علامت می‌زند تا بازگشت آن رد شود.
+
+Tag برچسب عددی روی مسیر است که مبدأ را مشخص می‌کند. با Route-map، مسیری که Tag دارد در جهت بازگشت رد می‌شود؛ مثلاً مسیرهای EIGRP→OSPF با Tag 100 و در جهت OSPF→EIGRP با `match tag 100` deny می‌شوند تا برنگردند.
 
 **10-2-ت3** — وگرنه ASBR بدون Route-map حلقه می‌سازد.
 
+اگر Route-map فقط روی یک ASBR باشد، ASBR دیگر بدون فیلتر مسیرها را برمی‌گرداند و حلقه ساخته می‌شود. پس همه‌ی ASBRها باید Route-map یکسان داشته باشند و پس از تغییر آزمون شوند.
+
 **10-2-ت4** — 110 و 170.
+
+AD مسیر خارجی OSPF برابر ۱۱۰ و EIGRP External برابر ۱۷۰ است. اگر مسیر از OSPF به EIGRP رفته و برگردد، رقابت AD ممکن است مسیر اصلی را بازنویسی کند؛ Tag این را از ریشه قطع می‌کند.
 
 **10-2-ت5** — Route-map فقط روی R-A؛ یکسان‌سازی و آزمون.
 
+پس از افزودن R-B حلقه شد چون Route-map فقط روی R-A بود. مراحل: ۱) `show route-map` روی R-B. ۲) یکسان‌سازی Tag و Route-map. ۳) آزمون: traceroute و `show ip route` برای مسیر مشکوک؛ ۴) قطع یک لینک و تأیید نبود حلقه.
+
 **10-2-ت6** — مبدأ، Tag، جهت، Route-map و مالک.
+
+برگه‌ی Tag سازمان: برای هر دامنه شناسه‌ی Tag (OSPF=100، EIGRP=200، BGP=300)، جهت Redistribution، Route-map مربوط، مالک و تاریخ بازبینی. این برگه از اشتباه هنگام اضافه‌شدن ASBR جدید جلوگیری می‌کند.
 
 **10-2-Q1** — To prevent routes from being re-redistributed back into their source domain, avoiding loops.
 
@@ -1535,15 +1553,27 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 **10-3-ت1** — Metric و AD برابر.
 
+شرط ECMP: چند مسیر با Metric و AD برابر به همان Prefix، و تعداد مسیرها ≤ `maximum-paths` (OSPF پیش‌فرض ۴). اگر Cost حتی یک واحد فرق کند ECMP نمی‌شود؛ برای تنظیم Cost یکسان `ip ospf cost` به‌کار می‌رود.
+
 **10-3-ت2** — هر جریان همیشه از یک مسیر.
+
+Per-flow یعنی هر جریان (مثلاً یک اتصال TCP) با Hash روی IP/پورت‌ها همیشه از یک مسیر می‌رود. مزیت: ترتیب بسته‌ها حفظ می‌شود و با دستگاه Stateful سازگار است؛ عیب: توزیع بار ممکن است ناهموار باشد.
 
 **10-3-ت3** — بسته‌ها نامرتب می‌رسند.
 
+Per-packet بسته‌ها را بین مسیرها می‌چرخاند و چون تأخیر مسیرها متفاوت است، بسته‌ها نامرتب می‌رسند؛ TCP آن را Loss فرض می‌کند و سرعت را پایین می‌آورد و فایروال Stateful ممکن است Session را بشکند. پس برای TCP بد است.
+
 **10-3-ت4** — ۴.
+
+مقدار پیش‌فرض `maximum-paths` در OSPF برابر ۴ مسیر است (قابل افزایش تا حد پلتفرم). اگر ۶ مسیر برابر داشته باشید فقط ۴ تا در RIB می‌آید.
 
 **10-3-ت5** — الگوریتم Hash با پورت؛ آزمون با چند جریان.
 
+توزیع ۹۰/۱۰ معمولاً نشانه‌ی Hash ناهموار (چند جریان بزرگ با Src/Dst ثابت) است. راه: الگوریتم Hash که پورت را هم لحاظ کند (`ip cef load-sharing algorithm include-ports`)، و آزمون با iperf چند جریان.
+
 **10-3-ت6** — Symmetric hash/Active-Standby.
+
+ECMP بین دو فایروال Stateful فقط با Symmetric Hash (هر دو جهت جریان از یک فایروال) یا طراحی Active-Standby/Session sync ایمن است. در غیر این صورت Asymmetric رخ می‌دهد (درس ۱۰-۶).
 
 **10-3-Q1** — It preserves packet order within a flow and works with stateful devices.
 
@@ -1555,15 +1585,27 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 **10-4-ت1** — بر اساس ACL (مبدأ، پروتکل، پورت) و نه فقط مقصد.
 
+PBR با ACL تصمیم می‌گیرد: مبدأ، مقصد، پروتکل و پورت. به‌خلاف مسیریابی عادی که فقط مقصد را می‌بیند. مثال: ترافیک 10.10.20.0/24 از ISP-A و بقیه از ISP-B.
+
 **10-4-ت2** — Interface ورودی ترافیک.
+
+PBR روی Interface ورودی ترافیک (`ip policy route-map`) اعمال می‌شود؛ نه روی خروجی. برای ترافیک خود روتر از `ip local policy` استفاده می‌شود.
 
 **10-4-ت3** — default فقط وقتی مسیر مشخص در RIB نباشد استفاده می‌شود.
 
+`set ip next-hop` حتی اگر مسیر مشخص در RIB باشد، Next-hop تعیین‌شده را ترجیح می‌دهد؛ `set ip default next-hop` فقط وقتی استفاده می‌شود که RIB مسیر مشخصی (غیر از Default) نداشته باشد.
+
 **10-4-ت4** — تا ترافیک غیرمطابق با مسیریابی عادی برود و Drop نشود.
+
+Sequence پایانی بدون Match و Set یعنی «مابقی ترافیک عادی». بدون آن، ترافیک غیرمطابق با Route-map (که deny ضمنی دارد) از PBR خارج و عادی مسیریابی می‌شود یا (بسته به پیاده‌سازی) Drop می‌شود؛ برای اطمینان همیشه یک `permit` پایانی بگذارید.
 
 **10-4-ت5** — IP SLA+Track، verify-availability، Next-hop دوم، آزمون قطع لینک.
 
+Failover PBR: `ip sla` با icmp-echo روی Next-hop، `track 1 ip sla 1 reachability`، و `set ip next-hop verify-availability X 10 track 1` به‌همراه Next-hop دوم. آزمون: قطع لینک ISP-A و دیدن اینکه ترافیک Finance به Next-hop دوم می‌رود (شمارنده‌ها و traceroute).
+
 **10-4-ت6** — ACL، Track، Failover، مستند و آزمون منفی؛ ریسک: Next-hop مرده.
+
+PBR دو ISP: ACL برای Finance، Route-map با Track و Next-hop دوم، Failover آزمون‌شده، مستند و آزمون منفی (ترافیک غیر Finance از مسیر عادی). ریسک اصلی: Next-hop مرده؛ جبران با Track.
 
 **10-4-Q1** — To stop using the next hop when it becomes unreachable.
 
@@ -1574,15 +1616,25 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 **10-5-ت1** — جدول مسیریابی مجازی مستقل روی همان روتر.
 
+VRF یک جدول مسیریابی مجازی مستقل روی همان روتر است: Interfaceها، Routeها و پروتکل‌ها در هر VRF جدا هستند؛ پس آدرس‌های تکراری (مثلاً دو مشتری با 192.168.1.0/24) مشکلی ندارند.
+
 **10-5-ت2** — چون Interface به جدول دیگری منتقل می‌شود و IP قبلی در جدول Global ثبت بوده.
 
 **10-5-ت3** — ping vrf NAME.
 
+ping بدون vrf در جدول Global اجرا می‌شود؛ برای تست داخل VRF `ping vrf CUST-A 192.168.1.2` و `traceroute vrf ...` لازم است. فراموشی این دستور شایع‌ترین «ping کار نمی‌کند» در VRF است.
+
 **10-5-ت4** — شناسه‌ی یکتا برای Prefix در VRF.
+
+RD (Route Distinguisher) مقدار یکتا (مثلاً 65000:1) است که Prefix را در VRF متمایز می‌کند تا در MPLS/BGP آدرس‌های تکراری با هم قاطی نشوند. در VRF-lite لازم نیست ولی استاندارد پیکربندی است.
 
 **10-5-ت5** — VRF جدا، فایروال Zone، NAT جدا، آزمون منفی.
 
+سه مشتری با اینترنت مشترک: سه VRF، Default هر VRF به Interface/Zone جدا در فایروال، NAT جدا برای هر مشتری، و آزمون منفی (مشتری A به B نرسد). ریسک: Leak ناخواسته از Static یا Redistribute.
+
 **10-5-ت6** — VRF+Zone+Policy+Log.
+
+جداسازی با فایروال: VRF مسیرها را جدا می‌کند و Zone/Policy فایروال تعیین می‌کند چه چیزی بین Zoneها عبور کند. فقط VRF امنیت کامل نیست؛ Policy و Log لازم است.
 
 **10-5-Q1** — Multiple isolated routing tables on one router without MPLS.
 
@@ -1593,15 +1645,27 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 **10-6-ت1** — رفت و برگشت از مسیر یا فایروال متفاوت.
 
+Asymmetric یعنی بسته‌ی رفت و برگشت یک جریان از مسیر یا فایروال متفاوت عبور کنند. در Stateless مشکلی نیست؛ در Stateful باعث Drop می‌شود.
+
 **10-6-ت2** — Session اولیه را ندیده.
+
+فایروال Stateful فقط وقتی بسته‌ی برگشت را می‌پذیرد که Session اولیه (SYN) را دیده باشد؛ در Asymmetric فایروال دوم SYN را ندیده و `no session matched` می‌دهد و Drop می‌کند.
 
 **10-6-ت3** — ECMP، دو ISP، Redistribution.
 
+سه علت رایج: ECMP/Per-packet بین فایروال‌ها، دو ISP با Policy ورودی/خروجی متفاوت (Local-pref و Prepend)، و Redistribution/Route-map ناهمگون. موارد دیگر: HA نادرست و NAT متفاوت.
+
 **10-6-ت4** — Capture دو سویه.
+
+با Capture هم‌زمان روی هر دو فایروال: FW1 فقط SYN و FW2 فقط SYN-ACK را می‌بیند؛ و traceroute از دو سر مسیر متفاوت نشان می‌دهد. این دو شاهد با هم Asymmetric را ثابت می‌کنند.
 
 **10-6-ت5** — Symmetric یا Session sync.
 
+راه سازمان: طراحی Symmetric (Local-pref/Weight/PBR تا هر دو جهت از یک فایروال) یا Cluster با Session sync. `asymroute` فقط موقت و ضعیف‌کننده‌ی امنیت است.
+
 **10-6-ت6** — Sync+Hash+آزمون.
+
+Active-Active با Session sync: فعال‌سازی session-pickup، آزمون قطع FW1 و ماندگاری Sessionها، و اندازه‌گیری Delay Sync. جایگزین ساده‌تر: Active-Standby. معیار: صفر قطع Session در Failover آزمایشی.
 
 **10-6-Q1** — They never saw the initial packet, so no session exists.
 
@@ -1613,17 +1677,31 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 
 **10-7-ت1** — رد‌یابی ساده و جلوگیری از NAT دوباره.
 
+NAT فقط روی Edge: Log و رد‌یابی ساده می‌شود، IP واقعی کاربر در Internal دیده می‌شود و NAT دوباره (Double NAT) مشکلات VPN/Port-forward نمی‌سازد.
+
 **10-7-ت2** — تعیین ISP خروجی در کل AS.
+
+Local-pref (مقدار بزرگ‌تر بهتر) در کل AS از طریق iBGP پخش می‌شود و ISP خروجی را برای همه‌ی روترها تعیین می‌کند؛ ابزار اصلی کنترل خروج.
 
 **10-7-ت3** — بدون آن ترافیک به Next-hop مرده می‌رود.
 
+بدون Track، PBR به Next-hop مرده ادامه می‌دهد و ترافیک بی‌صدا Drop می‌شود. Track/IP SLA Next-hop مرده را از Policy خارج می‌کند و Failover را ممکن می‌سازد.
+
 **10-7-ت4** — VRF جدا، Default مستقل، Policy فایروال، آزمون منفی.
+
+Guest در VRF جدا قرار می‌گیرد با Default مستقل به Interface فایروال؛ Policy فایروال فقط اینترنت را مجاز می‌کند و آزمون منفی (Guest→Servers) رد می‌شود و Log دارد.
 
 **10-7-ت5** — Capture، Local-pref/Prepend، آزمون.
 
+Asymmetric پس از لینک دوم: Capture روی هر دو فایروال، اصلاح Local-pref/Prepend یا PBR تا هر دو جهت از یک فایروال برود، و آزمون تکرار (Capture Symmetric).
+
 **10-7-ت6** — Local-pref، Prepend، PBR، Track، VRF.
 
+طرح سه‌ISP: Local-pref برای ترتیب خروج، Prepend برای ورود، PBR با Track برای ترافیک حساس، VRF برای مهمان و آزمون Failover هر ISP؛ مستندسازی ریسک و Rollback.
+
 **10-7-Q1** — IP SLA with a track object.
+
+IP SLA به‌همراه Track Object می‌تواند Next-hop مرده را از PBR کنار بگذارد.
 
 ### پاسخ‌های درس‌های افزوده‌ی فصل 10 (۱۰-۸ و ۱۰-۹)
 
