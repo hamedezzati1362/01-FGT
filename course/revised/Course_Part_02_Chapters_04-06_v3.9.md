@@ -5963,11 +5963,19 @@ show ip route ospf
 
 **6-1-ت1** — ۱ (ساده): چند Adjacency برای ۶ روتر در Full Mesh؟
 
+در Full Mesh هر روتر با همه‌ی روترهای دیگر Adjacency می‌سازد. برای n روتر هر جفت یک بار شمرده می‌شود، پس تعداد جفت‌ها همان فرمول ترکیب است (محاسبه در بلوک زیر). برای شش روتر هر روتر با پنج روتر دیگر ارتباط دارد؛ چون هر ارتباط دو بار شمرده می‌شود، نتیجه نصف می‌شود: پانزده Adjacency. اگر روتر هفتم اضافه شود می‌شود بیست‌ویک؛ رشد درجه‌ی دوم است و همین دلیل وجود DR است: روی Segment مشترک با DR فقط هر روتر با DR و BDR (دو Adjacency) Full می‌شود.
+
+``` text
+Adjacencies = n x (n - 1) / 2 = 6 x 5 / 2 = 15
+```
+
 ``` text
 6 x 5 / 2 = 15
 ```
 
 **6-1-ت2** — ۲ (ساده): DROther با DROther چه حالتی؟
+
+دو DROther روی یک Segment چندگانه‌دسترسی به حالت 2-Way می‌رسند و Full نمی‌شوند. این رفتار «عادی» است نه خطا: آن‌ها LSDB را فقط از DR/BDR همگام می‌کنند. اگر `show ip ospf neighbor` دو DROther را در 2-Way نشان داد، مشکلی نیست؛ ولی اگر یک روتر با DR در 2-Way ماند، باید به دنبال عدم‌تطابق MTU، تایمر یا Authentication باشید.
 
 ``` text
 2-Way (normal)
@@ -5975,11 +5983,15 @@ show ip route ospf
 
 **6-1-ت3** — ۳ (متوسط): انتخاب DR بر چه اساسی؟
 
+DR با بالاترین Priority (پیش‌فرض ۱) انتخاب می‌شود و در صورت برابری، بالاترین Router ID. Priority صفر یعنی «هرگز DR نشو». انتخاب غیر-Preemptive است: روتری که بعداً با Priority بالاتر برسد DR فعلی را کنار نمی‌زند. در طراحی عملی Priority را روی روترهای قوی‌تر (مثلاً Core) بالا می‌برند و روی روترهای کوچک ۰ می‌گذارند تا اتفاقی DR نشوند.
+
 ``` text
 Highest priority, then highest router ID.
 ```
 
 **6-1-ت4** — ۴ (متوسط): چه زمانی point-to-point؟
+
+Network Type به‌صورت point-to-point برای لینک‌های دو‌روتره مناسب است: انتخاب DR/BDR انجام نمی‌شود، Adjacency سریع‌تر Full می‌شود و Hello/Dead تایمرها (۱۰/۴۰) پیش‌فرض می‌مانند. روی Ethernet دو‌روتره با `ip ospf network point-to-point` زمان همگرایی کم می‌شود. هر دو سر باید همان نوع را داشته باشند، وگرنه Adjacency ناپایدار یا ناقص می‌شود.
 
 ``` text
 On links with exactly two routers; avoids DR election and speeds convergence.
@@ -5987,15 +5999,21 @@ On links with exactly two routers; avoids DR election and speeds convergence.
 
 **6-1-ت5** — ۵ (سخت): چرا بعد از تغییر Priority، DR عوض نشد؟
 
+علت این است که انتخابات DR غیر-Preemptive است؛ تغییر Priority تا وقتی DR فعلی زنده است اثری ندارد. برای اعمال: فرایند OSPF را روی روترها دوباره راه‌اندازی می‌کنید (`clear ip ospf process`) یا Interface را shut/no shut می‌کنید. در Production این کار قطع کوتاه ایجاد می‌کند؛ پس در Maintenance Window و با آگاهی از اثر روی Adjacencyها انجام شود.
+
 ``` text
 DR election is non-preemptive; the OSPF process must be cleared.
 ```
 
 **6-1-م1** — DR چرا لازم است؟
 
+روی Segment مشترک با n روتر، بدون DR تعداد Adjacency حدود n(n−1)/2 است و هر تغییر LSA به همه‌ی آن‌ها Flood می‌شود. DR نقطه‌ی مرکزی است: هر روتر LSA را فقط به DR (و BDR) می‌فرستد و DR آن را برای همه پخش می‌کند. نتیجه کاهش Adjacency، کاهش ترافیک Flood و پایداری بهتر. BDR یدک‌کش آماده است تا اگر DR افتاد، بدون انتخابات طولانی جایگزین شود.
+
 تعداد Adjacency را در Segment مشترک کم می‌کند.
 
 **6-1-م2** — Network Type چه تأثیری دارد؟
+
+Network Type تعیین می‌کند آیا DR/BDR انتخاب شود، Hello/Dead چند ثانیه باشد و Next-hopها چگونه کشف شوند. مثال: Broadcast (Ethernet) انتخابات و تایمر ۱۰/۴۰؛ point-to-point بدون انتخابات؛ NBMA/Frame Relay قدیمی با Neighbor دستی. عدم‌تطابق Network Type بین دو سر یکی از علل رایج «Adjacency ناپایدار» است؛ شاهد: `show ip ospf interface` نوع و تایمرها را نشان می‌دهد.
 
 انتخاب DR، تایمرها و رفتار همسایگی را تعیین می‌کند.
 
@@ -6005,11 +6023,15 @@ Only DR and BDR form full adjacencies with everyone; DROthers exchange LSAs via 
 
 **6-2-ت1** — ۱ (ساده): ABR چیست؟
 
+ABR (Area Border Router) روتری است که حداقل یک Interface در Area 0 و Interface دیگر در Area دیگر دارد. LSDB جدا برای هر Area نگه می‌دارد، مسیرهای هر Area را به‌صورت LSA نوع ۳ خلاصه برای Areaهای دیگر می‌فرستد و محل خلاصه‌سازی (`area X range`) است. اگر ABR بخواهد کار کند باید به Backbone وصل باشد؛ در غیر این صورت از Virtual Link استفاده می‌شود.
+
 ``` text
 A router with interfaces in two or more areas, one of which is area 0.
 ```
 
 **6-2-ت2** — ۲ (ساده): O IA یعنی؟
+
+`O IA` یعنی مسیر بین‌Area (Inter-Area): مقصد در Area دیگری است و مسیرش از LSA نوع ۳ آمده که ABR ساخته است. `O` یعنی داخل همان Area. در جدول مسیر، O IA با Metric مجموع هزینه‌ی تا ABR و هزینه‌ی ABR تا مقصد دیده می‌شود. اگر انتظار O IA داشتید ولی ندیدید، ABR/Area 0/Summary را بررسی کنید.
 
 ``` text
 An inter-area route (from a type 3 LSA).
@@ -6017,11 +6039,19 @@ An inter-area route (from a type 3 LSA).
 
 **6-2-ت3** — ۳ (متوسط): خلاصه‌ی 10.1.4.0/24 تا 10.1.7.0/24؟
 
+محدوده‌ی 10.1.4.0/24 تا 10.1.7.0/24 چهار شبکه‌ی /24 پیاپی است. چهار شبکه یعنی ۲ بیت از octet سوم تغییر می‌کند؛ پس طول Prefix 24−2=22 و شروع بلوک عدد ۴ (چون ۴ مضرب ۴ است). نتیجه 10.1.4.0/22 که دقیقاً 10.1.4.0 تا 10.1.7.255 را پوشش می‌دهد. روی ABR: `area 1 range 10.1.4.0 255.255.252.0`. اگر شبکه‌ای مثل 10.1.5.0/24 در آن بازه موجود نباشد، Black-hole ممکن است ایجاد شود؛ Null0 محافظ است.
+
+``` text
+Block size = 4 (third octet) -> 10.1.4.0/22 covers 10.1.4.0-10.1.7.255
+```
+
 ``` text
 Third octet 4..7 -> block 4 -> 10.1.4.0/22
 ```
 
 **6-2-ت4** — ۴ (متوسط): چرا Stub باید روی همه‌ی روترهای Area باشد؟
+
+پرچم Stub در Hello بسته‌ها حمل می‌شود (E-bit). اگر یک روتر Stub باشد و دیگری نه، Hello نامطابق است و Adjacency ساخته نمی‌شود. به همین دلیل پیکربندی Stub باید روی همه‌ی روترهای Area انجام شود. در عیب‌یابی `show ip ospf` پرچم Area را نشان می‌دهد و `debug ip ospf adj` پیام «mismatch stub/transit area option» می‌دهد (فقط Lab).
 
 ``` text
 The stub flag is carried in Hellos; a mismatch prevents adjacency.
@@ -6029,15 +6059,21 @@ The stub flag is carried in Hellos; a mismatch prevents adjacency.
 
 **6-2-ت5** — ۵ (سخت): مزیت Totally Stubby؟
 
+در Totally Stubby Area روترها فقط مسیرهای داخل Area به‌علاوه‌ی یک Default (از ABR) دارند؛ LSA نوع ۳ و ۴ و ۵ فیلتر می‌شود. مزیت: جدول مسیر و LSDB کوچک و همگرایی سریع‌تر برای روترهای ضعیف (شعبه). عیب: دید کمتر؛ مسیر خروج بهینه‌ی خارجی ممکن نیست و Default همه‌چیز است. پیکربندی: `area X stub no-summary` روی ABR و `area X stub` روی بقیه.
+
 ``` text
 Routers in the area keep only intra-area routes plus one default route, minimizing tables.
 ```
 
 **6-2-م1** — چرا به Area 0 همه وصل‌اند؟
 
+قاعده‌ی OSPF چندناحیه‌ای: همه‌ی Areaها باید به Area 0 (Backbone) وصل باشند و ترافیک بین Areaها از آن عبور می‌کند. این طراحی از حلقه‌ی مسیریابی بین Areaها جلوگیری می‌کند (مدل Distance-Vector بین Area). اگر Area بدون اتصال فیزیکی به Backbone باشد، Virtual Link موقت است نه طراحی دائمی.
+
 ترافیک بین Areaها از Backbone عبور می‌کند.
 
 **6-2-م2** — ASBR چه می‌کند؟
+
+ASBR (Autonomous System Boundary Router) مسیر خارجی را (از پروتکل دیگر یا Static) وارد OSPF می‌کند و آن را به‌صورت LSA نوع ۵ (یا ۷ در NSSA) پخش می‌کند. بقیه‌ی روترها با LSA نوع ۴ آدرس ASBR را می‌شناسند. این مسیرها با E1/E2 در جدول مسیر دیده می‌شوند. پیش‌نیاز Redistribution کنترل‌شده با Route-map است.
 
 Route خارجی را وارد OSPF می‌کند.
 
@@ -6047,11 +6083,15 @@ It connects areas to the backbone and exchanges (summarized) routes between them
 
 **6-3-ت1** — ۱ (ساده): OSPFv3 چطور فعال می‌شود؟
 
+در OSPFv3 فعال‌سازی روی Interface انجام می‌شود نه با دستور network: ابتدا `ipv6 unicast-routing`، سپس `ipv6 router ospf N` برای تعریف فرایند و Router ID، و سپس روی هر Interface `ipv6 ospf N area A`. چون Adjacency روی Link-local ساخته می‌شود، حتی بدون آدرس Global هم همسایگی شکل می‌گیرد؛ ولی برای Reachability سراسری آدرس Global لازم است.
+
 ``` text
 ipv6 unicast-routing, ipv6 router ospf N, and "ipv6 ospf N area A" on each interface.
 ```
 
 **6-3-ت2** — ۲ (ساده): Next-hop در IPv6 چه آدرسی است؟
+
+Next-hop در IPv6 آدرس Link-local همسایه (fe80::/10) است، نه آدرس Global؛ چون پروتکل‌های مسیریابی از Link-local برای ارتباط روی لینک استفاده می‌کنند. دلیل: Link-local ثابت و مستقل از Prefix Global است؛ تغییر Prefix Global ارتباط را قطع نمی‌کند. در `show ipv6 route` Next-hop به‌صورت fe80::... همراه Interface نمایش داده می‌شود.
 
 ``` text
 The neighbor link-local address (fe80::).
@@ -6059,11 +6099,15 @@ The neighbor link-local address (fe80::).
 
 **6-3-ت3** — ۳ (متوسط): چرا Router ID لازم است؟
 
+OSPFv3 هم Router ID ۳۲بیتی دارد (قالب IPv4). اگر روتر هیچ آدرس IPv4 نداشته باشد، انتخاب خودکار ممکن نیست و Process شروع نمی‌شود یا هشدار می‌دهد. پس باید `router-id 1.1.1.1` را دستی تنظیم کرد. Router ID باید در کل Domain یکتا باشد.
+
 ``` text
 OSPFv3 uses a 32-bit router ID; without any IPv4 address it must be set manually.
 ```
 
 **6-3-ت4** — ۴ (سخت): چرا Static IPv6 با Next-hop Link-Local به Interface هم نیاز دارد؟
+
+آدرس Link-local فقط در یک لینک یکتاست؛ دو لینک مختلف ممکن است همان fe80::1 را داشته باشند. بنابراین برای Static Route با Next-hop Link-local باید Interface خروجی هم ذکر شود تا روتر بداند آن آدرس روی کدام لینک است: `ipv6 route 2001:db8:2::/64 GigabitEthernet0/1 fe80::2`. بدون Interface فرمان رد می‌شود.
 
 ``` text
 Link-local addresses are only unique per link, so the exit interface is required.
@@ -6071,9 +6115,13 @@ Link-local addresses are only unique per link, so the exit interface is required
 
 **6-3-م1** — تفاوت اصلی فعال‌سازی v2 و v3؟
 
+در OSPFv2 با دستور network و Wildcard Interfaceها انتخاب می‌شوند؛ در OSPFv3 دستور مستقیم روی Interface است (`ipv6 ospf N area A`). یعنی تعریف Area روی Interface؛ این رفتار خطای Wildcard را حذف می‌کند و دقت بیشتری می‌دهد.
+
 v3 روی Interface فعال می‌شود، نه با network.
 
 **6-3-م2** — چرا Router ID دستی؟
+
+چون OSPFv3 هم Router ID ۳۲بیتی IPv4 می‌خواهد و ممکن است روتر فقط IPv6 داشته باشد (شبکه‌ی IPv6-only). در چنین روتری بدون تنظیم دستی، Router ID ساخته نمی‌شود. ثبات Router ID هم مهم است: Loopback با آدرس ثابت و مستند.
 
 چون ممکن است روتر IPv4 نداشته باشد.
 
