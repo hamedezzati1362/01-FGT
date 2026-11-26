@@ -1225,230 +1225,301 @@ Improvement: run T-12/T-15 in lab; verify commands
 
 <a id="l-32-1"></a>
 
-## درس 32-0 — عملیات واقعی: Change Management، ITIL و شبیه‌سازی حادثه (Capstone III/IV)
+## درس 32-0 — عملیات واقعی: Change Management، ITIL و شبیه‌سازی حادثه (مقدمه‌ی Capstone III/IV)
 
-**فصل ۳۲ · درس افزوده (پیش‌درس ۳۲-۱) · پیش‌نیاز: ۲۹-۰، ۳۰-۰، ۳۱-۰ · ≈ ۴ ساعت**
+**فصل 32 · بازنویسی عمیق · پیش‌نیاز: فصل ۲۷ تا ۳۱ · ≈ 11 ساعت**
 
-> **وضعیت:** قالب عملیات؛ حادثه فقط در Lab شبیه‌سازی؛ نتیجه بدون شاهد «اجرا نشده».
-
-### ۱) هدف آموزشی
-
-1. فرایند **Change** (Standard/Normal/Emergency) و ۱۰ مرحله‌ی تغییر را اجرا کند.
-2. **Incident، Problem، Change، Release** را در چرخه‌ی ITIL تفکیک کند.
-3. حادثه‌ی شبیه‌سازی‌شده را از Detection تا Post-Incident Review (PIR) بدون سرزنش اجرا کند.
-4. معیارهای عملیاتی (MTTD، MTTR، Change Failure Rate) را اندازه بگیرد.
-5. Runbook و Handover بنویسد.
-
-### ۲) مفهوم پایه
-
-بیشتر قطعی‌ها از **تغییر** می‌آیند، نه سخت‌افزار. عملیات حرفه‌ای = تغییر کنترل‌شده + پاسخ سریع + یادگیری. ITIL زبان مشترک است؛ هدف اجرای سبک و موثر است نه بروکراسی.
-
-### ۳) توضیح عمیق فنی
-
-#### ۳-۱) انواع Change
-
-| نوع | مثال | تأیید |
-|---|---|---|
-| Standard | افزودن Address Object تأییدشده | از پیش تأیید |
-| Normal | Policy جدید، تغییر Route | CAB/مدیر + Window |
-| Emergency | رفع قطعی/حمله | سریع + ثبت بعدی |
-
-#### ۳-۲) ده مرحله‌ی تغییر
-
-``` text
-1 Request   2 Risk/Impact   3 Plan (steps, tests, rollback)   4 Approve
-5 Schedule  6 Pre-checks+Backup   7 Implement   8 Post-checks (positive/negative)
-9 Close + evidence   10 Review (PIR if failed)
-```
-
-#### ۳-۳) Incident در برابر Problem
-
-- **Incident:** اختلال فعلی؛ هدف بازگرداندن سرویس سریع.
-- **Problem:** ریشه‌ی تکرارشونده؛ هدف حذف علت (RCA).
-- Incident Priority = Impact × Urgency.
-
-#### ۳-۴) معیارها
-
-``` text
-MTTD = mean time to detect
-MTTR = mean time to restore
-Change failure rate = failed changes / total changes
-```
-
-#### ۳-۵) PIR (بدون سرزنش)
-
-Timeline، اثر، علت‌های مؤثر (فرایند/ابزار/انسان)، چه خوب بود، چه بد، اقدام (Owner، تاریخ). تمرکز بر سیستم، نه فرد.
-
-#### ۳-۶) Runbook/Handover
-
-برای هر سرویس: وضعیت سالم، Verificationها، خطاهای رایج، Rollback، تماس، Escalation.
-
-### ۴) مثال حل‌شده
-
-**Change:** افزودن Policy برای سرور جدید. Plan: Backup، Policy با Source دقیق، Log، Window، Rollback = حذف Policy؛ Pre-check: Route/DNS؛ Post-check: مثبت (443 OK) و منفی (22 Block)؛ Evidence: Log+Capture؛ Close.
-
-**Incident (Lab):** تزریق عیب: Policy اشتباه Deny. Detection: Alert کاربران؛ Triage: Sev2؛ Debug Flow: Denied policy؛ رفع: Rollback؛ MTTR=۱۸ دقیقه؛ PIR: نبود Post-check منفی؛ اقدام: چک‌لیست Post-check.
-
-**مثال سخت:** Emergency Change هنگام حمله: Block IP بدون CAB؛ ثبت بعدی ظرف ۲۴ ساعت؛ بازبینی؛ PIR.
-
-### ۵) GUI و CLI
-
-GUI/CLI برای Evidence؛ Ticketing؛ Config diff (`show full-configuration` و Diff).
-
-### ۶) نکات امنیتی
-
-- Emergency Change سوءاستفاده نشود؛ بازبینی اجباری.
-- Secret در Ticket/Runbook ذخیره نشود.
-
-### ۷) جمع‌بندی
-
-- تغییر کنترل‌شده، ۱۰ مرحله، Rollback.
-- Incident بازگرداندن؛ Problem ریشه‌کنی.
-- معیارها و PIR بدون سرزنش.
-
-### ۸) تمرین و ارزیابی
-
-**ت1.** (ساده) Incident و Problem چه فرقی دارند؟ *(پاسخ: 32-0-ت1)*
-
-**ت2.** (متوسط) ۱۰ مرحله‌ی تغییر را بنویسید. *(پاسخ: 32-0-ت2)*
-
-**ت3.** (سخت) PIR برای حادثه‌ی نمونه بنویسید. *(پاسخ: 32-0-ت3)*
-
-**Q1.** Quick quiz (English): Why is a blameless post-incident review recommended? *(پاسخ: 32-0-Q1)*
-
-### ۹) اصطلاحات و English Corner
-
-| مخفف | شکل کامل | معنی |
-|---|---|---|
-| CAB | Change Advisory Board | هیئت تأیید تغییر |
-| MTTR | Mean Time To Restore | میانگین زمان بازیابی |
-| PIR | Post-Incident Review | بازبینی پس از حادثه |
-| ITIL | IT Infrastructure Library | چارچوب مدیریت خدمات IT |
-
-- *A blameless review focuses on process, not individuals.* ← بازبینی بدون سرزنش روی فرایند تمرکز می‌کند نه افراد.
-
-### ۱۰) منابع
-
-- ITIL 4 Foundation؛ Google SRE Book (Postmortem Culture)؛ NIST SP 800-61.
-
-## درس 32-1 — Capstone III: عملیات روزانه و Change Management (ITIL) — فرایند، قالب CHG و مثال کامل
-
-**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۰، ۳۱-۵، ۲۷-۷ · ≈ 8 ساعت**
-
-> **وضعیت:** عملیات و Capstone III/IV؛ حادثه فقط در Lab شبیه‌سازی؛ FortiOS 7.0.3 (بوت‌نشده)؛ بدون شاهد «اجرا نشده».
+> **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. انواع Change (Standard/Normal/Emergency) و فرایند ده‌مرحله‌ای را اجرا کند.
-2. CHG کامل (ریسک، Plan، Pre/Post-check، Rollback) بنویسد.
-3. CAB/Approval و Window را مدیریت کند.
-4. معیارها (Change Failure Rate، Lead time) را اندازه بگیرد.
-5. Emergency Change و بازبینی پس از آن را درست انجام دهد.
+1. تفاوت «ساختن شبکه» و «اداره‌ی شبکه» را بگوید.
+2. فرایندهای ITIL (Incident، Problem، Change، Release) را در یک سازمان شبکه‌ای نگاشت کند.
+3. انواع تغییر (Standard، Normal، Emergency) را تفکیک کند.
+4. شاخص‌های عملیات (MTTD، MTTR، Change Success Rate) را محاسبه کند.
+5. نقش‌ها (Owner، Implementer، Reviewer، CAB) را بشناسد.
+6. مسیر چهار Capstone را بفهمد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-بیشتر قطعی‌های شبکه از تغییرات است. Change Management یعنی هر تغییر قابل‌پیش‌بینی، آزمون‌شده و برگشت‌پذیر باشد. هدف ITIL «سنگین‌کردن» نیست؛ «ایمن و سریع‌کردن» است.
+ساختن شبکه یک پروژه است و تمام می‌شود؛ اداره‌ی آن هر روز ادامه دارد. در سازمان‌های واقعی بیشترین قطعی‌ها بعد از «تغییر» رخ می‌دهد، نه به‌دلیل خرابی سخت‌افزار. پس مهارت اصلی مهندس عملیات این است که تغییر را کنترل‌شده، قابل‌برگشت و مستند انجام دهد و در حادثه آرام و روشمند عمل کند.
+
+این درس چارچوب را می‌دهد و Capstone III (عملیات روزانه و Change، حادثه) و IV (Migration/Upgrade) را معرفی می‌کند.
 
 ### ۳) توضیح عمیق فنی
 
-#### ۱) انواع Change
+#### ۱) ITIL در یک نگاه
 
-| نوع | مثال | تأیید |
+| فرایند | هدف | نمونه در شبکه |
 |---|---|---|
-| Standard | افزودن Address Object تأییدشده | از پیش تأیید |
-| Normal | Policy جدید، Route | Review/CAB + Window |
-| Emergency | Block IP در حمله | سریع؛ ثبت و بازبینی پس از آن |
+| Incident | بازگرداندن سرویس سریع | قطع ISP |
+| Problem | یافتن ریشه و جلوگیری از تکرار | Flap تکراری لینک |
+| Change | تغییر کنترل‌شده | افزودن Policy |
+| Release | استقرار نسخه | Upgrade FortiOS |
+| Configuration Mgmt | دانستن وضعیت | As-Built، Git |
 
-#### ۲) ده مرحله
+#### ۲) انواع Change
 
-Request → Risk/Impact → Plan (مراحل، آزمون، Rollback) → Approve → Schedule → Pre-check+Backup → Implement → Post-check (مثبت/منفی) → Close → Review.
+| نوع | ویژگی | مثال |
+|---|---|---|
+| Standard | از پیش تأییدشده، کم‌ریسک | افزودن Address Object |
+| Normal | بررسی و تأیید | Policy جدید |
+| Emergency | فوری، با ثبت بعدی | رفع قطعی |
 
-#### ۳) قالب CHG (نمونه‌ی پر)
-
-``` text
-CHG-0042  Add policy for new ERP server 10.0.20.11
-Risk: low (single host, TCP 443)   Impact: ERP users
-Plan: 1 backup  2 add address  3 add policy (log all)  4 test  5 close
-Pre-check: policy list diff clean ; backup ok
-Post-check positive: users->10.0.20.11:443 OK ; negative: guest->10.0.20.11 blocked
-Rollback: delete policy 142 ; restore tag pre-CHG-0042
-Window: Tue 22:00-22:30 ; Owner: net-team ; Approver: sec-lead
-```
-
-#### ۴) معیارها
+#### ۳) شاخص‌ها
 
 ``` text
-Change failure rate = failed changes / total changes
-Lead time = implement date - request date
+MTTD = detection time - incident start
+MTTR = recovery time - incident start
+Change Success Rate = successful changes / total changes x 100
+Example: 47 / 50 = 94 %
 ```
 
-#### ۵) Emergency
+#### ۴) نقش‌ها
 
-اقدام فوری برای مهار (Block)، ثبت CHG پس از آن ظرف ۲۴ ساعت، بازبینی و حذف Ruleهای موقت.
+Owner (مالک سرویس)، Implementer (مجری)، Reviewer (بازبین فنی)، CAB (هیئت تأیید تغییر) برای تغییرات پرریسک.
+
+#### ۵) چهار Capstone
+
+| Capstone | موضوع |
+|---|---|
+| I | طراحی و ساخت |
+| II | آزمون و Runbook |
+| III | عملیات روزانه، Change، حادثه |
+| IV | Migration/Upgrade |
+
+#### ۶) اصل مهم
+
+«قابل‌برگشت»: هیچ تغییری بدون Rollback Plan و Backup. و «قابل‌مشاهده»: پیش‌ و پس‌ از تغییر شاخص‌ها اندازه گرفته شود.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| نوع Change | طبق ریسک |
+| Rollback | اجباری |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** CHG Standard افزودن Address.
+**ساده (حل‌شده):** افزودن Address Object ⇒ Standard Change؛ ثبت در سیستم؛ بدون CAB.
 
-**متوسط (تحلیل):** Normal Change با Post-check منفی شکست خورد (Guest دسترسی داشت)؛ Rollback؛ RCA: Source=all؛ اصلاح؛ CHG جدید.
+**متوسط (شاخص):** ۵۰ تغییر، ۳ ناموفق: Change Success Rate = ۴۷/۵۰ = ۹۴٪. تحلیل: علت ۳ شکست؟ الگوی مشترک (مثلاً بدون Pre-check)؟ اقدام: چک‌لیست.
 
-**سخت (Emergency):** حمله‌ی Brute-force؛ Block IP فوری؛ ثبت بعدی؛ Rule موقت با انقضا؛ بازبینی؛ درس: Playbook.
+**سخت (Emergency):** قطع ISP ساعت ۲ بامداد؛ تغییر Emergency برای Failover دستی. مراحل: تصمیم Owner، ثبت لحظه‌ای، اجرا، Verify، ثبت رسمی تا ۲۴ ساعت، Review بعدی. ریسک: دور زدن فرایند؛ جبران: Review اجباری.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
 ``` text
-execute backup config sftp pre-CHG-0042.conf 192.168.90.10 backup-user <PASSWORD>
-show firewall policy 142
+! process lesson
 ```
 
 ### ۸) Verification (اثبات صحت)
 
-- CHG امضا‌شده؛ Post-check.
+- شاخص‌ها محاسبه شد.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| Change خراب | Post-check | Rollback |
+| تغییرات ناموفق | Pre-check | چک‌لیست |
 
 ### ۱۰) نکات امنیتی
 
-- Emergency بازبینی.
+- تغییر بدون تأیید ممنوع.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- ده مرحله + قالب + معیار.
+- ساختن ≠ اداره.
+- ITIL.
+- Rollback و Verify.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Standard Change؟ *(پاسخ: 32-1-ت1)*
+**ت1.** (ساده) Standard Change چیست؟ *(پاسخ: 32-0-ت1)*
 
-**ت2.** (ساده) Post-check منفی چیست؟ *(پاسخ: 32-1-ت2)*
+**ت2.** (ساده) MTTR؟ *(پاسخ: 32-0-ت2)*
 
-**ت3.** (متوسط) Change failure rate؟ *(پاسخ: 32-1-ت3)*
+**ت3.** (متوسط) Change Success Rate برای ۴۷ از ۵۰؟ *(پاسخ: 32-0-ت3)*
 
-**ت4.** (متوسط) چرا Emergency بازبینی دارد؟ *(پاسخ: 32-1-ت4)*
+**ت4.** (متوسط) CAB چیست؟ *(پاسخ: 32-0-ت4)*
 
-**ت5.** (سخت) CHG را برای Policy جدید بنویسید. *(پاسخ: 32-1-ت5)*
+**ت5.** (سخت) Emergency Change در بامداد. *(پاسخ: 32-0-ت5)*
 
-**ت6.** (سخت، طراحی) Pre-check خودکار. *(پاسخ: 32-1-ت6)*
+**ت6.** (سخت، طراحی) فرایند Change. *(پاسخ: 32-0-ت6)*
 
-**Q1.** Quick quiz (English): What distinguishes an emergency change? *(پاسخ: 32-1-Q1)*
+**Q1.** Quick quiz (English): What is an emergency change? *(پاسخ: 32-0-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| CAB | Change Advisory Board | هیئت تأیید |
-| CHG | Change request | درخواست تغییر |
+| ITIL | Information Technology Infrastructure Library | چارچوب مدیریت سرویس |
+| CAB | Change Advisory Board | هیئت مشاور تغییر |
 
-- *Plan every change with rollback.* ← هر Change را با Rollback برنامه‌ریزی کنید.
+- *Every change needs a rollback plan.* ← هر تغییر نیاز به Rollback Plan دارد.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Change. **Evidence:** `03-ops/chg-01.md`.
+**کارت Lab:** مقدمه‌ی عملیات (اجرا نشده). **Evidence:** `03-ops/ops-intro.md`.
+
+### ۱۵) منابع
+
+- ITIL 4 Foundation
+- NIST SP 800-61
+
+## درس 32-1 — Capstone III: عملیات روزانه و Change Management (ITIL) — فرایند، قالب CHG و مثال کامل
+
+**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۰ · ≈ 11 ساعت**
+
+> **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
+
+### ۱) هدف آموزشی
+
+در پایان این درس باید بتوانید:
+
+1. فرایند Change را از ثبت تا Close اجرا کند.
+2. قالب CHG کامل (دلیل، اثر، Pre/Post-check، Rollback) را بنویسد.
+3. عملیات روزانه (Health Check، Backup، Review Log) را چک‌لیست کند.
+4. مثال کامل CHG برای افزودن Policy را بنویسد.
+5. ریسک و Window را درست انتخاب کند.
+
+### ۲) مفهوم پایه: چیست و چرا؟
+
+عملیات روزانه خسته‌کننده است ولی همان چیزی است که قطعی را جلوگیری می‌کند. سه چیز را هر روز می‌پرسید: «همه‌چیز سالم است؟ Backup گرفته شد؟ Log غیرعادی هست؟» و برای هر تغییر یک CHG می‌نویسید.
+
+### ۳) توضیح عمیق فنی
+
+#### ۱) چک‌لیست روزانه
+
+| زمان | کار | ابزار |
+|---|---|---|
+| 08:00 | Health Check (CPU، Session، HA) | `get system performance status` |
+| 08:15 | بررسی Alertهای شبانه | Log/FAZ |
+| 08:30 | تأیید Backup دیشب | فایل + Hash |
+| 09:00 | Review Deny غیرعادی | Log |
+| هفتگی | Hit Count و Policy Review | GUI |
+
+#### ۲) قالب CHG
+
+``` text
+CHG-0123
+Title: Allow APP-to-DB 1433 for new reporting server
+Requester / Owner / Implementer / Reviewer
+Reason: business request REQ-456
+Risk: Low   Impact: DB zone
+Window: 2026-12-03 22:00-22:30
+Pre-check: backup, policy lookup, confirm IPs
+Steps: 1) create address SRV-RPT 2) policy 62 APP->DB 1433 log all 3) verify
+Post-check: lookup, hit count, test connection, log
+Rollback: disable policy 62 ; restore backup if needed
+Approval: Owner (done) / CAB (not required, standard-low)
+```
+
+#### ۳) مثال کامل (CLI Unverified)
+
+``` text
+config firewall address
+ edit "SRV-RPT"
+  set subnet 10.30.2.50 255.255.255.255
+ next
+end
+config firewall policy
+ edit 62
+  set name "RPT-to-DB"
+  set srcintf "ZN-APP"
+  set dstintf "ZN-DB"
+  set srcaddr "SRV-RPT"
+  set dstaddr "SRV-DB"
+  set action accept
+  set schedule "always"
+  set service "MS-SQL"
+  set logtraffic all
+ next
+end
+```
+
+Post-check: `diagnose firewall iprope lookup 10.30.2.50 40000 10.30.3.10 1433 tcp ZN-APP` ⇒ policy 62.
+
+#### ۴) انتخاب Window
+
+کمترین ترافیک؛ نه آخر هفته‌ی مالی؛ با تیم آماده؛ Rollback < 10 دقیقه.
+
+#### ۵) بستن CHG
+
+نتیجه (موفق/ناموفق)، زمان واقعی، شاخص‌ها، درس‌ها.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Window | کم‌ترافیک |
+| Rollback | <10 دقیقه |
+
+### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+**ساده (حل‌شده):** Health Check ساعت ۸: CPU 22٪، Session 41k، HA in-sync؛ ثبت.
+
+**متوسط (CHG):** CHG برای Policy 62 نوشته شد؛ Post-check: Lookup=62، Hit افزایش؛ Close موفق؛ ثبت زمان واقعی ۱۸ دقیقه.
+
+**سخت (ناموفق):** پس از اعمال، DB به App سرور نمی‌رسد. مراحل: Post-check Lookup=61 (Deny بالاتر)؛ Rollback: غیرفعال 62؛ تحلیل: ترتیب Policy؛ CHG بسته با «ناموفق + درس»؛ CHG جدید با ترتیب درست.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get system performance status
+diagnose firewall iprope lookup 10.30.2.50 40000 10.30.3.10 1433 tcp ZN-APP
+```
+
+### ۸) Verification (اثبات صحت)
+
+- Post-check کامل.
+- CHG بسته.
+
+### ۹) Troubleshooting
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| تغییر اثر ندارد | Lookup | ترتیب |
+
+### ۱۰) نکات امنیتی
+
+- تغییر فقط با تأیید.
+
+### ۱۱) جمع‌بندی مفهومی
+
+- چک‌لیست روزانه.
+- CHG کامل.
+- Post-check.
+
+### ۱۲) تمرین و ارزیابی
+
+**ت1.** (ساده) چه چیزی هر روز بررسی می‌شود؟ *(پاسخ: 32-1-ت1)*
+
+**ت2.** (ساده) Pre-check؟ *(پاسخ: 32-1-ت2)*
+
+**ت3.** (متوسط) CHG ناموفق چطور بسته می‌شود؟ *(پاسخ: 32-1-ت3)*
+
+**ت4.** (متوسط) Window مناسب؟ *(پاسخ: 32-1-ت4)*
+
+**ت5.** (سخت) Post-check Lookup=61. *(پاسخ: 32-1-ت5)*
+
+**ت6.** (سخت، طراحی) قالب CHG. *(پاسخ: 32-1-ت6)*
+
+**Q1.** Quick quiz (English): What should a post-check confirm after a change? *(پاسخ: 32-1-Q1)*
+
+### ۱۳) اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| CHG | Change request | درخواست تغییر |
+
+- *Always verify after the change.* ← پس از تغییر همیشه تأیید کنید.
+
+### ۱۴) کارت Lab
+
+**کارت Lab:** عملیات روزانه (اجرا نشده). **Evidence:** `03-ops/chg-0123.md`.
 
 ### ۱۵) منابع
 
@@ -1458,416 +1529,549 @@ show firewall policy 142
 
 ## درس 32-2 — Capstone III: شبیه‌سازی حادثه کامل — سناریو، نقش‌ها، Timeline نمونه، MTTD/MTTR و PIR
 
-**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰ تا ۲۹-۴، ۳۲-۱ · ≈ 8 ساعت**
+**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۰، ۲۹-۴ · ≈ 11 ساعت**
 
-> **وضعیت:** عملیات و Capstone III/IV؛ حادثه فقط در Lab؛ FortiOS 7.0.3 (بوت‌نشده)؛ بدون شاهد «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. حادثه‌ی دومرحله‌ای را در Lab اجرا و با نقش‌های IC/Operator/Comms/Scribe مدیریت کند.
-2. Timeline، MTTD/MTTR و کیفیت Detection را اندازه بگیرد.
-3. RCA و PIR بدون سرزنش با اقدام‌های قابل‌پیگیری بنویسد.
-4. Playbookها را به‌روز کند.
+1. سناریوی حادثه را با نقش‌ها (Incident Commander، Operator، Scribe، Communicator) اجرا کند.
+2. Timeline را لحظه‌ای ثبت و MTTD/MTTR را محاسبه کند.
+3. ارتباط‌رسانی (Status Update) را درست انجام دهد.
+4. PIR بی‌ملامت و اقدام پیشگیرانه بنویسد.
+5. درس‌ها را به Runbook برگرداند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-حادثه را باید «تمرین» کرد تا زیر فشار واقعی اشتباه نشود. این درس یک سناریوی کامل با Timeline نمونه می‌دهد.
+حادثه با آرامش حل می‌شود. در شبیه‌سازی (Game Day) تمرین می‌کنید که چه کسی تصمیم می‌گیرد، چه کسی ثبت می‌کند و چه کسی به مدیریت گزارش می‌دهد، تا در حادثه‌ی واقعی همه بدانند چه کار کنند.
 
 ### ۳) توضیح عمیق فنی
 
-#### سناریو (Lab)
+#### ۱) سناریو
 
-Inject 1 (T0): Change اشتباه، Policy Deny ERP.
-Inject 2 (T0+10): Scan خارجی و ۲۰ Login ناموفق VPN.
+ساعت 10:00 کاربران شعبه اینترنت ندارند. Alert: SD-WAN Member port1 Dead. در 10:12 مشخص می‌شود ISP-B هم کند است (Loss 30٪).
 
-#### نقش‌ها
+#### ۲) نقش‌ها
 
-IC (تصمیم/اولویت)، Operator (دستورها)، Comms (ارتباطات)، Scribe (Timeline).
+| نقش | وظیفه |
+|---|---|
+| Incident Commander | تصمیم و هماهنگی |
+| Operator | اجرای دستورها |
+| Scribe | ثبت Timeline |
+| Communicator | به‌روزرسانی مدیریت/کاربران |
 
-#### Timeline نمونه
+#### ۳) Timeline نمونه
+
+| ساعت | رویداد |
+|---|---|
+| 10:00 | شروع قطع (طبق Log) |
+| 10:04 | Alert دریافت (MTTD=4 min) |
+| 10:06 | IC تعیین؛ Operator: sdwan member |
+| 10:12 | ISP-A قطع؛ ISP-B Loss 30٪ |
+| 10:20 | تماس ISP-A (Ticket) |
+| 10:30 | تصمیم: ترافیک حیاتی با PBR به ISP-B؛ Teams از LTE (در دسترس) |
+| 10:45 | سرویس حیاتی برگشت (MTTR=45 min) |
+| 12:10 | ISP-A برگشت؛ Failback پس از ۳۰ دقیقه |
+
+#### ۴) ارتباط‌رسانی
 
 ``` text
-19:00 T0   Change CHG-0050 applied (policy 150 deny)
-19:04      users report ERP down (detect via ticket)        MTTD = 4 min
-19:06      IC assigns Sev1; Operator runs debug flow -> "Denied policy 150"
-19:09      Rollback of CHG-0050 (tag pre-CHG-0050)
-19:11      ERP verified (positive+negative tests)             MTTR = 7 min from detect
-19:10      Alert: 20 failed VPN logins from 198.51.100.7 -> block IP (Sev3) after ERP restored
-19:30      Close; PIR scheduled in 48 h
+10:08 Status: investigating internet outage at branch; ETA next update 10:30
+10:30 Status: ISP-A down, mitigation in progress (critical services via ISP-B)
+10:45 Status: critical services restored; root cause ISP-A fiber cut (ticket 7712)
 ```
+
+#### ۵) شاخص‌ها
 
 ``` text
-MTTD = detect - fault start = 4 min ; MTTR = restore - detect = 7 min
+MTTD = 10:04 - 10:00 = 4 min
+MTTR (critical) = 10:45 - 10:00 = 45 min
 ```
 
-#### PIR (نمونه)
+#### ۶) PIR
 
-علت‌ها: نبود Post-check منفی/مثبت در CHG؛ Alert ERP وجود نداشت (کشف از Ticket). اقدام: Alert Synthetic Test ERP (Owner، تاریخ)، چک‌لیست Post-check، آموزش.
+ریشه: وابستگی به یک ISP برای Failover با کیفیت؛ ISP-B ضعیف. اقدام: ISP-B با کیفیت بهتر/LTE Backup، Alert روی Loss، Runbook به‌روز.
 
-#### اولویت‌بندی
+### ۴) طراحی و تصمیم‌گیری
 
-دو رویداد: اثر کسب‌وکار (ERP) Sev1 اول؛ Scan Sev3 بعد.
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| نقش | چهار نقش |
+| Status | دوره‌ای |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Rollback و بازگشت ERP؛ MTTD 4، MTTR 7.
+**ساده (حل‌شده):** MTTD=4 دقیقه، MTTR=45 دقیقه.
 
-**متوسط (تحلیل):** دو رویداد هم‌زمان: تصمیم IC بر پایه‌ی اثر؛ ثبت دلیل.
+**متوسط (ارتباط‌رسانی):** Status Update هر ۲۰ تا ۳۰ دقیقه حتی بدون خبر جدید؛ مدیریت می‌داند وضعیت چیست؛ جلوگیری از تماس‌های پراکنده.
 
-**سخت (بهبود):** MTTD بالاست چون کشف با Ticket؛ اقدام: Synthetic monitoring ERP هر ۱ دقیقه؛ هدف MTTD ≤ 1 min.
+**سخت (PIR):** PIR: ریشه (وابستگی)، تصمیم‌ها (PBR برای حیاتی)، چه خوب بود (Alert سریع، نقش‌ها)، چه بد بود (ISP-B ضعیف، Runbook قدیمی)، اقدام‌ها با مالک/تاریخ؛ بدون سرزنش.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose sys sdwan member
+diagnose sys sdwan health-check
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- PIR تکمیل.
+- Timeline کامل.
+- PIR.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| MTTD بالا | Timeline | Alert/Synthetic |
+| بی‌نظمی | نقش مبهم | IC تعیین |
 
 ### ۱۰) نکات امنیتی
 
-- Lab فقط.
+- اطلاعات حساس در Status نیاید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- تمرین IR + Metrics + PIR.
+- نقش‌ها.
+- Timeline.
+- Status.
+- PIR.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) MTTD و MTTR در Timeline مثال؟ *(پاسخ: 32-2-ت1)*
+**ت1.** (ساده) Incident Commander؟ *(پاسخ: 32-2-ت1)*
 
-**ت2.** (ساده) نقش Scribe؟ *(پاسخ: 32-2-ت2)*
+**ت2.** (ساده) MTTD؟ *(پاسخ: 32-2-ت2)*
 
-**ت3.** (متوسط) چرا ERP قبل از Scan؟ *(پاسخ: 32-2-ت3)*
+**ت3.** (متوسط) چرا Status دوره‌ای؟ *(پاسخ: 32-2-ت3)*
 
-**ت4.** (متوسط) چه اقدامی MTTD را کم می‌کند؟ *(پاسخ: 32-2-ت4)*
+**ت4.** (متوسط) Scribe؟ *(پاسخ: 32-2-ت4)*
 
-**ت5.** (سخت) PIR مثال را بنویسید. *(پاسخ: 32-2-ت5)*
+**ت5.** (سخت) PIR بنویسید. *(پاسخ: 32-2-ت5)*
 
-**ت6.** (سخت، طراحی) سناریوی دوم (Tunnel+Policy). *(پاسخ: 32-2-ت6)*
+**ت6.** (سخت، طراحی) Game Day. *(پاسخ: 32-2-ت6)*
 
-**Q1.** Quick quiz (English): Why are roles such as incident commander assigned during an incident? *(پاسخ: 32-2-Q1)*
+**Q1.** Quick quiz (English): Why do we assign explicit roles during an incident? *(پاسخ: 32-2-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
 | IC | Incident Commander | فرمانده‌ی حادثه |
-| Synthetic monitoring | Synthetic monitoring | پایش با آزمون مصنوعی |
 
-- *Learn from every incident.* ← از هر حادثه بیاموزید.
+- *Communicate regularly during an incident.* ← در حادثه به‌طور منظم اطلاع‌رسانی کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Incident. **Evidence:** `03-ops/incident-lab.md`.
+**کارت Lab:** شبیه‌سازی حادثه (اجرا نشده). **Evidence:** `03-ops/incident-sim.md`.
 
 ### ۱۵) منابع
 
-- NIST SP 800-61
-- Google SRE Book (Incident management)
+- NIST SP 800-61 Rev.2
+- Google SRE: Incident response
 
 <a id="l-32-3"></a>
 
 ## درس 32-3 — Capstone IV: مهاجرت/ارتقای کامل در Lab — Plan زمان‌بندی‌شده، Post-check، Rollback و گزارش
 
-**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰ تا ۳۰-۴، ۳۲-۱ · ≈ 8 ساعت**
+**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۱ تا ۳۰-۴، ۳۲-۱ · ≈ 11 ساعت**
 
-> **وضعیت:** عملیات و Capstone III/IV؛ حادثه فقط در Lab؛ FortiOS 7.0.3 (بوت‌نشده)؛ بدون شاهد «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Plan Cutover را دقیقه‌به‌دقیقه اجرا کند.
-2. Post-check Matrix را اجرا و اختلاف‌ها را RCA کند.
-3. Rollback آزمایشی را زمان‌سنجی کند.
-4. گزارش نهایی مهاجرت و Hypercare بنویسد.
+1. Plan زمان‌بندی‌شده‌ی Upgrade/Migration (T-7d تا T+1d) بنویسد.
+2. Pre-check و Baseline را جمع کند.
+3. Cutover را مرحله‌ای با Checkpoint اجرا (طراحی) کند.
+4. Post-check و مقایسه با Baseline را انجام دهد.
+5. Rollback را در Lab آزمون و گزارش نهایی بنویسد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آخرین Capstone: یک مهاجرت/ارتقا را مثل تولید اجرا کنید: Plan، Go/No-Go، Cutover، Post-check، Rollback، گزارش.
+Upgrade یا Migration بزرگ‌ترین ریسک عملیاتی است. «قطع در ساعت ۲ بامداد برای Upgrade» داستان آشنایی است. چاره، Plan دقیق، Baseline و Rollback آزمون‌شده است.
 
 ### ۳) توضیح عمیق فنی
 
-#### Plan زمان‌بندی‌شده (نمونه)
+#### ۱) Plan زمانی
+
+| زمان | کار |
+|---|---|
+| T-7d | Inventory، Baseline، Backup، Release Notes، Path |
+| T-3d | Lab dry-run، Rollback test، CAB |
+| T-1d | تأیید Window، اطلاع‌رسانی |
+| T0 22:00 | Backup، Upgrade Secondary |
+| 22:20 | Failover، Upgrade Primary |
+| 22:50 | Post-check |
+| T+1d | مانیتورینگ و Close |
+
+#### ۲) Baseline
 
 ``` text
-T-60  Go/No-Go (backup ok, OOB ok, team, test matrix)
-T-30  final backups both devices, tag pre-cutover
-T+00  announce start
-T+05  switch gateway/route to new FGT
-T+10  smoke tests (3 critical services)
-T+20  full test matrix (15 tests)
-T+35  decision: continue / rollback (criteria: any critical test fails after fix attempt 10 min)
-T+45  monitoring + comms
-T+60  close window / hypercare start
+get system status
+diagnose sys session stat
+get router info routing-table all  (summary)
+policy hit counts (top 20)
 ```
 
-#### Post-check
+#### ۳) Checkpoint
 
-Matrix ۱۵ آزمون + Session/Log/CPU؛ مقایسه با Baseline.
+| Checkpoint | شرط ادامه |
+|---|---|
+| C1: Backup | فایل+Hash |
+| C2: Secondary upgraded | cluster in-sync |
+| C3: Failover | سرویس بدون قطع طولانی |
+| C4: Primary upgraded | checksum |
+| C5: Post-check | معیارها OK |
 
-#### Rollback آزمایشی
+اگر C3 شکست: Rollback.
+
+#### ۴) Post-check
+
+مقایسه‌ی Session count (±10٪)، Routeها، IPsec up، Policy hit، Log ingestion، آزمون‌های Test Matrix.
+
+#### ۵) گزارش
 
 ``` text
-restore tag pre-cutover on old path -> run smoke tests -> record time (<= 15 min)
+Result: successful ; duration 55 min (plan 60)
+Deviations: HA sync slow (6 min)
+Lessons: wait for in-sync before failover
 ```
 
-#### گزارش
+### ۴) طراحی و تصمیم‌گیری
 
-خلاصه، Timeline، نتایج Matrix، اختلاف‌ها و RCA، Rollback time، Hypercare plan (۷ روز)، درس‌آموخته.
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| Window | ۶۰ دقیقه+Rollback |
+| Baseline | قبل |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Cutover موفق؛ همه‌ی Smoke Pass.
+**ساده (حل‌شده):** Baseline: Session 41k؛ Post: 39k (−5٪) در حد قابل‌قبول.
 
-**متوسط (تحلیل):** T+20: ۲ آزمون Fail (NAT Partner)؛ ۱۰ دقیقه رفع؛ Pass.
+**متوسط (Checkpoint):** C2 رد شد (out-of-sync). تصمیم: توقف تا Sync؛ سپس ادامه؛ تأخیر ۶ دقیقه در Window.
 
-**سخت (تصمیم):** پس از ۱۰ دقیقه یک آزمون حیاتی هنوز Fail ⇒ طبق Trigger Rollback؛ زمان ۱۲ دقیقه؛ RCA بعد از Window.
+**سخت (Rollback):** پس از C4 IPsec بالا نمی‌آید. زمان تصمیم ۱۵ دقیقه؛ Debug نشان Proposal؛ Rollback به Partition قبلی ۸ دقیقه؛ RCA در Lab؛ CHG ناموفق با درس.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+get system status
+diagnose sys session stat
+diagnose sys ha checksum cluster
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- گزارش و Evidence.
+- Checkpointها.
+- Post-check.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| شکست | Post-check | Rollback |
+| out-of-sync | checksum | Sync |
 
 ### ۱۰) نکات امنیتی
 
-- Change.
+- Backup رمزگذاری.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- Plan زمان‌بندی‌شده + Post-check + Rollback.
+- Plan.
+- Checkpoint.
+- Rollback.
+- گزارش.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Go/No-Go چه زمانی؟ *(پاسخ: 32-3-ت1)*
+**ت1.** (ساده) Baseline؟ *(پاسخ: 32-3-ت1)*
 
-**ت2.** (ساده) Trigger Rollback مثال؟ *(پاسخ: 32-3-ت2)*
+**ت2.** (ساده) Checkpoint؟ *(پاسخ: 32-3-ت2)*
 
-**ت3.** (متوسط) چرا Rollback آزمایشی؟ *(پاسخ: 32-3-ت3)*
+**ت3.** (متوسط) چرا Rollback زمان‌دار؟ *(پاسخ: 32-3-ت3)*
 
-**ت4.** (متوسط) Hypercare چیست؟ *(پاسخ: 32-3-ت4)*
+**ت4.** (متوسط) Session count ±؟ *(پاسخ: 32-3-ت4)*
 
-**ت5.** (سخت) Plan زمان‌بندی را بنویسید. *(پاسخ: 32-3-ت5)*
+**ت5.** (سخت) IPsec بعد Upgrade down؛ تصمیم. *(پاسخ: 32-3-ت5)*
 
-**ت6.** (سخت، طراحی) گزارش نهایی. *(پاسخ: 32-3-ت6)*
+**ت6.** (سخت، طراحی) Plan T-7d تا T+1d. *(پاسخ: 32-3-ت6)*
 
-**Q1.** Quick quiz (English): Why define the rollback trigger before the cutover begins? *(پاسخ: 32-3-Q1)*
+**Q1.** Quick quiz (English): Why define a rollback time limit before the change window? *(پاسخ: 32-3-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Hypercare | Hypercare | پایش ویژه |
+| Cutover | Cutover | لحظه‌ی انتقال |
 
-- *Test the rollback path.* ← مسیر Rollback را آزمایش کنید.
+- *Define checkpoints with go/no-go criteria.* ← Checkpoint با معیار ادامه/توقف تعریف کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Cutover. **Evidence:** `03-ops/cutover-lab.md`.
+**کارت Lab:** Capstone IV (اجرا نشده). **Evidence:** `03-ops/capstone-iv.md`.
 
 ### ۱۵) منابع
 
-- درس ۳۰-۲
+- Fortinet Upgrade Path Tool
+- FortiOS 7.0 Release Notes
 
 <a id="l-32-4"></a>
 
 ## درس 32-4 — ارزیابی نهایی و Portfolio: ماتریس مهارت، تحلیل شکاف، نگاشت نقش و نمونه‌ی Portfolio
 
-**فصل 32 · بازنویسی عمیق · پیش‌نیاز: همه‌ی Gateها · ≈ 8 ساعت**
+**فصل 32 · بازنویسی عمیق · پیش‌نیاز: کل دوره · ≈ 11 ساعت**
 
-> **وضعیت:** عملیات و Capstone III/IV؛ حادثه فقط در Lab؛ FortiOS 7.0.3 (بوت‌نشده)؛ بدون شاهد «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Portfolio قابل‌ارائه با شواهد بسازد.
-2. ماتریس مهارت و Gap Analysis را صادقانه بنویسد.
+1. ماتریس مهارت (سطح ۱ تا ۴) را صادقانه پر کند.
+2. شکاف‌ها را با شواهد تحلیل کند.
 3. مهارت‌ها را به نقش‌های شغلی نگاشت کند.
+4. Portfolio حرفه‌ای (پروژه، Evidence، Runbook) بسازد.
+5. برنامه‌ی تکمیل شکاف بنویسد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-Portfolio، نمونه‌کار با شاهد است؛ Gap Analysis نشان می‌دهد کدام ادعاها هنوز شاهد ندارند.
+پایان دوره یعنی «حالا چه کاری می‌توانم انجام دهم و چه چیزی را نمی‌دانم؟». ارزیابی صادقانه ارزشمندتر از ادعای بزرگ است؛ همان چیزی که در مصاحبه و ممیزی هم دیده می‌شود.
 
 ### ۳) توضیح عمیق فنی
 
-#### ساختار Portfolio
+#### ۱) سطح‌ها
 
-``` text
-01-overview.md        architecture summary (1 page)
-02-design/            HLD, LLD, IP plan, ADRs
-03-ops/               runbooks, change records, RCAs, PIR
-04-evidence/          evidence index + raw files (sanitized)
-05-gates/             G1..G11 status (verified/partial/not executed)
-06-limitations.md     Unverified / not executed / license-dependent
-```
+| سطح | معنی |
+|---|---|
+| 1 | آشنا (می‌دانم چیست) |
+| 2 | با راهنما انجام می‌دهم |
+| 3 | مستقل و با شاهد |
+| 4 | آموزش می‌دهم و طراحی می‌کنم |
 
-#### ماتریس مهارت
+#### ۲) ماتریس نمونه
 
-| حوزه | سطح ادعایی | شاهد | Gap |
-|---|---|---|---|
-| Switching/STP | L3 | G1–G2 | — |
-| Routing | L3 | G3/A4 | BGP Lab |
-| Firewall/NAT | L3 | G5/G6 | FortiGate اجرا نشده |
-| UTM | L2 | طراحی | Needs-License |
-| VPN/SD-WAN | L3 | G7/G8 | Lab اجرا نشده |
-| HA | L2 | طراحی | لایسنس |
-| Ops/IR | L3 | G10/IR Lab | — |
+| مهارت | سطح | شاهد |
+|---|---|---|
+| Subnetting/VLSM | 3 | آزمون ۲-۱ |
+| STP/L2 Security | 3 | Lab 4 (طراحی) |
+| OSPF | 2 | Lab 5 (اجرا نشده) |
+| FortiGate Policy/NAT | 2 | طراحی؛ Lab اجرا نشده |
+| IPsec/SD-WAN | 2 | طراحی |
+| Troubleshooting | 3 | پرونده‌های حل‌شده |
+| Automation | 2 | Netmiko read-only |
 
-#### نگاشت نقش
+#### ۳) تحلیل شکاف
 
-Network Engineer: Routing/Switching/VPN؛ Security Engineer: Firewall/UTM/IR؛ SOC L1/L2: Detection/Response؛ Architect: HLD/ADR/Risk.
+- شکاف ۱: Labهای اجرا نشده ⇒ شواهد عملی نداریم.
+- شکاف ۲: دستورهای Unverified.
+- برنامه: اجرای Labها با اجازه، ثبت Evidence.
+
+#### ۴) نگاشت نقش
+
+| نقش | مهارت کلیدی | آمادگی |
+|---|---|---|
+| Network Admin | VLAN، OSPF، ACL | خوب |
+| Firewall Engineer | FortiGate Policy، VPN، HA | متوسط (Lab لازم) |
+| NOC Engineer | عیب‌یابی، Log | خوب |
+| Security Analyst (Blue) | Log، PCAP، PIR | متوسط |
+
+#### ۵) Portfolio
+
+شامل: ۳ پروژه (Lab A، Capstone I، Capstone III)، Evidence Index، Runbook نمونه، PIR نمونه، توضیح شکاف‌ها (صادقانه)، بدون اطلاعات حساس.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| سطح | با شاهد |
+| Portfolio | صادقانه |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Portfolio با ۶ پوشه.
+**ساده (حل‌شده):** OSPF سطح ۲ چون Lab اجرا نشده؛ نه ۳.
 
-**متوسط (تحلیل):** Gap: FortiGate اجرا نشده؛ سطح ادعا از L3 به L2؛ برنامه‌ی Lab.
+**متوسط (شکاف):** شکاف FortiGate: طراحی داریم ولی اجرا نه؛ برنامه: اجرای Lab‌ها با اجازه‌ی صریح و ثبت Evidence.
 
-**سخت (قضاوت):** کارفرما می‌پرسد «HA کار می‌کند؟»؛ پاسخ صادقانه: طراحی/مفهومی با منبع؛ اجرا نشده؛ برنامه‌ی آزمون.
+**سخت (Portfolio):** Portfolio برای نقش Firewall Engineer: Capstone I و Runbook؛ با برچسب «طراحی؛ Lab اجرا نشده»؛ مصاحبه‌گر صداقت را می‌بیند.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+! no CLI: evaluation lesson
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Portfolio کامل.
+- ماتریس با شاهد.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| شاهد کم | Index | Lab بیشتر |
+| ادعا بدون شاهد | ماتریس | کاهش سطح |
 
 ### ۱۰) نکات امنیتی
 
-- Secret پاک.
+- Portfolio بدون اطلاعات حساس.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- Portfolio + Gap + نقش.
+- صداقت.
+- شکاف.
+- Portfolio.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Portfolio شامل چیست؟ *(پاسخ: 32-4-ت1)*
+**ت1.** (ساده) سطح ۳ یعنی؟ *(پاسخ: 32-4-ت1)*
 
-**ت2.** (ساده) Gap چیست؟ *(پاسخ: 32-4-ت2)*
+**ت2.** (ساده) شکاف چیست؟ *(پاسخ: 32-4-ت2)*
 
-**ت3.** (متوسط) چرا فایل محدودیت‌ها؟ *(پاسخ: 32-4-ت3)*
+**ت3.** (متوسط) چرا Lab اجرا نشده سطح را کم می‌کند؟ *(پاسخ: 32-4-ت3)*
 
-**ت4.** (متوسط) FortiGate اجرا نشده؛ سطح ادعا؟ *(پاسخ: 32-4-ت4)*
+**ت4.** (متوسط) محتوای Portfolio؟ *(پاسخ: 32-4-ت4)*
 
-**ت5.** (سخت) پاسخ به «HA کار می‌کند؟» *(پاسخ: 32-4-ت5)*
+**ت5.** (سخت) Portfolio برای Firewall Engineer. *(پاسخ: 32-4-ت5)*
 
-**ت6.** (سخت، طراحی) ماتریس مهارت. *(پاسخ: 32-4-ت6)*
+**ت6.** (سخت، طراحی) برنامه‌ی پر کردن شکاف. *(پاسخ: 32-4-ت6)*
 
-**Q1.** Quick quiz (English): Why include a limitations file in a portfolio? *(پاسخ: 32-4-Q1)*
+**Q1.** Quick quiz (English): Why is honest self-assessment valuable? *(پاسخ: 32-4-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Gap analysis | Gap analysis | تحلیل شکاف |
+| Portfolio | Portfolio | نمونه‌کارها |
 
-- *Be transparent about limitations.* ← درباره‌ی محدودیت‌ها شفاف باشید.
+- *Show evidence for every skill you claim.* ← برای هر مهارتی که ادعا می‌کنید شاهد نشان دهید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Portfolio. **Evidence:** `03-ops/portfolio.md`.
+**کارت Lab:** ارزیابی نهایی (اجرا نشده). **Evidence:** `03-ops/skill-matrix.md`.
 
 ### ۱۵) منابع
 
-- درس ۳۲-۰
+- درس‌های کل دوره
 
 <a id="l-32-5"></a>
 
 ## درس 32-5 — Roadmap یادگیری بعدی: مسیر گواهی، Labهای اجرا نشده، Automation و برنامه‌ی ۶ ماهه
 
-**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۴ · ≈ 8 ساعت**
+**فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۴ · ≈ 11 ساعت**
 
-> **وضعیت:** عملیات و Capstone III/IV؛ حادثه فقط در Lab؛ FortiOS 7.0.3 (بوت‌نشده)؛ بدون شاهد «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Roadmap ۶ ماهه با اولویت از Gap بنویسد.
-2. مسیر گواهی/تخصص را انتخاب کند.
-3. Labهای اجرا نشده را زمان‌بندی کند.
+1. مسیرهای گواهی (Cisco، Fortinet، امنیت) را با پیش‌نیاز مقایسه کند.
+2. برنامه‌ی ۶ ماهه با هدف، زمان و Evidence بنویسد.
+3. Labهای اجرا نشده را اولویت‌بندی کند.
+4. Automation و Observability را در برنامه جای دهد.
+5. معیار موفقیت اندازه‌گیری‌پذیر تعیین کند.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-برنامه‌ی ادامه باید از Gap شروع شود: اول آنچه شاهد ندارد.
+دوره پایان یافت ولی یادگیری نه. بدون برنامه، «بعداً Lab می‌زنم» هرگز اتفاق نمی‌افتد. این درس برنامه‌ی ۶ ماهه‌ی واقع‌بینانه می‌دهد.
 
 ### ۳) توضیح عمیق فنی
 
-#### برنامه‌ی ۶ ماهه (قالب)
+#### ۱) مسیر گواهی (نمونه؛ شرایط را از وب‌سایت رسمی تأیید کنید)
 
-| ماه | هدف | خروجی/شاهد |
+| مسیر | محتوا | پیش‌نیاز |
 |---|---|---|
-| ۱ | اجرای Labهای اجرا نشده (FortiGate Boot با تأیید، Packet Flow Debug) | Evidence G5/G6 |
-| ۲ | VPN/SD-WAN واقعی | G7/G8 |
-| ۳ | Automation (Ansible/Python) روی Lab | CP1+ |
-| ۴ | گواهی هدف (مثلاً Fortinet NSE 4 یا Cisco CCNA) | آزمون |
-| ۵ | Blue Team/Detection پروژه | Playbook+PIR |
-| ۶ | پروژه‌ی واقعی/مشارکت + بازنگری Portfolio | Portfolio نسخه 2 |
+| Cisco CCNA | شبکه‌ی پایه تا Automation | فصل ۱ تا ۸ |
+| Fortinet NSE 4 | FortiGate Security | فصل ۱۲ تا ۲۲ |
+| Fortinet NSE 5/6 | FortiAnalyzer/FortiManager | فصل ۲۴، ۲۶ |
+| Security (Blue Team) | Log، PCAP، PIR | فصل ۲۸، ۲۹ |
 
-#### مسیرها
+(نام و سطح گواهی‌ها ممکن است تغییر کند؛ `Unverified`.)
 
-Fortinet NSE 4/5/6، Cisco CCNA→CCNP ENCOR (در صورت نیاز)، Linux/Windows Admin، Python/Ansible، SIEM/SOC.
+#### ۲) اولویت Labها
 
-#### معیار پیشرفت
+1. Phase 0B (Lab ایزوله) با اجازه.
+2. FortiGate: Interface/Policy/NAT (فصل ۱۳).
+3. IPsec و SD-WAN (فصل ۱۸، ۲۱).
+4. HA (در صورت لایسنس).
 
-هر ماه: شاهد جدید در Portfolio و کاهش Gap.
+#### ۳) برنامه‌ی ۶ ماهه
+
+| ماه | هدف | Evidence |
+|---|---|---|
+| 1 | اجرای Lab فصل ۱ تا ۴ | Config + خروجی |
+| 2 | OSPF/HSRP Lab | As-Built |
+| 3 | FortiGate Policy/NAT/VIP | Evidence Index |
+| 4 | IPsec/SD-WAN | Debug |
+| 5 | Logging/Monitoring/Automation | Git repo |
+| 6 | Capstone و مرور | Portfolio |
+
+#### ۴) Automation
+
+از Read-only (Netmiko) به Ansible `--check` و Git؛ هیچ تغییر خودکار بدون Pilot.
+
+#### ۵) معیار موفقیت
+
+«تا پایان ماه ۳، حداقل ۱۰ Lab با Evidence»؛ «تا پایان ماه ۶، Portfolio با ۳ پروژه».
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| برنامه | ۱۰ ساعت هفتگی |
+| Evidence | هر ماه |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده (حل‌شده):** Roadmap جدول.
+**ساده (حل‌شده):** ماه ۱: ۴ Lab فصل ۱ تا ۴ با خروجی؛ معیار: ۴ فایل Evidence.
 
-**متوسط (تحلیل):** وقت محدود؛ اولویت با Gap بیشترین ریسک (VPN/HA).
+**متوسط (اولویت):** منابع محدود؛ FortiGate اول چون هدف شغلی؛ سپس OSPF؛ برنامه‌ی هفتگی ۱۰ ساعت.
 
-**سخت (بودجه):** بدون گواهی پولی: Labهای رایگان + Evidence؛ جایگزین: پروژه‌ی متن‌باز.
+**سخت (شکست برنامه):** ماه ۳ نیمه‌کاره ماند؛ تحلیل: ساعت ناکافی؛ برنامه‌ی ماه ۴ با ۶ ساعت هفتگی و کاهش دامنه؛ معیار جدید.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+! planning lesson
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Roadmap.
+- برنامه با معیار.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| مبهم | بازبینی | اولویت |
+| عقب‌افتادن | دامنه | کاهش |
 
 ### ۱۰) نکات امنیتی
 
-- —
+- Labها فقط در محیط ایزوله.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- Roadmap از Gap.
+- برنامه‌ی ۶ ماهه.
+- Evidence.
+- Automation امن.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) Roadmap از کجا شروع می‌شود؟ *(پاسخ: 32-5-ت1)*
+**ت1.** (ساده) چرا برنامه‌ی ۶ ماهه؟ *(پاسخ: 32-5-ت1)*
 
-**ت2.** (ساده) معیار پیشرفت؟ *(پاسخ: 32-5-ت2)*
+**ت2.** (ساده) معیار موفقیت؟ *(پاسخ: 32-5-ت2)*
 
-**ت3.** (متوسط) اولویت‌بندی با وقت محدود؟ *(پاسخ: 32-5-ت3)*
+**ت3.** (متوسط) اولویت Lab؟ *(پاسخ: 32-5-ت3)*
 
-**ت4.** (متوسط) چرا Labهای اجرا نشده اول؟ *(پاسخ: 32-5-ت4)*
+**ت4.** (متوسط) Automation امن؟ *(پاسخ: 32-5-ت4)*
 
-**ت5.** (سخت) برنامه‌ی ۶ ماهه. *(پاسخ: 32-5-ت5)*
+**ت5.** (سخت) برنامه شکست خورد. *(پاسخ: 32-5-ت5)*
 
-**ت6.** (سخت، طراحی) بدون بودجه‌ی گواهی چه؟ *(پاسخ: 32-5-ت6)*
+**ت6.** (سخت، طراحی) برنامه‌ی ۶ ماهه. *(پاسخ: 32-5-ت6)*
 
-**Q1.** Quick quiz (English): How should the roadmap prioritize topics? *(پاسخ: 32-5-Q1)*
+**Q1.** Quick quiz (English): Why should a learning plan include measurable evidence? *(پاسخ: 32-5-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
@@ -1875,114 +2079,153 @@ Fortinet NSE 4/5/6، Cisco CCNA→CCNP ENCOR (در صورت نیاز)، Linux/Wi
 |---|---|---|
 | NSE | Network Security Expert | برنامه‌ی گواهی Fortinet |
 
-- *Plan your next learning steps.* ← گام‌های بعدی را برنامه‌ریزی کنید.
+- *Set measurable goals for each month.* ← برای هر ماه هدف قابل‌اندازه‌گیری تعیین کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** Roadmap. **Evidence:** `03-ops/roadmap.md`.
+**کارت Lab:** Roadmap (اجرا نشده). **Evidence:** `03-ops/roadmap.md`.
 
 ### ۱۵) منابع
 
-- Fortinet Training Institute
-- Cisco Learning Network
+- صفحه‌ی رسمی گواهی Cisco و Fortinet (تأیید در زمان استفاده)
 
 <a id="l-32-6"></a>
 
 ## درس 32-6 — آزمون نهایی دوره: سناریوی جامع، صورت مسئله، کلید پاسخ و Rubric
 
-**فصل 32 · بازنویسی عمیق · پیش‌نیاز: همه · ≈ 8 ساعت**
+**فصل 32 · بازنویسی عمیق · پیش‌نیاز: کل دوره · ≈ 12 ساعت**
 
-> **وضعیت:** عملیات و Capstone III/IV؛ حادثه فقط در Lab؛ FortiOS 7.0.3 (بوت‌نشده)؛ بدون شاهد «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
+> **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
 ### ۱) هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. سناریوی جامع را از طراحی تا عیب‌یابی حل کند.
-2. سه عیب چندلایه را با روش فرضیه‌محور رفع کند.
-3. Evidence و RCA ارائه دهد.
-4. صادقانه محدودیت‌ها را اعلام کند.
+1. سناریوی جامع (Edge، Internal، VPN، SD-WAN، Logging) را تحلیل کند.
+2. سه خرابی چندلایه را با روش ۱۰ گامی رفع کند.
+3. طراحی، Policy و آزمون را با Evidence بنویسد.
+4. گزارش حادثه و CHG را تحویل دهد.
+5. با Rubric نمره‌دهی و صادقانه Gap را بنویسد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟
 
-آزمون نهایی همه‌ی مهارت‌ها.
+آزمون نهایی همه‌ی مهارت‌ها را در یک سناریو می‌سنجد. در دنیای واقعی خرابی تک‌علتی کم است؛ معمولاً دو علت با هم می‌آیند. روش و صبر مهم‌تر از سرعت است.
 
 ### ۳) توضیح عمیق فنی
 
-#### صورت مسئله
+#### ۱) صورت مسئله
 
-سازمان: HQ + ۳ شعبه، دو ISP، IPsec، SD-WAN، HA، UTM، Auth (LDAP/MFA)، Log/Monitoring، Backup.
+شعبه با Edge FW (دو ISP، SD-WAN)، Internal FW، DMZ وب، IPsec به HQ، دورکاری، Syslog. گزارش: «بعضی کاربران اینترنت ندارند، VPN به HQ گاهی قطع می‌شود، وب از بیرون باز نمی‌شود.»
 
-بخش ۱ طراحی (HLD/IP Plan/ADR). بخش ۲ پیاده‌سازی (Evidence). بخش ۳ سه عیب تزریق‌شده: (۱) MTU/Policy VPN؛ (۲) Asymmetric یا Prefix-list BGP؛ (۳) Auth/Policy گروهی. بخش ۴ IR کوتاه. بخش ۵ گزارش و محدودیت‌ها.
+#### ۲) کلید
 
-#### کلید (خلاصه)
+**علت ۱ (اینترنت):** Health-check فقط Gateway ISP-A. ISP-A قطع ولی Gateway زنده ⇒ Failover نمی‌شود. رفع: Server خارجی 8.8.8.8.
 
-- عیب ۱: ping DF/Debug Flow؛ MSS/Policy.
-- عیب ۲: Sniffer دو‌نقطه‌ای/advertised-routes.
-- عیب ۳: `authserver`، fsso list، Debug Flow.
-- IR: Detect، Contain، Evidence، PIR.
+**علت ۲ (VPN):** MTU/MSS تونل؛ دانلود می‌ایستد. PMTU 1400 ⇒ MSS 1360. رفع: MSS-clamp.
 
-#### Rubric (۱۰۰)
+**علت ۳ (وب):** Policy dst=IP داخلی نه VIP. رفع: dst=VIP.
 
-طراحی ۲۰؛ پیاده‌سازی ۲۵؛ عیب‌یابی ۳۰؛ مستندات ۱۵؛ صداقت ۱۰.
+#### ۳) روش
+
+``` text
+1 define symptom 2 route 3 policy 4 NAT 5 session 6 DNS 7 MTU 8 logs 9 sniffer+debug 10 verify
+```
+
+#### ۴) خروجی‌های لازم
+
+- جدول علت/شاهد/رفع.
+- CHG برای رفع‌ها (ترتیب، Window، Rollback).
+- PIR کوتاه.
+- Evidence Index.
+
+#### ۵) Rubric (۱۰۰)
+
+| معیار | امتیاز |
+|---|---|
+| تشخیص ۳ علت با شاهد | 30 |
+| رفع و آزمون مثبت/منفی | 20 |
+| CHG و Rollback | 15 |
+| PIR و شاخص‌ها | 15 |
+| Evidence Index | 10 |
+| صداقت (Unverified، Gap) | 10 |
+
+قبولی ۷۵.
+
+### ۴) طراحی و تصمیم‌گیری
+
+| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+|---|---|
+| ترتیب رفع | لایه‌ی پایین‌تر اول |
+| CHG | یک CHG با سه مرحله |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-**ساده:** طراحی.
+**ساده (حل‌شده):** علت ۳: Lookup=0 (no policy)؛ Policy dst=VIP؛ آزمون: HTTPS از بیرون 200.
 
-**متوسط:** پیاده‌سازی.
+**متوسط (چندعلتی):** ابتدا علت ۱ (اینترنت) رفع؛ سپس علت ۳؛ هر رفع جدا آزمون؛ در پایان VPN.
 
-**سخت:** سه عیب و IR.
+**سخت (کامل):** CHG-0301: ۱) Health-check ۲) Policy VIP ۳) MSS. Window شبانه؛ Rollback: Config قبلی. Post-check: Failover 4 s، وب 200، دانلود VPN ۱۰۰MB ok. PIR: ریشه‌ها، MTTD/MTTR، اقدام: چک‌لیست Health-check و MSS استاندارد.
+
+### ۷) پیاده‌سازی از مسیر CLI
+
+``` text
+diagnose sys sdwan health-check
+diagnose firewall iprope lookup 203.0.113.10 40000 10.30.0.10 443 tcp port1
+execute ping-options df-bit yes
+```
 
 ### ۸) Verification (اثبات صحت)
 
-- Evidence.
+- هر علت Evidence دارد.
+- آزمون منفی.
 
 ### ۹) Troubleshooting
 
 | علامت | شاهد برای بررسی | علت محتمل و رفع |
 |---|---|---|
-| ناقص | Rubric | کسری |
+| چندعلتی | تفکیک | یکی‌یکی |
 
 ### ۱۰) نکات امنیتی
 
-- Secret.
+- رمز در گزارش نیاید.
 
 ### ۱۱) جمع‌بندی مفهومی
 
-- آزمون جامع.
+- روش ۱۰ گامی.
+- چندعلتی.
+- CHG/PIR.
 
 ### ۱۲) تمرین و ارزیابی
 
-**ت1.** (ساده) بخش‌های آزمون؟ *(پاسخ: 32-6-ت1)*
+**ت1.** (ساده) علت ۱ چیست؟ *(پاسخ: 32-6-ت1)*
 
-**ت2.** (ساده) Rubric وزن عیب‌یابی؟ *(پاسخ: 32-6-ت2)*
+**ت2.** (ساده) علت ۳؟ *(پاسخ: 32-6-ت2)*
 
-**ت3.** (متوسط) عیب ۱ را چگونه جداسازی می‌کنید؟ *(پاسخ: 32-6-ت3)*
+**ت3.** (متوسط) ترتیب رفع؟ *(پاسخ: 32-6-ت3)*
 
-**ت4.** (متوسط) عیب ۳ را چگونه؟ *(پاسخ: 32-6-ت4)*
+**ت4.** (متوسط) MSS؟ *(پاسخ: 32-6-ت4)*
 
-**ت5.** (سخت) سه عیب را با RCA کوتاه بنویسید. *(پاسخ: 32-6-ت5)*
+**ت5.** (سخت) CHG بنویسید. *(پاسخ: 32-6-ت5)*
 
-**ت6.** (سخت، طراحی) گزارش نهایی با محدودیت‌ها. *(پاسخ: 32-6-ت6)*
+**ت6.** (سخت، طراحی) PIR. *(پاسخ: 32-6-ت6)*
 
-**Q1.** Quick quiz (English): What will the final exam evaluate? *(پاسخ: 32-6-Q1)*
+**Q1.** Quick quiz (English): Why fix multi-cause failures one at a time? *(پاسخ: 32-6-Q1)*
 
 ### ۱۳) اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
-| Final | Final exam | آزمون نهایی |
+| PIR | Post-Incident Review | بازبینی پس از حادثه |
 
-- *Review all gates before the final exam.* ← قبل از آزمون نهایی همه‌ی Gateها را مرور کنید.
+- *Isolate the layers and test after each fix.* ← لایه‌ها را جدا کنید و پس از هر رفع آزمون کنید.
 
 ### ۱۴) کارت Lab
 
-**کارت Lab:** آزمون نهایی. **Evidence:** `03-ops/final.md`.
+**کارت Lab:** آزمون نهایی (اجرا نشده). **Evidence:** `03-ops/final-exam.md`.
 
 ### ۱۵) منابع
 
-- همه‌ی فصل‌ها
+- کل دوره
 
 ## پاسخ‌های فصل 32
 
@@ -1991,114 +2234,136 @@ Fortinet NSE 4/5/6، Cisco CCNA→CCNP ENCOR (در صورت نیاز)، Linux/Wi
 
 ### پاسخ‌های بازنویسی عمیق درس 32-1
 
-**32-1-ت1** — تغییر کم‌ریسک از پیش تأییدشده.
 
-**32-1-ت2** — آزمون مسدود بودن ترافیک غیرمجاز.
+### پاسخ‌های بازنویسی عمیق درس 32-1
 
-**32-1-ت3** — نسبت Changeهای ناموفق به کل.
+**32-1-ت1** — سلامت، Alert، Backup، Log غیرعادی.
 
-**32-1-ت4** — برای جلوگیری از سوءاستفاده و حذف Ruleهای موقت.
+**32-1-ت2** — Backup و بررسی‌های قبل.
 
-**32-1-ت5** — قالب بالا.
+**32-1-ت3** — Rollback، ثبت علت و درس.
 
-**32-1-ت6** — Diff Policy، Backup، Health.
+**32-1-ت4** — کم‌ترافیک با تیم آماده.
 
-**32-1-Q1** — It is applied urgently and documented/reviewed afterwards.
+**32-1-ت5** — ترتیب Policy؛ Rollback؛ CHG جدید.
+
+**32-1-ت6** — قالب بالا.
+
+**32-1-Q1** — That the change works as intended and nothing else broke.
+
+### پاسخ‌های بازنویسی عمیق درس 32-2
 
 
 ### پاسخ‌های بازنویسی عمیق درس 32-2
 
-**32-2-ت1** — MTTD=4 دقیقه، MTTR=7 دقیقه.
+**32-2-ت1** — تصمیم‌گیر و هماهنگ‌کننده.
 
-**32-2-ت2** — ثبت Timeline و تصمیم‌ها.
+**32-2-ت2** — زمان تا کشف.
 
-**32-2-ت3** — اثر کسب‌وکار بالاتر (Sev1).
+**32-2-ت3** — اطمینان مدیریت و کاهش تماس‌ها.
 
-**32-2-ت4** — Synthetic monitoring/Alert خودکار.
+**32-2-ت4** — ثبت Timeline.
 
-**32-2-ت5** — خلاصه، Timeline، علت‌ها، خوب/بد، اقدام Owner/Date، Metrics.
+**32-2-ت5** — قالب.
 
-**32-2-ت6** — Inject، Detect، Contain، Fix، PIR.
+**32-2-ت6** — سناریو و نقش‌ها.
 
-**32-2-Q1** — To avoid confusion and ensure decisions, actions, communication and records are handled in parallel.
+**32-2-Q1** — To avoid confusion and ensure decisions, actions and records are handled.
+
+### پاسخ‌های بازنویسی عمیق درس 32-3
 
 
 ### پاسخ‌های بازنویسی عمیق درس 32-3
 
-**32-3-ت1** — قبل از شروع (T-60).
+**32-3-ت1** — وضعیت پیش از تغییر.
 
-**32-3-ت2** — آزمون حیاتی پس از ۱۰ دقیقه رفع همچنان Fail.
+**32-3-ت2** — نقطه‌ی تصمیم.
 
-**32-3-ت3** — اثبات مسیر بازگشت.
+**32-3-ت3** — برای تصمیم به‌موقع.
 
-**32-3-ت4** — پایش تشدیدشده پس از تغییر.
+**32-3-ت4** — حدود ±۱۰٪.
 
-**32-3-ت5** — طبق بالا.
+**32-3-ت5** — Debug سریع؛ Rollback اگر در زمان.
 
-**32-3-ت6** — بخش‌های بالا.
+**32-3-ت6** — جدول.
 
-**32-3-Q1** — So the decision is objective and not influenced by pressure during the change.
+**32-3-Q1** — To avoid delaying the decision and extending the outage.
+
+### پاسخ‌های بازنویسی عمیق درس 32-4
 
 
 ### پاسخ‌های بازنویسی عمیق درس 32-4
 
-**32-4-ت1** — طراحی، عملیات، Evidence، Gateها، محدودیت‌ها.
+**32-4-ت1** — مستقل و با شاهد.
 
-**32-4-ت2** — فاصله‌ی ادعا با شاهد.
+**32-4-ت2** — تفاوت سطح فعلی با هدف.
 
-**32-4-ت3** — صداقت و جلوگیری از ادعای بی‌شاهد.
+**32-4-ت3** — شاهد عملی نیست.
 
-**32-4-ت4** — کاهش به L2 تا آزمون اجرا شود.
+**32-4-ت4** — پروژه، Evidence، Runbook، PIR.
 
-**32-4-ت5** — صادقانه: اجرا نشده؛ طراحی با مرجع؛ برنامه‌ی آزمون.
+**32-4-ت5** — Capstone I، Runbook، برچسب صادقانه.
 
-**32-4-ت6** — جدول.
+**32-4-ت6** — Lab، شاهد، زمان.
 
-**32-4-Q1** — To be transparent about what is unverified and avoid unsupported claims.
+**32-4-Q1** — It shows real skill level and guides focused improvement.
+
+### پاسخ‌های بازنویسی عمیق درس 32-5
 
 
 ### پاسخ‌های بازنویسی عمیق درس 32-5
 
-**32-5-ت1** — از Gap.
+**32-5-ت1** — تا یادگیری به عمل تبدیل شود.
 
-**32-5-ت2** — شاهد جدید.
+**32-5-ت2** — اندازه‌گیری‌پذیر.
 
-**32-5-ت3** — بیشترین ریسک/Gap.
+**32-5-ت3** — هدف شغلی.
 
-**32-5-ت4** — تا ادعاها شاهد داشته باشند.
+**32-5-ت4** — Read-only و Pilot.
 
-**32-5-ت5** — جدول.
+**32-5-ت5** — کاهش دامنه.
 
-**32-5-ت6** — Lab/پروژه/Evidence.
+**32-5-ت6** — جدول.
 
-**32-5-Q1** — By the largest gaps between claimed skills and available evidence.
+**32-5-Q1** — To verify real progress rather than assumed progress.
+
+### پاسخ‌های بازنویسی عمیق درس 32-6
 
 
 ### پاسخ‌های بازنویسی عمیق درس 32-6
 
-**32-6-ت1** — طراحی، پیاده‌سازی، سه عیب، IR، گزارش.
+**32-6-ت1** — Health-check روی Gateway.
 
-**32-6-ت2** — ۳۰.
+**32-6-ت2** — dst=IP داخلی.
 
-**32-6-ت3** — ping DF برای MTU و Debug Flow برای Policy.
+**32-6-ت3** — لایه‌ی پایین‌تر اول.
 
-**32-6-ت4** — `authserver`، `fsso list`، Debug Flow.
+**32-6-ت4** — PMTU−40.
 
-**32-6-ت5** — علامت/شاهد/علت/رفع.
+**32-6-ت5** — سه مرحله با Rollback.
 
-**32-6-ت6** — بخش‌های Portfolio.
+**32-6-ت6** — ریشه، شاخص، اقدام.
 
-**32-6-Q1** — Design, implementation, troubleshooting, documentation and honesty.
+**32-6-Q1** — To know which change solved which problem.
 
 ### پاسخ‌های درس افزوده‌ی 32-0 (فصل 32)
 
-**32-0-ت1** — Incident بازگرداندن سرویس؛ Problem حذف علت ریشه‌ای تکرارشونده.
 
-**32-0-ت2** — Request، Risk، Plan، Approve، Schedule، Pre-check+Backup، Implement، Post-check، Close، Review.
+### پاسخ‌های بازنویسی عمیق درس 32-0
 
-**32-0-ت3** — Timeline، اثر، علت (نبود Post-check منفی)، چه خوب/بد، اقدام با Owner و تاریخ.
+**32-0-ت1** — تغییر کم‌ریسک و از پیش تأییدشده.
 
-**32-0-Q1** — Because it exposes process weaknesses without people hiding information.
+**32-0-ت2** — میانگین زمان بازیابی.
+
+**32-0-ت3** — ۹۴٪.
+
+**32-0-ت4** — هیئت تأیید تغییرات پرریسک.
+
+**32-0-ت5** — ثبت، تأیید Owner، اجرا، Verify، ثبت رسمی.
+
+**32-0-ت6** — ثبت، ارزیابی، تأیید، اجرا، Verify، Close.
+
+**32-0-Q1** — An urgent change to restore service that is documented and reviewed afterwards.
 
 # پایان بخش ۱۱ (فصل‌های ۳۱ تا ۳۲)
 
