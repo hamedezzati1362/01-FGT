@@ -1785,6 +1785,158 @@ udld enable
 - IEEE 802.1D/802.1w
 - Cisco Spanning Tree Protocol guides
 
+<a id="l-4-8"></a>
+
+## درس 4-8 — Storm Control و RA Guard: جلوگیری از طوفان ترافیک و Router Advertisement جعلی
+
+**فصل 4 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 4.7: Configure Layer 2 security features؛ بخش‌های Storm Control و RA Guard) · پیش‌نیاز: ۴-۴، ۴-۵**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** دو سپر لایه‌ی ۲: (۱) **Storm Control** که جلوی طوفان Broadcast/Multicast/Unicast را می‌گیرد و (۲) **RA Guard** که جلوی روتر جعلی در شبکه‌ی IPv6 را می‌گیرد.
+
+**چرا لازم است؟** تصور کنید در یک سالن یک نفر مدام با بلندگو داد می‌زند؛ هیچ‌کس نمی‌تواند حرف بزند. طوفان Broadcast همین است: یک حلقه‌ی L2 یا کارت شبکه‌ی خراب، میلیون‌ها فریم Broadcast تولید می‌کند و CPU همه‌ی دستگاه‌ها را پر می‌کند. RA Guard هم مثل کسی است که در سالن ادعا می‌کند «من مدیر هستم، همه از من پیروی کنید»؛ مهاجم با یک Router Advertisement جعلی خودش را Default Gateway معرفی می‌کند و ترافیک را از خود عبور می‌دهد (Man-in-the-Middle).
+
+### ۲) Storm Control
+
+#### ۲-۱) مفهوم
+
+Storm Control ترافیک Broadcast، Multicast یا Unicast ناشناخته را روی هر پورت **اندازه می‌گیرد** و اگر از سطح (Threshold) گذشت، ترافیک اضافه را رد یا پورت را خاموش می‌کند.
+
+Threshold را می‌توان به‌صورت درصد پهنای باند، bps یا pps داد.
+
+#### ۲-۲) دستورها (Unverified)
+
+``` text
+interface GigabitEthernet1/0/10
+ storm-control broadcast level 20.00 10.00
+ storm-control multicast level 30.00
+ storm-control unicast level 50.00
+ storm-control action shutdown
+ storm-control action trap
+```
+
+- `level 20.00 10.00`: سطح بالا (Rising) 20٪ و سطح پایین (Falling) 10٪.
+- پیش‌فرض Action: ترافیک اضافه در بازه‌ی جاری (۱ ثانیه) **Drop** می‌شود (حالت filter).
+- `action shutdown`: پورت `err-disabled` می‌شود.
+- `action trap`: فقط SNMP Trap ارسال می‌شود.
+
+بازیابی خودکار:
+
+``` text
+errdisable recovery cause storm-control
+errdisable recovery interval 300
+```
+
+بررسی:
+
+``` text
+show storm-control
+show storm-control broadcast
+show interfaces Gi1/0/10 status err-disabled
+```
+
+#### ۲-۳) محاسبه‌ی Threshold
+
+``` text
+Port speed = 1 Gbps
+Broadcast level = 20 %
+Allowed broadcast = 1000 Mbps x 0.20 = 200 Mbps
+```
+
+در شبکه‌ی عادی Broadcast بسیار کمتر از 1٪ است؛ پس 20٪ بسیار سخاوتمندانه است. برای انتخاب عدد واقعی ابتدا Baseline بگیرید.
+
+### ۳) RA Guard
+
+#### ۳-۱) پیش‌زمینه: RA در IPv6
+
+در IPv6 روترها با پیام **RA** (Router Advertisement، یعنی «اعلان روتر»؛ ICMPv6 Type 134) به Hostها می‌گویند: Prefix چیست، Default Gateway کیست و آیا از DHCPv6 استفاده کنند. Hostها با **SLAAC** (Stateless Address Autoconfiguration) آدرس می‌سازند.
+
+#### ۳-۲) حمله
+
+مهاجم با ابزاری (مثلاً `radvd` یا ابزارهای تست) RA جعلی می‌فرستد: خودش را Gateway معرفی می‌کند، Prefix اشتباه می‌دهد یا DNS مخرب (RDNSS). نتیجه: قطع شبکه یا شنود ترافیک. این حمله شبیه Rogue DHCP در IPv4 است.
+
+#### ۳-۳) راه‌حل: RA Guard
+
+RA Guard روی پورت سوییچ، پیام‌های RA را فقط از پورت‌هایی که «Router» هستند قبول می‌کند و از پورت‌های «Host» حذف می‌کند.
+
+``` text
+ipv6 nd raguard policy HOST-POLICY
+ device-role host
+ipv6 nd raguard policy ROUTER-POLICY
+ device-role router
+!
+interface GigabitEthernet1/0/10
+ ipv6 nd raguard attach-policy HOST-POLICY
+interface GigabitEthernet1/0/1
+ ipv6 nd raguard attach-policy ROUTER-POLICY
+```
+
+بررسی:
+
+``` text
+show ipv6 nd raguard policies
+show ipv6 snooping counters
+```
+
+محدودیت: پیاده‌سازی‌های قدیمی با Fragmentation/Extension Header دور زده می‌شدند؛ RFC 7113 ضعف‌ها را توضیح داده است و باید نسخه‌ی سیستم‌عامل و پشتیبانی را بررسی کرد.
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — کدام پورت Host و کدام Router؟** پورت متصل به روتر Uplink ⇒ `device-role router`. تمام پورت‌های کاربران ⇒ `device-role host`.
+
+**متوسط — طوفان Broadcast.** علامت: CPU سوییچ 95٪ و کاربران کند. روش:
+
+1. `show processes cpu sorted` و `show interfaces counters`.
+2. پورتی که Broadcast بسیار بالا دارد را پیدا کنید.
+3. `storm-control broadcast level 5` (Lab/Baseline) و `action shutdown`.
+4. علت را (حلقه‌ی L2 یا کارت خراب) رفع کنید.
+
+``` text
+Gi1/0/14  Broadcast  rising=20.00  falling=10.00  action=shutdown  current=87.3%
+```
+
+**سخت — RA جعلی.** کاربران IPv6 ناگهان Default Gateway عجیب (`fe80::dead:beef`) دارند.
+
+1. در کلاینت: `ipconfig` یا `ip -6 route` ⇒ Gateway نامعتبر.
+2. با Wireshark: فیلتر `icmpv6.type == 134` ⇒ MAC فرستنده.
+3. MAC را در جدول CAM بیابید: `show mac address-table address <mac>` ⇒ پورت.
+4. پورت را خاموش و RA Guard روی همه‌ی پورت‌های Host فعال کنید.
+
+### ۵) Lab (اجرا نشده)
+
+دو ماشین و یک سوییچ؛ یک ماشین با ابزار تست RA؛ پیش و پس از RA Guard رفتار را مقایسه کنید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| RA | Router Advertisement | اعلان روتر در IPv6 |
+| SLAAC | Stateless Address Autoconfiguration | ساخت خودکار آدرس |
+| NDP | Neighbor Discovery Protocol | کشف همسایه |
+| MITM | Man-in-the-Middle | مهاجم میانی |
+| RDNSS | Recursive DNS Server option | DNS در RA |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) Storm Control چه ترافیک‌هایی را کنترل می‌کند؟ *(پاسخ: 4-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) RA Guard چه حمله‌ای را می‌گیرد؟ *(پاسخ: 4-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) روی لینک 10 Gbps سطح Broadcast برابر 1٪ است؛ چند Mbps مجاز است؟ *(پاسخ: 4-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) مراحل یافتن منبع RA جعلی را بنویسید. *(پاسخ: 4-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *Storm control limits broadcast, multicast and unicast traffic on a port.*
+- *RA guard drops router advertisements received on host-facing ports.*
+- **Q1.** Which ICMPv6 message type is a router advertisement? *(پاسخ: 4-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 4
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -2182,6 +2334,20 @@ Because all traffic would flow through a low-capacity edge device instead of the
 **4-7-ت6** — Rapid-PVST، Root Primary/Secondary، PortFast+BPDU Guard، Root Guard، UDLD روی Fiber.
 
 **4-7-Q1** — It places the port in err-disabled state to protect the spanning tree.
+
+### پاسخ‌های درس افزوده‌ی 4-8 (فصل 4)
+
+**4-8-ت1** — Broadcast، Multicast و Unicast (ناشناخته). هر نوع جداگانه Threshold می‌گیرد.
+
+**4-8-ت2** — Router Advertisement جعلی (Rogue RA) که مهاجم برای معرفی خود به‌عنوان Gateway یا دادن Prefix/DNS اشتباه می‌فرستد.
+
+**4-8-ت3** — 10 Gbps = 10000 Mbps؛ 1٪ آن 100 Mbps. فرمول: 10000 × 0.01 = 100.
+
+**4-8-ت4** — ۱) Capture با `icmpv6.type == 134` ۲) MAC فرستنده ۳) `show mac address-table address <mac>` برای پورت ۴) خاموش‌کردن پورت و فعال‌سازی RA Guard.
+
+**4-8-Q1** — Type 134.
+
+---
 
 # فصل 5 — Routing I: Static، Floating و OSPF
 

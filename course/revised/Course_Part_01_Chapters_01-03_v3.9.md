@@ -526,6 +526,115 @@ Router#
 
 <a id="ans-1"></a>
 
+<a id="l-1-C"></a>
+
+## درس 1-C — مجازی‌سازی: Hypervisor، ماشین مجازی و Container
+
+**فصل 1 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 1.2: Describe the role and function of hypervisors, virtual machines, and containers) · پیش‌نیاز: ۱-A، ۱-B**
+
+> **وضعیت:** نظری/مستندی؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** Hypervisor چیست، ماشین مجازی (VM) و Container چه فرقی دارند، و Virtual Switch چطور شبکه‌ی مجازی را به شبکه‌ی فیزیکی وصل می‌کند.
+
+**چرا لازم است؟** Lab این دوره روی ESXi و PNetLab ساخته شده است؛ سرور فیزیکی بدون مجازی‌سازی برای هر کار یک دستگاه می‌خواهد. با مجازی‌سازی یک سرور قوی ده‌ها «دستگاه» می‌شود. و چون سرورهای امروزی (وب، پایگاه‌داده، حتی فایروال VM) داخل VM یا Container اجرا می‌شوند، مهندس شبکه باید بداند ترافیک آنها از کدام مسیر می‌گذرد.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) Hypervisor
+
+برنامه‌ای که منابع سخت‌افزار (CPU، RAM، دیسک، شبکه) را بین چند ماشین مجازی تقسیم می‌کند.
+
+| نوع | شرح | مثال |
+|---|---|---|
+| Type 1 (Bare-metal) | مستقیم روی سخت‌افزار نصب می‌شود | VMware ESXi، Hyper-V، KVM |
+| Type 2 (Hosted) | روی یک سیستم‌عامل معمولی اجرا می‌شود | VirtualBox، VMware Workstation |
+
+سازمان‌ها برای تولید از Type 1 استفاده می‌کنند چون سریع‌تر و پایدارتر است.
+
+#### ۲-۲) ماشین مجازی (VM)
+
+یک «کامپیوتر نرم‌افزاری» کامل با سیستم‌عامل مستقل (Guest OS)، دیسک مجازی و کارت شبکه‌ی مجازی. مزیت: ایزولاسیون قوی؛ عیب: سنگین (هر VM یک سیستم‌عامل کامل).
+
+#### ۲-۳) Container
+
+برنامه و وابستگی‌هایش در یک بسته؛ همه‌ی Containerها **هسته‌ی سیستم‌عامل میزبان** را به اشتراک می‌گذارند. بسیار سبک و سریع.
+
+``` text
+VM        : Hardware -> Hypervisor -> [Guest OS + App] x N
+Container : Hardware -> Host OS -> Container engine -> [App + libs] x N
+```
+
+| معیار | VM | Container |
+|---|---|---|
+| ایزولاسیون | قوی (هسته‌ی جدا) | متوسط (هسته‌ی مشترک) |
+| زمان راه‌اندازی | دقیقه | ثانیه |
+| حجم | گیگابایت | مگابایت |
+| مثال | ESXi VM | Docker |
+
+#### ۲-۴) شبکه‌ی مجازی
+
+- **vSwitch (Virtual Switch):** سوییچ نرم‌افزاری داخل Hypervisor؛ VMها را به هم و به شبکه‌ی فیزیکی وصل می‌کند.
+- **Port Group/VLAN:** VLAN روی vSwitch.
+- **Uplink:** کارت فیزیکی که vSwitch را به سوییچ واقعی وصل می‌کند.
+- در Container: شبکه‌ی Bridge، Host و Overlay.
+
+نکته‌ی امنیتی: ترافیک بین دو VM روی یک میزبان ممکن است هرگز به شبکه‌ی فیزیکی نرسد و فایروال فیزیکی آن را نبیند (East-West). راه: فایروال مجازی یا Micro-segmentation.
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده.** `VM1` و `VM2` روی یک ESXi و یک Port Group ⇒ ترافیک داخل vSwitch می‌ماند. اگر بخواهیم فایروال ببیند، باید دو VM در Port Group/VLAN‌های متفاوت و مسیر از فایروال.
+
+**متوسط — بار منابع.** ۱۰ VM هر کدام 4 vCPU روی میزبان 16 هسته.
+
+``` text
+Total vCPU = 10 x 4 = 40
+Physical cores = 16
+Overcommit ratio = 40 / 16 = 2.5
+```
+
+نسبت 2.5:1 برای بارهای سبک ممکن است؛ برای VMهای شبکه‌ای (مثل فایروال VM) باید CPU رزرو شود.
+
+**سخت — «VM در Lab به اینترنت نمی‌رسد».**
+
+1. VM به کدام Port Group وصل است؟
+2. Port Group روی کدام vSwitch و Uplink؟ (Uplink خالی = ایزوله، مثل `vSwitch-FGT` در این دوره.)
+3. VLAN ID درست؟ (VLAN 4095 در ESXi یعنی همه‌ی VLANها.)
+4. Promiscuous/Forged Transmits برای VMهای شبکه‌ای.
+5. NAT/Route در VM گیرنده.
+
+### ۴) Lab (اجرا نشده)
+
+نمودار vSwitch/Port Group/Uplink Lab خودتان را بکشید و نشان دهید ترافیک کدام VM از فایروال می‌گذرد.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| VM | Virtual Machine | ماشین مجازی |
+| vCPU | Virtual CPU | هسته‌ی مجازی |
+| vSwitch | Virtual Switch | سوییچ مجازی |
+| KVM | Kernel-based Virtual Machine | Hypervisor لینوکس |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) تفاوت Hypervisor نوع 1 و 2؟ *(پاسخ: 1-C-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) چرا Container سبک‌تر از VM است؟ *(پاسخ: 1-C-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) ۲۴ vCPU روی ۱۲ هسته؛ نسبت Overcommit؟ *(پاسخ: 1-C-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) چرا فایروال فیزیکی ترافیک دو VM همسایه را نمی‌بیند و راه‌حل؟ *(پاسخ: 1-C-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *A hypervisor allocates physical resources to virtual machines.*
+- *Containers share the host kernel; virtual machines each have their own.*
+- **Q1.** Which type of hypervisor runs directly on hardware? *(پاسخ: 1-C-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 1
 
 > ابتدا بدون نگاه حل کنید. هر پاسخ با شناسه‌ی «درس-نوع+شماره» مشخص است (ت = تمرین، م = سؤال مرور، Q = Quick quiz انگلیسی).
@@ -620,6 +729,20 @@ Because the command may be accepted without the feature actually functioning; it
 ---
 
 <a id="ch2"></a>
+
+### پاسخ‌های درس افزوده‌ی 1-C (فصل 1)
+
+**1-C-ت1** — نوع 1 مستقیم روی سخت‌افزار نصب می‌شود (ESXi، KVM)؛ نوع 2 روی یک سیستم‌عامل معمولی اجرا می‌شود (VirtualBox).
+
+**1-C-ت2** — چون Containerها هسته‌ی سیستم‌عامل میزبان را به اشتراک می‌گذارند و سیستم‌عامل کامل ندارند.
+
+**1-C-ت3** — 24 / 12 = 2 (نسبت 2:1).
+
+**1-C-ت4** — چون ترافیک داخل vSwitch همان میزبان می‌ماند و به شبکه‌ی فیزیکی نمی‌رسد. راه: قرار دادن VMها در VLAN/Port Group جدا و عبور از فایروال، یا فایروال مجازی/Micro-segmentation.
+
+**1-C-Q1** — Type 1 (bare-metal) hypervisor.
+
+---
 
 # فصل 2 — IP، VLSM، IPv6، CLI، SSH و Wireshark
 
@@ -2883,6 +3006,475 @@ Mask یک طرف را عمداً اشتباه کنید (درس ۲-۱) و Capture
 
 <a id="ans-2"></a>
 
+<a id="l-2-7"></a>
+
+## درس 2-7 — IPv6 عملی: آدرس‌دهی، Modified EUI-64، SLAAC و اندازه‌ی Prefix
+
+**فصل 2 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 1.4: Troubleshoot IPv6 address configuration, assignment, and prefix sizing — unicast and modified EUI 64) · پیش‌نیاز: ۲-۱ تا ۲-۶**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** آدرس IPv6 را بخوانیم و بنویسیم (فشرده‌سازی)، آدرس Link-local، Global Unicast و Unique Local را تشخیص دهیم، Modified EUI-64 را با دست محاسبه کنیم، تفاوت SLAAC و DHCPv6 را بدانیم و Prefix را درست انتخاب کنیم.
+
+**چرا لازم است؟** IPv4 مثل شماره‌ی تلفن‌های ۷ رقمی است که تمام شده‌اند. IPv6 فضای آدرس عملاً بی‌پایان دارد، ولی قواعدش (به‌خصوص ساخت آدرس خودکار از MAC) سؤال ثابت آزمون CCNA و علت بسیاری از خطاهای عملی است: «چرا گوشی IPv6 گرفت ولی Gateway ندارد؟»
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) ساختار
+
+آدرس IPv6 ۱۲۸ بیت است و به ۸ گروه ۱۶ بیتی (هر کدام ۴ رقم هگزا) تقسیم می‌شود.
+
+``` text
+2001:0DB8:0001:0001:0000:0000:0000:0001
+```
+
+قواعد فشرده‌سازی:
+
+1. صفرهای ابتدای هر گروه حذف می‌شود: `0001` ⇒ `1`.
+2. یک رشته‌ی متوالی از گروه‌های صفر را (فقط یک‌بار) با `::` جایگزین کنید.
+
+``` text
+Full      : 2001:0DB8:0001:0001:0000:0000:0000:0001
+Step 1    : 2001:DB8:1:1:0:0:0:1
+Step 2    : 2001:DB8:1:1::1
+```
+
+#### ۲-۲) انواع مهم آدرس
+
+| نوع | Prefix | کاربرد |
+|---|---|---|
+| Global Unicast | 2000::/3 | قابل‌مسیریابی در اینترنت |
+| Link-local | FE80::/10 | فقط روی همان لینک |
+| Unique Local | FC00::/7 (عملاً FD00::/8) | داخلی (مثل RFC1918) |
+| Multicast | FF00::/8 | چندپخشی |
+| Loopback | ::1/128 | خود دستگاه |
+| Unspecified | ::/128 | آدرس نامشخص |
+
+IPv6 Broadcast ندارد؛ جای آن Multicast است (مثلاً FF02::1 همه‌ی Nodeها).
+
+#### ۲-۳) Modified EUI-64
+
+EUI-64 = Extended Unique Identifier ۶۴ بیتی. روشی برای ساخت ۶۴ بیت پایینی آدرس (Interface ID) از MAC ۴۸ بیتی:
+
+1. MAC را نصف کنید: بخش OUI (۲۴ بیت) و بخش دستگاه (۲۴ بیت).
+2. بین آنها `FFFE` درج کنید.
+3. بیت هفتم (Universal/Local) از بایت اول را **معکوس** کنید.
+
+``` text
+MAC            : 00:1A:2B:3C:4D:5E
+Split          : 00:1A:2B | 3C:4D:5E
+Insert FFFE    : 00:1A:2B:FF:FE:3C:4D:5E
+First byte 00  : 00000000 -> flip bit 7 (value 0x02) -> 00000010 = 02
+Interface ID   : 021A:2BFF:FE3C:4D5E
+```
+
+**چرا معکوس؟** در MAC بیت U/L برابر 0 یعنی «جهانی/Universal» است و در IPv6 قرارداد برعکس است؛ پس معکوس می‌شود. روش سریع: بایت اول را با `02` XOR کنید.
+
+#### ۲-۴) SLAAC و DHCPv6
+
+| روش | شرح |
+|---|---|
+| SLAAC | Host از RA، Prefix را می‌گیرد و Interface ID را خودش می‌سازد (EUI-64 یا تصادفی) |
+| DHCPv6 Stateless | آدرس با SLAAC؛ DNS و ... از DHCPv6 (پرچم O) |
+| DHCPv6 Stateful | آدرس هم از DHCPv6 (پرچم M) |
+
+پرچم‌ها در RA: **M** = Managed (آدرس از DHCPv6) و **O** = Other (اطلاعات دیگر از DHCPv6).
+
+نکته‌ی حریم خصوصی: EUI-64 MAC را در آدرس نشان می‌دهد؛ سیستم‌عامل‌های امروزی معمولاً Interface ID پایدار-مات (RFC 7217) یا موقت تصادفی (RFC 4941) می‌سازند.
+
+#### ۲-۵) اندازه‌ی Prefix
+
+| Prefix | کاربرد |
+|---|---|
+| /48 | سایت (معمولاً به یک سازمان داده می‌شود) |
+| /56 | سایت کوچک/منزل |
+| /64 | هر LAN (برای SLAAC الزامی) |
+| /127 | لینک Point-to-Point بین روترها (RFC 6164) |
+| /128 | Loopback/میزبان |
+
+SLAAC فقط با Prefix طول 64 کار می‌کند.
+
+### ۳) دستورهای سیسکو (Unverified)
+
+``` text
+ipv6 unicast-routing
+interface GigabitEthernet0/0
+ ipv6 address 2001:DB8:1:1::/64 eui-64
+ no shutdown
+interface GigabitEthernet0/1
+ ipv6 address 2001:DB8:1:2::1/64
+ ipv6 nd other-config-flag
+```
+
+``` text
+show ipv6 interface brief
+show ipv6 interface GigabitEthernet0/0
+show ipv6 route
+ping 2001:DB8:1:2::10
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — فشرده‌سازی.** `2001:0db8:0000:0000:0000:ff00:0042:8329` ⇒ `2001:db8::ff00:42:8329`.
+
+**متوسط — EUI-64 با Flip واقعی.** MAC `AC:DE:48:12:34:56`.
+
+``` text
+Split       : AC:DE:48 | 12:34:56
+Insert      : AC:DE:48:FF:FE:12:34:56
+AC in binary: 10101100  -> flip bit 7 -> 10101110 = AE
+Interface ID: AEDE:48FF:FE12:3456
+Prefix 2001:DB8:1:1::/64 -> 2001:DB8:1:1:AEDE:48FF:FE12:3456
+```
+
+**سخت — عیب‌یابی.** Host آدرس Global گرفته ولی به اینترنت نمی‌رسد.
+
+1. `ipconfig` / `ip -6 addr`: Prefix درست؟
+2. Gateway: `ip -6 route` ⇒ Default via `fe80::...` وجود دارد؟
+3. روتر: `ipv6 unicast-routing` فعال است؟ (بدون آن روتر RA نمی‌فرستد.)
+4. `show ipv6 interface` روی روتر: Prefix/Flags.
+5. ping به Gateway Link-local با Interface: `ping fe80::1%12` (Windows) یا `ping6 -I eth0 fe80::1`.
+
+نتیجه رایج: فراموشی `ipv6 unicast-routing`.
+
+### ۵) Lab (اجرا نشده)
+
+دو روتر و یک Host؛ آدرس با eui-64 بسازید و با محاسبه‌ی دستی مقایسه کنید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| EUI-64 | Extended Unique Identifier 64-bit | ساخت Interface ID از MAC |
+| SLAAC | Stateless Address Autoconfiguration | آدرس‌دهی خودکار بدون DHCP |
+| RA | Router Advertisement | اعلان روتر |
+| NDP | Neighbor Discovery Protocol | جایگزین ARP در IPv6 |
+| ULA | Unique Local Address | آدرس داخلی |
+| DHCPv6 | Dynamic Host Configuration Protocol for IPv6 | DHCP برای IPv6 |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) `FE80::1` چه نوع آدرسی است؟ *(پاسخ: 2-7-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) آدرس `2001:0DB8:0000:0000:0000:0000:0000:0001` را فشرده کنید. *(پاسخ: 2-7-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) برای MAC `00:50:56:A1:B2:C3` و Prefix `2001:DB8:A::/64` آدرس EUI-64 بسازید. *(پاسخ: 2-7-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) Host آدرس Global دارد ولی Gateway ندارد؛ سه علت محتمل و آزمون هر یک. *(پاسخ: 2-7-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *Modified EUI-64 inserts FFFE in the middle of the MAC and flips the universal/local bit.*
+- *A /64 prefix is required for SLAAC.*
+- **Q1.** Which flag in the RA tells hosts to use DHCPv6 for addresses? *(پاسخ: 2-7-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
+<a id="l-2-8"></a>
+
+## درس 2-8 — مبانی شبکه‌ی بی‌سیم (Wireless): باند، کانال، RF، امنیت و معماری
+
+**فصل 2 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 1.5: Describe wireless principles — band and channel selection, RF characteristics, security protocols, cause of interference) · پیش‌نیاز: ۲-۰**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** شبکه‌ی بی‌سیم چطور کار می‌کند: باندها و کانال‌ها، ویژگی‌های سیگنال (dBm، SNR)، علت تداخل، پروتکل‌های امنیتی (WEP تا WPA3) و معماری‌های AP (مستقل، کنترلری، ابری).
+
+**چرا لازم است؟** کابل شبکه «اختصاصی» است؛ هوا «مشترک» است. وقتی ۳۰ نفر در یک اتاق با یک کانال صحبت کنند، همه کند می‌شوند. اگر کانال و قدرت را درست انتخاب نکنید، شکایت «Wi-Fi کند است» هیچ‌وقت تمام نمی‌شود. و چون امنیت بی‌سیم از هوا عبور می‌کند، رمزنگاری ضعیف یعنی هر کس بیرون ساختمان بتواند ترافیک را بخواند.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) استانداردهای 802.11
+
+| استاندارد | نام تجاری | باند | ویژگی کلیدی |
+|---|---|---|---|
+| 802.11b | — | 2.4 GHz | 11 Mbps |
+| 802.11a | — | 5 GHz | 54 Mbps |
+| 802.11g | — | 2.4 GHz | 54 Mbps |
+| 802.11n | Wi-Fi 4 | 2.4 و 5 GHz | MIMO، کانال 40 MHz |
+| 802.11ac | Wi-Fi 5 | 5 GHz | MU-MIMO (Downlink)، تا 160 MHz |
+| 802.11ax | Wi-Fi 6 / 6E | 2.4، 5 و 6 GHz (6E) | OFDMA، کارایی در تراکم بالا |
+| 802.11be | Wi-Fi 7 | 2.4، 5، 6 GHz | کانال 320 MHz، Multi-Link Operation |
+
+MIMO = Multiple Input Multiple Output (چند آنتن برای چند جریان داده).
+
+#### ۲-۲) باند و کانال
+
+- **2.4 GHz:** برد بیشتر، ازدحام بیشتر. در آمریکا کانال‌های 1 تا 11، در اروپا 1 تا 13. فقط **سه کانال بدون هم‌پوشانی** با عرض 20 MHz: 1، 6، 11.
+- **5 GHz:** کانال‌های زیاد بدون هم‌پوشانی، برد کمتر. بعضی کانال‌ها DFS (Dynamic Frequency Selection) دارند: اگر رادار تشخیص داده شود، AP باید کانال را ترک کند.
+- **6 GHz (Wi-Fi 6E/7):** باند تمیز با کانال‌های بیشتر؛ فقط دستگاه‌های جدید.
+
+قاعده‌ی طراحی: در 2.4 GHz فقط 1/6/11؛ AP‌های مجاور کانال متفاوت؛ کانال‌های 20 MHz در تراکم بالا.
+
+#### ۲-۳) ویژگی‌های RF
+
+- **فرکانس و طول موج:** فرکانس بالاتر ⇒ برد کمتر و نفوذ ضعیف‌تر در دیوار.
+- **توان:** با dBm سنجیده می‌شود (نسبت به 1 mW).
+
+``` text
+dBm = 10 x log10(P in mW)
+1 mW   =  0 dBm
+10 mW  = 10 dBm
+100 mW = 20 dBm
+```
+
+- قواعد سریع: **+3 dB یعنی دو برابر توان**، **+10 dB یعنی ده برابر**.
+- **RSSI** = Received Signal Strength Indicator (قدرت سیگنال دریافتی، مثل -60 dBm).
+- **Noise Floor:** نویز پس‌زمینه، مثلاً -90 dBm.
+- **SNR** = Signal-to-Noise Ratio.
+
+``` text
+SNR (dB) = Signal (dBm) - Noise (dBm)
+Signal = -65 dBm, Noise = -90 dBm -> SNR = 25 dB
+```
+
+راهنمای رایج طراحی (برای کیفیت صوت/تصویر): RSSI بهتر از حدود -67 dBm و SNR حدود 25 dB یا بیشتر. عدد دقیق را از راهنمای سازنده بگیرید.
+
+- **EIRP** = توان تشعشعی مؤثر = توان فرستنده + بهره‌ی آنتن - تلفات کابل.
+- **تضعیف (Attenuation):** دیوار بتنی، شیشه‌ی رنگی، آب (بدن انسان) و فلز سیگنال را ضعیف می‌کنند.
+
+#### ۲-۴) علل تداخل
+
+1. **Co-channel interference:** چند AP در یک کانال ⇒ باید نوبت بگیرند (CSMA/CA) و ظرفیت تقسیم می‌شود.
+2. **Adjacent channel interference:** کانال‌های هم‌پوشان در 2.4 GHz (مثلاً 3 و 4).
+3. **تداخل غیر Wi-Fi:** مایکروویو، Bluetooth، تلفن بی‌سیم، رادار (در DFS).
+4. **Hidden node و دیوارها.**
+
+#### ۲-۵) امنیت
+
+| پروتکل | رمزنگاری | وضعیت |
+|---|---|---|
+| Open | ندارد | ناامن |
+| WEP | RC4 | شکسته؛ ممنوع |
+| WPA | TKIP | قدیمی؛ توصیه نمی‌شود |
+| WPA2 | AES-CCMP | رایج؛ تا حد زیادی امن |
+| WPA3 | SAE (Personal)، GCMP (Enterprise) | جدید؛ PMF اجباری |
+
+- **Personal (PSK):** یک رمز مشترک؛ در WPA3 با SAE در برابر حدس آفلاین مقاوم‌تر.
+- **Enterprise (802.1X):** هر کاربر هویت جدا با EAP و RADIUS؛ مناسب سازمان.
+- **OWE (Enhanced Open):** رمزنگاری بدون رمز برای شبکه‌های باز (مهمان).
+- PMF = Protected Management Frames (محافظت از فریم‌های مدیریتی در برابر Deauth جعلی).
+
+#### ۲-۶) معماری
+
+| مدل | شرح |
+|---|---|
+| Autonomous AP | هر AP مستقل پیکربندی می‌شود |
+| Lightweight AP + WLC | WLC (Wireless LAN Controller) مدیریت مرکزی؛ AP با CAPWAP تونل می‌سازد (کنترل UDP 5246، داده UDP 5247) |
+| Cloud-managed | مدیریت از ابر (مثل Meraki) |
+
+مفاهیم: SSID (نام شبکه)، BSSID (MAC رادیوی AP)، BSS (یک AP و کلاینت‌هایش)، ESS (چند AP با یک SSID برای Roaming).
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — تبدیل dBm.** فرستنده 100 mW. که برابر است با:
+
+``` text
+10 x log10(100) = 20 dBm
+```
+
+**متوسط — طرح کانال.** ۶ AP در یک راهرو خطی در 2.4 GHz: کانال‌ها به‌صورت 1، 6، 11، 1، 6، 11. AP‌های هم‌کانال دو AP فاصله دارند تا تداخل کم شود.
+
+**متوسط — SNR.** کلاینت RSSI = -72 dBm و Noise = -92 dBm.
+
+``` text
+SNR = -72 - (-92) = 20 dB
+```
+
+برای ویدیو کم است؛ ⇒ AP نزدیک‌تر یا توان بیشتر.
+
+**سخت — «Wi-Fi گاهی قطع می‌شود».** علائم: ظهر قطع‌قطع.
+
+1. نقشه‌ی کانال: چند AP هم‌کانال؟
+2. غیر Wi-Fi: مایکروویو آشپزخانه در 2.4 GHz (ساعت ناهار)؟
+3. DFS: در 5 GHz رادار تشخیص داده می‌شود و AP کانال عوض می‌کند؟
+4. روش: Spectrum Analyzer یا Log کنترلر.
+5. رفع: انتقال دستگاه‌ها به 5 GHz، کانال ثابت غیر DFS، Band Steering.
+
+### ۴) Lab (اجرا نشده)
+
+با اپ تحلیل Wi-Fi کانال‌ها و RSSI یک محیط را ثبت و نقشه‌ی کانال بکشید.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| RF | Radio Frequency | فرکانس رادیویی |
+| RSSI | Received Signal Strength Indicator | قدرت سیگنال |
+| SNR | Signal-to-Noise Ratio | نسبت سیگنال به نویز |
+| EIRP | Effective Isotropic Radiated Power | توان تشعشعی مؤثر |
+| DFS | Dynamic Frequency Selection | ترک کانال هنگام رادار |
+| WLC | Wireless LAN Controller | کنترلر بی‌سیم |
+| CAPWAP | Control And Provisioning of Wireless Access Points | تونل AP و WLC |
+| SSID | Service Set Identifier | نام شبکه |
+| PMF | Protected Management Frames | محافظت فریم مدیریتی |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) کدام کانال‌های 2.4 GHz بدون هم‌پوشانی‌اند؟ *(پاسخ: 2-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) WPA2 و WPA3 را مقایسه کنید. *(پاسخ: 2-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) Signal = -68 dBm و Noise = -95 dBm؛ SNR چیست؟ *(پاسخ: 2-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) دو علت تداخل در 2.4 GHz و روش تشخیص هر کدام. *(پاسخ: 2-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *Use channels 1, 6 and 11 in the 2.4 GHz band to avoid overlap.*
+- *WPA3 replaces the pre-shared key exchange with SAE.*
+- **Q1.** What does SNR stand for? *(پاسخ: 2-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
+<a id="l-2-9"></a>
+
+## درس 2-9 — عیب‌یابی اتصال کلاینت سیمی و بی‌سیم در Windows، macOS و Linux
+
+**فصل 2 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 1.6: Troubleshoot wired and wireless client connectivity — IP configuration, network reachability, wireless security parameters on Windows, MacOS, Linux) · پیش‌نیاز: ۲-۴، ۲-۷، ۲-۸**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** روش لایه‌به‌لایه برای پاسخ به «اینترنت من کار نمی‌کند» روی سه سیستم‌عامل، با تفسیر هر خروجی.
+
+**چرا لازم است؟** اولین تماس پشتیبانی همیشه از کلاینت است. ادمینی که فقط روی سوییچ و روتر کار کرده، وقتی کاربر پشت تلفن می‌گوید «وصل می‌شود ولی کار نمی‌کند» بدون روش، گیج می‌شود. روش درست در دو دقیقه علت را به یکی از چهار دسته می‌رساند: لینک، آدرس IP، مسیر (Gateway)، یا DNS.
+
+### ۲) روش چهارمرحله‌ای
+
+``` text
+Step 1  Link        : is the interface up / associated to the right SSID?
+Step 2  IP config   : address, mask, gateway, DNS correct?
+Step 3  Reachability: ping gateway -> ping external IP -> ping name
+Step 4  Application : browser/app specific issue
+```
+
+قاعده: ping به **IP** و ping به **نام** را جدا بزنید. IP موفق و نام ناموفق = DNS.
+
+### ۳) دستورها
+
+#### Windows
+
+``` text
+ipconfig /all
+ipconfig /release
+ipconfig /renew
+ipconfig /flushdns
+netsh wlan show interfaces
+netsh wlan show profiles
+netsh wlan show wlanreport
+ping 192.168.1.1
+ping 8.8.8.8
+ping www.example.com
+tracert 8.8.8.8
+nslookup www.example.com
+```
+
+#### macOS
+
+``` text
+networksetup -getinfo Wi-Fi
+ifconfig en0
+sudo wdutil info
+ping -c 4 192.168.1.1
+traceroute 8.8.8.8
+scutil --dns
+```
+
+(ابزار قدیمی `airport -I` در نسخه‌های جدید macOS حذف شده؛ `wdutil` جایگزین است.)
+
+#### Linux
+
+``` text
+ip addr
+ip route
+iw dev wlan0 link
+nmcli dev wifi
+nmcli -p device show wlan0
+resolvectl status
+ping -c 4 192.168.1.1
+traceroute 8.8.8.8
+dig www.example.com
+```
+
+### ۴) تفسیر نتایج
+
+| مشاهده | معنی | اقدام |
+|---|---|---|
+| آدرس 169.254.x.x | APIPA؛ DHCP پاسخ نداده | DHCP/VLAN/Relay |
+| آدرس درست ولی بدون Gateway | RA/DHCP ناقص | بررسی DHCP |
+| Gateway اشتباه | Static غلط یا Rogue DHCP | بررسی |
+| ping IP موفق، ping نام ناموفق | DNS | DNS سرور |
+| ping Gateway ناموفق | مشکل L2/VLAN/امنیت | سوییچ/AP |
+| «Connected, no internet» | Gateway/Internet/DNS | ping مرحله‌ای |
+| پیوسته قطع | RSSI کم/تداخل | AP/کانال |
+| رمز درست ولی وصل نمی‌شود | نوع امنیت/Band ناسازگار | WPA3/2، 5 GHz |
+
+### ۵) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — APIPA.** دستور `ipconfig` آدرس `169.254.33.17` نشان می‌دهد. نتیجه: DHCP نیامده. مراحل: ۱) کابل/SSID ۲) VLAN پورت ۳) DHCP Server (درس ۷) ۴) `ipconfig /renew`.
+
+**متوسط — فقط نام کار نمی‌کند.**
+
+``` text
+ping 8.8.8.8          -> reply
+ping www.example.com  -> could not find host
+nslookup www.example.com -> timeout
+```
+
+نتیجه DNS است. بررسی DNS که DHCP داده؛ تست دستی: `nslookup www.example.com 8.8.8.8`. اگر با 8.8.8.8 کار کرد، DNS داخلی مشکل دارد.
+
+**سخت — بی‌سیم «وصل است ولی کند و قطع‌قطع».**
+
+1. `netsh wlan show interfaces`: Signal 38٪، Radio type 802.11n، Channel 6، Band 2.4 GHz.
+2. سیگنال کم و 2.4 GHz پرتراکم.
+3. `netsh wlan show wlanreport`: علت قطع‌ها (Disassociation).
+4. اقدام: انتقال به 5 GHz (SSID جدا یا Band Steering)، AP نزدیک‌تر، بررسی کانال‌های همسایه.
+5. تأیید: Signal بالا 70٪ و ping پایدار.
+
+### ۵-۱) بررسی پارامترهای امنیتی بی‌سیم
+
+- نوع امنیت مطابقت دارد؟ (WPA2/WPA3)؛ کلاینت قدیمی WPA3 پشتیبانی نمی‌کند (Transition Mode).
+- رمز با فاصله/حروف بزرگ و کوچک.
+- 802.1X: گواهی/اعتبار کاربر، ساعت سیستم (گواهی)، Profile.
+
+### ۶) Lab (اجرا نشده)
+
+سه ماشین (Windows، macOS، Linux) و یک AP؛ سه خطای تزریقی (DHCP خاموش، DNS اشتباه، رمز اشتباه) را تشخیص دهید.
+
+### ۷) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| APIPA | Automatic Private IP Addressing | آدرس 169.254 هنگام نبود DHCP |
+| DNS | Domain Name System | سیستم نام دامنه |
+| DHCP | Dynamic Host Configuration Protocol | تخصیص خودکار IP |
+| BSSID | Basic Service Set Identifier | MAC رادیوی AP |
+| 802.1X | — | احراز هویت مبتنی بر پورت |
+
+### ۸) تمرین‌ها
+
+**ت1.** (ساده) آدرس 169.254.x.x چه معنایی دارد؟ *(پاسخ: 2-9-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) چرا ping IP و ping نام را جدا می‌زنیم؟ *(پاسخ: 2-9-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) ping Gateway موفق است ولی ping 8.8.8.8 نه؛ علت محتمل؟ *(پاسخ: 2-9-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) کلاینت بی‌سیم وصل می‌شود ولی پس از چند دقیقه قطع می‌شود؛ پنج گام تشخیص. *(پاسخ: 2-9-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۹) English Corner
+
+- *If pinging an IP address works but pinging a name fails, the problem is DNS.*
+- *An address starting with 169.254 means the client could not reach a DHCP server.*
+- **Q1.** Which command shows the IP configuration on Windows? *(پاسخ: 2-9-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 2
 
 > ابتدا بدون نگاه حل کنید. هر پاسخ با شناسه‌ی «درس-نوع+شماره» مشخص است (ت = تمرین، م = سؤال مرور، Q = Quick quiz انگلیسی).
@@ -3412,6 +4004,44 @@ The broadcast address ff:ff:ff:ff:ff:ff.
 ---
 
 <a id="ch3"></a>
+
+### پاسخ‌های درس افزوده‌ی 2-7 (فصل 2)
+
+**2-7-ت1** — Link-local؛ فقط روی همان لینک معتبر است و از روتر عبور نمی‌کند.
+
+**2-7-ت2** — `2001:DB8::1`.
+
+**2-7-ت3** — MAC: 00:50:56:A1:B2:C3 ⇒ بعد از درج FFFE: 00:50:56:FF:FE:A1:B2:C3. بایت اول 00 با 02 XOR می‌شود: 02. Interface ID: 0250:56FF:FEA1:B2C3. آدرس: `2001:DB8:A::250:56FF:FEA1:B2C3` (صفر ابتدای گروه حذف شد).
+
+**2-7-ت4** — ۱) `ipv6 unicast-routing` روی روتر خاموش است ⇒ `show running-config | include ipv6 unicast` ۲) RA نمی‌رسد/فیلتر شده ⇒ Wireshark `icmpv6.type == 134` ۳) Prefix طول 64 نیست ⇒ SLAAC کار نمی‌کند.
+
+**2-7-Q1** — The M (Managed address configuration) flag.
+
+### پاسخ‌های درس افزوده‌ی 2-8 (فصل 2)
+
+**2-8-ت1** — 1، 6 و 11 (با عرض 20 MHz).
+
+**2-8-ت2** — WPA2 با AES-CCMP رایج و امن (ولی PSK در برابر حدس آفلاین آسیب‌پذیر)؛ WPA3 با SAE، PMF اجباری و در Enterprise رمزنگاری قوی‌تر (GCMP-256).
+
+**2-8-ت3** — SNR = Signal − Noise = -68 − (-95) = 27 dB.
+
+**2-8-ت4** — ۱) تداخل هم‌کانال: چند AP در یک کانال؛ تشخیص با اسکن کانال‌ها ۲) تداخل غیر Wi-Fi مانند مایکروویو؛ تشخیص با Spectrum Analyzer و ارتباط با ساعت وقوع.
+
+**2-8-Q1** — Signal-to-Noise Ratio.
+
+### پاسخ‌های درس افزوده‌ی 2-9 (فصل 2)
+
+**2-9-ت1** — APIPA؛ کلاینت DHCP Server را پیدا نکرده و خودش آدرس Link-local IPv4 ساخته است.
+
+**2-9-ت2** — برای جداکردن مشکل شبکه (IP) از مشکل نام‌گذاری (DNS). IP موفق و نام ناموفق یعنی DNS.
+
+**2-9-ت3** — مسیر بعد از Gateway: روتر/NAT/ISP یا Policy فایروال؛ مشکل کلاینت نیست چون Gateway پاسخ می‌دهد.
+
+**2-9-ت4** — ۱) `netsh wlan show interfaces` برای Signal/Band ۲) `wlanreport` برای دلیل Disassociation ۳) بررسی تداخل/کانال ۴) Log کنترلر/AP برای Roaming/Deauth ۵) آزمون روی 5 GHz و AP نزدیک‌تر.
+
+**2-9-Q1** — `ipconfig /all`.
+
+---
 
 # فصل 3 — Switching I: MAC، VLAN، Trunk، Router-on-a-Stick و SVI
 
@@ -5018,6 +5648,168 @@ Lesson   : always "add"; backup + review show before and after
 
 <a id="ans-3"></a>
 
+<a id="l-3-7"></a>
+
+## درس 3-7 — PoE و تنظیم پورت سوییچ برای دستگاه‌های لبه (تلفن IP، Access Point، دوربین)
+
+**فصل 3 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 2.2: Configure Layer 2 switch port attributes for edge-host connectivity) · پیش‌نیاز: ۳-۱ تا ۳-۵**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified` و Lab اجرا نشده. خروجی‌های نمونه برای آموزش‌اند، نه اندازه‌گیری واقعی.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** PoE (Power over Ethernet، یعنی «برق از روی کابل شبکه») چیست، استانداردهایش چه فرقی دارند، سوییچ چطور بودجه‌ی توان را مدیریت می‌کند و چطور پورت را برای هر نوع دستگاه لبه (کامپیوتر، چاپگر، تلفن IP، Access Point، دوربین) تنظیم می‌کنیم.
+
+**چرا لازم است؟** تصور کنید ۴۰ تلفن IP و ۱۰ Access Point در یک ساختمان نصب می‌کنید. اگر هر کدام آداپتور برق جدا بخواهند، ۵۰ پریز، ۵۰ کابل برق و ۵۰ نقطه‌ی خرابی اضافه می‌شود. PoE یک کابل برای هر دو کار است. ولی برق «خرج» دارد: سوییچ بودجه‌ی محدودی دارد و اگر بیش از آن مصرف شود، پورت‌ها خاموش می‌شوند. مهندسی که بودجه را حساب نکرده باشد، روز نصب Access Point دهم می‌فهمد که پورت‌ها بالا نمی‌آیند.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) دو نقش: PSE و PD
+
+- **PSE** = Power Sourcing Equipment، یعنی «تجهیز منبع برق»؛ همان سوییچ (یا Injector).
+- **PD** = Powered Device، یعنی «دستگاه برق‌گیر»؛ تلفن، AP، دوربین.
+
+سوییچ برق را بدون پرسیدن ارسال نمی‌کند؛ چون ممکن است کامپیوتر معمولی وصل شود و بسوزد. مراحل:
+
+1. **Detection:** سوییچ ولتاژ کم می‌فرستد و مقاومت مشخصه‌ی PD (حدود 25 کیلواهم) را می‌سنجد.
+2. **Classification:** PD با «کلاس» خود می‌گوید چه توانی لازم دارد.
+3. **Power-up:** سوییچ برق را وصل می‌کند.
+4. **Monitoring:** اگر دستگاه جدا شود یا اضافه‌بار شود، برق قطع می‌شود.
+
+#### ۲-۲) استانداردهای IEEE
+
+| استاندارد | نام رایج | حداکثر توان در PSE | حداکثر توان قابل‌استفاده در PD |
+|---|---|---|---|
+| 802.3af | PoE (Type 1) | 15.4 W | 12.95 W |
+| 802.3at | PoE+ (Type 2) | 30 W | 25.5 W |
+| 802.3bt Type 3 | PoE++ / 4PPoE | 60 W | 51 W |
+| 802.3bt Type 4 | PoE++ | 100 W | 71.3 W |
+
+نکته‌ی مهم: اختلاف ستون دوم و سوم «تلفات کابل» است. برای طراحی، توان **PD** را معیار بگیرید و بودجه را بر اساس توان **PSE** حساب کنید.
+
+سیسکو دو برند اختصاصی هم دارد: UPOE (تا 60 W) و UPOE+ (تا 90 W)؛ مقادیر دقیق را از دیتاشیت مدل بخوانید.
+
+#### ۲-۳) کلاس‌ها
+
+کلاس‌های PD از 0 تا 8 هستند و هر کلاس سقف توان مشخصی دارد (مثلاً کلاس 3: 15.4 W در PSE). اگر سوییچ کلاس را نداند، به‌صورت پیش‌فرض بر اساس کلاس عمل می‌کند و ممکن است بیش از نیاز واقعی بودجه رزرو کند.
+
+#### ۲-۴) بودجه‌ی توان (Power Budget)
+
+``` text
+Total PoE budget      = switch PoE power supply capacity (e.g. 370 W)
+Allocated per port    = by class (default) or by actual consumption (if enabled)
+Remaining budget      = Total - sum of allocated
+```
+
+اگر مجموع نیاز از بودجه بیشتر شود، سوییچ پورت‌های جدید را (طبق اولویت و ترتیب) برق نمی‌دهد.
+
+### ۳) دستورهای سیسکو (Unverified)
+
+``` text
+interface GigabitEthernet1/0/5
+ switchport mode access
+ switchport access vlan 20
+ power inline auto
+ power inline max 15400
+ spanning-tree portfast
+```
+
+- `power inline auto`: Detection و تأمین برق خودکار (پیش‌فرض).
+- `power inline never`: برق هرگز ارسال نشود (مثلاً پورت چاپگر).
+- `power inline static max 15400`: رزرو ثابت (میلی‌وات) برای PD‌هایی که کلاس درست اعلام نمی‌کنند.
+- `power inline max <mW>`: سقف توان این پورت.
+
+``` text
+show power inline
+show power inline GigabitEthernet1/0/5 detail
+show power inline module 1
+```
+
+خروجی نمونه (آموزشی):
+
+``` text
+Available:370.0(w)  Used:96.5(w)  Remaining:273.5(w)
+Interface Admin  Oper       Power   Device              Class Max
+                             (Watts)
+Gi1/0/5   auto   on         15.4    Cisco IP Phone 8845  4     30.0
+Gi1/0/6   auto   on         25.5    AIR-AP2802I          4     30.0
+Gi1/0/7   auto   off        0.0     n/a                  n/a   30.0
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — تلفن + کامپیوتر پشت تلفن.** تلفن IP به پورت سوییچ وصل است و کامپیوتر به تلفن. پورت باید Access برای Data VLAN و Voice VLAN باشد:
+
+``` text
+interface GigabitEthernet1/0/10
+ switchport mode access
+ switchport access vlan 20
+ switchport voice vlan 120
+ power inline auto
+ spanning-tree portfast
+```
+
+سوییچ با CDP/LLDP-MED به تلفن می‌گوید Voice VLAN کدام است؛ ترافیک تلفن با Tag 120 و کامپیوتر بدون Tag.
+
+**متوسط — محاسبه‌ی بودجه.** سوییچ 24 پورت با بودجه 370 W. ۱۲ تلفن (هرکدام 7 W واقعی ولی کلاس 2 با رزرو 7 W) و ۸ AP (هرکدام 25.5 W).
+
+``` text
+Phones : 12 x 7.0   =  84.0 W
+APs    :  8 x 25.5  = 204.0 W
+Total  = 84.0 + 204.0 = 288.0 W
+Remaining = 370 - 288 = 82 W
+```
+
+باقی‌مانده 82 W؛ برای ۲ AP دیگر (51 W) کافی است ولی برای ۴ AP (102 W) نه.
+
+مراحل: ۱) هر گروه دستگاه را جمع بزنید ۲) از بودجه کم کنید ۳) حاشیه‌ی 20٪ بگذارید (370 × 0.2 = 74 W) ⇒ استفاده‌ی امن حداکثر 296 W.
+
+**سخت — تلفن Class 4 ولی «بالا نمی‌آید».** علامت: Gi1/0/12 در حالت `off` و Log:
+
+``` text
+%ILPOWER-3-CONTROLLER_PORT_ERR: Controller port error, Interface Gi1/0/12: Power Controller reports power Imax error detected
+```
+
+روش عیب‌یابی:
+
+1. `show power inline Gi1/0/12 detail` ⇒ کلاس و توان درخواستی.
+2. اگر دستگاه بیش از `power inline max` می‌خواهد ⇒ سقف را افزایش دهید.
+3. با کابل و تلفن دیگر آزمایش کنید (کابل خراب مقاومت زیاد می‌دهد).
+4. اگر بودجه تمام شده ⇒ `show power inline` را ببینید.
+
+### ۵) Lab (اجرا نشده)
+
+۱) یک سوییچ با PoE و یک تلفن/AP. ۲) `show power inline` را ثبت کنید. ۳) `power inline never` و تأیید قطع برق. ۴) سقف توان را کم کنید و علامت را مشاهده کنید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| PoE | Power over Ethernet | برق از روی کابل شبکه |
+| PSE | Power Sourcing Equipment | منبع برق (سوییچ) |
+| PD | Powered Device | دستگاه برق‌گیر |
+| IEEE | Institute of Electrical and Electronics Engineers | نهاد استاندارد |
+| LLDP-MED | Link Layer Discovery Protocol – Media Endpoint Discovery | تبادل VLAN و توان با تلفن |
+| UPOE | Universal PoE | PoE سیسکو تا 60 W |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) PSE و PD را تعریف کنید. *(پاسخ: 3-7-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) تفاوت 802.3af و 802.3at از نظر توان چیست؟ *(پاسخ: 3-7-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) سوییچ با بودجه 740 W دارید؛ ۲۰ AP با 25.5 W و ۳۰ تلفن با 7 W. بودجه کافی است؟ *(پاسخ: 3-7-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) AP روی پورت بالا نمی‌آید؛ چهار گام عیب‌یابی را بنویسید. *(پاسخ: 3-7-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *The switch acts as the power sourcing equipment and the phone is the powered device.* سوییچ منبع برق و تلفن دستگاه برق‌گیر است.
+- *Check the PoE budget before adding more access points.*
+- **Q1.** What does `power inline never` do? *(پاسخ: 3-7-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 3
 
 > ابتدا بدون نگاه حل کنید. هر پاسخ با شناسه‌ی «درس-نوع+شماره» مشخص است (ت = تمرین، م = سؤال مرور، Q = Quick quiz انگلیسی).
@@ -5433,6 +6225,20 @@ Symptom, Scope, Hypothesis, Test, Fix and Verify.
 **3-0-ت6** — Aging کمتر (مثلاً 60–120 s) تا MAC جابه‌جاشده زودتر پاک شود؛ هزینه: Flood بیشتر؛ بر اساس اندازه‌گیری.
 
 **3-0-Q1** — It floods the frame out of all ports in the same VLAN except the ingress port.
+
+### پاسخ‌های درس افزوده‌ی 3-7 (فصل 3)
+
+**3-7-ت1** — PSE همان تجهیز تأمین‌کننده‌ی برق (سوییچ یا Injector) و PD دستگاه مصرف‌کننده‌ی برق (تلفن، AP، دوربین) است.
+
+**3-7-ت2** — 802.3af حداکثر 15.4 W در PSE (12.95 W در PD) می‌دهد؛ 802.3at (PoE+) تا 30 W در PSE (25.5 W در PD).
+
+**3-7-ت3** — نیاز: 20 × 25.5 = 510 W و 30 × 7 = 210 W؛ جمع 720 W. بودجه 740 W است؛ باقی‌مانده فقط 20 W (حدود 2.7٪)، پس از نظر عددی کافی است ولی بدون حاشیه‌ی ایمن؛ باید حاشیه 20٪ (148 W) در نظر گرفت، یعنی برای این بار به سوییچ/منبع بزرگ‌تر نیاز است.
+
+**3-7-ت4** — ۱) `show power inline <port> detail` برای کلاس و توان ۲) مقایسه با `power inline max` ۳) تعویض کابل/دستگاه ۴) بررسی بودجه‌ی باقی‌مانده.
+
+**3-7-Q1** — It disables PoE on the port, so the switch never supplies power to the connected device.
+
+---
 
 # پایان بخش ۱ (فصل‌های ۱ تا ۳)
 
