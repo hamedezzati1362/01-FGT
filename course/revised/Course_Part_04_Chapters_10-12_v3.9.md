@@ -2335,6 +2335,65 @@ any     -> any      : implicit deny + log
 - Microsoft: STRIDE Threat Modeling.
 - MITRE ATT&CK — Lateral Movement (مفهومی).
 
+### تکمیل عمیق: مدل تهدید و Defense in Depth قبل از نوشتن اولین Policy
+
+#### چرا باید یاد بگیریم؟
+
+Policy بدون مدل تهدید مثل قفل‌گذاری بی‌دانستن اینکه دزد از کجا می‌آید است. اول باید بپرسید: «چه چیزی ارزش دارد؟ چه کسی می‌خواهد آن را؟ از کدام مسیر؟».
+
+#### مدل ساده
+
+``` text
+Asset      : ERP database, customer data
+Threat     : external attacker, malware, insider, misconfiguration
+Path       : internet -> web -> app -> db ; user PC -> server
+Control    : segmentation, policy, IPS, MFA, logging
+Residual   : what remains after controls
+```
+
+#### Defense in Depth
+
+لایه‌های مستقل: محیط (فایروال)، شبکه (Segmentation)، میزبان (EDR/Patch)، برنامه (WAF)، داده (رمزنگاری)، هویت (MFA)، پایش (Log). شکست یک لایه نباید همه را بشکند.
+
+#### مثال ساده — مرز اعتماد
+
+Trust Boundary جایی است که سطح اعتماد تغییر می‌کند: اینترنت→DMZ، DMZ→داخل، Users→Servers.
+
+#### مثال متوسط — امتیاز ریسک
+
+``` text
+Risk = Likelihood (1-5) x Impact (1-5)
+Web exposed to internet: 4 x 5 = 20 (high)
+Internal print server  : 2 x 2 = 4  (low)
+```
+
+#### مثال سخت — کنترل جایگزین
+
+سرور قدیمی بدون Patch که نمی‌توان ارتقا داد: کنترل جبرانی: Segmentation شدید، فقط پورت لازم، IPS، پایش.
+
+#### Lab
+
+یک جدول دارایی/تهدید/کنترل برای شبکه‌ی خودتان بنویسید.
+
+#### عیب‌یابی طراحی
+
+| علامت | علت | رفع |
+|---|---|---|
+| کنترل بی‌هدف | بدون مدل | مدل تهدید |
+| یک لایه | بدون عمق | لایه‌ها |
+| ریسک نامعلوم | بدون امتیاز | ارزیابی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Trust boundary؟** تغییر سطح اعتماد.
+**۲. Defense in depth؟** لایه‌های مستقل.
+**۳. کنترل جبرانی؟** جایگزین وقتی Patch ممکن نیست.
+
+#### English Corner
+
+- *Threat modeling asks what to protect, from whom, and via which path.*
+- Q: What is a compensating control?
+
 ## درس 11-1 — فایروال چیست؟ Stateless در برابر Stateful، و چرا هر دو مهم‌اند
 
 **فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۰، ۲-۱ · ≈ 9 ساعت**
@@ -2526,6 +2585,66 @@ Sessions = users x sessions per user = 50 x 50 = 2500
 1. *تفاوت Packet filter و Stateful؟* حافظه‌ی وضعیت اتصال.
 2. *UDP و ICMP چطور؟* شبه‌Session با Timeout.
 3. *NGFW چه اضافه می‌کند؟* برنامه، کاربر، محتوا، IPS (بعضی Needs-License).
+
+### تکمیل عمیق: Stateless در برابر Stateful — با مثال
+
+#### چرا؟
+
+فهمیدن این تفاوت بسیاری از رفتارهای «عجیب» را توضیح می‌دهد: چرا ACL نیاز به قاعده‌ی برگشت دارد و چرا فایروال نیاز ندارد.
+
+#### توضیح ساده
+
+- **Stateless (ACL)**: هر بسته به‌تنهایی بررسی می‌شود؛ حافظه ندارد.
+- **Stateful**: برای هر اتصال یک Session نگه می‌دارد؛ بسته‌ی برگشت را با Session تطبیق می‌دهد.
+
+#### مثال ساده
+
+کاربر به وب (443) می‌رود. با ACL Stateless باید هم «outbound 443» و هم «inbound established/پورت‌های بالا» را بنویسید. با Stateful فقط «outbound 443» کافی است.
+
+``` text
+Stateless:  permit tcp src any eq 443 dst 10.10.0.0/24 established
+Stateful :  (return traffic accepted automatically via session)
+```
+
+#### مثال متوسط — حمله‌ی ACK Scan
+
+ACL ساده با `established` بسته‌ی ACK ساختگی را می‌پذیرد؛ فایروال Stateful بسته‌ی بدون Session را رد می‌کند.
+
+#### مثال سخت — محدودیت Stateful
+
+Stateful ترافیک نامتقارن را نمی‌پسندد (درس 23)، و Session Table ظرفیت دارد (DoS با SYN Flood).
+
+#### جدول مقایسه
+
+| ویژگی | Stateless | Stateful |
+|---|---|---|
+| حافظه | ندارد | Session |
+| سرعت | بالا | کمی کمتر |
+| امنیت | محدود | بیشتر |
+| ترافیک برگشت | قاعده‌ی جدا | خودکار |
+
+#### Lab
+
+یک ACL ساده Stateless را برای وب بنویسید و مشکلات آن را فهرست کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| برگشت رد | بدون قاعده | Stateful |
+| ACK scan | established | Stateful |
+| Session پر | SYN flood | DoS Policy |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا ACL قاعده‌ی برگشت؟** حافظه ندارد.
+**۲. Stateful محدودیت؟** نامتقارن و ظرفیت.
+**۳. ACK scan؟** بسته‌ی بی‌Session.
+
+#### English Corner
+
+- *A stateful firewall allows return traffic by matching it to an existing session.*
+- Q: Why can a stateless ACL be fooled by crafted ACK packets?
 
 ## درس 11-2 — Zone، Trust Boundary، Default Deny و Least Privilege: از ماتریس تا Policy
 
@@ -2749,6 +2868,62 @@ WEB      -         -            -        1433 (app tier)
 2. *Default Deny با Log چرا؟* برای ممیزی و Alert.
 3. *Trust Boundary چیست؟* مرزی که ترافیک از سطح اعتماد کمتر به بیشتر یا برعکس عبور می‌کند.
 
+### تکمیل عمیق: Zone، Default Deny و Least Privilege از ماتریس تا Policy
+
+#### چرا؟
+
+قبل از نوشتن Policy یک ماتریس نیاز بکشید؛ بعد هر خانه یا «Allow با سرویس مشخص» یا «Deny» است.
+
+#### ماتریس نمونه
+
+| از ↓ / به → | Internet | DMZ | Servers | Mgmt |
+|---|---|---|---|---|
+| Users | HTTP/S,DNS | HTTPS | HTTPS,SMB | — |
+| Guest | HTTP/S,DNS | — | — | — |
+| Mgmt | — | SSH | SSH | همه |
+| Internet | — | HTTPS (VIP) | — | — |
+
+خانه‌ی خالی = Deny.
+
+#### مثال ساده — تبدیل به Policy
+
+هر خانه‌ی پر یک Policy؛ در پایان Deny All با Log.
+
+#### مثال متوسط — Least Privilege
+
+به‌جای `Users -> Servers ALL` بنویسید `Users -> SRV-ERP HTTPS`. مقصد دقیق، سرویس دقیق.
+
+#### مثال سخت — دور زدن Zone
+
+در Zone با `intrazone allow` دو Interface همان Zone آزادانه صحبت می‌کنند؛ حتماً `deny` و Policy صریح.
+
+#### آزمون
+
+برای هر Policy یک آزمون مثبت و برای هر خانه‌ی خالی یک آزمون منفی (چند نمونه).
+
+#### Lab
+
+ماتریس را برای سازمان فرضی خودتان بکشید و ۱۰ Policy بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Policy ALL | تنبلی | تنگ |
+| Zone باز | intrazone | deny |
+| بی‌آزمون | غفلت | آزمون منفی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. خانه‌ی خالی؟** Deny.
+**۲. Least privilege؟** حداقل لازم.
+**۳. آزمون منفی؟** اثبات بستن.
+
+#### English Corner
+
+- *Every empty cell in the access matrix is an implicit deny that should be tested.*
+- Q: What does least privilege mean for a firewall rule?
+
 ## درس 11-3 — مسیر بسته در فایروال: Transit، Local-in، Local-out و ترتیب DNAT/Route/Policy/SNAT
 
 **فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۱، ۱۱-۲ · ≈ 10 ساعت**
@@ -2962,6 +3137,57 @@ diagnose debug enable
 2. *Local-out چیست؟* ترافیک تولیدشده توسط خود فایروال (NTP، FortiGuard).
 3. *Route چند بار جستجو می‌شود؟* معمولاً دو بار در عمر Session (بسته‌ی اول و اولین پاسخ).
 
+### تکمیل عمیق: مسیر بسته — Transit، Local-in و Local-out
+
+#### چرا؟
+
+مسیر بسته تعیین می‌کند کدام کنترل اعمال شود. بدون این نقشه، Policy اشتباه می‌نویسید.
+
+#### سه مسیر
+
+``` text
+Transit   : A -> Firewall -> B       (firewall policy)
+Local-in  : A -> Firewall itself    (allowaccess / local-in policy)
+Local-out : Firewall itself -> B    (service config, routing)
+```
+
+#### مثال ساده
+
+- SSH به فایروال ⇒ Local-in.
+- Users→Server ⇒ Transit.
+- فایروال به NTP ⇒ Local-out.
+
+#### مثال متوسط — ترتیب
+
+در Transit: Session، DoS، RPF، DNAT، Route، Policy، UTM، SNAT.
+
+#### مثال سخت — اشتباه رایج
+
+مهندس Policy `Users -> any SSH` برای باز کردن SSH به فایروال نوشت؛ بی‌اثر است چون Local-in است.
+
+#### Lab
+
+برای شش ترافیک مختلف نوع و کنترل را بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| SSH به FW نه | allowaccess | افزودن |
+| Update نه | Local-out Route | تنظیم |
+| Policy بی‌اثر | نوع اشتباه | شناسایی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. SSH به FW؟** Local-in.
+**۲. Policy عادی کافی است؟** خیر.
+**۳. Local-out مثال؟** NTP.
+
+#### English Corner
+
+- *Identify whether traffic is transit, local-in or local-out before writing a rule.*
+- Q: Which control applies to SSH connections to the firewall?
+
 ## درس 11-4 — ACL، Policy و NAT: تفاوت‌ها، ارتباط‌ها و ترکیب درست
 
 **فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۱، ۱۱-۳ · ≈ 10 ساعت**
@@ -3151,6 +3377,61 @@ Public DNS  : web.example.com -> 203.0.113.10 (for internet)
 1. *DNAT کجا Policy را عوض می‌کند؟* Policy روی VIP نوشته می‌شود.
 2. *PAT ظرفیت؟* حدود ۶۴ هزار پورت به‌ازای IP و مقصد.
 3. *Hairpin چیست؟* دسترسی داخلی به IP عمومی سرور داخلی.
+
+### تکمیل عمیق: ACL، Policy و NAT — تفاوت‌ها و ترکیب
+
+#### چرا؟
+
+این سه مفهوم اغلب با هم قاطی می‌شوند؛ هرکدام سؤال متفاوتی را جواب می‌دهند.
+
+#### سه سؤال
+
+| ابزار | سؤال |
+|---|---|
+| ACL/Policy | اجازه هست؟ |
+| NAT | آدرس چه شود؟ |
+| Routing | از کجا برود؟ |
+
+#### مثال ساده — ترکیب
+
+Users→Internet: Route می‌گوید «از port1»، Policy می‌گوید «مجاز»، NAT می‌گوید «با IP عمومی».
+
+#### مثال متوسط — ترتیب
+
+DNAT قبل از Policy؛ SNAT بعد از Policy. پس Policy ورودی VIP باید به IP عمومی نگاه کند.
+
+#### مثال سخت — خطای Overlap
+
+NAT یک‌به‌یک روی Tunnel برای شبکه‌های هم‌پوشان: Policy باید به آدرس «ترجمه‌شده» اشاره کند.
+
+``` text
+Original : 192.168.1.10 (remote site B)
+Translated at A: 10.222.1.10
+Policy at A uses 10.222.1.10
+```
+
+#### Lab
+
+سه ترافیک را از نظر Route/Policy/NAT تحلیل کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Policy مچ نمی‌شود | آدرس قبل/بعد NAT | تصحیح |
+| Route اشتباه | Interface | بررسی |
+| NAT بی‌اثر | Policy | فعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. سه سؤال؟** مجاز؟ آدرس؟ مسیر؟
+**۲. DNAT/Policy؟** DNAT اول.
+**۳. Policy و آدرس ترجمه‌شده؟** باید هماهنگ.
+
+#### English Corner
+
+- *Routing, policy and NAT answer three different questions about a packet.*
+- Q: Does a firewall policy match the pre-NAT or post-NAT destination address?
 
 ## درس 11-5 — Session، Timeout، MTU/MSS و ریشه‌ی خرابی‌های «نیمه‌کارکرده» TCP/UDP
 
@@ -3352,6 +3633,60 @@ MSS = PMTU - 40 = 1438 - 40 = 1398 ; use 1380 for margin
 2. *MSS-clamp کجاست؟* روی فایروال/تونل در SYN.
 3. *MTU و Fragmentation؟* IPv4 می‌تواند Fragment کند، DF=1 نمی‌تواند.
 
+### تکمیل عمیق: Session، Timeout، MTU/MSS و خرابی «نیمه‌کارکرده»
+
+#### چرا؟
+
+اتصال‌هایی که «باز می‌شوند ولی قطع می‌شوند» معمولاً از Timeout یا MTU می‌آیند.
+
+#### Timeout
+
+``` text
+TCP established default = 3600 s
+UDP default = 60 s ; DNS shorter
+```
+
+(پیش‌فرض‌ها را از مستند نسخه بخوانید.)
+
+#### مثال ساده — SSH بی‌کار
+
+SSH پس از ۱ ساعت بی‌کاری قطع می‌شود: Session Timeout. رفع: Keepalive در کلاینت یا Timeout سفارشی برای Service.
+
+#### مثال متوسط — MTU/MSS
+
+``` text
+MSS = MTU - 40 ; Path MTU 1400 -> MSS 1360
+```
+
+نشانه: ping کار می‌کند ولی HTTPS نه.
+
+#### مثال سخت — دو علت
+
+UDP DNS با پاسخ بزرگ + TCP/53 بسته + MTU: ترکیب. تشخیص با Capture.
+
+#### Lab
+
+Timeout را با اتصال بی‌کار آزمایش کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| قطع بعد ۱ ساعت | Timeout | Keepalive |
+| ping ok، HTTPS نه | MTU | Clamp |
+| DNS گاهی | TCP/53 | باز |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Timeout TCP؟** ۳۶۰۰ ثانیه (پیش‌فرض).
+**۲. MSS؟** MTU منهای ۴۰.
+**۳. Keepalive؟** جلوگیری از قطع.
+
+#### English Corner
+
+- *Idle sessions are removed when their timeout expires.*
+- Q: How do you calculate TCP MSS from the MTU?
+
 ## درس 11-6 — کارگاه طراحی Policy، ۱۰ پرسش مسیر بسته و آزمون G4: پروژه‌ی حل‌شده‌ی کامل
 
 **فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۰ تا ۱۱-۷ · ≈ 12 ساعت**
@@ -3546,6 +3881,59 @@ log: srcip=10.30.0.10 dstip=10.20.0.20 dstport=1433 policyid=90 action=deny
 2. *Log Deny چه می‌دهد؟* Evidence و Alert.
 3. *بهبود طرح؟* MFA/SSO، Segment بیشتر، WAF.
 
+### تکمیل عمیق: کارگاه طراحی Policy و آزمون G4
+
+#### چرا؟
+
+G4 طراحی Policy کامل را از ماتریس تا آزمون می‌سنجد.
+
+#### کار
+
+۱. ماتریس. ۲. Policy. ۳. ۱۰ پرسش مسیر بسته. ۴. آزمون مثبت/منفی.
+
+#### ده پرسش مسیر بسته
+
+``` text
+1 ingress interface? 2 session exists? 3 RPF ok? 4 DNAT? 5 route? 6 policy? 7 UTM? 8 SNAT? 9 egress? 10 reply path?
+```
+
+#### مثال ساده
+
+Users→ERP HTTPS: ingress port2، session جدید، RPF ok، بدون DNAT، route port3، policy 10، SNAT نه، egress port3، reply از همان.
+
+#### مثال متوسط — خطای تزریقی
+
+Policy با srcintf اشتباه: پاسخ سؤال ۶ «policy 0».
+
+#### Rubric
+
+``` text
+Matrix 20 | Policies 30 | Packet path 20 | Tests 20 | Report 10
+```
+
+#### Lab
+
+یک کارگاه کامل انجام دهید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Policy بی‌دلیل | ماتریس ناقص | بازنگری |
+| آزمون منفی نیست | غفلت | افزودن |
+| Path ناقص | فراموشی SNAT | چک‌لیست |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا ده پرسش؟** پوشش.
+**۲. Reply path؟** برگشت.
+**۳. آزمون منفی؟** مرز.
+
+#### English Corner
+
+- *Walk the ten packet-path questions for every new policy.*
+- Q: Which stage of the packet path decides the egress interface?
+
 ## درس 11-7 — Stateful Inspection از درون: State Table، TCP State و Timeout
 
 **فصل ۱۱ · درس افزوده (تکمیل ۱۱-۱) · پیش‌نیاز: ۱۱-۰، ۱۱-۱، فصل ۲ (TCP) · ≈ ۶ ساعت**
@@ -3731,6 +4119,59 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 - NIST SP 800-41 Rev.1 — Guidelines on Firewalls and Firewall Policy (Stateful Inspection).
 - RFC 9293 — Transmission Control Protocol (TCP).
 - Linux kernel documentation: nf_conntrack sysctl.
+
+### تکمیل عمیق: Stateful Inspection از درون — State Table و TCP State
+
+#### چرا؟
+
+دانستن اینکه Session چطور ساخته و حذف می‌شود، رفتارهای عجیب را توضیح می‌دهد.
+
+#### TCP State
+
+``` text
+SYN_SENT -> SYN_RECV -> ESTABLISHED -> FIN_WAIT -> TIME_WAIT -> CLOSED
+```
+
+فایروال Session را با SYN می‌سازد؛ بسته‌ی بعدی باید با آن همخوان باشد (Sequence در Window).
+
+#### مثال ساده
+
+بسته‌ی SYN-ACK بدون SYN ⇒ Session ندارد ⇒ Drop.
+
+#### مثال متوسط — Timeoutها
+
+هر State Timeout دارد؛ SYN_SENT کوتاه، ESTABLISHED طولانی، TIME_WAIT کوتاه.
+
+#### مثال سخت — SYN Flood
+
+هزاران SYN ساختگی Session Table را پر می‌کنند. دفاع: DoS Policy با آستانه (`tcp_syn_flood`) و SYN Cookies.
+
+#### Lab
+
+Session را در هر State ببینید.
+
+``` text
+diagnose sys session list | grep proto_state
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Drop بسته‌ی ACK | بی‌Session | نامتقارن |
+| Table پر | SYN flood | DoS |
+| قطع زود | Timeout | تنظیم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Session با چه ساخته می‌شود؟** SYN.
+**۲. SYN flood؟** پر شدن جدول.
+**۳. Timeout هر State؟** متفاوت.
+
+#### English Corner
+
+- *A stateful firewall creates a session on the first SYN and validates later packets against it.*
+- Q: How does a DoS policy protect the session table?
 
 ## پاسخ‌های فصل 11
 
