@@ -1839,6 +1839,156 @@ example.com.  CNAME  other.net.     <-- invalid at the zone apex (conflicts with
 
 ---
 
+<a id="l-7-9"></a>
+
+## درس 7-9 — DHCPv4 روی IOS: Server، Relay، کشف خطا و عیب‌یابی
+
+**فصل 7 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 1.7: Troubleshoot DHCPv4 client, server, and relay on IOS devices) · پیش‌نیاز: ۷-۱**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** DHCP روی روتر/سوییچ Cisco چطور Server و Relay می‌شود، فرایند DORA، و نقشه‌ی عیب‌یابی از سمت Client، Server و Relay.
+
+**چرا لازم است؟** DHCP مثل متصدی «شماره‌ی پذیرش» است: هر کس می‌آید، شماره‌ی شبکه (IP) می‌گیرد. اگر متصدی نباشد یا در طبقه‌ی دیگر باشد و کسی راهنمایی نکند، همه با آدرس 169.254 می‌مانند. شکایت «اینترنت ندارم» اغلب همین است.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) DORA
+
+``` text
+1 Discover : client broadcast (src 0.0.0.0:68 -> 255.255.255.255:67) "any DHCP server?"
+2 Offer    : server offers an address + options
+3 Request  : client accepts one offer (broadcast, names the server)
+4 Ack      : server confirms the lease
+```
+
+Client UDP/68، Server UDP/67. چون Discover Broadcast است، از روتر عبور نمی‌کند؛ برای Server در VLAN دیگر **Relay** لازم است.
+
+#### ۲-۲) Relay
+
+Relay Broadcast کلاینت را به Unicast تبدیل و به سرور می‌فرستد و فیلد **giaddr** (آدرس Interface خود) را درج می‌کند. سرور با giaddr تشخیص می‌دهد کدام Pool را بدهد.
+
+#### ۲-۳) پارامترها
+
+Lease (مدت اجاره)، Default Gateway، DNS، Domain، (اختیاری) Option 43/66/150 برای AP/تلفن. Client در 50٪ Lease (T1) تمدید و در 87.5٪ (T2) Rebinding می‌کند.
+
+### ۳) دستورها (Unverified)
+
+**Server روی IOS**
+
+``` text
+ip dhcp excluded-address 10.10.0.1 10.10.0.10
+ip dhcp pool USERS
+ network 10.10.0.0 255.255.255.0
+ default-router 10.10.0.1
+ dns-server 10.20.0.5
+ domain-name example.com
+ lease 1 0 0
+```
+
+`lease 1 0 0` یعنی ۱ روز، ۰ ساعت، ۰ دقیقه.
+
+**Relay**
+
+``` text
+interface Vlan10
+ ip address 10.10.0.1 255.255.255.0
+ ip helper-address 10.20.0.5
+```
+
+`ip helper-address` به‌صورت پیش‌فرض چند سرویس UDP (از جمله DHCP/BOOTP، DNS، TFTP، TACACS، NetBIOS، Time) را Forward می‌کند.
+
+**Client روی IOS**
+
+``` text
+interface GigabitEthernet0/1
+ ip address dhcp
+```
+
+**بررسی**
+
+``` text
+show ip dhcp pool
+show ip dhcp binding
+show ip dhcp conflict
+show ip dhcp server statistics
+debug ip dhcp server packet
+undebug all
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — محاسبه‌ی ظرفیت Pool.** شبکه 10.10.0.0/24: ۲۵۴ آدرس قابل‌استفاده؛ استثنا ۱۰ آدرس.
+
+``` text
+Usable hosts = 254
+Excluded     = 10  (10.10.0.1 - 10.10.0.10)
+Available    = 254 - 10 = 244 leases
+```
+
+اگر ۲۶۰ دستگاه داشته باشید، Pool خالی می‌شود ⇒ Pool بزرگ‌تر (/23) یا Lease کوتاه‌تر.
+
+**متوسط — Relay ندارد.** VLAN10 در سوییچ لایه‌ی ۳ و Server در 10.20.0.5. کلاینت‌ها 169.254. روش:
+
+1. `show running-config interface Vlan10` ⇒ `ip helper-address` نیست.
+2. افزودن helper.
+3. `debug ip dhcp server packet` روی Server: Discover دریافت می‌شود؟
+4. Server Pool برای `10.10.0.0/24` دارد؟ (انتخاب Pool با giaddr)
+5. مسیر برگشت به 10.10.0.1.
+
+**سخت — «Pool تمام شد ولی دستگاه کم است».**
+
+``` text
+show ip dhcp binding   (lots of entries for phones that reconnect)
+show ip dhcp conflict  (addresses detected as in use)
+```
+
+علل: Lease طولانی برای دستگاه‌های موقت (مهمان)، آدرس‌های Static داخل Pool (Conflict). رفع: Lease کوتاه برای Guest، افزودن آدرس Static به `excluded-address`، `clear ip dhcp conflict *` پس از رفع.
+
+**سخت — DHCP Snooping.** اگر DHCP Snooping فعال باشد و Uplink به سمت Server `trust` نباشد، Offer حذف می‌شود. `show ip dhcp snooping`؛ رفع: `ip dhcp snooping trust` روی Uplink. (درس ۴-۵)
+
+#### نقشه‌ی عیب‌یابی
+
+| سمت | بررسی |
+|---|---|
+| Client | `ipconfig /all`، 169.254؟ ، کابل/VLAN |
+| Relay | helper، IP Interface، Route به Server |
+| Server | Pool، excluded، Lease خالی؟ ، debug |
+| امنیت | Snooping Trust، ACL UDP 67/68 |
+
+### ۵) Lab (اجرا نشده)
+
+سه دستگاه: Client، روتر Relay، Server؛ ابتدا بدون helper، سپس با helper.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| DHCP | Dynamic Host Configuration Protocol | تخصیص خودکار IP |
+| DORA | Discover, Offer, Request, Acknowledge | چهار مرحله |
+| giaddr | Gateway IP address | آدرس Relay در پیام |
+| BOOTP | Bootstrap Protocol | پیش‌ساز DHCP |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) چهار مرحله‌ی DORA. *(پاسخ: 7-9-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) چرا Relay لازم است؟ *(پاسخ: 7-9-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) شبکه /23 و ۲۰ آدرس excluded؛ ظرفیت Pool؟ *(پاسخ: 7-9-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) کلاینت‌ها 169.254 دارند؛ پنج گام. *(پاسخ: 7-9-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *The relay agent inserts its own address in the giaddr field.*
+- *If clients receive 169.254.x.x addresses, they did not get a DHCP offer.*
+- **Q1.** Which UDP ports does DHCP use? *(پاسخ: 7-9-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 7
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -2230,6 +2380,18 @@ Only when there is congestion on a link.
 **7-8-ت4** — ۱) `dig example.com MX +short` ۲) بررسی A/AAAA نام MX ۳) مقایسه‌ی پاسخ NSها و SOA Serial ۴) بررسی TTL/Cache و پاک‌سازی.
 
 **7-8-Q1** — PTR.
+
+### پاسخ‌های درس افزوده‌ی 7-9 (فصل 7)
+
+**7-9-ت1** — Discover، Offer، Request، Acknowledge.
+
+**7-9-ت2** — چون Discover Broadcast است و از روتر عبور نمی‌کند؛ Relay آن را به Unicast سمت سرور تبدیل می‌کند و giaddr می‌گذارد.
+
+**7-9-ت3** — /23 دارای 510 آدرس قابل‌استفاده است (512 − 2)؛ 510 − 20 = 490.
+
+**7-9-ت4** — ۱) VLAN/کابل کلاینت ۲) `ip helper-address` روی Interface ۳) مسیر Relay به Server ۴) Pool مناسب giaddr و آدرس‌های excluded ۵) DHCP Snooping Trust و ACL پورت 67/68.
+
+**7-9-Q1** — UDP 67 (server) and 68 (client).
 
 ---
 

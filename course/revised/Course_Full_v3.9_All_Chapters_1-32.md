@@ -5810,6 +5810,514 @@ Remaining = 370 - 288 = 82 W
 
 ---
 
+<a id="l-3-8"></a>
+
+## درس 3-8 — لایه‌ی ۱ در عمل: کابل مسی، فیبر، وضعیت Interface و خواندن شمارنده‌های خطا
+
+**فصل 3 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 1.1: Diagnose interface and cable issues such as collisions, errors, mismatched duplex, speed, distance, interface, signal levels, pin out, and cable types) · پیش‌نیاز: ۳-۰**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** انواع کابل (مس و فیبر)، قواعد Pinout، معنی هر وضعیت Interface (`up/up`، `down/down` و ...)، و اینکه شمارنده‌هایی مثل CRC، Runt، Giant و Late Collision هر کدام چه علتی را نشان می‌دهند.
+
+**چرا لازم است؟** بیش از نیمی از «شبکه کند است» و «پورت بالا نمی‌آید» ریشه‌ی فیزیکی دارد: کابل بد، کانکتور شل، فیبر برعکس، یا Duplex ناهمخوان. اگر لایه‌ی ۱ را نشناسید، ساعت‌ها Routing و Policy را بررسی می‌کنید در حالی که علت یک کابل است. قاعده‌ی عیب‌یابی: **از پایین شروع کنید.**
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) کابل مسی UTP
+
+UTP = Unshielded Twisted Pair، یعنی «زوج سیم تابیده‌ی بدون شیلد»؛ چهار زوج (۸ سیم).
+
+| دسته | سرعت/فاصله‌ی معمول | نکته |
+|---|---|---|
+| Cat5e | تا 1 Gbps، حداکثر 100 متر | حداقل امروزی |
+| Cat6 | تا 1 Gbps تا 100 m؛ 10 Gbps در فاصله‌ی کوتاه (حدود 55 m) | |
+| Cat6a | 10 Gbps تا 100 m | |
+
+**قاعده‌ی 100 متر:** حداکثر طول یک «Link» اترنت مسی 100 متر است (۹۰ متر کابل ثابت + ۱۰ متر پچ‌کورد). از این بیشتر ⇒ تضعیف، خطا، Late Collision. راه‌حل: سوییچ میانی یا فیبر.
+
+#### ۲-۲) Pinout: T568A و T568B
+
+ترتیب سیم‌ها از پین ۱ تا ۸:
+
+``` text
+T568A: 1 white-green, 2 green, 3 white-orange, 4 blue, 5 white-blue, 6 orange, 7 white-brown, 8 brown
+T568B: 1 white-orange, 2 orange, 3 white-green, 4 blue, 5 white-blue, 6 green, 7 white-brown, 8 brown
+```
+
+- **Straight-through:** دو سر یک استاندارد (هر دو T568B). برای دو دستگاه «غیرمشابه»: PC ⇄ سوییچ، روتر ⇄ سوییچ.
+- **Crossover:** یک سر T568A و سر دیگر T568B. برای دستگاه‌های «مشابه»: سوییچ ⇄ سوییچ، PC ⇄ PC.
+- **Rollover:** کابل کنسول (ترتیب معکوس).
+
+چرا Crossover؟ در Fast Ethernet (10/100) پین‌های 1 و 2 ارسال و 3 و 6 دریافت هستند. اگر دو سوییچ مستقیم وصل شوند، ارسال هر دو به ارسال دیگری می‌خورد؛ Crossover ارسال را به دریافت وصل می‌کند.
+
+``` text
+10/100BASE-TX : uses pins 1,2 (TX) and 3,6 (RX)
+1000BASE-T    : uses all 4 pairs (8 pins), bidirectional on each pair
+```
+
+**Auto-MDIX:** سوییچ‌های امروزی خودکار جهت را تشخیص می‌دهند؛ پس Crossover معمولاً لازم نیست. روی IOS قدیمی: `mdix auto` (روی Interface).
+
+#### ۲-۳) فیبر نوری
+
+| نوع | هسته | فاصله | نمونه |
+|---|---|---|---|
+| Multimode (MMF) | 50/125 µm (OM3/OM4) | کوتاه، صدها متر | 1000BASE-SX، 10GBASE-SR |
+| Single-mode (SMF) | 9/125 µm (OS2) | ده‌ها کیلومتر | 1000BASE-LX، 10GBASE-LR |
+
+قواعد: SX/SR = Multimode و فاصله‌ی کوتاه؛ LX/LR = Single-mode و فاصله‌ی بلند. فیبر **جفت** است: یک رشته Tx و یک رشته Rx؛ Tx یک سمت باید به Rx سمت دیگر برسد. شایع‌ترین خطا: برعکس‌بودن جفت فیبر (Tx-Tx). مبدل‌ها: SFP (1G)، SFP+ (10G)، با کانکتور LC/SC. نوع فیبر و نوع SFP باید هماهنگ باشد (SX روی SMF یا LX روی MMF کوتاه، خطا و افت می‌دهد).
+
+سطح سیگنال نوری با DOM (Digital Optical Monitoring) خوانده می‌شود:
+
+``` text
+show interfaces transceiver detail
+```
+
+عدد Rx Power (dBm) باید بین آستانه‌های Low/High همان خروجی باشد؛ آستانه‌ها برای هر ماژول متفاوت‌اند و از خود دستور خوانده می‌شوند. Rx خیلی کم ⇒ فیبر کثیف/خم‌شده/فاصله‌ی زیاد؛ خیلی زیاد ⇒ نیاز به Attenuator در لینک کوتاه با ماژول قوی.
+
+#### ۲-۴) وضعیت Interface
+
+``` text
+show interfaces status
+show ip interface brief
+```
+
+| Status / Protocol | معنی | علت رایج |
+|---|---|---|
+| administratively down / down | با `shutdown` خاموش شده | پیکربندی |
+| down / down | لایه‌ی ۱ برقرار نیست | کابل، پورت، دستگاه مقابل خاموش، فیبر Tx/Rx |
+| up / down | لایه‌ی ۱ برقرار، لایه‌ی ۲ نه | Encapsulation/Keepalive/Clocking (سریال) |
+| up / up | سالم | — |
+| err-disabled | امنیت/خطا پورت را بست | Port Security، BPDU Guard، Storm Control |
+
+#### ۲-۵) Speed و Duplex
+
+Auto-Negotiation سرعت و Duplex را بین دو سر هماهنگ می‌کند. قاعده: **هر دو سر Auto یا هر دو دستی با مقدار یکسان**. اگر یک سر دستی (مثلاً 100/full) و دیگری Auto باشد، سر Auto سرعت را حس می‌کند ولی Duplex را نمی‌تواند بفهمد و معمولاً Half می‌گذارد ⇒ **Duplex Mismatch**.
+
+علامت Duplex Mismatch: لینک بالا است ولی کند است، سمت Half شمارنده‌ی Late Collision و سمت Full شمارنده‌ی CRC/Runt بالا می‌رود. Gigabit بدون Auto-Negotiation کار نمی‌کند.
+
+#### ۲-۶) شمارنده‌های خطا
+
+``` text
+show interfaces GigabitEthernet0/1
+show interfaces counters errors
+clear counters GigabitEthernet0/1
+```
+
+| شمارنده | معنی | علت محتمل |
+|---|---|---|
+| CRC | فریم با Checksum خراب | کابل/کانکتور بد، تداخل، Duplex Mismatch |
+| Runts | فریم کوچک‌تر از 64 بایت | Collision، Duplex Mismatch |
+| Giants | فریم بزرگ‌تر از حد (1518/1522 بدون Jumbo) | MTU متفاوت، دستگاه خراب |
+| Collisions | برخورد (فقط Half-duplex) | در Full-duplex نباید باشد |
+| Late Collision | برخورد بعد از 64 بایت اول | کابل بیش از 100 m یا Duplex Mismatch |
+| Input errors | جمع خطاهای ورودی | — |
+| Output drops | بسته‌ی دور ریخته در صف خروجی | ازدحام (QoS) |
+| Interface resets | ریست‌های لینک | Keepalive، کابل ناپایدار |
+
+**نکته:** شمارنده‌ها از آخر ریست تجمعی‌اند. اگر عدد بزرگ ولی ثابت است، خطای قدیمی است. `clear counters` بزنید و دوباره نگاه کنید؛ فقط افزایش جدید مهم است.
+
+``` text
+Error rate % = errors / total packets x 100
+50 CRC errors in 1,000,000 packets -> 0.005 %   (usually negligible)
+5,000 CRC errors in 1,000,000 packets -> 0.5 %  (investigate)
+```
+
+### ۳) دستور TDR (تست کابل مسی)
+
+``` text
+test cable-diagnostics tdr interface GigabitEthernet0/1
+show cable-diagnostics tdr interface GigabitEthernet0/1
+```
+
+TDR = Time Domain Reflectometer؛ طول و وضعیت هر زوج (Open، Short) را می‌گوید. (روی همه‌ی مدل‌ها نیست.)
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — `down/down`.** تازه کامپیوتر وصل شده ولی چراغ پورت خاموش و `show interfaces status` ⇒ `notconnect`. گام‌ها: ۱) کابل را به پورت دیگر ببرید ۲) کابل دیگر ۳) PC روشن است؟ ۴) نوع کابل (پچ‌کورد قدیمی خراب) ۵) سمت دیگر `shutdown`؟
+
+**متوسط — CRC بالا.**
+
+``` text
+Gi0/3 is up, line protocol is up
+  5 minute input rate 2000 bits/sec
+  1,200,000 packets input, 1,800,000,000 bytes
+  4,800 input errors, 4,800 CRC, 0 frame, 0 overrun
+```
+
+``` text
+CRC rate = 4800 / 1200000 x 100 = 0.4 %
+```
+
+مراحل: ۱) `clear counters` ۲) پس از 10 دقیقه دوباره ببینید ۳) اگر CRC همچنان در حال افزایش است: کابل را عوض کنید ۴) کابل نزدیک کابل برق؟ ۵) طول کابل؟ ۶) اگر فیبر: DOM.
+
+**سخت — Duplex Mismatch.** کاربر سرور شکایت دارد: انتقال فایل 3 Mbps روی لینک 100 Mbps.
+
+``` text
+SW1 Gi0/5 (set: speed 100, duplex full):   input errors 0, CRC 5200, runts 310
+Server NIC (auto):   half-duplex, late collisions 4800
+```
+
+تحلیل: سوییچ دستی Full و سرور Auto ⇒ سرور Half دیده است. سمت Half Late Collision دارد؛ سمت Full دچار CRC/Runt. رفع: هر دو Auto (ترجیحاً) یا هر دو دستی یکسان.
+
+``` text
+interface GigabitEthernet0/5
+ speed auto
+ duplex auto
+```
+
+تأیید: `show interfaces Gi0/5` ⇒ `Full-duplex, 100Mb/s` و شمارنده‌های جدید صفر.
+
+**سخت — فیبر بالا نمی‌آید.**
+
+1. `show interfaces transceiver detail`: Rx Power سمت A: `-40 dBm` (No signal).
+2. Tx سمت A خوب است ⇒ مشکل مسیر یا سمت B.
+3. جفت را جابه‌جا کنید (Tx/Rx برعکس).
+4. نوع SFP و فیبر را مقایسه کنید (SX/LX).
+5. کانکتور را تمیز کنید؛ پس از آن Rx باید در محدوده باشد.
+
+### ۵) Lab (اجرا نشده)
+
+دو سوییچ؛ `speed 100` در یک سمت و Auto در سمت دیگر؛ شمارنده‌ها را ثبت و رفع کنید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| UTP | Unshielded Twisted Pair | زوج تابیده‌ی بدون شیلد |
+| MDI/MDIX | Medium Dependent Interface (Crossover) | ترتیب پین Tx/Rx |
+| SFP | Small Form-factor Pluggable | ماژول قابل‌تعویض |
+| DOM | Digital Optical Monitoring | پایش نوری دیجیتال |
+| CRC | Cyclic Redundancy Check | بررسی خطای فریم |
+| TDR | Time Domain Reflectometer | تست طول/خطای کابل |
+| MMF/SMF | Multimode/Single-mode Fiber | فیبر چندمد/تک‌مد |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) حداکثر طول لینک اترنت مسی چند متر است؟ *(پاسخ: 3-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) برای اتصال دو سوییچ در حالت بدون Auto-MDIX کدام کابل؟ *(پاسخ: 3-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) 900 خطای CRC در 600000 بسته؛ درصد خطا؟ *(پاسخ: 3-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (متوسط) `up/down` و `down/down` چه فرقی دارند؟ *(پاسخ: 3-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت5.** (سخت) سمت A: Late Collision، سمت B: CRC؛ تشخیص و رفع. *(پاسخ: 3-8-ت5 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *Late collisions usually indicate a duplex mismatch or a cable that is too long.*
+- *Set both ends to auto-negotiate, or hard-code both ends identically.*
+- **Q1.** What does a down/down interface status indicate? *(پاسخ: 3-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
+<a id="l-3-9"></a>
+
+## درس 3-9 — CDP و LLDP: کشف همسایه و اعتبارسنجی مستندات شبکه
+
+**فصل 3 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 2.3: Validate the accuracy of network documentation using CDP and LLDP) · پیش‌نیاز: ۳-۱ تا ۳-۵**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** CDP و LLDP چه می‌کنند، چه اطلاعاتی می‌دهند، چطور فعال/غیرفعال می‌شوند و چطور با آنها نمودار شبکه را با واقعیت تطبیق می‌دهیم.
+
+**چرا لازم است؟** سند شبکه مثل نقشه‌ی شهر است: ماه به ماه قدیمی می‌شود. یک همکار کابل را جابه‌جا می‌کند و کسی نقشه را اصلاح نمی‌کند. وقتی اتفاقی بیفتد، به نقشه‌ی غلط تکیه می‌کنید. CDP/LLDP به هر دستگاه اجازه می‌دهند «بپرسد» چه کسی کنارش وصل است. بنابراین به‌جای گشتن بین رک‌ها، با یک دستور واقعیت را می‌بینید. اما همین پروتکل‌ها اطلاعات حساس را به همسایه افشا می‌کنند و باید روی پورت‌های غیرقابل‌اعتماد خاموش شوند.
+
+### ۲) توضیح از پایه
+
+| ویژگی | CDP | LLDP |
+|---|---|---|
+| سازنده | اختصاصی Cisco | استاندارد IEEE 802.1AB (چندسازنده) |
+| لایه | ۲ | ۲ |
+| مقصد Multicast | 01:00:0C:CC:CC:CC | 01:80:C2:00:00:0E |
+| ارسال (پیش‌فرض Cisco) | هر 60 ثانیه | هر 30 ثانیه |
+| Holdtime پیش‌فرض | 180 ثانیه | 120 ثانیه |
+| پیش‌فرض روی IOS | روشن | **خاموش** |
+
+CDP = Cisco Discovery Protocol. LLDP = Link Layer Discovery Protocol. هر دو فقط به **همسایه‌ی مستقیم** اطلاع می‌دهند؛ از روتر عبور نمی‌کنند.
+
+اطلاعاتی که می‌دهند: نام دستگاه، پورت محلی و پورت مقابل، مدل (Platform)، قابلیت‌ها (Router، Switch، Phone)، آدرس مدیریتی، نسخه‌ی نرم‌افزار، VLAN Native، Duplex و توان PoE.
+
+LLDP-MED افزوده‌ای برای تلفن‌ها: Voice VLAN و توان.
+
+### ۳) دستورها (Unverified)
+
+``` text
+! CDP (enabled by default)
+show cdp
+show cdp neighbors
+show cdp neighbors detail
+cdp run
+no cdp run
+interface GigabitEthernet0/24
+ no cdp enable
+
+! LLDP (disabled by default on IOS)
+lldp run
+show lldp
+show lldp neighbors
+show lldp neighbors detail
+interface GigabitEthernet0/24
+ lldp transmit
+ lldp receive
+ no lldp transmit
+ no lldp receive
+```
+
+خروجی نمونه:
+
+``` text
+SW1# show cdp neighbors
+Capability Codes: R - Router, S - Switch, H - Host, I - IGMP, r - Repeater, P - Phone
+Device ID    Local Intrfce  Holdtme  Capability  Platform    Port ID
+SW2          Gig 0/1        152      S I         WS-C3750X   Gig 1/0/24
+R1           Gig 0/2        170      R S I       ISR4331     Gig 0/0/1
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — خواندن.** سطر اول می‌گوید پورت `Gig 0/1` به `SW2` و پورت `Gig 1/0/24` آن وصل است. نقشه را بکشید: SW1 Gi0/1 ⇄ Gi1/0/24 SW2.
+
+**متوسط — تطبیق نقشه.**
+
+``` text
+Document says : SW1 Gi0/2 -> R1 Gi0/0/0
+CDP says      : SW1 Gi0/2 -> R1 Gi0/0/1
+```
+
+نتیجه: سند اشتباه است (یا کابل جابه‌جا شده). مراحل: ۱) `show cdp neighbors detail` برای تأیید ۲) بررسی Interface روتر (IP و VLAN) ۳) اصلاح سند ۴) ثبت در CHG.
+
+**متوسط — دستگاه غیر Cisco.** سوییچ سیسکو و یک FortiGate/Switch دیگر: CDP پاسخ نمی‌دهد؛ `lldp run` روی سوییچ و فعال‌سازی LLDP روی دستگاه مقابل. (در FortiGate: `config system interface; edit port1; set lldp-reception enable; set lldp-transmission enable`; Unverified.)
+
+**سخت — کشف دستگاه ناشناس.** `show cdp neighbors` روی پورت Gi0/18 دستگاهی با نام `Phone-ABC` و Capability `H P` نشان می‌دهد ولی در سند این پورت خالی است.
+
+1. `show cdp neighbors Gi0/18 detail` ⇒ IP، مدل.
+2. `show mac address-table interface Gi0/18` ⇒ MACها.
+3. بررسی VLAN و PoE (`show power inline Gi0/18`).
+4. اگر مجاز نیست: پورت خاموش و گزارش امنیتی.
+5. اگر مجاز است: سند به‌روز شود.
+
+**ریسک امنیتی:** CDP/LLDP اطلاعات مدل و نسخه را برای هر دستگاه متصل می‌فرستند. روی پورت‌های کاربران و Uplink به بیرون خاموش کنید؛ فقط بین زیرساخت و پورت تلفن/AP که لازم است نگه دارید.
+
+### ۵) Lab (اجرا نشده)
+
+سه سوییچ و دو روتر؛ نمودار را فقط با CDP بکشید و سپس با نقشه‌ی اصلی مقایسه کنید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| CDP | Cisco Discovery Protocol | کشف همسایه‌ی Cisco |
+| LLDP | Link Layer Discovery Protocol | کشف همسایه‌ی استاندارد |
+| TLV | Type-Length-Value | قالب فیلد اطلاعات |
+| MED | Media Endpoint Discovery | افزونه‌ی دستگاه انتهایی |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) CDP پیش‌فرض روشن است یا LLDP؟ *(پاسخ: 3-9-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) چرا LLDP برای شبکه‌ی چندسازنده مناسب‌تر است؟ *(پاسخ: 3-9-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) سند با CDP همخوانی ندارد؛ سه گام. *(پاسخ: 3-9-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) چرا باید CDP روی پورت کاربران خاموش شود؟ *(پاسخ: 3-9-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *CDP is Cisco proprietary, while LLDP is an open IEEE standard.*
+- *Disable discovery protocols on ports facing untrusted devices.*
+- **Q1.** Which command lists CDP neighbors? *(پاسخ: 3-9-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
+<a id="l-3-10"></a>
+
+## درس 3-10 — عیب‌یابی لایه‌ی ۲ و ۳ با show، ping توسعه‌یافته، traceroute و Packet Capture
+
+**فصل 3 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 2.4: Troubleshoot basic Layer 2/Layer 3 connectivity and device operations using show commands, show logs, ping, extended ping, traceroute and packet capture output) · پیش‌نیاز: ۳-۶، ۲-۴**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** پنج ابزار پایه‌ی هر مهندس شبکه: `show`، Log، `ping` (ساده و توسعه‌یافته)، `traceroute` و خروجی Capture؛ و اینکه هر کدام چه سؤالی را جواب می‌دهد.
+
+**چرا لازم است؟** مثل پزشک: دماسنج، فشارسنج، عکس و آزمایش خون هرکدام چیزی می‌گویند. اگر فقط `ping` بزنید و جواب ندهد، نمی‌دانید مشکل کجاست. با ترکیب ابزارها، مشکل را مثل «تقسیم نصف» محدود می‌کنید.
+
+### ۲) توضیح از پایه
+
+| ابزار | سؤال | لایه |
+|---|---|---|
+| `show interfaces`، `show ip interface brief` | لینک و IP سالم است؟ | 1-3 |
+| `show mac address-table`، `show arp` | دستگاه کجا یاد گرفته شد؟ IP↔MAC؟ | 2 |
+| `show ip route` | مسیر کدام است؟ | 3 |
+| `show logging` | چه رویدادی ثبت شده؟ | همه |
+| `ping` | رسیدن به مقصد؟ | 3 |
+| `ping` توسعه‌یافته | رسیدن از منبع/اندازه/DF مشخص؟ | 3 |
+| `traceroute` | مسیر Hopها و محل قطع؟ | 3 |
+| Packet Capture | واقعاً روی سیم چه بود؟ | 2-7 |
+
+#### ۲-۱) ping ساده
+
+ICMP Echo Request. نتیجه‌ها روی IOS:
+
+| نماد | معنی |
+|---|---|
+| `!` | پاسخ دریافت شد |
+| `.` | Timeout (پاسخ نیامد) |
+| `U` | Destination Unreachable |
+| `N` | Network Unreachable |
+| `Q` | Source Quench |
+| `M` | Could not fragment (DF) |
+| `?` | نوع بسته‌ی ناشناخته |
+
+#### ۲-۲) ping توسعه‌یافته (Extended Ping)
+
+بدون آرگومان، `ping` وارد پرسش و پاسخ می‌شود:
+
+``` text
+R1# ping
+Protocol [ip]:
+Target IP address: 10.20.0.10
+Repeat count [5]: 100
+Datagram size [100]: 1500
+Timeout in seconds [2]:
+Extended commands [n]: y
+Source address or interface: 10.10.0.1
+Type of service [0]:
+Set DF bit in IP header? [no]: yes
+Validate reply data? [no]:
+Data pattern [0xABCD]:
+Loose, Strict, Record, Timestamp, Verbose[none]:
+Sweep range of sizes [n]: y
+```
+
+چرا لازم است؟
+
+1. **Source:** برای آزمودن مسیر برگشت. اگر ping با منبع پیش‌فرض (IP نزدیک‌ترین Interface خروجی) جواب می‌دهد ولی با `10.10.0.1` نه، مسیر برگشت برای آن شبکه ندارد.
+2. **Size و DF:** پیدا کردن MTU مسیر. اندازه‌ی ۱۵۰۰ با DF: اگر `M` آمد، بسته نمی‌تواند عبور کند.
+3. **Repeat:** پایداری (Loss).
+4. **Sweep:** افزایش خودکار اندازه.
+
+#### ۲-۳) traceroute
+
+TTL را از ۱ شروع و هر بار ۱ اضافه می‌کند؛ هر روتر با TTL=0 پیام ICMP Time Exceeded برمی‌گرداند. روی IOS مبنا UDP پورت‌های بالا (33434+) است؛ در Windows (`tracert`) ICMP.
+
+``` text
+R1# traceroute 198.51.100.10
+  1 10.10.0.2 2 msec 1 msec 1 msec
+  2 10.99.0.1 4 msec 3 msec 4 msec
+  3 * * *
+  4 198.51.100.10 12 msec 11 msec 12 msec
+```
+
+`* * *` یعنی Hop پاسخ نداده (ممکن است فایروال ICMP را ببندد، لزوماً قطع نیست؛ ردیف بعد پاسخ داد پس مسیر ادامه دارد). اگر همه‌ی ردیف‌های بعد `*` باشند، محل قطع/Drop آنجاست.
+
+#### ۲-۴) Log
+
+``` text
+show logging
+```
+
+Severity (۰ تا ۷): 0 Emergency، 1 Alert، 2 Critical، 3 Error، 4 Warning، 5 Notification، 6 Informational، 7 Debug. نمونه:
+
+``` text
+*Nov 27 10:15:01: %LINK-3-UPDOWN: Interface GigabitEthernet0/3, changed state to down
+*Nov 27 10:15:03: %SPANTREE-2-BLOCK_BPDUGUARD: Received BPDU on port Gi0/5 with BPDU Guard enabled. Disabling port.
+```
+
+قالب پیام: `%FACILITY-SEVERITY-MNEMONIC: متن`.
+
+#### ۲-۵) Packet Capture روی IOS XE (Embedded Packet Capture)
+
+``` text
+monitor capture CAP1 interface GigabitEthernet0/0 both
+monitor capture CAP1 match any
+monitor capture CAP1 buffer size 10
+monitor capture CAP1 start
+! ... reproduce the problem ...
+monitor capture CAP1 stop
+show monitor capture CAP1 buffer brief
+monitor capture CAP1 export flash:cap1.pcap
+```
+
+سپس فایل در Wireshark. نمونه‌ی خروجی خلاصه:
+
+``` text
+  1  0.000  10.10.0.5 -> 10.20.0.10  ICMP Echo request
+  2  0.000  10.20.0.10 -> 10.10.0.5  ICMP Echo reply
+```
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — ping شکست می‌خورد.** `ping 10.20.0.10` ⇒ `.....`. بررسی: `show ip interface brief` (Interface up؟)، `show ip route 10.20.0.10` (مسیر؟)، `show arp` (MAC مقصد یاد گرفته شد؟).
+
+**متوسط — ping از LAN کار می‌کند ولی از روتر نه؟** ping ساده از روتر منبع IP Interface خروجی را به‌کار می‌برد و ممکن است Route برگشت نداشته باشد. Extended Ping با Source=`10.10.0.1` همان شرایط کاربر را شبیه‌سازی می‌کند.
+
+**متوسط — محاسبه‌ی Path MTU.**
+
+``` text
+ping 10.20.0.10 size 1500 df-bit  -> M.M.M
+ping 10.20.0.10 size 1400 df-bit  -> !!!!!
+Next test 1450, then 1425 ... until the largest size that passes is found.
+```
+
+در IOS مقدار `size` اندازه‌ی کل بسته‌ی IP (شامل هدر) است؛ بنابراین بزرگ‌ترین اندازه‌ی موفق با DF همان MTU مسیر است. (در Windows ‏`ping -l` فقط اندازه‌ی داده است و باید 28 بایت هدر IP و ICMP به آن اضافه شود.)
+
+**سخت — یک Hop را بیابید.** از R1 به سرور:
+
+``` text
+1 10.10.0.2 1 msec
+2 10.99.0.1 2 msec
+3 * * *
+4 * * *
+```
+
+1. محل قطع بعد از Hop 2 است.
+2. روی R2 (`10.99.0.1`): `show ip route 198.51.100.10` ⇒ مسیر؟
+3. Capture روی Interface خروجی R2: بسته می‌رود و بازنمی‌گردد؟
+4. اگر می‌رود: بالادست (ISP/فایروال).
+5. اگر نمی‌رود: Route/ACL روی R2.
+
+**سخت — نتیجه‌ی Capture.** خروجی نشان می‌دهد SYN‌ها بدون SYN-ACK: مشکل بعد از روتر. SYN-ACK با RST: پورت بسته. پاسخ ICMP Unreachable: Route یا ACL.
+
+### ۴) Lab (اجرا نشده)
+
+سه روتر؛ یک ACL که ICMP را می‌بندد؛ با traceroute و Capture محل را بیابید.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| ICMP | Internet Control Message Protocol | پیام‌های کنترل/خطا |
+| TTL | Time To Live | عمر بسته |
+| DF | Don't Fragment | ممنوعیت Fragment |
+| MTU | Maximum Transmission Unit | بزرگ‌ترین واحد ارسال |
+| EPC | Embedded Packet Capture | ضبط بسته روی دستگاه |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) علامت `U` و `.` در ping چه معنایی دارند؟ *(پاسخ: 3-10-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) چرا Extended Ping Source دارد؟ *(پاسخ: 3-10-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) traceroute پس از Hop 3 فقط `*` نشان می‌دهد؛ دو علت. *(پاسخ: 3-10-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) Capture نشان می‌دهد SYN بدون SYN-ACK؛ تفسیر. *(پاسخ: 3-10-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *Use an extended ping with a source address to test the return path.*
+- *An asterisk in traceroute output means no reply was received for that probe.*
+- **Q1.** What does the M character in a ping result mean? *(پاسخ: 3-10-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 3
 
 > ابتدا بدون نگاه حل کنید. هر پاسخ با شناسه‌ی «درس-نوع+شماره» مشخص است (ت = تمرین، م = سؤال مرور، Q = Quick quiz انگلیسی).
@@ -6237,6 +6745,44 @@ Symptom, Scope, Hypothesis, Test, Fix and Verify.
 **3-7-ت4** — ۱) `show power inline <port> detail` برای کلاس و توان ۲) مقایسه با `power inline max` ۳) تعویض کابل/دستگاه ۴) بررسی بودجه‌ی باقی‌مانده.
 
 **3-7-Q1** — It disables PoE on the port, so the switch never supplies power to the connected device.
+
+### پاسخ‌های درس افزوده‌ی 3-8 (فصل 3)
+
+**3-8-ت1** — 100 متر (۹۰ متر کابل ثابت + ۱۰ متر پچ‌کورد).
+
+**3-8-ت2** — Crossover (یا Straight-through با Auto-MDIX فعال).
+
+**3-8-ت3** — 900 / 600000 × 100 = 0.15٪.
+
+**3-8-ت4** — `down/down`: لایه‌ی ۱ برقرار نیست (کابل، پورت، دستگاه مقابل)؛ `up/down`: لایه‌ی ۱ برقرار ولی لایه‌ی ۲ (Encapsulation/Keepalive) مشکل دارد.
+
+**3-8-ت5** — Duplex Mismatch: سمت Half Late Collision و سمت Full CRC/Runt می‌بیند. رفع: هر دو Auto یا هر دو دستی با مقدار یکسان و تأیید با `show interfaces`.
+
+**3-8-Q1** — The physical layer is not established (cable, port, or far-end device problem); administratively down is a separate status.
+
+### پاسخ‌های درس افزوده‌ی 3-9 (فصل 3)
+
+**3-9-ت1** — CDP روشن است؛ LLDP روی IOS به‌صورت پیش‌فرض خاموش است.
+
+**3-9-ت2** — چون استاندارد IEEE 802.1AB و مستقل از سازنده است؛ CDP فقط دستگاه‌های Cisco را می‌شناسد.
+
+**3-9-ت3** — ۱) `show cdp neighbors detail` برای تأیید واقعی ۲) بررسی کابل/Interface دو سر ۳) اصلاح سند و ثبت در CHG.
+
+**3-9-ت4** — چون مدل، نسخه و آدرس مدیریتی را به دستگاه متصل (احتمالاً مخرب) افشا می‌کند؛ باید فقط بین زیرساخت لازم فعال بماند.
+
+**3-9-Q1** — `show cdp neighbors`.
+
+### پاسخ‌های درس افزوده‌ی 3-10 (فصل 3)
+
+**3-10-ت1** — `U` = Destination Unreachable؛ `.` = Timeout (پاسخ نیامد).
+
+**3-10-ت2** — برای تعیین آدرس منبع و آزمودن مسیر برگشت از آن شبکه، مثل کاربر واقعی.
+
+**3-10-ت3** — ۱) Hop ICMP/UDP را فیلتر می‌کند ولی عبور می‌دهد (اگر Hop بعدی جواب بدهد) ۲) قطع/Drop در آن نقطه (اگر همه‌ی Hopهای بعد هم `*` باشند).
+
+**3-10-ت4** — بسته به مقصد رسیده یا خارج شده ولی پاسخ برنمی‌گردد: Drop بعد از روتر (فایروال/ISP)، مسیر برگشت نامتقارن یا سرور پاسخ نمی‌دهد؛ باید Capture در Hopهای بعدی گرفت.
+
+**3-10-Q1** — Could not fragment: بسته با DF بزرگ‌تر از MTU مسیر است.
 
 ---
 
@@ -8347,6 +8893,170 @@ Gi1/0/14  Broadcast  rising=20.00  falling=10.00  action=shutdown  current=87.3%
 
 ---
 
+<a id="l-4-9"></a>
+
+## درس 4-9 — EtherChannel و LACP/PAgP: حالت‌ها، شرط تشکیل، Load Balancing و عیب‌یابی
+
+**فصل 4 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 2.1.c: Layer 2/Layer 3 LACP port-channel/EtherChannel و 2.2: port channel and LACP) · پیش‌نیاز: ۴-۱ تا ۴-۳**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** چند لینک فیزیکی را چطور به یک لینک منطقی تبدیل کنیم، کدام ترکیب حالت‌های LACP/PAgP تشکیل می‌شود، چطور بار تقسیم می‌شود و چرا یک Port-Channel «Suspended» می‌شود.
+
+**چرا لازم است؟** اگر بین دو سوییچ دو کابل 1 Gbps بکشید، STP یکی را Block می‌کند و پهنای باند عملاً 1 Gbps می‌ماند. EtherChannel دو کابل را «یک لینک 2 Gbps» نشان می‌دهد؛ STP هم فقط یک لینک می‌بیند. اگر یکی از کابل‌ها قطع شود، لینک منطقی بدون Reconvergence بالا می‌ماند.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) سه روش تشکیل
+
+| روش | استاندارد | حالت‌ها |
+|---|---|---|
+| LACP | IEEE 802.3ad / 802.1AX | `active`، `passive` |
+| PAgP | اختصاصی Cisco | `desirable`، `auto` |
+| Static | — | `on` |
+
+LACP = Link Aggregation Control Protocol؛ PAgP = Port Aggregation Protocol.
+
+#### ۲-۲) جدول ترکیب‌ها
+
+| سمت A | سمت B | نتیجه |
+|---|---|---|
+| active | active | تشکیل می‌شود |
+| active | passive | تشکیل می‌شود |
+| passive | passive | **تشکیل نمی‌شود** (هیچ‌کس شروع نمی‌کند) |
+| desirable | desirable | تشکیل می‌شود |
+| desirable | auto | تشکیل می‌شود |
+| auto | auto | **تشکیل نمی‌شود** |
+| on | on | تشکیل می‌شود (بدون مذاکره) |
+| on | active/desirable | **تشکیل نمی‌شود** (پروتکل ناهمخوان) |
+
+قاعده: در یک Port-Channel نمی‌توان LACP و PAgP را با هم قاطی کرد.
+
+#### ۲-۳) شرط‌های لینک‌های عضو
+
+همه‌ی Memberها باید یکسان باشند: Speed، Duplex، حالت Access/Trunk، VLAN مجاز Trunk، Native VLAN، تنظیمات STP. ناهمخوانی ⇒ عضو Suspended یا Port-Channel بالا نمی‌آید. LACP تا ۸ لینک فعال (و تا ۸ در Standby) می‌پذیرد.
+
+#### ۲-۴) Load Balancing
+
+بار **به‌ازای Flow** تقسیم می‌شود نه به‌ازای بسته: یک Hash از فیلدهای انتخاب‌شده (MAC/IP/Port) محاسبه و لینک مشخصی انتخاب می‌شود. یک Flow همیشه از یک لینک می‌رود (برای جلوگیری از بی‌ترتیبی بسته‌ها).
+
+``` text
+port-channel load-balance src-dst-ip
+show etherchannel load-balance
+```
+
+نتیجه: اگر فقط یک Flow بزرگ داشته باشید (مثلاً Backup)، فقط یک لینک پر می‌شود و دیگری خالی می‌ماند. با افزایش تعداد Flowها توزیع یکنواخت‌تر می‌شود.
+
+``` text
+Hash index = (hash value) mod (number of active links)
+Example: 2 links -> index 0 or 1 ; 4 links -> 0..3
+```
+
+#### ۲-۵) Layer 3 EtherChannel
+
+``` text
+interface Port-channel2
+ no switchport
+ ip address 10.99.0.1 255.255.255.252
+```
+
+Port-Channel بین دو سوییچ لایه‌ی ۳ با IP؛ بدون VLAN/STP.
+
+### ۳) دستورها (Unverified)
+
+``` text
+interface range GigabitEthernet0/1 - 2
+ switchport mode trunk
+ channel-group 1 mode active
+interface Port-channel1
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30
+```
+
+``` text
+show etherchannel summary
+show etherchannel 1 detail
+show lacp neighbor
+show interfaces port-channel 1
+```
+
+خروجی نمونه و تفسیر پرچم‌ها:
+
+``` text
+Group  Port-channel  Protocol    Ports
+1      Po1(SU)       LACP        Gi0/1(P)   Gi0/2(P)
+```
+
+| پرچم | معنی |
+|---|---|
+| S | Layer 2 |
+| U | In use (فعال) |
+| P | عضو Port-Channel (Bundled) |
+| s | Suspended (ناهمخوانی) |
+| D | Down |
+| I | Stand-alone |
+| H | Hot-standby |
+| R | Layer 3 |
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — ظرفیت.** 4 لینک 1 Gbps ⇒ پهنای باند کل 4 Gbps ولی هر Flow حداکثر 1 Gbps.
+
+**متوسط — Port-Channel «Suspended».**
+
+``` text
+Po1(SD)   Gi0/1(s)   Gi0/2(P)
+```
+
+1. `show etherchannel 1 detail` ⇒ دلیل: Gi0/1 در حالت Access و Gi0/2 Trunk.
+2. هر دو Memberها را یکسان کنید.
+3. `interface range` را shutdown و سپس no shutdown کنید.
+4. تأیید: `Po1(SU)`.
+
+**متوسط — ترکیب غلط.** یک سمت `on` و سمت دیگر `active`؛ تشکیل نمی‌شود. رفع: هر دو `active` (یا یکی `active` و دیگری `passive`).
+
+**سخت — «Port-Channel دو لینک دارد ولی فقط یک لینک پر است».**
+
+1. `show etherchannel load-balance`: `src-mac`.
+2. چون همه‌ی ترافیک از یک Router به یک Server می‌رود، MAC منبع/مقصد ثابت است ⇒ Hash ثابت.
+3. تغییر به `src-dst-ip` یا `src-dst-port` (در صورت پشتیبانی).
+4. اندازه‌گیری با چند Flow (iperf `-P 8`).
+
+**سخت — Loop پس از Port-Channel.** یکی از Memberها با کابل مستقیم به سوییچ دیگری هم وصل شده. STP/LACP: ماشه‌ی `err-disabled`. بررسی `show spanning-tree` و Log.
+
+### ۵) Lab (اجرا نشده)
+
+دو سوییچ با دو لینک؛ ترکیب‌های جدول ۲-۲ را آزمایش کنید و `show etherchannel summary` را ثبت کنید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| LACP | Link Aggregation Control Protocol | مذاکره‌ی استاندارد |
+| PAgP | Port Aggregation Protocol | مذاکره‌ی Cisco |
+| Bundle | — | مجموعه‌ی لینک‌های تجمیع‌شده |
+| Flow | — | جریان ترافیک با 5-tuple یکسان |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) کدام ترکیب‌ها تشکیل می‌شوند: passive/passive، active/passive، auto/auto؟ *(پاسخ: 4-9-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) چرا STP فقط یک Port-Channel می‌بیند؟ *(پاسخ: 4-9-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) چهار لینک 10 Gbps؛ حداکثر سرعت یک Flow؟ *(پاسخ: 4-9-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) `Po1(SD)` و `Gi0/1(s)`؛ مراحل رفع. *(پاسخ: 4-9-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *Two passive LACP ports will never form a channel because neither side initiates.*
+- *EtherChannel balances flows across links, not individual packets.*
+- **Q1.** What does the (s) flag mean for a member port? *(پاسخ: 4-9-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 4
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -8756,6 +9466,18 @@ Because all traffic would flow through a low-capacity edge device instead of the
 **4-8-ت4** — ۱) Capture با `icmpv6.type == 134` ۲) MAC فرستنده ۳) `show mac address-table address <mac>` برای پورت ۴) خاموش‌کردن پورت و فعال‌سازی RA Guard.
 
 **4-8-Q1** — Type 134.
+
+### پاسخ‌های درس افزوده‌ی 4-9 (فصل 4)
+
+**4-9-ت1** — passive/passive: خیر؛ active/passive: بله؛ auto/auto: خیر.
+
+**4-9-ت2** — چون Port-Channel یک لینک منطقی است؛ STP روی لینک منطقی اجرا می‌شود نه Memberها.
+
+**4-9-ت3** — 10 Gbps؛ چون هر Flow با Hash روی یک لینک می‌ماند (ظرفیت کل 40 Gbps برای چند Flow).
+
+**4-9-ت4** — ۱) `show etherchannel 1 detail` برای دلیل ۲) یکسان‌سازی Speed/Duplex/Mode/VLAN/Native Memberها ۳) shutdown/no shutdown روی Member ۴) تأیید `Po1(SU)` و `Gi0/1(P)`.
+
+**4-9-Q1** — Suspended: the port's configuration does not match the channel, so it is not bundled.
 
 ---
 
@@ -15083,6 +15805,156 @@ example.com.  CNAME  other.net.     <-- invalid at the zone apex (conflicts with
 
 ---
 
+<a id="l-7-9"></a>
+
+## درس 7-9 — DHCPv4 روی IOS: Server، Relay، کشف خطا و عیب‌یابی
+
+**فصل 7 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 1.7: Troubleshoot DHCPv4 client, server, and relay on IOS devices) · پیش‌نیاز: ۷-۱**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** DHCP روی روتر/سوییچ Cisco چطور Server و Relay می‌شود، فرایند DORA، و نقشه‌ی عیب‌یابی از سمت Client، Server و Relay.
+
+**چرا لازم است؟** DHCP مثل متصدی «شماره‌ی پذیرش» است: هر کس می‌آید، شماره‌ی شبکه (IP) می‌گیرد. اگر متصدی نباشد یا در طبقه‌ی دیگر باشد و کسی راهنمایی نکند، همه با آدرس 169.254 می‌مانند. شکایت «اینترنت ندارم» اغلب همین است.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) DORA
+
+``` text
+1 Discover : client broadcast (src 0.0.0.0:68 -> 255.255.255.255:67) "any DHCP server?"
+2 Offer    : server offers an address + options
+3 Request  : client accepts one offer (broadcast, names the server)
+4 Ack      : server confirms the lease
+```
+
+Client UDP/68، Server UDP/67. چون Discover Broadcast است، از روتر عبور نمی‌کند؛ برای Server در VLAN دیگر **Relay** لازم است.
+
+#### ۲-۲) Relay
+
+Relay Broadcast کلاینت را به Unicast تبدیل و به سرور می‌فرستد و فیلد **giaddr** (آدرس Interface خود) را درج می‌کند. سرور با giaddr تشخیص می‌دهد کدام Pool را بدهد.
+
+#### ۲-۳) پارامترها
+
+Lease (مدت اجاره)، Default Gateway، DNS، Domain، (اختیاری) Option 43/66/150 برای AP/تلفن. Client در 50٪ Lease (T1) تمدید و در 87.5٪ (T2) Rebinding می‌کند.
+
+### ۳) دستورها (Unverified)
+
+**Server روی IOS**
+
+``` text
+ip dhcp excluded-address 10.10.0.1 10.10.0.10
+ip dhcp pool USERS
+ network 10.10.0.0 255.255.255.0
+ default-router 10.10.0.1
+ dns-server 10.20.0.5
+ domain-name example.com
+ lease 1 0 0
+```
+
+`lease 1 0 0` یعنی ۱ روز، ۰ ساعت، ۰ دقیقه.
+
+**Relay**
+
+``` text
+interface Vlan10
+ ip address 10.10.0.1 255.255.255.0
+ ip helper-address 10.20.0.5
+```
+
+`ip helper-address` به‌صورت پیش‌فرض چند سرویس UDP (از جمله DHCP/BOOTP، DNS، TFTP، TACACS، NetBIOS، Time) را Forward می‌کند.
+
+**Client روی IOS**
+
+``` text
+interface GigabitEthernet0/1
+ ip address dhcp
+```
+
+**بررسی**
+
+``` text
+show ip dhcp pool
+show ip dhcp binding
+show ip dhcp conflict
+show ip dhcp server statistics
+debug ip dhcp server packet
+undebug all
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — محاسبه‌ی ظرفیت Pool.** شبکه 10.10.0.0/24: ۲۵۴ آدرس قابل‌استفاده؛ استثنا ۱۰ آدرس.
+
+``` text
+Usable hosts = 254
+Excluded     = 10  (10.10.0.1 - 10.10.0.10)
+Available    = 254 - 10 = 244 leases
+```
+
+اگر ۲۶۰ دستگاه داشته باشید، Pool خالی می‌شود ⇒ Pool بزرگ‌تر (/23) یا Lease کوتاه‌تر.
+
+**متوسط — Relay ندارد.** VLAN10 در سوییچ لایه‌ی ۳ و Server در 10.20.0.5. کلاینت‌ها 169.254. روش:
+
+1. `show running-config interface Vlan10` ⇒ `ip helper-address` نیست.
+2. افزودن helper.
+3. `debug ip dhcp server packet` روی Server: Discover دریافت می‌شود؟
+4. Server Pool برای `10.10.0.0/24` دارد؟ (انتخاب Pool با giaddr)
+5. مسیر برگشت به 10.10.0.1.
+
+**سخت — «Pool تمام شد ولی دستگاه کم است».**
+
+``` text
+show ip dhcp binding   (lots of entries for phones that reconnect)
+show ip dhcp conflict  (addresses detected as in use)
+```
+
+علل: Lease طولانی برای دستگاه‌های موقت (مهمان)، آدرس‌های Static داخل Pool (Conflict). رفع: Lease کوتاه برای Guest، افزودن آدرس Static به `excluded-address`، `clear ip dhcp conflict *` پس از رفع.
+
+**سخت — DHCP Snooping.** اگر DHCP Snooping فعال باشد و Uplink به سمت Server `trust` نباشد، Offer حذف می‌شود. `show ip dhcp snooping`؛ رفع: `ip dhcp snooping trust` روی Uplink. (درس ۴-۵)
+
+#### نقشه‌ی عیب‌یابی
+
+| سمت | بررسی |
+|---|---|
+| Client | `ipconfig /all`، 169.254؟ ، کابل/VLAN |
+| Relay | helper، IP Interface، Route به Server |
+| Server | Pool، excluded، Lease خالی؟ ، debug |
+| امنیت | Snooping Trust، ACL UDP 67/68 |
+
+### ۵) Lab (اجرا نشده)
+
+سه دستگاه: Client، روتر Relay، Server؛ ابتدا بدون helper، سپس با helper.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| DHCP | Dynamic Host Configuration Protocol | تخصیص خودکار IP |
+| DORA | Discover, Offer, Request, Acknowledge | چهار مرحله |
+| giaddr | Gateway IP address | آدرس Relay در پیام |
+| BOOTP | Bootstrap Protocol | پیش‌ساز DHCP |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) چهار مرحله‌ی DORA. *(پاسخ: 7-9-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) چرا Relay لازم است؟ *(پاسخ: 7-9-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) شبکه /23 و ۲۰ آدرس excluded؛ ظرفیت Pool؟ *(پاسخ: 7-9-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) کلاینت‌ها 169.254 دارند؛ پنج گام. *(پاسخ: 7-9-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *The relay agent inserts its own address in the giaddr field.*
+- *If clients receive 169.254.x.x addresses, they did not get a DHCP offer.*
+- **Q1.** Which UDP ports does DHCP use? *(پاسخ: 7-9-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 7
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -15474,6 +16346,18 @@ Only when there is congestion on a link.
 **7-8-ت4** — ۱) `dig example.com MX +short` ۲) بررسی A/AAAA نام MX ۳) مقایسه‌ی پاسخ NSها و SOA Serial ۴) بررسی TTL/Cache و پاک‌سازی.
 
 **7-8-Q1** — PTR.
+
+### پاسخ‌های درس افزوده‌ی 7-9 (فصل 7)
+
+**7-9-ت1** — Discover، Offer، Request، Acknowledge.
+
+**7-9-ت2** — چون Discover Broadcast است و از روتر عبور نمی‌کند؛ Relay آن را به Unicast سمت سرور تبدیل می‌کند و giaddr می‌گذارد.
+
+**7-9-ت3** — /23 دارای 510 آدرس قابل‌استفاده است (512 − 2)؛ 510 − 20 = 490.
+
+**7-9-ت4** — ۱) VLAN/کابل کلاینت ۲) `ip helper-address` روی Interface ۳) مسیر Relay به Server ۴) Pool مناسب giaddr و آدرس‌های excluded ۵) DHCP Snooping Trust و ACL پورت 67/68.
+
+**7-9-Q1** — UDP 67 (server) and 68 (client).
 
 ---
 

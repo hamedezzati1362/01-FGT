@@ -1937,6 +1937,170 @@ Gi1/0/14  Broadcast  rising=20.00  falling=10.00  action=shutdown  current=87.3%
 
 ---
 
+<a id="l-4-9"></a>
+
+## درس 4-9 — EtherChannel و LACP/PAgP: حالت‌ها، شرط تشکیل، Load Balancing و عیب‌یابی
+
+**فصل 4 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 2.1.c: Layer 2/Layer 3 LACP port-channel/EtherChannel و 2.2: port channel and LACP) · پیش‌نیاز: ۴-۱ تا ۴-۳**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** چند لینک فیزیکی را چطور به یک لینک منطقی تبدیل کنیم، کدام ترکیب حالت‌های LACP/PAgP تشکیل می‌شود، چطور بار تقسیم می‌شود و چرا یک Port-Channel «Suspended» می‌شود.
+
+**چرا لازم است؟** اگر بین دو سوییچ دو کابل 1 Gbps بکشید، STP یکی را Block می‌کند و پهنای باند عملاً 1 Gbps می‌ماند. EtherChannel دو کابل را «یک لینک 2 Gbps» نشان می‌دهد؛ STP هم فقط یک لینک می‌بیند. اگر یکی از کابل‌ها قطع شود، لینک منطقی بدون Reconvergence بالا می‌ماند.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) سه روش تشکیل
+
+| روش | استاندارد | حالت‌ها |
+|---|---|---|
+| LACP | IEEE 802.3ad / 802.1AX | `active`، `passive` |
+| PAgP | اختصاصی Cisco | `desirable`، `auto` |
+| Static | — | `on` |
+
+LACP = Link Aggregation Control Protocol؛ PAgP = Port Aggregation Protocol.
+
+#### ۲-۲) جدول ترکیب‌ها
+
+| سمت A | سمت B | نتیجه |
+|---|---|---|
+| active | active | تشکیل می‌شود |
+| active | passive | تشکیل می‌شود |
+| passive | passive | **تشکیل نمی‌شود** (هیچ‌کس شروع نمی‌کند) |
+| desirable | desirable | تشکیل می‌شود |
+| desirable | auto | تشکیل می‌شود |
+| auto | auto | **تشکیل نمی‌شود** |
+| on | on | تشکیل می‌شود (بدون مذاکره) |
+| on | active/desirable | **تشکیل نمی‌شود** (پروتکل ناهمخوان) |
+
+قاعده: در یک Port-Channel نمی‌توان LACP و PAgP را با هم قاطی کرد.
+
+#### ۲-۳) شرط‌های لینک‌های عضو
+
+همه‌ی Memberها باید یکسان باشند: Speed، Duplex، حالت Access/Trunk، VLAN مجاز Trunk، Native VLAN، تنظیمات STP. ناهمخوانی ⇒ عضو Suspended یا Port-Channel بالا نمی‌آید. LACP تا ۸ لینک فعال (و تا ۸ در Standby) می‌پذیرد.
+
+#### ۲-۴) Load Balancing
+
+بار **به‌ازای Flow** تقسیم می‌شود نه به‌ازای بسته: یک Hash از فیلدهای انتخاب‌شده (MAC/IP/Port) محاسبه و لینک مشخصی انتخاب می‌شود. یک Flow همیشه از یک لینک می‌رود (برای جلوگیری از بی‌ترتیبی بسته‌ها).
+
+``` text
+port-channel load-balance src-dst-ip
+show etherchannel load-balance
+```
+
+نتیجه: اگر فقط یک Flow بزرگ داشته باشید (مثلاً Backup)، فقط یک لینک پر می‌شود و دیگری خالی می‌ماند. با افزایش تعداد Flowها توزیع یکنواخت‌تر می‌شود.
+
+``` text
+Hash index = (hash value) mod (number of active links)
+Example: 2 links -> index 0 or 1 ; 4 links -> 0..3
+```
+
+#### ۲-۵) Layer 3 EtherChannel
+
+``` text
+interface Port-channel2
+ no switchport
+ ip address 10.99.0.1 255.255.255.252
+```
+
+Port-Channel بین دو سوییچ لایه‌ی ۳ با IP؛ بدون VLAN/STP.
+
+### ۳) دستورها (Unverified)
+
+``` text
+interface range GigabitEthernet0/1 - 2
+ switchport mode trunk
+ channel-group 1 mode active
+interface Port-channel1
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30
+```
+
+``` text
+show etherchannel summary
+show etherchannel 1 detail
+show lacp neighbor
+show interfaces port-channel 1
+```
+
+خروجی نمونه و تفسیر پرچم‌ها:
+
+``` text
+Group  Port-channel  Protocol    Ports
+1      Po1(SU)       LACP        Gi0/1(P)   Gi0/2(P)
+```
+
+| پرچم | معنی |
+|---|---|
+| S | Layer 2 |
+| U | In use (فعال) |
+| P | عضو Port-Channel (Bundled) |
+| s | Suspended (ناهمخوانی) |
+| D | Down |
+| I | Stand-alone |
+| H | Hot-standby |
+| R | Layer 3 |
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — ظرفیت.** 4 لینک 1 Gbps ⇒ پهنای باند کل 4 Gbps ولی هر Flow حداکثر 1 Gbps.
+
+**متوسط — Port-Channel «Suspended».**
+
+``` text
+Po1(SD)   Gi0/1(s)   Gi0/2(P)
+```
+
+1. `show etherchannel 1 detail` ⇒ دلیل: Gi0/1 در حالت Access و Gi0/2 Trunk.
+2. هر دو Memberها را یکسان کنید.
+3. `interface range` را shutdown و سپس no shutdown کنید.
+4. تأیید: `Po1(SU)`.
+
+**متوسط — ترکیب غلط.** یک سمت `on` و سمت دیگر `active`؛ تشکیل نمی‌شود. رفع: هر دو `active` (یا یکی `active` و دیگری `passive`).
+
+**سخت — «Port-Channel دو لینک دارد ولی فقط یک لینک پر است».**
+
+1. `show etherchannel load-balance`: `src-mac`.
+2. چون همه‌ی ترافیک از یک Router به یک Server می‌رود، MAC منبع/مقصد ثابت است ⇒ Hash ثابت.
+3. تغییر به `src-dst-ip` یا `src-dst-port` (در صورت پشتیبانی).
+4. اندازه‌گیری با چند Flow (iperf `-P 8`).
+
+**سخت — Loop پس از Port-Channel.** یکی از Memberها با کابل مستقیم به سوییچ دیگری هم وصل شده. STP/LACP: ماشه‌ی `err-disabled`. بررسی `show spanning-tree` و Log.
+
+### ۵) Lab (اجرا نشده)
+
+دو سوییچ با دو لینک؛ ترکیب‌های جدول ۲-۲ را آزمایش کنید و `show etherchannel summary` را ثبت کنید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| LACP | Link Aggregation Control Protocol | مذاکره‌ی استاندارد |
+| PAgP | Port Aggregation Protocol | مذاکره‌ی Cisco |
+| Bundle | — | مجموعه‌ی لینک‌های تجمیع‌شده |
+| Flow | — | جریان ترافیک با 5-tuple یکسان |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) کدام ترکیب‌ها تشکیل می‌شوند: passive/passive، active/passive، auto/auto؟ *(پاسخ: 4-9-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) چرا STP فقط یک Port-Channel می‌بیند؟ *(پاسخ: 4-9-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) چهار لینک 10 Gbps؛ حداکثر سرعت یک Flow؟ *(پاسخ: 4-9-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) `Po1(SD)` و `Gi0/1(s)`؛ مراحل رفع. *(پاسخ: 4-9-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *Two passive LACP ports will never form a channel because neither side initiates.*
+- *EtherChannel balances flows across links, not individual packets.*
+- **Q1.** What does the (s) flag mean for a member port? *(پاسخ: 4-9-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 4
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -2346,6 +2510,18 @@ Because all traffic would flow through a low-capacity edge device instead of the
 **4-8-ت4** — ۱) Capture با `icmpv6.type == 134` ۲) MAC فرستنده ۳) `show mac address-table address <mac>` برای پورت ۴) خاموش‌کردن پورت و فعال‌سازی RA Guard.
 
 **4-8-Q1** — Type 134.
+
+### پاسخ‌های درس افزوده‌ی 4-9 (فصل 4)
+
+**4-9-ت1** — passive/passive: خیر؛ active/passive: بله؛ auto/auto: خیر.
+
+**4-9-ت2** — چون Port-Channel یک لینک منطقی است؛ STP روی لینک منطقی اجرا می‌شود نه Memberها.
+
+**4-9-ت3** — 10 Gbps؛ چون هر Flow با Hash روی یک لینک می‌ماند (ظرفیت کل 40 Gbps برای چند Flow).
+
+**4-9-ت4** — ۱) `show etherchannel 1 detail` برای دلیل ۲) یکسان‌سازی Speed/Duplex/Mode/VLAN/Native Memberها ۳) shutdown/no shutdown روی Member ۴) تأیید `Po1(SU)` و `Gi0/1(P)`.
+
+**4-9-Q1** — Suspended: the port's configuration does not match the channel, so it is not bundled.
 
 ---
 
