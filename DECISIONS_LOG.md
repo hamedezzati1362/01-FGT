@@ -144,3 +144,9 @@ Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خ�
 - ساعت‌های دوره: ≈۱۳۷۱ تأیید شد.
 - Phase 0B: Runbook اجرا توسط کاربر در `phase0b/FortiGate_Probe_Runbook.md` تهیه شد. Claude هیچ فرمانی روی ESXi/PNetLab/FortiGate اجرا نمی‌کند؛ کاربر اجرا و Evidence را می‌گذارد.
 - تا قبل از Evidence هیچ دستوری از `Unverified` خارج نمی‌شود.
+
+## D-343 — تطبیق دستورها با مستندات رسمی (۲۰۲۶-۱۱-۲۷)
+- به انتخاب کاربر (گزینه‌ی ۲: مقایسه با مستندات، بدون دستگاه) ۱۴ گروه دستور FortiGate با docs.fortinet.com تطبیق داده شد؛ گزارش در `course/revised/Docs_Verification_Report_v3.9.md`.
+- وضعیت جدید «تأیید مستندی» = در مستندات رسمی هست ولی اجرا نشده؛ هنوز هیچ دستور «اجراشده با شاهد» نیست.
+- اصلاحات: log-filter (تغییر نحو 7.4.1)، سطح Debug fnbamd (255)، `auto-asic-offload` (نیازمند تأیید)، HA failover (فقط آزمون).
+- Runbook Phase 0B اختیاری باقی ماند.
