@@ -1958,145 +1958,151 @@ MTTR = (20 + 40 + 10 + 30) / 4 = 25 minutes
 
 > **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. فرایند Change را از ثبت تا Close اجرا کند.
-2. قالب CHG کامل (دلیل، اثر، Pre/Post-check، Rollback) را بنویسد.
-3. عملیات روزانه (Health Check، Backup، Review Log) را چک‌لیست کند.
-4. مثال کامل CHG برای افزودن Policy را بنویسد.
-5. ریسک و Window را درست انتخاب کند.
+1. عملیات روزانه/هفتگی/ماهانه‌ی شبکه و فایروال را سازمان‌دهی کنید.
+2. Change Management بر مبنای ITIL (Standard، Normal، Emergency) را اجرا کنید.
+3. RFC/CHG کامل (دلیل، ریسک، آزمون، Rollback، تأیید) بنویسید.
+4. تفاوت Incident، Problem و Change را بدانید و به هم وصل کنید.
+5. KPIهای عملیاتی (MTTD، MTTR، Change Success Rate) را اندازه بگیرید.
+6. CAB (Change Advisory Board) و Post-Implementation Review را برگزار کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا یک روز کاری و CHG کامل؟** عملیات روزانه مثل مسواک‌زدن است: کسل‌کننده ولی نبودنش گران. چک‌لیست: Health Check، Alerts، Backup (حجم+Hash)، Deny غیرعادی، تیکت‌ها، Handover. هر تغییر: CHG با دلیل، ریسک، Window، Pre/Post-check و Rollback.
+یک فرودگاه با ۱۰۰۰ پرواز در روز بدون برج مراقبت و فرایند، هرج‌ومرج است. شبکه‌ی سازمانی هم همین: بیشترین خطاهای قطعی از «تغییرات برنامه‌ریزی‌نشده» می‌آید، نه از خرابی سخت‌افزار. مهندس ارشد مهارتش تنها دانستن دستور نیست؛ بلکه تغییر را کنترل‌شده، قابل‌برگشت و مستند انجام می‌دهد. ITIL چارچوب رایج این کار است.
 
-**جمع‌بندی اصلی درس:**
+### عملیات تکرارشونده
 
-عملیات روزانه خسته‌کننده است ولی همان چیزی است که قطعی را جلوگیری می‌کند. سه چیز را هر روز می‌پرسید: «همه‌چیز سالم است؟ Backup گرفته شد؟ Log غیرعادی هست؟» و برای هر تغییر یک CHG می‌نویسید.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) چک‌لیست روزانه
-
-| زمان | کار | ابزار |
+| دوره | کار | Runbook |
 |---|---|---|
-| 08:00 | Health Check (CPU، Session، HA) | `get system performance status` |
-| 08:15 | بررسی Alertهای شبانه | Log/FAZ |
-| 08:30 | تأیید Backup دیشب | فایل + Hash |
-| 09:00 | Review Deny غیرعادی | Log |
-| هفتگی | Hit Count و Policy Review | GUI |
+| روزانه | چک سلامت، Alertهای باز، Backup | RB-01 |
+| هفتگی | بازبینی Log، Patch Advisory، ظرفیت | RB-02 |
+| ماهانه | Patch، گزارش، Drill Failover | RB-08 |
+| فصلی | بازبینی Policy/دسترسی، Restore Test | RB-10 |
+| سالانه | DR Test، بازنگری معماری، لایسنس | - |
 
-#### ۲) قالب CHG
+### سه مفهوم ITIL
 
-``` text
-CHG-0123
-Title: Allow APP-to-DB 1433 for new reporting server
-Requester / Owner / Implementer / Reviewer
-Reason: business request REQ-456
-Risk: Low   Impact: DB zone
-Window: 2026-12-03 22:00-22:30
-Pre-check: backup, policy lookup, confirm IPs
-Steps: 1) create address SRV-RPT 2) policy 62 APP->DB 1433 log all 3) verify
-Post-check: lookup, hit count, test connection, log
-Rollback: disable policy 62 ; restore backup if needed
-Approval: Owner (done) / CAB (not required, standard-low)
-```
-
-#### ۳) مثال کامل (CLI Unverified)
-
-``` text
-config firewall address
- edit "SRV-RPT"
-  set subnet 10.30.2.50 255.255.255.255
- next
-end
-config firewall policy
- edit 62
-  set name "RPT-to-DB"
-  set srcintf "ZN-APP"
-  set dstintf "ZN-DB"
-  set srcaddr "SRV-RPT"
-  set dstaddr "SRV-DB"
-  set action accept
-  set schedule "always"
-  set service "MS-SQL"
-  set logtraffic all
- next
-end
-```
-
-Post-check: `diagnose firewall iprope lookup 10.30.2.50 40000 10.30.3.10 1433 tcp ZN-APP` ⇒ policy 62.
-
-#### ۴) انتخاب Window
-
-کمترین ترافیک؛ نه آخر هفته‌ی مالی؛ با تیم آماده؛ Rollback < 10 دقیقه.
-
-#### ۵) بستن CHG
-
-نتیجه (موفق/ناموفق)، زمان واقعی، شاخص‌ها، درس‌ها.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Window | کم‌ترافیک |
-| Rollback | <10 دقیقه |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-``` text
-08:00 get system performance status ; 08:20 verify backup size+sha256
-```
-
-#### مثال متوسط — CHG
-
-Policy 62 برای سرور گزارش: Lookup=62 و Hit افزایش؛ بسته با زمان واقعی.
-
-#### مثال سخت — ناموفق
-
-Post-check: Lookup=61 (Deny بالاتر)؛ Rollback (disable 62) ظرف ۲ دقیقه؛ CHG بسته «ناموفق + درس».
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Health Check ساعت ۸: CPU 22٪، Session 41k، HA in-sync؛ ثبت.
-
-**متوسط (CHG):** CHG برای Policy 62 نوشته شد؛ Post-check: Lookup=62، Hit افزایش؛ Close موفق؛ ثبت زمان واقعی ۱۸ دقیقه.
-
-**سخت (ناموفق):** پس از اعمال، DB به App سرور نمی‌رسد. مراحل: Post-check Lookup=61 (Deny بالاتر)؛ Rollback: غیرفعال 62؛ تحلیل: ترتیب Policy؛ CHG بسته با «ناموفق + درس»؛ CHG جدید با ترتیب درست.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-get system performance status
-diagnose firewall iprope lookup 10.30.2.50 40000 10.30.3.10 1433 tcp ZN-APP
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Post-check کامل.
-- CHG بسته.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| مفهوم | هدف | مثال |
 |---|---|---|
-| تغییر اثر ندارد | Lookup | ترتیب |
+| Incident | بازگرداندن سرویس سریع | VPN شعبه Down |
+| Problem | یافتن و رفع ریشه | چرا VPN هر ماه قطع می‌شود؟ |
+| Change | تغییر کنترل‌شده | افزودن Policy، ارتقا |
 
-### ۱۰) نکات امنیتی
+ارتباط: Incident تکراری ⇒ Problem ⇒ رفع ریشه با Change.
 
-- تغییر فقط با تأیید.
+### انواع Change
 
-### ۱۱) جمع‌بندی مفهومی
+| نوع | ویژگی | تأیید |
+|---|---|---|
+| Standard | کم‌ریسک، تکراری، از پیش مصوب | خودکار/Template |
+| Normal | نیاز به ارزیابی ریسک | CAB/Reviewer |
+| Emergency | فوری (حادثه) | تأیید سریع + Review بعدی |
 
-- چک‌لیست روزانه.
-- CHG کامل.
-- Post-check.
+### قالب CHG (RFC)
 
-### ۱۲) تمرین و ارزیابی
+``` text
+CHG-ID       : CHG-0123
+Title        : Add HTTPS policy for new app server
+Requester    : AppTeam      Owner: NetOps
+Type         : Normal       Window: Sat 22:00-23:00
+Reason       : business need REQ-882
+Impact/Risk  : low; affects only 10.20.0.50; risk score 3x2=6
+Plan         : numbered steps with commands
+Test (pre/post): iprope lookup; curl; negative test
+Rollback     : delete policy 340; restore backup <file> (<= 10 min)
+Approvals    : Reviewer ___ ; Owner ___
+Evidence     : paths
+Result/PIR   : after execution
+```
+
+### فرایند
+
+``` text
+Request -> Assess (risk, impact) -> Approve (CAB/peer) -> Schedule (window, freeze)
+-> Implement (backup first) -> Verify (tests) -> Close (evidence) -> PIR if failed
+```
+
+### Change Freeze و ریسک
+
+``` text
+Risk score = Likelihood x Impact
+Score <= 6   : Standard/Normal with peer review
+Score 7-14   : Normal + CAB + staging test
+Score >= 15  : CAB + exec approval + extended rollback test
+```
+
+دوره‌ی Freeze (پایان سال، فروش ویژه): فقط Emergency.
+
+### KPIها
+
+| KPI | فرمول | هدف نمونه |
+|---|---|---|
+| Change Success Rate | موفق / کل | ≥ 95٪ |
+| Emergency Change Ratio | Emergency / کل | ≤ 10٪ |
+| MTTD | زمان کشف | ≤ 15 دقیقه |
+| MTTR | زمان بازگردانی | ≤ 60 دقیقه |
+| Backlog Problem | تعداد Problem باز | روند کاهشی |
+
+``` text
+Change Success Rate = successful / total x 100
+Example: 57 / 60 x 100 = 95 %
+```
+
+### CAB
+
+شرکت‌کنندگان: NetOps، SecOps، مالک سرویس، Help Desk. جلسه‌ی کوتاه هفتگی: مرور CHGهای هفته‌ی بعد؛ سؤال‌های کلیدی: «Rollback آزمون شده؟ چه کسی تحت تأثیر؟ پنجره درست؟».
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Standard Change
+
+«افزودن Address Object جدید» تکراری و کم‌ریسک ⇒ Template Standard؛ بدون CAB؛ فقط Peer Review و ثبت.
+
+#### مثال متوسط — CHG کامل
+
+CHG-0123: Policy HTTPS؛ Plan، Pre-test (Lookup)، اجرای شنبه ۲۲:۰۰، Post-test (curl و آزمون منفی)، Rollback ≤ ۱۰ دقیقه. نتیجه: موفق؛ Evidence `chg-0123/`.
+
+#### مثال متوسط — Incident به Problem
+
+VPN شعبه B سه بار در ماه قطع شد (Incident ×3). Problem: علت ریشه MTU/Rekey. Change: MSS Clamp و Lifetime. بدون Problem تکرار Incident ادامه می‌یابد.
+
+#### مثال سخت — Emergency
+
+۰۲:۰۰: Policy اشتباه Production را قطع کرد. Emergency Change: Rollback فوری با تأیید تلفنی مدیر. فردا: CHG ثبت و Review: چرا تغییر بدون آزمون وارد Production شد؟
+
+#### مثال سخت — شکست Change
+
+Upgrade موفق به‌نظر رسید ولی VPN Phase2 پس از ۲ ساعت Down. KPI: Change Failure. PIR: آزمون Post-change فقط ping بود؛ Test Matrix ناقص. اقدام: Test Matrix کامل در قالب CHG.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. CHG-0123 را کامل بنویسید.
+2. ریسک و نوع Change را تعیین کنید.
+3. KPIهای ماه را محاسبه کنید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| Change شکست | آزمون ناقص | Test Matrix |
+| Emergency زیاد | بی‌برنامه | Standard/Template |
+| Incident تکراری | Problem نیست | RCA |
+| بدون Rollback | بی‌طرح | قالب CHG |
+
+### نکات امنیتی
+
+Change با MFA و Audit؛ جداسازی نقش (درخواست‌کننده ≠ تأییدکننده)؛ ثبت Evidence؛ بازبینی دسترسی.
+
+### جمع‌بندی
+
+عملیات روزانه تا سالانه؛ ITIL: Incident/Problem/Change؛ CHG کامل با ریسک و Rollback؛ CAB و KPI؛ Emergency با Review بعدی.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چه چیزی هر روز بررسی می‌شود؟ *(پاسخ: 32-1-ت1)*
 
@@ -2112,7 +2118,7 @@ diagnose firewall iprope lookup 10.30.2.50 40000 10.30.3.10 1433 tcp ZN-APP
 
 **Q1.** Quick quiz (English): What should a post-check confirm after a change? *(پاسخ: 32-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2120,127 +2126,15 @@ diagnose firewall iprope lookup 10.30.2.50 40000 10.30.3.10 1433 tcp ZN-APP
 
 - *Always verify after the change.* ← پس از تغییر همیشه تأیید کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** عملیات روزانه (اجرا نشده). **Evidence:** `03-ops/chg-0123.md`.
 
-### ۱۵) منابع
+### منابع
 
 - ITIL 4 Change Enablement
 
 <a id="l-32-2"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: عملیات روزانه
-
-چک‌لیست: Alerts، Backup، Capacity، Patch، Ticket‌ها. Handover شیفت.
-
-**پرسش‌های مصاحبه**
-1. *Runbook؟* استاندارد.
-2. *SLA؟* پاسخ/حل.
-3. *بهبود؟* Post-review.
-
-### مثال حل‌شده: Handover شیفت
-
-``` text
-Open tickets: 3 ; Alerts: CPU warn FW2 ; Pending change: CHG-114 tonight 23:00 ; Backups: OK
-```
-
-### تکمیل عمیق: یک روز کاری واقعی و یک CHG کامل با سه پایان متفاوت
-
-#### چرا؟
-
-عملیات روزانه شبیه مسواک‌زدن است؛ کسل‌کننده، اما نبودنش هزینه‌ی سنگین دارد. در این درس یک «روز» را از ۰۸:۰۰ تا ۱۷:۰۰ قدم‌به‌قدم می‌گذرانیم تا ببینید چه چیزی کی بررسی می‌شود و چرا.
-
-#### یک روز کاری گام‌به‌گام
-
-``` text
-08:00  get system performance status       -> CPU, memory, uptime
-08:05  get system ha status               -> in-sync ?
-08:10  review overnight alerts            -> SIEM/Zabbix
-08:20  verify backup (file size + sha256) -> not zero bytes
-08:40  review Top Deny by srcip           -> scan / misconfig
-09:00  handle tickets / CHGs
-16:30  prepare handover note
-```
-
-**تفسیر عددی نمونه:**
-
-اگر CPU امروز 62٪ است و میانگین هفته‌ی گذشته 20٪، حتی اگر زیر آستانه‌ی ۷۰٪ باشد، «غیرعادی» است و باید دلیلش را بپرسید. Baseline یعنی همین مقایسه با حالت نرمال.
-
-#### بررسی Backup: چرا «وجود فایل» کافی نیست؟
-
-``` text
-ls -l cfg-2026-11-27.conf        -> 184320 bytes (normal ~180 KB)
-sha256sum cfg-2026-11-27.conf    -> store beside file
-grep -c "config firewall policy" cfg-2026-11-27.conf
-```
-
-فایل ۰ بایتی یا بدون بخش Policy یعنی Backup خراب. هر ماه یک Restore آزمایشی در Lab انجام دهید؛ Backup آزمون‌نشده، Backup نیست.
-
-#### CHG نمونه‌ی ساده
-
-درخواست: افزودن سرور گزارش‌گیری (10.30.2.50) به DB روی پورت 1433.
-
-- ریسک: کم؛ اثر: فقط Zone DB.
-- Window: ساعت ۲۲:۰۰ تا ۲۲:۳۰.
-- Rollback: غیرفعال کردن Policy 62 (کمتر از ۲ دقیقه).
-
-#### CHG نمونه‌ی متوسط — تغییر NAT
-
-تغییر IP Pool برای ۲۰۰ کاربر. ریسک متوسط چون قطع اتصال‌های جاری. Pre-check: ظرفیت Pool (محاسبه‌ی بالا)، تأیید ISP که IP Route شده. Post-check: `diagnose sys session list` با SNAT جدید؛ تست از یک کاربر.
-
-#### CHG نمونه‌ی سخت — تغییر شکست‌خورده با Rollback
-
-ساعت ۲۲:۰۵ Policy 62 اعمال شد. ۲۲:۱۰ گزارش «DB قطع شد». Post-check:
-
-``` text
-diagnose firewall iprope lookup 10.30.2.50 40000 10.30.3.10 1433 tcp ZN-APP
- -> policy 61 (deny)
-```
-
-یعنی Policy 61 (Deny) بالاتر از 62 است. گام‌ها:
-
-1. ۲۲:۱۱ Rollback: `set status disable` روی 62.
-2. ۲۲:۱۲ تأیید بازگشت سرویس.
-3. ۲۲:۳۰ بستن CHG با «ناموفق».
-4. روز بعد CHG جدید با جابه‌جایی ترتیب.
-
-چون Rollback آماده بود، اثر فقط ۲ دقیقه شد.
-
-#### محاسبه‌ی ریسک ساده
-
-``` text
-Risk score = Likelihood (1-5) x Impact (1-5)
-Example: 2 x 4 = 8  -> medium -> require reviewer
-```
-
-#### Lab
-
-۱) چک‌لیست روزانه را روی Lab اجرا و خروجی‌ها را ذخیره کنید. ۲) CHG بالا را اجرا و Post-check بگیرید. ۳) عمداً ترتیب را غلط بگذارید و Rollback کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Post-check ناموفق | Policy پایین‌تر از Deny | تغییر ترتیب |
-| Backup خالی | دسترسی مقصد | بررسی مجوز |
-| CHG بدون Rollback | قالب ناقص | اجباری کردن فیلد |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Hash Backup؟** تشخیص خرابی/دستکاری.
-**۲. چرا Rollback قبل از شروع نوشته می‌شود؟** در بحران وقت فکر نیست.
-**۳. Baseline چه کمکی می‌کند؟** تشخیص غیرعادی حتی زیر آستانه.
-
-#### English Corner
-
-- *Run the post-check immediately after the change.* پس از تغییر بلافاصله Post-check را اجرا کنید.
-- *A backup is only as good as its last successful restore test.*
-- Q: What belongs in a pre-check?
 
 ## درس 32-2 — Capstone III: شبیه‌سازی حادثه کامل — سناریو، نقش‌ها، Timeline نمونه، MTTD/MTTR و PIR
 
@@ -2248,132 +2142,136 @@ Example: 2 x 4 = 8  -> medium -> require reviewer
 
 > **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. سناریوی حادثه را با نقش‌ها (Incident Commander، Operator، Scribe، Communicator) اجرا کند.
-2. Timeline را لحظه‌ای ثبت و MTTD/MTTR را محاسبه کند.
-3. ارتباط‌رسانی (Status Update) را درست انجام دهد.
-4. PIR بی‌ملامت و اقدام پیشگیرانه بنویسد.
-5. درس‌ها را به Runbook برگرداند.
+1. یک شبیه‌سازی کامل حادثه (چندمرحله‌ای با Inject) را اجرا کنید.
+2. نقش‌ها (Incident Commander، Ops، Comms، Scribe) را تقسیم کنید.
+3. ده‌گامی عیب‌یابی و Playbook پاسخ را هم‌زمان به‌کار ببرید.
+4. Timeline، Evidence و Communication Log نگه دارید.
+5. PIR بدون سرزنش و اقدام‌های SMART بنویسید.
+6. MTTD/MTTR را محاسبه و با هدف مقایسه کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا شبیه‌سازی حادثه؟** آتش‌نشانان تمرین می‌کنند چون در شلوغی واقعی فرصت فکر نیست. نقش‌ها: Incident Commander، Operator، Scribe، Communicator. Scribe را جدا نگه دارید.
+آتش‌نشان‌ها با تمرین می‌دوند، نه با مطالعه‌ی دستورالعمل در لحظه‌ی آتش. حادثه‌ی واقعی با فشار، ابهام و چند علت هم‌زمان همراه است. شبیه‌سازی (Game Day / Tabletop) این شرایط را بی‌خطر می‌سازد و نقاط ضعف Runbook، ارتباط و تصمیم‌گیری را پیش از حادثه‌ی واقعی نشان می‌دهد.
 
-**جمع‌بندی اصلی درس:**
-
-حادثه با آرامش حل می‌شود. در شبیه‌سازی (Game Day) تمرین می‌کنید که چه کسی تصمیم می‌گیرد، چه کسی ثبت می‌کند و چه کسی به مدیریت گزارش می‌دهد، تا در حادثه‌ی واقعی همه بدانند چه کار کنند.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) سناریو
-
-ساعت 10:00 کاربران شعبه اینترنت ندارند. Alert: SD-WAN Member port1 Dead. در 10:12 مشخص می‌شود ISP-B هم کند است (Loss 30٪).
-
-#### ۲) نقش‌ها
+### نقش‌ها
 
 | نقش | وظیفه |
 |---|---|
-| Incident Commander | تصمیم و هماهنگی |
-| Operator | اجرای دستورها |
-| Scribe | ثبت Timeline |
-| Communicator | به‌روزرسانی مدیریت/کاربران |
+| Incident Commander (IC) | تصمیم، اولویت، هماهنگی (نه تایپ دستور) |
+| Ops Lead | اجرای فنی |
+| Comms Lead | اطلاع‌رسانی به مدیر/کاربر |
+| Scribe | ثبت Timeline و Evidence |
+| SME | کارشناس موضوع (VPN/Firewall) |
 
-#### ۳) Timeline نمونه
+اصل: یک نفر تصمیم می‌گیرد؛ یک نفر می‌نویسد؛ همه کار نمی‌کنند.
 
-| ساعت | رویداد |
+### سناریو (چندمرحله‌ای با Inject)
+
+شرکت «لب»؛ جمعه ۱۴:۰۰ (اوج).
+
+| زمان | Inject |
 |---|---|
-| 10:00 | شروع قطع (طبق Log) |
-| 10:04 | Alert دریافت (MTTD=4 min) |
-| 10:06 | IC تعیین؛ Operator: sdwan member |
-| 10:12 | ISP-A قطع؛ ISP-B Loss 30٪ |
-| 10:20 | تماس ISP-A (Ticket) |
-| 10:30 | تصمیم: ترافیک حیاتی با PBR به ISP-B؛ Teams از LTE (در دسترس) |
-| 10:45 | سرویس حیاتی برگشت (MTTR=45 min) |
-| 12:10 | ISP-A برگشت؛ Failback پس از ۳۰ دقیقه |
+| T+0 | Helpdesk: «شعبه B ERP را نمی‌بیند» |
+| T+10 | مانیتورینگ: BGP شعبه B Idle؛ تونل B↔Hub1 Down |
+| T+20 | Hub1 پایین نمی‌آید ولی CPU 95٪ |
+| T+30 | هشدار: ورودهای ناموفق SSH به Hub1 از IP ناشناس |
+| T+45 | Log: تغییر Policy `ALL` توسط حساب `svc-tmp` در ساعت ۱۳:۴۰ |
+| T+60 | شعبه C هم قطع (BGP) |
 
-#### ۴) ارتباط‌رسانی
+### مسیر حل (کلید)
 
-``` text
-10:08 Status: investigating internet outage at branch; ETA next update 10:30
-10:30 Status: ISP-A down, mitigation in progress (critical services via ISP-B)
-10:45 Status: critical services restored; root cause ISP-A fiber cut (ticket 7712)
-```
+1. **T+0–10 (Scope):** فقط B؟ همه؟ `diagnose vpn ike gateway list`.
+2. **T+10–20:** تونل B به Hub1 Down؛ Hub2 چطور؟ (Failover BGP؟).
+3. **T+20:** CPU بالا؛ `diagnose sys top` ⇒ `ipsengine`/`sshd`.
+4. **T+30:** Brute-force SSH ⇒ احتمال نفوذ؛ **تغییر ماهیت:** حادثه‌ی امنیتی.
+5. IC: اولویت دوم: «مهار» نه فقط «بازگرداندن».
+6. Containment: Block IP (Local-in)، غیرفعال `svc-tmp` و `admin`، دسترسی Console.
+7. Evidence: Snapshot Config + Log + Hash.
+8. Eradication: حذف Policy ALL، حساب‌ها، تغییر همه‌ی Secretها (PSK، Admin، API Token).
+9. Recovery: Restore Config پاک، تونل‌ها را دوباره، BGP Established، Failover به Hub2 تا اطمینان.
+10. Monitor 72 ساعت.
 
-#### ۵) شاخص‌ها
+### Communication Log
 
-``` text
-MTTD = 10:04 - 10:00 = 4 min
-MTTR (critical) = 10:45 - 10:00 = 45 min
-```
-
-#### ۶) PIR
-
-ریشه: وابستگی به یک ISP برای Failover با کیفیت؛ ISP-B ضعیف. اقدام: ISP-B با کیفیت بهتر/LTE Backup، Alert روی Loss، Runbook به‌روز.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| نقش | چهار نقش |
-| Status | دوره‌ای |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-نقش‌ها و مسئولیت‌ها.
-
-#### مثال متوسط — Timeline VPN
-
-``` text
-10:00 alert ; 10:07 serious (success after failures) ; 10:08 contain ; 10:50 recover ; D+1 PIR
-```
-
-#### مثال سخت
-
-هم‌زمان قطع ISP: نفر اول VPN، نفر دوم ISP؛ نفوذ فعال اولویت دارد.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** MTTD=4 دقیقه، MTTR=45 دقیقه.
-
-**متوسط (ارتباط‌رسانی):** Status Update هر ۲۰ تا ۳۰ دقیقه حتی بدون خبر جدید؛ مدیریت می‌داند وضعیت چیست؛ جلوگیری از تماس‌های پراکنده.
-
-**سخت (PIR):** PIR: ریشه (وابستگی)، تصمیم‌ها (PBR برای حیاتی)، چه خوب بود (Alert سریع، نقش‌ها)، چه بد بود (ISP-B ضعیف، Runbook قدیمی)، اقدام‌ها با مالک/تاریخ؛ بدون سرزنش.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-diagnose sys sdwan member
-diagnose sys sdwan health-check
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Timeline کامل.
-- PIR.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| زمان | مخاطب | پیام |
 |---|---|---|
-| بی‌نظمی | نقش مبهم | IC تعیین |
+| T+15 | مدیر IT | «اختلال شعب؛ در حال بررسی؛ ETA بعدی در ۳۰ دقیقه» |
+| T+35 | مدیر IT/امنیت | «نشانه‌ی ورود غیرمجاز؛ تیم امنیت درگیر» |
+| T+70 | همه | «سرویس‌ها بازگشت؛ تحقیقات ادامه» |
+| T+3d | مدیریت | PIR |
 
-### ۱۰) نکات امنیتی
+قاعده: پیام حقیقی، ساده، با زمان بعدی.
 
-- اطلاعات حساس در Status نیاید.
+### Timeline نمونه
 
-### ۱۱) جمع‌بندی مفهومی
+``` text
+13:40 svc-tmp changed policy ALL (root cause start)
+14:00 helpdesk: branch B ERP down       (T+0)
+14:10 BGP B Idle                         (T+10)
+14:30 SSH brute-force alert              (T+30) => security incident declared
+14:50 contained (Local-in block, accounts disabled)
+15:30 recovered (restore + tunnels up)
+MTTD (from 13:40) = 14:30 - 13:40 = 50 min
+MTTR (service)    = 15:30 - 14:00 = 90 min
+```
 
-- نقش‌ها.
-- Timeline.
-- Status.
-- PIR.
+### PIR
 
-### ۱۲) تمرین و ارزیابی
+``` text
+Root cause : svc-tmp (created via exposed SSH; weak password) -> policy ALL -> exfil/scan -> VPN instability
+Went well  : Local-in block fast; backup clean; roles clear
+Failed     : SSH exposed on WAN; Alert at 14:30 only; no config diff alert
+Actions    : remove SSH from WAN (24h, NetOps); MFA+trusthost (7d, SecOps); daily config diff + alert (14d, NetOps); incident drill quarterly (SOC)
+```
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — نقش‌ها
+
+IC (علی)، Ops (سارا)، Comms (رضا)، Scribe (نیلوفر). در T+30 IC می‌گوید: «سارا، Block IP؛ رضا، پیام امنیتی؛ نیلوفر، ساعت‌ها را ثبت کن.»
+
+#### مثال متوسط — تغییر ماهیت
+
+از «اختلال شبکه» به «حادثه‌ی امنیتی» در T+30. IC تصمیم گرفت: حفظ Evidence قبل از Restore. اگر فقط «تونل را بالا بیاور» اجرا می‌شد، شواهد از بین می‌رفت.
+
+#### مثال متوسط — اولویت
+
+دو کار هم‌زمان: بازگرداندن شعبه C و مهار نفوذ. IC: اول مهار (۱۵ دقیقه)، سپس بازیابی؛ چون بازیابی بدون مهار دوباره آلوده می‌شود.
+
+#### مثال سخت — Inject غافلگیرکننده
+
+T+50: Comms می‌گوید مدیر اجرایی می‌خواهد «همه‌چیز را خاموش کنید». IC: توضیح ریسک (نابودی Evidence، قطع کامل کسب‌وکار) و پیشنهاد جایگزین (ایزوله‌سازی Mgmt و Hub1). تصمیم مستند. این مهارت ارتباط است.
+
+#### مثال سخت — نقد تمرین
+
+Scribe فاصله‌ی ۱۰ دقیقه‌ای در Timeline داشت (همه درگیر بودند). یافته: قالب ثبت ساده‌تر؛ ابزار مشترک (Doc همزمان). آموزش نقش Scribe.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. شبیه‌سازی Tabletop با نقش‌ها.
+2. Timeline و Communication Log.
+3. PIR و اقدام‌ها.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| همه کار می‌کنند | IC نیست | نقش |
+| بی‌Timeline | Scribe | ثبت |
+| Evidence گم | Restore زود | Snapshot |
+| پیام متناقض | بی‌Comms | سخنگو |
+
+### جمع‌بندی
+
+شبیه‌سازی با نقش‌ها و Inject؛ تغییر ماهیت (اختلال ⇒ امنیتی)؛ مهار پیش از بازیابی؛ Timeline و ارتباطات؛ PIR بدون سرزنش و MTTD/MTTR.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Incident Commander؟ *(پاسخ: 32-2-ت1)*
 
@@ -2389,7 +2287,7 @@ diagnose sys sdwan health-check
 
 **Q1.** Quick quiz (English): Why do we assign explicit roles during an incident? *(پاسخ: 32-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2397,121 +2295,16 @@ diagnose sys sdwan health-check
 
 - *Communicate regularly during an incident.* ← در حادثه به‌طور منظم اطلاع‌رسانی کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** شبیه‌سازی حادثه (اجرا نشده). **Evidence:** `03-ops/incident-sim.md`.
 
-### ۱۵) منابع
+### منابع
 
 - NIST SP 800-61 Rev.2 (در ۲۰۲۵ با Rev.3 جایگزین شده؛ مدل ۵ فاز کلاسیک مرجع آموزشی)
 - Google SRE: Incident response
 
 <a id="l-32-3"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: شبیه‌سازی حادثه
-
-Timeline نمونه: T0 هشدار، T+5 تأیید، T+15 مهار، T+60 بازیابی، T+24h PIR.
-
-**پرسش‌های مصاحبه**
-1. *Roles؟* Incident Commander.
-2. *ارتباط؟* دوره‌ای.
-3. *Evidence؟* حفظ.
-
-### مثال حل‌شده: Timeline
-
-``` text
-10:00 alert ; 10:05 triage ; 10:15 contain ; 10:50 recover ; next day PIR
-```
-نقش‌ها: Incident Commander، Ops، Comms، Scribe.
-
-### تکمیل عمیق: یک حادثه‌ی کامل از هشدار تا گزارش پس از حادثه
-
-#### چرا؟
-
-آتش‌نشانان تمرین آتش می‌کنند، نه چون آتش دوست دارند، چون در شلوغی واقعی فرصت فکر نیست. شبیه‌سازی حادثه همین کار را برای تیم شبکه می‌کند: نقش‌ها و ترتیب کارها از قبل در ذهن باشد.
-
-#### نقش‌ها
-
-| نقش | کار |
-|---|---|
-| Incident Commander | تصمیم‌گیری و هماهنگی |
-| Operator | اجرای دستورها |
-| Scribe | ثبت Timeline |
-| Communicator | اطلاع به ذی‌نفعان |
-
-در تیم کوچک یک نفر چند نقش دارد، ولی **ثبت‌کننده** را جدا نگه دارید؛ کسی که دستور می‌زند فرصت نوشتن ندارد.
-
-#### سناریو: VPN شرکت از ساعت ۱۰:۰۰ کند و بعد قطع می‌شود
-
-``` text
-10:00 alert  : VPN failed logins 43 in 5 min from 203.0.113.50
-10:03 triage : many users, real accounts -> suspected brute force
-10:05 check  : any success after failures ?  (Event log)
-10:07 result : one success for user ali from same IP  -> serious
-10:08 contain: block IP, disable ali session, force password reset
-10:20 verify : no new logins from IP; ali re-enabled after reset + MFA
-10:50 recover: VPN normal; monitor 72h
-D+1   PIR    : written
-```
-
-#### تحلیل تصمیم‌ها
-
-- چرا ابتدا «موفقیت پس از شکست» بررسی شد؟ چون Brute-force بدون موفقیت یک «تلاش» است و با موفقیت یک «نفوذ».
-- چرا Block فقط IP؟ جلوگیری از آسیب به کاربران مشروع.
-- چرا Reset رمز و MFA؟ رمز ممکن است لو رفته باشد.
-
-#### بخش Evidence
-
-``` text
-execute log filter category 1
-execute log display
-sha256sum vpn-events-2026-11-27.log
-```
-
-Log خام را قبل از هر تغییر کپی و Hash کنید؛ بعداً ثابت می‌کند چه شد.
-
-#### سناریوی سخت‌تر: دو مشکل هم‌زمان
-
-در حین حادثه، ISP هم قطع می‌شود. اولویت: بازگرداندن اینترنت کاربران یا مهار VPN؟ قاعده: خطر نفوذ فعال بر ناراحتی عملیاتی غلبه دارد؛ ولی چون دو نفر دارید، Operator-A VPN، Operator-B ISP.
-
-#### PIR (Post-Incident Review)
-
-``` text
-Impact   : VPN degraded 50 min, 1 account compromised
-Root cause: weak password + no MFA
-Actions  : MFA for all (owner IT, due 14d); geo-restrict (owner NOC, 7d)
-MTTD 3 min ; MTTR 50 min
-```
-
-Blameless یعنی «چه سیستمی اجازه داد این رخ دهد؟» نه «چه کسی خطا کرد؟».
-
-#### Lab
-
-سناریو را روی Lab با Log ساختگی تمرین کنید؛ هر نقش را یک‌بار بازی کنید؛ Timeline را بنویسید.
-
-#### عیب‌یابی فرایند
-
-| علامت | علت | رفع |
-|---|---|---|
-| Timeline ناقص | Scribe نبود | تعیین نقش |
-| مهار دیر | نبود Playbook | تدوین Playbook |
-| تکرار حادثه | PIR بی‌پیگیری | Action Owner و تاریخ |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Evidence قبل از رفع؟** رفع ممکن است شواهد را پاک کند.
-**۲. Blameless چیست؟** بررسی سیستم نه فرد.
-**۳. چرا MFA بعد از حادثه؟** علت ریشه‌ای رمز ضعیف بود.
-
-#### English Corner
-
-- *Preserve evidence before remediation.* پیش از اصلاح، شواهد را حفظ کنید.
-- *The post-incident review is blameless.*
-- Q: Which roles should exist during an incident?
 
 ## درس 32-3 — Capstone IV: مهاجرت/ارتقای کامل در Lab — Plan زمان‌بندی‌شده، Post-check، Rollback و گزارش
 
@@ -2519,131 +2312,129 @@ Blameless یعنی «چه سیستمی اجازه داد این رخ دهد؟» 
 
 > **وضعیت:** عملیات و Capstone III/IV روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Plan زمان‌بندی‌شده‌ی Upgrade/Migration (T-7d تا T+1d) بنویسد.
-2. Pre-check و Baseline را جمع کند.
-3. Cutover را مرحله‌ای با Checkpoint اجرا (طراحی) کند.
-4. Post-check و مقایسه با Baseline را انجام دهد.
-5. Rollback را در Lab آزمون و گزارش نهایی بنویسد.
+1. مهاجرت/ارتقای کامل را در Lab (از Plan تا Evidence) اجرا کنید.
+2. Upgrade Path و Release Notes را بررسی کنید.
+3. ارتقای Cluster HA بدون قطع طولانی (Uninterruptible) را برنامه‌ریزی کنید.
+4. Rollback را آزمون و زمان‌سنجی کنید.
+5. تست پیش/پس را با Baseline مقایسه کنید.
+6. گزارش نهایی و درس‌آموخته بنویسید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا ارتقای مرحله‌ای؟** ارتقا مثل تعویض موتور هواپیما در پرواز است. Upgrade Path رسمی، Release Notes، Lab، Backup، آزمون پیش/پس و Rollback. در HA ابتدا Secondary.
+ارتقای فایروال لبه از پرخطرترین کارهای دوره‌ای است: ممکن است Default تغییر کند، قابلیتی حذف شود، VPN Peer ناسازگار شود. ولی ارتقا نکردن هم خطرناک‌تر است (CVE). مهارت مهندس ارشد اجرای ارتقا به‌صورت قابل‌پیش‌بینی است: بررسی، Staging، Window، Rollback آزمون‌شده.
 
-**جمع‌بندی اصلی درس:**
-
-Upgrade یا Migration بزرگ‌ترین ریسک عملیاتی است. «قطع در ساعت ۲ بامداد برای Upgrade» داستان آشنایی است. چاره، Plan دقیق، Baseline و Rollback آزمون‌شده است.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) Plan زمانی
-
-| زمان | کار |
-|---|---|
-| T-7d | Inventory، Baseline، Backup، Release Notes، Path |
-| T-3d | Lab dry-run، Rollback test، CAB |
-| T-1d | تأیید Window، اطلاع‌رسانی |
-| T0 22:00 | Backup، Upgrade Secondary |
-| 22:20 | Failover، Upgrade Primary |
-| 22:50 | Post-check |
-| T+1d | مانیتورینگ و Close |
-
-#### ۲) Baseline
+### Plan
 
 ``` text
-get system status
-diagnose sys session stat
-get router info routing-table all  (summary)
-policy hit counts (top 20)
+T-14d  select target version (Recommended/Mature), read Release Notes + Known Issues
+T-10d  upgrade path check (Fortinet Upgrade Path tool), license/hardware compat
+T-7d   lab: restore production config into lab VMs, upgrade, run test matrix
+T-3d   change request, CAB approval, rollback rehearsal
+T-1d   backup full (encrypted) + baseline capture, go/no-go
+T0     upgrade (HA: secondary first), verify
+T+1d   monitor, close CHG, update inventory/runbooks
 ```
 
-#### ۳) Checkpoint
+### بررسی Upgrade Path
 
-| Checkpoint | شرط ادامه |
-|---|---|
-| C1: Backup | فایل+Hash |
-| C2: Secondary upgraded | cluster in-sync |
-| C3: Failover | سرویس بدون قطع طولانی |
-| C4: Primary upgraded | checksum |
-| C5: Post-check | معیارها OK |
+- مسیر مستقیم یا میانی (مثلاً ممکن است پرش از ۶٫۴ به ۷٫۰ نیاز به نسخه‌ی میانی داشته باشد؛ در ابزار رسمی بررسی کنید).
+- Release Notes: Changes in Default Behavior، Known Issues، تغییر Syntax (مثلاً Policy/VPN/SD-WAN).
+- سازگاری سخت‌افزار و Peerها (FortiAP/FortiSwitch/FortiClient نسخه‌ی پشتیبانی).
 
-اگر C3 شکست: Rollback.
-
-#### ۴) Post-check
-
-مقایسه‌ی Session count (±10٪)، Routeها، IPsec up، Policy hit، Log ingestion، آزمون‌های Test Matrix.
-
-#### ۵) گزارش
+### ارتقای HA بدون قطع طولانی
 
 ``` text
-Result: successful ; duration 55 min (plan 60)
-Deviations: HA sync slow (6 min)
-Lessons: wait for in-sync before failover
+1 backup both members
+2 upload image to primary; cluster upgrades secondary first
+3 secondary reboots, rejoins, config sync verified (checksum)
+4 failover to upgraded unit
+5 primary upgrades and reboots, rejoins
+6 optional failback (planned)
+7 verify: HA status, VPN, BGP, SD-WAN, UTM, logs
 ```
 
-### ۴) طراحی و تصمیم‌گیری
+نتیجه‌ی مورد انتظار: قطع کوتاه هنگام Failover (چند ثانیه)؛ Session Pickup بعضی Sessionها را نگه می‌دارد.
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Window | ۶۰ دقیقه+Rollback |
-| Baseline | قبل |
+### Test Matrix (Baseline)
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+| # | آزمون | قبل | بعد |
+|---|---|---|---|
+| 1 | HA status + checksum | ok | ok |
+| 2 | IPsec همه‌ی شعبه‌ها | up | up |
+| 3 | BGP Established | ok | ok |
+| 4 | SD-WAN Health-check | alive | alive |
+| 5 | Policy hit/Deny غیرمنتظره | baseline | مقایسه |
+| 6 | UTM (Web/DNS/File) | بلاک | بلاک |
+| 7 | Dial-up + MFA | ok | ok |
+| 8 | Syslog/SNMP | ok | ok |
+| 9 | Throughput/CPU | N | ≈N |
 
-#### مثال ساده
-
-برنامه T-14 تا T+24h.
-
-#### مثال متوسط — جدول
-
-نسخه، تعداد Policy، Tunnel، HA قبل/بعد.
-
-#### مثال سخت
-
-SSL-VPN Portal پس از ارتقا باز نشد: Release Notes؛ Rollback با معیار ۳۰ دقیقه.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Baseline: Session 41k؛ Post: 39k (−5٪) در حد قابل‌قبول.
-
-**متوسط (Checkpoint):** C2 رد شد (out-of-sync). تصمیم: توقف تا Sync؛ سپس ادامه؛ تأخیر ۶ دقیقه در Window.
-
-**سخت (Rollback):** پس از C4 IPsec بالا نمی‌آید. زمان تصمیم ۱۵ دقیقه؛ Debug نشان Proposal؛ Rollback به Partition قبلی ۸ دقیقه؛ RCA در Lab؛ CHG ناموفق با درس.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### Rollback
 
 ``` text
-get system status
-diagnose sys session stat
-diagnose sys ha checksum cluster
+Option A: reboot to previous firmware partition (execute set-next-reboot primary|secondary)
+Option B: restore pre-upgrade config on previous firmware (if config converted)
+Target  : <= 15 minutes; rehearsed in lab
 ```
 
-### ۸) Verification (اثبات صحت)
+نکته: پس از ارتقای نسخه‌ی اصلی، Config به قالب جدید تبدیل می‌شود؛ بازگشت به نسخه‌ی قدیمی با Config جدید ممکن است سازگار نباشد ⇒ حتماً Backup پیش از ارتقا.
 
-- Checkpointها.
-- Post-check.
+### مثال‌های حل‌شده
 
-### ۹) Troubleshooting
+#### مثال ساده — انتخاب نسخه
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+نسخه‌ی هدف: «Recommended» رسمی (مثلاً از جدول Fortinet «Recommended Release») نه جدیدترین. دلیل: بلوغ و باگ‌های کمتر؛ با ثبت در ADR.
+
+#### مثال متوسط — Release Notes
+
+یافته: در نسخه‌ی جدید Proposal پیش‌فرض IPsec تغییر کرده. اقدام: Proposal صریح در همه‌ی Phase1ها قبل از ارتقا؛ آزمون Lab.
+
+#### مثال متوسط — زمان‌سنجی
+
+``` text
+Rollback rehearsal: 11 min (target <= 15) -> OK
+Upgrade secondary: 8 min ; failover gap: 4 s ; primary: 8 min
+Total window used: 35 min of 90
+```
+
+#### مثال سخت — شکست در Lab
+
+Upgrade در Lab VPN Phase2 را شکست داد (Selector). کشف قبل از Production. رفع در Config و Test دوباره. ارزش Lab: هزینه‌ی خطا صفر. بدون آن Production.
+
+#### مثال سخت — HA Out-of-sync پس از ارتقا
+
+Secondary Config Sync نشد (`checksum` متفاوت). علت: اختلاف Build؛ رفع: `execute ha synchronize start` پس از هم‌نسخه‌شدن؛ Failover را تا Sync انجام ندهید. Log و Evidence.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Plan ارتقا و بررسی Upgrade Path.
+2. Test Matrix پیش/پس.
+3. Rollback Rehearsal.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| out-of-sync | checksum | Sync |
+| VPN بعد از ارتقا Down | Default تغییر | Proposal صریح |
+| HA Sync نشد | Build | هم‌نسخه |
+| Rollback ناسازگار | Config جدید | Backup قبل |
+| Window کم | بی‌زمان‌سنجی | Rehearsal |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Backup رمزگذاری.
+Image از منبع رسمی با Hash؛ Backup رمزگذاری‌شده؛ بعد از ارتقا Patch وضعیت؛ ثبت CHG و Evidence.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- Plan.
-- Checkpoint.
-- Rollback.
-- گزارش.
+ارتقای کامل: انتخاب نسخه، Upgrade Path، Lab، HA ترتیبی، Test Matrix پیش/پس، Rollback آزمون‌شده، گزارش و درس‌آموخته.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Baseline؟ *(پاسخ: 32-3-ت1)*
 
@@ -2659,7 +2450,7 @@ diagnose sys ha checksum cluster
 
 **Q1.** Quick quiz (English): Why define a rollback time limit before the change window? *(پاسخ: 32-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2667,11 +2458,11 @@ diagnose sys ha checksum cluster
 
 - *Define checkpoints with go/no-go criteria.* ← Checkpoint با معیار ادامه/توقف تعریف کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Capstone IV (اجرا نشده). **Evidence:** `03-ops/capstone-iv.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet Upgrade Path Tool
 - FortiOS 7.0 Release Notes
@@ -2692,99 +2483,6 @@ diagnose sys ha checksum cluster
 **نقطه‌ی تصمیم Rollback:** اگر تا 22:40 C3 یا C4 موفق نشد ⇒ Rollback (Boot از Partition قبلی).
 
 **گزارش:** مدت ۵۵ دقیقه (Plan ۶۰)، انحراف: Sync ۶ دقیقه کند بود؛ درس: پیش از Failover منتظر in-sync بمانید.
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: ارتقا/مهاجرت در Lab
-
-Plan زمان‌بندی، Rollback، آزمون پیش/پس؛ مسیر ارتقا طبق Upgrade Path Tool مستند Fortinet.
-
-**پرسش‌های مصاحبه**
-1. *Upgrade Path؟* مرحله‌ای.
-2. *Backup؟* قبل.
-3. *Release Notes؟* بررسی.
-
-### مثال حل‌شده: مسیر ارتقا
-
-نسخه‌ی فعلی ← با Upgrade Path Tool رسمی Fortinet مسیر را بگیرید (ممکن است مرحله‌ای باشد)؛ Backup، آزمون در Lab، پنجره‌ی تغییر، Verify، Rollback.
-
-### تکمیل عمیق: ارتقای نسخه‌ی FortiOS در Lab به‌صورت مرحله‌ای
-
-#### چرا؟
-
-ارتقا مثل تعویض موتور هواپیما در حین پرواز است؛ اگر آماده نباشید، همه‌چیز می‌افتد. هدف: ارتقای امن با Backup، مسیر درست، آزمون پیش/پس و Rollback.
-
-#### مفهوم Upgrade Path
-
-FortiOS همیشه از هر نسخه‌ای به هر نسخه‌ای نمی‌رود. Fortinet ابزار رسمی Upgrade Path Tool دارد که مسیر مرحله‌ای (مثلاً A→B→C) را مشخص می‌کند. مسیر را همیشه از ابزار/مستند رسمی همان مدل بگیرید؛ در Lab هم این عادت را بسازید.
-
-#### برنامه‌ی ارتقا (Plan)
-
-``` text
-T-14d  read Release Notes (known issues, config changes)
-T-7d   upgrade in Lab with copied config
-T-1d   full backup + hash + rollback image ready
-T0     maintenance window: upgrade primary path
-T+30m  verify: tunnels, HA, policy hit, UTM, logs
-T+24h  monitor; close change
-```
-
-#### Pre-check/Post-check جدول
-
-| مورد | قبل | بعد |
-|---|---|---|
-| نسخه | `get system status` | همان با نسخه‌ی جدید |
-| تعداد Policy | `show firewall policy` (شمارش edit) | یکسان |
-| Tunnel | `diagnose vpn tunnel list` | همه‌ی Tunnelها Up |
-| HA | `get system ha status` | in-sync |
-| Route | `get router info routing-table all` | بدون تفاوت غیرمنتظره |
-
-#### مثال ساده
-
-ارتقای یک VM تکی در Lab: Backup، بارگذاری Image، Reboot، Verify. زمان ≈ ۱۵ دقیقه.
-
-#### مثال متوسط — Cluster HA
-
-روش مستند Fortinet «Uninterruptible Upgrade»: ابتدا Secondary ارتقا می‌یابد و بوت می‌شود، Failover کنترل‌شده، سپس نفر دوم ارتقا می‌یابد. نکته: در طول ارتقا Cluster موقتاً نسخه‌ی ناهمسان دارد؛ این حالت موقت و طبق مستند مجاز است.
-
-#### مثال سخت — ارتقا که قابلیتی را می‌شکند
-
-پس از ارتقا SSL VPN Portal باز نمی‌شود. بررسی Release Notes: Syntax یا Default تغییر کرده. رفع: تطبیق Config با Syntax جدید یا Rollback به Image قبلی (Backup Image روی Flash). تصمیم Rollback با معیار قبلی: «اگر سرویس حیاتی تا ۳۰ دقیقه برنگشت».
-
-#### Rollback
-
-``` text
-execute restore image tftp old.out 10.50.0.30
-execute restore config tftp cfg-before.conf 10.50.0.30
-```
-
-برای دقیق بودن دستورها نسخه‌ی خودتان را از مستند رسمی بخوانید.
-
-#### Lab
-
-Upgrade Path را در ابزار رسمی ببینید؛ در Lab ارتقا و Rollback را یک‌بار انجام دهید و Pre/Post جدول را پر کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| بوت نمی‌شود | Image ناسازگار | Rollback از Console |
-| Config حذف شد | مسیر ارتقا اشتباه | Restore Backup |
-| Cluster out-of-sync | نسخه‌ی ناهمسان | تکمیل ارتقای عضو دوم |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Release Notes؟** تغییر Syntax/Default/Bug.
-**۲. چرا Lab اول؟** کشف مشکلات بدون اثر.
-**۳. معیار Rollback؟** از قبل تعریف‌شده.
-
-#### English Corner
-
-- *Follow the supported upgrade path.*
-- *Always read the release notes before upgrading.*
-- Q: When do you roll back?
 
 ## درس 32-4 — ارزیابی نهایی و Portfolio: ماتریس مهارت، تحلیل شکاف، نگاشت نقش و نمونه‌ی Portfolio
 
