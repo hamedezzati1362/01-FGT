@@ -344,132 +344,139 @@ Config از Primary به Secondary کپی می‌شود؛ `Configuration Status:
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ HA/VDOM Needs-License؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. SPOF را در توپولوژی تشخیص دهد و ماتریس خرابی بسازد.
-2. HA، Redundancy، Load-balancing و DR را تفکیک کند.
-3. A-P و A-A و Session Pickup را برای نیاز مشخص انتخاب کند.
-4. هزینه/ریسک/محدودیت (لایسنس، Split-brain، Firmware) را بسنجد.
-5. دسترس‌پذیری را محاسبه کند (۹۹٫۹ و ...).
+1. SPOF (Single Point of Failure) را در یک معماری پیدا کنید.
+2. سطوح افزونگی (لینک، دستگاه، سایت) را تفکیک کنید.
+3. RTO و RPO و اثر آن‌ها بر انتخاب HA را محاسبه کنید.
+4. FGCP Active-Passive و Active-Active را از نظر طراحی مقایسه کنید.
+5. جایگزین‌ها (VRRP، Standalone + Backup، Cloud Redundancy) را بشناسید.
+6. هزینه‌ی افزونگی در برابر هزینه‌ی قطعی را ارزیابی کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا قبل از HA باید SPOF را فهرست کنیم؟** HA مثل بیمه‌ی یک چیز است، نه همه‌چیز. اگر بیمه‌ی خودرو دارید ولی خانه‌ی شما آتش بگیرد، بیمه‌ی خودرو کمک نمی‌کند. SPOF (Single Point of Failure، یعنی «نقطه‌ی شکست یگانه») هر جزئی است که اگر بیفتد کل سرویس می‌خوابد: دستگاه، لینک، برق، ISP، سوییچ، DNS، NTP. طراح خوب ابتدا فهرست می‌نویسد، سپس برای هر مورد افزونگی می‌گذارد.
+اگر فروشگاه شما فقط یک صندوق دارد و آن خراب شود، فروش متوقف می‌شود. دو صندوق (Active-Passive) یعنی دومی منتظر است. ولی اگر هر دو به یک پریز وصل باشند، پریز SPOF است. HA فقط «دو دستگاه» نیست؛ یعنی حذف تمام نقاط تک‌خطایی از مسیر: برق، لینک، سوئیچ، ISP، فایروال. بسیاری از پروژه‌ها دو فایروال می‌خرند ولی هر دو را به یک سوئیچ می‌زنند؛ سوئیچ می‌شود SPOF و HA بی‌فایده.
 
-**سه مفهوم کلیدی طراحی**
-
-- **RTO (Recovery Time Objective):** حداکثر زمان قابل‌قبول برای بازگشت سرویس.
-- **RPO (Recovery Point Objective):** حداکثر داده‌ی قابل‌ازدست‌دادن.
-- **سطوح افزونگی:** دستگاه (HA)، لینک (LAG/دو لینک)، مسیر (Dual-ISP)، برق (دو PSU/UPS)، مکان (دو سایت).
-
-**Active-Passive یا Active-Active؟** A-P ساده است؛ A-A برای بار UTM سنگین و پیچیده‌تر. تصور «A-A یعنی ظرفیت دو برابر» اشتباه رایج است؛ پس از Failover فقط یک دستگاه می‌ماند و باید کل بار را بردارد.
-
-**جمع‌بندی اصلی درس:**
-
-HA یعنی «طراحی برای خرابی»، نه «دو دستگاه». باید بدانید HA چه خرابی‌هایی را پوشش می‌دهد و کدام را نه؛ و هزینه‌ی افزونگی چیست.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) ماتریس خرابی
-
-| خرابی | HA فایروال پوشش می‌دهد؟ | راه مکمل |
-|---|---|---|
-| دستگاه/برق | بله | — |
-| لینک Interface | بله (Monitor) | LAG |
-| ISP/لینک بالادست | خیر | Dual-ISP/SD-WAN |
-| Config اشتباه | خیر (Sync می‌شود) | Change/Canary |
-| CVE مشترک | خیر | Patch/تنوع |
-| سایت | خیر | DR |
-
-#### ۲) دسترس‌پذیری
+### SPOF — جست‌وجو
 
 ``` text
-Availability = MTBF / (MTBF + MTTR)
-Serial (both needed): A = A1 x A2        Parallel (either): A = 1 - (1-A1)(1-A2)
-Example: single device 99.5%  -> HA pair parallel = 1 - 0.005^2 = 99.9975%
-Downtime/year at 99.9% = 8.76 h ; at 99.99% = 52.6 min
+Users -- [SW] -- [FGT-A] -- [SW] -- ISP1
+                 [FGT-B]
 ```
 
-#### ۳) انتخاب مدل
+SPOFهای ممکن: سوئیچ تک، کابل تک، منبع تغذیه‌ی تک، ISP تک، دیسک (لاگ)، لایسنس، آدمی که فقط او رمز را می‌داند.
 
-| نیاز | پاسخ |
+### سطوح افزونگی
+
+| سطح | روش |
 |---|---|
-| قطع کوتاه قابل‌قبول | A-P |
-| تداوم Session | A-P + Session Pickup |
-| بار UTM زیاد | A-A (محدودیت) |
-| سایت دوم | DR/Multi-site |
+| لینک | LAG/Redundant Interface، دو کابل |
+| دستگاه | HA Cluster (FGCP) |
+| ISP | Dual-ISP/SD-WAN |
+| سایت | DR (سایت دوم)، DNS/GSLB |
+| برق | دو منبع، دو مسیر UPS |
 
-#### ۴) هزینه/ریسک
+### RTO و RPO
 
-لایسنس دو دستگاه، پیچیدگی، آزمون دوره‌ای، Firmware یکسان، Split-brain، ارتقای کنترل‌شده.
+- **RTO** (Recovery Time Objective): حداکثر زمان قطع قابل‌قبول.
+- **RPO** (Recovery Point Objective): حداکثر داده/وضعیت از دست‌رفته‌ی قابل‌قبول.
 
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| A-P/A-A | a-p مگر نیاز بار |
-| Pickup | حساس |
-| DR | سایت |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — دسترس‌پذیری
+برای فایروال: RPO یعنی Sessionها و پیکربندی؛ FGCP پیکربندی را Sync می‌کند و (با session-pickup) Session TCP را.
 
 ``` text
-Availability = uptime / (uptime + downtime)
-99.9%  -> ~8.76 hours downtime / year
-99.99% -> ~52.6 minutes downtime / year
+Availability = Uptime / (Uptime + Downtime)
+99.9%  -> ~8.76 h downtime / year
+99.99% -> ~52.6 min / year
 ```
 
-#### مثال متوسط — نقشه‌ی SPOF
+``` text
+Downtime/year (99.9%) = 365 x 24 x 0.001 = 8.76 h
+Downtime/year (99.99%) = 365 x 24 x 0.0001 = 0.876 h = 52.6 min
+```
 
-| جزء | افزونگی | وضعیت |
+### FGCP: Active-Passive در برابر Active-Active
+
+| ویژگی | Active-Passive | Active-Active |
 |---|---|---|
-| فایروال | HA A-P | دارد |
-| سوییچ هسته | یک سوییچ | **SPOF** |
-| ISP | تک‌لینک | **SPOF** |
-| برق | UPS تک | **SPOF** |
-| DNS | دو سرور | دارد |
+| ترافیک | Primary | هر دو (UTM توزیع) |
+| سادگی | بالا | کمتر |
+| ظرفیت | یک دستگاه | بیشتر (فقط بعضی ترافیک‌ها) |
+| عیب‌یابی | ساده | پیچیده |
+| پیشنهاد | بله (عمومی) | موارد خاص |
 
-نتیجه: HA فایروال سه SPOF دیگر را نمی‌پوشاند.
+### جایگزین‌ها
 
-#### مثال سخت — SPOF پنهان
-
-دو فایروال HA هستند ولی هر دو به یک سوییچ با یک منبع برق وصل‌اند. خرابی سوییچ همه را می‌برد. رفع: دو سوییچ و اتصال متقاطع؛ و آزمون واقعی قطع هر جزء (کابل را بکشید و ping مداوم).
-
-#### مثال سخت — ظرفیت پس از Failover
-
-ترافیک 3 Gbps و هر دستگاه با UTM فقط 2 Gbps. با A-A نیز پس از افتادن یک عضو، یک دستگاه 2 Gbps می‌ماند و اشباع می‌شود. نتیجه: مدل بزرگ‌تر یا کاهش Profile؛ HA ظرفیت را حل نمی‌کند.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** ماتریس SPOF برای ISP، فایروال، سوئیچ، برق؛ اولویت.
-
-**متوسط (محاسبه):** دستگاه تکی 99.5٪؛ جفت HA ⇒ 1−0.005²=99.9975٪؛ Downtime سالانه ≈ ۲۲ دقیقه؛ ولی با ISP تکی 99.9٪ ⇒ سقف کل 99.9٪ (حلقه ضعیف).
-
-**سخت (قضاوت):** مدیر: «HA داریم پس قطع نداریم». چهار خرابی خارج از پوشش: ISP، Config خراب Sync‌شده، CVE مشترک/ارتقای هم‌زمان، قطع Heartbeat (Split-brain). طرح: Dual-ISP/SD-WAN، Change Canary، Patch مرحله‌ای، HB Redundant.
-
-### ۸) Verification (اثبات صحت)
-
-- ماتریس خرابی امضا‌شده.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| روش | توضیح | محدودیت |
 |---|---|---|
-| Config خراب | HA status | Change/Rollback |
+| VRRP | Gateway مجازی بین دو FGT مستقل | بدون Sync Config/Session |
+| Standalone + Backup + Cold Spare | ارزان | RTO ساعت‌ها |
+| Cloud/ VM Redundancy | بسته به پلتفرم | معماری ابری |
+| دو سایت (DR) | سایت دوم | RTO/RPO تعریف |
 
-### ۱۰) نکات امنیتی
+### هزینه در برابر قطعی
 
-- HA آسیب‌پذیری را حل نمی‌کند.
+``` text
+Cost of outage = revenue/hour x hours + SLA penalties + reputation
+Cost of HA     = 2nd device + licenses + support + complexity
+```
 
-### ۱۱) جمع‌بندی مفهومی
+مثال: فروشگاه آنلاین 10M در ساعت؛ قطع ۴ ساعت ⇒ 40M؛ HA سالانه 8M ⇒ توجیه‌پذیر.
 
-- HA طراحی برای خرابی؛ حلقه‌ی ضعیف سقف را تعیین می‌کند.
+### مثال‌های حل‌شده
 
-### ۱۲) تمرین و ارزیابی
+#### مثال ساده — پیدا کردن SPOF
+
+دو FGT در HA ولی هر دو به یک سوئیچ ⇒ سوئیچ SPOF. راه: دو سوئیچ (Stack یا جدا) با اتصال متقاطع.
+
+#### مثال متوسط — RTO
+
+نیاز: RTO < 10 s برای Sessionها. FGCP Failover معمولاً چند ثانیه؛ با Session Pickup اتصال‌های TCP می‌مانند. قابل‌قبول. ولی اگر برنامه‌ی Voice حساس است، تماس ممکن است Glitch ثانیه‌ای داشته باشد.
+
+#### مثال متوسط — VRRP یا FGCP
+
+شعبه‌ی کوچک با دو FGT مستقل: VRRP ساده ولی Config دوباره باید دستی؛ FGCP Sync خودکار. تصمیم: FGCP (اگر دو دستگاه هم‌مدل).
+
+#### مثال سخت — Availability
+
+نیاز 99.99٪؛ فایروال HA 99.99٪ ولی ISP 99.5٪. کل سیستم محدود به ضعیف‌ترین حلقه: ISP تک ⇒ سایت 99.5٪. راه: دو ISP. محاسبه‌ی ترکیبی:
+
+``` text
+Serial availability  = A1 x A2 = 0.9999 x 0.995 = 0.99490
+Parallel (2 ISPs)    = 1 - (1-0.995) x (1-0.995) = 0.999975
+```
+
+#### مثال سخت — HA و Config نادرست
+
+Cluster سالم ولی Policy ناقص ⇒ HA هم همان ناقص را Sync می‌کند. HA خطاهای پیکربندی را حل نمی‌کند، تکثیر می‌کند.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. معماری موجود را رسم و SPOF علامت بزنید.
+2. RTO/RPO تعریف و روش انتخاب کنید.
+3. هزینه‌ی HA در برابر قطعی را بنویسید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| HA بی‌فایده | SPOF دیگر | حذف |
+| Failover کند | Timer | تنظیم |
+| Config خراب Sync | تکثیر | Change Control |
+| ISP تک | Availability پایین | Dual-ISP |
+
+### نکات امنیتی
+
+HA لینک Heartbeat را ایزوله و رمزگذاری‌شده نگه دارد؛ دسترسی مدیریتی جدا برای هر عضو؛ آزمون دوره‌ای.
+
+### جمع‌بندی
+
+HA یعنی حذف SPOFها؛ RTO/RPO و Availability با فرمول؛ FGCP Active-Passive پیش‌فرض عملی؛ VRRP و DR جایگزین؛ هزینه‌ی افزونگی را با هزینه‌ی قطعی بسنجید.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) SPOF چیست؟ *(پاسخ: 22-1-ت1)*
 
@@ -485,7 +492,7 @@ Availability = uptime / (uptime + downtime)
 
 **Q1.** Quick quiz (English): Why does the weakest component limit overall availability in a serial chain? *(پاسخ: 22-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -495,103 +502,16 @@ Availability = uptime / (uptime + downtime)
 
 - *HA is not a substitute for change control.* ← HA جایگزین کنترل تغییر نیست.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** نقشه HA. **Evidence:** `02-design/ha-map.md`.
 
-### ۱۵) منابع
+### منابع
 
 - [FGCP](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/62403/fgcp)
 - NIST SP 800-34
 
 <a id="l-22-2"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: SPOF Map
-
-| جزء | افزونه |
-|---|---|
-| دستگاه | HA |
-| لینک | LAG/Dual-link |
-| برق | دو PSU/UPS |
-| ISP | Dual-ISP |
-| سوئیچ | Stack/MLAG |
-
-HA فقط یک ردیف را می‌پوشاند؛ نقشه‌ی بقیه را ترسیم کنید.
-
-**پرسش‌های مصاحبه**
-1. *RTO/RPO؟* زمان/داده‌ی قابل تحمل.
-2. *Active-Active؟* مقیاس ولی پیچیده.
-3. *SPOF پنهان؟* DNS، NTP.
-
-### تکمیل عمیق: مفاهیم HA برای طراحی — SPOF، RTO/RPO و سطوح افزونگی
-
-#### چرا؟
-
-HA فقط یک ردیف از فهرست خرابی‌هاست. طراح خوب ابتدا همه‌ی نقاط شکست (SPOF = Single Point of Failure) را فهرست می‌کند و بعد برای هر کدام راه‌حل می‌گذارد.
-
-#### نقشه‌ی SPOF
-
-| جزء | شکست | افزونگی |
-|---|---|---|
-| دستگاه | سوختن | HA Cluster |
-| لینک | قطع کابل | LAG / لینک دوم |
-| برق | قطع | دو PSU + UPS |
-| ISP | قطع | Dual-ISP/SD-WAN |
-| سوئیچ | خرابی | دو سوئیچ |
-| DNS/NTP | قطع | سرور دوم |
-
-#### RTO و RPO
-
-RTO = Recovery Time Objective (حداکثر زمان قابل‌قبول برای بازگشت سرویس)، RPO = Recovery Point Objective (حداکثر داده‌ی قابل‌ازدست‌دادن). برای فایروال: RTO معمولاً ثانیه تا دقیقه؛ RPO به Session و Config مربوط است.
-
-#### مثال ساده — محاسبه‌ی دسترس‌پذیری
-
-``` text
-Availability = uptime / (uptime + downtime)
-99.9%  -> ~8.76 hours downtime/year
-99.99% -> ~52.6 minutes downtime/year
-```
-
-#### مثال متوسط — Active-Passive در برابر Active-Active
-
-| معیار | A-P | A-A |
-|---|---|---|
-| سادگی | بالا | کمتر |
-| ظرفیت | یک دستگاه | تقسیم‌شده (محدود) |
-| UTM | ساده | سخت‌تر |
-
-A-A تنها برای بعضی ترافیک (مثلاً UTM) توزیع می‌کند و بسیاری از سازمان‌ها A-P را ترجیح می‌دهند.
-
-#### مثال سخت — SPOF پنهان
-
-HA کامل، ولی هر دو فایروال به یک سوئیچ وصل‌اند که برق مشترک دارد؛ خرابی سوئیچ همه را می‌برد. راه: دو سوئیچ، اتصال متقاطع.
-
-#### Lab
-
-نقشه‌ی SPOF شبکه‌ی خودتان را با ۱۰ ردیف بنویسید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| قطع با وجود HA | SPOF دیگر | نقشه |
-| Failover کند | Timer | تنظیم |
-| ظرفیت ناکافی | A-P | A-A یا ارتقا |
-
-#### پرسش‌ها با پاسخ
-
-**۱. 99.99٪ چند دقیقه؟** حدود ۵۲٫۶ دقیقه در سال.
-**۲. RTO چیست؟** زمان بازگشت.
-**۳. SPOF پنهان؟** برق/سوئیچ مشترک.
-
-#### English Corner
-
-- *Redundancy at one layer is useless if another layer is a single point of failure.*
-- Q: What does 99.99 percent availability allow per year?
 
 ## درس 22-2 — پیکربندی HA Active-Passive: برگه‌ی طراحی، GUI، CLI، Heartbeat، Monitor و Verification
 
@@ -599,225 +519,157 @@ HA کامل، ولی هر دو فایروال به یک سوئیچ وصل‌ان
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده»؛ HA/VDOM وابسته به مدل/لایسنس (Needs-License).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. پیش‌نیازهای HA (هم‌مدل، هم‌نسخه، هم‌لایسنس، پورت‌ها) را بررسی کند.
-2. برگه‌ی طراحی (Group، Mode، Priority، hbdev، monitor، session-pickup) را بنویسد.
-3. HA را از GUI و CLI روی دو دستگاه پیکربندی کند.
-4. وضعیت Cluster و Sync را با دستورهای Verification تأیید کند.
-5. Management Interface اختصاصی (ha-mgmt) را تنظیم کند.
-6. خطاهای رایج (Mismatch، Out-of-sync، Heartbeat) را عیب‌یابی کند.
+1. پیش‌نیازهای HA (هم‌مدل، هم‌نسخه، هم‌لایسنس، پورت‌ها، دیسک) را بررسی کنید.
+2. برگه‌ی طراحی (Group، Mode، Priority، hbdev، monitor، session-pickup) را بنویسید.
+3. HA را از GUI و CLI روی دو دستگاه پیکربندی کنید.
+4. وضعیت Cluster و Sync را با دستورهای Verification تأیید کنید.
+5. Management Interface اختصاصی (ha-mgmt) را تنظیم کنید.
+6. خطاهای رایج ساخت Cluster را رفع کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا قبل از CLI «برگه‌ی طراحی»؟** HA با یک تنظیم اشتباه (Group-name ناهمخوان، رمز متفاوت، Heartbeat روی لینک مشترک) یا برقرار نمی‌شود یا بدتر، ناپایدار می‌شود. برگه‌ی طراحی مثل چک‌لیست خلبان است: قبل از پرواز همه‌چیز بررسی می‌شود.
+ساختن Cluster مثل ازدواج دو دستگاه است: باید کاملاً هم‌خوان باشند (مدل، نسخه، لایسنس) و روی «قوانین زندگی مشترک» توافق کنند (Group، Password، Heartbeat). یک اختلاف کوچک (مثلاً نسخه‌ی FortiOS) و Cluster تشکیل نمی‌شود یا Sync نمی‌شود. چون HA روی دستگاه Production اعمال می‌شود، یک اشتباه می‌تواند اینترنت را قطع کند؛ پس برگه‌ی طراحی و ترتیب اجرا حیاتی است.
 
-**پیش‌نیازها:** دو دستگاه با **همان مدل**، **همان نسخه‌ی FortiOS**، لایسنس‌های هم‌ارز و Interfaceهای هم‌نام.
+### پیش‌نیازها
 
-**تنظیمات اصلی**
-
-- `group-name` و `password` یکسان.
-- `mode a-p`.
-- `hbdev`: ۲ لینک Heartbeat مستقل با Priority.
-- `priority`: عضو ترجیحی Primary (مثلاً 200 و 100).
-- `override`: معمولاً خاموش تا Failback خودکار رخ ندهد.
-- `monitor`: Interfaceهایی که قطعشان باید Failover بدهد.
-- `session-pickup`: حفظ Sessionهای TCP هنگام Failover.
-
-**پس از اتصال:** Config فقط از Primary همگام می‌شود؛ `get system ha status` باید `in-sync` نشان دهد.
-
-**جمع‌بندی اصلی درس:**
-
-یک فایروال تنها نقطه‌ی شکست است: اگر بسوزد، سازمان از اینترنت جدا می‌شود. HA دو فایروال را طوری به هم می‌بندد که یکی فعال و دیگری آماده باشد. اگر فعال بیفتد، دومی ظرف چند ثانیه جای آن را می‌گیرد و کاربر شاید فقط یک بار «رفرش» کند.
-
-اما HA تنها زمانی کار می‌کند که پیکربندی دقیق باشد: دو دستگاه باید یکسان باشند، Heartbeat جدا و قابل‌اعتماد باشد و Monitor درست انتخاب شود. در این درس هر پارامتر را با دلیلش می‌نویسید. توجه: FGCP نیازمند مدل/لایسنس مناسب است؛ در Lab مجازی بدون لایسنس معتبر ممکن است ناممکن باشد (Needs-License).
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) پیش‌نیازها
-
-| مورد | الزام |
+| مورد | چرا |
 |---|---|
-| مدل | یکسان |
-| FortiOS | یکسان (مثلاً 7.0.3 Build یکسان) |
-| لایسنس | معتبر روی هر دو (نرم‌افزار/سرویس) |
-| پورت‌ها | Heartbeat اختصاصی، Monitor Interfaceها همنام |
-| دیسک/RAM | یکسان |
+| هم‌مدل و هم‌سخت‌افزار | Sync و Offload |
+| هم‌نسخه و Build | رفتار و Sync |
+| لایسنس FortiGuard هر دو | خدمات هر عضو |
+| پورت‌های Heartbeat | حداقل ۲ لینک مستقیم |
+| Interfaceهای یکسان | Monitor/Failover |
+| زمان (NTP) | Log و Certificate |
 
-#### ۲) برگه‌ی طراحی
+### برگه‌ی طراحی
 
-| پارامتر | مقدار | دلیل |
+| پارامتر | FGT-A | FGT-B |
 |---|---|---|
-| Mode | Active-Passive | ساده و قابل‌پیش‌بینی |
-| Group name | FGT-HA | یکسان در هر دو |
-| Password | از Vault | احراز اعضا |
-| hbdev | port3 (50)، port4 (100) | دو لینک مستقل |
-| Priority | A=200، B=100 | فقط وقتی تعیین‌کننده است که Age برابر باشد یا override فعال باشد (به توضیح انتخاب Primary پایین‌تر نگاه کنید) |
-| override | disable | جلوگیری از Flap |
-| session-pickup | enable | ماندگاری TCP |
-| monitor | port1 port2 | Failover با خرابی لینک |
+| group-name | FGT-HA | FGT-HA |
+| mode | a-p | a-p |
+| password | <SECRET> | <SECRET> |
+| hbdev | port3 (100)، port4 (50) | port3 (100)، port4 (50) |
+| priority | 200 | 100 |
+| override | disable | disable |
+| monitor | port1، port2 | port1، port2 |
+| session-pickup | enable | enable |
+| ha-mgmt | port8 | port8 |
+| hostname | FGT-A | FGT-B |
 
-**ترتیب انتخاب Primary در FGCP (طبق مستند Fortinet):** وقتی override غیرفعال است (پیش‌فرض): ۱) Monitored Interface خراب‌نشده، ۲) **Age** (مدت کارکرد HA؛ اختلاف کمتر از ۳۰۰ ثانیه «مساوی» حساب می‌شود)، ۳) Device Priority، ۴) Serial Number. وقتی override فعال است: Monitored Interface، سپس **Priority**، بعد Age، بعد Serial. پس با override خاموش، عضو با Priority بالاتر فقط وقتی Primary می‌شود که با اختلاف Age کمتر از ۵ دقیقه هم‌زمان بالا آمده باشد؛ وگرنه عضو قدیمی‌تر Primary می‌ماند. Priority پیش‌فرض ۱۲۸ است و override بین اعضا همگام نمی‌شود (باید روی هر دو یکسان تنظیم شود). خرابی Monitored Interface یا Reboot، Age آن عضو را صفر می‌کند.
-
-#### ۳) CLI
+### پیکربندی CLI (FGT-A)
 
 ``` text
 config system ha
- set group-name "FGT-HA"
- set mode a-p
- set password <FROM-VAULT>
- set hbdev "port3" 50 "port4" 100
- set priority 200
- set session-pickup enable
- set monitor "port1" "port2"
- set override disable
- set ha-mgmt-status enable
- config ha-mgmt-interfaces
-  edit 1
-   set interface "mgmt"
-   set gateway 10.99.0.1
-  next
- end
+    set group-id 10
+    set group-name "FGT-HA"
+    set mode a-p
+    set password <SECRET>
+    set hbdev "port3" 100 "port4" 50
+    set session-pickup enable
+    set session-pickup-connectionless enable
+    set priority 200
+    set override disable
+    set monitor "port1" "port2"
+    set ha-mgmt-status enable
+    config ha-mgmt-interfaces
+        edit 1
+            set interface "port8"
+            set gateway 10.50.0.254
+        next
+    end
 end
 ```
 
-روی دستگاه B همان پارامترها با priority 100. پس از Apply، اعضا شرکت می‌کنند و Config از Primary به Secondary همگام می‌شود (Hostname و ha-mgmt مستثنی). پارامترها `Unverified`.
+FGT-B: همان با `priority 100`. نکات:
 
-#### ۴) GUI
+1. `group-id` برای MAC مجازی (VMAC) استفاده می‌شود؛ دو Cluster در یک L2 باید Group-ID متفاوت داشته باشند.
+2. `override disable`: عضو با Priority بالاتر پس از بازگشت به‌صورت خودکار Primary نمی‌شود (ثبات).
+3. Hostname هر عضو باید جدا باشد (Sync نمی‌شود).
 
-System → HA: Mode = Active-Passive، Device Priority، Group Name، Password، Heartbeat Interfaces و Monitor Interfaces را تنظیم کنید.
+### ترتیب اجرا
 
-#### ۵) Verification
+1. Backup پیکربندی.
+2. نسخه و لایسنس را بررسی کنید.
+3. کابل Heartbeat را وصل کنید.
+4. HA را روی FGT-A (که Config اصلی دارد) فعال کنید.
+5. HA را روی FGT-B با همان پارامتر و Priority پایین‌تر فعال کنید؛ FGT-B Config خود را از A می‌گیرد.
+6. Cluster Sync را تأیید کنید.
+
+اجرا روی B قبل از A می‌تواند Config را بازنویسی کند؛ همیشه دستگاه حاوی Config درست Primary بماند.
+
+### Verification
 
 ``` text
 get system ha status
 diagnose sys ha status
 diagnose sys ha checksum cluster
-diagnose sys ha checksum show
+diagnose sys ha history read
 execute ha manage 1 admin
 ```
 
-انتظار: دو عضو، Primary=A، checksumها یکسان.
-
-#### ۶) خطاهای رایج
-
-| علامت | علت |
-|---|---|
-| عضو دوم Join نمی‌شود | Mismatch نسخه/Group/Password/لایسنس |
-| Out-of-sync | تفاوت Config/HB ضعیف |
-| Flap | override enable یا Monitor ناپایدار |
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Heartbeat | دو لینک |
-| override | disable |
-| Mgmt | ha-mgmt جدا |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — برگه
+نمونه:
 
 ``` text
-Group name : FGT-HA        Mode : a-p        Password : (vault)
-HB devices : port7 (50), port8 (50)
-Priority   : A=200, B=100  Override : disable
-Monitor    : port1, port2  Session pickup : enable
+HA Health Status: OK
+Mode: HA A-P
+Primary : FGT-A, FG...A, HA cluster index = 0
+Secondary: FGT-B, FG...B, HA cluster index = 1
 ```
 
-#### مثال ساده — CLI
+`checksum cluster` باید در دو عضو برابر باشد (Config Sync).
 
-``` text
-config system ha
- set group-name "FGT-HA"
- set mode a-p
- set password ***
- set hbdev "port7" 50 "port8" 50
- set priority 200
- set override disable
- set session-pickup enable
- set monitor "port1" "port2"
-end
-```
+### مثال‌های حل‌شده
 
-روی دستگاه دوم همان با Priority کمتر.
+#### مثال ساده — Cluster تشکیل شد
 
-#### مثال متوسط — بررسی
+`get system ha status` ⇒ دو عضو؛ Primary=FGT-A. `diagnose sys ha checksum cluster` ⇒ checksum یکسان.
 
-``` text
-get system ha status
-diagnose sys ha checksum cluster
-```
+#### مثال متوسط — Out-of-sync
 
-انتظار: دو عضو، `in-sync`، Primary مورد نظر.
+Checksum متفاوت. علت: Config دستی روی B (تنظیم ممنوع). راه: `execute ha synchronize start` یا از Primary تغییر دهید؛ هرگز روی Secondary تغییر ندهید (به‌جز ha-mgmt).
 
-#### مثال متوسط — MAC مجازی
+#### مثال متوسط — Monitor
 
-پس از Failover MAC مجازی تغییر نمی‌کند؛ سوییچ‌ها ARP را دوباره یاد نمی‌گیرند و Gratuitous ARP ارسال می‌شود. اگر پس از Failover بعضی دستگاه‌ها قطع بمانند، ARP Cache سوییچ/روتر بررسی شود.
+`monitor port1 port2`: اگر لینک port1 در Primary Down شود، Failover. اگر Monitor نباشد، Failover فقط با خرابی کامل دستگاه.
 
-#### مثال سخت — عضو دوم نمی‌پیوندد
+#### مثال سخت — نسخه‌ی متفاوت
 
-1. Group-name/Password یکسان؟
-2. نسخه/مدل/Build یکسان؟
-3. Heartbeat Interface‌ها واقعاً متصل و Link Up؟
-4. همان Interface برای ترافیک عادی هم استفاده شده؟
-5. VLAN/سوییچ بین دو لینک Heartbeat.
-پس از رفع: `get system ha status`.
+B نسخه‌ی 7.0.2 و A 7.0.3. Cluster اولیه ممکن است تشکیل شود ولی Sync مشکل دارد. رفع: ارتقای B به همان Build قبل از HA. توصیه: Upgrade روی هر دو قبل از Cluster.
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال سخت — Heartbeat روی لینک مشترک
 
-**ساده (حل‌شده):** پس از پیکربندی دو دستگاه `get system ha status` نشان می‌دهد دو عضو، Primary=A. checksum یکسان؛ پس Cluster سالم.
+hbdev روی port1 (که ترافیک کاربر هم دارد). در ازدحام Heartbeat Loss ⇒ Failover اشتباه (Flapping). رفع: لینک اختصاصی و Redundant. نمونه‌ی هشدار: `HA heartbeat lost`.
 
-**متوسط (Mismatch):** B Join نمی‌شود. مراحل: ۱) `get system status` نسخه‌ی B 7.0.2 و A 7.0.3. ۲) هم‌نسخه‌سازی. ۳) Join. پاسخ: نسخه‌ی یکسان لازم است.
+### Lab هدایت‌شده (اجرا نشده)
 
-**سخت (Out-of-sync):** `diagnose sys ha checksum cluster` تفاوت در بخش Policy. مراحل: ۱) `diagnose sys ha checksum show` بخش متفاوت. ۲) Primary را مرجع کنید؛ در B Reboot یا `diagnose sys ha checksum recalculate` (فرمان `execute ha synchronize` در مستند تأیید نشد). ۳) Verify. علت: تغییر مستقیم روی Secondary. درس: همیشه روی Primary تغییر دهید.
+1. برگه‌ی طراحی را کامل کنید.
+2. Cluster بسازید و Verify کنید.
+3. Out-of-sync عمدی و رفع.
 
-### ۶) پیاده‌سازی از مسیر GUI
+### عیب‌یابی سریع
 
-1. System → HA را باز کنید.
-2. Mode و Priority را تنظیم کنید.
-3. Heartbeat و Monitor Interfaces را انتخاب کنید.
-4. Apply و بررسی Cluster Members.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-get system ha status
-diagnose sys ha status
-diagnose sys ha checksum cluster
-execute ha manage 1 admin
-```
-
-### ۸) Verification (اثبات صحت)
-
-- دو عضو و Primary.
-- checksum یکسان.
-- Failover آزمون.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| Join نمی‌شود | نسخه/Group/Password | یکسان‌سازی |
-| Out-of-sync | checksum | Sync/Reboot |
-| Flap | override/monitor | disable |
+| Cluster تشکیل نمی‌شود | Group/Password/Mode | هماهنگ |
+| Out-of-sync | تغییر روی Secondary | Sync |
+| Flapping | Heartbeat | لینک اختصاصی |
+| B Config را بازنویسی | ترتیب | Primary درست |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- رمز HA در Vault.
-- HB جدا.
+Password HA قوی؛ لینک Heartbeat ایزوله؛ `ha-mgmt` فقط در Mgmt؛ Backup قبل از تغییر.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- HA نیاز به یکسانی.
-- HB مضاعف.
-- override disable.
-- Primary تغییر دهید.
+HA با پیش‌نیاز و برگه‌ی طراحی؛ A-P، hbdev دو لینک، monitor و session-pickup؛ ترتیب فعال‌سازی؛ تأیید با `get system ha status` و `checksum cluster`.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) پیش‌نیازهای HA؟ *(پاسخ: 22-2-ت1)*
 
@@ -833,7 +685,7 @@ execute ha manage 1 admin
 
 **Q1.** Quick quiz (English): Why should changes be made on the primary unit only? *(پاسخ: 22-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -841,114 +693,16 @@ execute ha manage 1 admin
 
 - *Heartbeat links must be dedicated.* ← لینک‌های Heartbeat باید اختصاصی باشند.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** پیکربندی HA (اجرا نشده؛ Needs-License). **Evidence:** `03-ops/ha-config.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: HA (FGCP)
 - FortiOS 7.0 HA guide
 
 <a id="l-22-3"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: پیکربندی
-
-``` text
-config system ha
- set group-name "FGT-HA"
- set mode a-p
- set hbdev "port7" 50 "port8" 50
- set priority 200
- set override disable
- set session-pickup enable
- set monitor "port1" "port2"
-end
-```
-
-نسخه‌ی یکسان و مدل یکسان الزامی. پس از اتصال: `get system ha status` ⇒ `Configuration Status: in-sync`.
-
-**پرسش‌های مصاحبه**
-1. *چرا دو hbdev؟* افزونگی.
-2. *Password؟* امنیت HA.
-3. *Config فقط روی Primary؟* همگام‌سازی.
-
-### تکمیل عمیق: پیکربندی HA Active-Passive — برگه، دستور و تأیید
-
-#### چرا؟
-
-HA با یک تنظیم اشتباه (Group-name، رمز، Heartbeat) برقرار نمی‌شود یا بدتر، ناپایدار می‌شود. برگه‌ی طراحی قبل از اجرا مانع خطاست.
-
-#### برگه‌ی طراحی
-
-``` text
-Group name : FGT-HA
-Mode       : a-p
-Password   : (vault)
-HB devices : port7 (prio 50), port8 (prio 50)
-Priority   : A=200, B=100
-Override   : disable
-Monitor    : port1, port2
-Session pickup : enable
-```
-
-پیش‌نیاز: همان مدل، همان نسخه‌ی FortiOS، همان لایسنس‌ها.
-
-#### مثال ساده — دستور
-
-``` text
-config system ha
- set group-name "FGT-HA"
- set mode a-p
- set password ***
- set hbdev "port7" 50 "port8" 50
- set priority 200
- set override disable
- set session-pickup enable
- set monitor "port1" "port2"
-end
-```
-
-روی دستگاه دوم همان تنظیم با Priority کمتر.
-
-#### مثال متوسط — تأیید
-
-``` text
-get system ha status
-```
-
-منتظر: `HA Health Status: OK`، دو عضو، `Configuration Status: in-sync`، Primary مورد انتظار.
-
-#### مثال سخت — نکته‌ی Interface
-
-در HA، Interface Heartbeat به‌صورت اختصاصی استفاده می‌شود؛ روی همان Interface ترافیک عادی نگذارید. MAC مجازی (`00:09:0f:09:xx:xx`) پس از Failover ثابت می‌ماند و سوئیچ‌ها ARP را دوباره یاد نمی‌گیرند؛ Gratuitous ARP ارسال می‌شود.
-
-#### Lab
-
-برگه را بنویسید و پیکربندی را (در صورت داشتن دو VM لایسنس‌دار) اجرا کنید؛ در غیر این صورت «اجرا نشده».
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| عضو دوم نمی‌پیوندد | Group-name/Password | یکسان |
-| in-sync نیست | نسخه/Config | همگام |
-| Failover بی‌دلیل | Monitor | بازبینی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا نسخه‌ی یکسان؟** سازگاری Sync.
-**۲. MAC مجازی چرا؟** پایداری ARP.
-**۳. چرا دو hbdev؟** افزونگی.
-
-#### English Corner
-
-- *Both cluster members must run the same firmware version.*
-- Q: What does the virtual MAC address achieve after a failover?
 
 ## درس 22-3 — آزمون Failover/Failback و Session Pickup: طراحی تست، اندازه‌گیری و تحلیل
 
@@ -956,152 +710,136 @@ get system ha status
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده»؛ HA/VDOM وابسته به مدل/لایسنس (Needs-License).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. برنامه‌ی تست Failover (Reboot، قطع لینک، قطع Monitor) را طراحی کند.
-2. زمان قطع را با Ping/Probe با دقت اندازه بگیرد.
-3. Session Pickup را برای TCP/UDP/NAT آزمون و محدودیت‌ها را بداند.
-4. Failback کنترل‌شده را انجام دهد.
-5. نتایج را در جدول Evidence تحلیل کند.
+1. برنامه‌ی تست Failover (Reboot، قطع لینک، قطع Monitor، قطع برق) را طراحی کنید.
+2. زمان قطع را با Ping/Probe دقیق اندازه بگیرید.
+3. Session Pickup را برای TCP، UDP و NAT آزمون و محدودیت‌ها را بدانید.
+4. Failback کنترل‌شده را اجرا کنید.
+5. Election را در حالت `override` با و بدون آن تحلیل کنید.
+6. گزارش آزمون (Evidence) را بنویسید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا آزمون Failover؟** «HA داریم» تا وقتی Failover را اندازه نگرفته‌اید فقط یک باور است. آزمون باید ۳ چیز را بسنجد: **زمان قطع**، **حفظ Session** و **رفتار Failback**.
+HA آزمون‌نشده «امیدوارانه» است. ماشینی که هرگز چرخ یدکش را عوض نکرده‌اید، در جاده نمی‌دانید جک کجاست. آزمون Failover باید در Change Window با برنامه انجام شود و عدد (زمان قطع) داشته باشد، نه «به نظر خوب بود». همچنین Session Pickup همه‌چیز را نجات نمی‌دهد؛ باید دقیقاً بدانید چه چیزی حفظ می‌شود.
 
-**سناریوهای آزمون**
+### الگوریتم Election
 
-| آزمون | انتظار |
+بدون `override`:
+
+``` text
+1 monitored interfaces up count   (more is better)
+2 HA uptime (age)                 (greater is better; diff < margin ignored)
+3 priority                        (higher is better)
+4 serial number                   (higher wins)
+```
+
+با `override`:
+
+``` text
+1 monitored interfaces
+2 priority
+3 HA uptime
+4 serial number
+```
+
+پیامد: با `override disable`، عضوی که تازه برگشته (Uptime کم) Primary نمی‌شود؛ عضو فعلی می‌ماند (Failback خودکار نیست). با `override enable` عضو با Priority بالا بلافاصله پس از Sync دوباره Primary می‌شود (ممکن است قطع دوباره بسازد).
+
+### برنامه‌ی آزمون
+
+| # | آزمون | انتظار |
+|---|---|---|
+| 1 | Reboot Primary | Failover < N ثانیه |
+| 2 | قطع کابل port1 (Monitor) | Failover |
+| 3 | قطع Heartbeat یک لینک | بدون Failover |
+| 4 | قطع هر دو Heartbeat | Split-brain (آزمون کنترل‌شده، ۲۲-۵) |
+| 5 | Failback | کنترل‌شده |
+| 6 | Session Pickup | اتصال‌های TCP حفظ |
+
+### اندازه‌گیری
+
+``` text
+ping -t 8.8.8.8   (from LAN)            -> loss window = outage
+ssh to server + long command           -> TCP session survival
+iperf3 -c SRV -t 120                   -> throughput interruption
+```
+
+``` text
+Outage = (lost pings) x (ping interval)
+Example: 4 lost x 1 s = 4 s
+```
+
+### Session Pickup
+
+| ترافیک | حفظ می‌شود؟ |
 |---|---|
-| کشیدن کابل WAN Primary | Failover با Monitor |
-| خاموش‌کردن Primary | Failover سریع |
-| قطع یک Heartbeat | بدون Failover (لینک دوم) |
-| قطع هر دو Heartbeat | Split-brain (فقط Lab) |
+| TCP (با session-pickup) | بله (عموماً) |
+| UDP/ICMP | فقط با `session-pickup-connectionless enable` |
+| NAT | بله (Session شامل NAT) |
+| IPsec SA | تونل دوباره برقرار می‌شود (SA Sync بسته به مدل/نسخه) |
+| UTM/Proxy Session | معمولاً حفظ نمی‌شود (Flow-based محدود) |
+| Sessionهای Offload | بسته به مدل |
 
-**Failback:** با `override` خاموش خودکار برنمی‌گردد؛ Failback را در پنجره‌ی تغییر انجام دهید تا قطع دوم در ساعت کاری رخ ندهد.
+بدون Session Pickup: Sessionها قطع و کاربر دوباره اتصال می‌گیرد.
 
-**جمع‌بندی اصلی درس:**
-
-«HA داریم» یعنی ادعا؛ «Failover در ۳٫۲ ثانیه با حفظ ۹۸٪ Sessionها» یعنی اثبات. بدون آزمون اندازه‌گیری‌شده نمی‌دانید HA واقعاً کار می‌کند یا فقط پیکربندی شده.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) ماتریس تست
-
-| # | آزمون | روش | معیار |
-|---|---|---|---|
-| 1 | Reboot Primary | `execute reboot` | قطع < 5 s |
-| 2 | قطع کابل Monitor | جدا کردن port1 | Failover |
-| 3 | قطع یک HB | جدا کردن port3 | Cluster ثابت |
-| 4 | قطع هر دو HB | جدا کردن | Split-brain (Lab کنترل‌شده) |
-| 5 | Failback | بازگرداندن A | بدون Flap |
-
-#### ۲) اندازه‌گیری
+### Failback کنترل‌شده
 
 ``` text
-# on a client
-ping -t -w 200 8.8.8.8   (interval ~ 200 ms)
-# lost packets x 0.2 s = outage seconds
+execute ha failover set 1
 ```
 
-مثال: ۱۴ بسته گمشده × ۰٫۲ = ۲٫۸ ثانیه.
+(یا Priority عوض کنید) در پنجره‌ی کم‌ترافیک؛ اگر `override disable`، Failover دستی لازم است. ثبت زمان و Session.
 
-#### ۳) Session Pickup
+### مثال‌های حل‌شده
 
-``` text
-config system ha
- set session-pickup enable
- set session-pickup-connectionless enable
-end
-```
+#### مثال ساده — Reboot
 
-طبق مستند Fortinet: `session-pickup` Sessionهای TCP را همگام می‌کند؛ `session-pickup-connectionless` برای UDP/ICMP است و فقط وقتی session-pickup فعال باشد در دسترس است (پیش‌فرض خاموش)؛ `session-pickup-nat` و `session-pickup-expectation` مخصوص **FGSP** هستند نه FGCP. (نحو `Unverified` تا اجرای Lab.) بعضی Sessionهای UTM/Proxy-based یا SSL Inspection پس از Failover ممکن است ریست شوند. اندازه‌گیری با SSH باز و دانلود جاری.
-
-#### ۴) Failback
-
-با override disable، Primary قبلی پس از بازگشت Secondary می‌ماند. برای بازگرداندن: `execute ha failover set 1` سپس `unset` (`Unverified`) در Window.
-
-#### ۵) تحلیل
-
-اگر قطع > 5 s: Monitor/Link Failed Threshold/HB timers. اگر Sessionها ریست: session-pickup یا نوع Session.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| آزمون | قطع واقعی |
-| اندازه‌گیری | Ping 200 ms |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — اندازه‌گیری
-
-``` text
-ping -i 0.2 8.8.8.8
-lost 15 packets x 0.2 s = 3.0 s
-```
-
-معیار نمونه: کمتر از 5 ثانیه.
+`execute reboot` روی Primary. ping پایدار: ۳ بسته قطع (۳ ثانیه) ⇒ Failover ≈ ۳ ثانیه. `diagnose sys ha history read` دلیل: `HA state changed: ... reboot`.
 
 #### مثال متوسط — Session Pickup
 
-یک SSH یا دانلود طولانی باز نگه دارید و Failover کنید. با Pickup فعال اتصال TCP ادامه می‌یابد؛ UDP/Multicast و Sessionهای Offload‌شده محدودیت دارند (مستند نسخه).
+SSH به سرور و `ping` طولانی. Failover: SSH ادامه می‌یابد؛ `iperf3` چند ثانیه توقف و ادامه. نتیجه: Session TCP حفظ شد.
 
-#### مثال متوسط — ثبت نتایج
+#### مثال متوسط — UDP
 
-| آزمون | زمان قطع | Session حفظ؟ | یادداشت |
-|---|---|---|---|
-| قطع WAN | 3.0 s | بله | OK |
-| خاموش Primary | 4.2 s | بله | OK |
+Voice روی UDP: بدون `session-pickup-connectionless` پس از Failover تماس قطع و دوباره برقرار می‌شود. با آن: بسته‌ها ادامه (با Glitch کوتاه).
 
-#### مثال سخت — Failover ناموفق
+#### مثال سخت — Override
 
-پس از Failover کاربران اینترنت ندارند: ARP سوییچ قدیمی، Route/NAT ناهمگام یا Policy روی Interface Secondary. شاهد: `get system ha status`، `diagnose sys ha checksum cluster`، Sniffer.
+`override enable` و Priority A=200: پس از reboot A و بازگشت، A فوراً Primary می‌شود ⇒ قطع دوم. رفع: `override disable` یا Failback در زمان برنامه‌ریزی‌شده.
 
-#### مثال سخت — Flap پس از Failback
+#### مثال سخت — Monitor و Failover اشتباه
 
-Failback فوری باعث دو قطع پشت‌سرهم شد. تصمیم: `override disable` و Failback دستی با اطلاع‌رسانی.
+Monitor port2 (داخلی) در Primary Down (سوئیچ داخلی خراب). Failover به B ولی B هم به همان سوئیچ وصل است ⇒ خرابی ادامه. درس: Monitor باید معنی‌دار باشد و SPOF مشترک را در طراحی حذف کنید.
 
-#### مثال‌های اصلی درس (مرور)
+### Lab هدایت‌شده (اجرا نشده)
 
-**ساده (حل‌شده):** Reboot Primary: ۱۲ بسته گمشده با Interval 0٫2 ⇒ ۲٫۴ ثانیه؛ پذیرفته.
+1. شش آزمون جدول را اجرا و زمان بگیرید.
+2. Session Pickup TCP/UDP.
+3. Failback کنترل‌شده.
 
-**متوسط (Session):** SSH باز در Failover قطع شد. مراحل: ۱) session-pickup خاموش. ۲) فعال‌سازی. ۳) تکرار: SSH ماند. پاسخ: session-pickup لازم است.
+### عیب‌یابی سریع
 
-**سخت (Failover کند):** Failover ۱۲ ثانیه. مراحل: ۱) Monitor روی port1 ولی Link Failed با تأخیر. ۲) HB interval و lost-threshold. ۳) کاهش timers با احتیاط (`hb-interval`، `hb-lost-threshold` Unverified). ۴) آزمون: ۴ ثانیه. ریسک: Timer کم ⇒ Flap؛ تست پایداری.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-get system ha status
-execute ha failover set 1
-execute ha failover unset 1
-```
-
-### ۸) Verification (اثبات صحت)
-
-- جدول Evidence.
-- Session ماندگار.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| Failover کند | Timers/Monitor | تنظیم |
-| Session ریست | pickup/UTM | pickup |
+| Failover کند | Heartbeat Timer | تنظیم |
+| Session قطع | pickup غیرفعال | enable |
+| Failback ناخواسته | override | disable |
+| Voice قطع | UDP | connectionless |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Failover تست فقط در Window.
+آزمون فقط در پنجره‌ی مجاز؛ Backup پیش از آزمون؛ Log HA مرکزی؛ آلارم Failover.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- اثبات با اندازه‌گیری.
-- pickup.
-- Failback کنترل‌شده.
+آزمون Failover با عدد؛ Election بدون/با override؛ Session Pickup (TCP، UDP، NAT) و محدودیت‌ها؛ Failback کنترل‌شده؛ Monitor معنی‌دار.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) قطع چگونه محاسبه می‌شود؟ *(پاسخ: 22-3-ت1)*
 
@@ -1117,7 +855,7 @@ execute ha failover unset 1
 
 **Q1.** Quick quiz (English): How do you calculate the outage duration with a continuous ping? *(پاسخ: 22-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1125,102 +863,15 @@ execute ha failover unset 1
 
 - *Measure failover time, do not assume it.* ← زمان Failover را اندازه بگیرید، فرض نکنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** تست Failover (اجرا نشده). **Evidence:** `03-ops/ha-failover.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: HA failover
 
 <a id="l-22-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: طراحی آزمون Failover
-
-``` text
-ping -t 8.8.8.8   (from user)
-# pull cable of primary
-# count lost packets
-lost 3 packets x 1 s = ~3 s outage
-```
-
-معیار: < هدف (مثلاً ۵ ثانیه) و Session TCP حفظ (با Pickup). Failback کنترل‌شده در پنجره‌ی تغییر.
-
-**پرسش‌های مصاحبه**
-1. *شاهد؟* Log HA + ping.
-2. *Session UDP/Multicast؟* Pickup محدودیت.
-3. *Failback؟* دستی بهتر.
-
-### تکمیل عمیق: آزمون Failover/Failback با عدد
-
-#### چرا؟
-
-«HA داریم» تا وقتی که Failover را اندازه نگرفته‌اید فقط یک باور است. آزمون باید زمان قطع و حفظ Session را اندازه بگیرد.
-
-#### آزمون ساده
-
-از یک کاربر `ping -i 0.2 8.8.8.8` بزنید؛ کابل Primary را بکشید؛ شمارش بسته‌های گم‌شده.
-
-``` text
-lost = 15 packets ; interval = 0.2 s
-Outage = 15 x 0.2 = 3.0 s
-```
-
-معیار پذیرش نمونه: < 5 s.
-
-#### آزمون Session Pickup
-
-یک دانلود طولانی یا SSH باز نگه دارید؛ Failover را انجام دهید. با Pickup فعال، اتصال TCP باید ادامه یابد.
-
-``` text
-ssh user@10.20.0.10      # keep typing during failover
-```
-
-برای UDP/Multicast یا Sessionهای Offload‌شده محدودیت‌هایی طبق مستند وجود دارد.
-
-#### Failback
-
-با `override disable` برگشت خودکار رخ نمی‌دهد؛ Failback را در پنجره‌ی تغییر انجام دهید تا یک قطع دوم در ساعت کاری ایجاد نشود.
-
-#### مثال متوسط — سناریوهای آزمون
-
-| آزمون | انتظار |
-|---|---|
-| کشیدن کابل WAN Primary | Failover با Monitor |
-| خاموش‌کردن Primary | Failover < 5 s |
-| قطع یک Heartbeat | بدون Failover |
-| قطع هر دو HB | Split-brain (فقط در Lab) |
-
-#### مثال سخت — Failover ناموفق
-
-پس از Failover، کاربران اینترنت ندارند: ARP سوئیچ قدیمی، یا Secondary Route/NAT ناهمگام. شاهد: `get system ha status`، `diagnose sys ha checksum cluster`، Sniffer.
-
-#### Lab
-
-جدول بالا را اجرا و شواهد را ثبت کنید (اگر لایسنس دارید).
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Session قطع | Pickup خاموش | فعال |
-| قطع طولانی | ARP | Gratuitous ARP |
-| Failback ناگهانی | override | غیرفعال |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Failover زمان؟** با ping اندازه‌گیری.
-**۲. چرا Failback کنترل‌شده؟** قطع دوم.
-**۳. Pickup؟** حفظ Session.
-
-#### English Corner
-
-- *Measure failover time instead of assuming it.*
-- Q: Why perform failback in a maintenance window?
 
 ## درس 22-4 — عیب‌یابی HA و ارتقای Cluster: Out-of-sync، Flap، Split-brain، Upgrade Path و Rollback
 
