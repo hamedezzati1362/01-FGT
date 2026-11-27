@@ -1075,7 +1075,7 @@ Out-of-sync یعنی Config اعضا یکی نیست و checksum متفاوت ا
 
 **22-2-ت5** — نسخه، Group، Password، لایسنس، HB.
 
-عضو دوم Join نمی‌شود: نسخه، Group name، Password، لایسنس و Heartbeat را بررسی کنید.
+عضو دوم Join نمی‌شود — روش بررسی: ۱) `get system status` روی هر دو: نسخه/Build و Serial. ۲) `get system ha status` روی Primary: آیا عضو دوم دیده می‌شود؟ ۳) Group name و Password یکسان؟ ۴) Heartbeat: کابل، `hbdev` و VLAN. ۵) لایسنس هر دو. رفع معمول: هم‌نسخه‌سازی یا Group/Password یکسان؛ پس از Join checksum را مقایسه کنید.
 
 **22-2-ت6** — جدول بالا.
 
@@ -1106,7 +1106,7 @@ Failback کنترل‌شده از Flap و قطع‌های پیاپی جلوگی�
 
 **22-3-ت5** — Monitor/HB timers.
 
-Failover کند: Monitor، Heartbeat timers و Link Failed Threshold را بررسی کنید.
+Failover کند (مثلاً ۱۲ ثانیه): ۱) `diagnose sys ha history read` علت و زمان را نشان می‌دهد. ۲) Monitor Interface: آیا خرابی لینک سریع دیده شد؟ ۳) Heartbeat interval و lost-threshold (پیش‌فرض‌ها را از مستند بخوانید؛ `Unverified`). ۴) کاهش محتاطانه و آزمون ۱۰ بار قطع/وصل. ریسک: Timer خیلی کم Flap می‌دهد؛ معیار: Failover < ۵ ثانیه بدون Flap.
 
 **22-3-ت6** — ۵ آزمون.
 
@@ -1137,7 +1137,7 @@ Out-of-sync معمولاً از تغییر مستقیم روی Secondary یا ض
 
 **22-4-ت5** — HB، Reboot، Re-sync.
 
-Split-brain رفع: HB را وصل، یک عضو را Reboot، Primary را تعیین و Re-sync کنید.
+Split-brain رفع: ۱) تأیید: روی هر دو `get system ha status` Primary. ۲) Heartbeat را وصل کنید (دو لینک). ۳) عضوی را که نباید Primary باشد Reboot کنید. ۴) پس از Join `diagnose sys ha checksum cluster` را بررسی و در صورت نیاز Sync. ۵) Alert روی تغییر Primary. ۶) در RCA: چرا هر دو HB قطع شدند (سوییچ مشترک؟).
 
 **22-4-ت6** — Partition قبلی.
 
@@ -2919,7 +2919,7 @@ WEB→DB در Log مسیر ممنوع طراحی بود و باید بررسی/�
 
 **24-1-ت5** — Log طولانی‌تر و مالک.
 
-Backup شبانه قطع شد: Log طولانی‌تر (۳۰ روز) و مشورت مالک برای مسیرهای کم‌تکرار.
+Backup شبانه قطع شد — تحلیل: Log deny: BACKUP→DB 445 ساعت 02:00. در Discovery ۱۴ روزه دیده نشده چون Backup هفتگی بود. رفع: Policy مجزا برای BACKUP→DB با Service 445 و Schedule شبانه؛ آموزه: Log ≥ ۳۰ روز و مشورت مالک برای کارهای کم‌تکرار؛ پیش از Deny نهایی دوره‌ی Monitor.
 
 **24-1-ت6** — جدول.
 
@@ -2981,7 +2981,7 @@ Management VDOM VDOM سرویس‌های سیستمی (DNS، FortiGuard) است�
 
 **24-3-ت5** — IP، Route، Policy دو جهت.
 
-ping بین VDOM ندارد: IP دو سر vlk، Route هر VDOM و Policy دو جهت را بررسی کنید.
+ping بین VDOM ندارد — بررسی به ترتیب: ۱) IP روی دو سر vlk (vlk0 در DMZ و vlk1 در INT) و Subnet یکسان. ۲) Route در هر VDOM به Subnet VDOM دیگر از طریق vlk. ۳) Policy دو جهت. ۴) `diagnose debug flow` داخل هر VDOM (`config vdom / edit X`). ۵) آزمون ping. علت رایج: Policy فقط یک‌طرفه.
 
 **24-3-ت6** — DMZ/INT.
 

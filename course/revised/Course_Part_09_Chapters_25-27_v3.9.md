@@ -3075,7 +3075,7 @@ allowaccess snmp برای پاسخ SNMP لازم است.
 
 **27-5-ت5** — Backup، خراب، Restore، مقایسه.
 
-Restore آزمایشی: Backup، خرابی عمدی، Restore و مقایسه.
+Restore آزمایشی در Lab: ۱) Backup بگیرید و Hash ثبت کنید. ۲) Config را عمداً خراب کنید (مثلاً Policy حذف). ۳) Restore. ۴) پس از Boot: تعداد Policy/Route/Interface و Hash/Diff با نسخه‌ی اصلی. ۵) زمان Restore را ثبت کنید (RTO). ریسک: Backup حاوی رمز؛ رمزگذاری و محدودیت دسترسی.
 
 **27-5-ت6** — ۷ مورد.
 

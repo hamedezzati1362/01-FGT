@@ -984,7 +984,7 @@ BDP = 100 Mbit/s x 0.08 s = 8 Mbit = 1 MB
 
 **28-2-ت6** — سؤال، نقطه، Filter، الگوها، محاسبات، علت، رفع، تأیید.
 
-گزارش تحلیل PCAP: سؤال، نقطه‌ی Capture، Filter، الگوها، محاسبات، علت، رفع و تأیید.
+گزارش تحلیل PCAP باید این بخش‌ها را داشته باشد: سؤال (چه مشکلی؟)، نقطه‌ی Capture، Filter، الگوهای دیده‌شده با شماره‌ی بسته، محاسبات (مثلاً RTT، BDP)، علت، رفع و تأیید. هر ادعا یک شماره‌ی بسته به‌عنوان Evidence دارد.
 
 **28-2-Q1** — Throughput is limited to the window size divided by the round-trip time.
 
@@ -1030,7 +1030,7 @@ Debug بار CPU و Log زیاد و ریسک اطلاعات حساس دارد.
 
 **28-4-ت5** — شواهد مستقل برای هر علت، رفع یکی و اندازه‌گیری، سپس دیگری.
 
-چندعلتی: شواهد مستقل برای هر علت؛ رفع یکی و اندازه‌گیری؛ سپس دیگری.
+چندعلتی در PCAP: برای هر علت شاهد مستقل پیدا کنید (مثلاً Retransmission برای Loss و RST برای Policy)، یکی را رفع و اثرش را اندازه بگیرید، سپس دومی؛ اگر هر دو را هم‌زمان رفع کنید نمی‌دانید کدام اثر داشت.
 
 **28-4-ت6** — قالب یکسان، دسته‌بندی، جستجو، نسخه‌دار، بازبینی فصلی، پیوند به Runbook.
 
@@ -1806,7 +1806,7 @@ Baseline تا انحراف از رفتار عادی تشخیص داده شود �
 
 **29-1-ت6** — جدول بالا بسط داده شود.
 
-چک‌لیست تشخیص: منبع Log، قانون، آستانه، مالک و اقدام.
+چک‌لیست تشخیص: منبع Log (Traffic/Event/UTM)، قانون (مثلاً ۱۰ ورود ناموفق در ۵ دقیقه)، آستانه، مالک، اقدام اول و تاریخ بازبینی. هر قانون با آزمون (تولید رویداد تست) تأیید شود.
 
 **29-1-Q1** — Because attackers can change IPs and hashes easily but their behaviors change much less.
 
@@ -1848,7 +1848,7 @@ Exposure window فاصله‌ی انتشار Advisory تا اعمال Patch اس
 
 **29-3-ت6** — Coverage، Time-to-patch، تعداد EoL، Exception فعال، Trend.
 
-شاخص‌ها: Coverage، Time-to-patch، تعداد EoL، Exception فعال و Trend.
+شاخص‌های مدیریت آسیب‌پذیری: Coverage (درصد دارایی‌های پایش‌شده)، Time-to-patch (میانه‌ی روز)، تعداد EoL، Exception فعال با تاریخ پایان و روند ماهانه. هدف: روند رو به بهبود و Exceptionهای محدود.
 
 **29-3-Q1** — Internet exposure, available exploits and high asset criticality.
 
@@ -2643,7 +2643,7 @@ Policy با IP داخلی (post-DNAT) چون DNAT قبل از Policy انجام 
 
 **30-1-ت6** — ستون‌ها: مبدأ، مقصد، Policy، NAT، Gap، Test؛ ۱۰ سطر.
 
-جدول نگاشت: مبدأ، مقصد، Policy، NAT، Gap و Test؛ ۱۰ سطر نمونه.
+جدول نگاشت Migration: ستون‌ها مبدأ، مقصد، Policy قدیمی، Policy جدید، NAT، Gap، آزمون؛ حداقل ۱۰ سطر نمونه (Users→Internet، VIP وب، IPsec، ...). هر Gap (ویژگی بی‌معادل) با تصمیم و مالک ثبت شود.
 
 **30-1-Q1** — Because the two platforms process traffic differently, so identical text can behave differently.
 
@@ -2670,7 +2670,7 @@ Post-check: Test Matrix، Log/Session، Monitoring و آزمون مثبت/منف
 
 **30-2-ت6** — طبق قالب؛ با زمان‌بندی و مسئولان.
 
-Plan T-7d تا T+1d با زمان‌بندی و مسئول.
+Plan: T-7d Inventory و Baseline؛ T-3d آزمون Lab و Rollback؛ T-1d اطلاع‌رسانی؛ T0 Cutover با Checkpoint؛ T+1d بازبینی. هر ردیف مسئول و زمان دارد.
 
 **30-2-Q1** — So the decision is made objectively before pressure and emotions affect judgment.
 

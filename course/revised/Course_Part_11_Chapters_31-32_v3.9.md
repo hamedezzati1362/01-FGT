@@ -1104,7 +1104,7 @@ ADR ثبت تصمیم معماری با زمینه، گزینه‌ها، تصم�
 
 **31-1-ت6** — ساختار بالا با محتوای هر بخش.
 
-ساختار سند طراحی: نیازمندی، HLD، LLD، آزمون، ریسک.
+سند طراحی: نیازمندی (R-xx با معیار)، HLD (نمودار و Zone)، LLD (آدرس، Interface، Route، Policy)، آزمون و ردیابی، ریسک و Gap، وضعیت (طراحی‌شده/اجرا نشده/اجراشده با شاهد).
 
 **31-1-Q1** — So that success is measurable and can be verified objectively later.
 
@@ -1160,7 +1160,7 @@ Rollback ≤ ۱۵ دقیقه و باید زمان‌سنجی شود.
 
 **31-3-ت6** — جدول بالا با مسئول و زمان.
 
-برنامه‌ی Build با مسئول و زمان.
+برنامه‌ی Build: ترتیب (Interface، Route، Policy، VPN، Logging)، مسئول، زمان و Checkpoint پس از هر مرحله با Evidence.
 
 **31-3-Q1** — So a failure can be attributed to the stage just built instead of an unknown layer.
 
@@ -2354,7 +2354,7 @@ Post-check Lookup=61: ترتیب Policy؛ Rollback و CHG جدید.
 
 **32-1-ت6** — قالب بالا.
 
-قالب CHG: عنوان، مالک، دلیل، ریسک، Window، Pre/Post-check، Rollback.
+قالب CHG: شناسه، عنوان، مالک/مجری/بازبین، دلیل، ریسک و اثر، Window، Pre-check، مراحل، Post-check، Rollback و تأیید. هر بخش یک ردیف.
 
 **32-1-Q1** — That the change works as intended and nothing else broke.
 
@@ -2385,7 +2385,7 @@ PIR: Summary، Impact، Timeline، Root cause، Actions.
 
 **32-2-ت6** — سناریو و نقش‌ها.
 
-Game Day: سناریو، نقش‌ها و Timeline.
+Game Day: سناریو (قطع ISP-A و کیفیت پایین ISP-B)، نقش‌ها (IC، Operator، Scribe، Communicator)، Timeline و معیار موفقیت (MTTD < ۵ دقیقه، MTTR < ۴۵ دقیقه) و PIR.
 
 **32-2-Q1** — To avoid confusion and ensure decisions, actions and records are handled.
 
@@ -2416,7 +2416,7 @@ IPsec بعد Upgrade down: Debug سریع؛ Rollback اگر در زمان.
 
 **32-3-ت6** — جدول.
 
-Plan T-7d تا T+1d: جدول زمان و کار.
+Plan: T-7d تا T+1d با Checkpoint C1 تا C5 و نقطه‌ی تصمیم Rollback (مثلاً ساعت ۲۲:۴۰). هر ردیف زمان، کار و معیار ادامه دارد.
 
 **32-3-Q1** — To avoid delaying the decision and extending the outage.
 
@@ -2447,7 +2447,7 @@ Portfolio Firewall Engineer: Capstone I، Runbook و برچسب صادقانه.
 
 **32-4-ت6** — Lab، شاهد، زمان.
 
-برنامه‌ی پر کردن شکاف: Lab، شاهد، زمان.
+برنامه‌ی پر کردن شکاف: مهارت، سطح فعلی، سطح هدف، Lab لازم، Evidence و تاریخ؛ مثلاً FortiGate Policy/NAT سطح ۲→۳ با ۱۰ Lab و Evidence Index تا پایان ماه ۳.
 
 **32-4-Q1** — It shows real skill level and guides focused improvement.
 
@@ -2478,7 +2478,7 @@ Automation امن: Read-only و Pilot.
 
 **32-5-ت6** — جدول.
 
-برنامه‌ی ۶ ماهه: ماه، هدف، Evidence.
+برنامه‌ی ۶ ماهه: ماه ۱ Lab فصل ۱ تا ۴؛ ماه ۲ OSPF/HSRP؛ ماه ۳ FortiGate Policy/NAT؛ ماه ۴ IPsec/SD-WAN؛ ماه ۵ Logging/Automation؛ ماه ۶ Capstone و Portfolio؛ هر ماه Evidence مشخص.
 
 **32-5-Q1** — To verify real progress rather than assumed progress.
 
@@ -2505,7 +2505,7 @@ MSS = PMTU − 40.
 
 **32-6-ت5** — سه مرحله با Rollback.
 
-CHG سه مرحله با Rollback.
+CHG سه‌مرحله‌ای: ۱) Health-check به 8.8.8.8 (Rollback: Config قبلی)، ۲) Policy VIP (Rollback: غیرفعال)، ۳) MSS-clamp (Rollback: حذف). Window شبانه، Post-check: Failover 4 s، وب 200 و دانلود VPN 100MB.
 
 **32-6-ت6** — ریشه، شاخص، اقدام.
 
