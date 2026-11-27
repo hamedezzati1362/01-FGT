@@ -94,18 +94,37 @@ Handshake TLS در سطح مفهومی (Client Hello، Certificate، Key Exchang
 
 طبق مستند Fortinet (7.0):
 
-- **Flow-based:** بسته‌ها را «در جریان» می‌بیند؛ یک Snapshot از محتوا می‌گیرد و با Pattern Matching بررسی می‌کند؛ بسته‌ها بازسازی کامل نمی‌شوند. تأخیر کمتر، Throughput بیشتر (و قابلیت NPU Offload در بعضی حالت‌ها).
-- **Proxy-based:** فایروال اتصال کلاینت را ختم و اتصال جدیدی به سرور می‌سازد؛ **محتوا را کامل بازسازی** می‌کند (فایل کامل، پاسخ کامل HTTP). قابلیت بیشتر (مثلاً بعضی گزینه‌های AV/Web Filter/DLP مثل Content Disarm، Quota و ...)، هزینه‌ی CPU/Memory و تأخیر بیشتر.
-- در 7.0 حالت بازرسی **در هر Policy** انتخاب می‌شود (`set inspection-mode flow|proxy`)؛ پیش‌فرض Flow است.
+**دو مدل ذهنی دقیق (مستند رسمی FortiOS 7.0، بخش Inspection modes؛ نقل از منبع با خلاصه‌ی صفحه):**
+
+- **Flow-based:** ترافیک در Policy «Buffer کامل» نمی‌شود؛ بازرسی روی **جریان بسته‌ها** و به‌صورت **Stream/وضعیت‌دار** انجام می‌شود (ماژول‌های امنیتی در یک گذر مشترک اجرا می‌شوند؛ تطبیق الگو با موتور DFA که ممکن است توسط سخت‌افزار CP شتاب بگیرد). **این به معنی «دیدن چند بسته‌ی تصادفی» یا «ناتوانی در تحلیل جریان» نیست:** موتور وضعیت جریان را نگه می‌دارد و می‌تواند الگوهایی را که در چند بسته پخش شده‌اند تشخیص دهد. برای تصمیم نهایی، طبق مستند، آخرین بسته تا صدور «حکم» اسکن نگه داشته می‌شود و در صورت تخلف اتصال Reset می‌شود. تأخیر حدس‌پذیرتر و CPU معمولاً کمتر است.
+- **Proxy-based:** فایروال اتصال را به‌عنوان پراکسی ختم می‌کند و محتوا را **بازسازی** می‌کند (مثلاً ساختار HTTP/فایل کامل)؛ به همین دلیل بعضی قابلیت‌های نیازمند «دیدن کل شیء» ممکن‌اند (مثل Content Disarm یا Client Comforting در AV، سهمیه‌ی Web Filter). هزینه‌ی CPU/Memory و تأخیر معمولاً بیشتر است.
+- حالت بازرسی **در هر Policy** تنظیم می‌شود (`set inspection-mode flow|proxy`)؛ Flow برای Policyهای جدید حالت پیش‌فرض است (مستند رسمی 7.0).
+
+**تفاوت «Stream» و «Buffering/بازسازی» به زبان ساده:** Stream مثل بازرس کنار نوار نقاله است که اجناس را هنگام عبور می‌بیند و وضعیت را به خاطر می‌سپارد؛ Proxy مثل بازرسی است که کل محموله را پایین می‌آورد، باز می‌کند و دوباره می‌بندد. اولی سریع‌تر، دومی برای بعضی بررسی‌ها انعطاف‌پذیرتر است؛ هیچ‌کدام «برتر مطلق» نیست.
+
+**مقایسه‌ی قابلیت‌ها بر اساس جدول رسمی «Inspection mode feature comparison» (FortiOS 7.0.0)، با تکیه بر خلاصه‌ی صفحه (قبل از استفاده، جدول زنده‌ی نسخه‌ی خودتان را ببینید):**
+
+| قابلیت | Flow | Proxy | یادداشت |
+|---|---|---|---|
+| Antivirus، Web Filter، DNS Filter، Application Control، IPS، File Filter، Email Filter، VoIP، SSL/SSH Inspection | بله | بله | اما زیرگزینه‌ها متفاوت است |
+| DLP | محدود (طبق جدول: در Flow فقط CLI) | بله | بدون Fingerprint/Watermark در Flow |
+| ICAP | خیر | بله | فقط Proxy |
+| WAF | خیر | بله | فقط Proxy |
+| AV: Content Disarm، Client Comforting | خیر | بله | تفاوت زیرگزینه |
+| Web Filter: Category Usage Quota، Search Engine، Web Profile Override | خیر | بله | تفاوت زیرگزینه |
+| Email Filter: بررسی با کمک FortiGuard | خیر | بله | تفاوت زیرگزینه |
+
+**مقایسه‌ی کلی (با فرض مدل/نسخه‌ی یکسان؛ نه اعداد تضمینی):**
 
 | معیار | Flow | Proxy |
 |---|---|---|
-| سازوکار | بدون بازسازی کامل، Pattern | ختم و بازسازی |
-| تأخیر | کمتر | بیشتر |
-| CPU/Memory | کمتر | بیشتر |
-| قابلیت‌ها | کمتر (جدول مقایسه‌ی Fortinet) | بیشتر |
-| پوشش پورت | همه‌ی پورت‌ها در Deep (طبق مستند) | فقط پورت‌های نگاشت‌شده مگر «Inspect all ports» |
-| کاربرد | Throughput، ترافیک عمومی | حساسیت بالا، قابلیت خاص |
+| سازوکار | بازرسی Stream با وضعیت جریان | ختم و بازسازی محتوا |
+| تأخیر/CPU | معمولاً کمتر | معمولاً بیشتر |
+| زیرگزینه‌های Profile | کمتر | بیشتر |
+| پوشش پورت/رفتار SSL | وابسته به Profile SSL و نسخه | وابسته به پورت‌های نگاشت‌شده/Inspect all ports |
+| کاربرد | ترافیک عمومی با Throughput بالا | نیاز به قابلیت Proxy-only |
+
+**هشدارهای علمی:** (۱) رفتار هر روش در هر Security Profile مستقل است؛ از «Flow این‌طور است» به همه‌ی Profileها تعمیم ندهید. (۲) اثر کارایی به مدل، Offload، حجم و نوع ترافیک وابسته است و باید اندازه‌گیری شود (در این دوره اندازه‌گیری انجام نشده). (۳) نقش دقیق IPS Engine در Flow و شرایط Offload در منابع این بازنگری تأیید نشد → نیازمند بررسی. (۴) ماژول‌های تغییرکننده‌ی نسخه (مثلاً زیرگزینه‌های جدید در 7.2+) را از جدول همان نسخه بخوانید.
 
 (برای هر Profile باید جدول «Inspection mode feature comparison» همان نسخه بررسی شود.)
 
@@ -247,7 +266,7 @@ get firewall ssl-ssh-profile
 
 ### ۱۰) جمع‌بندی مفهومی
 
-- Flow سریع‌تر و محدودتر؛ Proxy کامل‌تر و سنگین‌تر؛ انتخاب Per-Policy.
+- Flow معمولاً سبک‌تر و با زیرگزینه‌های کمتر؛ Proxy با زیرگزینه‌های بیشتر و هزینه‌ی معمولاً بیشتر؛ انتخاب Per-Policy و وابسته به Profile/نسخه (جدول ۴-۱).
 - Certificate Inspection فقط گواهی/SNI؛ Deep محتوا را می‌بیند ولی نیاز به CA و Exemption دارد.
 - TLS 1.3/ECH/QUIC/Pinning دید را کم می‌کنند.
 - Monitor قبل از Block.
@@ -322,8 +341,8 @@ get firewall ssl-ssh-profile
 
 #### توضیح ساده
 
-- **Flow-based**: بسته‌ها در حین عبور بازرسی می‌شوند، بدون ذخیره‌ی کامل فایل. سریع‌تر؛ قابلیت NPU Offload بیشتر.
-- **Proxy-based**: فایروال فایل/ارتباط را کامل دریافت و سپس تصمیم می‌گیرد. کندتر ولی بازرسی عمیق‌تر برای بعضی قابلیت‌ها.
+- **Flow-based**: ترافیک بدون Buffering کامل و به‌صورت Stream وضعیت‌دار بازرسی می‌شود (نه فقط چند بسته). معمولاً سریع‌تر؛ امکان Offload وابسته به مدل/Profile.
+- **Proxy-based**: اتصال ختم و محتوا بازسازی می‌شود؛ بعضی قابلیت‌ها فقط در این حالت هست (مثل WAF، ICAP) و معمولاً هزینه‌ی بیشتری دارد؛ «عمیق‌تر» مطلق نیست و به Profile بستگی دارد.
 
 جدول قابلیت‌های هر حالت در مستند Fortinet نسخه آمده؛ قاعده‌ی عملی: پیش‌فرض Flow، و Proxy فقط وقتی قابلیت مورد نیاز آن را بخواهد.
 
@@ -831,17 +850,17 @@ Antivirus در لبه مثل بازرسی گمرک است: بسته‌ها را 
 | Sandbox (FortiSandbox) | اجرای فایل در محیط ایزوله (Needs-License/جدا) |
 | Botnet/C&C | نام/IP سرورهای کنترل |
 
-### Flow-based در برابر Proxy-based
+### Flow-based در برابر Proxy-based (برای Antivirus)
 
 | ویژگی | Flow-based | Proxy-based |
 |---|---|---|
-| سرعت | بالاتر | کمتر |
-| بافر فایل | بسته‌ها عبور و بررسی | کل فایل بافر |
-| عمق | کمی کمتر | بیشتر |
-| پیش‌فرض | بله (در 7.0 معمولاً) | اختیاری |
-| Quarantine | محدود | بهتر |
+| ذخیره‌ی فایل | بدون Buffering کامل؛ بازرسی Stream وضعیت‌دار | محتوا بازسازی/بافر می‌شود |
+| تأخیر/منابع | معمولاً کمتر | معمولاً بیشتر |
+| زیرگزینه‌های AV | کمتر (طبق جدول رسمی 7.0.0: بدون Content Disarm و Client Comforting) | بیشتر |
+| پیش‌فرض | Policy جدید در 7.0 | انتخاب صریح |
+| Quarantine/Sandbox | وابسته به نسخه/مدل/لایسنس؛ در منابع این بازنگری تأیید نشد | وابسته به نسخه/مدل/لایسنس |
 
-انتخاب: پیش‌فرض Flow؛ Proxy برای نیاز خاص (Sandbox/Quarantine عمیق). جزئیات در ۱۶-۰.
+«Flow = چند بسته‌ی اول» **نادرست** است؛ Flow وضعیت جریان را نگه می‌دارد. «Proxy = همیشه امن‌تر» هم نادرست است؛ تفاوت در زیرگزینه‌ها و سازوکار است. رفتار هر Security Profile را جدا و از جدول همان نسخه بخوانید؛ جزئیات Offload وابسته به مدل است (نیازمند بررسی).
 
 ### Antivirus Profile
 
@@ -943,7 +962,7 @@ AV لبه مکمل Endpoint؛ Quarantine را پایش کنید؛ File Filter ب
 
 ### جمع‌بندی
 
-AV با Signature/Heuristic/Sandbox؛ Flow سریع‌تر و Proxy عمیق‌تر؛ File Filter بدون لایسنس؛ EICAR برای آزمون ایمن؛ فایل رمزشده و HTTPS محدودیت‌اند.
+AV با Signature/Heuristic/Sandbox؛ Flow معمولاً سبک‌تر و Proxy با قابلیت‌های بیشتر (وابسته به Profile و نسخه)؛ File Filter بدون لایسنس؛ EICAR برای آزمون ایمن؛ فایل رمزشده و HTTPS محدودیت‌اند.
 
 ### تمرین و ارزیابی
 
@@ -2440,7 +2459,7 @@ LDAP پروتکل پرس‌وجو از Directory است (AD یک Directory اس�
 
 - **Kerberos:** احراز هویت مبتنی بر Ticket؛ KDC (در DC) Ticket Granting Ticket صادر می‌کند؛ نیاز به ساعت هماهنگ (≤ 5 دقیقه اختلاف) و DNS درست. رویدادهای ورود در Security Log DC (مثلاً 4768/4769) تولید می‌شوند.
 - **NTLM:** قدیمی‌تر، چالش–پاسخ؛ ضعیف‌تر و در حال حذف.
-- اثر بر FSSO: طبق مستند، **FSSO Polling فقط Kerberos را پشتیبانی می‌کند** (رویدادهای 4768 و 4769)، **NTLM ساپورت نمی‌شود**، و در ورود هم‌زمان کاربران زیاد ممکن است ورودی‌ها از دست برود.
+- اثر بر FSSO — **با حدود اعتبار دقیق:** مستند رسمی FortiOS 7.0 (صفحه‌ی «FSSO polling connector agent installation»، Administration Guide 7.0.0) درباره‌ی **روش Agentless/Polling Connector روی خود FortiGate** می‌گوید: Agent رویدادهای Security Event Log کنترلرهای دامنه را Poll می‌کند؛ «فقط رویدادهای ورود Kerberos با شناسه‌ی 4768 و 4769 پشتیبانی می‌شوند»، «احراز هویت مبتنی بر NTLM پشتیبانی نمی‌شود»، و در ورود هم‌زمان تعداد زیاد کاربر ممکن است Daemon بعضی ورودها را از دست بدهد (و استفاده از «FSSO agent mode» پیشنهاد شده). **این محدودیت‌ها به همان روش و همان نسخه‌ی مستند مربوط‌اند و نباید به DC Agent یا Collector Agent تعمیم داده شوند.** رفتار Collector Agent (حالت‌های Windows Event/NetAPI/…) و DC Agent در منابع این بازنگری **تأیید نشد → نیازمند بررسی در مستند FSSO Agent همان نسخه**. اینکه آیا نسخه‌های بعد از 7.0 همین محدودیت را دارند نیز نیازمند بررسی است.
 
 #### ۴-۳) RADIUS
 
@@ -2455,11 +2474,13 @@ LDAP پروتکل پرس‌وجو از Directory است (AD یک Directory اس�
 
 | حالت | سازوکار | نکته |
 |---|---|---|
-| DC Agent + Collector | Agent روی هر DC رویداد را به Collector می‌دهد؛ Collector به FortiGate (TCP 8000؛ UDP 8002 برای DC Agent) | تا ۵ Collector برای Redundancy (مستند) |
-| Collector Agent Polling | Collector خودش DCها را Poll می‌کند (نیاز به DC Agent نیست) | نصب روی یک سرور |
-| FortiGate Polling (Agentless) | FortiGate مستقیم DC را Poll می‌کند (Security Event Log) و گروه‌ها را از LDAP می‌گیرد | فقط Kerberos 4768/4769؛ NTLM نه؛ ممکن است ورود را از دست بدهد؛ پیش‌نیاز: LDAP server تنظیم‌شده |
+| DC Agent + Collector | Agent روی DC نصب می‌شود و ورود را به Collector می‌دهد؛ Collector به FortiGate گزارش می‌کند | جزئیات پورت/تعداد Collector از مستند FSSO Agent همان نسخه (در این بازنگری تأیید نشد) |
+| Collector Agent (روش Polling/Event Log) | Collector روی یک سرور ویندوز DCها را برای رویدادهای ورود بررسی می‌کند (بدون DC Agent) | محدودیت‌ها و رویدادهای پشتیبانی‌شده‌ی آن **تأیید نشد** و با محدودیت روش Agentless برابر فرض نشود |
+| FortiGate Polling Connector (Agentless) | FortiGate مستقیم Security Event Log کنترلرهای دامنه را Poll می‌کند و گروه‌ها را از LDAP می‌گیرد | طبق مستند 7.0.0: فقط Kerberos 4768/4769؛ NTLM نه؛ احتمال از دست‌رفتن ورودها در ورود هم‌زمان زیاد؛ پیش‌نیاز: LDAP |
 
-نکات مستند: در Polling، چون Security Event Log اطلاعات گروه ندارد، FortiGate با LDAP گروه را می‌پرسد و فقط کاربرانی که در گروه‌های Filter هستند به لیست FSSO می‌روند؛ `polling-frequency` بین 1 تا 30 ثانیه (پیش‌فرض 10).
+**انتخاب روش (استدلال):** تصمیم به معماری (تعداد DC و کاربر، الگوی ورود Kerberos/NTLM، سیاست نصب نرم‌افزار روی DC، نسخه‌ی FortiOS/Agent) بستگی دارد. اگر محیط NTLM قابل‌توجه یا ورود هم‌زمان زیاد دارد، روش Agentless طبق مستند خود مستند را به Agent mode ارجاع می‌دهد؛ ولی مناسب‌بودن Collector/DC Agent برای NTLM را باید از مستند همان Agent تأیید کرد.
+
+نکات مستند (روش Agentless): در Polling، چون Security Event Log اطلاعات گروه ندارد، FortiGate با LDAP گروه را می‌پرسد و فقط کاربرانی که در گروه‌های Filter هستند به لیست FSSO می‌روند؛ `polling-frequency` بین 1 تا 30 ثانیه (پیش‌فرض 10).
 
 #### ۴-۵) محدودیت‌های هویت مبتنی بر IP
 
@@ -2516,14 +2537,14 @@ end
 
 **مثال متوسط:** کاربر Login کرد ولی Policy مطابق نشد. علت‌ها به ترتیب: نگاشت IP→User نیامده (Polling/Log)، گروه در Filter نیست، DN اشتباه، ساعت ناهماهنگ.
 
-**مثال سخت:** بعضی کاربران پس از ورود با NTLM در Polling دیده نمی‌شوند. علت طبق مستند: Polling فقط Kerberos. راه‌حل: Collector Agent یا اصلاح DNS/SPN تا Kerberos استفاده شود.
+**مثال سخت:** بعضی کاربران پس از ورود با NTLM در روش **Agentless Polling Connector** دیده نمی‌شوند. علت طبق مستند FortiOS 7.0.0: این روش فقط رویدادهای Kerberos 4768/4769 را پشتیبانی می‌کند. تفکیک علت: ۱) Security Log DC برای همان ورود چه رویدادی دارد؟ (۴۷۶۸/۴۷۶۹ یا فقط NTLM) ۲) آیا نام/SPN/DNS باعث بازگشت به NTLM شده؟ ۳) آیا ورود هم‌زمان زیاد باعث از دست‌رفتن رویداد شده؟ راه‌ها: اصلاح DNS/SPN تا Kerberos استفاده شود، یا بررسی روش Agent-based (مناسب‌بودن آن برای NTLM باید از مستند Agent نسخه‌ی شما تأیید شود).
 
 ### ۶) طراحی و تصمیم‌گیری
 
 | سؤال | تصمیم |
 |---|---|
 | LDAP یا RADIUS؟ | LDAP برای Directory/گروه؛ RADIUS برای VPN/Wi-Fi/MFA/NPS |
-| FSSO کدام حالت؟ | کوچک: Polling؛ بزرگ/NTLM: Collector/DC Agent |
+| FSSO کدام حالت؟ | به معماری، نسخه و الگوی ورود (Kerberos/NTLM) بستگی دارد؛ Agentless برای محیط کوچک با Kerberos؛ ورود هم‌زمان زیاد یا NTLM ⇒ مستند Agent mode را بررسی کنید (تأیید نشده) |
 | رمزنگاری | LDAPS/StartTLS |
 | Redundancy | چند Collector، چند LDAP |
 | Fallback | Captive Portal برای IP بدون Login |
@@ -2559,7 +2580,7 @@ diagnose debug disable
 
 - AAA سه سؤال: کیستی، چه می‌توانی، چه کردی.
 - LDAP: Bind سرویس + Search + Bind کاربر.
-- Kerberos نیازمند ساعت و DNS؛ Polling فقط Kerberos.
+- Kerberos نیازمند ساعت و DNS؛ روش Agentless Polling طبق مستند 7.0.0 فقط Kerberos 4768/4769 را می‌خواند (محدودیت همان روش).
 - RADIUS: Request/Accept/Reject با Secret.
 - هویت مبتنی بر IP محدودیت دارد؛ طراحی با Fallback.
 
@@ -4142,7 +4163,7 @@ Timeout کوتاه، Challenge پشتیبانی‌نشده، Secret و NPS Polic
 
 **17-4-ت1** — Kerberos 4768/4769.
 
-FSSO Polling فقط رویدادهای Kerberos 4768/4769 را می‌خواند؛ ورود NTLM دیده نمی‌شود.
+روش Agentless Polling Connector در FortiOS 7.0.0 طبق مستند رسمی فقط رویدادهای Kerberos 4768/4769 را پشتیبانی می‌کند؛ ورود NTLM در آن دیده نمی‌شود. این محدودیت به DC Agent/Collector Agent تعمیم داده نمی‌شود (برای آن‌ها نیازمند بررسی).
 
 **17-4-ت2** — Group Filter، NTLM، ساعت/Event Log.
 
@@ -4152,15 +4173,15 @@ FSSO کاربر را نمی‌بیند: Group Filter، NTLM، ساعت و دست
 
 چند کاربر با یک IP (Terminal Server) نگاشت یک‌به‌یک را ممکن نمی‌کند؛ از TS Agent استفاده کنید.
 
-**17-4-ت4** — Collector/DC Agent؛ Polling محدودیت‌های NTLM و بار دارد.
+**17-4-ت4** — پاسخ قطعی‌تر از «Collector» نیست؛ استدلال: ۱) Agentless طبق مستند 7.0.0 NTLM را پشتیبانی نمی‌کند ⇒ برای ۲۰۰۰ کاربر با NTLM مناسب نیست؛ ۲) روش Agent-based گزینه‌ی بررسی است ولی پشتیبانی NTLM آن باید از مستند FSSO Agent نسخه‌ی شما تأیید شود؛ ۳) راه سوم کاهش NTLM با اصلاح DNS/SPN. گزینه‌ها را با هزینه/نسخه/معماری مقایسه کنید.
 
-Collector/DC Agent مدل جایگزین Polling است؛ Polling محدودیت NTLM و بار دارد.
+Agent-based جایگزین بررسی‌شدنی است؛ محدودیت‌های Agentless (NTLM، از دست‌رفتن ورود در همزمانی زیاد) فقط برای همان روش مستند شده است.
 
 **17-4-ت5** — Login/Logout، تغییر IP، گروه جدید، NTLM، قطع Collector؛ هر کدام Evidence.
 
 آزمون FSSO: Login/Logout، تغییر IP، گروه جدید، NTLM و قطع Collector؛ برای هرکدام Evidence.
 
-**17-4-Q1** — Polling reads only Kerberos events, so NTLM logons are not captured.
+**17-4-Q1** — The agentless polling connector (per FortiOS 7.0.0 docs) reads only Kerberos events 4768/4769, so NTLM logons are not captured by that method.
 
 
 ### پاسخ‌های بازنویسی درس 17-5
@@ -4198,9 +4219,9 @@ nmap از Guest به Users/Servers باید Filtered باشد؛ آزمون من�
 
 Debug بار CPU، حجم Log و افشای اطلاعات حساس دارد؛ محدود و موقتی.
 
-**17-6-ت3** — NTLM؛ Polling فقط Kerberos را می‌بیند؛ یا Group Filter.
+**17-6-ت3** — NTLM (در روش Agentless Polling طبق مستند 7.0.0 فقط Kerberos دیده می‌شود)، یا Group Filter؛ علت را با Security Log DC اثبات کنید.
 
-FSSO کاربر را نمی‌بیند: NTLM (Polling فقط Kerberos)، یا Group Filter.
+FSSO کاربر را نمی‌بیند: علامت را از علت جدا کنید؛ فرضیه‌ها: NTLM در روش Agentless، Group Filter، ساعت/DNS، قطع Collector؛ با Log DC و `fsso list` تفکیک کنید.
 
 **17-6-ت4** — Policy NPS/گروه، Secret، Constraint روش احراز؛ شاهد: NPS Event.
 

@@ -3663,6 +3663,8 @@ A negative test: connect from the DMZ to the database and verify it is denied an
 
 > **وضعیت (FortiOS 7.0.3، `Unverified` روی Image):** ترتیب مراحل بر پایه‌ی مستند رسمی «Debugging the packet flow» (Administration Guide 7.0) و مقاله‌های جامعه‌ی Fortinet است؛ جزئیات داخلی نسخه‌ی دقیق باید با `get system status` و Debug واقعی تأیید شود. Lab «اجرا نشده».
 
+> **نکته‌ی علمی v4.0 — حدود اعتبار مدل:** جریان ده‌مرحله‌ای این درس یک «**مدل مفهومی ساده‌شده برای آموزش**» است، نه شرح ثابت و کامل همه‌ی حالات FortiOS. ترتیب دقیق داخلی به نسخه، نوع ترافیک (Transit، Local-in، Local-out)، وجود Session، Hardware Offload، IPsec، Proxy-based Inspection و تنظیمات خاص بستگی دارد. در منابع رسمی FortiOS 7.0 که برای این بازنگری قابل‌دسترسی بود، یک جدول رسمی «ترتیب کامل مراحل» **تأیید نشد**؛ آنچه با منبع رسمی تأیید شد: ترتیب Policy Route ← Routing Table (درس ۴-۴)، حالت‌های Inspection (Flow/Proxy) و ماهیت Local-out. هرجا در متن «مفهوم عمومی شبکه» و «رفتار مختص FortiOS» جدا شده، همین تفکیک مدنظر است.
+
 ### ۱) هدف آموزشی
 
 دانشجو در پایان می‌تواند برای یک بسته‌ی واقعی توضیح دهد:
@@ -3708,6 +3710,19 @@ A negative test: connect from the DMZ to the database and verify it is denied an
 10. Egress           : ARP/next-hop MAC, send
 ```
 
+**حدود اعتبار این ترتیب (مدل مفهومی ساده‌شده):**
+
+| بخش | نوع دانش | توضیح |
+|---|---|---|
+| Route Lookup و Policy Lookup به‌عنوان دو تصمیم جدا | مفهوم عمومی فایروال/روتر | در هر فایروال Stateful تقریباً صادق است |
+| DNAT پیش از Policy | مفهوم مشترک NAT/فایروال + رفتار FortiOS (VIP) | Policy مقصد post-DNAT را می‌بیند؛ جزئیات Central NAT متفاوت است |
+| RPF قبل از Session | رفتار FortiOS | تنظیم‌پذیر؛ حالت Strict/Loose و `asymroute` اثر دارند |
+| ترتیب Session Lookup نسبت به سایر مراحل | رفتار FortiOS + Offload | بسته‌ی Offload شده ممکن است اصلاً به CPU نرسد |
+| Security Profile پس از Policy | رفتار FortiOS | در Proxy mode بازرسی روی جریان بازسازی‌شده انجام می‌شود |
+| SNAT پس از Policy | رفتار FortiOS | NAT خروجی با Central NAT یا IP Pool متفاوت پیکربندی می‌شود |
+
+این مدل برای **ترافیک عبوری (Transit)** است. ترافیک Local-in/Local-out و ترافیک IPsec مسیر متفاوت دارند (۴-۸ و ۱۲-۸).
+
 دو نکته‌ی فراتر از جدول:
 
 - **DNAT قبل از Route و Policy** اتفاق می‌افتد؛ بنابراین Policy باید بر اساس آدرس **مقصد بعد از DNAT** (آدرس داخلی) تطبیق شود، نه IP عمومی VIP. در مستند Fortinet و مقاله‌ی Central NAT این ترتیب «ingress → session lookup → DNAT → route → policy → SNAT» آمده است.
@@ -3717,16 +3732,23 @@ A negative test: connect from the DMZ to the database and verify it is denied an
 
 FortiGate هر بسته‌ی ورودی را با **Reverse Path Forwarding (RPF)** می‌سنجد: آیا بهترین مسیر به آدرس **مبدأ** از همان Interfaceی که بسته آمده می‌گذرد؟ اگر نه، به‌عنوان جعل/Asymmetric Drop می‌شود (Debug: `reverse path check fail, drop`). این یکی از شایع‌ترین دلایل Drop در شبکه‌های نامتقارن یا با Route ناقص است (فصل ۱۰-۶، ۲۳).
 
-#### ۴-۳) Session Lookup (Fast path)
+#### ۴-۳) Session Lookup — ترافیک جدید در برابر ترافیک دارای Session
 
-اگر بسته با یک Session موجود (در یکی از جهت‌ها) مطابقت کند، Route و Policy برای آن دوباره بررسی نمی‌شوند (به‌جز موارد خاص مثل تغییر Route و `session-route-check`). نتیجه:
+- **ترافیک جدید (بسته‌ی اول):** Session پیدا نمی‌شود؛ Route Lookup، Policy Lookup و (در صورت نیاز) NAT اجرا می‌شود و نتیجه در Session ثبت می‌گردد.
+- **ترافیک دارای Session:** بسته‌های بعدی هر دو جهت (Original و Reply) با ورودی Session تطبیق می‌خورند و معمولاً **Policy Lookup کامل دوباره انجام نمی‌شود**؛ NAT و وضعیت ذخیره‌شده در Session اعمال می‌شود. پاسخ‌های برگشتی بدون Policy جداگانه عبور می‌کنند چون Session دارند.
 
-- پاسخ‌های برگشتی بدون Policy عبور می‌کنند (چون Session دارند).
-- تغییر Policy یا Route روی **Sessionهای موجود** تا پایان Session یا پاک کردن آن اثر ندارد (درس ۱۳-۷).
+**چرا نمی‌توان گفت «Session موجود هرگز Route یا Policy را دوباره بررسی نمی‌کند»؟** چون رفتار به عوامل زیر وابسته است و تعمیم مطلق نادرست است:
+
+1. **تغییر Route:** Session معمولاً به Interface/Gateway ثبت‌شده وابسته می‌ماند، ولی FortiOS گزینه‌هایی برای بازبینی مسیر Session دارد (مثل تنظیمات `snat-route-change`، `session-route-check`/رفتار Route-change؛ **نام و رفتار دقیق وابسته به نسخه‌اند و در منابع این بازنگری تأیید نشدند → نیازمند بررسی در مستند نسخه‌ی هدف**).
+2. **تغییر Policy:** تغییر یا حذف Policy ممکن است Sessionهای موجود را فوراً قطع نکند، ولی در بعضی نسخه‌ها/حالت‌ها (مثلاً Proxy-based، یا Policyهایی که Session را با Policy ID مرتبط می‌کنند، یا Session Helper/UTM) Session دوباره ارزیابی یا بازنشانی می‌شود. این رفتار را بدون مستند نسخه قطعی ننویسید.
+3. **Offload (NPU):** Session Offload شده در سخت‌افزار پردازش می‌شود و تغییرات نرم‌افزاری ممکن است نیاز به پاک‌کردن/بازسازی Session داشته باشد.
+4. **انقضای Session:** Timeout هر پروتکل، Session را پایان می‌دهد و بسته‌ی بعدی دوباره «جدید» محسوب می‌شود.
+
+**جمع‌بندی آموزشی (قابل‌اتکا):** «Session موجود *معمولاً* بدون ارزیابی مجدد Policy ادامه می‌یابد؛ بنابراین بعد از تغییر Route/Policy، نتیجه را با **اتصال جدید** آزمون کنید و برای Session قدیمی وضعیت (`diagnose sys session list`) را ببینید؛ پاک‌کردن Session (فقط با فیلتر و Change) راه تضمین ارزیابی دوباره است.» جزئیات وابسته به نسخه: نیازمند بررسی.
 
 #### ۴-۴) Route Lookup
 
-انتخاب Interface خروجی و Next-hop با همان قواعد (LPM، Distance، Priority، Policy Route). در FortiOS: ترتیب بررسی: **Policy Route (PBR)** ← **SD-WAN Rule** ← **Routing Table (RIB/FIB)**. (جزئیات SD-WAN: فصل ۲۱.) **Zone** و Interface خروجی همین‌جا مشخص می‌شود.
+انتخاب Interface خروجی و Next-hop با همان قواعد (LPM، Distance، Priority، Policy Route). در FortiOS: ترتیب بررسی (مستند رسمی FortiOS 7.0، بخش Policy routes — تأییدشده): فایروال از بالای فهرست Policy Route شروع می‌کند؛ اگر Policy Route تطبیق نخورد یا Interface/Gateway آن کامل نباشد یا مسیر فعالی نیابد، **Routing Table** بررسی می‌شود. نقش **SD-WAN Rule** (Service) نیز در همین مرحله‌ی انتخاب مسیر است، ولی ترتیب دقیق آن نسبت به Policy Route در نسخه‌ی هدف و **Route Cache/FIB** در منابع این بازنگری تأیید نشد → نیازمند بررسی. نکته‌ی تأییدشده: برای ترافیک برگشتی، Policy Route بررسی نمی‌شود، و رفتار خروج برگشتی به تنظیم Auxiliary Session بستگی دارد. (جزئیات SD-WAN: فصل ۲۱.) **Zone** و Interface خروجی همین‌جا مشخص می‌شود.
 
 > تفاوت مهم: **Routing می‌گوید بسته از کجا برود؛ Policy می‌گوید اجازه‌ی عبور دارد یا نه.** هر دو باید درست باشند؛ Route درست و Policy غایب = Drop؛ Policy درست و Route غلط = Drop یا مسیر اشتباه.
 
@@ -3742,9 +3764,25 @@ FortiGate هر بسته‌ی ورودی را با **Reverse Path Forwarding (RPF
 
 اگر Policy NAT فعال باشد، آدرس مبدأ به IP خروجی Interface یا IP Pool تغییر می‌کند و در Session ذخیره می‌شود تا بسته‌های بعدی و پاسخ بدون پردازش مجدد ترجمه شوند. پس هر Session دو جهت دارد: Original و Reply.
 
-#### ۴-۸) ترافیک Local-in و Local-out (مرور)
+#### ۴-۸) سه حالت: Transit، Local-in و Local-out
 
-ترافیکی که **مقصدش خود FortiGate** است (Local-in) یا **مبدأش خود FortiGate** است (Local-out) مسیر متفاوتی دارد و Forward Policy بر آن اعمال نمی‌شود؛ درس ۱۲-۸ آن را کامل توضیح می‌دهد.
+| حالت | تعریف | سازوکار اصلی | نکته |
+|---|---|---|---|
+| **Transit (Forward)** | مبدأ و مقصد هیچ‌کدام خود FortiGate نیستند | Route + **Firewall Policy** (Forward) | مدل ۱۰مرحله‌ای بالا |
+| **Local-in** | مقصد = خود FortiGate (SSH/HTTPS/ping/IKE/…) | `allowaccess` روی Interface + **Local-in Policy** (+ DoS Policy پیش از آن) | Firewall Policy عادی اعمال نمی‌شود |
+| **Local-out** | مبدأ = خود FortiGate (DNS، FortiGuard، Syslog، NTP) | Routing Table (پیش‌فرض)، یا SD-WAN/Interface دستی | مستند رسمی 7.0: Local out «relies on routing table lookups» مگر SD-WAN/Interface دستی انتخاب شود (تأییدشده) |
+
+سوءبرداشت رایج: «همه‌ی ترافیک مرتبط با فایروال را با Forward Policy کنترل می‌کنم.» ← ترافیک مدیریتی به خود دستگاه با Local-in و `allowaccess` کنترل می‌شود. جزئیات: درس ۱۲-۸.
+
+#### ۴-۹) VIP/DNAT — حداقل لازم برای فهم Flow
+
+- در مدل مفهومی، **مقصد بسته پیش از Route/Policy ترجمه می‌شود**؛ بنابراین Route Lookup بر مقصد جدید (داخلی) انجام می‌شود و Policy باید به **شیء VIP یا مقصد post-DNAT طبق نسخه/حالت** اشاره کند (در FortiOS معمولاً شیء VIP در `dstaddr`؛ در Central NAT رفتار متفاوت است — درس ۱۳-۳).
+- Policy بدون Policy مقابل VIP کار نمی‌کند؛ VIP فقط «ترجمه» است نه «اجازه».
+- پاسخ سرور داخلی با Session برعکس ترجمه می‌شود (Reverse DNAT/SNAT).
+
+#### ۴-۱۰) Hardware Acceleration و رابطه‌اش با Flow
+
+Session می‌تواند به NPU **Offload** شود؛ در این حالت بسته‌های بعدی ممکن است از مسیر نرم‌افزاری (CPU) نگذرند. پیامدها: ۱) Sniffer/Debug Flow همه‌ی بسته‌ها را نشان نمی‌دهد؛ ۲) تغییرات Policy/Route ممکن است نیاز به پاک‌کردن Session داشته باشد؛ ۳) Offload با بعضی Security Profileها (به‌ویژه Proxy-based) یا ویژگی‌ها ممکن نیست. شرایط دقیق Offload وابسته به مدل/NP/نسخه است (درس ۱۲-۹)؛ در منابع این بازنگری فقط جزئیات IPsec Offload تأیید شد (`npu-offload` در Phase1؛ `auto-asic-offload disable` در Policy ترافیک را Offload نمی‌کند).
 
 ### ۵) مثال حل‌شده: Debug Flow
 
@@ -3857,7 +3895,8 @@ diagnose sniffer packet any "host 8.8.8.8 and port 443" 4 20 l
 
 - ترتیب: Ingress → RPF → Session → DNAT → Route → Policy → Profile → SNAT → Session → Egress.
 - DNAT قبل از Route/Policy؛ SNAT بعد از Policy.
-- Session موجود Policy/Route را دور می‌زند.
+- Session موجود *معمولاً* بدون ارزیابی مجدد Policy ادامه می‌یابد؛ اما این یک قاعده‌ی مطلق نیست و به نسخه، Offload، Proxy mode و تنظیمات Route-change بستگی دارد (۴-۳).
+- Transit، Local-in و Local-out سه مسیر متفاوت‌اند (۴-۸).
 - Routing و Policy دو تصمیم جدا هستند؛ هر دو لازم‌اند.
 - Debug Flow + Session + Routing Table سه شاهد اصلی‌اند.
 
@@ -3890,7 +3929,7 @@ diagnose sniffer packet any "host 8.8.8.8 and port 443" 4 20 l
 | Policy ID 0 | Implicit deny | Policy ضمنی رد |
 | Debug flow | Packet flow debug | ردگیری گام‌به‌گام بسته |
 
-- *The firewall policy is evaluated only for the first packet of a session.* ← Policy فقط برای بسته‌ی اول Session ارزیابی می‌شود.
+- *In the simplified model the policy is evaluated for the first packet of a session; real behavior can vary by version and offload.* ← در مدل ساده، Policy برای بسته‌ی اول Session ارزیابی می‌شود؛ رفتار واقعی بسته به نسخه و Offload می‌تواند متفاوت باشد.
 - *Check routing and policy as two separate decisions.* ← Routing و Policy را دو تصمیم جدا بررسی کنید.
 
 ### ۱۳) منابع

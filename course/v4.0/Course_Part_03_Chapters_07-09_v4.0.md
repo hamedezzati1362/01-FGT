@@ -5287,7 +5287,7 @@ Our AS 65010 ---- eBGP ---- ISP-A (AS 65100)  (preferred)
 - با OSPF نمی‌توان از ISP پیش‌فرض مسیر انتخابی ساخت و AS_PATH/Policy را حمل کرد.
 - ما Local-Preference بالاتری برای مسیرهای ISP-A می‌گذاریم (درس ۹-۴).
 
-**مثال سخت (تحلیل):** Prefix 198.51.100.0/24 از ISP-A با AS_PATH `65100 65300` و از ISP-B با AS_PATH `65200` می‌رسد. بدون هیچ Policy کدام انتخاب می‌شود؟ جواب: AS_PATH کوتاه‌تر (ISP-B) برنده است؛ مگر Weight/Local-Pref بالاتری برای A تنظیم کنیم، چون آن‌ها پیش از AS_PATH سنجیده می‌شوند (درس ۹-۷).
+**مثال سخت (تحلیل):** Prefix 198.51.100.0/24 از ISP-A با AS_PATH `65100 65300` و از ISP-B با AS_PATH `65200` می‌رسد. فرض‌ها: هر دو مسیر معتبرند و Next-hop هر دو قابل‌دسترس است؛ روی روتر ما هیچ Weight/Local-Preference دستی نگذاشته‌ایم (هر دو مقدار پیش‌فرض)؛ مسیر محلی (Locally originated) برای این Prefix وجود ندارد و دستور `bgp bestpath as-path ignore` فعال نیست. در این شرایط، و در الگوریتم Cisco IOS/IOS XE، معیارهای مقدم (Weight، Local-Pref، مسیر محلی) مساوی‌اند و در گام AS_PATH مسیر کوتاه‌تر (ISP-B) انتخاب می‌شود. این یک نتیجه‌ی **مشروط به همین فرض‌هاست**، نه قاعده‌ی مطلق: اگر Local-Pref مسیر A بالاتر باشد، A بدون سنجش AS_PATH برنده است (کامل در درس ۹-۷).
 
 ### ۶) طراحی و تصمیم‌گیری
 
@@ -6646,7 +6646,7 @@ ISP-B تماس می‌گیرد: «شما Prefixهای ISP-A را اعلام کر
 
 **فصل ۹ · درس افزوده (تکمیل ۹-۴ و ۹-۵) · پیش‌نیاز: درس‌های ۹-۰ تا ۹-۵ · ≈ ۷ ساعت**
 
-> **وضعیت:** ترتیب انتخاب مسیر از مستند رسمی Cisco ([لینک](https://www.cisco.com/c/en/us/support/docs/ip/border-gateway-protocol-bgp/13753-25.html)) و RFC 4271؛ ترتیب Tie-breakerهای انتهایی بسته به پلتفرم/نسخه فرق دارد؛ Labها «اجرا نشده».
+> **وضعیت:** ترتیب انتخاب مسیر از مستند رسمی Cisco با عنوان «Select BGP Best-path Algorithm» (Document ID 13753؛ [لینک](https://www.cisco.com/c/en/us/support/docs/ip/border-gateway-protocol-bgp/13753-25.html)) تأیید شد و RFC 4271؛ ترتیب Tie-breakerهای انتهایی بسته به پلتفرم/نسخه فرق دارد؛ Labها «اجرا نشده».
 
 ### ۱) هدف آموزشی
 
@@ -6668,28 +6668,36 @@ BGP چند مسیر برای یک Prefix دریافت می‌کند ولی فق�
 
 ### ۴) توضیح عمیق فنی
 
-#### ۴-۱) ترتیب مراحل (Cisco IOS، خلاصه‌ی مستند رسمی)
+#### ۴-۱) ترتیب مراحل (Cisco IOS/IOS XE، مطابق مستند رسمی)
+
+نکته‌ی مدل: BGP هر مسیر معتبر را به‌ترتیب با «بهترین مسیر فعلی» مقایسه می‌کند. پس از **حذف مسیرهای نامعتبر** (مثلاً Next-hop غیرقابل‌دسترس، یا مسیری که به‌خاطر Loop/Policy رد شده)، معیارهای زیر از بالا به پایین اعمال می‌شوند و **اولین معیاری که تفاوت ایجاد کند** برنده را تعیین می‌کند.
 
 ``` text
-Order (highest priority first), Cisco IOS:
-1. Weight           : highest wins (Cisco-specific, local to the router)
-2. Local Preference : highest wins (default 100; shared inside the AS)
-3. Locally originated (network/aggregate/redistribute) preferred
-4. AS_PATH length   : shortest wins
-5. Origin           : IGP < EGP < Incomplete (lowest wins)
-6. MED              : lowest wins (compared only between paths from the same neighbor AS by default)
-7. Prefer eBGP over iBGP
-8. Lowest IGP metric to the next hop
-9. Oldest path / lowest Router-ID / shortest cluster list / lowest neighbor address (tie-breakers)
+Cisco IOS / IOS XE (document 13753), highest priority first:
+0. Precondition   : path is valid; NEXT_HOP is reachable (inaccessible next-hop paths are ignored)
+1. Weight         : highest wins (Cisco-specific, local to the router)
+2. Local Preference: highest wins (default 100, if the attribute is absent)
+3. Locally originated (network/redistribute preferred over aggregate-address); AIGP if configured
+4. AS_PATH length : shortest wins (skipped with 'bgp bestpath as-path ignore'; AS_SET counts as 1)
+5. Origin         : IGP < EGP < Incomplete
+6. MED            : lowest wins; compared only when the neighboring (first) AS is the same
+                    unless 'bgp always-compare-med'; missing MED treated as 0 unless 'med missing-as-worst'
+7. eBGP over iBGP
+8. Lowest IGP metric to the BGP next hop
+9. Multipath installation decision
+10. Oldest path (when both are external), unless 'bgp bestpath compare-routerid'
+11. Lowest router ID (Originator ID if present)
+12. Minimum cluster-list length (route reflectors)
+13. Lowest neighbor address
 ```
 
 نکات دقیق:
 
-- **پیش از این مراحل**، مسیری که Next-hop آن غیرقابل‌دسترس است حذف می‌شود (در IOS-XR صراحتاً ذکر شده؛ در IOS هم Next-hop نامعتبر مسیر را «Inaccessible» می‌کند).
+- **تفاوت پلتفرم:** این ترتیب مربوط به Cisco IOS/IOS XE است. ترتیب و مجموعه‌ی معیارها در FortiOS الزاماً همین نیست (مثلاً Weight مفهومی Cisco-specific است). در منابع رسمی FortiOS 7.0 که برای این بازنگری در دسترس بود، **ترتیب کامل Best Path در FortiOS تأیید نشد**؛ بنابراین دانشجو نباید ترتیب Cisco را به FortiGate تعمیم دهد و باید جدول مستند همان نسخه‌ی FortiOS را بخواند (وضعیت: «نیازمند بررسی»).
 - Weight فقط روی همان روتر معنا دارد و به Peerها اعلام نمی‌شود.
 - Local-Pref در کل AS (iBGP) پخش می‌شود و برای **انتخاب خروجی ترافیک** است.
-- MED به‌صورت پیش‌فرض فقط بین مسیرهای یک AS همسایه مقایسه می‌شود. اگر برای چند AS مقایسه کنیم باید `bgp always-compare-med` را آگاهانه فعال کنیم (ریسک ناسازگاری).
-- Tie-breakerهای انتهایی بسته به پلتفرم/نسخه کمی متفاوت است؛ فهرست بالا برای مرحله‌های ۷ به بعد «خلاصه» است. برای دقت در تولید به مستند همان نسخه رجوع کنید (`Unverified` برای vIOS/CSR).
+- MED پیش‌فرض فقط بین مسیرهای یک AS همسایه مقایسه می‌شود. `bgp always-compare-med` را باید در کل AS یکسان فعال کرد، وگرنه خطر ناسازگاری و حلقه وجود دارد (طبق همان مستند). رفتار `deterministic-med` را در مستند نسخه‌ی خودتان بررسی کنید.
+- مرحله‌های ۹ به بعد (Multipath، قدیمی‌ترین مسیر، Router-ID) Tie-breaker هستند و در عمل کمتر تعیین‌کننده‌اند.
 
 #### ۴-۲) کدام Attribute برای چه هدفی؟
 
@@ -6712,7 +6720,39 @@ Path B: via ISP-B, Weight 0,   LocalPref 200, AS_PATH 65200 65301 65302 (3 hops)
 
 مراحل: Weight هر دو 0 ← تساوی. Local-Pref: B (200) از A (100) بزرگ‌تر ← **B برنده**؛ AS_PATH و MED سنجیده نمی‌شوند.
 
-اگر هر دو Local-Pref 100 بودند: AS_PATH کوتاه‌تر ← **A برنده**. اگر AS_PATH هم برابر بود: Origin، سپس MED (در صورت یکسان‌بودن AS همسایه).
+اگر هر دو Local-Pref 100 بودند (و Weight و مسیر محلی نیز تساوی باشد، و هر دو مسیر معتبر باشند): AS_PATH کوتاه‌تر ← **A برنده**. اگر AS_PATH هم برابر بود: Origin، سپس MED (در صورت یکسان‌بودن AS همسایه).
+
+#### ۴-۳ب) مثال حل‌شده‌ی دوم: چرا «AS_PATH کوتاه‌تر» همیشه برنده نیست
+
+**فرض‌ها (برای هر دو مثال):** پلتفرم Cisco IOS/IOS XE؛ هر مسیر معتبر و Next-hop آن قابل‌دسترس؛ `as-path ignore` و `always-compare-med` غیرفعال.
+
+**مثال الف — سه مسیر، مقایسه‌ی مرحله‌ای.** Prefix 198.51.100.0/24:
+
+``` text
+P1: via ISP-A (eBGP), Weight 0, LP 100, AS_PATH 65100 65300       (2), Origin IGP,        MED 50
+P2: via ISP-B (eBGP), Weight 0, LP 100, AS_PATH 65200             (1), Origin IGP,        MED 10
+P3: via iBGP peer R2, Weight 0, LP 100, AS_PATH 65200 65301 65302 (3), Origin Incomplete, MED 0
+```
+
+1. اعتبار: هر سه مسیر معتبر و Next-hop قابل‌دسترس ⇒ هر سه وارد مقایسه.
+2. Weight: هر سه 0 ⇒ تساوی. Local-Pref: هر سه 100 ⇒ تساوی. مسیر محلی: هیچ‌کدام ⇒ تساوی.
+3. AS_PATH: P2 با طول 1 از P1 (2) و P3 (3) کوتاه‌تر است ⇒ **P2 برنده؛ P1 و P3 حذف**. Origin و MED سنجیده نمی‌شوند (MED مسیر P2 از AS 65200 و P1 از AS 65100 است و اصولاً قابل‌مقایسه نبود).
+4. نتیجه: P2، و دلیل: «اولین معیاری که تفاوت ایجاد کرد AS_PATH بود».
+
+**مثال ب — سه علت متفاوت که کوتاه‌ترین AS_PATH برنده نمی‌شود:**
+
+``` text
+Case 1 (Local-Pref): A: LP 200, AS_PATH len 3   vs   B: LP 100, AS_PATH len 1
+   -> LP is compared before AS_PATH -> A wins although its path is longer.
+Case 2 (Weight)    : A: Weight 100 (this router only), len 4   vs   B: Weight 0, len 1
+   -> Weight is compared first -> A wins on this router; other routers in the AS may choose B.
+Case 3 (Reachability): B has the shortest AS_PATH but its NEXT_HOP has no IGP/connected route
+   -> B is inaccessible and ignored; A is chosen even if longer.
+```
+
+درس‌ها: (۱) ترتیب مهم‌تر از «طول» است؛ (۲) Weight فقط محلی است و ممکن است روترهای یک AS تصمیم متفاوت بگیرند؛ (۳) مسیر نامعتبر هرگز وارد رقابت نمی‌شود؛ (۴) با `bgp bestpath as-path ignore` اصلاً AS_PATH سنجیده نمی‌شود.
+
+**سوءبرداشت‌های رایج:** «BGP کوتاه‌ترین مسیر را انتخاب می‌کند» ← نه؛ BGP سیاست‌محور است و AS_PATH فقط یکی از معیارهاست و در ترتیب Cisco بعد از Weight/Local-Pref/مسیر محلی می‌آید. «MED همه‌ی مسیرها را مقایسه می‌کند» ← پیش‌فرض فقط برای همان AS همسایه.
 
 #### ۴-۴) AS-Path Prepend و MED در عمل
 
