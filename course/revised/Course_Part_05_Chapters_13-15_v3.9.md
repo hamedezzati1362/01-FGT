@@ -1976,6 +1976,34 @@ diagnose debug reset
 
 <a id="l-14-2"></a>
 
+### تعمیق: ده پرسش روی یک پرونده‌ی واقعی
+
+**سناریو.** «کاربر 10.10.0.5 به https://app.example.com نمی‌رسد».
+
+``` text
+Q1 Scope?      only this user -> not a global outage
+Q2 DNS?        nslookup app.example.com -> 198.51.100.8 (ok)
+Q3 Route?      get router info routing-table details 198.51.100.8 -> via port1
+Q4 Policy?     diagnose firewall iprope lookup 10.10.0.5 50000 198.51.100.8 443 tcp port2 -> policy 30
+Q5 NAT?        session shows SNAT to 203.0.113.2
+Q6 Session?    diagnose sys session filter dst 198.51.100.8 -> state=SYN_SENT only
+Q7 Reply?      sniffer port1: SYN out, no SYN-ACK
+Q8 Upstream?   ISP/target blocks source 203.0.113.2
+Q9 Fix         use other pool IP / ticket to ISP
+Q10 Verify     curl -vk works; session established
+```
+
+نتیجه: مشکل خارج از فایروال است؛ Evidence با Sniffer (SYN بدون پاسخ) اثبات شد، نه حدس.
+
+**قاعده‌ی انتخاب ابزار:** علامت «Timeout» ⇒ Route/Sniffer؛ «Refused» ⇒ سرویس یا Policy Deny؛ «کند» ⇒ MTU/Session/CPU.
+
+**اشتباهات رایج:** پرش مستقیم به Debug Flow، نداشتن Baseline، تغییر هم‌زمان چند چیز.
+
+**پرسش‌های مصاحبه**
+1. *اولین کار در «اینترنت قطع است»؟* تعیین Scope.
+2. *چرا ترتیب مهم است؟* هر گام فرضیه‌ای را حذف می‌کند.
+3. *Evidence خوب چیست؟* خروجی دستور با زمان و فیلتر مشخص.
+
 ## درس 14-2 — Packet Sniffer در CLI و GUI و تحلیل pcap با Wireshark: از فیلتر تا نتیجه‌گیری
 
 **فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۱ · ≈ 10 ساعت**
@@ -2145,6 +2173,37 @@ diagnose sniffer packet port2 'icmp' 6 10 l
 - Wireshark User Guide
 
 <a id="l-14-3"></a>
+
+### تعمیق: Sniffer برای اثبات «بسته رسید ولی پاسخ نداد»
+
+**دستور**
+
+``` text
+diagnose sniffer packet any 'host 10.10.0.5 and host 198.51.100.8 and tcp port 443' 4 20 l
+```
+
+پارامترها: Interface، فیلتر BPF، Verbosity، تعداد بسته، زمان Local. Verbosity 4 هدر + نام Interface، 6 هدر+Payload.
+
+**خروجی نمونه و تفسیر**
+
+``` text
+12:01:01.100 port2 in  10.10.0.5.50000 -> 198.51.100.8.443: syn 123
+12:01:01.101 port1 out 203.0.113.2.50000 -> 198.51.100.8.443: syn 123
+12:01:02.101 port1 out 203.0.113.2.50000 -> 198.51.100.8.443: syn 123
+```
+
+- ورودی داریم ⇒ ترافیک به فایروال رسیده.
+- خروجی با SNAT ⇒ Policy و NAT کار کرده.
+- بدون SYN-ACK و Retransmit ⇒ مسئله بعد از فایروال.
+
+**ذخیره pcap:** خروجی `l` یا 6 را با اسکریپت fgt2eth به pcap تبدیل و در Wireshark با فیلتر `tcp.analysis.retransmission` ببینید.
+
+**اشتباهات رایج:** فیلتر غلط (فقط یک Host)، Interface `any` با حجم زیاد، فراموشی تعداد بسته و بار CPU.
+
+**پرسش‌های مصاحبه**
+1. *Sniffer بسته Offload شده را می‌بیند؟* ممکن است ببیند ناقص؛ برای Debug Offload را موقتاً بررسی کنید.
+2. *چرا دو سمت؟* مقایسه in و out.
+3. *Verbosity 6؟* Payload هم.
 
 ## درس 14-3 — Debug Flow: خواندن تصمیم فایروال خط‌به‌خط با مثال‌های Allowed، Denied و RPF
 
@@ -2324,6 +2383,53 @@ diagnose debug reset
 
 <a id="l-14-4"></a>
 
+### تعمیق: Debug Flow با سه نتیجه‌ی کاملاً متفاوت
+
+**راه‌اندازی**
+
+``` text
+diagnose debug reset
+diagnose debug flow filter addr 198.51.100.8
+diagnose debug flow filter dport 443
+diagnose debug flow show function-name enable
+diagnose debug flow trace start 20
+diagnose debug enable
+```
+
+**نتیجه A — Allowed**
+
+``` text
+msg="allocate a new session-0003f1"
+msg="find a route: gw-203.0.113.1 via port1"
+msg="Allowed by Policy-30: SNAT"
+msg="SNAT 10.10.0.5->203.0.113.2:50000"
+```
+
+**نتیجه B — Denied**
+
+``` text
+msg="Denied by forward policy check (policy 0)"
+```
+
+یعنی Policy نیست یا Interface/Address مطابق نیست؛ با iprope lookup همان 5-tuple علت را ببینید.
+
+**نتیجه C — RPF**
+
+``` text
+msg="reverse path check fail, drop"
+```
+
+یعنی Route برگشت به Interface دیگر است؛ `get router info routing-table details <src>`.
+
+**پایان کار:** `diagnose debug disable` و `diagnose debug reset`؛ فراموشی آن CPU و Log می‌خورد.
+
+**نکته.** Debug Flow فقط Session اولیه (بسته‌ی اول) را نشان می‌دهد؛ ادامه‌ی Session Offload شده دیده نمی‌شود.
+
+**پرسش‌های مصاحبه**
+1. *Policy 0؟* Implicit Deny.
+2. *چرا Trace محدود (20)؟* حفاظت CPU.
+3. *تفاوت Sniffer و Debug Flow؟* بسته در سیم در برابر تصمیم فایروال.
+
 ## درس 14-4 — Session، Routing و iprope: ابزارهای تکمیلی برای اثبات تصمیم‌ها
 
 **فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۱ تا ۱۴-۳ · ≈ 10 ساعت**
@@ -2487,6 +2593,33 @@ diagnose sys session list
 
 <a id="l-14-5"></a>
 
+### تعمیق: ترکیب Session + Route + iprope در یک پرونده
+
+**سناریو.** پس از تغییر Default Route، بعضی کاربران هنوز از ISP قدیم خارج می‌شوند.
+
+``` text
+get router info routing-table details 0.0.0.0/0 -> via port4 (new)
+diagnose sys session filter src 10.10.0.5
+diagnose sys session list -> ... gw=198.18.0.1 via port1 (old)
+```
+
+علت: Sessionهای موجود مسیر قدیم را نگه می‌دارند (Route cache در Session). راه حل: پاک‌سازی Session با فیلتر یا `set snat-route-change enable` برای حالتی که SNAT استفاده می‌شود (طبق مستند Fortinet).
+
+**Lookup**
+
+``` text
+diagnose firewall iprope lookup 10.10.0.5 40000 8.8.8.8 53 udp port2
+```
+
+**نکته.** `get router info routing-table all` بهترین مسیر فعال؛ `database` همه‌ی مسیرها (Admin Distance/Priority).
+
+**اشتباهات رایج:** Clear بدون فیلتر، فراموشی `diagnose sys session filter clear`.
+
+**پرسش‌های مصاحبه**
+1. *چرا Session قدیم مسیر قدیم را دارد؟* Session Route را در لحظه‌ی ساخت ثبت می‌کند.
+2. *iprope چه می‌گوید؟* Policy مطابق بدون ترافیک.
+3. *Policy Route کجا؟* قبل از جدول مسیر عادی.
+
 ## درس 14-5 — MTU/MSS، DNS و مشکلات TCP/UDP: عیب‌یابی «نیمه‌کارکرده» با محاسبه و آزمون پایدار
 
 **فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۵، ۱۴-۱، ۱۴-۲ · ≈ 10 ساعت**
@@ -2644,6 +2777,43 @@ execute ping www.example.com
 - RFC 1191
 
 <a id="l-14-6"></a>
+
+### تعمیق: محاسبه‌ی MTU/MSS و پرونده‌ی «سایت باز می‌شود ولی بارگذاری نمی‌شود»
+
+**محاسبه**
+
+``` text
+Path MTU            = 1400   (found by ping -f)
+MSS = MTU - IP(20) - TCP(20) = 1360
+IPsec ESP overhead ~ 73 bytes -> inner MTU ~ 1427 for MTU 1500
+```
+
+**تست**
+
+``` text
+ping -f -l 1472 198.51.100.8   -> fragmentation needed (too big)
+ping -f -l 1372 198.51.100.8   -> reply (1400 total)
+```
+
+**رفع** با MSS Clamping روی Policy:
+
+``` text
+config firewall policy
+ edit 30
+  set tcp-mss-sender 1360
+  set tcp-mss-receiver 1360
+ next
+end
+```
+
+یا کاهش MTU Interface Tunnel. علت اصلی: ICMP «Fragmentation needed» بین مسیر فیلتر شده (PMTUD Black Hole).
+
+**DNS:** `diagnose test application dnsproxy 3` وضعیت؛ UDP بزرگ (EDNS) و TCP/53.
+
+**پرسش‌های مصاحبه**
+1. *چرا ping کار می‌کند ولی HTTPS نه؟* بسته‌ی کوچک رد می‌شود، بزرگ نه.
+2. *MSS Clamp کجا؟* روی TCP SYN.
+3. *چرا ICMP را کامل نبندیم؟* PMTUD.
 
 ## درس 14-6 — تحلیل Log، Packet Walk و آزمون عملی فصل ۱۴: سه پرونده‌ی کامل
 
@@ -2807,6 +2977,35 @@ ingress port2 -> RPF ok -> route 10.20.0.0/24 via port3 -> policy 62 accept -> e
 **گام ۵ — آزمون:** `curl -vk https://10.20.0.30` ⇒ 200؛ Log: action=accept policyid=62؛ آزمون منفی SSH ⇒ Deny.
 
 **درس:** Log اثبات می‌کند چه شد؛ Lookup نشان می‌دهد چرا.
+
+### تعمیق: پرونده‌ی کامل Log → Packet Walk
+
+**Log**
+
+``` text
+date=2026-11-27 time=10:12:01 logid=0000000013 type=traffic subtype=forward
+srcip=10.10.0.5 dstip=198.51.100.8 dstport=443 action=timeout policyid=30
+sentbyte=60 rcvdbyte=0 duration=60
+```
+
+**تفسیر:** `action=timeout` با rcvdbyte=0 یعنی Session باز شد ولی جوابی نیامد؛ مشکل بعد از فایروال.
+
+**Packet Walk:** کاربر → port2 (RPF OK) → Policy 30 → SNAT → Route port1 → ISP ⇒ بدون پاسخ.
+
+**جدول Evidence**
+
+| گام | ابزار | نتیجه |
+|---|---|---|
+| Route | get router info routing-table | OK |
+| Policy | iprope lookup | 30 |
+| Wire | sniffer | SYN out فقط |
+
+**آزمون عملی.** سه پرونده؛ برای هرکدام Timeline، Evidence، علت، رفع و آزمون منفی؛ Rubric: گام‌ها ۳۰، Evidence ۳۰، علت ۲۰، رفع ۱۰، صداقت ۱۰.
+
+**پرسش‌های مصاحبه**
+1. *action=close و timeout؟* close پایان عادی؛ timeout انقضا.
+2. *چرا sentbyte مهم است؟* ترافیک واقعی را نشان می‌دهد.
+3. *Log کجا ناقص؟* Offload و Sampling.
 
 ## درس 14-7 — روش نظام‌مند عیب‌یابی: از علامت تا علت و رفع (با پرونده‌های واقعی)
 
@@ -2997,6 +3196,29 @@ diagnose debug reset
 
 - Fortinet Docs: [Debugging the packet flow](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/54688/debugging-the-packet-flow)؛ FortiOS 7.0 Administration Guide — Troubleshooting.
 - ITIL 4 — Incident and Problem Management (مفهومی).
+
+### تعمیق: «فرضیه‌محور» به‌جای «حدس‌محور»
+
+**الگو:** فرضیه ← آزمون ← پذیرش/رد.
+
+``` text
+H1: Route wrong       -> test: routing-table details   -> rejected
+H2: Policy missing    -> test: iprope lookup           -> rejected
+H3: Upstream drop     -> test: sniffer SYN without ACK -> accepted
+```
+
+**پرونده‌ی ۱:** سرور بیرونی فقط به IP قبلی اجازه می‌داد؛ پس از Pool جدید قطع.
+**پرونده‌ی ۲:** Policy درست ولی Schedule منقضی.
+**پرونده‌ی ۳:** DNS داخلی جواب قدیم می‌داد (TTL).
+
+**گزارش:** علامت، اثر، Timeline، فرضیه‌ها، Evidence، علت ریشه، رفع، پیشگیری.
+
+**اشتباهات رایج:** رفع بدون Evidence، تغییر چندتایی، ثبت‌نکردن.
+
+**پرسش‌های مصاحبه**
+1. *چرا یک تغییر در هر زمان؟* ردیابی علت.
+2. *Evidence بد؟* «به نظرم».
+3. *Rollback؟* همیشه آماده.
 
 ## پاسخ‌های فصل 14
 
@@ -3417,6 +3639,26 @@ diagnose sys session filter dst 10.10.10.20
 - NIST SP 800-41 Rev.1 — Guidelines on Firewalls (DMZ designs).
 - Fortinet Docs: FortiOS 7.0 Administration Guide — Virtual IPs، Firewall policy.
 
+### تعمیق: مقایسه‌ی یک‌فایروالی و دوفایروالی با عدد
+
+**سناریو.** ۲۰۰ کاربر، ۱۵ سرور داخلی، ۳ سرور DMZ.
+
+| معیار | یک فایروال | دو فایروال |
+|---|---|---|
+| نقطه‌ی شکست | ۱ | ۲ (با HA هر کدام ۱ جفت) |
+| سطح حمله به داخل | یک Policy اشتباه کافی | باید دو لایه شکسته شود |
+| تفکیک مسئولیت | ندارد | Edge=امنیت، Internal=شبکه |
+| هزینه/پیچیدگی | کم | بیشتر |
+
+**جریان:** Internet → Edge (NAT+VIP) → DMZ؛ Users → Internal → Edge → Internet. DMZ هرگز مستقیم به داخل Session نمی‌گشاید.
+
+**تحلیل خرابی:** اگر Edge بیفتد اینترنت و DMZ قطع؛ Internal با Policy Route/Default به Edge همچنان داخلی کار می‌کند. اگر Internal بیفتد فقط ارتباط داخلی.
+
+**پرسش‌های مصاحبه**
+1. *چرا دو سازنده‌ی متفاوت؟* ضعف مشترک کم می‌شود (بحث Defense in Depth).
+2. *DMZ به داخل؟* فقط جریان‌های حداقلی و آغاز از داخل.
+3. *هزینه‌ی عملیاتی؟* دو مجموعه Policy و Backup.
+
 ## درس 15-1 — طراحی معماری دوفایروالی: نقش‌ها، Zoneها، آدرس‌دهی و جدول مسیر
 
 **فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۰، ۱۲-۲، ۱۳-۱ · ≈ 10 ساعت**
@@ -3597,6 +3839,34 @@ end
 - NIST SP 800-41
 
 <a id="l-15-2"></a>
+
+### تعمیق: جدول آدرس‌دهی و مسیر نمونه برای طراحی
+
+``` text
+Edge   port1 WAN   203.0.113.2/29   gw 203.0.113.1
+Edge   port2 DMZ   10.30.0.1/24
+Edge   port3 LINK  10.99.0.1/30
+Int    port1 LINK  10.99.0.2/30
+Int    port2 USERS 10.10.0.1/24
+Int    port3 SRV   10.20.0.1/24
+Int    port4 MGMT  10.50.0.1/24
+```
+
+Routeها:
+
+``` text
+Int : 0.0.0.0/0 via 10.99.0.1
+Edge: 10.10.0.0/24, 10.20.0.0/24, 10.50.0.0/24 via 10.99.0.2
+```
+
+**اشتباه رایج:** Edge بدون Route برگشت به شبکه‌های داخلی ⇒ ترافیک رفت می‌رسد، برگشت گم می‌شود.
+
+**آزمون طراحی:** برای هر جریان (Users→Internet، Internet→DMZ، Users→DMZ) فهرست Hop، NAT و Policy بنویسید؛ ناقص بودن همان‌جا پیدا می‌شود.
+
+**پرسش‌های مصاحبه**
+1. *چرا شبکه‌ی /30 بین فایروال‌ها؟* حداقل آدرس و سطح حمله.
+2. *Mgmt کجا؟* Internal، جدا از Users.
+3. *Route خلاصه؟* 10.0.0.0/8 فقط اگر فضای آدرس هم‌پوشان ندارید.
 
 ## درس 15-2 — ساخت Edge: WAN، DMZ، NAT، VIP و Policy ورودی
 
@@ -3793,6 +4063,41 @@ diagnose debug enable
 **گام ۵ — آزمون منفی:** SSH به 203.0.113.10 ⇒ Deny (policyid=99 با Log).
 
 **گام ۶ — پایان:** `diagnose debug disable` و `diagnose debug reset`.
+
+### تعمیق: Edge گام‌به‌گام با آزمون
+
+``` text
+config system interface
+ edit port1
+  set ip 203.0.113.2 255.255.255.248
+  set allowaccess ping
+ next
+end
+config router static
+ edit 1
+  set gateway 203.0.113.1
+  set device port1
+ next
+end
+```
+
+**NAT خروجی:** Policy `LINK -> WAN` با nat enable و Pool/Interface؛ **VIP:** وب 203.0.113.3 → 10.30.0.10:443.
+
+**آزمون‌ها**
+
+``` text
+from Users: curl -sI https://example.org           -> 200 (via Edge SNAT)
+from Internet: curl -vk https://203.0.113.3        -> 200
+from Internet: nmap -p 22 203.0.113.3              -> filtered
+from DMZ     : ping 10.20.0.10                     -> fail (negative test)
+```
+
+**Evidence:** Log هر Policy و Session SNAT/DNAT.
+
+**پرسش‌های مصاحبه**
+1. *چرا allowaccess محدود؟* سطح مدیریت روی WAN.
+2. *DMZ→داخل؟* ممنوع مگر استثنای مستند.
+3. *VIP بدون Policy؟* ترافیک عبور نمی‌کند.
 
 ## درس 15-3 — ساخت Internal: Users، Servers، Mgmt و Routing به Edge با آزمون کامل
 
@@ -3997,6 +4302,24 @@ diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
 
 <a id="l-15-4"></a>
 
+### تعمیق: Internal و آزمون سناریوهای Users/Servers/Mgmt
+
+``` text
+Policy 10 USERS -> SRV   HTTPS,SMB,DNS accept log
+Policy 20 USERS -> LINK  HTTP,HTTPS,DNS accept (no NAT here; NAT at Edge)
+Policy 30 MGMT  -> any   SSH,HTTPS,ICMP accept log
+Policy 90 any   -> any   deny log
+```
+
+نکته‌ی طراحی: NAT فقط در Edge؛ دوبار NAT معمولاً دردسر است (Log و ردیابی).
+
+**آزمون‌ها:** Users→SRV (مجاز)، Users→Mgmt (رد)، SRV→Internet (طبق سیاست رد)؛ Evidence هر کدام با Log و Lookup.
+
+**پرسش‌های مصاحبه**
+1. *چرا NAT در Edge؟* یک نقطه‌ی ترجمه، ردیابی ساده.
+2. *Mgmt چرا جدا؟* کاهش سطح حمله به ابزار مدیریت.
+3. *دسترسی Mgmt از Users؟* فقط Jump/Bastion.
+
 ## درس 15-4 — DMZ سه‌لایه: Web، App، DB؛ Policy، آزمون منفی و پایش
 
 **فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱ تا ۱۵-۳ · ≈ 10 ساعت**
@@ -4170,6 +4493,31 @@ diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp port3
 
 <a id="l-15-5"></a>
 
+### تعمیق: DMZ سه‌لایه و ماتریس جریان
+
+| از | به | اجازه |
+|---|---|---|
+| Internet | Web | 443 |
+| Web | App | 8443 |
+| App | DB | 5432 |
+| Web | DB | ممنوع |
+| DB | Internet | ممنوع |
+
+``` text
+Policy W2A  Web -> App  tcp/8443 accept log
+Policy A2D  App -> DB   tcp/5432 accept log
+Policy DENY any -> any  deny log
+```
+
+**آزمون منفی:** از Web به DB با nc 5432 باید Timeout و Log Deny بدهد. **پایش:** هشدار روی Deny غیرعادی و Session زیاد روی Web.
+
+**دلیل سه‌لایه:** نفوذ به Web مستقیم DB را باز نمی‌کند.
+
+**پرسش‌های مصاحبه**
+1. *چرا DB آغازگر نیست؟* جلوگیری از Exfiltration.
+2. *Egress Web؟* فقط به‌روزرسانی‌های لازم.
+3. *Hit Count اینجا؟* کشف جریان ناخواسته.
+
 ## درس 15-5 — Packet Walk در دو فایروال: NAT در دو نقطه، Session در هر سمت و اثبات
 
 **فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱ تا ۱۵-۴، ۱۴-۳ · ≈ 10 ساعت**
@@ -4316,6 +4664,26 @@ diagnose debug flow trace start 20
 
 <a id="l-15-6"></a>
 
+### تعمیق: Packet Walk Users → Internet در دو فایروال
+
+``` text
+User 10.10.0.5 -> Int port2 : RPF ok, Policy 20 accept, no NAT
+Int port1 -> Edge port3    : RPF ok (route 10.10.0.0/24 via Int)
+Edge: Policy LINK->WAN accept, SNAT 10.10.0.5 -> 203.0.113.2
+Edge port1 -> ISP
+```
+
+برگشت: ISP → Edge (Session معکوس، DNAT به 10.10.0.5) → Int (Session) → User.
+
+**دو Session** (یکی در هر فایروال) باید با دو Log هم‌خوان باشند؛ زمان‌ها با NTP هم‌گام.
+
+**شکست:** اگر Edge Route برگشت 10.10.0.0/24 نداشته باشد، پاسخ از Default Route خارج می‌شود (نامتقارن) و Int آن را رد می‌کند.
+
+**پرسش‌های مصاحبه**
+1. *چرا Session در هر دو؟* هرکدام Stateful جدا.
+2. *مسیر نامتقارن؟* Session ناقص و Drop.
+3. *هم‌گامی Log؟* NTP و Timezone یکسان.
+
 ## درس 15-6 — خرابی‌ها و آزمون G6: Edge، Internal، DMZ و گزارش RCA
 
 **فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱ تا ۱۵-۵ · ≈ 10 ساعت**
@@ -4449,6 +4817,27 @@ get router info routing-table all
 ### ۱۵) منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Troubleshooting
+
+### تعمیق: پرونده‌ی G6 با RCA
+
+**خرابی ۱:** پس از تغییر، DMZ از اینترنت در دسترس نیست. Evidence: Lookup روی Edge Policy 0؛ VIP حذف شده. رفع: بازسازی VIP و Policy.
+**خرابی ۲:** Users به اینترنت نمی‌رسند؛ Sniffer در Edge بسته‌ی ورودی نمی‌بیند ⇒ مشکل Route Int→Edge.
+**خرابی ۳:** DMZ به DB داخلی Session باز می‌کند (Policy بیش‌ازحد) ⇒ نقض سیاست.
+
+``` text
+RCA Title : DMZ unreachable 2026-11-27
+Impact    : public site down 14 min
+Cause     : VIP removed during cleanup
+Fix       : VIP restored from backup
+Prevent   : change review + pre/post lookup tests
+```
+
+**معیار G6:** هر سه خرابی با Evidence، رفع و آزمون منفی؛ گزارش RCA کامل.
+
+**پرسش‌های مصاحبه**
+1. *اولین گام در قطع DMZ؟* Lookup روی Edge.
+2. *Backup چرا؟* بازگشت سریع.
+3. *چرا Review؟* تغییر بدون بازبینی علت اصلی خرابی.
 
 ## پاسخ‌های فصل 15
 
