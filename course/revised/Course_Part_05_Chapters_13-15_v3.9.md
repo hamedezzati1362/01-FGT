@@ -3100,75 +3100,85 @@ F3 DMZ -> Internal    : denied by default (only minimal exceptions)
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. نقش Edge و Internal را تفکیک و تصمیم‌های طراحی را توجیه کند.
-2. Zoneها، سطح اعتماد و آدرس‌دهی (VLSM) را برای معماری کامل بنویسد.
-3. جدول مسیر هر فایروال و Default/Static را طراحی کند.
-4. ماتریس Policy بین Zoneها را بسازد.
-5. خطرات (Asymmetric، Single point of failure، Rule drift) را شناسایی کند.
-6. مستند طراحی قابل‌ممیزی تحویل دهد.
+1. نقش Edge و Internal را در معماری دوفایروالی تعریف کنید.
+2. Interfaceها، Zoneها و آدرس‌دهی را (با /30 برای Transit) طراحی کنید.
+3. جدول مسیر دو دستگاه را بنویسید و Route برگشت را فراموش نکنید.
+4. ماتریس Policy بین Zoneها را طراحی کنید.
+5. Asymmetric، Double NAT و Rule Drift را به‌عنوان خطر بشناسید.
+6. طراحی را با Packet Walk اثبات کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا طراحی آدرس و مسیر دو فایروال؟** بیشتر خطاهای این معماری Route برگشت است: Edge نمی‌داند شبکه‌های داخلی کجایند. قبل از CLI جدول Interface/Route را بنویسید.
+یک ساختمان اداری را در نظر بگیرید: نگهبان در ورودی ساختمان (Edge) و کارت‌خوان جلوی اتاق سرور (Internal). اگر مهاجم از نگهبان رد شود، هنوز مانع دوم دارد. دو فایروال هم همین «دفاع لایه‌ای» است. ولی دو دستگاه یعنی دو برابر Route، دو برابر Policy و دو برابر نقطه‌ی خطا؛ بدون طراحی دقیق، خود پیچیدگی تبدیل به آسیب‌پذیری می‌شود. این درس نقشه‌ی ساختمان را قبل از اجرا می‌کشد.
 
-**جمع‌بندی اصلی درس:** چرا شرکت‌ها دو فایروال می‌گذارند؟ تصور کنید یک ساختمان دو نگهبان دارد: نگهبان در ورودی خیابان (Edge) افراد ناشناس را می‌پالاید؛ نگهبان داخل ساختمان (Internal) فقط کارمندان و بخش‌ها را کنترل می‌کند. اگر یکی دور زده شود، دومی هنوز هست. ولی هزینه‌ی دو نگهبان، هماهنگی و پیچیدگی مسیرها هم هست.
+### نقش‌ها
 
-هدف این درس: طرحی بنویسید که هر Zone مالک مشخص، ماتریس Policy روشن و جدول مسیر بدون ابهام داشته باشد، قبل از اینکه یک دستور بزنید.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) نقش‌ها
-
-| فایروال | نقش | کنترل |
+| دستگاه | نقش | قابل‌دسترس از |
 |---|---|---|
-| Edge | اینترنت، DMZ، NAT/VIP، VPN | شمال-جنوب، UTM لبه |
-| Internal | کاربران، سرورها، مدیریت | شرق-غرب، تفکیک داخلی |
+| Edge | اتصال به ISP، NAT، DMZ، VIP | اینترنت |
+| Internal | Users، Servers، Mgmt | فقط از Edge و داخل |
 
-#### ۲) توپولوژی
+اصل: **هر ترافیک ورودی از اینترنت ابتدا در Edge متوقف و فقط مجاز به DMZ می‌رود؛ هیچ مسیر مستقیمی از اینترنت به Internal وجود ندارد.**
+
+### توپولوژی
 
 ``` text
-Internet
-   |
- [ISP-A]--port1--[EDGE FW]--port3--[DMZ switch: web]
-                    |
-                  port2 (transit 10.255.0.0/30)
-                    |
-                 [INTERNAL FW]--port2--[USERS 10.10.0.0/24]
-                               --port3--[SERVERS 10.20.0.0/24]
-                               --port4--[MGMT 10.99.0.0/24]
+ Internet
+    |
+ [ISP 203.0.113.1]
+    |
+ port1 WAN 203.0.113.2/29
+ +-------+
+ | EDGE  |-- port2 DMZ 10.30.0.1/24 -- [Web]
+ +-------+
+ port3 LINK 10.99.0.1/30
+    |
+ port1 LINK 10.99.0.2/30
+ +----------+
+ | INTERNAL |-- port2 USERS 10.10.0.1/24
+ +----------+-- port3 SRV   10.20.0.1/24
+              -- port4 MGMT  10.50.0.1/24
 ```
 
-#### ۳) آدرس‌دهی
+### جدول Interface
 
-| شبکه | آدرس | استفاده |
-|---|---|---|
-| Transit Edge–Internal | 10.255.0.0/30 | .1 Edge، .2 Internal |
-| DMZ | 10.30.0.0/24 | وب |
-| Users | 10.10.0.0/24 | کاربران |
-| Servers | 10.20.0.0/24 | App/DB |
-| Mgmt | 10.99.0.0/24 | مدیریت |
-| WAN | 198.51.100.0/30 | به ISP |
+| دستگاه | Interface | Zone | آدرس |
+|---|---|---|---|
+| Edge | port1 | WAN | 203.0.113.2/29 |
+| Edge | port2 | DMZ | 10.30.0.1/24 |
+| Edge | port3 | LINK | 10.99.0.1/30 |
+| Internal | port1 | LINK | 10.99.0.2/30 |
+| Internal | port2 | USERS | 10.10.0.1/24 |
+| Internal | port3 | SRV | 10.20.0.1/24 |
+| Internal | port4 | MGMT | 10.50.0.1/24 |
 
-#### ۴) جدول مسیر
+### چرا /30 برای Transit؟
 
 ``` text
-EDGE:
-  0.0.0.0/0      -> 198.51.100.1 (port1)
-  10.10.0.0/24   -> 10.255.0.2   (port2)   internal users
-  10.20.0.0/24   -> 10.255.0.2
-  10.99.0.0/24   -> 10.255.0.2
-INTERNAL:
-  0.0.0.0/0      -> 10.255.0.1   (port1 transit)
-  (connected) users/servers/mgmt
+/30 -> 4 addresses - network - broadcast = 2 usable hosts
 ```
 
-اصل: Internal فقط یک Default به Edge؛ Edge همه‌ی شبکه‌های داخلی را از طریق Internal می‌شناسد. بدون Route برگشت در Edge، پاسخ‌ها گم می‌شوند.
+دو آدرس قابل‌استفاده برای دو فایروال کافی است و هیچ Host سوم نمی‌تواند در آن لینک قرار بگیرد (سطح حمله‌ی کمینه).
 
-#### ۵) ماتریس Policy
+### جدول مسیر
+
+``` text
+Internal: 0.0.0.0/0     via 10.99.0.1
+Edge    : 0.0.0.0/0     via 203.0.113.1
+Edge    : 10.10.0.0/24  via 10.99.0.2
+Edge    : 10.20.0.0/24  via 10.99.0.2
+Edge    : 10.50.0.0/24  via 10.99.0.2
+```
+
+Internal فقط یک Default به Edge دارد. Edge باید «برگشت» به سه شبکه‌ی داخلی را بداند؛ وگرنه پاسخ‌ها از Default (WAN) خارج و گم می‌شوند.
+
+### ماتریس Policy
 
 | از ↓ به → | Internet | DMZ | Users | Servers | Mgmt |
 |---|---|---|---|---|---|
@@ -3178,89 +3188,60 @@ INTERNAL:
 | Servers | Updates | - | - | - | - |
 | Mgmt | - | SSH | - | SSH | - |
 
-#### ۶) خطرات
+خالی (-) یعنی Deny. هر خانه یک Policy مشخص دارد؛ هیچ ALL/ALL.
 
-- Asymmetric: فقط یک مسیر بین Edge و Internal.
-- NAT دوباره: فقط Edge NAT کند (NAT دوم تحلیل را سخت می‌کند).
-- Rule drift: فاصله‌ی سیاست دو فایروال؛ بازبینی فصلی.
-- Single point of failure: در فصل HA/DR.
+### خطرها
 
-### ۴) طراحی و تصمیم‌گیری
+| خطر | علت | کاهش |
+|---|---|---|
+| Asymmetric | دو مسیر بین Edge و Internal | یک Link، Route واحد |
+| Double NAT | NAT در هر دو | NAT فقط در Edge |
+| Rule Drift | اختلاف Policy دو دستگاه | بازبینی فصلی |
+| SPOF | هر دستگاه یک نقطه‌ی خطا | HA/DR (فصل بعد) |
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| NAT کجا | فقط Edge |
-| Default Internal | به Edge |
-| DMZ | روی Edge یا Internal؟ Edge برای انتشار عمومی |
+### مثال‌های حل‌شده
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+#### مثال ساده — Transit
 
-#### مثال ساده — /30
+چرا 10.99.0.0/30 و نه /24؟ فقط دو Host لازم است؛ /24 ۲۵۴ آدرس بی‌دلیل در معرض ورود می‌گذارد.
+
+#### مثال متوسط — Summary Route
+
+سه شبکه‌ی 10.10.0.0/24، 10.20.0.0/24 و 10.50.0.0/24 پیوسته نیستند (10.30 و 10.40 بین‌شان است). Summary 10.0.0.0/16 DMZ (10.30) را هم پوشش می‌دهد و Edge را به اشتباه برای DMZ به Internal می‌فرستد. پس سه Route جدا.
 
 ``` text
-/30 = 2 usable hosts
+10.10.0.0/24 + 10.20.0.0/24 + 10.50.0.0/24 -> not contiguous
+Summary 10.0.0.0/16 would also cover DMZ 10.30.0.0/24 -> WRONG
 ```
-
-لینک بین دو فایروال کافی و کم‌سطح‌حمله است.
-
-#### مثال متوسط — Route
-
-Int: default via 10.99.0.1؛ Edge: شبکه‌های داخلی via 10.99.0.2.
 
 #### مثال سخت — Route برگشت فراموش‌شده
 
-Users به اینترنت می‌روند؛ پاسخ به Edge می‌رسد ولی Edge Route به 10.10.0.0/24 ندارد و از WAN خارج می‌کند؛ شاهد: Sniffer port1؛ رفع: Route.
+Users به اینترنت می‌روند؛ پاسخ به Edge می‌رسد؛ Edge Route به 10.10.0.0/24 ندارد و از Default به ISP می‌فرستد ⇒ گم. علامت: کاربر Timeout؛ Sniffer روی port1 Edge پاسخ ورودی را می‌بیند ولی SYN-ACK به داخل نمی‌رسد؛ `get router info routing-table details 10.10.0.5` (Edge) ⇒ Default. رفع: Route برگشت. تأیید: همان دستور ⇒ via 10.99.0.2.
 
-#### مثال‌های اصلی درس (مرور)
+### Lab هدایت‌شده (اجرا نشده)
 
-**ساده (حل‌شده):** کاربر 10.10.0.5 به اینترنت: Internal (Policy Users→Edge) ⇒ Edge (Transit→Internet, SNAT) ⇒ ISP. برگشت: Edge می‌داند 10.10.0.0/24 از port2 است ⇒ Internal ⇒ Users.
+1. جدول Interface و Route را بنویسید.
+2. ماتریس Policy را روی کاغذ پر کنید.
+3. برای سه جریان Packet Walk Hop-by-hop بنویسید.
 
-**متوسط (تحلیل خطا):** Route 10.10.0.0/24 در Edge نیست: Session کاربران ساخته می‌شود ولی برگشت از Default به ISP می‌رود و Drop. اثبات: Edge debug flow: `reverse path check fail`/Sniffer port1 دیده می‌شود. رفع: Route.
+### عیب‌یابی سریع
 
-**سخت (طراحی ممیزی‌پذیر):** سازمان ۱۵۰ کاربر، ۱۰ سرور، وب‌سرور عمومی. تحویل: ۱) نمودار، ۲) جدول آدرس، ۳) ماتریس Policy، ۴) جدول مسیر دو فایروال، ۵) ریسک‌ها و آزمون: Users→Internet، Internet→Web، Users→DB (ممنوع)، DMZ→DB مستقیم (ممنوع). معیار: ۱۰۰٪ آزمون‌ها مطابق ماتریس.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. هر فایروال: Network → Interfaces برای Transit و Zoneها.
-2. Network → Static Routes.
-3. Policy & Objects برای ماتریس.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-config router static
- edit 1
-  set dst 10.10.0.0 255.255.255.0
-  set gateway 10.255.0.2
-  set device "port2"
- next
-end
-```
-
-### ۸) Verification (اثبات صحت)
-
-- ping/traceroute مطابق جدول.
-- آزمون مثبت/منفی ماتریس.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| برگشت ندارد | Route Edge | Route داخلی |
-| Policy تطابق ندارد | Zone | Interface |
+| پاسخ گم | Route برگشت | افزودن در Edge |
+| IP تکراری | Overlap | بازبینی |
+| Mgmt از Users قابل‌دسترس | Policy | Deny |
+| دو NAT | تنظیم اشتباه | NAT فقط Edge |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Default Deny بین Zoneها.
-- Mgmt جدا.
+Mgmt را هرگز از اینترنت یا Users باز نکنید؛ لینک Transit را فقط برای همین دو دستگاه نگه دارید.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- Edge شمال-جنوب؛ Internal شرق-غرب.
-- جدول مسیر دو سمتی.
-- ماتریس Policy.
+Edge ورودی عمومی و DMZ؛ Internal شبکه‌های داخلی؛ Transit /30؛ Route برگشت در Edge الزامی؛ NAT فقط Edge؛ ماتریس Policy بدون ALL؛ خطرها: Asymmetric و Rule Drift.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا NAT فقط روی Edge؟ *(پاسخ: 15-1-ت1)*
 
@@ -3276,7 +3257,7 @@ end
 
 **Q1.** Quick quiz (English): Why configure NAT only on the edge firewall? *(پاسخ: 15-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3284,118 +3265,16 @@ end
 
 - *Edge handles north-south traffic.* ← Edge ترافیک شمال-جنوب را کنترل می‌کند.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** طراحی دوفایروالی (اجرا نشده). **Evidence:** `02-design/arch2.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Firewall policies; Routing
 - NIST SP 800-41
 
 <a id="l-15-2"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: جدول آدرس‌دهی و مسیر نمونه برای طراحی
-
-``` text
-Edge   port1 WAN   203.0.113.2/29   gw 203.0.113.1
-Edge   port2 DMZ   10.30.0.1/24
-Edge   port3 LINK  10.99.0.1/30
-Int    port1 LINK  10.99.0.2/30
-Int    port2 USERS 10.10.0.1/24
-Int    port3 SRV   10.20.0.1/24
-Int    port4 MGMT  10.50.0.1/24
-```
-
-Routeها:
-
-``` text
-Int : 0.0.0.0/0 via 10.99.0.1
-Edge: 10.10.0.0/24, 10.20.0.0/24, 10.50.0.0/24 via 10.99.0.2
-```
-
-**اشتباه رایج:** Edge بدون Route برگشت به شبکه‌های داخلی ⇒ ترافیک رفت می‌رسد، برگشت گم می‌شود.
-
-**آزمون طراحی:** برای هر جریان (Users→Internet، Internet→DMZ، Users→DMZ) فهرست Hop، NAT و Policy بنویسید؛ ناقص بودن همان‌جا پیدا می‌شود.
-
-**پرسش‌های مصاحبه**
-1. *چرا شبکه‌ی /30 بین فایروال‌ها؟* حداقل آدرس و سطح حمله.
-2. *Mgmt کجا؟* Internal، جدا از Users.
-3. *Route خلاصه؟* 10.0.0.0/8 فقط اگر فضای آدرس هم‌پوشان ندارید.
-
-### تکمیل عمیق: آدرس‌دهی و جدول مسیر دو فایروال
-
-#### چرا؟
-
-بیشتر خطاهای اولیه‌ی این طراحی در Route برگشت است: Edge نمی‌داند شبکه‌های داخلی کجایند.
-
-#### جدول Interface
-
-``` text
-Edge  port1 WAN   203.0.113.2/29  GW 203.0.113.1
-Edge  port2 DMZ   10.30.0.1/24
-Edge  port3 LINK  10.99.0.1/30
-Int   port1 LINK  10.99.0.2/30
-Int   port2 USERS 10.10.0.1/24
-Int   port3 SRV   10.20.0.1/24
-Int   port4 MGMT  10.50.0.1/24
-```
-
-#### مثال ساده — چرا /30؟
-
-``` text
-/30 = 2 usable hosts (4 addresses - network - broadcast)
-```
-
-دو آدرس قابل‌استفاده برای دو فایروال کافی است و سطح حمله‌ی کمینه.
-
-#### Routeها
-
-``` text
-Int : 0.0.0.0/0 via 10.99.0.1
-Edge: 10.10.0.0/24 via 10.99.0.2
-Edge: 10.20.0.0/24 via 10.99.0.2
-Edge: 10.50.0.0/24 via 10.99.0.2
-```
-
-#### مثال متوسط — Summary
-
-اگر 10.10.0.0/24 و 10.20.0.0/24 و 10.50.0.0/24 را بخواهیم خلاصه کنیم، بلوک پیوسته نیست؛ سه Route جدا بهتر از یک Summary خطرناک است.
-
-#### مثال سخت — Route برگشت فراموش‌شده
-
-Users به اینترنت می‌روند؛ پاسخ به Edge می‌رسد ولی Edge Route به 10.10.0.0/24 ندارد و از Default (WAN) خارج می‌کند ⇒ ترافیک گم می‌شود. شاهد: Sniffer روی port1 Edge، بسته‌ی پاسخ خروجی به WAN. رفع: Route برگشت.
-
-``` text
-get router info routing-table details 10.10.0.5
-```
-
-#### Lab
-
-جدول را بنویسید و برای هر جریان Hop-by-hop نگاه کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| پاسخ گم | Route برگشت | افزودن |
-| Overlap | IP تکراری | بررسی |
-| Mgmt قابل‌دسترس از Users | Policy | Deny |
-
-#### پرسش‌ها با پاسخ
-
-**۱. /30 چند Host؟** ۲.
-**۲. چرا Route برگشت؟** پاسخ باید برگردد.
-**۳. Summary؟** فقط بلوک پیوسته.
-
-#### English Corner
-
-- *Always verify the return route on the outer firewall.*
-- Q: How many usable addresses are in a /30?
 
 ## درس 15-2 — ساخت Edge: WAN، DMZ، NAT، VIP و Policy ورودی
 
@@ -3403,163 +3282,190 @@ get router info routing-table details 10.10.0.5
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Interfaceهای Edge را (WAN، DMZ، Transit) پیکربندی کند.
-2. Default Route و Route داخلی را اضافه کند.
-3. SNAT برای کاربران داخلی و VIP برای وب را بسازد.
-4. Policyهای Edge را با Log و Default Deny بنویسد.
-5. آزمون مثبت/منفی و Evidence را انجام دهد.
+1. WAN، DMZ و Transit را روی Edge پیکربندی کنید.
+2. Default Route و Routeهای برگشت را بنویسید.
+3. SNAT (خروجی) و VIP (ورودی) را روی Edge بسازید.
+4. Policyهای ورودی (Internet→DMZ) را ایمن بنویسید.
+5. با Lookup، Session و Sniffer آزمون کنید.
+6. چهار خطای رایج Edge را رفع کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Edge با دقت؟** Edge اولین خط دفاع است؛ خطا در آن مستقیم دیده می‌شود: WAN، NAT، VIP، Policy ورودی.
+Edge «دروازه‌ی شهر» است: همه‌ی ترافیک عمومی از آن رد می‌شود. یک اشتباه در VIP یا Policy یعنی سرور داخلی را در معرض اینترنت گذاشتن. در این درس Edge را قدم‌به‌قدم می‌سازیم و با آزمون مثبت و منفی ثابت می‌کنیم فقط همان چیزی باز است که می‌خواهیم.
 
-**جمع‌بندی اصلی درس:** Edge اولین چیزی است که اینترنت می‌بیند. هر اشتباه اینجا یعنی مواجهه‌ی مستقیم با اینترنت؛ پس ساخت باید نظم‌دار و با آزمون منفی باشد.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) Interface
+### قدم ۱ — Interfaceها
 
 ``` text
 config system interface
- edit "port1"
-  set ip 198.51.100.2 255.255.255.252
-  set allowaccess ping
-  set role wan
- next
- edit "port2"
-  set ip 10.255.0.1 255.255.255.252
-  set allowaccess ping
-  set role lan
- next
- edit "port3"
-  set ip 10.30.0.1 255.255.255.0
-  set allowaccess ping
-  set role dmz
- next
+    edit "port1"
+        set alias WAN
+        set mode static
+        set ip 203.0.113.2 255.255.255.248
+        set allowaccess ping
+    next
+    edit "port2"
+        set alias DMZ
+        set ip 10.30.0.1 255.255.255.0
+    next
+    edit "port3"
+        set alias LINK
+        set ip 10.99.0.1 255.255.255.252
+    next
 end
 ```
 
-#### ۲) Route
+روی WAN فقط `ping` (و در صورت نیاز) مجاز؛ هرگز `http`، `ssh`، `telnet` از اینترنت.
+
+### قدم ۲ — Routeها
 
 ``` text
 config router static
- edit 1
-  set gateway 198.51.100.1
-  set device "port1"
- next
- edit 2
-  set dst 10.10.0.0 255.255.255.0
-  set gateway 10.255.0.2
-  set device "port2"
- next
+    edit 1
+        set gateway 203.0.113.1
+        set device port1
+    next
+    edit 2
+        set dst 10.10.0.0 255.255.255.0
+        set gateway 10.99.0.2
+        set device port3
+    next
+    edit 3
+        set dst 10.20.0.0 255.255.255.0
+        set gateway 10.99.0.2
+        set device port3
+    next
+    edit 4
+        set dst 10.50.0.0 255.255.255.0
+        set gateway 10.99.0.2
+        set device port3
+    next
 end
 ```
 
-#### ۳) NAT و VIP
+### قدم ۳ — خروجی (SNAT)
+
+``` text
+config firewall policy
+    edit 10
+        set name "LINK-to-WAN"
+        set srcintf "port3"
+        set dstintf "port1"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "HTTP" "HTTPS" "DNS"
+        set nat enable
+        set logtraffic all
+    next
+end
+```
+
+NAT فقط اینجا (Edge). با `nat enable` مبدأ به 203.0.113.2 (یا Pool) ترجمه می‌شود.
+
+### قدم ۴ — ورودی (VIP + Policy)
 
 ``` text
 config firewall vip
- edit "VIP-WEB-443"
-  set extintf "port1"
-  set extip 203.0.113.10
-  set mappedip "10.30.0.10"
-  set portforward enable
-  set extport 443
-  set mappedport 443
- next
+    edit "VIP-WEB"
+        set extip 203.0.113.3
+        set mappedip 10.30.0.10
+        set extintf port1
+        set portforward enable
+        set protocol tcp
+        set extport 443
+        set mappedport 443
+    next
+end
+config firewall policy
+    edit 20
+        set name "WAN-to-DMZ-WEB"
+        set srcintf "port1"
+        set dstintf "port2"
+        set srcaddr "all"
+        set dstaddr "VIP-WEB"
+        set action accept
+        set schedule "always"
+        set service "HTTPS"
+        set logtraffic all
+    next
 end
 ```
 
-#### ۴) Policy
+نکته: `dstaddr` باید خود VIP باشد، نه IP داخلی.
 
-| ID | از | به | Source | Dest | Service | NAT |
-|---|---|---|---|---|---|---|
-| 1 | port2 (Transit) | port1 | NET-INTERNAL | all | HTTP/HTTPS/DNS | Enable |
-| 2 | port1 | port3 | all | VIP-WEB-443 | HTTPS | - |
-| 3 | port3 | port2 | SRV-WEB | SRV-APP | TCP-8443 | - |
-| 99 | any | any | all | all | ALL | Deny + Log |
+### Policyهای DMZ
 
-#### ۵) آزمون
+| Policy | مسیر | سرویس | توضیح |
+|---|---|---|---|
+| 20 | WAN→DMZ | HTTPS (VIP) | انتشار |
+| 30 | DMZ→WAN | DNS/NTP/Updates | حداقل |
+| 99 | any→any | - | Deny + Log (Implicit) |
 
-از Internal Users: curl اینترنت؛ از Internet: HTTPS به VIP؛ منفی: SSH به VIP رد؛ DMZ→Users رد.
+اصل: DMZ نباید آزادانه به داخل ابتکار اتصال بزند؛ این مسیر فقط از Internal با Policy مشخص.
 
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Policy 99 | Deny با Log |
-| Route | دقیق |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
+### آزمون
 
 ``` text
-config system interface
- edit port1
-  set ip 203.0.113.2 255.255.255.248
-  set allowaccess ping
- next
-end
+diagnose firewall iprope lookup 198.51.100.50 40000 203.0.113.3 443 tcp port1
+diagnose sys session filter dst 10.30.0.10
+diagnose sniffer packet any 'host 10.30.0.10 and tcp port 443' 4 10 a
 ```
 
-#### مثال متوسط — VIP و Policy
+آزمون منفی: از اینترنت به پورت 22 همان VIP ⇒ باید Deny (Lookup ⇒ policy 0).
 
-VIP برای وب و Policy `WAN -> DMZ` فقط HTTPS؛ آزمون: curl مثبت، nmap منفی.
+### مثال‌های حل‌شده
 
-#### مثال سخت — DMZ به داخل
+#### مثال ساده — VIP
 
-Policy قدیمی `DMZ -> any accept` پیدا شد: Disable، Log ۳۰ روزه، Policy حداقلی.
+کاربر اینترنت به 203.0.113.3:443 ⇒ Edge DNAT به 10.30.0.10:443. Session: `act=dnat`. Sniffer port2: بسته با مقصد 10.30.0.10.
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال متوسط — آزمون منفی
 
-**ساده (حل‌شده):** Policy 1 با SNAT؛ Session با IP 198.51.100.2.
+اینترنت → 203.0.113.3:22: Lookup ⇒ policy 0؛ Log: deny. ثابت می‌کند فقط HTTPS باز است.
 
-**متوسط (تحلیل):** VIP کار نمی‌کند: Policy 2 dst=VIP نبود؛ اصلاح.
+#### مثال متوسط — Route برگشت
 
-**سخت (آزمون منفی):** DMZ→Users باید Deny؛ Log policyid=99؛ ثبت Evidence.
+Web (10.30.0.10) پاسخ را به Edge می‌دهد (Gateway Edge). برای Users: پاسخ از Edge به Internal باید Route داشته باشد؛ Route 10.10.0.0/24 via 10.99.0.2 موجود است ⇒ OK.
 
-### ۶) پیاده‌سازی از مسیر GUI
+#### مثال سخت — VIP و Policy اشتباه
 
-1. Network → Interfaces.
-2. Static Routes.
-3. Virtual IPs.
-4. Firewall Policy.
+`dstaddr` Policy برابر `all` و VIP هم باز؛ ظاهراً کار می‌کند ولی Policy برای هر آدرس عمومی ناخواسته باز است. رفع: `dstaddr "VIP-WEB"`. آزمون: Lookup به 203.0.113.4:443 ⇒ policy 0.
 
-### ۷) پیاده‌سازی از مسیر CLI
+#### مثال سخت — Hairpin
 
-``` text
-show system interface port1
-show router static
-show firewall vip
-show firewall policy
-```
+Users داخلی با IP عمومی 203.0.113.3 به سایت می‌روند: ترافیک از Internal به Edge و برگشت به DMZ. نیاز به Policy LINK→DMZ و گاهی NAT؛ ساده‌تر: DNS داخلی نام را به 10.30.0.10 حل کند (Split DNS).
 
-### ۸) Verification (اثبات صحت)
+### Lab هدایت‌شده (اجرا نشده)
 
-- Lookup/Flow/Session.
-- آزمون منفی در Log.
+1. Interface/Route/Policy را اعمال کنید.
+2. VIP و آزمون مثبت/منفی.
+3. Sniffer در دو Interface.
 
-### ۹) Troubleshooting
+### عیب‌یابی سریع
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| اینترنت قطع | Route/NAT | Default/NAT |
-| VIP از بیرون نه | Policy | dst=VIP |
+| VIP کار نمی‌کند | dstaddr اشتباه | VIP |
+| پاسخ نمی‌آید | Gateway سرور | Edge |
+| NAT نمی‌شود | nat disable | enable |
+| از اینترنت پورت دیگر باز | Policy باز | تنگ |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- port1 بدون مدیریت.
+Policy ورودی فقط پورت لازم؛ IPS/WAF در صورت لایسنس (Needs-License)؛ مدیریت Edge فقط از Mgmt.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- Interface، Route، NAT، Policy، آزمون.
+Edge: Interface، Route (با برگشت)، SNAT، VIP + Policy با dstaddr=VIP، آزمون مثبت و منفی. DMZ حداقل دسترسی.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Policy 99؟ *(پاسخ: 15-2-ت1)*
 
@@ -3575,7 +3481,7 @@ show firewall policy
 
 **Q1.** Quick quiz (English): Which policy should end the Edge rule list? *(پاسخ: 15-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3583,11 +3489,11 @@ show firewall policy
 
 - *Test denied flows too.* ← جریان‌های ردشده را هم آزمون کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Edge (اجرا نشده). **Evidence:** `02-design/fgt-edge.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Virtual IPs
 
@@ -3616,315 +3522,159 @@ diagnose debug enable
 
 **گام ۶ — پایان:** `diagnose debug disable` و `diagnose debug reset`.
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Edge گام‌به‌گام با آزمون
-
-``` text
-config system interface
- edit port1
-  set ip 203.0.113.2 255.255.255.248
-  set allowaccess ping
- next
-end
-config router static
- edit 1
-  set gateway 203.0.113.1
-  set device port1
- next
-end
-```
-
-**NAT خروجی:** Policy `LINK -> WAN` با nat enable و Pool/Interface؛ **VIP:** وب 203.0.113.3 → 10.30.0.10:443.
-
-**آزمون‌ها**
-
-``` text
-from Users: curl -sI https://example.org           -> 200 (via Edge SNAT)
-from Internet: curl -vk https://203.0.113.3        -> 200
-from Internet: nmap -p 22 203.0.113.3              -> filtered
-from DMZ     : ping 10.20.0.10                     -> fail (negative test)
-```
-
-**Evidence:** Log هر Policy و Session SNAT/DNAT.
-
-**پرسش‌های مصاحبه**
-1. *چرا allowaccess محدود؟* سطح مدیریت روی WAN.
-2. *DMZ→داخل؟* ممنوع مگر استثنای مستند.
-3. *VIP بدون Policy؟* ترافیک عبور نمی‌کند.
-
-### تکمیل عمیق: ساخت Edge — WAN، DMZ، NAT، VIP و Policy ورودی
-
-#### چرا؟
-
-Edge اولین خط دفاع است؛ هر خطا در آن مستقیم دیده می‌شود.
-
-#### گام ۱ — Interface
-
-``` text
-config system interface
- edit port1
-  set mode static
-  set ip 203.0.113.2 255.255.255.248
-  set allowaccess ping
-  set role wan
- next
-end
-```
-
-فقط `ping` برای WAN؛ مدیریت از WAN را باز نگذارید.
-
-#### گام ۲ — Route و NAT خروجی
-
-Default Route به ISP و Policy `LINK -> WAN` با `nat enable`.
-
-#### گام ۳ — VIP و Policy ورودی
-
-``` text
-config firewall vip
- edit "VIP-WEB"
-  set extintf "port1"
-  set extip 203.0.113.3
-  set mappedip "10.30.0.10"
-  set portforward enable
-  set extport 443
-  set mappedport 443
- next
-end
-config firewall policy
- edit 30
-  set srcintf "port1"
-  set dstintf "port2"
-  set srcaddr "all"
-  set dstaddr "VIP-WEB"
-  set service "HTTPS"
-  set action accept
-  set logtraffic all
- next
-end
-```
-
-#### آزمون‌ها
-
-``` text
-from Internet: curl -vk https://203.0.113.3      # expect 200
-from Internet: nmap -p 22,80,3389 203.0.113.3    # expect filtered
-from DMZ     : nc -zv 10.20.0.10 445             # expect timeout (negative)
-```
-
-#### مثال سخت — DMZ به داخل
-
-یک Policy قدیمی `DMZ -> any accept` پیدا شد. اقدام: Disable، بررسی Log ۳۰ روزه، Policy حداقلی.
-
-#### Lab
-
-Edge را در Lab بسازید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| VIP کار نمی‌کند | Policy/ARP | بررسی |
-| nmap باز | Policy گسترده | تنگ |
-| WAN مدیریتی | allowaccess | حذف |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا ping فقط؟** حداقل.
-**۲. VIP بدون Policy؟** ترافیک رد.
-**۳. آزمون منفی DMZ؟** Timeout.
-
-#### English Corner
-
-- *Expose only the required service on the VIP and test with a port scan.*
-- Q: Why is management access on the WAN interface dangerous?
-
 ## درس 15-3 — ساخت Internal: Users، Servers، Mgmt و Routing به Edge با آزمون کامل
 
 **فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱، ۱۵-۲ · ≈ 10 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Interfaceها و Zoneهای Internal را (Users، Servers، Mgmt، Transit) پیکربندی کند.
-2. Default به Edge و ترتیب Routeها را درست بسازد.
-3. Policyهای Users→Servers، Users→Edge و Mgmt را با Least Privilege بنویسد.
-4. دلیل خاموش‌بودن NAT روی Internal را توضیح دهد.
-5. Packet Walk و آزمون مثبت/منفی را اجرا و مستند کند.
-6. خطاهای رایج (Route، Zone، NAT دوباره) را عیب‌یابی کند.
+1. Interface و Zoneهای Internal (Users، Servers، Mgmt) را پیکربندی کنید.
+2. Default Route به Edge را بگذارید و NAT را فقط روی Edge نگه دارید.
+3. Policyهای Users، Servers و Mgmt را بر اساس حداقل دسترسی بنویسید.
+4. آزمون کامل (مثبت/منفی/Hop-by-hop) انجام دهید.
+5. مدیریت (SSH/HTTPS) را فقط از Mgmt مجاز کنید.
+6. خطاهای رایج Internal را رفع کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Internal جدا؟** Internal جداسازی داخل است: Users، Servers، Mgmt. NAT فقط در Edge تا ردیابی ساده بماند.
+Internal «کارت‌خوان اتاق سرور» است. مهاجمی که یک لپ‌تاپ آلوده در Users دارد، نباید بتواند مستقیم به پایگاه‌داده یا Mgmt برسد. Internal با Policy سخت‌گیرانه بین Zoneهای داخلی از حرکت جانبی (Lateral Movement) جلوگیری می‌کند.
 
-**جمع‌بندی اصلی درس:** Edge در برابر اینترنت از ساختمان محافظت می‌کند؛ ولی بیشتر حوادث واقعی از «داخل» شروع می‌شوند: لپ‌تاپ آلوده‌ای که به سرور فایل می‌رسد، حسابی که لو رفته و به DB می‌رود. Internal فایروالی است که این حرکت جانبی (Lateral Movement) را می‌بندد.
-
-ساخت Internal اغلب ساده فرض می‌شود و همین‌جا خطا می‌شود: Default اشتباه، NAT دوباره، یا Policyهای ALL «موقتی». این درس Internal را مرحله‌به‌مرحله می‌سازد و هر مرحله را با آزمون ثابت می‌کند.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) نقش و آدرس‌ها
+### Interface و Zone
 
 ``` text
-Internal FW
- port1  10.255.0.2/30   Transit to Edge (Default gateway 10.255.0.1)
- port2  10.10.0.1/24    USERS
- port3  10.20.0.1/24    SERVERS
- port4  10.99.0.1/24    MGMT
+config system zone
+    edit "ZN-USERS"
+        set interface "port2"
+    next
+    edit "ZN-SRV"
+        set interface "port3"
+    next
+    edit "ZN-MGMT"
+        set interface "port4"
+        set intrazone deny
+    next
+end
 ```
 
-#### ۲) Interface، Zone و Route
+`intrazone deny` یعنی Hostهای داخل یک Zone هم بدون Policy نمی‌توانند به هم برسند.
+
+### Default Route
 
 ``` text
-config system interface
- edit "port1"
-  set ip 10.255.0.2 255.255.255.252
-  set allowaccess ping
-  set role wan
- next
- edit "port2"
-  set ip 10.10.0.1 255.255.255.0
-  set allowaccess ping
-  set role lan
- next
- edit "port3"
-  set ip 10.20.0.1 255.255.255.0
-  set allowaccess ping
-  set role lan
- next
- edit "port4"
-  set ip 10.99.0.1 255.255.255.0
-  set allowaccess ping https ssh
-  set role lan
- next
-end
 config router static
- edit 1
-  set gateway 10.255.0.1
-  set device "port1"
- next
+    edit 1
+        set gateway 10.99.0.1
+        set device port1
+    next
 end
 ```
 
-فقط port4 (Mgmt) مدیریت مجاز دارد. Route داخلی لازم نیست چون شبکه‌ها Connected هستند.
+Internal هیچ NAT خروجی ندارد؛ NAT فقط در Edge.
 
-#### ۳) چرا NAT خاموش؟
-
-اگر Internal هم NAT کند، Edge فقط IP Transit (10.255.0.2) را می‌بیند؛ Logها ناخوانا می‌شوند، رد‌یابی کاربر به IP سخت و Policy مبتنی بر Source در Edge بی‌معنا. NAT فقط یک‌بار و آن هم روی Edge.
-
-#### ۴) ماتریس Policy Internal
-
-| ID | از | به | Source | Dest | Service | Log |
-|---|---|---|---|---|---|---|
-| 10 | port2 | port1 | NET-USERS | all | HTTP/HTTPS/DNS | Sec |
-| 20 | port2 | port3 | NET-USERS | SRV-APP | TCP-443 | All |
-| 30 | port4 | port2/port3 | HOST-ADMIN | all | SSH/HTTPS | All |
-| 40 | port3 | port1 | SRV-APP | UPDATE-SITES | HTTPS | All |
-| 99 | any | any | all | all | ALL | Deny+All |
-
-#### ۵) Packet Walk
-
-``` text
-10.10.0.5 -> port2 (RPF ok) -> route default -> port1
-Policy 10 accept (no NAT) -> Edge 10.255.0.1 -> Edge Policy 1 SNAT -> ISP
-Reply: ISP -> Edge (session reply) -> route 10.10.0.0/24 via 10.255.0.2 -> Internal -> port2
-```
-
-#### ۶) آزمون‌ها
-
-مثبت: Users→Internet، Users→SRV-APP:443، Admin→SSH سرور. منفی: Users→SRV-DB، Users→Mgmt، Servers→Users، Internet→Users (از بیرون).
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| NAT | فقط Edge |
-| Mgmt | Interface و Policy جدا، Trusted host |
-| Servers→Internet | فقط مقاصد Update |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-Policy Users→SRV (HTTPS/SMB/DNS)، Users→LINK (اینترنت بدون NAT)، Mgmt→any (SSH/HTTPS/ICMP)، Deny پایانی.
-
-#### مثال متوسط — آزمون
-
-Users→SRV 443 ok؛ Users→Mgmt 22 timeout (منفی).
-
-#### مثال سخت — دور زدن Mgmt
-
-از SRV با SSH Tunnel به Mgmt؛ جلوگیری: SRV→MGMT ممنوع، Egress محدود، Log.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** ورودی: کاربر 10.10.0.5 به 203.0.113.10:443. مراحل: ۱) Policy 10 مطابق است. ۲) Default به 10.255.0.1. ۳) Edge SNAT می‌کند. پاسخ: Session در Internal با policy_id=10 و بدون NAT؛ در Edge با SNAT.
-
-**متوسط (NAT دوباره):** گزارش: در Edge Log همه‌ی کاربران IP 10.255.0.2 هستند. مراحل: ۱) Policy 10 در Internal `nat enable` دارد. ۲) خاموش‌کردن NAT. ۳) Log Edge IP واقعی کاربر را نشان می‌دهد. درس: NAT فقط روی Edge.
-
-**سخت (چندعلتی):** پس از نصب Internal، Users به Servers می‌رسند ولی اینترنت ندارند. مراحل: ۱) Lookup: Policy 10 درست. ۲) Debug flow: Allowed، route port1. ۳) Sniffer port1: SYN خارج می‌شود. ۴) Edge: SYN دریافت نمی‌شود؟ در Edge Sniffer port2 چیزی نیست: کابل/VLAN Transit. ۵) رفع VLAN و آزمون. درس: Evidence هر دو فایروال.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Network → Interfaces برای هر پورت.
-2. Network → Static Routes → Default به 10.255.0.1.
-3. Policy & Objects → Firewall Policy با ماتریس.
-4. Log & Report → Forward Traffic برای آزمون منفی.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### Policyها
 
 ``` text
 config firewall policy
- edit 10
-  set name "USERS-to-EDGE"
-  set srcintf "port2"
-  set dstintf "port1"
-  set srcaddr "NET-USERS"
-  set dstaddr "all"
-  set action accept
-  set schedule "always"
-  set service "HTTP" "HTTPS" "DNS"
-  set nat disable
-  set logtraffic utm
- next
+    edit 10
+        set name "USERS-to-APP"
+        set srcintf "ZN-USERS"
+        set dstintf "ZN-SRV"
+        set srcaddr "NET-USERS"
+        set dstaddr "HOST-APP"
+        set service "HTTPS"
+        set action accept
+        set schedule "always"
+        set logtraffic all
+    next
+    edit 20
+        set name "USERS-to-NET"
+        set srcintf "ZN-USERS"
+        set dstintf "port1"
+        set srcaddr "NET-USERS"
+        set dstaddr "all"
+        set service "HTTP" "HTTPS" "DNS"
+        set action accept
+        set schedule "always"
+        set logtraffic all
+    next
+    edit 30
+        set name "MGMT-to-ALL-SSH"
+        set srcintf "ZN-MGMT"
+        set dstintf "ZN-SRV"
+        set srcaddr "HOST-ADMIN"
+        set dstaddr "all"
+        set service "SSH"
+        set action accept
+        set schedule "always"
+        set logtraffic all
+    next
 end
-get router info routing-table all
-diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
 ```
 
-### ۸) Verification (اثبات صحت)
+مدیریت FortiGate: `set allowaccess https ssh` فقط روی port4 (Mgmt) و `trusthost` برای Admin.
 
-- Lookup: Policy 10.
-- Session بدون NAT در Internal.
-- آزمون‌های منفی در Log با policyid=99.
+### مثال‌های حل‌شده
 
-### ۹) Troubleshooting
+#### مثال ساده — Users به اپ
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+PC 10.10.0.5 → 10.20.0.30:443: Lookup (ورودی port2) ⇒ policy 10 ⇒ OK.
+
+#### مثال متوسط — آزمون منفی
+
+Users → Servers پورت 1433 (DB): Lookup ⇒ policy 0 ⇒ Deny؛ Log deny. ثابت می‌کند Users مستقیم به DB دسترسی ندارند.
+
+#### مثال متوسط — اینترنت
+
+Users → 8.8.8.8:53: Policy 20 ⇒ Internal Route به Edge ⇒ Edge SNAT ⇒ اینترنت. Session Internal بدون NAT؛ Session Edge با SNAT.
+
+#### مثال سخت — حرکت جانبی
+
+PC آلوده در Users به SSH سرور 10.20.0.30 تلاش می‌کند. Policy SSH فقط از ZN-MGMT است ⇒ Deny؛ Log هشدار. مقایسه: بدون Zone و با ALL، حمله موفق می‌شد.
+
+#### مثال سخت — Default Route اشتباه
+
+Default روی port1 ولی Gateway اشتباه (10.99.0.9). علامت: Users اینترنت ندارند. `get router info routing-table details 8.8.8.8` ⇒ via 10.99.0.9؛ ARP ناموفق. رفع: Gateway درست 10.99.0.1. تأیید: ping به 10.99.0.1 و Debug.
+
+### آزمون کامل
+
+``` text
+get router info routing-table details 8.8.8.8
+diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.30 443 tcp port2
+diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.30 1433 tcp port2
+diagnose sys session filter src 10.10.0.5
+diagnose sys session list
+```
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Zoneها و Policyها را بسازید.
+2. آزمون مثبت/منفی را اجرا کنید.
+3. Mgmt را محدود و SSH را از Users تست کنید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| اینترنت نیست | Route/Transit | Default و لینک Transit |
-| IP کاربر در Edge پنهان | NAT Internal | NAT disable |
-| Users به Servers نمی‌رسند | Policy 20 | Service/Zone |
+| اینترنت ندارند | Default/Gateway | تصحیح |
+| Users به DB می‌رسند | Policy باز | تنگ |
+| Mgmt از Users باز | allowaccess | محدود |
+| Zone Policy کار نمی‌کند | Interface عضو نیست | عضویت |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Mgmt جدا و محدود.
-- Default Deny با Log.
-- Servers→Internet فقط Update.
+Admin با MFA و `trusthost`؛ SSH فقط Key؛ Log همه‌ی Policyها؛ DB فقط از App.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- Internal ضد حرکت جانبی.
-- Default به Edge.
-- NAT فقط Edge.
-- آزمون مثبت و منفی.
+Internal: Zone با `intrazone deny`، Default به Edge، NAT فقط Edge، Policy حداقل دسترسی (Users→App، Mgmt→SSH)، آزمون منفی برای اثبات.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا NAT روی Internal خاموش است؟ *(پاسخ: 15-3-ت1)*
 
@@ -3940,7 +3690,7 @@ diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
 
 **Q1.** Quick quiz (English): Why is NAT not enabled on the internal firewall in this design? *(پاسخ: 15-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3949,96 +3699,16 @@ diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
 
 - *Internal firewall limits lateral movement.* ← فایروال داخلی حرکت جانبی را محدود می‌کند.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Internal (اجرا نشده). **Evidence:** `02-design/fgt-internal.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Firewall policies; Routing
 - NIST SP 800-41 Rev.1
 
 <a id="l-15-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Internal و آزمون سناریوهای Users/Servers/Mgmt
-
-``` text
-Policy 10 USERS -> SRV   HTTPS,SMB,DNS accept log
-Policy 20 USERS -> LINK  HTTP,HTTPS,DNS accept (no NAT here; NAT at Edge)
-Policy 30 MGMT  -> any   SSH,HTTPS,ICMP accept log
-Policy 90 any   -> any   deny log
-```
-
-نکته‌ی طراحی: NAT فقط در Edge؛ دوبار NAT معمولاً دردسر است (Log و ردیابی).
-
-**آزمون‌ها:** Users→SRV (مجاز)، Users→Mgmt (رد)، SRV→Internet (طبق سیاست رد)؛ Evidence هر کدام با Log و Lookup.
-
-**پرسش‌های مصاحبه**
-1. *چرا NAT در Edge؟* یک نقطه‌ی ترجمه، ردیابی ساده.
-2. *Mgmt چرا جدا؟* کاهش سطح حمله به ابزار مدیریت.
-3. *دسترسی Mgmt از Users؟* فقط Jump/Bastion.
-
-### تکمیل عمیق: ساخت Internal — Users، Servers، Mgmt
-
-#### چرا؟
-
-Internal جداسازی داخل است؛ جایی که کاربران، سرورها و مدیریت از هم تفکیک می‌شوند.
-
-#### Policyها
-
-``` text
-ID 10 USERS -> SRV   HTTPS,SMB,DNS accept log
-ID 20 USERS -> LINK  HTTP,HTTPS,DNS accept log   (no NAT here; NAT at Edge)
-ID 30 MGMT  -> any   SSH,HTTPS,ICMP accept log
-ID 90 any   -> any   deny log
-```
-
-نکته: NAT را فقط در Edge انجام دهید.
-
-#### مثال ساده — Mgmt
-
-شبکه‌ی Mgmt فقط از ایستگاه مدیریتی (Jump/Bastion) قابل‌دسترس باشد: Policy از Users به Mgmt نباید وجود داشته باشد.
-
-#### مثال متوسط — آزمون
-
-``` text
-Users -> SRV 443 : ok
-Users -> MGMT 22 : timeout (negative)
-SRV   -> Internet: policy-based (usually deny)
-```
-
-هر مورد با Lookup و Log اثبات شود.
-
-#### مثال سخت — دور زدن Mgmt
-
-کاربر از SRV با SSH Tunnel به Mgmt می‌رسد. جلوگیری: SRV→MGMT ممنوع؛ Egress محدود؛ Log.
-
-#### Lab
-
-Policyها را بسازید و چهار آزمون را اجرا کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Users به Mgmt | Policy گسترده | حذف |
-| اینترنت نمی‌آید | Route/Edge | بررسی |
-| دو NAT | تنظیم | غیرفعال |
-
-#### پرسش‌ها با پاسخ
-
-**۱. NAT کجا؟** Edge.
-**۲. Mgmt چرا جدا؟** سطح حمله.
-**۳. Jump host؟** نقطه‌ی کنترل.
-
-#### English Corner
-
-- *Management networks should be reachable only from controlled jump hosts.*
-- Q: Why avoid NAT on the internal firewall?
 
 ## درس 15-4 — DMZ سه‌لایه: Web، App، DB؛ Policy، آزمون منفی و پایش
 
@@ -4046,154 +3716,128 @@ Policyها را بسازید و چهار آزمون را اجرا کنید.
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. دلیل معماری سه‌لایه را با سناریوی حمله توضیح دهد.
-2. آدرس‌دهی و Policy بین لایه‌ها را با Least Privilege بنویسد.
-3. آزمون منفی را برای هر خانه‌ی Deny اجرا کند.
-4. Log و Alert برای تلاش‌های ممنوع بسازد.
-5. خطاهای رایج (Web→DB مجاز، Update باز) را رفع کند.
-6. نتیجه را مستند و برای ممیز آماده کند.
+1. معماری سه‌لایه (Web، App، DB) را در DMZ و Servers طراحی کنید.
+2. Policy بین لایه‌ها را با اصل «فقط لایه‌ی مجاور» بنویسید.
+3. آزمون منفی (Web به DB مستقیم ممنوع) را اجرا کنید.
+4. Log و پایش هر لایه را تنظیم کنید.
+5. اثر نفوذ به Web را با و بدون تفکیک مقایسه کنید.
+6. خطاهای رایج سه‌لایه را رفع کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا DMZ سه‌لایه؟** اگر Web هک شود نباید مستقیم به DB برسد. هر لایه فقط با لایه‌ی بعد صحبت می‌کند.
+اگر وب‌سرور هک شود و DB در همان شبکه با دسترسی آزاد باشد، مهاجم در چند دقیقه همه‌ی داده را می‌برد. در سه‌لایه، Web فقط با App حرف می‌زند و App فقط با DB: مهاجم برای رسیدن به داده باید دو مانع را رد کند و در هر مانع Log و آلارم دارد. مثل بانک: سالن (Web)، کارمند (App)، خزانه (DB)؛ مشتری مستقیم به خزانه نمی‌رود.
 
-**جمع‌بندی اصلی درس:** مهاجم یک آسیب‌پذیری وب‌اپلیکیشن را پیدا می‌کند و کنترل وب‌سرور را می‌گیرد. در معماری یک‌لایه همه‌چیز (از جمله DB) همان‌جاست و کار تمام است. در معماری سه‌لایه، وب‌سرور فقط می‌تواند با App حرف بزند، و App فقط با DB روی یک پورت. مهاجم به دیوار بعدی می‌خورد و Log هم زنگ خطر می‌دهد.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) لایه‌ها
+### معماری
 
 ``` text
-Internet -> [WEB 10.30.1.0/24] -> [APP 10.30.2.0/24] -> [DB 10.30.3.0/24]
+Internet -> [Edge] -> DMZ: Web (10.30.0.10)
+                         |  HTTPS 8443
+                         v
+              [Internal] SRV: App (10.20.0.30)
+                         |  TCP 1433
+                         v
+                         DB  (10.20.0.40)
 ```
 
-#### ۲) ماتریس
+### ماتریس سه‌لایه
 
-| از ↓ به → | WEB | APP | DB | Internet |
-|---|---|---|---|---|
-| Internet | 443 (VIP) | - | - | - |
-| WEB | - | 8443 | **ممنوع** | - |
-| APP | - | - | 1433 | Update (کنترل‌شده) |
-| DB | - | - | - | **ممنوع** |
-| Users | 443 | 8443 (Admin) | - | - |
+| از | به | سرویس | اجازه |
+|---|---|---|---|
+| Internet | Web | HTTPS 443 (VIP) | بله |
+| Web | App | TCP 8443 | بله |
+| App | DB | TCP 1433 | بله |
+| Web | DB | هر | **خیر** |
+| Internet | App/DB | هر | **خیر** |
+| DB | Internet | هر | **خیر** |
 
-#### ۳) Policy نمونه
+### Policyها (Internal و Edge)
 
 ``` text
 config firewall policy
- edit 60
-  set name "APP-to-DB-1433"
-  set srcintf "ZN-APP"
-  set dstintf "ZN-DB"
-  set srcaddr "SRV-APP"
-  set dstaddr "SRV-DB"
-  set action accept
-  set schedule "always"
-  set service "MS-SQL"
-  set logtraffic all
- next
- edit 61
-  set name "DENY-WEB-to-DB"
-  set srcintf "ZN-WEB"
-  set dstintf "ZN-DB"
-  set srcaddr "all"
-  set dstaddr "all"
-  set action deny
-  set logtraffic all
- next
+    edit 40
+        set name "WEB-to-APP"
+        set srcintf "LINK"
+        set dstintf "ZN-SRV"
+        set srcaddr "HOST-WEB"
+        set dstaddr "HOST-APP"
+        set service "TCP-8443"
+        set action accept
+        set schedule "always"
+        set logtraffic all
+    next
+    edit 41
+        set name "APP-to-DB"
+        set srcintf "ZN-SRV"
+        set dstintf "ZN-SRV"
+        set srcaddr "HOST-APP"
+        set dstaddr "HOST-DB"
+        set service "TCP-1433"
+        set action accept
+        set schedule "always"
+        set logtraffic all
+    next
 end
 ```
 
-Policy Deny صریح (61) اگرچه Implicit Deny هم هست، ولی برای Log و Alert لازم است.
+نکته: App و DB در یک Zone‌اند؛ پس `intrazone deny` باعث می‌شود Policy صریح لازم باشد (و Web به DB اصلاً مسیر ندارد). برای تفکیک قوی‌تر DB را در Zone/VLAN جدا بگذارید.
 
-#### ۴) آزمون منفی
+### مثال‌های حل‌شده
 
-``` text
-From WEB: telnet 10.30.3.10 1433  -> must FAIL, log policyid=61
-From Internet: connect to APP     -> FAIL
-From DB: curl https://example.com -> FAIL
-```
+#### مثال ساده — مسیر مجاز
 
-#### ۵) Alert
-
-``` text
-Alert: policyid=61 count > 5 in 5 min  -> notify SOC
-```
-
-(در FortiAnalyzer/Syslog؛ فصل ۲۴.)
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| تعداد لایه | سه لایه؛ دو لایه اگر ریسک کم |
-| Update | Proxy/ لیست مقاصد |
-| Alert | روی Deny بین لایه‌ها |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — ماتریس
-
-Internet→Web 443؛ Web→App 8443؛ App→DB 5432؛ Web→DB ممنوع؛ DB→Internet ممنوع.
+کاربر اینترنت ← Edge VIP ← Web ← Internal Policy 40 ← App ← Policy 41 ← DB. هر گام Log دارد؛ Session در هر فایروال جدا.
 
 #### مثال متوسط — آزمون منفی
 
-از Web `nc -zv DB 5432` باید Timeout و Log Deny بدهد.
-
-#### مثال سخت — Egress
-
-وب‌سرور هک‌شده به C2 وصل می‌شود؛ Egress محدود و هشدار روی خروجی غیرعادی.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** App→DB 1433: Session با policyid=60؛ ارتباط برقرار.
-
-**متوسط (تحلیل):** ممیزی کشف کرد Web→DB مجاز است (Policy ALL). اثبات: Lookup ID قدیمی؛ رفع: Policy 61 بالاتر و حذف ALL؛ آزمون منفی موفق؛ Log دارد.
-
-**سخت (حمله‌ی شبیه‌سازی‌شده):** فرض: Web آلوده است. مهاجم Scan 10.30.3.0/24 می‌زند. انتظار: ده‌ها Deny با policyid=61 در Log؛ Alert؛ پاسخ: ایزوله‌کردن وب‌سرور (Quarantine). معیار: زمان تشخیص < ۵ دقیقه، هیچ اتصال موفق به DB جز App.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Policy & Objects → Firewall Policy → ترتیب Policyها.
-2. Log & Report → Forward Traffic → Filter policyid=61.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
 ``` text
-show firewall policy 61
-diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp port3
+diagnose firewall iprope lookup 10.30.0.10 40000 10.20.0.40 1433 tcp port3
+ -> policy 0 (deny)
 ```
 
-### ۸) Verification (اثبات صحت)
+Web به DB مستقیم ممنوع؛ Log deny. اگر Policy 0 نبود و مجاز شد، خطای طراحی است.
 
-- Lookup: Policy 61 برای Web→DB.
-- App→DB Session موفق.
-- Alert در آزمون.
+#### مثال متوسط — پایش
 
-### ۹) Troubleshooting
+برای هر Policy: `logtraffic all`؛ هشدار: تعداد Deny از Web به DB > 0 ⇒ Alert (نشانه‌ی تلاش حرکت جانبی). فهرست Dashboard: Top Denied.
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+#### مثال سخت — نفوذ به Web
+
+مهاجم با آسیب‌پذیری Web کنترل سرور را گرفت. تلاش: اسکن شبکه‌ی داخلی ⇒ Deny (Edge/Internal)، فقط 8443 به App مجاز. تلاش Exploit روی App از طریق 8443 ممکن است (باید IPS/WAF)؛ تلاش به DB ⇒ Deny. اثر: دامنه‌ی خسارت محدود به Web و (در صورت آسیب‌پذیری App) App.
+
+#### مثال سخت — DB با اینترنت
+
+برای به‌روزرسانی DB، تیم موقتاً DB→Internet را باز کرد و فراموش شد. ممیزی: Policy بدون Owner/Expiry، Hit Count فعال ⇒ DB به C2 وصل شد (در سناریو). درس: Policy موقت با Comment و تاریخ انقضا، بازبینی فصلی (۱۳-۵).
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Policy 40 و 41 را بسازید.
+2. آزمون منفی Web→DB و Internet→App.
+3. Alert برای Deny غیرعادی.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Web به DB می‌رسد | Lookup | Policy ALL |
-| App به DB نمی‌رسد | Policy 60 | Service/Address |
+| App به DB نمی‌رسد | Policy/Port | 41 |
+| Web به DB می‌رسد | Policy بیش‌ازحد | حذف |
+| Log نیست | logtraffic | all |
+| DB اینترنت دارد | Policy موقت | حذف |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- DB بدون Internet.
-- Log All روی Denyها.
+DB فقط TLS و حساب سرویس؛ IPS روی مسیر Web→App (Needs-License)؛ Backup DB خارج از شبکه.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- سه‌لایه مانع حرکت جانبی.
-- Least privilege.
-- آزمون منفی.
-- Alert روی Deny.
+سه‌لایه با «فقط مجاور»؛ آزمون منفی الزامی؛ Log و Alert روی Deny غیرعادی؛ Policy موقت ممنوع بدون انقضا.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا Web→DB ممنوع است؟ *(پاسخ: 15-4-ت1)*
 
@@ -4209,7 +3853,7 @@ diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp port3
 
 **Q1.** Quick quiz (English): Why use three tiers instead of placing web and database together? *(پاسخ: 15-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -4218,106 +3862,16 @@ diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp port3
 
 - *The web tier must not reach the database directly.* ← لایه‌ی وب نباید مستقیماً به DB برسد.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** سه‌لایه (اجرا نشده). **Evidence:** `02-design/fgt-3tier.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Firewall policies
 - NIST SP 800-41; OWASP
 
 <a id="l-15-5"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: DMZ سه‌لایه و ماتریس جریان
-
-| از | به | اجازه |
-|---|---|---|
-| Internet | Web | 443 |
-| Web | App | 8443 |
-| App | DB | 5432 |
-| Web | DB | ممنوع |
-| DB | Internet | ممنوع |
-
-``` text
-Policy W2A  Web -> App  tcp/8443 accept log
-Policy A2D  App -> DB   tcp/5432 accept log
-Policy DENY any -> any  deny log
-```
-
-**آزمون منفی:** از Web به DB با nc 5432 باید Timeout و Log Deny بدهد. **پایش:** هشدار روی Deny غیرعادی و Session زیاد روی Web.
-
-**دلیل سه‌لایه:** نفوذ به Web مستقیم DB را باز نمی‌کند.
-
-**پرسش‌های مصاحبه**
-1. *چرا DB آغازگر نیست؟* جلوگیری از Exfiltration.
-2. *Egress Web؟* فقط به‌روزرسانی‌های لازم.
-3. *Hit Count اینجا؟* کشف جریان ناخواسته.
-
-### تکمیل عمیق: DMZ سه‌لایه — Web، App، DB
-
-#### چرا؟
-
-اگر وب‌سرور هک شود، مهاجم نباید مستقیم به پایگاه‌داده برسد. سه‌لایه‌بودن این زنجیره را می‌شکند.
-
-#### ماتریس
-
-| از | به | اجازه |
-|---|---|---|
-| Internet | Web | 443 |
-| Web | App | 8443 |
-| App | DB | 5432 |
-| Web | DB | ممنوع |
-| DB | Internet | ممنوع |
-
-#### مثال ساده — Policy
-
-``` text
-Policy W2A Web -> App tcp/8443 accept log
-Policy A2D App -> DB  tcp/5432 accept log
-Policy DENY any -> any deny log
-```
-
-#### مثال متوسط — آزمون منفی
-
-``` text
-from Web: nc -zv 10.30.3.10 5432   # expect timeout; log deny
-```
-
-#### مثال سخت — Egress
-
-وب‌سرور هک‌شده می‌خواهد به C2 در اینترنت وصل شود؛ Egress باید محدود باشد (فقط به‌روزرسانی‌های لازم). Log ترافیک خروجی غیرعادی Alert بدهد.
-
-#### پایش
-
-Hit Count و Deny Log؛ هشدار روی Deny غیرمعمول از Web.
-
-#### Lab
-
-ماتریس را اجرا و Evidence ثبت کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Web به DB | Policy | حذف |
-| DB به اینترنت | Egress | Deny |
-| Log نیست | log | فعال |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Web→DB ممنوع؟** زنجیره‌ی نفوذ.
-**۲. Egress؟** خروجی.
-**۳. پایش؟** Deny.
-
-#### English Corner
-
-- *Restrict outbound traffic from servers to limit data exfiltration.*
-- Q: Why must the web tier never talk directly to the database?
 
 ## درس 15-5 — Packet Walk در دو فایروال: NAT در دو نقطه، Session در هر سمت و اثبات
 
@@ -4325,128 +3879,119 @@ Hit Count و Deny Log؛ هشدار روی Deny غیرمعمول از Web.
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Packet Walk کامل سه جریان (Users→Internet، Internet→Web، Users→Web) را بنویسد.
-2. NAT و Session را در هر فایروال جداگانه بخواند.
-3. با Sniffer/Debug در هر فایروال اثبات کند.
-4. Hairpin و Split DNS را در این معماری حل کند.
-5. Walk را به‌عنوان مستند Runbook تحویل دهد.
+1. Packet Walk کامل Users→اینترنت و اینترنت→Web را در دو فایروال بنویسید.
+2. نقاط NAT (SNAT در Edge، DNAT در Edge) را مشخص کنید.
+3. Session در هر فایروال را بخوانید و تفاوت‌ها را توضیح دهید.
+4. با Sniffer در چهار نقطه مسیر را اثبات کنید.
+5. تفاوت Asymmetric و Symmetric را روی دو دستگاه بشناسید.
+6. نبود NAT در Internal را اثبات کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Packet Walk دوفایروالی؟** هر بسته دو Session، دو Log و دو تصمیم دارد؛ برای عیب‌یابی باید مسیر را قدم‌به‌قدم دنبال کنید.
+وقتی دو فایروال دارید، عیب‌یابی «کدام فایروال بسته را گم کرد؟» سخت‌تر می‌شود. Packet Walk مثل نقشه‌ی مسیر پستی است: بسته از کدام Hub می‌گذرد، کجا برچسب آدرس عوض می‌شود. با آن، هر خرابی را به یک نقطه‌ی مشخص نسبت می‌دهید.
 
-**جمع‌بندی اصلی درس:** در یک فایروال، Packet Walk ساده است. با دو فایروال، یک بسته دو بار Policy و گاهی دو بار NAT می‌خورد. اگر Walk روی کاغذ نباشد، هنگام خرابی هیچ‌کس نمی‌داند کدام فایروال کجا تصمیم گرفته. این درس Walk را به یک مستند استاندارد تبدیل می‌کند.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) جریان A: Users → Internet
+### Packet Walk — Users به اینترنت
 
 ``` text
-1 User 10.10.0.5:40000 -> 203.0.113.10:443
-2 Internal ingress port2, RPF ok, Policy 10 accept (NAT off)
-3 Internal route default -> port1 -> Edge 10.255.0.1
-4 Edge ingress port2, RPF ok, Policy 1 accept, SNAT -> 198.51.100.2:40000
-5 Edge egress port1 -> ISP
-Reply: Edge session reply -> un-NAT -> route 10.10.0.0/24 via 10.255.0.2
-       Internal session reply -> port2 -> user
+PC 10.10.0.5 -> 8.8.8.8:53 (UDP)
+ 1 PC -> Internal port2  (src 10.10.0.5 dst 8.8.8.8)
+ 2 Internal: route default -> port1 (10.99.0.1)
+ 3 Internal: policy 20 accept, NO NAT
+ 4 Internal port1 -> Edge port3  (src 10.10.0.5 unchanged)
+ 5 Edge: route default -> port1 (203.0.113.1)
+ 6 Edge: policy 10 accept, SNAT 10.10.0.5 -> 203.0.113.2
+ 7 Edge port1 -> ISP -> 8.8.8.8
+ 8 Reply: 8.8.8.8 -> 203.0.113.2
+ 9 Edge: reverse NAT -> 10.10.0.5, route -> port3 via 10.99.0.2
+10 Internal: session match -> PC
 ```
 
-#### ۲) جریان B: Internet → Web
+### Packet Walk — اینترنت به Web
 
 ``` text
-1 Client 8.8.4.4 -> 203.0.113.10:443
-2 Edge ingress port1: DNAT via VIP-WEB-443 -> 10.30.0.10:443
-3 Route 10.30.0.10 -> port3, Policy 2 accept
-4 Web server replies -> Edge session reply -> un-DNAT -> client
+Client 198.51.100.50 -> 203.0.113.3:443
+ 1 Edge port1: VIP DNAT 203.0.113.3 -> 10.30.0.10
+ 2 Edge: policy 20 (WAN->DMZ), session created
+ 3 Edge port2 -> Web 10.30.0.10
+ 4 Web replies -> Edge (gateway)
+ 5 Edge: reverse DNAT, src 203.0.113.3 -> client
 ```
 
-Internal در این جریان دخالتی ندارد.
+### Session در دو فایروال
 
-#### ۳) جریان C: Users → Web (از داخل)
-
-``` text
-1 User 10.10.0.5 -> web.example.com
-2 DNS public IP 203.0.113.10  -> Hairpin problem
-3 With Split DNS: internal DNS returns 10.30.0.10
-4 Internal -> Edge (route 10.30.0.0/24) -> Edge Policy USERS->DMZ -> web
-```
-
-#### ۴) اثبات در هر دو فایروال
-
-``` text
-Internal: diagnose sys session filter src 10.10.0.5 ; diagnose sys session list   (no snat)
-Edge:     diagnose sys session filter src 10.10.0.5 ; diagnose sys session list   (snat)
-```
-
-#### ۵) قالب Runbook
-
-برای هر جریان: مسیر، Policyها، NAT، دستورهای اثبات، علائم خرابی و اقدام اول.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Hairpin | Split DNS |
-| Runbook | سه جریان اصلی |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — رفت
-
-User → Int (Policy 20، بدون NAT) → Edge (Policy LINK→WAN + SNAT) → ISP.
-
-#### مثال متوسط — دو Session
-
-Edge: `session filter dst ...`؛ Int: `session filter src ...`؛ Byteها هم‌خوان.
-
-#### مثال سخت — نامتقارن
-
-Edge Route برگشت ندارد: پاسخ از Default خارج می‌شود؛ Int Session ندارد؛ Sniffer دو سمت.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** جریان A: Internal Policy 10 بدون NAT؛ Edge Policy 1 با SNAT. `session list` در Internal act=snat ندارد و در Edge دارد.
-
-**متوسط (تحلیل):** کاربران به وب با IP عمومی نمی‌رسند ولی از اینترنت می‌رسد: Hairpin. مراحل: ۱) DNS عمومی. ۲) Route بسته به Edge می‌رود و DNAT می‌شود ولی پاسخ سرور مستقیم به کاربر نمی‌رود. رفع: Split DNS (پاسخ 10.30.0.10)؛ آزمون nslookup.
-
-**سخت (اثبات دوسمتی):** Users به یک سایت نمی‌رسند. مراحل: ۱) Internal: Session org بدون reply. ۲) Edge: Session ساخته نشده ⇒ بسته به Edge نمی‌رسد. ۳) Sniffer port1 Internal: خروج؛ Sniffer port2 Edge: دریافت نیست ⇒ لینک Transit. ۴) رفع. درس: هر فایروال را جداگانه اثبات کنید.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-diagnose sys session filter src 10.10.0.5
-diagnose sys session list
-diagnose debug flow trace start 20
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Walk سه جریان.
-- Session دو سمت.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| دستگاه | Session | NAT |
 |---|---|---|
-| Session فقط در Internal | Transit | لینک |
-| وب داخلی باز نمی‌شود | DNS | Split DNS |
+| Internal | 10.10.0.5:5353 → 8.8.8.8:53 | ندارد |
+| Edge | 10.10.0.5:5353 → 8.8.8.8:53 | `act=snat → 203.0.113.2` |
 
-### ۱۰) نکات امنیتی
+``` text
+Internal: diagnose sys session filter src 10.10.0.5 ; session list  (no snat)
+Edge    : diagnose sys session filter src 10.10.0.5 ; session list  (act=snat)
+```
 
-- Debug را خاموش کنید.
+### Sniffer در چهار نقطه
 
-### ۱۱) جمع‌بندی مفهومی
+``` text
+A: Internal port2  src 10.10.0.5
+B: Internal port1  src 10.10.0.5  (still private)
+C: Edge     port3  src 10.10.0.5
+D: Edge     port1  src 203.0.113.2 (NATed)
+```
 
-- Walk دو فایروال.
-- NAT یک‌بار.
-- Split DNS.
-- Runbook.
+اگر A دیده شود ولی B نه ⇒ Internal Policy/Route. B دیده شود ولی C نه ⇒ لینک Transit. C دیده شود ولی D نه ⇒ Edge Policy/Route.
 
-### ۱۲) تمرین و ارزیابی
+### Asymmetric
+
+اگر Internal چند لینک به Edge داشت و پاسخ از لینک دیگری برمی‌گشت، Session در Internal وجود نداشت و RPF/State fail می‌شد. طراحی تک‌لینک این را حذف می‌کند.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — کجا NAT؟
+
+فقط Edge. Sniffer B: src هنوز 10.10.0.5. اگر 203.0.113.2 دیده شود، Internal هم NAT می‌کند (اشتباه: Double NAT).
+
+#### مثال متوسط — گم‌شدن در Transit
+
+A و B دیده شد، C نه. بررسی: VLAN لینک Transit اشتباه. رفع: VLAN/کابل. تأیید: C دیده شد.
+
+#### مثال متوسط — Session نیمه
+
+Edge Session با `SYN_SENT`؛ D دیده شد؛ پاسخ نیامد ⇒ بالادست.
+
+#### مثال سخت — Double NAT ناخواسته
+
+کاربران به اینترنت می‌روند ولی Log Edge همه را 10.99.0.2 (Internal) نشان می‌دهد؛ ممیزی نمی‌داند کدام کاربر. علت: `nat enable` در Policy Internal. رفع: `nat disable` در Internal. درس: NAT فقط Edge تا Log و ردیابی کاربر حفظ شود.
+
+#### مثال سخت — Route برگشت Edge
+
+پاسخ به D می‌آید ولی C دیده نمی‌شود: Edge Route به 10.10.0.0/24 ندارد ⇒ پاسخ از Default خارج. `routing-table details 10.10.0.5` در Edge. رفع: Route برگشت.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. چهار Sniffer هم‌زمان.
+2. Session هر دو فایروال را مقایسه کنید.
+3. Double NAT را عمدی بسازید و رفع کنید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| A ولی B نه | Internal | Policy/Route |
+| B ولی C نه | Transit | VLAN |
+| C ولی D نه | Edge | Policy |
+| Src نادرست در Log | Double NAT | nat disable |
+
+### جمع‌بندی
+
+Packet Walk با چهار نقطه‌ی Sniffer؛ NAT فقط Edge؛ Session هر دو فایروال؛ Route برگشت در Edge؛ Double NAT ردیابی را خراب می‌کند.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) NAT کجا انجام می‌شود؟ *(پاسخ: 15-5-ت1)*
 
@@ -4462,7 +4007,7 @@ diagnose debug flow trace start 20
 
 **Q1.** Quick quiz (English): How can internal users reach an internal web server by its public name? *(پاسخ: 15-5-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -4470,99 +4015,16 @@ diagnose debug flow trace start 20
 
 - *Document the packet walk in a runbook.* ← Packet Walk را در Runbook مستند کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Walk (اجرا نشده). **Evidence:** `03-ops/walk-arch2.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Packet flow
 - FortiOS 7.0: Virtual IPs
 
 <a id="l-15-6"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Packet Walk Users → Internet در دو فایروال
-
-``` text
-User 10.10.0.5 -> Int port2 : RPF ok, Policy 20 accept, no NAT
-Int port1 -> Edge port3    : RPF ok (route 10.10.0.0/24 via Int)
-Edge: Policy LINK->WAN accept, SNAT 10.10.0.5 -> 203.0.113.2
-Edge port1 -> ISP
-```
-
-برگشت: ISP → Edge (Session معکوس، DNAT به 10.10.0.5) → Int (Session) → User.
-
-**دو Session** (یکی در هر فایروال) باید با دو Log هم‌خوان باشند؛ زمان‌ها با NTP هم‌گام.
-
-**شکست:** اگر Edge Route برگشت 10.10.0.0/24 نداشته باشد، پاسخ از Default Route خارج می‌شود (نامتقارن) و Int آن را رد می‌کند.
-
-**پرسش‌های مصاحبه**
-1. *چرا Session در هر دو؟* هرکدام Stateful جدا.
-2. *مسیر نامتقارن؟* Session ناقص و Drop.
-3. *هم‌گامی Log؟* NTP و Timezone یکسان.
-
-### تکمیل عمیق: Packet Walk در دو فایروال
-
-#### چرا؟
-
-با دو فایروال، هر بسته دو Session، دو Log و دو تصمیم دارد. برای عیب‌یابی باید مسیر را قدم‌به‌قدم دنبال کنید.
-
-#### رفت (Users → Internet)
-
-``` text
-User 10.10.0.5 -> Int port2 : RPF ok, Policy 20 accept (no NAT)
-Int port1 -> Edge port3    : RPF ok (route 10.10.0.0/24 via Int)
-Edge: Policy LINK->WAN accept, SNAT 10.10.0.5 -> 203.0.113.2
-Edge port1 -> ISP
-```
-
-#### برگشت
-
-ISP → Edge (Session معکوس، DNAT به 10.10.0.5) → Int (Session) → User.
-
-#### مثال متوسط — دو Session
-
-``` text
-Edge: diagnose sys session filter dst 198.51.100.8
-Int : diagnose sys session filter src 10.10.0.5
-```
-
-هر دو Session باید وجود داشته باشند و Byteها هم‌خوان.
-
-#### مثال سخت — مسیر نامتقارن
-
-Edge Route برگشت 10.10.0.0/24 ندارد: پاسخ از Default خارج می‌شود ⇒ Int Session ندارد (SYN-ACK بدون SYN) ⇒ Drop. با Sniffer دو سمت دیده می‌شود.
-
-#### هم‌گامی Log
-
-NTP یکسان و Timezone یکسان؛ در غیر این صورت مقایسه‌ی Log غیرممکن است.
-
-#### Lab
-
-یک curl را در هر دو فایروال ردیابی کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| فقط یک Session | نامتقارن | Route |
-| IP عجیب در Log | NAT | بررسی |
-| ساعت‌ها متفاوت | NTP | همگام |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا دو Session؟** دو Stateful.
-**۲. نامتقارن؟** پاسخ از مسیر دیگر.
-**۳. NTP؟** مقایسه‌ی Log.
-
-#### English Corner
-
-- *Each stateful firewall keeps its own session for the same flow.*
-- Q: What does a missing return route do to a flow?
 
 ## درس 15-6 — خرابی‌ها و آزمون G6: Edge، Internal، DMZ و گزارش RCA
 
@@ -4570,119 +4032,114 @@ NTP یکسان و Timezone یکسان؛ در غیر این صورت مقایسه
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. خرابی‌های رایج دوفایروالی را به علت نگاشت کند.
-2. سه پرونده را با Evidence دوسمتی حل کند.
-3. RCA و گزارش حادثه بنویسد.
-4. آزمون G6 را با Rubric تحویل دهد.
-5. درس‌های آموخته را به چک‌لیست پیشگیری تبدیل کند.
+1. خرابی‌های Edge، Internal و DMZ را تفکیک کنید.
+2. با ده‌گامی و Packet Walk علت را محلی‌سازی کنید.
+3. RCA بنویسید.
+4. آزمون G6 را با Rubric بشناسید.
+5. نقش Rollback و Change را بدانید.
+6. اثر خرابی هر دستگاه را تحلیل کنید (بدون HA).
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا G6؟** سه خرابی واقعی ساخت‌های فصل را محک می‌زند: Edge، Internal، DMZ.
+دو دستگاه یعنی دو نقطه‌ی خطا. سؤال اول در بحران: «مشکل از Edge است یا Internal یا بین‌شان؟». بدون محلی‌سازی، هر دو را زیر و رو می‌کنید و تغییرات تصادفی خطای جدید می‌سازد. G6 این مهارت را می‌سنجد.
 
-**جمع‌بندی اصلی درس:** G6 آخرین دروازه‌ی بخش فایروال است. در دنیای واقعی خرابی با برچسب «اینترنت قطع است» می‌آید، نه با «Route Edge اشتباه است». شما باید از علامت به علت برسید و ثابت کنید.
+### اثر خرابی هر دستگاه
 
-### ۳) توضیح عمیق فنی
-
-#### ۱) جدول خرابی‌های رایج
-
-| علامت | علت محتمل | شاهد |
-|---|---|---|
-| کاربران اینترنت ندارند | Route Edge به داخل نیست | `reverse path check fail` یا بسته‌ی برگشت در port1 |
-| IP همه‌ی کاربران یکی است | NAT دوباره | Log Edge |
-| وب از اینترنت باز نمی‌شود | Policy روی VIP نیست | Lookup/Flow |
-| Web به DB می‌رسد | Policy ALL | Lookup |
-| بعضی Sessionها قطع | Asymmetric/ECMP | Sniffer دو سمت |
-
-#### ۲) سه پرونده‌ی نمونه
-
-**پرونده ۱:** کاربران Internal اینترنت ندارند. Internal: Session org ok. Edge: Session ساخته می‌شود؛ پاسخ Drop با RPF. علت: Route 10.10.0.0/24 در Edge نیست. رفع: Route.
-
-**پرونده ۲:** VIP وب از بیرون باز نمی‌شود. Flow: `Denied by forward policy check (policy 0)`. علت: Policy dst=VIP نیست. رفع: Policy.
-
-**پرونده ۳:** پس از افزودن لینک دوم، Sessionها گاهی قطع. Sniffer: SYN از لینک A و SYN-ACK از B. علت: Asymmetric. رفع: Route/Weight یا Active-Standby.
-
-#### ۳) گزارش RCA
-
-``` text
-Title: Internal users lost internet 2026-11-26
-Impact: 150 users, 25 min
-Timeline: 10:05 report; 10:12 edge sniffer; 10:20 route added
-Root cause: missing return route on Edge after Transit re-IP
-Corrective: add route; Preventive: pre-change checklist + route monitoring
-```
-
-#### ۴) آزمون G6
-
-سه عیب تزریقی؛ برای هرکدام: Evidence دو فایروال، علت، رفع، آزمون منفی. Rubric: کشف ۳۰، رفع ۳۰، Evidence ۲۰، آزمون منفی ۱۰، صداقت ۱۰.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| خرابی | اثر |
 |---|---|
-| چک‌لیست قبل تغییر | Route، Policy، NAT، Backup |
-| Monitoring | Route و لینک Transit |
+| Edge Down | اینترنت و DMZ قطع؛ داخلی بین Zoneها ادامه |
+| Internal Down | Users/Servers قطع؛ DMZ و Edge سالم |
+| لینک Transit | Users بدون اینترنت؛ DMZ سالم |
+| Policy اشتباه Edge | DMZ یا اینترنت |
+| Route برگشت | پاسخ گم |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### روش محلی‌سازی
 
-#### مثال ساده — DMZ از اینترنت نمی‌رسد
+1. Scope: کدام Zone/سرویس؟
+2. Sniffer A–D (درس قبل): نقطه‌ی قطع.
+3. در همان فایروال: Route، Policy، NAT، Session.
+4. رفع و آزمون.
 
-Lookup روی Edge ⇒ policy 0؛ VIP حذف شده؛ بازسازی VIP و Policy.
+### پرونده‌ها
 
-#### مثال متوسط — Users بی‌اینترنت
+**پرونده ۱ — Users اینترنت ندارند:** Sniffer: A، B، C دیده؛ D نه. Edge Policy 10 Disable (CHG شب). رفع: Enable. RCA: Change بدون آزمون پس از اجرا.
 
-Sniffer Edge port3: بسته نمی‌رسد ⇒ Route Int→Edge (Default حذف). رفع.
+**پرونده ۲ — Web از اینترنت قابل‌دسترس نیست:** Lookup ⇒ policy 0. VIP درست؛ Policy 20 dstintf=port3 (اشتباه). رفع: port2. تأیید: Session DNAT.
 
-#### مثال سخت — نقض سیاست
+**پرونده ۳ — Users به App نمی‌رسند:** Internal Lookup ⇒ policy 0؛ HOST-APP IP قدیمی. رفع: آدرس. آزمون منفی DB هنوز Deny.
 
-DMZ به DB داخلی Session باز می‌کند: حذف Policy، بررسی Log برای سوءاستفاده، PIR. Rubric: کشف ۳۰، رفع ۲۵، آزمون منفی ۱۵، RCA ۲۰، صداقت ۱۰.
+**پرونده ۴ — ترکیبی:** Route برگشت پاک شد + Policy تغییر. یکی‌یکی رفع.
 
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** پرونده ۱: Route برگشت در Edge؛ پس از افزودن، Session بسته می‌شود و اینترنت می‌آید.
-
-**متوسط (تحلیل):** پرونده ۲: Lookup ID 0 ⇒ Implicit Deny؛ Policy با dst=VIP ساخته می‌شود؛ آزمون از بیرون و پورت دیگر منفی.
-
-**سخت (دو عیب):** هم Route و هم Policy خراب. ابتدا Route را رفع (برگشت)؛ سپس Policy؛ هر رفع جدا آزمون؛ اگر هم‌زمان رفع کنید ریشه‌ی اصلی معلوم نمی‌شود.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### قالب RCA
 
 ``` text
-diagnose debug flow filter addr 10.10.0.5
-diagnose debug flow trace start 20
-diagnose debug enable
-diagnose debug disable
-get router info routing-table all
+Incident : Users no internet, 40 users, 25 min
+Detect   : helpdesk call 09:05
+Localize : Sniffer A-C ok, D missing -> Edge policy 10
+Cause    : policy 10 disabled during change CHG-310
+Fix      : enable policy 10
+Prevent  : post-change smoke test, peer review
 ```
 
-### ۸) Verification (اثبات صحت)
+### آزمون G6
 
-- Evidence دو فایروال.
-- آزمون منفی.
-- گزارش RCA.
+سه خرابی تزریقی (Edge Policy، Internal Route، DMZ VIP).
 
-### ۹) Troubleshooting
+| معیار | امتیاز |
+|---|---|
+| محلی‌سازی با Sniffer | 25 |
+| Evidence (Lookup/Session) | 25 |
+| رفع صحیح | 25 |
+| آزمون منفی/RCA | 15 |
+| صداقت (ثبت اشتباه) | 10 |
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+### مثال‌های حل‌شده
+
+#### مثال ساده — Zone
+
+«فقط DMZ قطع». Sniffer Edge port2: نه Internal؛ Edge Policy 20 بررسی.
+
+#### مثال متوسط — Transit
+
+همه‌ی Zoneهای داخلی بی‌اینترنت، DMZ سالم. Sniffer B ولی C نه ⇒ Transit (VLAN/کابل). رفع و تأیید.
+
+#### مثال متوسط — Rollback
+
+Policy جدید Edge اینترنت را قطع کرد. Rollback ۲ دقیقه‌ای (Revision) سرویس را برگرداند؛ سپس RCA.
+
+#### مثال سخت — دو خرابی
+
+Edge Policy 20 اشتباه + Internal Route پاک. ترتیب: ۱) Route (Users) ۲) آزمون ۳) Policy (DMZ) ۴) آزمون؛ ثبت جدا. اگر هم‌زمان تغییر دهید، نمی‌دانید کدام اثر داشت.
+
+#### مثال سخت — Edge Down
+
+Edge قطع؛ DMZ و اینترنت رفت. داخلی بین Zone‌ها کار می‌کند. نتیجه: بدون HA، Edge SPOF. توصیه: HA/ISP دوم (فصل بعد).
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. سه خرابی را بسازید.
+2. محلی‌سازی با A–D.
+3. RCA.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| اینترنت نیست | Edge Route | Route داخلی |
-| VIP کار نمی‌کند | Policy | dst=VIP |
+| همه‌جا تغییر | بی‌محلی‌سازی | Sniffer |
+| Rollback ندارید | Change بی‌طرح | Backup |
+| خطای دوباره | آزمون ناقص | Smoke test |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- Debug را خاموش کنید.
+محلی‌سازی با Sniffer چهارنقطه‌ای؛ رفع یکی‌یکی؛ RCA و Rollback؛ دو فایروال بدون HA دو SPOF دارد.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- از علامت به علت.
-- Evidence دوسمتی.
-- RCA و پیشگیری.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Route برگشت چرا مهم است؟ *(پاسخ: 15-6-ت1)*
 
@@ -4698,7 +4155,7 @@ get router info routing-table all
 
 **Q1.** Quick quiz (English): Why should faults be fixed one at a time? *(پاسخ: 15-6-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -4706,100 +4163,13 @@ get router info routing-table all
 
 - *Collect evidence from both firewalls.* ← از هر دو فایروال شواهد جمع کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** G6 (اجرا نشده). **Evidence:** `03-ops/rca-arch2.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Troubleshooting
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: پرونده‌ی G6 با RCA
-
-**خرابی ۱:** پس از تغییر، DMZ از اینترنت در دسترس نیست. Evidence: Lookup روی Edge Policy 0؛ VIP حذف شده. رفع: بازسازی VIP و Policy.
-**خرابی ۲:** Users به اینترنت نمی‌رسند؛ Sniffer در Edge بسته‌ی ورودی نمی‌بیند ⇒ مشکل Route Int→Edge.
-**خرابی ۳:** DMZ به DB داخلی Session باز می‌کند (Policy بیش‌ازحد) ⇒ نقض سیاست.
-
-``` text
-RCA Title : DMZ unreachable 2026-11-27
-Impact    : public site down 14 min
-Cause     : VIP removed during cleanup
-Fix       : VIP restored from backup
-Prevent   : change review + pre/post lookup tests
-```
-
-**معیار G6:** هر سه خرابی با Evidence، رفع و آزمون منفی؛ گزارش RCA کامل.
-
-**پرسش‌های مصاحبه**
-1. *اولین گام در قطع DMZ؟* Lookup روی Edge.
-2. *Backup چرا؟* بازگشت سریع.
-3. *چرا Review؟* تغییر بدون بازبینی علت اصلی خرابی.
-
-### تکمیل عمیق: خرابی‌ها و آزمون G6 — سه پرونده با RCA
-
-#### چرا؟
-
-G6 تمام ساخت‌های فصل را با سه خرابی واقعی محک می‌زند.
-
-#### خرابی ۱ — DMZ از اینترنت نمی‌رسد
-
-``` text
-diagnose firewall iprope lookup 198.51.100.50 40000 203.0.113.3 443 tcp port1   # on Edge
- -> policy 0 (deny)
-```
-
-علت: VIP حذف شده. رفع: بازسازی VIP و Policy؛ آزمون curl.
-
-#### خرابی ۲ — Users بی‌اینترنت
-
-Sniffer روی Edge port3: بسته‌ای نمی‌رسد ⇒ مشکل Route Int→Edge (Default Route Int حذف شده). رفع: افزودن.
-
-#### خرابی ۳ — DMZ به DB داخلی Session باز می‌کند
-
-Policy بیش‌ازحد؛ نقض سیاست. رفع: حذف Policy، بررسی Log برای سوءاستفاده، PIR.
-
-#### قالب RCA
-
-``` text
-Title   : DMZ unreachable
-Impact  : public site down 14 min
-Cause   : VIP removed during cleanup
-Fix     : VIP restored from backup
-Prevent : change review + pre/post lookup tests
-```
-
-#### Rubric
-
-``` text
-Diagnosis 30 | Fix 25 | Negative test 15 | RCA 20 | Honesty 10
-```
-
-#### Lab
-
-سه خرابی را ایجاد و رفع کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| چند خرابی | هم‌زمان | یکی‌یکی |
-| بدون Backup | غفلت | Backup |
-| RCA ناقص | عجله | قالب |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Lookup اول؟** سریع و بی‌اثر.
-**۲. چرا Backup؟** بازگشت.
-**۳. RCA چه دارد؟** علت و پیشگیری.
-
-#### English Corner
-
-- *A good root cause analysis ends with a preventive action.*
-- Q: What is your first command when a published service becomes unreachable?
 
 ## پاسخ‌های فصل 15
 
