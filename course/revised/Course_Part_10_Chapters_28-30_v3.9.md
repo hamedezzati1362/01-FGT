@@ -71,7 +71,7 @@
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا تحلیل بسته؟** Log می‌گوید «چه رخ داد»؛ Capture می‌گوید «چه چیزی روی سیم رفت». برای «کند است» Log اغلب چیزی ندارد ولی بسته‌ها دارند: Retransmission، Window صفر، RST. مثل آزمایش خون که علامت را به علت وصل می‌کند.
+**چرا تحلیل بسته؟** Log می‌گوید «چه رخ داد»؛ Capture می‌گوید «چه چیزی روی سیم رفت». برای «کند است» Log اغلب چیزی ندارد ولی بسته‌ها دارند: Retransmission، Window صفر، RST. یک ارتباط TCP سه مرحله دارد: Handshake، انتقال، بستن؛ هر مرحله الگوی نرمال و الگوی خراب دارد.
 
 **جمع‌بندی اصلی درس:**
 
@@ -134,7 +134,7 @@ tls.alert_message
 
 ### ۵) GUI و CLI
 
-#### مثال ساده
+#### مثال ساده — RTT
 
 ``` text
 RTT = SYN-ACK time - SYN time = 0.082 - 0.000 = 82 ms
@@ -143,12 +143,14 @@ RTT = SYN-ACK time - SYN time = 0.082 - 0.000 = 82 ms
 #### مثال متوسط — سقف سرعت
 
 ``` text
-Throughput max = Window / RTT = 65535 / 0.082 ~ 6.4 Mbps
+Throughput max = Window / RTT = 65535 B / 0.082 s ~ 6.4 Mbps
 ```
 
-#### مثال سخت
+یعنی روی لینک 100 Mbps با این Window فقط ~6.4 Mbps؛ Window Scaling خاموش.
 
-Window Scaling خاموش + Loss ۳٪: دو علت؛ رفع یکی‌یکی.
+#### مثال سخت — دو علت
+
+Window Scaling حذف‌شده + Loss ۳٪. رفع یکی‌یکی و اندازه‌گیری مجدد.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -316,7 +318,7 @@ wireshark display filters:
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا Capture درست؟** نقطه‌ی غلط یا فیلتر ضعیف داده را بی‌ارزش می‌کند. قاعده: سه نقطه (کلاینت، FW in، FW out)، فیلتر دقیق، مدت کوتاه، حریم Payload.
+**چرا Capture درست؟** Capture بد بدتر از نبودن است. قاعده: سه نقطه (کلاینت، FW in، FW out)، فیلتر دقیق، مدت کوتاه، حریم Payload (Snaplen/رمزنگاری فایل).
 
 **جمع‌بندی اصلی درس:**
 
@@ -384,15 +386,20 @@ Display filter: `ip.addr==10.1.4.10`، `tcp.analysis.retransmission`، `tls.hand
 
 #### مثال ساده
 
-`tcpdump -ni eth0 -w c.pcap host X and port 443 -c 200`.
+``` text
+tcpdump -ni eth0 -w c.pcap host 198.51.100.8 and tcp port 443 -c 200
+```
 
 #### مثال متوسط
 
-`diagnose sniffer packet port2 ... 4 20 l` و port1.
+``` text
+diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 20 l
+diagnose sniffer packet port1 'host 198.51.100.8 and tcp port 443' 4 20 l
+```
 
 #### مثال سخت
 
-تطبیق جریان‌ها پس از NAT با Sequence و زمان.
+پس از NAT Src IP عوض می‌شود؛ جریان‌ها با Sequence و زمان تطبیق داده شوند.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -587,7 +594,7 @@ Payload ممکن است داده‌ی حساس داشته باشد؛ فقط هد
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا TCP و DNS؟** بیشتر مشکلات نیمه‌کارکرده TCP یا DNS است. باید Handshake، Retransmission و Query/Response را بخوانید.
+**چرا TCP و DNS؟** بیشتر مشکلات نیمه‌کارکرده یا TCP است یا DNS. Handshake را باید مثل یک جمله بخوانید: SYN، SYN-ACK، ACK و RTT. Retransmission با Backoff نمایی و Dup ACK و پرچم TC در DNS.
 
 **جمع‌بندی اصلی درس:**
 
@@ -656,15 +663,15 @@ dns.flags.rcode != 0   dns.time > 0.2
 
 #### مثال ساده
 
-SYN، SYN-ACK، ACK و RTT.
+SYN، SYN,ACK، ACK؛ RTT.
 
 #### مثال متوسط
 
-Retransmission با Backoff 0.2، 0.4، 0.8.
+Retransmission با فواصل 0.2، 0.4، 0.8 ⇒ ACK نمی‌رسد.
 
 #### مثال سخت
 
-AAAA بی‌پاسخ 5 ثانیه سپس A موفق.
+Query AAAA بی‌پاسخ 5 ثانیه سپس A موفق ⇒ DNS Server با AAAA مشکل دارد.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -864,7 +871,7 @@ Capture نشان می‌دهد: Query AAAA بی‌پاسخ ۵ ثانیه، سپ�
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا TLS در Capture؟** امروز بیشتر ترافیک رمز است؛ باید بدانید کدام بخش هنوز دیده می‌شود: SNI و (در TLS1.2) گواهی.
+**چرا TLS در Capture؟** بیشتر ترافیک رمز است؛ باید بدانید کدام بخش دیده می‌شود: SNI و (در TLS 1.2) گواهی؛ در TLS 1.3 گواهی رمز است. Alertها علت را می‌گویند: `unknown_ca`، `handshake_failure`.
 
 **جمع‌بندی اصلی درس:**
 
@@ -927,15 +934,17 @@ quic
 
 #### مثال ساده
 
-`tls.handshake.type == 1` ClientHello.
+``` text
+tls.handshake.type == 1
+```
 
 #### مثال متوسط
 
-Alert `unknown_ca`.
+Alert Unknown CA ⇒ SSL Inspection بدون نصب CA.
 
 #### مثال سخت
 
-`handshake_failure` به‌خاطر نسخه/Cipher.
+ClientHello فقط TLS1.0/1.1 و سرور 1.2 می‌خواهد ⇒ handshake_failure.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -1126,7 +1135,7 @@ Issuer باید CA مورد انتظار باشد؛ اگر نام CA فایرو�
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا ده پرسش و بلوک TS؟** عیب‌یاب خوب سؤال می‌پرسد و ثبت می‌کند.
+**چرا ده پرسش و بلوک TS؟** عیب‌یاب خوب سؤال می‌پرسد و ثبت می‌کند: Symptom، Scope، Hypothesis، Test، Evidence، Cause، Fix، Verify.
 
 **جمع‌بندی اصلی درس:**
 
@@ -1179,15 +1188,15 @@ Priority ~= likelihood x impact / test cost
 
 #### مثال ساده
 
-Symptom، Scope، Hypothesis، Test، Evidence، Cause، Fix، Verify.
+بلوک TS: HTTPS یک کاربر Timeout؛ Sniffer: SYN بدون SYN-ACK؛ علت: IP Pool مسدود؛ رفع و Verify.
 
 #### مثال متوسط
 
-اگر «همه‌ی کاربران»: Route/لینک.
+اگر «همه‌ی کاربران»: Route/لینک؛ «یک نفر»: کلاینت/Policy منبع.
 
 #### مثال سخت
 
-ECMP با MTU متفاوت ⇒ MSS Clamp.
+ECMP با دو لینک MTU متفاوت ⇒ MSS Clamp.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -1374,7 +1383,7 @@ Verify    : curl 200
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا آزمون PCAP؟** نشان می‌دهد تحلیل‌گرید نه فقط باز‌کننده‌ی Wireshark.
+**چرا آزمون PCAP؟** تحلیل‌گر یعنی بتواند از الگو به علت برسد: SYN با Backoff ⇒ Drop؛ RST با TTL متفاوت ⇒ Middlebox؛ Window=0 ⇒ گیرنده.
 
 **جمع‌بندی اصلی درس:**
 
@@ -1430,15 +1439,15 @@ verify: download 100MB x3 without retransmission
 
 #### مثال ساده
 
-SYN با Backoff بی‌پاسخ.
+SYN با Backoff 1،2،4 ثانیه بی‌پاسخ.
 
-#### مثال متوسط
+#### مثال متوسط — TTL
 
-RST با TTL متفاوت ⇒ Middlebox.
+RST با TTL 62 در برابر 54 ⇒ احتمال تزریق توسط IPS.
 
 #### مثال سخت
 
-Window=0 ⇒ گیرنده. Rubric: الگو ۲۵، Evidence ۲۵، علت ۲۵، رفع ۲۵.
+قالب RCA با شماره‌ی بسته؛ Rubric: الگو ۲۵، Evidence ۲۵، علت ۲۵، رفع ۲۵.
 
 #### مثال‌های اصلی درس (مرور)
 

@@ -3214,7 +3214,11 @@ Install Preview تا اثر نصب پیش از اعمال دیده شود.
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا Baseline؟** بدون «نرمال»، «غیرعادی» معنا ندارد. P95 و ضریب آستانه‌ی هشدار را می‌سازند.
+**چرا Baseline؟** پزشک وقتی می‌گوید «فشار 160 بالاست» که بداند فشار نرمال شما 120 است. در شبکه هم «CPU 60٪» برای یک دستگاه عادی و برای دستگاه دیگر فاجعه است. Baseline یعنی ثبت رفتار عادی تا انحراف را تشخیص دهید.
+
+**سه پرسش:** چه چیزی را اندازه بگیریم (CPU، Session، پهنای باند، خطا)؟ هر چند وقت؟ چه عددی «هشدار» است؟ آستانه‌ی خوب از دو چیز می‌آید: ظرفیت دستگاه (دیتاشیت) و رفتار واقعی (P95). P95 یعنی ۹۵٪ زمان مقدار کمتر یا مساوی آن بود؛ ۵٪ اوج‌های لحظه‌ای حذف می‌شوند تا گمراه نکنند.
+
+**Alert Fatigue:** اگر روزی ۲۰۰ هشدار بیاید هیچ‌کس نمی‌خواند. هر هشدار باید **اقدام‌پذیر** باشد و دوره‌ی تحمل داشته باشد (مثلاً ۱۰ دقیقه).
 
 **جمع‌بندی اصلی درس:**
 
@@ -3289,21 +3293,23 @@ diagnose sys top 2 20
 
 ### ۵) GUI و CLI
 
-#### مثال ساده
+#### مثال ساده — ساخت Baseline
 
-``` text
-CPU P95 41% x 1.5 = 61% warn
-```
+داده‌ی ۷ روز: CPU میانگین 18٪، P95 = 41٪؛ Session میانگین 25,000 و Peak 38,000؛ ظرفیت 200,000.
 
-#### مثال متوسط
+#### مثال متوسط — آستانه
 
 ``` text
 Session warn = 0.5 x 200000 = 100000
+Session crit = 0.8 x 200000 = 160000
+CPU warn     = P95 x 1.5   = 41 x 1.5 ~ 61 %
 ```
 
-#### مثال سخت
+مراحل: ظرفیت ← درصد ← P95 ← ضریب ← مدت پایداری.
 
-Baseline فصلی.
+#### مثال سخت — فصلی
+
+پایان ماه ترافیک ۳ برابر است. Baseline جدا برای «روز عادی» و «پایان ماه» یا آستانه‌ی وابسته به تقویم؛ وگرنه هر ماه هشدار کاذب.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -3449,7 +3455,9 @@ CPU warn     = P95 x 1.5      = 41 x 1.5 ~ 61 %
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا Logging درست؟** Log حافظه‌ی شبکه است؛ ناقص یعنی کوری در حادثه، بیش‌ازحد یعنی دیسک پر.
+**چرا Logging درست؟** Log حافظه‌ی شبکه است. ناقص یعنی در حادثه کور؛ بیش‌ازحد یعنی دیسک پر و CPU درگیر.
+
+**انواع:** Traffic (Sessionها)، Event (سیستم/ادمین/VPN/HA)، UTM (AV/IPS/Web)، Local. **سطح در Policy:** `all` (همه‌ی Sessionها)، `utm` (فقط رویداد UTM)، `disable`. Deny ضمنی Log ندارد مگر `fwpolicy-implicit-log` فعال باشد.
 
 **جمع‌بندی اصلی درس:**
 
@@ -3520,15 +3528,32 @@ execute log display
 
 #### مثال ساده
 
-`logtraffic all`.
+``` text
+config firewall policy
+ edit 30
+  set logtraffic all
+ next
+end
+config log setting
+ set fwpolicy-implicit-log enable
+end
+```
 
-#### مثال متوسط
+#### مثال متوسط — مشاهده
 
-`fwpolicy-implicit-log enable`.
+``` text
+execute log filter category 0
+execute log filter field srcip 10.10.0.5
+execute log display
+```
 
-#### مثال سخت
+#### مثال سخت — دیسک پر
 
-دیسک پر ⇒ Syslog/FAZ.
+``` text
+Storage = log_per_day x days x devices = 2 GB x 90 x 12 = 2160 GB
+```
+
+Log محلی در ۴۸ ساعت پر می‌شود و حادثه‌ی هفته‌ی قبل از بین رفته ⇒ Syslog/FAZ با نگهداری ۹۰ روز.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -3755,7 +3780,7 @@ execute log display
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا SNMP/Zabbix؟** مانیتورینگ عدد می‌گیرد، ذخیره و با آستانه مقایسه و خبر می‌دهد. SNMPv3 ترجیح.
+**چرا SNMP و Zabbix؟** نمی‌شود هر صبح وارد ۱۰ فایروال شد و CPU را دید. مانیتورینگ عدد را می‌گیرد، ذخیره می‌کند، با آستانه مقایسه می‌کند و خبر می‌دهد. SNMP v2c رمز (Community) را متن ساده می‌فرستد؛ v3 احراز هویت و رمزنگاری دارد و ترجیح داده می‌شود.
 
 **جمع‌بندی اصلی درس:**
 
@@ -3811,15 +3836,32 @@ Availability = uptime/total؛ نمودار روند CPU/Session، وضعیت Tun
 
 #### مثال ساده
 
-`snmpwalk -v2c -c ro-comm 10.50.0.1`.
+``` text
+config system snmp community
+ edit 1
+  set name "ro-comm"
+  config hosts
+   edit 1
+    set ip 10.50.0.20 255.255.255.255
+   next
+  end
+ next
+end
+```
 
-#### مثال متوسط
+#### مثال متوسط — خواندن
 
-Trigger `avg(...,10m)>70`.
+``` text
+snmpwalk -v2c -c ro-comm 10.50.0.1 1.3.6.1.2.1.1.1
+```
 
-#### مثال سخت
+#### مثال سخت — Trigger
 
-Trigger «No data».
+``` text
+avg(/FGT-1/system.cpu.util,10m) > 70
+```
+
+و Trigger «No data for 5m» برای قطع SNMP. آزمون: بار مصنوعی با iperf.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -4055,7 +4097,7 @@ SNMP را در Lab فعال، با snmpwalk تست و یک Trigger بسازید.
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا API امن؟** اتوماسیون بدون امنیت در پشتی است: حداقل دسترسی، Trusted Host، توکن در Vault.
+**چرا API امن؟** اتوماسیون کار تکراری را حذف می‌کند ولی API بدون امنیت در پشتی است. اصول: حداقل دسترسی (Profile فقط‌خواندنی)، Trusted Host، توکن در Vault، Log و ممیزی.
 
 **جمع‌بندی اصلی درس:**
 
@@ -4114,15 +4156,29 @@ if current != desired: backup(current); PUT desired; verify(GET); else: no-op
 
 #### مثال ساده
 
-GET status.
+``` text
+config system api-user
+ edit "zabbix"
+  set accprofile "ro-profile"
+  config trusthost
+   edit 1
+    set type ipv4-trusthost
+    set ipv4-trusthost 10.50.0.20 255.255.255.255
+   next
+  end
+ next
+end
+```
 
-#### مثال متوسط
+#### مثال متوسط — GET
 
-403 ⇒ Trusted Host/Profile.
+``` text
+curl -sk -H "Authorization: Bearer $TOKEN" https://10.50.0.1/api/v2/monitor/system/status
+```
 
-#### مثال سخت
+#### مثال سخت — خطا
 
-POST با Rollback.
+401 توکن؛ 403 Trusted Host/Profile؛ 404 مسیر. آزمون منفی: Profile فقط‌خواندنی با PUT باید رد شود.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -4343,7 +4399,7 @@ curl -sk -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا Hardening و Restore؟** مدیریت آسیب‌پذیرترین سطح است؛ Backup بدون آزمون Restore فقط امید است.
+**چرا Hardening و Backup/Restore؟** مدیریت آسیب‌پذیرترین سطح است؛ Backup بدون آزمون Restore فقط امید است. چک‌لیست: Trusted Host، 2FA، غیرفعال HTTP/Telnet، Timeout، قفل پس از شکست، Banner، Backup رمزگذاری‌شده.
 
 **جمع‌بندی اصلی درس:**
 
@@ -4398,15 +4454,25 @@ ssh admin@192.168.90.1 (from non-trusted IP)    # expect refusal
 
 #### مثال ساده
 
-`admintimeout`.
+``` text
+config system global
+ set admintimeout 10
+ set admin-lockout-threshold 5
+ set admin-lockout-duration 300
+end
+```
 
-#### مثال متوسط
+#### مثال متوسط — اسکن
 
-`nmap` از Users.
+``` text
+nmap -p 22,23,80,443,8443 10.50.0.1   # from Users
+```
 
-#### مثال سخت
+انتظار: همه filtered/closed.
 
-Restore در Lab، RTO.
+#### مثال سخت — Restore
+
+Backup ← Restore در Lab ← مقایسه‌ی Policy/Route ← ثبت RTO. RTO = زمان بازیابی؛ RPO = زمان از آخرین Backup.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -4618,7 +4684,7 @@ Restore را در Lab اجرا و زمان بگیرید.
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا G10؟** ثابت می‌کند عملیات را سر پا نگه می‌دارید: Log، مانیتور، API امن، Backup.
+**چرا G10؟** ثابت می‌کند عملیات را سر پا نگه می‌دارید: Log می‌بینید، مانیتور دارید، API امن است و Backup قابل‌اتکا.
 
 **جمع‌بندی اصلی درس:**
 
@@ -4693,17 +4759,20 @@ Logging ۲۰، Monitoring ۲۰، Hardening ۲۰، Backup/Restore ۲۰، تشخی
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### مثال ساده
+#### مثال ساده — شواهد
 
-شاهد هر بخش.
+Logging: فایل Log؛ Monitoring: Trigger؛ API: GET و رد منفی؛ Hardening: nmap؛ Backup: Diff پس از Restore.
 
-#### مثال متوسط
+#### مثال متوسط — نمره
 
-Syslog Source.
+``` text
+Logging 20 | Monitoring 20 | API 15 | Hardening 25 | Backup/Restore 20
+Example: 20 + 18 + 15 + 22 + 10 = 85
+```
 
-#### مثال سخت
+#### مثال سخت — Syslog نمی‌رسد
 
-آزمون منفی API. Rubric: Logging ۲۰، Monitoring ۲۰، API ۱۵، Hardening ۲۵، Backup ۲۰.
+Source Interface نادرست؛ شاهد tcpdump سرور بدون بسته؛ `set source-ip`.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -4874,7 +4943,7 @@ Restore آزمون‌نشده ۱۰ نمره از دست می‌دهد.
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا ادمین ناشناس را بررسی کنیم؟** مدیریت سطح اصلی حمله است.
+**چرا ممیزی ادمین؟** مهاجمی که ادمین شود همه‌چیز دارد. فهرست ادمین‌ها را مرتب با فهرست مجاز مقایسه کنید و Log ورود را هشدار بدهید.
 
 **جمع‌بندی اصلی درس:**
 
@@ -4940,15 +5009,28 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 
 #### مثال ساده
 
-`show system admin`.
+``` text
+show system admin
+```
 
-#### مثال متوسط
+#### مثال متوسط — Local-in
 
-Local-in deny از WAN.
+``` text
+config firewall local-in-policy
+ edit 1
+  set intf "port1"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "HTTPS" "SSH"
+  set action deny
+  set schedule "always"
+ next
+end
+```
 
-#### مثال سخت
+#### مثال سخت — ادمین ناشناس
 
-ورود 03:10 از IP خارجی: غیرفعال، تغییر رمز، diff، Persistence، PIR.
+ورود «backup2» ساعت 03:10 از IP خارجی: غیرفعال‌سازی، تغییر رمز همه، diff Config با Backup، بررسی Persistence (SSH Key/Script)، PIR.
 
 #### مثال‌های اصلی درس (مرور)
 
