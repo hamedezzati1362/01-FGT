@@ -1746,6 +1746,24 @@ Throughput = concurrent users x avg Mbps  (e.g. 240 x 2 = 480 Mbps)
 
 <a id="l-20-2"></a>
 
+### تعمیق: مدل تهدید دسترسی راه‌دور با مثال
+
+**سناریو.** ۳۰۰ کارمند دورکار. تهدیدها: سرقت رمز (Credential Stuffing)، دستگاه آلوده، آسیب‌پذیری Gateway.
+
+| کنترل | تهدید که کم می‌کند |
+|---|---|
+| MFA | سرقت رمز |
+| Posture Check | دستگاه آلوده |
+| Patch سریع Gateway | آسیب‌پذیری |
+| Least Privilege Policy | حرکت جانبی |
+
+**ZTNA:** دسترسی بر اساس هویت+وضعیت دستگاه برای هر برنامه (Needs-License؛ FortiClient EMS).
+
+**پرسش‌های مصاحبه**
+1. *VPN در برابر ZTNA؟* شبکه‌محور در برابر برنامه‌محور.
+2. *چرا Gateway هدف حمله است؟* در معرض اینترنت.
+3. *Split در برابر Full؟* ریسک در برابر پهنای باند.
+
 ## درس 20-2 — SSL VPN در 7.0.3 (فقط Lab ایزوله): سازوکار، Portal، Realm، Tunnel، Split و Hardening
 
 **فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۲۰-۱، ۲۰-۷، ۱۷-۲ · ≈ 9 ساعت**
@@ -1906,6 +1924,26 @@ diagnose debug reset
 - Fortinet Docs: SSL VPN (7.0)
 
 <a id="l-20-3"></a>
+
+### تعمیق: SSL VPN در 7.0.3 — فقط Lab
+
+``` text
+config vpn ssl settings
+ set servercert "Fortinet_Factory"
+ set tunnel-ip-pools "SSLVPN_TUNNEL_ADDR1"
+ set port 10443
+ set source-interface port1
+end
+```
+
+Portal `tunnel-access` + Policy `SSLVPN -> LAN` با گروه. **هشدار:** SSL-VPN در نسخه‌های ۷.x سابقه‌ی آسیب‌پذیری‌های جدی (PSIRT) دارد؛ در محیط واقعی نسخه‌ی وصله‌شده و MFA الزامی؛ بسیاری از سازمان‌ها به IPsec مهاجرت می‌کنند (وضعیت طبق مستند Fortinet نسخه).
+
+**آزمون:** اتصال FortiClient، `get vpn ssl monitor`.
+
+**پرسش‌های مصاحبه**
+1. *Realm؟* آدرس/ظاهر Portal جدا.
+2. *Split Tunnel؟* مسیرهای مشخص.
+3. *Host Check؟* وضعیت دستگاه.
 
 ## درس 20-3 — IPsec Dial-up (Remote Access): IKEv2، هویت، Mode Config، Split/Full، DNS و Policy
 
@@ -2073,6 +2111,30 @@ diagnose vpn ike gateway list
 
 <a id="l-20-4"></a>
 
+### تعمیق: IPsec Dial-up با IKEv2
+
+``` text
+config vpn ipsec phase1-interface
+ edit "DIALUP"
+  set type dynamic
+  set interface port1
+  set ike-version 2
+  set mode-cfg enable
+  set ipv4-start-ip 10.200.0.10
+  set ipv4-end-ip 10.200.0.200
+  set ipv4-dns-server1 10.20.0.5
+  set authmethod signature
+ next
+end
+```
+
+هویت با گواهی/EAP؛ Split با `ipv4-split-include`. **آزمون:** اتصال، `diagnose vpn ike gateway list`، دسترسی به منبع مجاز و رد منبع غیرمجاز.
+
+**پرسش‌های مصاحبه**
+1. *Mode Config؟* IP/DNS به کلاینت.
+2. *PSK گروهی؟* ضعیف؛ گواهی بهتر.
+3. *DNS Leak؟* DNS داخلی ارسال شود.
+
 ## درس 20-4 — MFA، پایش و Hardening دسترسی راه‌دور: Detection، Alert، پاسخ و بازبینی
 
 **فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۲۰-۲، ۲۰-۳، ۲۷-۰، ۲۹-۰ · ≈ 8 ساعت**
@@ -2221,6 +2283,30 @@ execute log display
 - Fortinet Docs: Log and report (7.0)
 
 <a id="l-20-5"></a>
+
+### تعمیق: Hardening و Detection VPN
+
+کنترل‌ها: MFA، محدودیت جغرافیایی (Local-in Policy/Geo Address)، قفل پس از شکست، Log متمرکز و هشدار.
+
+``` text
+config firewall local-in-policy
+ edit 1
+  set intf port1
+  set srcaddr GEO-ALLOWED
+  set dstaddr all
+  set service SSLVPN-PORT
+  set action accept
+  set schedule always
+ next
+end
+```
+
+**هشدار نمونه:** ≥۱۰ شکست ورود در ۵ دقیقه از یک IP ⇒ Alert (قاعده‌ی SIEM).
+
+**پرسش‌های مصاحبه**
+1. *Local-in Policy؟* ترافیک به خود فایروال.
+2. *Brute-force؟* MFA + Lockout.
+3. *Detection؟* Log Event.
 
 ## درس 20-5 — آزمون عملی دسترسی راه‌دور: SSL-VPN/IPsec Dial-up، MFA و Split Tunnel — صورت مسئله، کلید کامل و Rubric
 
@@ -2407,6 +2493,17 @@ diagnose firewall iprope lookup 10.212.134.5 40000 10.20.0.10 443 tcp ssl.root
 - Fortinet FortiOS 7.0 Administration Guide: SSL VPN; IPsec dial-up
 - FortiOS 7.0 SSL VPN guide
 
+### تعمیق: ارزیابی عملی دسترسی راه‌دور
+
+آزمون‌ها: ۱) اتصال موفق کاربر مجاز ۲) رد کاربر غیرمجاز ۳) Split Tunnel (ترافیک اینترنت مستقیم) ۴) MFA ۵) قطع و Reconnect.
+
+**Rubric:** هر مورد ۲۰ نمره با Evidence (Log، `get vpn ssl monitor`).
+
+**پرسش‌های مصاحبه**
+1. *Evidence Split؟* `route print` کلاینت.
+2. *آزمون منفی؟* کاربر خارج از گروه.
+3. *Reconnect؟* Session Timeout.
+
 ## درس 20-7 — SSL VPN در برابر IPsec Remote Access: وضعیت نسخه‌ها، ریسک و مهاجرت
 
 **فصل ۲۰ · درس افزوده (پس از ۲۰-۵) · پیش‌نیاز: ۱۸-۰، ۲۰-۱ تا ۲۰-۵ · ≈ ۵ ساعت**
@@ -2514,6 +2611,22 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 - Fortinet Docs: [SSL VPN tunnel mode replaced with IPsec VPN (7.6.3)](https://docs.fortinet.com/document/fortigate/7.6.3/fortios-release-notes/173430/ssl-vpn-tunnel-mode-no-longer-supported)، [SSL VPN tunnel mode to IPsec VPN migration](https://docs.fortinet.com/document/fortigate/7.6.3/administration-guide/155142/ssl-vpn-tunnel-mode-to-ipsec-vpn-migration-new).
 - FortiGuard PSIRT Advisories (CVE-2022-42475، CVE-2023-27997) — مراجعه‌ی مستقیم.
+
+### تعمیق: جدول تصمیم SSL VPN در برابر IPsec RA
+
+| معیار | SSL VPN | IPsec Dial-up |
+|---|---|---|
+| عبور از فایروال مهمان (443) | آسان | سخت‌تر (UDP/500/4500) |
+| سطح حمله‌ی تاریخی | بالا | کمتر |
+| کلاینت | FortiClient/مرورگر | FortiClient |
+| روند مستند | بررسی PSIRT نسخه | — |
+
+توصیه‌ی عملی: برای پروژه‌ی جدید IPsec IKEv2 + MFA؛ SSL VPN فقط با نسخه‌ی وصله‌شده طبق مستند Fortinet.
+
+**پرسش‌های مصاحبه**
+1. *چرا مهاجرت؟* ریسک آسیب‌پذیری.
+2. *UDP مسدود؟* NAT-T/TCP.
+3. *Patch؟* پایش PSIRT.
 
 ## پاسخ‌های فصل 20
 
@@ -2826,6 +2939,39 @@ end
 
 <a id="l-21-2"></a>
 
+### تعمیق: Dual-ISP کلاسیک با عدد
+
+``` text
+config router static
+ edit 1
+  set gateway 203.0.113.1
+  set device port1
+  set distance 10
+ next
+ edit 2
+  set gateway 198.51.100.1
+  set device port2
+  set distance 20
+ next
+end
+config system link-monitor
+ edit "ISP1"
+  set srcintf port1
+  set server 8.8.8.8
+  set interval 1000
+  set failtime 5
+  set recoverytime 5
+ next
+end
+```
+
+زمان تشخیص ≈ interval × failtime = 1 s × 5 = 5 s. با قطع، Route Distance 10 غیرفعال و Distance 20 فعال می‌شود. NAT برای هر خروجی جدا (Policy برای هر Interface).
+
+**پرسش‌های مصاحبه**
+1. *Distance در برابر Priority؟* Distance انتخاب Route؛ Priority تساوی را می‌شکند.
+2. *Session قدیم؟* روی ISP قبل می‌ماند.
+3. *چرا Monitor؟* قطع بالادستی بدون Down شدن لینک.
+
 ## درس 21-2 — ساخت SD-WAN عملی: Zone، Member، Health-check، Route و Policy
 
 **فصل ۲۱ · بازنویسی عمیق · پیش‌نیاز: ۲۱-۷ (مفاهیم)، ۲۱-۱، ۱۲-۰ · ≈ ۶ ساعت**
@@ -2971,6 +3117,41 @@ GUI: Network → SD-WAN → Performance SLAs (نمودار Latency/Jitter/Loss).
 
 <a id="l-21-3"></a>
 
+### تعمیق: ساخت SD-WAN
+
+``` text
+config system sdwan
+ set status enable
+ config zone
+  edit "virtual-wan-link"
+  next
+ end
+ config members
+  edit 1
+   set interface port1
+   set gateway 203.0.113.1
+  next
+  edit 2
+   set interface port2
+   set gateway 198.51.100.1
+  next
+ end
+ config health-check
+  edit "HC1"
+   set server "8.8.8.8"
+   set members 1 2
+  next
+ end
+end
+```
+
+پس از ایجاد، Policyهای قبلی که به Interface مستقیم اشاره می‌کنند باید به Zone SD-WAN منتقل شوند؛ Static Route به `virtual-wan-link`.
+
+**پرسش‌های مصاحبه**
+1. *Member؟* Interface عضو.
+2. *Health-check؟* پایش کیفیت.
+3. *Route؟* Default روی Zone.
+
 ## درس 21-3 — SD-WAN Rule و Performance SLA: انتخاب مسیر بر اساس برنامه و کیفیت
 
 **فصل ۲۱ · بازنویسی عمیق · پیش‌نیاز: ۲۱-۲، ۲۱-۷ · ≈ ۶ ساعت**
@@ -3109,6 +3290,42 @@ end
 - Fortinet Docs: [Maximize bandwidth (SLA) strategy](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/708464/maximize-bandwidth-sla-strategy)، [config system sdwan](https://docs.fortinet.com/document/fortigate/7.0.1/cli-reference/94620/config-system-sdwan).
 
 <a id="l-21-4"></a>
+
+### تعمیق: Rule و SLA
+
+``` text
+config health-check
+ edit "HC1"
+  config sla
+   edit 1
+    set latency-threshold 100
+    set jitter-threshold 30
+    set packetloss-threshold 2
+   next
+  end
+ next
+end
+config service
+ edit 1
+  set name "VOICE"
+  set mode sla
+  set dst "SIP-PEERS"
+  config sla
+   edit "HC1"
+    set id 1
+   next
+  end
+  set priority-members 1 2
+ next
+end
+```
+
+منطق: Voice روی عضو ۱ تا زمانی که SLA شکسته نشود؛ بعد عضو ۲.
+
+**پرسش‌های مصاحبه**
+1. *Strategy‌ها؟* manual، best-quality، lowest-cost، sla.
+2. *Failback؟* طبق recoverytime.
+3. *Rule بدون Match؟* Implicit Rule.
 
 ## درس 21-4 — Failover عملی، Session و NAT در Dual-ISP/SD-WAN: آزمون، Clear، IP ثابت و معماری ۳
 
@@ -3249,6 +3466,17 @@ diagnose sys session filter clear
 - Fortinet Docs: SD-WAN
 
 <a id="l-21-5"></a>
+
+### تعمیق: Failover و Session
+
+پس از Failover، Sessionهای موجود تا انقضا روی لینک قبلی می‌مانند؛ برای رفتار سریع `set snat-route-change enable` (برای SNAT) یا پاک‌سازی Session محدود. IP عمومی عوض می‌شود ⇒ اتصالات پایدار (مثل SSH/VoIP) قطع می‌شوند؛ برای IP ثابت: BGP با دو ISP یا Cloud Anchor.
+
+**آزمون:** `ping -t` مداوم؛ قطع کابل ISP1؛ ثبت تعداد بسته‌ی گم‌شده × فاصله‌ی ping.
+
+**پرسش‌های مصاحبه**
+1. *چرا VoIP قطع؟* IP منبع عوض.
+2. *Failback خودکار؟* ممکن است ناپایدار؛ hold-down.
+3. *Clear Session؟* با فیلتر.
 
 ## درس 21-5 — Gate G8: آزمون عملی Dual-ISP و SD-WAN — صورت مسئله، کلید پاسخ کامل و Rubric
 
@@ -3458,6 +3686,15 @@ diagnose sys session list
 
 - Fortinet FortiOS 7.0 Administration Guide: SD-WAN
 - FortiOS 7.0 SD-WAN guide
+
+### تعمیق: Rubric G8
+
+مراحل: ساخت SD-WAN ۲۰، SLA ۲۰، Failover ۲۵، Failback ۱۰، Evidence ۱۵، گزارش ۱۰. قطع لینک تزریقی با ثبت زمان.
+
+**پرسش‌های مصاحبه**
+1. *Evidence Failover؟* `diagnose sys sdwan health-check` و Log.
+2. *Brownout؟* لینک بالا ولی کیفیت بد.
+3. *SLA Target؟* از نیاز اپلیکیشن.
 
 ## درس 21-7 — SD-WAN از درون: Health-check، SLA، استراتژی‌ها، Failover/Failback و تفاوت با Routing
 
@@ -3694,6 +3931,22 @@ get router info routing-table all
 ### ۱۳) منابع
 
 - Fortinet Docs: [SD-WAN](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/19246/sd-wan)، [Link health monitor](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/580649/link-health-monitor)، [Maximize bandwidth (SLA) strategy](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/708464/maximize-bandwidth-sla-strategy)، [config system sdwan](https://docs.fortinet.com/document/fortigate/7.0.1/cli-reference/94620/config-system-sdwan).
+
+### تعمیق: خواندن Health-check
+
+``` text
+diagnose sys sdwan health-check
+ Seq(1 port1): state(alive), packet-loss(0.000%) latency(12.3) jitter(0.8)
+ Seq(2 port2): state(dead)
+diagnose sys sdwan service
+```
+
+`state(dead)` پس از failtime شکست متوالی. Failback پس از recoverytime موفقیت. اگر هر دو alive ولی SLA بد: Rule به SLA متوسل می‌شود.
+
+**پرسش‌های مصاحبه**
+1. *مقدار پیش‌فرض failtime؟* ۵.
+2. *Probe پروتکل؟* ping/http/tcp-echo/dns.
+3. *Weight/Cost؟* برای lowest-cost.
 
 ## پاسخ‌های فصل 21
 

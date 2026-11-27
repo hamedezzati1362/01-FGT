@@ -255,6 +255,20 @@ diagnose sys ha history read
 
 - Fortinet Docs: [FGCP](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/62403/fgcp)، [Troubleshoot an HA formation](https://docs.fortinet.com/document/fortigate/7.4.0/administration-guide/946059/troubleshoot-an-ha-formation)، [Session pickup (7.6)](https://docs.fortinet.com/document/fortigate/7.6.0/administration-guide/955521/session-pickup) (برای مفهوم؛ تفاوت نسخه را بررسی کنید).
 
+### تعمیق: Election و Failover با سناریو
+
+دو FG: A priority 200، B priority 100، override غیرفعال. A ریبوت و برمی‌گردد ⇒ چون override خاموش، ترتیب Monitored Interface > Age > Priority؛ B (قدیمی‌تر) Primary می‌ماند؛ برای بازگشت A: `override enable` یا تغییر Age (محاسبه‌ی مستند).
+
+``` text
+get system ha status
+diagnose sys ha history read
+```
+
+Heartbeat روی دو لینک (Redundant) و VLAN/Interface جدا. **پرسش‌های مصاحبه**
+1. *Split-brain؟* دو Primary.
+2. *Monitor Port؟* قطع ⇒ Failover.
+3. *Session Pickup؟* حفظ TCP در Failover (Needs-License ندارد، قابلیت پایه).
+
 ## درس 22-1 — مفاهیم HA برای طراحی: SPOF، سطوح افزونگی، انتخاب مدل و تحلیل خرابی‌ها
 
 **فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰، ۱۱-۷، ۵-۷ · ≈ 8 ساعت**
@@ -380,6 +394,23 @@ Downtime/year at 99.9% = 8.76 h ; at 99.99% = 52.6 min
 - NIST SP 800-34
 
 <a id="l-22-2"></a>
+
+### تعمیق: SPOF Map
+
+| جزء | افزونه |
+|---|---|
+| دستگاه | HA |
+| لینک | LAG/Dual-link |
+| برق | دو PSU/UPS |
+| ISP | Dual-ISP |
+| سوئیچ | Stack/MLAG |
+
+HA فقط یک ردیف را می‌پوشاند؛ نقشه‌ی بقیه را ترسیم کنید.
+
+**پرسش‌های مصاحبه**
+1. *RTO/RPO؟* زمان/داده‌ی قابل تحمل.
+2. *Active-Active؟* مقیاس ولی پیچیده.
+3. *SPOF پنهان؟* DNS، NTP.
 
 ## درس 22-2 — پیکربندی HA Active-Passive: برگه‌ی طراحی، GUI، CLI، Heartbeat، Monitor و Verification
 
@@ -572,6 +603,27 @@ execute ha manage 1 admin
 
 <a id="l-22-3"></a>
 
+### تعمیق: پیکربندی
+
+``` text
+config system ha
+ set group-name "FGT-HA"
+ set mode a-p
+ set hbdev "port7" 50 "port8" 50
+ set priority 200
+ set override disable
+ set session-pickup enable
+ set monitor "port1" "port2"
+end
+```
+
+نسخه‌ی یکسان و مدل یکسان الزامی. پس از اتصال: `get system ha status` ⇒ `Configuration Status: in-sync`.
+
+**پرسش‌های مصاحبه**
+1. *چرا دو hbdev؟* افزونگی.
+2. *Password؟* امنیت HA.
+3. *Config فقط روی Primary؟* همگام‌سازی.
+
 ## درس 22-3 — آزمون Failover/Failback و Session Pickup: طراحی تست، اندازه‌گیری و تحلیل
 
 **فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۲ · ≈ 11 ساعت**
@@ -712,6 +764,22 @@ execute ha failover unset 1
 
 <a id="l-22-4"></a>
 
+### تعمیق: طراحی آزمون Failover
+
+``` text
+ping -t 8.8.8.8   (from user)
+# pull cable of primary
+# count lost packets
+lost 3 packets x 1 s = ~3 s outage
+```
+
+معیار: < هدف (مثلاً ۵ ثانیه) و Session TCP حفظ (با Pickup). Failback کنترل‌شده در پنجره‌ی تغییر.
+
+**پرسش‌های مصاحبه**
+1. *شاهد؟* Log HA + ping.
+2. *Session UDP/Multicast؟* Pickup محدودیت.
+3. *Failback؟* دستی بهتر.
+
 ## درس 22-4 — عیب‌یابی HA و ارتقای Cluster: Out-of-sync، Flap، Split-brain، Upgrade Path و Rollback
 
 **فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۲، ۲۲-۳، ۱۲-۶ · ≈ 11 ساعت**
@@ -848,6 +916,21 @@ diagnose sys ha checksum cluster
 - Fortinet FortiOS 7.0 Administration Guide: HA troubleshooting; Upgrade
 
 <a id="l-22-5"></a>
+
+### تعمیق: عیب‌یابی
+
+``` text
+diagnose sys ha checksum cluster
+diagnose sys ha checksum show
+execute ha synchronize start
+```
+
+Out-of-sync: Checksum متفاوت. Flap: Heartbeat ناپایدار/Monitor. ارتقای Cluster: Uninterruptible Upgrade طبق مستند.
+
+**پرسش‌های مصاحبه**
+1. *Split-brain رفع؟* قطع یکی و بازگردانی.
+2. *Checksum؟* مقایسه Config.
+3. *ارتقا؟* ابتدا Secondary.
 
 ## درس 22-5 — آزمون عملی HA: طراحی، Failover، Split-brain کنترل‌شده، Upgrade و RCA — کلید پاسخ و Rubric
 
@@ -1017,6 +1100,15 @@ execute ha manage 1 admin
 
 - Fortinet FortiOS 7.0 Administration Guide: HA (FGCP)
 - FortiOS 7.0 HA guide
+
+### تعمیق: Rubric HA
+
+ساخت ۲۰، Failover ۲۵، Failback ۱۵، Split-brain کنترل‌شده ۲۰، گزارش ۲۰.
+
+**پرسش‌های مصاحبه**
+1. *Split-brain آزمون؟* قطع Heartbeat در Lab.
+2. *Evidence؟* `get system ha status` قبل/بعد.
+3. *Needs-License؟* HA روی VM نیازمند لایسنس معتبر برای هر عضو است؛ در Lab بدون لایسنس اجرا نشده.
 
 ## پاسخ‌های فصل 22
 
@@ -1327,6 +1419,21 @@ diagnose sniffer packet any "host <client> and port <p>" 4 20 l
 
 - Fortinet Docs: [Debugging the packet flow](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/54688/debugging-the-packet-flow)؛ FortiOS 7.0 Administration Guide — Asymmetric routing.
 
+### تعمیق: ردیابی بسته‌به‌بسته‌ی مسیر نامتقارن
+
+``` text
+Client -> FW1 -> Server      (forward via ISP-A)
+Server -> FW2 -> Client      (reply via ISP-B)
+FW2 sees SYN-ACK without SYN -> drop (no session)
+```
+
+نشانه در Debug Flow: `no session matched` / `Denied ... (policy 0)` برای SYN-ACK. شواهد: Sniffer روی هر دو FW.
+
+**پرسش‌های مصاحبه**
+1. *چرا Stateful مسئله دارد؟* Session باید دو جهت را ببیند.
+2. *Stateless؟* ACL مشکل ندارد.
+3. *RPF؟* می‌تواند رد کند.
+
 ## درس 23-1 — Asymmetric Routing برای Stateful: تعریف دقیق، علت‌ها، تحلیل بسته‌به‌بسته و تفکیک RPF از No-session
 
 **فصل 23 · بازنویسی عمیق · پیش‌نیاز: ۲۳-۰، ۱۰-۶، ۱۱-۷، ۱۲-۰ · ≈ 8 ساعت**
@@ -1482,6 +1589,15 @@ get router info routing-table details 10.1.4.10
 - RFC 3704 (Ingress filtering/RPF)
 
 <a id="l-23-2"></a>
+
+### تعمیق: علل رایج
+
+دو ISP، Policy Route ناهمخوان، ECMP، دو فایروال موازی، Multi-homed سرور. برای هر علت یک آزمون: `get router info routing-table details <src>` در مقایسه با مسیر رفت.
+
+**پرسش‌های مصاحبه**
+1. *ECMP و Session؟* Hash 5-tuple.
+2. *Asymmetric در VPN؟* Selector/Route.
+3. *تشخیص؟* Sniffer دوطرفه.
 
 ## درس 23-2 — رفع Asymmetric: طراحی متقارن، Policy Route، SNAT، Session Sync و ریسک هر راه‌حل
 
@@ -1656,6 +1772,23 @@ diagnose sys session list
 
 <a id="l-23-3"></a>
 
+### تعمیق: راه‌حل‌ها
+
+۱) طراحی متقارن (بهترین) ۲) Policy Route منبع-مبنا ۳) SNAT به IP هر ISP ۴) در موارد ناگزیر `asymroute` (ریسک امنیتی). برای HA/موازی: Session Sync.
+
+``` text
+config system settings
+ set asymroute enable
+end
+```
+
+هشدار: Asymroute بازرسی Stateful را سست می‌کند؛ آخرین راه.
+
+**پرسش‌های مصاحبه**
+1. *SNAT چگونه؟* برگشت به همان خروجی.
+2. *Policy Route؟* بر اساس منبع.
+3. *ریسک؟* Bypass بررسی.
+
 ## درس 23-3 — چند فایروال سری و موازی: الگوها، NAT، Session، Failure Domain و مانیتورینگ
 
 **فصل 23 · بازنویسی عمیق · پیش‌نیاز: ۲۳-۰، ۱۵-۰، ۲۲-۰ · ≈ 8 ساعت**
@@ -1783,6 +1916,15 @@ Policy drift check: diff(config firewall policy FW1, FW2) after each change wind
 - Google SRE Book (Canarying)
 
 <a id="l-23-4"></a>
+
+### تعمیق: الگوهای سری و موازی
+
+سری: هر بسته از هر دو؛ NAT یک‌جا. موازی (Active-Active/ECMP): Session Sync یا Hash ثابت. **NAT:** فقط در یک نقطه.
+
+**پرسش‌های مصاحبه**
+1. *الگوی ساده‌تر؟* سری.
+2. *Load-balance؟* Hash منبع.
+3. *Sync؟* HA یا دستی.
 
 ## درس 23-4 — آزمون معماری ۵: چندفایروالی و مسیر نامتقارن — صورت مسئله، کلید پاسخ و Rubric
 
@@ -1921,6 +2063,15 @@ diagnose firewall proute list
 ### ۱۵) منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Routing; Session
+
+### تعمیق: Rubric معماری ۵
+
+تشخیص ۳۰، راه‌حل متقارن ۳۰، Evidence ۲۰، آزمون ۱۰، ریسک ۱۰.
+
+**پرسش‌های مصاحبه**
+1. *Evidence؟* Sniffer + Debug.
+2. *ریسک راه‌حل؟* پیچیدگی.
+3. *آزمون منفی؟* قطع یک مسیر.
 
 ## پاسخ‌های فصل 23
 
@@ -2209,6 +2360,30 @@ end
 
 - Fortinet Docs: [Inter-VDOM routing](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/335646/inter-vdom-routing)، [Global and per-VDOM resources](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/538256/global-and-per-vdom-resources).
 
+### تعمیق: VDOM — سناریوی چند‌مستاجر
+
+``` text
+config vdom
+ edit TENANT-A
+next
+end
+config global
+ config system vdom-link
+  edit "A-LINK"
+  next
+ end
+end
+```
+
+منابع: `config global; config system resource-limit` برای Session/Policy هر VDOM. Inter-VDOM Link ترافیک را بین مستاجران عبور می‌دهد با Policy.
+
+**VDOM = Needs-License** برای تعداد بیش از پیش‌فرض (طبق مدل).
+
+**پرسش‌های مصاحبه**
+1. *Management VDOM؟* root.
+2. *ایزوله کامل؟* جداول Route/Policy جدا.
+3. *محدودیت منابع؟* resource-limit.
+
 ## درس 24-1 — East-West و Segmentation: Zone، Trust Level، Flow Discovery و Policy Matrix
 
 **فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۲، ۱۵-۴ · ≈ 11 ساعت**
@@ -2355,6 +2530,15 @@ execute log display
 - NIST SP 800-125B
 
 <a id="l-24-2"></a>
+
+### تعمیق: East-West
+
+Flow Discovery: Log ۲ هفته برای شناخت جریان‌ها؛ سپس Policy حداقلی. Trust Level: Web < App < DB.
+
+**پرسش‌های مصاحبه**
+1. *چرا East-West؟* حرکت جانبی.
+2. *Zone؟* گروه Interface.
+3. *Intra-zone؟* پیش‌فرض رد/مجاز طبق تنظیم.
 
 ## درس 24-2 — Policy حداقلی Web/App/DB: ماتریس، پیاده‌سازی و آزمون Isolation
 
@@ -2551,6 +2735,20 @@ diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
 
 **گام ۵ — Evidence:** خروجی Lookup قبل/بعد، Log، زمان، نام مجری.
 
+### تعمیق: ماتریس Web/App/DB
+
+| از | به | سرویس |
+|---|---|---|
+| Web | App | tcp/8443 |
+| App | DB | tcp/5432 |
+
+هر سطر یک Policy؛ آزمون منفی Web→DB.
+
+**پرسش‌های مصاحبه**
+1. *Policy تعداد؟* به‌اندازه‌ی نیاز.
+2. *Log؟* All.
+3. *Hit Count؟* بازبینی.
+
 ## درس 24-3 — Lab عملی VDOM: ساخت، Inter-VDOM Link، Policy و محدودیت منابع
 
 **فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۲۴-۱، ۲۴-۲ · ≈ 11 ساعت**
@@ -2745,6 +2943,25 @@ get system status
 
 <a id="l-24-4"></a>
 
+### تعمیق: Lab VDOM
+
+مراحل: ساخت VDOM، اختصاص Interface، Inter-VDOM Link، Route، Policy، آزمون. محدودیت: هر VDOM Admin جدا.
+
+``` text
+config vdom
+ edit TENANT-A
+  config system interface
+   edit A-LINK0
+   next
+  end
+end
+```
+
+**پرسش‌های مصاحبه**
+1. *VDOM Link؟* Interface مجازی دو سر.
+2. *Admin Profile؟* محدوده.
+3. *Backup؟* Global.
+
 ## درس 24-4 — Logging Data Center و Gate G9: اثبات Isolation، آزمون منفی، Alert و مستندسازی
 
 **فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۲۴-۱ تا ۲۴-۳ · ≈ 12 ساعت**
@@ -2891,6 +3108,15 @@ execute log display
 ### ۱۵) منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Logging
+
+### تعمیق: Logging و G9
+
+Isolation اثبات: آزمون منفی TENANT-A→TENANT-B ⇒ Timeout؛ Log در VDOM مبدأ. معیار G9: ایزولاسیون، Policy حداقلی، Log، Rubric.
+
+**پرسش‌های مصاحبه**
+1. *Log هر VDOM؟* ارسال جدا.
+2. *Evidence ایزولاسیون؟* Lookup + Log.
+3. *منابع؟* محدودیت تنظیم‌شده.
 
 ## پاسخ‌های فصل 24
 
