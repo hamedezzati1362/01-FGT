@@ -378,81 +378,114 @@ Client <-TLS(cert signed by Corp CA)-> FortiGate <-TLS(real server cert)-> Serve
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده»؛ وابستگی لایسنس هر قابلیت صریح ذکر شده است.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. فهرست Security Profileها و محل اتصال آن‌ها به Policy را بگوید.
-2. برای هر قابلیت وابستگی لایسنس را مشخص کند (Needs-License/بدون لایسنس).
-3. یک «ماتریس لایسنس و قابلیت» برای Lab خود تکمیل کند.
-4. نتیجه‌ی بررسی را با شواهد (وضعیت FortiGuard، Log) ثبت و از ادعای بدون شاهد پرهیز کند.
-5. مسیر پردازش UTM را در Packet Flow (پس از Policy) جایابی کند.
+1. فهرست Security Profileها و محل اتصال آن‌ها به Firewall Policy را بگویید.
+2. برای هر قابلیت وابستگی لایسنس FortiGuard را مشخص کنید (Needs-License یا بدون لایسنس).
+3. جای UTM را در Packet Flow پیدا کنید (پس از تطبیق Policy، قبل از SNAT).
+4. «Profile ساخته‌شده» را از «محافظت واقعاً فعال» تفکیک کنید.
+5. ماتریس لایسنس و قابلیت را برای یک Lab تکمیل و با شاهد ثبت کنید.
+6. رفتار هنگام انقضای لایسنس یا خطای Rating را پیش‌بینی کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا نقشه‌ی UTM؟** UTM (Unified Threat Management، یعنی «مدیریت یکپارچه‌ی تهدید») مجموعه‌ای از «بازرس‌ها» است که محتوای ترافیک را بررسی می‌کنند: آنتی‌ویروس، IPS، Web Filter، DNS Filter، Application Control، File Filter. هرکدام کار خاص خود را دارد و **لایسنس جدا** (FortiGuard) لازم دارد. مثل داشتن چند متخصص در گمرک: یکی مواد منفجره، یکی مواد غذایی، یکی اسناد.
+فرض کنید یک ساختمان دارید. Firewall Policy مثل نگهبان در است: می‌پرسد «کارت دارید؟ اجازه‌ی ورود به این طبقه را دارید؟». ولی نگهبان داخل کیف شما را نگاه نمی‌کند. UTM (Unified Threat Management، یعنی «مدیریت یکپارچه‌ی تهدید») مثل دستگاه اشعه‌ی ایکس و بازرس کیف است: محتوای ترافیک را بازرسی می‌کند — آیا فایل ویروس دارد؟ آیا سایت مخرب است؟ آیا الگوی حمله دیده می‌شود؟
 
-**چرا قبل از وعده دادن باید ماتریس لایسنس بدانیم؟** اگر به مدیر بگویید «فایروال ویروس‌ها را می‌گیرد» ولی لایسنس AV نداشته باشید، امضاها به‌روز نمی‌شود و وعده غلط بوده است. قاعده: هیچ قابلیت UTM قبل از تأیید لایسنس «فعال» اعلام نمی‌شود.
+دو خطای پرهزینه‌ی رایج:
 
-**چگونه Profile به ترافیک وصل می‌شود؟** هر Profile (مثلاً WF-STD) در **Policy** انتخاب می‌شود. پس فقط ترافیک مطابق آن Policy بازرسی می‌شود. این یعنی می‌توانید برای کاربران Profile سخت‌گیر و برای سرورها Profile دیگر بگذارید.
+1. مدیر می‌گوید «فایروال همه‌ی ویروس‌ها را می‌گیرد» ولی لایسنس Antivirus منقضی شده است؛ حادثه که رخ می‌دهد ادعای شما «بدون شاهد» بوده.
+2. تیم Profile را می‌سازد ولی هرگز به Policy وصل نمی‌کند؛ همه فکر می‌کنند محافظت فعال است.
 
-**جمع‌بندی اصلی درس:** Security Profile مجموعه‌ی تنظیمات بازرسی لایه‌ی ۷ است که **داخل Firewall Policy** فعال می‌شود: Antivirus، Web Filter، DNS Filter، Application Control، IPS، File Filter، SSL/SSH Inspection (و DLP/Email Filter بسته به نسخه). Policy می‌گوید «اجازه‌ی عبور هست»؛ Profile می‌گوید «محتوای مجاز را هم بررسی کن».
+این درس نقشه‌ی کامل UTM را می‌دهد تا هیچ‌کدام از این دو اتفاق نیفتد.
 
-مشکل رایج: تیم‌ها فرض می‌کنند چون Profile ساخته‌اند، حفاظت فعال است. حفاظت فقط وقتی واقعی است که (۱) Profile به Policy درست وصل باشد، (۲) سرویس مربوط لایسنس/DB داشته باشد، (۳) ترافیک قابل‌دیدن باشد (TLS)، (۴) Log اثباتش کند.
+### UTM چیست؟ (توضیح ساده)
 
-### ۳) توضیح عمیق فنی
+هر Security Profile یک «بازرس تخصصی» است:
 
-#### ۱) جای UTM در Packet Flow
+| بازرس (Profile) | چه چیزی را بررسی می‌کند | مثال روزمره |
+|---|---|---|
+| Antivirus | بدافزار داخل فایل | اشعه‌ی ایکس کیف |
+| Web Filter | نوع و دسته‌ی سایت | فهرست مکان‌های ممنوعه |
+| DNS Filter | نام دامنه‌ای که کاربر می‌پرسد | دفتر تلفن مشکوک |
+| Application Control | نوع برنامه (BitTorrent، Telegram) | تشخیص نوع وسیله |
+| IPS | الگوی حمله به آسیب‌پذیری | کارشناس امنیت |
+| File Filter | نوع/پسوند فایل | ممنوعیت حمل جعبه‌ی خاص |
+| SSL/SSH Inspection | بازکردن ترافیک رمز | بازکردن بسته‌ی مهر و موم شده |
+
+نکته‌ی کلیدی: **Profile به‌تنهایی هیچ کاری نمی‌کند؛ باید داخل یک Policy انتخاب شود.** فقط ترافیکی بازرسی می‌شود که با آن Policy تطبیق و `accept` شده باشد.
+
+### جای UTM در Packet Flow
 
 ``` text
 Ingress -> RPF -> Session -> DNAT -> Route -> Policy match -> [Security profiles] -> SNAT -> Egress
 ```
 
-UTM فقط برای ترافیکی اجرا می‌شود که **Policy مطابق، `accept` کرده** باشد؛ ترافیک Denied اصلاً به Profile نمی‌رسد.
+نتیجه‌ی عملی:
 
-#### ۲) ماتریس قابلیت و لایسنس
+1. ترافیک Deny شده هرگز به Profile نمی‌رسد.
+2. UTM بعد از Policy است؛ پس اگر Policy اشتباه تطبیق بخورد، Profile اشتباه اعمال می‌شود.
+3. SSL Inspection (اگر روشن باشد) پیش از بازرسی لایه‌ی ۷ ترافیک را رمزگشایی می‌کند.
 
-| قابلیت | کار اصلی | نیاز لایسنس FortiGuard | بدون لایسنس چه می‌شود؟ |
+### ماتریس قابلیت و لایسنس
+
+| قابلیت | کار اصلی | لایسنس FortiGuard | بدون لایسنس |
 |---|---|---|---|
-| Antivirus | Signature بدافزار | بله (DB) | File Filter، بلاک نوع فایل |
-| Web Filter | Category/URL | Category: بله | Static URL Filter |
+| Antivirus | Signature بدافزار | بله (AV DB) | File Filter و بلاک نوع فایل |
+| Web Filter | Category و URL | Category: بله | Static URL Filter |
 | DNS Filter | بلاک دامنه‌ی مخرب | Category: بله | Static domain |
-| Application Control | شناخت برنامه | DB برنامه: بله | Port/Service-based |
-| IPS | Signature حمله | Signature: بله | Custom Signature، DoS Policy |
+| Application Control | شناخت برنامه | بله | بلاک با Port/Service |
+| IPS | Signature حمله | بله | Custom Signature، DoS Policy |
 | File Filter | نوع فایل | خیر | کار می‌کند |
 | SSL/SSH Inspection | رمزگشایی TLS | خیر (CA لازم) | کار می‌کند |
 
-(ستون لایسنس بر اساس مدل FortiGuard است؛ جزئیات هر مدل/نسخه را در مستند 7.0 و Contract بررسی کنید.)
+(جزئیات هر مدل و Contract را در مستند رسمی FortiOS 7.0 بررسی کنید؛ این جدول سطح مفهومی است.)
 
-#### ۳) راستی‌آزمایی لایسنس
+### سه سطح شاهد
 
-وضعیت سرویس‌ها از GUI (System → FortiGuard) و CLI دیده می‌شود. در Lab ایزوله به‌روزرسانی ممکن نیست؛ پس «Profile ساخته‌شده» ≠ «محافظت فعال».
+برای ادعای «محافظت فعال است» سه شاهد لازم است:
 
-#### ۴) سه سطح شاهد
+1. **پیکربندی:** Profile در Policy هست؟
 
-1. **پیکربندی:** Profile در Policy (`show firewall policy`).
-2. **وضعیت سرویس:** FortiGuard Valid/Expired.
-3. **رفتار:** تست با فایل/سایت/پورت و Log.
+``` text
+show firewall policy 30
+```
 
-### ۴) طراحی و تصمیم‌گیری
+2. **وضعیت سرویس:** FortiGuard Valid است؟ (GUI: System > FortiGuard یا `diagnose debug rating`)
+3. **رفتار:** آزمون واقعی (فایل EICAR، سایت دسته‌بندی‌شده) و Log.
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| کدام Profile روی کدام Policy؟ | Users→Internet: همه؛ Servers: IPS؛ Guest: Web/DNS |
-| Inspection Mode | Flow برای عموم؛ Proxy برای نیاز خاص (۱۶-۰) |
-| حالت لایسنس‌نداشتن | لایه‌ی جایگزین بدون لایسنس + ثبت صریح محدودیت |
+### وقتی لایسنس نیست یا Rating خطا می‌دهد
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+برای Web Filter در صورت خطای Rating: `error-allow` یا `error-block`.
 
-#### مثال ساده — کدام Profile چه می‌کند؟
+``` text
+config webfilter profile
+    edit "WF-STD"
+        config ftgd-wf
+            set options error-allow
+        end
+    next
+end
+```
 
-| Profile | چه چیزی را می‌بیند | لایسنس |
-|---|---|---|
-| Antivirus | فایل/محتوای آلوده | FortiGuard AV |
-| IPS | الگوی حمله به آسیب‌پذیری | FortiGuard IPS |
-| Web Filter | دسته‌ی سایت | Web Filtering (Category) |
-| DNS Filter | پرس‌وجوی DNS | FortiGuard |
-| Application Control | برنامه (مثلاً BitTorrent) | AppCtrl |
+`error-allow` یعنی در خطا اجازه بده (دسترسی‌پذیری بالا، ریسک بیشتر)؛ `error-block` یعنی مسدود کن (امنیت بالا، ریسک قطع). انتخاب طبق سیاست سازمان.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — کدام Profile چه می‌بیند؟
+
+سؤال: «کاربر فایل .exe را از سایت می‌گیرد؛ کدام Profile‌ها دخیل‌اند؟» پاسخ مرحله‌ای:
+
+1. Web Filter: آیا دسته‌ی سایت مجاز است؟
+2. Application Control: برنامه‌ی دانلود چیست؟
+3. File Filter: آیا نوع exe بلاک است؟
+4. Antivirus: آیا محتوا بدافزار است؟
+5. IPS: آیا الگوی Exploit دارد؟
+
+هر Profile یک سؤال جدا می‌پرسد؛ همه باید در Policy باشند.
 
 #### مثال متوسط — بررسی وضعیت
 
@@ -462,62 +495,48 @@ diagnose debug rating
 execute update-now
 ```
 
-در GUI صفحه‌ی FortiGuard وضعیت لایسنس و آخرین به‌روزرسانی را نشان می‌دهد. در Lab ما (VM بدون لایسنس) Category/AV/IPS «Needs-License» و اجرا نشده است؛ فقط Static URL و تنظیم Profile قابل‌بررسی است.
+در Lab بدون لایسنس: `diagnose debug rating` نشان می‌دهد Rating Server در دسترس نیست؛ پس Category/AV/IPS در این Lab «Needs-License» و اجرا نشده ثبت می‌شود. لایه‌ی جایگزین: Static URL، File Filter و DoS Policy.
+
+#### مثال متوسط — ماتریس Lab
+
+| قابلیت | لایسنس | روش جایگزین | وضعیت Lab |
+|---|---|---|---|
+| Web Filter Category | Needs-License | Static URL | اجرا نشده |
+| Antivirus | Needs-License | File Filter | اجرا نشده |
+| SSL Inspection | بدون لایسنس | - | قابل اجرا |
 
 #### مثال سخت — لایسنس منقضی
 
-لایسنس تمام شد ولی Profile روی Policy مانده. Category نمی‌تواند Rating بگیرد. رفتار پیش‌فرض (Allow/Block) با گزینه‌ی خطا (`error-allow`/`error-block`) تعیین می‌شود. اقدام: پایش انقضا ۶۰ روز قبل، تصمیم سیاست امنیتی برای حالت خطا، و ثبت در CHG.
+لایسنس تمام شد ولی Profile روی Policy مانده. Category Rating نمی‌گیرد؛ رفتار طبق `error-allow/error-block`. ممیز می‌پرسد «چه مدت بدون محافظت بودید؟». پاسخ با Evidence: تاریخ انقضا در FortiGuard، Log خطای Rating، و زمان تمدید. درس: هشدار ۶۰ و ۳۰ روز قبل از انقضا + پایش Rating Error.
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال سخت — Profile بی‌اتصال
 
-**ساده:** Policy 10 (Users→Internet) فقط Web Filter دارد. با `show firewall policy 10` اثبات می‌کنید `webfilter-profile` وصل است؛ بدون این شاهد، «Web Filter فعال است» ادعای تأییدنشده است.
+تیم IPS Sensor ساخت ولی Policy اینترنت را تغییر نداد. آزمون: فایل EICAR دانلود شد و Log UTM خالی بود ⇒ Profile متصل نیست. رفع: Policy ⇒ Security Profiles. اثبات: Log ⇒ `Security Events`.
 
-**متوسط:** AV Profile ساخته و به Policy وصل است ولی EICAR رد می‌شود. بررسی: FortiGuard AV DB تاریخ دارد؟ (نه در Lab ایزوله) ← علت: نبود DB. ثبت: «Needs-License؛ آزمایش ناموفق».
+### Lab هدایت‌شده (اجرا نشده)
 
-**سخت:** سازمان می‌خواهد «هیچ بدافزاری وارد نشود». تحلیل: AV Signature به‌تنهایی کافی نیست (Zero-day، رمزدار، TLS بدون Deep). طرح لایه‌ای: File Filter + SSL Inspection + IPS + Sandbox (لایسنس) + EDR/Patch؛ و معیار «کشف/پیشگیری» را با FP/FN مستند کنید.
+1. Profile ساده بسازید و به Policy وصل کنید.
+2. با `show firewall policy` اتصال را ثابت کنید.
+3. ماتریس لایسنس Lab را پر کنید.
 
-### ۶) پیاده‌سازی از مسیر GUI
+### عیب‌یابی سریع
 
-1. Security Profiles → هر Profile: وضعیت و گزینه‌ها.
-2. Policy & Objects → Firewall Policy → Security Profiles: فعال‌سازی و انتخاب.
-3. System → FortiGuard: وضعیت لایسنس/DB.
-4. Log & Report → Security Events.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-get system fortiguard-service status
-show firewall policy 10
-show antivirus profile
-show webfilter profile
-```
-
-### ۸) Verification (اثبات صحت)
-
-- ماتریس لایسنس را با خروجی واقعی پر کنید.
-- برای هر قابلیت یک آزمون و Log ثبت کنید.
-- قابلیت بدون شاهد = «اجرا نشده».
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| Profile اثر ندارد | Log بدون رویداد UTM | Profile به Policy وصل نیست یا Policy دیگری Match شده |
-| Category کار نمی‌کند | Log: rating error | لایسنس/ارتباط FortiGuard |
-| HTTPS دیده نمی‌شود | فقط SNI در Log | SSL Inspection فعال نیست |
+| Profile هست ولی اثر ندارد | به Policy وصل نیست | انتخاب در Policy |
+| Rating Error | لایسنس/DNS FortiGuard | بررسی |
+| Log UTM خالی | Policy Deny/Match نشده | Lookup |
+| حفاظت ادعایی | بدون شاهد | سه سطح شاهد |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Profile پیش‌فرض را بدون بازبینی روی همه‌چیز فعال نکنید.
-- UTM جایگزین Patch و Segmentation نیست.
+لایسنس و تاریخ انقضا را پایش کنید؛ رفتار `error-allow` را آگاهانه انتخاب کنید؛ ادعای «محافظت» را همیشه با Log و آزمون پشتیبانی کنید.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- Profile فقط برای ترافیک Accept‌شده اجرا می‌شود.
-- سه سطح شاهد: پیکربندی، وضعیت سرویس، رفتار.
-- Needs-License را صریح ثبت کنید.
+Security Profile داخل Policy فعال می‌شود و فقط ترافیک Accept شده را بازرسی می‌کند. هر قابلیت وابستگی لایسنس مشخص دارد؛ ادعا نیازمند سه شاهد (پیکربندی، وضعیت سرویس، رفتار) است.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) UTM در کجای Packet Flow است؟ *(پاسخ: 16-1-ت1)*
 
@@ -531,7 +550,7 @@ show webfilter profile
 
 **Q1.** Quick quiz (English): Why is a created profile not proof of protection? *(پاسخ: 16-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -541,100 +560,16 @@ show webfilter profile
 
 - *A security profile only works when it is attached to an accepting policy.* ← Profile فقط وقتی کار می‌کند که به Policy مجاز وصل شده باشد.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **Lab:** ماتریس UTM. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/utm-license-log.md`. **Rollback:** ندارد (فقط خواندنی).
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet Docs: FortiOS 7.0 Administration Guide — Security Profiles، FortiGuard.
 - [Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison).
 
 <a id="l-16-2"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: ماتریس لایسنس قبل از وعده‌دادن به مدیر
-
-**قاعده:** هیچ قابلیت UTM قبل از تأیید لایسنس FortiGuard «فعال» اعلام نمی‌شود.
-
-| قابلیت | به لایسنس نیاز دارد؟ |
-|---|---|
-| Web Filter Category | بله (FortiGuard Web Filtering) |
-| Static URL Filter | خیر |
-| Antivirus | بله (AV) |
-| IPS Signature به‌روز | بله |
-| Application Control | بله |
-
-**بررسی:** `diagnose debug rating` وضعیت سرور رتبه‌بندی؛ در GUI صفحه FortiGuard.
-
-**نسخه‌ی Lab:** FortiGate VM بدون لایسنس ⇒ فقط Static URL و بخش‌های محلی؛ بقیه Needs-License.
-
-**پرسش‌های مصاحبه**
-1. *تفاوت Static و Category؟* دستی در برابر پایگاه داده‌ی ابری.
-2. *لایسنس منقضی چه می‌شود؟* به‌روزرسانی متوقف؛ تنظیم فعلی ممکن است کار کند ولی Category جدید نه.
-3. *چرا Evidence لایسنس؟* ادعای ظرفیت بدون آن خطاست.
-
-### تکمیل عمیق: نقشه‌ی UTM و ماتریس لایسنس
-
-#### چرا؟
-
-قبل از وعده‌دادن به مدیر که «فایروال ویروس‌ها را می‌گیرد»، باید بدانید چه Profileی چه لایسنسی می‌خواهد.
-
-#### ماتریس
-
-| قابلیت | لایسنس | بدون لایسنس |
-|---|---|---|
-| Web Filter Category | FortiGuard Web Filtering | فقط Static URL |
-| Antivirus | FortiGuard AV | امضای قدیمی/غیرفعال |
-| IPS | FortiGuard IPS | امضای محدود |
-| Application Control | FortiGuard AppCtrl | امضای محدود |
-| DNS Filter | FortiGuard | محدود |
-
-(وضعیت دقیق را از مستند همان نسخه تأیید کنید.)
-
-#### مثال ساده — بررسی
-
-``` text
-get system status
-diagnose debug rating
-execute update-now
-```
-
-در GUI صفحه‌ی FortiGuard وضعیت لایسنس و آخرین به‌روزرسانی را می‌دهد.
-
-#### مثال متوسط — VM بدون لایسنس
-
-در Lab ما FortiGate VM لایسنس ندارد ⇒ Category/AV/IPS «Needs-License» و اجرا نشده؛ فقط Static URL و تنظیم Profile (Syntax) مستند می‌شود.
-
-#### مثال سخت — لایسنس منقضی
-
-لایسنس تمام شد؛ Profile هنوز روی Policy است ولی Category نمی‌تواند Rating بگیرد. رفتار پیش‌فرض (Allow/Block) را از مستند بخوانید (`rating-error` در Web Filter) و تنظیم کنید.
-
-#### Lab
-
-فهرست Profileهای شعبه‌ی خودتان با ستون لایسنس بنویسید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Category کار نمی‌کند | لایسنس/Rating | بررسی |
-| IPS قدیمی | به‌روزرسانی | update-now |
-| Log بی‌Category | rating error | تنظیم |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Static URL لایسنس می‌خواهد؟** خیر.
-**۲. rating-error؟** رفتار هنگام خطای Rating.
-**۳. چرا ماتریس؟** وعده‌ی غلط.
-
-#### English Corner
-
-- *UTM features that rely on FortiGuard require an active subscription.*
-- Q: What happens to category filtering when the license expires?
 
 ## درس 16-2 — Web Filter و DNS Filter: Static URL، Category، FQDN و عیب‌یابی HTTPS
 
@@ -642,174 +577,185 @@ execute update-now
 
 > **وضعیت (FortiOS 7.0.3):** Static URL Filter بدون لایسنس FortiGuard کار می‌کند؛ Category/Rating **Needs-License**. سینتکس `Unverified` روی Image. Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
 
-دانشجو بتواند:
+### هدف آموزشی
 
-1. توضیح دهد Web Filter چگونه تصمیم می‌گیرد (Static URL، Category، Safe Search، Quota) و ترتیب ارزیابی چیست.
-2. تفاوت **FQDN Filter** (در Policy/Address) با **Web Filter Profile** را بگوید.
-3. بداند در HTTPS بدون Deep Inspection چه چیزی دیده می‌شود (SNI) و چه نه (مسیر URL).
-4. **DNS Filter** را با Web Filter مقایسه و محدودیت‌اش (DoH) را بشناسد.
-5. یک Profile بسازد، به Policy وصل کند و **با آزمون مثبت/منفی و Log** ثابت کند کار می‌کند.
+در پایان این درس باید بتوانید:
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+1. Web Filter را در سه لایه (Static URL، Category، Content) توضیح دهید.
+2. DNS Filter و تفاوتش با Web Filter را بشناسید.
+3. Static URL Filter با Simple/Wildcard/Regex بسازید.
+4. FortiGuard Category Filter را (با لایسنس) تنظیم کنید و Action‌ها (Allow/Block/Monitor/Warning/Authenticate) را بشناسید.
+5. Override و Local Category را بدانید.
+6. Log را بخوانید و دلیل بلاک را اثبات کنید.
 
-**چرا HTTPS مشکل می‌سازد؟** وقتی ترافیک رمز است، فایروال محتوای صفحه (URL کامل، فایل) را نمی‌بیند. بدون «بازرسی TLS» فقط یک چیز دیده می‌شود: **SNI** (نام دامنه‌ای که کلاینت در شروع اتصال می‌گوید). یعنی می‌توان دامنه را مسدود کرد، ولی مسیر خاص داخل سایت را نه.
+### چرا باید یاد بگیریم؟
 
-**سه سطح فیلتر وب**
+Web Filter شبیه «فهرست مکان‌های ممنوعه‌ی مدرسه» است: دانش‌آموز می‌خواهد به مغازه‌ی خاصی برود؛ مدیر مدرسه براساس دسته (قمار، بزرگسال، بدافزار) اجازه می‌دهد یا نمی‌دهد. اهمیت: کاهش سطح حمله (سایت‌های Phishing/Malware)، رعایت قوانین سازمان و پهنای باند. مشکل رایج: بلاک بیش از حد (کاربران ناراضی) یا کمتر از حد (حادثه).
 
-1. **Static URL Filter:** فهرست دستی (Block/Allow/Exempt) با Simple، Wildcard، Regex.
-2. **Category (FortiGuard):** دسته‌بندی ابری (نیاز به لایسنس).
-3. **DNS Filter:** تغییر/بلوک پاسخ DNS بر اساس دسته؛ مستقل از TLS.
+### سه لایه‌ی Web Filter
 
-**دور زدن‌ها:** DoH (DNS over HTTPS) به Resolverهای بیرونی، VPN، IP مستقیم. راه: مسدود‌کردن DoH Resolverها و کنترل برنامه.
-
-**جمع‌بندی اصلی درس:** Flow/Proxy و TLS (۱۶-۰)، Packet Flow (۱۲-۰)، Policy (فصل ۱۳).
-
-### ۳) مفهوم پایه
-
-دسترسی وب مهم‌ترین مسیر ورود بدافزار و نشت داده است. Web Filter می‌پرسد: «این مقصد برای این کاربر مجاز است؟». سه منبع تصمیم: (۱) فهرست دستی شما (Static)، (۲) دسته‌بندی FortiGuard (Category؛ لایسنس)، (۳) رفتار (Quota، Safe Search).
-
-### ۴) توضیح عمیق فنی
-
-#### ۴-۱) ترتیب ارزیابی (مفهومی)
-
-``` text
-1. Static URL filter entries (first match: allow / block / monitor / exempt)
-2. FortiGuard category filter (needs rating service)
-3. Other options (safe search, quota, content checks)
-```
-
-اگر Static URL «Exempt» بزنید، بقیه‌ی بررسی‌ها برای آن مقصد رد می‌شوند؛ پس Exempt را با احتیاط استفاده کنید.
-
-#### ۴-۲) انواع ورودی Static URL
-
-- `simple`: مطابقت ساده‌ی دامنه/URL.
-- `wildcard`: الگوی `*.example.com`.
-- `regex`: عبارت منظم (قدرت زیاد، خطای زیاد، CPU بیشتر).
-- Action: `allow`, `block`, `monitor`, `exempt`.
-
-#### ۴-۳) HTTPS: چه چیزی دیده می‌شود؟
-
-| حالت | دید | نتیجه |
+| لایه | کار | لایسنس |
 |---|---|---|
-| HTTP | URL کامل | فیلتر کامل |
-| HTTPS + Certificate Inspection | دامنه (SNI/گواهی) | فیلتر بر اساس دامنه/Category؛ نه مسیر |
-| HTTPS + Deep Inspection | URL کامل پس از رمزگشایی | فیلتر کامل؛ نیاز CA (۱۶-۰) |
+| Static URL Filter | تطبیق دستی URL | خیر |
+| FortiGuard Category | رتبه‌بندی ابری سایت | بله |
+| Content/Script Filter | حذف Script/Cookie، Safe Search | بخشی |
 
-مثال: بلاک `example.com/private` فقط با Deep Inspection ممکن است؛ بلاک `example.com` با SNI ممکن است.
+ترتیب بررسی: Static URL Filter ⇒ FortiGuard Category ⇒ سایر.
 
-#### ۴-۴) DNS Filter
-
-فایروال Query را قبل از اتصال کنترل می‌کند: دامنه‌ی مخرب → NXDOMAIN/Redirect به Block Page. نقاط ضعف: **DoH/DoT** (DNS رمز) و IP مستقیم؛ راه‌حل: Application Control برای DoH + Deep Inspection + فقط DNS داخلی (Policy: DNS فقط به سرور شما).
-
-#### ۴-۵) Block Page و Log
-
-Block Page (Replacement Message) کاربر را مطلع می‌کند. Log: `action=blocked`، `catdesc`/`url`. برای عیب‌یابی، **Log Web Filter** اولین شاهد است.
-
-### ۵) پیاده‌سازی: GUI و CLI
-
-#### مثال ساده — Static URL
-
-``` text
-config webfilter urlfilter
- edit 1
-  config entries
-   edit 1
-    set url "*.example-bad.com"
-    set type wildcard
-    set action block
-   next
-  end
- next
-end
-```
-
-مرورگر به https://www.example-bad.com ⇒ بلوک؛ Log `utmaction=blocked`.
-
-#### مثال متوسط — DNS Filter
-
-پاسخ دامنه‌ی بد با آدرس Block Page جایگزین می‌شود؛ کاربر حتی اتصال TCP هم نمی‌سازد. اگر مرورگر DoH فعال داشته باشد، این کنترل دور زده می‌شود.
-
-#### مثال سخت — Block Page برای HTTPS
-
-بدون Inspection فایروال نمی‌تواند Block Page سالم نشان دهد (گواهی نامعتبر)؛ معمولاً اتصال Reset می‌شود. با SSL Inspection و CA سازمان، صفحه‌ی بلوک نمایش داده می‌شود. آزمون: سایت مجاز باز و سایت ممنوع بلوک.
-
-#### مثال‌های اصلی درس (مرور)
-
-**GUI:**
-
-1. Security Profiles → Web Filter → Create New (Name: WF-STD).
-2. FortiGuard Category Based Filter (اگر لایسنس) یا خاموش.
-3. Static URL Filter: Enable → Create New: URL `badsite.example`، Type Simple، Action Block.
-4. Policy & Objects → Firewall Policy → Users-to-Internet → Security Profiles: Web Filter = WF-STD؛ SSL Inspection = certificate-inspection.
-5. Log & Report → Web Filter.
-
-**CLI:**
+### Static URL Filter
 
 ``` text
 config webfilter urlfilter
     edit 1
-        set name "URLF-LAB"
+        set name "URLF-BLOCK"
         config entries
             edit 1
                 set url "badsite.example"
                 set type simple
                 set action block
             next
+            edit 2
+                set url "*.gambling.example"
+                set type wildcard
+                set action block
+            next
+            edit 3
+                set url "^.*\.casino\..*$"
+                set type regex
+                set action block
+            next
         end
-    next
-end
-config webfilter profile
-    edit "WF-STD"
-        config web
-            set urlfilter-table 1
-        end
-    next
-end
-config firewall policy
-    edit 10
-        set utm-status enable
-        set webfilter-profile "WF-STD"
-        set ssl-ssh-profile "certificate-inspection"
     next
 end
 ```
 
-(سینتکس `Unverified` روی 7.0.3؛ فیلدهای `utm-status` و ساختار `config web` را با CLI Reference تطبیق دهید.)
-
-### ۶) مثال‌ها
-
-**ساده:** بلاک `badsite.example`. کلاینت: `curl -I http://badsite.example` → Block Page؛ `curl -I http://good.example` → OK.
-
-**متوسط:** بلاک فقط `social.example/games` با HTTPS: با Certificate Inspection ممکن نیست؛ دو راه: Deep Inspection با Exemption مناسب، یا بلاک کل دامنه برای ساعات کاری با Schedule.
-
-**سخت (تحلیل خطا):** URL بلاک شده ولی کاربر باز می‌کند. فرضیه‌ها به ترتیب: (۱) Profile به Policy وصل نیست؛ (۲) Policy دیگری بالاتر Match شده؛ (۳) HTTPS و ورودی نیازمند مسیر کامل؛ (۴) QUIC دور می‌زند؛ (۵) DoH/IP مستقیم؛ (۶) Exempt قبلی. شواهد: Debug Flow (Policy ID)، Log Web Filter، Capture (UDP 443).
-
-### ۷) Troubleshooting
-
-| علامت | شاهد | علت |
+| نوع | معنی | مثال |
 |---|---|---|
-| Block نمی‌شود | Log خالی | Profile وصل نیست/Policy دیگر |
-| HTTPS مسیر بلاک نمی‌شود | Log فقط دامنه | Certificate Inspection |
-| Block Page خطای گواهی می‌دهد | مرورگر | CA نصب نیست |
-| QUIC دور می‌زند | Capture UDP 443 | بلاک QUIC |
-| Category کار نمی‌کند | Log: rating error | لایسنس/ارتباط FortiGuard |
+| simple | تطبیق دقیق | `badsite.example` |
+| wildcard | ستاره | `*.example.com` |
+| regex | عبارت منظم | الگو |
 
-### ۸) نکات امنیتی
+Action: `allow`، `block`، `monitor`، `exempt` (از سایر بازرسی‌ها معاف).
 
-- Exempt/Allow را محدود و مستند کنید.
-- Safe Search و بلاک Proxy/Anonymizer Category (در صورت لایسنس).
-- Web Filter جایگزین Patch/EDR نیست.
+### FortiGuard Category
 
-### ۹) جمع‌بندی
+``` text
+config webfilter profile
+    edit "WF-STD"
+        config ftgd-wf
+            set options error-allow
+            config filters
+                edit 1
+                    set category 26
+                    set action block
+                next
+                edit 2
+                    set category 8
+                    set action monitor
+                next
+            end
+        end
+    next
+end
+```
 
-- ترتیب: Static → Category → سایر؛ Exempt همه چیز بعدی را رد می‌کند.
-- HTTPS بدون Deep فقط دامنه؛ با Deep مسیر کامل.
-- DNS Filter قبل از اتصال؛ ضعف DoH. طبق مستند Fortinet بازرسی DoT/DoH فقط با Deep Inspection ممکن است (قبل از 7.6.0 فقط Proxy mode)؛ جایگزین: مسدودسازی TCP 853/443 به ارائه‌دهندگان شناخته‌شده یا (7.6.0+) Blocklist خارجی.
-- آزمون مثبت/منفی و Log.
+شماره‌ی Category در مستند FortiGuard هست؛ در عمل از GUI انتخاب کنید و شماره را از آنجا بخوانید (`<ID>`، دسته‌ها از لایسنس FortiGuard می‌آید: Needs-License).
 
-### ۱۰) تمرین و ارزیابی
+Actionها: Allow، Block، Monitor، Warning (صفحه‌ی هشدار با Continue)، Authenticate (فقط کاربر مجاز).
+
+### DNS Filter
+
+DNS Filter قبل از اتصال، نام دامنه را در پاسخ DNS بررسی می‌کند. مزیت: بدون رمزگشایی HTTPS، سریع، و برای همه‌ی پروتکل‌ها (نه فقط وب). Static domain و Category (لایسنس).
+
+``` text
+config dnsfilter profile
+    edit "DNS-STD"
+        config domain-filter
+            set domain-filter-table 1
+        end
+        config ftgd-dns
+            config filters
+                edit 1
+                    set category 12
+                    set action block
+                next
+            end
+        end
+    next
+end
+```
+
+نتیجه‌ی بلاک: Sinkhole (آدرس مسدودکننده) یا NXDOMAIN.
+
+### Web Filter در برابر DNS Filter
+
+| ویژگی | Web Filter | DNS Filter |
+|---|---|---|
+| بررسی | URL/Category | نام دامنه |
+| HTTPS بدون Inspection | فقط SNI/دامنه | بله (در DNS) |
+| صفحه‌ی بلاک | بله | نه (Sinkhole) |
+| پوشش | HTTP/HTTPS | همه‌ی پروتکل‌ها |
+
+استفاده‌ی هم‌زمان توصیه می‌شود.
+
+### Override و Local Category
+
+- **Override:** ادمین/مجاز موقتاً سایت را باز کند (زمان‌دار).
+- **Local Category:** دسته‌ی سازمانی خودتان (مثلاً «پورتال‌های مجاز»).
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — بلاک یک سایت
+
+Static URL Filter: `badsite.example` ⇒ block. آزمون: مرورگر ⇒ صفحه‌ی Blocked. Log: `action=blocked`، `urlfilteridx=1`.
+
+#### مثال متوسط — Wildcard و Exempt
+
+سایت‌های `*.example.com` مجاز؛ ولی `ads.example.com` بلاک. ترتیب مهم است: ورودی دقیق‌تر بالاتر. `exempt` برای سایت بانک (بدون AV/Inspection).
+
+#### مثال متوسط — خواندن Log
+
+``` text
+date=2026-11-27 time=10:15:01 type="utm" subtype="webfilter" eventtype="ftgd_blk"
+srcip=10.10.0.5 hostname="gambling.example" catdesc="Gambling" action="blocked"
+```
+
+`catdesc` دسته، `action` نتیجه. اگر `action=passthrough` یعنی Allow.
+
+#### مثال سخت — HTTPS و Inspection
+
+بدون SSL Inspection، Web Filter فقط SNI/CN را می‌بیند؛ URL کامل را نه. بنابراین `https://site/path-bad` نمی‌تواند با Path بلاک شود. راه: SSL Inspection (۱۶-۵) یا بلاک دامنه.
+
+#### مثال سخت — Rating Error
+
+لایسنس منقضی ⇒ Category Rating نیست ⇒ طبق `error-allow` همه‌چیز باز. Log: `eventtype="ftgd_err"`. رفع: تمدید + پایش.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Static URL با سه نوع بسازید.
+2. DNS Filter با Static domain.
+3. بلاک را با Log ثابت کنید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| بلاک نمی‌شود | Policy بدون Profile | اتصال |
+| HTTPS بلاک نمی‌شود | بدون Inspection | Inspection یا دامنه |
+| همه چیز باز | Rating Error | لایسنس |
+| بلاک زیاد | Category زیاد | Monitor/Override |
+
+### نکات امنیتی
+
+Safe Search اجباری؛ Policy برای سایت‌های بانکی exempt؛ Log همه‌ی بلاک‌ها؛ DNS Filter برای دستگاه‌های بدون Agent.
+
+### جمع‌بندی
+
+Web Filter سه لایه دارد (Static، Category، Content)؛ DNS Filter سریع و پروتکل‌مستقل است؛ بدون SSL Inspection Web Filter محدود است؛ Rating Error رفتار پیش‌فرض را تعیین می‌کند.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Static URL با Category چه فرقی دارد؟ *(پاسخ: 16-2-ت1)*
 
@@ -825,7 +771,7 @@ end
 
 **Q1.** Quick quiz (English): What does an exempt action in a static URL filter do? *(پاسخ: 16-2-Q1)*
 
-### ۱۱) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -836,108 +782,15 @@ end
 
 - *HTTPS without deep inspection reveals only the domain name.* ← HTTPS بدون Deep فقط نام دامنه را نشان می‌دهد.
 
-### ۱۲) Lab
+### Lab
 
 **کارت Lab:** Static URL Filter. **هدف:** بلاک یک دامنه و اثبات با Log. **توپولوژی:** Client → FGT → Web Lab. **وضعیت:** اجرا نشده. **مراحل:** مطابق بخش ۵. **Verification:** مثبت/منفی؛ Log. **Rollback:** حذف Profile از Policy. **Evidence:** `03-ops/webfilter-static.md`.
 
-### ۱۳) منابع
+### منابع
 
 - Fortinet Docs: FortiOS 7.0 Administration Guide — Web filter، DNS filter؛ [Inspection modes](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/721410/inspection-modes).
 
 <a id="l-16-3"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Web Filter برای HTTPS بدون Inspection
-
-**مسئله:** URL کامل در HTTPS رمز است؛ بدون SSL Inspection فقط **SNI/Domain** دیده می‌شود.
-
-``` text
-config webfilter urlfilter
- edit 1
-  config entries
-   edit 1
-    set url "*.example-bad.com"
-    set type wildcard
-    set action block
-   next
-  end
- next
-end
-```
-
-**آزمون:** مرورگر به https://www.example-bad.com ⇒ صفحه‌ی Block (Replacement Message)؛ Log `utmaction=blocked`.
-
-**DNS Filter** مستقل از TLS: پاسخ DNS را بر اساس Category تغییر/مسدود می‌کند؛ برای HTTPS بدون Inspection روش مناسب.
-
-**پرسش‌های مصاحبه**
-1. *چرا مسیر کامل دیده نمی‌شود؟* رمزگذاری TLS.
-2. *DoH مشکل؟* DNS Filter دور می‌خورد؛ بلاک DoH Resolverها.
-3. *Block Page روی HTTPS؟* نیازمند Inspection یا ارسال Reset.
-
-### تکمیل عمیق: Web Filter و DNS Filter — HTTPS بدون Inspection
-
-#### چرا؟
-
-بسیاری از سازمان‌ها نمی‌خواهند ترافیک را رمزگشایی کنند؛ آیا باز هم می‌توان وب را فیلتر کرد؟ بله، با SNI و DNS.
-
-#### آنچه بدون Inspection دیده می‌شود
-
-در HTTPS مسیر کامل URL رمز است؛ ولی **SNI** (نام سرور در ClientHello) دیده می‌شود. پس Domain را می‌توان مسدود کرد، ولی نه مسیر خاص (`/video/123`).
-
-#### مثال ساده — Static URL
-
-``` text
-config webfilter urlfilter
- edit 1
-  set name "BLOCK-LIST"
-  config entries
-   edit 1
-    set url "*.example-bad.com"
-    set type wildcard
-    set action block
-   next
-  end
- next
-end
-```
-
-#### مثال متوسط — DNS Filter
-
-پاسخ DNS را بر اساس Category تغییر/مسدود می‌کند؛ مستقل از TLS. دور زدن: DoH (DNS over HTTPS) به Resolverهای بیرونی؛ راه: مسدودکردن DoH Resolverهای شناخته‌شده یا App Control.
-
-#### مثال سخت — Block Page
-
-برای HTTPS بدون Inspection، فایروال نمی‌تواند Block Page سالم نشان دهد (گواهی نامعتبر)؛ معمولاً اتصال Reset می‌شود. با Inspection صفحه‌ی بلوک نمایش داده می‌شود.
-
-#### آزمون
-
-به https://www.example-bad.com برو ⇒ بلوک؛ Log: `utmaction=blocked`.
-
-#### Lab
-
-Static URL را بدون لایسنس تست کنید (اجرا نشده).
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| مسدود نمی‌شود | wildcard | الگو |
-| DoH دور می‌زند | Resolver بیرونی | مسدود |
-| Block Page نه | بدون Inspection | Reset طبیعی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. SNI چیست؟** نام سرور.
-**۲. DNS Filter مزیت؟** مستقل از TLS.
-**۳. DoH؟** دور زدن DNS.
-
-#### English Corner
-
-- *Without inspection, the firewall can filter by SNI and DNS but not by URL path.*
-- Q: How can users bypass DNS filtering?
 
 ## درس 16-3 — Antivirus و File Filter: سازوکار، حالت‌ها و تست امن
 
@@ -945,139 +798,147 @@ Static URL را بدون لایسنس تست کنید (اجرا نشده).
 
 > **وضعیت (FortiOS 7.0.3):** AV Signature **Needs-License**؛ File Filter بدون لایسنس. گزینه‌های Flow/Proxy از جدول مقایسه‌ی رسمی ([Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison)). Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
 
-1. بداند AV چه چیزی را کشف می‌کند (Signature، Heuristic) و چه چیزی را نه (Zero-day، فایل رمزدار، ترافیک رمز بدون Deep).
-2. تفاوت AV در Flow و Proxy را بداند و انتخاب کند.
-3. **File Filter** را به‌عنوان لایه‌ی مکمل بدون لایسنس طراحی کند.
-4. با **فایل EICAR** تست امن انجام دهد و نتیجه‌ی واقعی ثبت کند.
-5. FP/FN و اثر Performance را ارزیابی کند.
+### هدف آموزشی
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+در پایان این درس باید بتوانید:
 
-**چرا آنتی‌ویروس در فایروال؟** فایل آلوده معمولاً از وب یا ایمیل می‌آید. AV امضای شناخته‌شده را بررسی می‌کند و File Filter نوع فایل را (مثلاً `exe`) صرف‌نظر از امضا کنترل می‌کند.
+1. سازوکار Antivirus (Signature، Heuristic، Sandbox) را توضیح دهید.
+2. تفاوت Flow-based و Proxy-based AV را بشناسید.
+3. File Filter (بدون لایسنس) را تنظیم کنید.
+4. Quarantine، Action و Log AV را بشناسید.
+5. با فایل EICAR آزمون ایمن اجرا کنید.
+6. محدودیت‌ها (فایل رمزشده، حجم، Archive) را بدانید.
 
-**دو حالت بازرسی:** Flow-based (سریع‌تر، پایه) و Proxy-based (فایل را کامل بافر می‌کند؛ بازرسی عمیق‌تر). و **محدودیت‌ها:** فایل رمزدار، فایل بزرگ‌تر از Oversize Limit، و بدون SSL Inspection ترافیک HTTPS دیده نمی‌شود.
+### چرا باید یاد بگیریم؟
 
-**تست امن:** فایل EICAR؛ همه‌ی AVها آن را «ویروس تست» می‌شناسند و بی‌خطر است.
+Antivirus در لبه مثل بازرسی گمرک است: بسته‌ها را قبل از ورود به کشور باز می‌کند. مزیت: یک نقطه‌ی کنترل برای همه‌ی دستگاه‌ها (حتی بدون آنتی‌ویروس). محدودیت: فایل رمزگذاری‌شده یا ترافیک رمز (HTTPS بدون Inspection) را نمی‌بیند؛ پس AV لبه جایگزین Endpoint نیست، مکمل است.
 
-**جمع‌بندی اصلی درس:** ۱۶-۰ (Flow/Proxy، TLS)، ۱۶-۷ (FP/FN).
+### سازوکارها
 
-### ۳) مفهوم پایه
-
-بدافزار معمولاً به‌صورت فایل از وب/ایمیل/اشتراک می‌رسد. AV فایل را (یا جریان را) با پایگاه Signature می‌سنجد. اما هر امضا از گذشته می‌آید؛ بدافزار جدید یا رمزدار را نمی‌گیرد. پس AV **یک لایه** است، نه راه‌حل کامل.
-
-### ۴) توضیح عمیق فنی
-
-#### ۴-۱) AV چگونه کار می‌کند
-
-- **Flow-based:** بسته‌ها در جریان اسکن می‌شوند؛ سریع؛ بدون بازسازی کامل فایل؛ گزینه‌ها کمتر.
-- **Proxy-based:** فایل کامل Buffer می‌شود و پس از اسکن به کاربر می‌رسد؛ دقیق‌تر و گزینه‌های بیشتر (مثلاً محدودیت اندازه‌ی Buffer، Content Disarm بسته به نسخه)؛ تأخیر و مصرف حافظه بیشتر.
-- سقف اندازه‌ی فایل: فایل بزرگ‌تر از Threshold اسکن نمی‌شود (Pass یا Block طبق تنظیم) — **این یک نقطه‌ی کور است**.
-
-#### ۴-۲) چه چیزی دیده نمی‌شود
-
-| مورد | علت |
+| روش | ایده |
 |---|---|
-| Zero-day | Signature ندارد (نیاز Sandbox) |
-| فایل رمزدار (zip با رمز) | محتوا قابل اسکن نیست |
-| HTTPS بدون Deep | محتوا رمز است |
-| فایل بزرگ‌تر از سقف | اسکن نمی‌شود |
-| پروتکل غیراسکن‌شده | AV روی پروتکل‌های انتخاب‌شده کار می‌کند |
+| Signature | مقایسه با پایگاه امضا (نیازمند لایسنس) |
+| Heuristic | رفتار/الگوی مشکوک |
+| Sandbox (FortiSandbox) | اجرای فایل در محیط ایزوله (Needs-License/جدا) |
+| Botnet/C&C | نام/IP سرورهای کنترل |
 
-#### ۴-۳) File Filter
+### Flow-based در برابر Proxy-based
 
-کنترل بر اساس **نوع/پسوند** (و Magic bytes در صورت پشتیبانی) و جهت (Upload/Download). مثال: بلاک `exe, scr, js, vbs` از اینترنت؛ بلاک فایل رمزدار. مزیت: بدون لایسنس، سبک؛ ضعف: پسوند جعل‌شدنی، محتوای مخرب در نوع مجاز.
+| ویژگی | Flow-based | Proxy-based |
+|---|---|---|
+| سرعت | بالاتر | کمتر |
+| بافر فایل | بسته‌ها عبور و بررسی | کل فایل بافر |
+| عمق | کمی کمتر | بیشتر |
+| پیش‌فرض | بله (در 7.0 معمولاً) | اختیاری |
+| Quarantine | محدود | بهتر |
 
-#### ۴-۴) EICAR
+انتخاب: پیش‌فرض Flow؛ Proxy برای نیاز خاص (Sandbox/Quarantine عمیق). جزئیات در ۱۶-۰.
 
-فایل متنی استاندارد بی‌خطر که همه‌ی AVها به‌عنوان «ویروس تست» می‌شناسند؛ برای آزمون زنجیره (Policy→Profile→Inspection→Log). **نتیجه‌ی آزمون باید ثبت شود؛ اگر Signature در Lab نیست، «اجرا نشده/ناموفق» بنویسید، نه «کار می‌کند».**
-
-### ۵) پیاده‌سازی: GUI و CLI
-
-#### مثال ساده — EICAR
-
-``` text
-curl -O https://secure.eicar.org/eicar.com.txt
-```
-
-انتظار: Block و Log `virus=EICAR_TEST_FILE`.
-
-#### مثال متوسط — File Filter
-
-مسدودکردن `exe` و `scr` از اینترنت: صرف‌نظر از امضا. آزمون: دانلود فایل exe بی‌ضرر ⇒ بلوک.
-
-#### مثال سخت — فایل رمزدار
-
-zip با رمز اسکن نمی‌شود. سیاست: بلوک فایل‌های رمزدار از منبع نامعتبر یا قرنطینه + اطلاع کاربر. و Oversize: تعیین Action صریح (block یا pass با Log).
-
-#### مثال‌های اصلی درس (مرور)
-
-**GUI:**
-
-1. Security Profiles → AntiVirus → Create New (AV-STD): Inspected Protocols: HTTP/FTP/SMTP/... ؛ Action Block.
-2. Security Profiles → File Filter → Create New (FF-STD): Rule: File types exe/script؛ Direction Incoming؛ Action Block.
-3. Policy: AntiVirus = AV-STD؛ File Filter = FF-STD؛ SSL Inspection (مناسب).
-4. Log & Report → AntiVirus / Security Events.
-
-**CLI (ساختار؛ `Unverified`):**
+### Antivirus Profile
 
 ``` text
 config antivirus profile
     edit "AV-STD"
-        set comment "lab"
-    next
-end
-config file-filter profile
-    edit "FF-STD"
-        config rules
-            edit "block-exe"
-                set protocol http ftp
-                set action block
-                set file-type "exe"
-            next
+        config http
+            set options scan
         end
-    next
-end
-config firewall policy
-    edit 10
-        set av-profile "AV-STD"
-        set file-filter-profile "FF-STD"
+        config ftp
+            set options scan
+        end
+        config smtp
+            set options scan
+        end
     next
 end
 ```
 
-### ۶) مثال‌ها
+Action متداول: `scan` (بلاک و Log)، `avmonitor` (فقط Log).
 
-**ساده:** دانلود EICAR از وب: Block + Log AV.
+### File Filter (بدون لایسنس)
 
-**متوسط:** `setup.exe` بلاک می‌شود با File Filter در حالی‌که AV لایسنس ندارد؛ درس: لایه‌ی بدون لایسنس مفید است.
+``` text
+config file-filter profile
+    edit "FF-STD"
+        config rules
+            edit "block-exe"
+                set protocol http https ftp smtp
+                set action block
+                set file-type "exe" "msi"
+            next
+        end
+    next
+end
+```
 
-**سخت:** مهاجم zip رمزدار می‌فرستد؛ AV نمی‌بیند؛ File Filter رمزدار را بلاک می‌کند اگر پشتیبانی شود؛ سیاست: بلاک آرشیو رمزدار از منبع ناشناس + آموزش + Sandbox (در صورت لایسنس). **FN را بپذیرید و مستند کنید.**
+مزیت: بدون FortiGuard کار می‌کند؛ برای محیط‌های ایزوله (Lab) مناسب.
 
-### ۷) Troubleshooting
+### آزمون ایمن با EICAR
 
-| علامت | علت |
+EICAR یک رشته‌ی استاندارد و بی‌خطر است که همه‌ی AVها آن را «ویروس» می‌شناسند.
+
+``` text
+X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*
+```
+
+دانلود از سایت رسمی eicar.org؛ در FortiGate با AV فعال باید بلاک و Log شود. بدون لایسنس AV (Signature) بلاک نمی‌شود؛ File Filter با پسوند com/exe می‌تواند.
+
+### محدودیت‌ها
+
+| مورد | اثر |
 |---|---|
-| EICAR رد می‌شود | Profile وصل نیست/لایسنس/DB نیست/HTTPS بدون Deep |
-| فایل بزرگ اسکن نمی‌شود | سقف اندازه |
-| کندی دانلود | Proxy Buffer |
-| FP | Signature/استثنا |
+| فایل رمزشده (ZIP با رمز) | قابل‌اسکن نیست؛ File Filter یا Block |
+| بیش از حد حجم | `oversize` ⇒ Pass/Block طبق تنظیم |
+| Archive تو در تو | عمق محدود |
+| HTTPS بدون Inspection | اسکن نمی‌شود |
 
-### ۸) نکات امنیتی
+### مثال‌های حل‌شده
 
-- EICAR فقط برای تست؛ بدافزار واقعی ممنوع.
-- Exception محدود.
-- ترکیب با Patch/EDR.
+#### مثال ساده — File Filter
 
-### ۹) جمع‌بندی
+بلاک exe از HTTP. آزمون: دانلود `setup.exe` ⇒ بلاک؛ Log `utm filefilter blocked`.
 
-- AV Signature؛ Zero-day و رمزدار نه.
-- Flow سریع/Proxy دقیق.
-- File Filter لایه‌ی بدون لایسنس.
-- نتیجه‌ی واقعی ثبت شود.
+#### مثال متوسط — EICAR
 
-### ۱۰) تمرین و ارزیابی
+Policy با AV-STD. دانلود EICAR ⇒ صفحه‌ی «High Security Alert»؛ Log: `virus="EICAR_TEST_FILE" action="blocked"`. (با لایسنس؛ در Lab بدون لایسنس: اجرا نشده.)
+
+#### مثال متوسط — oversize
+
+فایل 500MB بزرگ‌تر از Limit: `oversize` ⇒ تنظیم `block` یا `pass`. تصمیم: Pass با Log و Endpoint AV؛ یا Block برای محیط حساس.
+
+#### مثال سخت — فایل رمزشده
+
+مهاجم Malware را در ZIP با رمز می‌فرستد؛ AV نمی‌بیند. دفاع لایه‌ای: File Filter «Encrypted Archive» ⇒ Block/Quarantine؛ Sandbox؛ Endpoint.
+
+#### مثال سخت — HTTPS
+
+بدافزار از HTTPS؛ بدون Inspection اسکن ناممکن؛ پس SSL Inspection (۱۶-۵) یا بلاک دامنه (DNS Filter).
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. File Filter exe ⇒ آزمون.
+2. EICAR (در صورت لایسنس).
+3. Log را بخوانید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| EICAR رد می‌شود | AV بدون لایسنس/Policy | بررسی |
+| فایل بزرگ رد می‌شود | oversize | تنظیم |
+| HTTPS اسکن نمی‌شود | بدون Inspection | فعال |
+| CPU بالا | Proxy-based | Flow |
+
+### نکات امنیتی
+
+AV لبه مکمل Endpoint؛ Quarantine را پایش کنید؛ File Filter برای نوع‌های پرخطر؛ Sandbox برای تهدید ناشناخته.
+
+### جمع‌بندی
+
+AV با Signature/Heuristic/Sandbox؛ Flow سریع‌تر و Proxy عمیق‌تر؛ File Filter بدون لایسنس؛ EICAR برای آزمون ایمن؛ فایل رمزشده و HTTPS محدودیت‌اند.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) EICAR چیست؟ *(پاسخ: 16-3-ت1)*
 
@@ -1091,7 +952,7 @@ end
 
 **Q1.** Quick quiz (English): Why can't antivirus inspect a password-protected archive? *(پاسخ: 16-3-Q1)*
 
-### ۱۱) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1102,104 +963,15 @@ end
 
 - *Antivirus is one layer, not a complete defense.* ← ضدویروس یک لایه است، نه دفاع کامل.
 
-### ۱۲) Lab
+### Lab
 
 **کارت Lab:** AV/File Filter. **هدف:** EICAR و بلاک exe. **وضعیت:** اجرا نشده. **Verification:** Log AV/File Filter. **Rollback:** حذف Profile. **Evidence:** `03-ops/av-notes.md` (نتیجه‌ی واقعی).
 
-### ۱۳) منابع
+### منابع
 
 - Fortinet Docs: [Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison)؛ EICAR (eicar.org).
 
 <a id="l-16-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: تست امن AV با EICAR و تفسیر
-
-``` text
-curl -O https://secure.eicar.org/eicar.com.txt
-```
-
-فایل EICAR بی‌خطر است و همه‌ی AVها آن را می‌شناسند. نتیجه‌ی مورد انتظار: Block + Log `virus=EICAR_TEST_FILE`.
-
-**حالت‌ها:** Flow-based (سریع‌تر، امضای پایه) در برابر Proxy-based (بافر کامل فایل). **File Filter** بر اساس نوع/پسوند مستقل از امضا است؛ مثلاً مسدودسازی exe از اینترنت.
-
-**محدودیت:** فایل رمزگذاری‌شده/بزرگ‌تر از Oversize Limit اسکن نمی‌شود؛ Policy برای Oversize را مشخص کنید.
-
-**پرسش‌های مصاحبه**
-1. *چرا EICAR؟* تست بی‌خطر.
-2. *فایل zip رمزدار؟* قابل اسکن نیست؛ Policy جدا.
-3. *AV در HTTPS؟* فقط با SSL Inspection.
-
-### تکمیل عمیق: Antivirus و File Filter
-
-#### چرا؟
-
-فایل آلوده معمولاً از وب یا ایمیل می‌آید؛ AV امضا را بررسی و File Filter نوع فایل را کنترل می‌کند.
-
-#### آزمون امن با EICAR
-
-EICAR یک فایل متنی بی‌خطر است که همه‌ی AVها آن را «ویروس تست» می‌شناسند.
-
-``` text
-curl -O https://secure.eicar.org/eicar.com.txt
-```
-
-انتظار: Block و Log `virus=EICAR_TEST_FILE`.
-
-#### مثال ساده — File Filter
-
-مسدودکردن `exe` و `scr` از اینترنت:
-
-``` text
-config file-filter profile
- edit "FF1"
-  config rules
-   edit 1
-    set name "block-exe"
-    set protocol http https
-    set action block
-    set file-type "exe"
-   next
-  end
- next
-end
-```
-
-(Syntax را از مستند نسخه تأیید کنید.)
-
-#### مثال متوسط — محدودیت‌ها
-
-فایل رمزدار (zip با رمز) و فایل بزرگ‌تر از Oversize Limit اسکن نمی‌شود؛ Policy برای رفتار Oversize (block/pass) را صریح بگذارید.
-
-#### مثال سخت — HTTPS
-
-بدون SSL Inspection، فایل داخل HTTPS دیده نمی‌شود؛ AV در وب رمز بی‌اثر است. با Inspection فعال می‌شود.
-
-#### Lab
-
-EICAR را در Lab با AV (در صورت لایسنس) تست کنید؛ در غیر این صورت «اجرا نشده».
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| EICAR عبور می‌کند | بدون Inspection/لایسنس | بررسی |
-| فایل بزرگ | Oversize | سیاست |
-| zip رمزدار | قابل اسکن نیست | سیاست |
-
-#### پرسش‌ها با پاسخ
-
-**۱. EICAR چیست؟** ویروس تست بی‌خطر.
-**۲. Oversize؟** فایل بزرگ‌تر از حد.
-**۳. AV در HTTPS؟** نیاز به Inspection.
-
-#### English Corner
-
-- *The EICAR test file safely validates antivirus inspection.*
-- Q: Why is an encrypted archive hard for antivirus to scan?
 
 ## درس 16-4 — IPS، DoS Policy و Application Control: سازوکار، تنظیم و FP
 
