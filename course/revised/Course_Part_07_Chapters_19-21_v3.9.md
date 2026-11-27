@@ -261,6 +261,65 @@ ADVPN: Spoke به Spoke فقط در صورت نیاز Shortcut می‌سازد؛
 2. *Routing پویا چرا؟* Failover و مقیاس.
 3. *ADVPN نیازها؟* IKEv2، Routing، تنظیم Hub.
 
+### تکمیل عمیق: طراحی Overlay چندشعبه — از ۳ شعبه تا ۳۰۰ شعبه
+
+#### چرا باید یاد بگیریم؟
+
+اتصال دو شعبه با یک Tunnel ساده است. اتصال ۳۰ شعبه به‌صورت دستی یعنی صدها Tunnel، صدها Route و کابوس نگهداری. طراحی Overlay یعنی تصمیم‌گیری درباره‌ی «ساختار» (Hub-and-Spoke یا Mesh)، «مسیریابی» (Static یا پویا) و «مقیاس» پیش از ساخت.
+
+#### توضیح ساده
+
+Overlay شبکه‌ای مجازی است که روی اینترنت (Underlay) ساخته می‌شود؛ شعبه‌ها با Tunnel به هم وصل‌اند و فکر می‌کنند در یک شبکه‌ی خصوصی هستند.
+
+#### مثال ساده — شمارش Tunnel
+
+``` text
+Full mesh tunnels  = N x (N - 1) / 2
+Hub-and-Spoke      = N (one per spoke, to hub)
+N = 10 -> mesh = 45 ; hub-spoke = 10
+N = 50 -> mesh = 1225 ; hub-spoke = 50
+```
+
+نتیجه: Mesh با رشد N منفجر می‌شود.
+
+#### مثال متوسط — ADVPN
+
+ADVPN = Auto-Discovery VPN. ساختار پایه Hub-and-Spoke است؛ وقتی Spoke A با Spoke B زیاد ارتباط دارد، Hub به آنها «Shortcut» پیشنهاد می‌کند و Tunnel مستقیم ساخته می‌شود. مزیت: هزینه‌ی Hub-Spoke + کارایی Mesh.
+
+#### مثال سخت — Hub Failure
+
+Hub تنها نقطه‌ی شکست است. طراحی: دو Hub (Primary/Secondary) با Routing پویا؛ Spoke به هر دو Tunnel دارد؛ ترجیح با Metric.
+
+``` text
+Failover time ~ detect (BFD/Dead timer) + route convergence
+OSPF dead 40 s (default broadcast) ; with BFD ~ <1 s
+```
+
+مقادیر پیش‌فرض را از مستند نسخه بخوانید.
+
+#### Lab
+
+نمودار سه‌لایه برای ۱۰ شعبه بکشید و تعداد Tunnel را محاسبه کنید.
+
+#### عیب‌یابی طراحی
+
+| علامت | علت | رفع |
+|---|---|---|
+| پیچیدگی انفجاری | Mesh کامل | Hub-Spoke/ADVPN |
+| Hub bottleneck | ترافیک Spoke-Spoke | ADVPN |
+| Failover کند | Timer | BFD |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چند Tunnel برای ۲۰ شعبه Mesh؟** ۱۹۰.
+**۲. ADVPN چه مشکلی را حل می‌کند؟** ترافیک Spoke-Spoke.
+**۳. چرا دو Hub؟** SPOF.
+
+#### English Corner
+
+- *A full mesh grows quadratically; hub-and-spoke grows linearly.*
+- Q: How does ADVPN combine the benefits of both designs?
+
 ## درس 19-1 — طراحی آدرس‌دهی چندشعبه: IP Plan، Summarization با محاسبه‌ی باینری، Tunnel IP و ظرفیت Hub
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۲-۲ (VLSM)، ۹-۰ · ≈ 8 ساعت**
@@ -462,6 +521,74 @@ Summary at hub: 10.0.0.0/10 would cover 10.0-63 (only if reserved)
 1. *Overlap؟* مشکل IPsec/NAT.
 2. *Summary خطر؟* مسیر ناموجود.
 3. *Loopback ID؟* ثبات Router-ID.
+
+### تکمیل عمیق: IP Plan و Summarization چندشعبه
+
+#### چرا؟
+
+طرح آدرس‌دهی بد، بعداً همه‌چیز را گران می‌کند: Overlap بین شعب، Routeهای زیاد و ناتوانی از Summarize. اینجا IP Plan را از ابتدا تمیز می‌سازیم.
+
+#### مثال ساده — تخصیص
+
+``` text
+HQ        10.0.0.0/16
+Branch 1  10.1.0.0/24
+Branch 2  10.2.0.0/24
+...
+Branch 50 10.50.0.0/24
+Tunnel    10.255.0.0/16 (overlay)
+```
+
+هر شعبه یک /24 (۲۵۴ Host) با فضای رشد.
+
+#### مثال متوسط — Summarization
+
+برای ۱۶ شعبه با آدرس‌های پیاپی در بایت سوم (10.1.0.0/24 تا 10.1.15.0/24) می‌توان یک Summary داد.
+
+``` text
+16 networks = 2^4 -> borrow 4 bits from the /24 -> /24 - 4 = /20
+Summary: 10.1.0.0/20  (covers 10.1.0.0 - 10.1.15.255)
+Check: 10.1.15.0/24 is inside, 10.1.16.0/24 is outside
+```
+
+مراحل: ۱) تعداد شبکه‌ها باید توان ۲ باشد (۱۶) ۲) شروع بلوک باید مضرب ۱۶ در بایت سوم باشد (۰ مضرب ۱۶ است) ۳) Prefix برابر ۲۴ منهای ۴ می‌شود.
+
+مثال مخالف: اگر شعبه‌ها از 10.1.4.0/24 شروع شوند، بلوک ۱۶تایی هم‌تراز نیست و Summary /20 شبکه‌های دیگر را هم می‌پوشاند.
+
+#### قاعده
+
+Summary فقط زمانی مجاز است که بلوک پیوسته، هم‌تراز (Aligned) و رزرو شده باشد؛ وگرنه ترافیک به مقصدهای ناموجود (Blackhole) می‌رود.
+
+#### مثال سخت — شرکت ادغام‌شده
+
+دو شرکت ادغام می‌شوند و هر دو 10.1.0.0/24 دارند (Overlap). راه: NAT بین آنها (۱:۱)، یا Renumbering تدریجی؛ NAT موقت و Renumber دائمی.
+
+#### Lab
+
+یک IP Plan برای ۳۰ شعبه بنویسید و با `ipaddress` پایتون Overlap را بررسی کنید.
+
+``` text
+python3 -c "import ipaddress as i; print(i.ip_network('10.16.0.0/20').overlaps(i.ip_network('10.16.8.0/24')))"
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Blackhole | Summary بیش‌ازحد | Null route دقیق |
+| Overlap | طرح ناقص | NAT/Renumber |
+| Route زیاد | بدون Summary | رزرو بلوک |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Aligned؟** Prefix دقیق.
+**۲. Overlap چه می‌کند؟** مسیر مبهم.
+**۳. Summary خطر؟** Blackhole.
+
+#### English Corner
+
+- *Summarize only contiguous, aligned address blocks.*
+- Q: What is a route blackhole caused by over-summarization?
 
 ## درس 19-2 — Tunnelهای Hub–Spoke و OSPF روی Tunnel: طراحی، Network Type، Cost، Convergence و عیب‌یابی
 
@@ -684,6 +811,86 @@ Point-to-multipoint برای Hub بدون انتخاب DR؛ Cost را برای �
 2. *Hello/Dead؟* 10/40 پیش‌فرض.
 3. *چرا P2MP؟* بدون DR.
 
+### تکمیل عمیق: OSPF روی Tunnel — Network Type، Cost و Convergence
+
+#### چرا؟
+
+Static Route در ۳۰ شعبه یعنی ویرایش دستی ۳۰ دستگاه؛ OSPF خودکار یاد می‌گیرد. ولی روی Tunnel رفتار خاصی دارد (Multi-access مجازی).
+
+#### Network Type
+
+| نوع | DR/BDR | کاربرد |
+|---|---|---|
+| broadcast | دارد | LAN |
+| point-to-point | ندارد | Tunnel دونقطه‌ای |
+| point-to-multipoint | ندارد | Hub با چند Spoke |
+
+در Hub-and-Spoke، Network Type `point-to-multipoint` روی Hub مناسب است؛ DR/BDR لازم نیست.
+
+#### مثال ساده — پیکربندی
+
+``` text
+config router ospf
+ set router-id 1.1.1.1
+ config area
+  edit 0.0.0.0
+  next
+ end
+ config network
+  edit 1
+   set prefix 10.255.0.0 255.255.0.0
+  next
+ end
+ config ospf-interface
+  edit "TO-SPOKES"
+   set interface "TO-SPOKES"
+   set network-type point-to-multipoint
+   set cost 10
+  next
+ end
+end
+```
+
+#### مثال متوسط — Cost برای ترجیح Hub
+
+Hub1 cost 10، Hub2 cost 20؛ Spoke ترافیک را به Hub1 می‌فرستد و با خرابی Hub1 به Hub2.
+
+#### Convergence
+
+``` text
+Dead interval default broadcast = 40 s ; P2P/P2MP often 40 s (verify)
+With BFD: detection ~ 300 ms x 3 = ~1 s
+```
+
+برای Failover زیر ۵ ثانیه از BFD یا Timerهای کوتاه (با آزمون) استفاده کنید.
+
+#### مثال سخت — MTU
+
+Tunnel با MTU کمتر ⇒ OSPF در ExStart گیر می‌کند. رفع: MTU برابر یا `mtu-ignore`.
+
+#### Lab
+
+Hub و دو Spoke بسازید؛ `get router info ospf neighbor` را بخوانید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ExStart | MTU | یکسان |
+| DR روی Tunnel | broadcast | P2MP |
+| Failover کند | Dead timer | BFD |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا P2MP؟** بدون DR.
+**۲. Cost برای؟** ترجیح مسیر.
+**۳. BFD؟** تشخیص سریع.
+
+#### English Corner
+
+- *Use point-to-multipoint for hub interfaces that terminate many spokes.*
+- Q: How can you speed up OSPF failure detection?
+
 ## درس 19-3 — BGP روی FortiGate برای Overlay: iBGP، Route Reflector، Next-hop، Local-pref، Failover و Filtering
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۹-۰، ۹-۷ · ≈ 8 ساعت**
@@ -903,6 +1110,83 @@ Metric: Local-pref بالاتر ⇒ ترجیح خروج. **اثبات:** `get ro
 2. *next-hop-self؟* برای Peerهای پشت Tunnel.
 3. *Local-pref در برابر MED؟* داخل AS در برابر بین AS.
 
+### تکمیل عمیق: BGP Overlay — iBGP، Route Reflector و Local-pref
+
+#### چرا؟
+
+برای مقیاس بالا و کنترل دقیق سیاست مسیریابی (مثلاً ترجیح یک Hub یا ISP)، BGP قوی‌تر از OSPF است. ولی باید قواعدش را بدانید.
+
+#### iBGP و مشکل Full-mesh
+
+در iBGP هر Router باید با همه‌ی Routerهای دیگر Peer باشد (چون مسیر یادگرفته‌شده از iBGP را به iBGP دیگر نمی‌دهد). با N Router: N(N-1)/2 Peer. **Route Reflector (RR)** این مشکل را حل می‌کند: Hub همه‌ی Spokeها را Client خود می‌کند و مسیرها را بازتاب می‌دهد.
+
+#### مثال ساده — پیکربندی RR
+
+``` text
+config router bgp
+ set as 65000
+ set router-id 1.1.1.1
+ config neighbor
+  edit "10.255.0.2"
+   set remote-as 65000
+   set route-reflector-client enable
+   set next-hop-self enable
+  next
+ end
+ config network
+  edit 1
+   set prefix 10.0.0.0 255.255.0.0
+  next
+ end
+end
+```
+
+#### مثال متوسط — Best Path (ترتیب مستند)
+
+Weight (Cisco) / Local-pref بالاتر، طول AS-path کوتاه‌تر، Origin، MED کمتر، eBGP بر iBGP، IGP metric کمتر، Router-ID. برای ترجیح Hub: Local-pref بالاتر روی مسیرهای Hub1.
+
+``` text
+route-map PREF-HUB1 permit 10
+ set local-preference 200
+```
+
+#### مثال سخت — Next-hop
+
+مسیر یاد گرفته شد ولی Inactive: Next-hop دسترسی‌پذیر نیست. راه: `next-hop-self` یا Route به Next-hop.
+
+#### تأیید
+
+``` text
+get router info bgp summary
+get router info bgp network
+get router info routing-table bgp
+```
+
+State باید Established و PfxRcd عدد باشد.
+
+#### Lab
+
+یک Hub به‌عنوان RR و دو Spoke Client بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Idle | TCP179/Policy | Local-in |
+| Route Inactive | Next-hop | next-hop-self |
+| انتخاب اشتباه | Local-pref | route-map |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا RR؟** حذف Full-mesh.
+**۲. Local-pref؟** سیاست داخل AS.
+**۳. Next-hop-self؟** دسترسی‌پذیری.
+
+#### English Corner
+
+- *A route reflector removes the need for a full iBGP mesh.*
+- Q: Why can a BGP route be learned but not installed?
+
 ## درس 19-4 — Local Breakout و Policy اینترنت شعبه: Backhaul در برابر Breakout، Split مسیر، SaaS، UTM و Failover
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۱۲-۰، ۱۶-۰، ۲۱-۷ · ≈ 8 ساعت**
@@ -1119,6 +1403,60 @@ get router info routing-table details 10.0.5.20
 2. *Policy شعبه؟* حداقل UTM.
 3. *DNS؟* منطبق با مسیر.
 
+### تکمیل عمیق: Local Breakout در برابر Backhaul
+
+#### چرا؟
+
+ترافیک اینترنت شعبه را از Tunnel به HQ بفرستیم (Backhaul) یا مستقیم از شعبه خارج کنیم (Local Breakout)؟ جواب به تأخیر، هزینه و امنیت بستگی دارد.
+
+#### مقایسه
+
+| معیار | Backhaul | Local Breakout |
+|---|---|---|
+| کنترل امنیتی | متمرکز (HQ) | در هر شعبه |
+| تأخیر SaaS | بیشتر | کمتر |
+| پهنای باند HQ | زیاد مصرف | کم |
+| پیچیدگی | کم | متوسط |
+
+#### مثال ساده — تأخیر
+
+``` text
+Backhaul : branch -> HQ (30 ms) -> internet (20 ms) = 50 ms to SaaS
+Breakout : branch -> internet (20 ms) = 20 ms
+Saving   = 30 ms per request
+```
+
+#### مثال متوسط — راه میانی
+
+SaaS معتبر (Office365) با Breakout؛ بقیه Backhaul. با SD-WAN Rule و Application Control پیاده می‌شود.
+
+#### مثال سخت — امنیت شعبه
+
+با Breakout، شعبه باید UTM و Policy مستقل داشته باشد؛ در غیر این صورت سطح حمله بزرگ می‌شود. حداقل: Web Filter، IPS، Log به مرکز.
+
+#### Lab
+
+یک Policy Breakout با NAT و یک Policy Backhaul بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| DNS اشتباه | مسیر DNS | هماهنگ |
+| شعبه بی‌حفاظ | UTM نیست | پروفایل |
+| تأخیر زیاد | Backhaul | Breakout انتخابی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Split Tunnel خطر؟** دور زدن امنیت.
+**۲. چرا راه میانی؟** تعادل.
+**۳. DNS؟** باید با مسیر هماهنگ باشد.
+
+#### English Corner
+
+- *Local breakout lowers latency but moves security enforcement to the branch.*
+- Q: Which traffic would you break out locally?
+
 ## درس 19-5 — ADVPN در عمل: ساخت، فرایند Shortcut، BGP/OSPF، Policy، محدودیت‌ها و عیب‌یابی
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۱۹-۳، ۱۸-۰ · ≈ 8 ساعت**
@@ -1311,6 +1649,73 @@ get router info routing-table all
 2. *Shortcut زمان؟* چند ثانیه.
 3. *Policy؟* Spoke↔Spoke باید مجاز باشد.
 
+### تکمیل عمیق: ADVPN در عمل
+
+#### چرا؟
+
+ADVPN اجازه می‌دهد Spoke‌ها بدون عبور از Hub مستقیم صحبت کنند؛ ولی با شرایط: IKEv2، Routing پویا و تنظیم Hub.
+
+#### فرایند Shortcut
+
+1. Spoke A می‌خواهد به Spoke B برود؛ ترافیک از Hub می‌رود.
+2. Hub تشخیص می‌دهد و به A و B «Shortcut Offer» می‌دهد.
+3. A و B Tunnel مستقیم می‌سازند.
+4. Routing به Shortcut تغییر می‌کند.
+
+#### مثال ساده — تنظیم Hub
+
+``` text
+config vpn ipsec phase1-interface
+ edit "HUB"
+  set type dynamic
+  set add-route disable
+  set auto-discovery-sender enable
+ next
+end
+```
+
+و در Spoke: `set auto-discovery-receiver enable`.
+
+#### مثال متوسط — مشاهده‌ی Shortcut
+
+``` text
+diagnose vpn ike gateway list
+get router info routing-table all
+```
+
+باید Tunnel جدید `HUB_0` (Shortcut) دیده شود.
+
+#### مثال سخت — NAT دوگانه
+
+دو Spoke پشت NAT هستند؛ ساخت مستقیم شکست می‌خورد. راه: NAT-T و UDP/4500، یا IP عمومی ثابت؛ و اگر ممکن نبود، ترافیک از Hub می‌ماند (Fallback).
+
+#### Policy
+
+Spoke↔Spoke باید در Policy مجاز باشد؛ فراموشی آن «Shortcut ساخته می‌شود ولی ترافیک رد می‌شود».
+
+#### Lab
+
+Hub و دو Spoke؛ ترافیک بین Spokeها را مشاهده و Shortcut را ثابت کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Shortcut نمی‌سازد | IKEv2/تنظیم | بررسی |
+| Shortcut ولی Drop | Policy | افزودن |
+| NAT | NAT-T | پورت |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Shortcut چیست؟** Tunnel مستقیم.
+**۲. چرا Policy؟** ترافیک Spoke-Spoke.
+**۳. NAT دوگانه؟** سخت.
+
+#### English Corner
+
+- *ADVPN shortcuts still need a firewall policy between spokes.*
+- Q: What triggers the creation of an ADVPN shortcut?
+
 ## درس 19-6 — آزمون معماری ۴: چندشعبه با Failover — صورت مسئله، کلید پاسخ و Rubric
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰ تا ۱۹-۵ · ≈ 8 ساعت**
@@ -1442,6 +1847,62 @@ diagnose debug flow trace start 10
 1. *Failover زمان؟* BFD/Dead timer.
 2. *چگونه اثبات؟* قطع کنترل‌شده و ping مداوم.
 3. *ثبت؟* Timeline.
+
+### تکمیل عمیق: آزمون معماری ۴ — چندشعبه با Failover
+
+#### چرا؟
+
+این آزمون ترکیب IP Plan، Routing، Failover و Evidence را می‌سنجد.
+
+#### صورت مسئله
+
+۱۰ شعبه، دو Hub، OSPF/BGP، Failover زیر ۱۰ ثانیه، IP Plan بدون Overlap.
+
+#### کلید
+
+1. IP Plan و Summary.
+2. Tunnelها (2 به ازای Spoke).
+3. Routing با Cost/Local-pref.
+4. آزمون: قطع Hub1 ⇒ ترافیک از Hub2.
+5. Evidence.
+
+``` text
+Tunnels = spokes x hubs = 10 x 2 = 20
+Failover = detect + converge ; measure with ping
+```
+
+#### Rubric
+
+``` text
+IP plan 20 | Routing 25 | Failover 25 | Evidence 20 | Report 10
+```
+
+#### مثال سخت — خرابی تزریقی
+
+قطع Hub1 + MTU اشتباه روی Tunnel Hub2 ⇒ Failover موفق ولی HTTPS کند. شاهد: `ping -f`. رفع: MSS Clamp.
+
+#### Lab
+
+آزمون را کامل و شواهد را ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Failover دیر | Timer | BFD |
+| کند پس از Failover | MTU | MSS |
+| Route نامعلوم | Summary | بررسی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا ۲۰ Tunnel؟** هر Spoke دو Hub.
+**۲. Evidence Failover؟** ping + routing.
+**۳. MSS؟** جلوگیری از Fragmentation.
+
+#### English Corner
+
+- *Measure failover time with continuous ping during the test.*
+- Q: Why can HTTPS be slow after a failover?
 
 ## پاسخ‌های فصل 19
 
