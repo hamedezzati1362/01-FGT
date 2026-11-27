@@ -4614,6 +4614,152 @@ end
 - *Management access should never be exposed to the internet.*
 - Q: What do you check after finding an unknown admin?
 
+<a id="l-27-8"></a>
+
+## درس 27-8 — Log در FortiGate: مقصدها، سطح‌ها، مشاهده و عیب‌یابی
+
+**فصل 27 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Configure log settings and diagnose problems using the logs» · پیش‌نیاز: ۲۷-۱، ۲۶-۲**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ FortiAnalyzer Needs-License؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** Logها کجا ذخیره می‌شوند (Memory، Disk، FortiAnalyzer، Syslog، FortiCloud)، چه سطحی ثبت شود، چطور مشاهده کنیم و چطور از Log علت یک خرابی را بیابیم.
+
+**چرا لازم است؟** Log دوربین مدار بسته‌ی شبکه است. اگر روی Memory ثبت شود، با ریبوت گم می‌شود؛ اگر Disk کوچک باشد، پس از چند روز بازنویسی می‌شود؛ اگر هیچ‌چیز ثبت نشود، در حادثه کور هستید. آزمون NSE4 «تشخیص مشکل با Log» می‌خواهد؛ پس باید بدانید در Log کدام فیلد را بخوانید.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) مقصدها
+
+| مقصد | ماندگاری | نکته |
+|---|---|---|
+| Memory | موقت (ریبوت = حذف) | فقط رویدادهای اخیر |
+| Disk | محلی؛ در بعضی مدل‌ها/VM پیش‌فرض خاموش | ظرفیت کم، Rolling |
+| FortiAnalyzer | متمرکز | تحلیل و گزارش (Needs-License) |
+| Syslog | سرور مرکزی (rsyslog/SIEM) | درس ۲۶-۲ |
+| FortiCloud | ابر Fortinet | طبق لایسنس |
+
+#### ۲-۲) نوع Log
+
+- **Traffic:** Sessionها (Forward/Local).
+- **Event:** سیستم، ادمین، VPN، HA، Router.
+- **Security (UTM):** AV، IPS، Web، App.
+
+#### ۲-۳) سطح (Severity)
+
+0 Emergency، 1 Alert، 2 Critical، 3 Error، 4 Warning، 5 Notification، 6 Information، 7 Debug. Log را با آستانه‌ی حداقل (مثلاً Information) ثبت کنید.
+
+``` text
+config log memory filter
+ set severity information
+end
+config log disk setting
+ set status enable
+ set max-log-file-size 20
+ set diskfull overwrite
+end
+config log fortianalyzer setting
+ set status enable
+ set server 10.50.0.30
+ set reliable enable
+end
+config log syslogd setting
+ set status enable
+ set server 10.50.0.20
+ set mode reliable
+end
+```
+
+#### ۲-۴) Log در Policy
+
+``` text
+config firewall policy
+ edit 30
+  set logtraffic all
+ next
+end
+```
+
+`all` همه‌ی Sessionها؛ `utm` فقط رویداد UTM؛ `disable` هیچ.
+
+### ۳) مشاهده و جست‌وجو
+
+``` text
+execute log filter category 0
+execute log filter field srcip 10.10.0.5
+execute log filter field dstport 443
+execute log filter start-line 1
+execute log filter view-lines 20
+execute log display
+diagnose log test
+```
+
+`diagnose log test` Logهای نمونه تولید می‌کند تا مسیر ارسال را بیازمایید.
+
+نمونه Log Traffic و فیلدهای مهم:
+
+``` text
+date=2026-11-27 time=10:12:01 logid=0000000013 type=traffic subtype=forward level=notice
+srcip=10.10.0.5 dstip=198.51.100.8 dstport=443 action=deny policyid=0 service=HTTPS
+sentbyte=0 rcvdbyte=0 srcintf="port2" dstintf="port1"
+```
+
+فیلدها: `action` (accept/deny/close/timeout)، `policyid` (0 = Deny ضمنی)، `srcintf/dstintf`، `sentbyte/rcvdbyte`، `duration`.
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده.** `policyid=0 action=deny` ⇒ ترافیک مطابق هیچ Policy نشد؛ Policy یا Interface اشتباه.
+
+**متوسط — «Log نمی‌رسد».**
+
+1. Policy `logtraffic` فعال؟
+2. مقصد فعال (`config log disk setting`)؟
+3. Syslog: `execute ping`، Route، Source IP، پورت و `tcpdump` روی سرور.
+4. FAZ: در GUI وضعیت Connection و (طبق نسخه) `execute log fortianalyzer test-connectivity` (Unverified).
+5. سطح Severity بسیار بالا (فقط Critical) ⇒ Log کم.
+
+**متوسط — حجم Log.** 2 GB در روز ×۱۲ دستگاه × ۹۰ روز = 2160 GB؛ پس برای نگهداری ۹۰ روزه ≈ 2.1 TB (درس ۲۶-۱).
+
+**سخت — حادثه‌ی «اتصال دیشب قطع شد».**
+
+1. فیلتر زمانی روی Traffic با `dstip` سرور.
+2. `action=timeout` و `rcvdbyte=0` ⇒ بدون پاسخ از سرور.
+3. Event Log: تغییر Config/Link/HA در همان ساعت؟
+4. `date/time` با NTP هم‌گام (Timezone).
+5. نتیجه: لینک ISP در ۰۲:۱۰ قطع (Event Log: `Link-monitor status changed`).
+
+### ۵) Lab (اجرا نشده)
+
+Logging به Syslog را فعال، یک Deny ایجاد و Log را در سرور و `execute log display` مقایسه کنید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| FAZ | FortiAnalyzer | تحلیل‌گر Log فورتی‌نت |
+| Syslog | System Logging Protocol | ارسال Log شبکه‌ای |
+| UTM | Unified Threat Management | مدیریت یکپارچه‌ی تهدید |
+| SIEM | Security Information and Event Management | جمع‌آوری و همبستگی رویداد |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) چرا Memory Log کافی نیست؟ *(پاسخ: 27-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) `policyid=0` یعنی چه؟ *(پاسخ: 27-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) پنج گام وقتی Log به Syslog نمی‌رسد. *(پاسخ: 27-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) از Log علت قطع شبانه را چگونه می‌یابید؟ *(پاسخ: 27-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *Send logs to a central server so they survive a reboot or disk overwrite.*
+- *A traffic log with policy ID 0 means the session was denied by the implicit deny rule.*
+- **Q1.** Which log type records administrator logins? *(پاسخ: 27-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 27
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -4762,6 +4908,20 @@ Telnet/HTTP/SNMPv1-2c رمز و داده را بدون رمزنگاری می‌�
 **27-7-ت4** — حساب API با Profile Read-only، Trusted Host فقط مانیتورینگ، Token در Vault، چرخش دوره‌ای، Log تماس‌ها.
 
 **27-7-Q1** — Because a backup that was never restored may be corrupt or incomplete, so recovery is not proven.
+
+### پاسخ‌های درس افزوده‌ی 27-8 (فصل 27)
+
+**27-8-ت1** — چون با ریبوت پاک می‌شود و ظرفیت محدود است؛ برای ممیزی باید Log به Disk/FAZ/Syslog برود.
+
+**27-8-ت2** — Deny ضمنی؛ ترافیک با هیچ Policy مطابق نشد (Interface/Address/Service نامنطبق).
+
+**27-8-ت3** — ۱) `logtraffic` روی Policy ۲) فعال بودن مقصد ۳) Route/Source IP/پورت ۴) `tcpdump` و فایروال سرور ۵) سطح Severity.
+
+**27-8-ت4** — فیلتر زمانی روی Traffic، بررسی `action/rcvdbyte`، سپس Event Log همان ساعت (Link/HA/Config) و تطبیق زمان با NTP.
+
+**27-8-Q1** — Event log (system/admin events).
+
+---
 
 # پایان بخش ۹ (فصل‌های ۲۵ تا ۲۷)
 

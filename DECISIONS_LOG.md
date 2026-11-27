@@ -192,3 +192,6 @@ Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خ�
 
 ## D-353 — تکمیل CCNA 3.4، 4.1، 5.3/5.5
 - درس‌های جدید: 6-8 (تفسیر HSRP/VRRP)، 8-11 (AAA: Local/TACACS+/RADIUS)، 8-12 (رویکردهای مدیریت، REST، Ansible، IaC).
+
+## D-354 — تکمیل NSE4: HA Active-Active/Virtual Cluster، Firewall Authentication، Web Filter، Log
+- درس‌های جدید: 22-6، 17-8، 16-9، 27-8. شماره‌ی Category در مثال Web Filter صرفاً نمونه است و باید از مستند/GUI خوانده شود.

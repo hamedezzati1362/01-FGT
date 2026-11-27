@@ -1496,6 +1496,133 @@ Example: 20 + 22 + 15 + 10 + 18 = 85
 - *Never fabricate evidence; label untested items honestly.*
 - Q: Why run split-brain tests only in a lab?
 
+<a id="l-22-6"></a>
+
+## درس 22-6 — HA در عمق: Active-Active، Load Balancing، Virtual Cluster و Management Interface
+
+**فصل 22 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Identify and configure different operation modes for an FGCP HA cluster» · پیش‌نیاز: ۲۲-۰ تا ۲۲-۵**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی (بوت نشده)؛ دستورها `Unverified`؛ HA به دو دستگاه لایسنس‌دار نیاز دارد (Needs-License)؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** دو حالت FGCP (Active-Passive و Active-Active)، اینکه در Active-Active واقعاً چه چیزی تقسیم می‌شود، Virtual Cluster، Interface مدیریتی اختصاصی و کدام حالت را چه وقت انتخاب کنیم.
+
+**چرا لازم است؟** تصور «Active-Active یعنی ظرفیت دو برابر» اشتباه رایجی است. اگر آن را اشتباه بفهمید، فایروال را کم‌ظرفیت می‌خرید و Cluster بعد از Failover از بار پر می‌شود. سؤال آزمون هم دقیقاً همین تفاوت‌هاست.
+
+### ۲) توضیح از پایه
+
+| معیار | Active-Passive (a-p) | Active-Active (a-a) |
+|---|---|---|
+| ترافیک | فقط Primary پردازش می‌کند | Primary بخشی را به Subordinate می‌دهد |
+| ظرفیت پس از Failover | همان یک دستگاه | یک دستگاه (باید برای بار کامل طراحی شود) |
+| پیچیدگی | کم | بیشتر |
+| کاربرد | رایج‌ترین | بار UTM سنگین |
+
+#### ۲-۱) در Active-Active دقیقاً چه چیزی تقسیم می‌شود؟
+
+طبق مستند FortiOS، به‌صورت پیش‌فرض Primary ترافیکی را که **بازرسی عمیق (UTM/Proxy-based)** می‌خواهد بین اعضا پخش می‌کند؛ ترافیک عادی (بدون Profile) همچنان از Primary می‌گذرد، مگر اینکه گزینه‌ی `load-balance-all` فعال شود. Primary همیشه تمام ترافیک ورودی را دریافت می‌کند و بخشی را به Subordinate می‌فرستد؛ پس Primary نقطه‌ی عبور اصلی می‌ماند.
+
+``` text
+config system ha
+ set mode a-a
+ set schedule round-robin
+ set load-balance-all disable
+end
+```
+
+الگوریتم‌های Schedule (نمونه): `round-robin`، `weight-round-robin`، `least-connection`، `random`، `ip`، `ipport`، `hub`، `none`.
+
+#### ۲-۲) Virtual Cluster
+
+وقتی چند VDOM دارید، می‌توان VDOMها را به دو Virtual Cluster تقسیم کرد: Cluster 1 در عضو A Primary و Cluster 2 در عضو B Primary. بدین ترتیب هر دستگاه برای بخشی از VDOMها Active است و بار توزیع می‌شود (در عین حال هر دو Failover‌پذیرند). نیاز به Multi-VDOM (درس ۲۴).
+
+#### ۲-۳) Management Interface اختصاصی
+
+``` text
+config system ha
+ set ha-mgmt-status enable
+ config ha-mgmt-interfaces
+  edit 1
+   set interface "mgmt"
+   set gateway 10.50.0.1
+  next
+ end
+end
+```
+
+با این تنظیم می‌توانید به **هر عضو** مستقیماً (حتی Secondary) از شبکه‌ی Mgmt وصل شوید؛ بدون آن، مدیریت فقط به Primary می‌رسد.
+
+#### ۲-۴) سایر تنظیمات مرتبط
+
+``` text
+config system ha
+ set group-name "FGT-HA"
+ set hbdev "port7" 50 "port8" 50
+ set session-pickup enable
+ set monitor "port1" "port2"
+ set override disable
+end
+```
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — انتخاب حالت.** شعبه‌ی کوچک با ترافیک 300 Mbps و بدون UTM سنگین ⇒ Active-Passive.
+
+**متوسط — محاسبه‌ی ظرفیت.** مرکز با 3 Gbps ترافیک؛ هر دستگاه با UTM می‌تواند 2 Gbps. اگر Active-Active فرض شود ولی `load-balance-all` خاموش باشد، Primary همچنان همه‌ی ترافیک را می‌پذیرد.
+
+``` text
+Required capacity after failover = 3 Gbps
+Single unit capacity (UTM)       = 2 Gbps
+2 < 3  ->  after failover one unit is overloaded
+```
+
+نتیجه: باید مدل بزرگ‌تر یا Profileهای سبک‌تر؛ A-A ظرفیت را حل نمی‌کند، چون پس از Failover باز یک دستگاه می‌ماند.
+
+**متوسط — دسترسی به Secondary.** برای ارتقا باید به Subordinate وصل شوید؛ بدون Management Interface اختصاصی ممکن نیست. با `ha-mgmt-status enable` از Mgmt مستقیم.
+
+**سخت — Virtual Cluster.** دو VDOM: `VD-A` و `VD-B`. تنظیم: VD-A در vcluster1 با Priority بالاتر روی FGT-1 و VD-B در vcluster2 با Priority بالاتر روی FGT-2.
+
+``` text
+get system ha status
+diagnose sys ha history read
+```
+
+انتظار: هر دستگاه برای یک VDOM Primary است. در Failover یک دستگاه، VDOMهای او نیز به دستگاه دیگر می‌روند.
+
+**سخت — «A-A فعال است ولی Subordinate کم‌کار است».** علت: Policy بدون Profile ⇒ ترافیک تقسیم نمی‌شود. راه: `load-balance-all enable` (با سنجش اثر) یا اعمال Profileها طبق نیاز.
+
+### ۴) Lab (اجرا نشده)
+
+دو FortiGate VM لایسنس‌دار؛ a-p و سپس a-a؛ `get system ha status` و Session را مقایسه کنید.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| FGCP | FortiGate Clustering Protocol | پروتکل Cluster فورتی‌گیت |
+| a-p / a-a | Active-Passive / Active-Active | حالت‌های HA |
+| vcluster | Virtual Cluster | Cluster مجازی برای VDOM |
+| HBdev | Heartbeat Device | Interface ضربان‌قلب |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) تفاوت a-p و a-a؟ *(پاسخ: 22-6-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Virtual Cluster به چه چیزی نیاز دارد؟ *(پاسخ: 22-6-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) چرا A-A ظرفیت پس از Failover را حل نمی‌کند؟ *(پاسخ: 22-6-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) چگونه به Subordinate مستقیم وصل شویم؟ *(پاسخ: 22-6-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *In active-active mode the primary unit distributes only certain sessions to the subordinate units.*
+- *Size the cluster so that one unit can carry the full load after a failover.*
+- **Q1.** What does load-balance-all change? *(پاسخ: 22-6-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 22
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -1670,6 +1797,20 @@ Split-brain: HB قطع ولی هر دو دستگاه زنده‌اند و هر �
 Checksum Cluster هم‌خوانی Config بین اعضا را بررسی می‌کند.
 
 **22-0-Q1** — Loss of heartbeat between members that are both still running, so each assumes the primary role.
+
+### پاسخ‌های درس افزوده‌ی 22-6 (فصل 22)
+
+**22-6-ت1** — در a-p فقط Primary ترافیک را پردازش می‌کند؛ در a-a Primary بخشی از ترافیک (پیش‌فرض ترافیک نیازمند UTM/Proxy) را به Subordinate توزیع می‌کند.
+
+**22-6-ت2** — Multi-VDOM؛ VDOMها بین دو Virtual Cluster تقسیم می‌شوند.
+
+**22-6-ت3** — چون پس از افتادن یک عضو فقط یک دستگاه می‌ماند و باید کل بار را بردارد؛ ظرفیت طراحی باید بر پایه‌ی یک دستگاه باشد.
+
+**22-6-ت4** — با `ha-mgmt-status enable` و تعریف Interface مدیریتی اختصاصی روی هر عضو.
+
+**22-6-Q1** — With it enabled, the primary distributes all sessions (not only those requiring content inspection) to the cluster members.
+
+---
 
 # فصل 23 — Multi-Firewall و Asymmetric Routing (معماری ۵)
 

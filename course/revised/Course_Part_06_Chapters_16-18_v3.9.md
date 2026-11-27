@@ -2247,6 +2247,138 @@ curl -sk "https://203.0.113.3/login?user=admin'--"
 
 ---
 
+<a id="l-16-9"></a>
+
+## درس 16-9 — Web Filter در FortiGate: دسته‌های FortiGuard، Static URL، Rating و عیب‌یابی
+
+**فصل 16 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Identify FortiGate inspection modes and configure web and DNS filtering» · پیش‌نیاز: ۱۶-۱، ۱۶-۲**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ دسته‌های FortiGuard Needs-License؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** Web Filter سه لایه دارد: Category (FortiGuard)، Static URL Filter و Content/Safe Search؛ هر سایت یک «Rating» دارد و Action می‌تواند Allow، Monitor، Block، Warning یا Authenticate باشد.
+
+**چرا لازم است؟** مدیر می‌گوید «شبکه‌های اجتماعی بسته، سایت بانک باز». اگر نحوه‌ی تصمیم‌گیری (اول Static URL؟ یا Category؟) را ندانید، یک سایت را به‌اشتباه باز یا بسته می‌کنید و کسی نمی‌داند چرا.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) ترتیب ارزیابی (مفهومی)
+
+1. **Static URL Filter** (Exempt/Block/Allow/Monitor): سریع‌ترین و صریح‌ترین.
+2. **FortiGuard Category Filter:** فایروال Rating سایت را از FortiGuard می‌پرسد (Cache می‌کند) و Action دسته را اعمال می‌کند.
+3. **Content Filter / Safe Search / Quota:** مرحله‌های تکمیلی.
+
+ترتیب دقیق و تعامل را از مستند FortiOS همان نسخه بخوانید؛ اصل: Exempt در Static URL می‌تواند بازرسی‌های بعدی را (طبق تنظیم) دور بزند.
+
+#### ۲-۲) دسته‌ها و Actionها
+
+| Action | معنی |
+|---|---|
+| Allow | اجازه، بدون Log ویژه |
+| Monitor | اجازه + Log |
+| Block | مسدود + صفحه‌ی جایگزین |
+| Warning | هشدار؛ کاربر می‌تواند ادامه دهد |
+| Authenticate | نیاز به Login (دسته‌ی ویژه) |
+
+دسته‌ها در گروه‌ها: Potentially Liable، Adult/Mature، Bandwidth Consuming، Security Risk، General Interest و غیره. **Local Categories/Ratings:** می‌توانید سایت سازمانی را به دسته‌ی محلی نگاشت کنید.
+
+#### ۲-۳) خطای Rating
+
+اگر FortiGuard در دسترس نیست (لایسنس منقضی/قطع ارتباط)، رفتار با گزینه‌ی خطا در Profile (مثلاً `error-allow` یا `error-block` در `options`) تعیین می‌شود: Allow یا Block.
+
+``` text
+config webfilter profile
+ edit "WF-STD"
+  set feature-set flow
+  config ftgd-wf
+   set options error-allow
+   config filters
+    edit 1
+     set category 26
+     set action block
+    next
+   end
+  end
+ next
+end
+```
+
+(شماره‌ی Category را از GUI/مستند بخوانید؛ عدد بالا مثال است.)
+
+#### ۲-۴) Static URL
+
+``` text
+config webfilter urlfilter
+ edit 1
+  set name "STATIC-URL"
+  config entries
+   edit 1
+    set url "*.example-bad.com"
+    set type wildcard
+    set action block
+   next
+   edit 2
+    set url "intranet.example.com"
+    set type simple
+    set action exempt
+   next
+  end
+ next
+end
+```
+
+انواع: Simple، Wildcard، Regex. Exempt سایت امن را از بررسی‌های دیگر خارج می‌کند.
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده.** Block دسته‌ی «Social Networking»؛ آزمون: مرورگر به سایت مثال ⇒ صفحه‌ی بلوک و Log `action=blocked`.
+
+**متوسط — استثنا.** سایت آموزشی در دسته‌ی «Streaming» مسدود شده ولی لازم است. راه: Static URL با `exempt` فقط برای آن Domain؛ ثبت دلیل و مالک.
+
+**متوسط — Quota.** دسته‌ی «Bandwidth Consuming» با سهمیه‌ی ۳۰ دقیقه در روز: Action `Warning` با Quota.
+
+**سخت — «سایت مجاز بلوک می‌شود».**
+
+1. Log: `catdesc` و `url`: دسته‌ی اشتباه؟
+2. `diagnose debug rating`: وضعیت سرور Rating.
+3. Rating اشتباه ⇒ درخواست «Rating Review» از FortiGuard یا Local Rating.
+4. Static URL با Exempt برای حل فوری.
+5. HTTPS: بدون Inspection فقط Domain دیده می‌شود (درس ۱۶-۲).
+
+**سخت — Rating در دسترس نیست.** Log: `Rating error`. بررسی: لایسنس، DNS فایروال، Route به FortiGuard، `error-allow` یا `error-block` طبق سیاست امنیتی.
+
+### ۴) Lab (اجرا نشده)
+
+Static URL بدون لایسنس قابل‌تست است؛ Category فقط با لایسنس.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| FortiGuard | — | سرویس اطلاعات تهدید Fortinet |
+| URL | Uniform Resource Locator | نشانی وب |
+| SNI | Server Name Indication | نام سرور در TLS |
+| Rating | — | دسته‌ی اختصاص‌یافته به سایت |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) پنج Action وب‌فیلتر؟ *(پاسخ: 16-9-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) تفاوت Block و Warning؟ *(پاسخ: 16-9-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) چرا Static URL با Exempt لازم است؟ *(پاسخ: 16-9-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) Rating در دسترس نیست؛ سه علت و رفتار مناسب. *(پاسخ: 16-9-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *Static URL filters can exempt trusted sites from further inspection.*
+- *If the rating service is unavailable, the profile decides whether to allow or block.*
+- **Q1.** What is a local rating? *(پاسخ: 16-9-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 16
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -2430,6 +2562,18 @@ IPS به بازرسی محتوا در CPU/CP نیاز دارد و Offload کام
 **16-8-ت4** — ۱) بررسی Log و Signature ۲) تأیید مشروع‌بودن ورودی ۳) Exemption مستند فقط برای همان URL/Parameter ۴) پایش و بازبینی.
 
 **16-8-Q1** — Cross-Site Scripting.
+
+### پاسخ‌های درس افزوده‌ی 16-9 (فصل 16)
+
+**16-9-ت1** — Allow، Monitor، Block، Warning، Authenticate.
+
+**16-9-ت2** — Block مسدود می‌کند؛ Warning هشدار می‌دهد و کاربر می‌تواند ادامه دهد.
+
+**16-9-ت3** — برای سایت‌های مورد اعتماد که به‌اشتباه Block می‌شوند؛ با Exempt سریع و مستند باز می‌شوند.
+
+**16-9-ت4** — لایسنس منقضی، DNS/Route به FortiGuard، قطع ارتباط؛ رفتار: `error-allow` یا `error-block` طبق سیاست امنیتی و پایش.
+
+**16-9-Q1** — A category assigned locally on the firewall to a site, overriding or complementing the FortiGuard rating.
 
 ---
 
@@ -4300,6 +4444,133 @@ FortiGate: `diagnose debug application fnbamd -1`؛ سرور: AD Event 4625 (و�
 - *Work through authentication problems from the network layer upward.*
 - Q: What does Windows event 4740 indicate?
 
+<a id="l-17-8"></a>
+
+## درس 17-8 — روش‌های Firewall Authentication در FortiGate: Active، Passive، Local و Remote
+
+**فصل 17 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Identify and configure different methods of firewall authentication» · پیش‌نیاز: ۱۷-۰ تا ۱۷-۵**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** Policy بر اساس «کاربر» چگونه با روش‌های مختلف شناسایی کاربر ساخته می‌شود: **Active** (کاربر خودش Login می‌کند) و **Passive** (فایروال بدون پرسش از منبع دیگر می‌فهمد)، و کجا هر کدام مناسب است.
+
+**چرا لازم است؟** وقتی می‌گویید «فقط گروه مالی به ERP برود»، فایروال باید بداند هر IP متعلق به چه کسی است. اگر روش اشتباه انتخاب شود، یا کاربران مدام Login می‌کنند (آزاردهنده) یا اصلاً شناسایی نمی‌شوند (نقص امنیتی).
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) دو خانواده
+
+| خانواده | چگونه | مثال |
+|---|---|---|
+| Active | فایروال از کاربر Username/Password می‌خواهد | Captive Portal، Firewall Authentication (HTTP/HTTPS/FTP/Telnet) |
+| Passive | هویت از منبع دیگر گرفته می‌شود | FSSO (از Active Directory)، RSSO (از RADIUS Accounting) |
+
+#### ۲-۲) منبع حساب
+
+- **Local:** کاربر داخل خود FortiGate (`config user local`).
+- **Remote:** LDAP، RADIUS، TACACS+، Kerberos/FSSO.
+
+#### ۲-۳) جریان Active
+
+1. کاربر اولین درخواست HTTP/HTTPS را می‌زند.
+2. اولین Policy مطابق که کاربر/گروه دارد، تشخیص می‌دهد کاربر هنوز Authenticate نشده.
+3. فایروال درخواست را Redirect می‌کند به صفحه‌ی Login (Captive Portal).
+4. پس از موفقیت، یک ورودی در جدول Authentication ثبت و Policy اعمال می‌شود.
+5. پس از Timeout بیکاری (پیش‌فرض ۵ دقیقه، قابل‌تغییر) نیاز به Login مجدد.
+
+``` text
+config user setting
+ set auth-timeout 5
+ set auth-timeout-type idle-timeout
+ set auth-type http https ftp telnet
+end
+```
+
+#### ۲-۴) مثال Policy
+
+``` text
+config user local
+ edit "ali"
+  set type password
+  set passwd ***
+ next
+end
+config user group
+ edit "G-FIN"
+  set member "ali"
+ next
+end
+config firewall policy
+ edit 40
+  set name "FIN-to-ERP"
+  set srcintf "port2"
+  set dstintf "port3"
+  set srcaddr "all"
+  set dstaddr "SRV-ERP"
+  set groups "G-FIN"
+  set service "HTTPS"
+  set action accept
+ next
+end
+```
+
+برای بررسی کاربران فعال:
+
+``` text
+diagnose firewall auth list
+diagnose firewall auth clear
+```
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — کدام روش؟** شبکه‌ی مهمان: Active (Captive Portal). کارکنان دامنه‌ای در شبکه‌ی داخلی: Passive (FSSO) تا Login دوم نداشته باشند.
+
+**متوسط — چرا Policy «کاربر» همه‌ی ترافیک را نمی‌گیرد؟** Active Auth فقط برای پروتکل‌های پشتیبانی‌شده (HTTP/HTTPS/FTP/Telnet) صفحه‌ی Login می‌دهد. برای SSH یا برنامه‌های دیگر، کاربر باید قبلاً از طریق مرورگر Login کند یا از FSSO استفاده شود.
+
+**متوسط — HTTPS و گواهی.** Redirect HTTPS به صفحه‌ی Login نیاز به گواهی معتبر دارد؛ وگرنه کاربر هشدار می‌بیند. مستندات پورت‌های Authentication (HTTP و HTTPS) را بررسی و در Policy Local-in مجاز کنید.
+
+**سخت — کاربر Login می‌کند ولی دسترسی ندارد.**
+
+1. `diagnose firewall auth list` ⇒ کاربر هست؟ گروه؟
+2. گروه درست در Policy (`groups`)؟
+3. ترتیب Policy: Policy بالاتر بدون کاربر ترافیک را گرفته؟
+4. Timeout منقضی شده؟
+5. اگر LDAP: گروه Nested یا Base DN (درس ۱۷-۲).
+6. اگر چند کاربر پشت یک NAT: هویت به IP وابسته است ⇒ یک کاربر دیگری را «بهره‌مند» می‌کند؛ راه: FSSO/TS Agent یا Authentication per session.
+
+### ۴) Lab (اجرا نشده)
+
+یک Policy با گروه محلی؛ از PC مرورگر را باز کنید، Login و `diagnose firewall auth list` را ببینید.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| FSSO | Fortinet Single Sign-On | SSO فورتی‌نت |
+| RSSO | RADIUS Single Sign-On | SSO بر پایه‌ی RADIUS Accounting |
+| LDAP | Lightweight Directory Access Protocol | پروتکل دایرکتوری |
+| NAS | Network Access Server | سرور دسترسی شبکه |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) Active و Passive را تعریف کنید. *(پاسخ: 17-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) کدام روش برای مهمان؟ *(پاسخ: 17-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) چرا برای SSH Active Auth کار نمی‌کند؟ *(پاسخ: 17-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) کاربر Login شده ولی رد می‌شود؛ پنج بررسی. *(پاسخ: 17-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *Active authentication prompts the user; passive authentication learns identity from another source.*
+- *Use FSSO to avoid a second login for domain users.*
+- **Q1.** Which command lists authenticated firewall users? *(پاسخ: 17-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 17
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -4497,6 +4768,20 @@ RADIUS Reject: Shared Secret یا کاربر.
 چک‌لیست شش‌گامی: Reachability، Bind، کاربر، رمز، گروه، Policy.
 
 **17-7-Q1** — Invalid credentials.
+
+### پاسخ‌های درس افزوده‌ی 17-8 (فصل 17)
+
+**17-8-ت1** — Active: فایروال از کاربر Login می‌خواهد (Captive Portal). Passive: هویت از منبع دیگر (FSSO/RSSO) بدون پرسش از کاربر گرفته می‌شود.
+
+**17-8-ت2** — Active (Captive Portal).
+
+**17-8-ت3** — Active Auth فقط برای HTTP/HTTPS/FTP/Telnet صفحه‌ی Login دارد؛ برای SSH باید قبلاً Login مرورگری شود یا از FSSO استفاده کرد.
+
+**17-8-ت4** — ۱) `diagnose firewall auth list` ۲) گروه در Policy ۳) ترتیب Policy ۴) Timeout ۵) گروه Nested/Base DN در LDAP (و NAT مشترک).
+
+**17-8-Q1** — `diagnose firewall auth list`.
+
+---
 
 # فصل 18 — IPsec Site-to-Site: IKEv2، Phase 1/2، MTU و عیب‌یابی (G7)
 

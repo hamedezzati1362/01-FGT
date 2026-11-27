@@ -38797,6 +38797,138 @@ curl -sk "https://203.0.113.3/login?user=admin'--"
 
 ---
 
+<a id="l-16-9"></a>
+
+## درس 16-9 — Web Filter در FortiGate: دسته‌های FortiGuard، Static URL، Rating و عیب‌یابی
+
+**فصل 16 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Identify FortiGate inspection modes and configure web and DNS filtering» · پیش‌نیاز: ۱۶-۱، ۱۶-۲**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ دسته‌های FortiGuard Needs-License؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** Web Filter سه لایه دارد: Category (FortiGuard)، Static URL Filter و Content/Safe Search؛ هر سایت یک «Rating» دارد و Action می‌تواند Allow، Monitor، Block، Warning یا Authenticate باشد.
+
+**چرا لازم است؟** مدیر می‌گوید «شبکه‌های اجتماعی بسته، سایت بانک باز». اگر نحوه‌ی تصمیم‌گیری (اول Static URL؟ یا Category؟) را ندانید، یک سایت را به‌اشتباه باز یا بسته می‌کنید و کسی نمی‌داند چرا.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) ترتیب ارزیابی (مفهومی)
+
+1. **Static URL Filter** (Exempt/Block/Allow/Monitor): سریع‌ترین و صریح‌ترین.
+2. **FortiGuard Category Filter:** فایروال Rating سایت را از FortiGuard می‌پرسد (Cache می‌کند) و Action دسته را اعمال می‌کند.
+3. **Content Filter / Safe Search / Quota:** مرحله‌های تکمیلی.
+
+ترتیب دقیق و تعامل را از مستند FortiOS همان نسخه بخوانید؛ اصل: Exempt در Static URL می‌تواند بازرسی‌های بعدی را (طبق تنظیم) دور بزند.
+
+#### ۲-۲) دسته‌ها و Actionها
+
+| Action | معنی |
+|---|---|
+| Allow | اجازه، بدون Log ویژه |
+| Monitor | اجازه + Log |
+| Block | مسدود + صفحه‌ی جایگزین |
+| Warning | هشدار؛ کاربر می‌تواند ادامه دهد |
+| Authenticate | نیاز به Login (دسته‌ی ویژه) |
+
+دسته‌ها در گروه‌ها: Potentially Liable، Adult/Mature، Bandwidth Consuming، Security Risk، General Interest و غیره. **Local Categories/Ratings:** می‌توانید سایت سازمانی را به دسته‌ی محلی نگاشت کنید.
+
+#### ۲-۳) خطای Rating
+
+اگر FortiGuard در دسترس نیست (لایسنس منقضی/قطع ارتباط)، رفتار با گزینه‌ی خطا در Profile (مثلاً `error-allow` یا `error-block` در `options`) تعیین می‌شود: Allow یا Block.
+
+``` text
+config webfilter profile
+ edit "WF-STD"
+  set feature-set flow
+  config ftgd-wf
+   set options error-allow
+   config filters
+    edit 1
+     set category 26
+     set action block
+    next
+   end
+  end
+ next
+end
+```
+
+(شماره‌ی Category را از GUI/مستند بخوانید؛ عدد بالا مثال است.)
+
+#### ۲-۴) Static URL
+
+``` text
+config webfilter urlfilter
+ edit 1
+  set name "STATIC-URL"
+  config entries
+   edit 1
+    set url "*.example-bad.com"
+    set type wildcard
+    set action block
+   next
+   edit 2
+    set url "intranet.example.com"
+    set type simple
+    set action exempt
+   next
+  end
+ next
+end
+```
+
+انواع: Simple، Wildcard، Regex. Exempt سایت امن را از بررسی‌های دیگر خارج می‌کند.
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده.** Block دسته‌ی «Social Networking»؛ آزمون: مرورگر به سایت مثال ⇒ صفحه‌ی بلوک و Log `action=blocked`.
+
+**متوسط — استثنا.** سایت آموزشی در دسته‌ی «Streaming» مسدود شده ولی لازم است. راه: Static URL با `exempt` فقط برای آن Domain؛ ثبت دلیل و مالک.
+
+**متوسط — Quota.** دسته‌ی «Bandwidth Consuming» با سهمیه‌ی ۳۰ دقیقه در روز: Action `Warning` با Quota.
+
+**سخت — «سایت مجاز بلوک می‌شود».**
+
+1. Log: `catdesc` و `url`: دسته‌ی اشتباه؟
+2. `diagnose debug rating`: وضعیت سرور Rating.
+3. Rating اشتباه ⇒ درخواست «Rating Review» از FortiGuard یا Local Rating.
+4. Static URL با Exempt برای حل فوری.
+5. HTTPS: بدون Inspection فقط Domain دیده می‌شود (درس ۱۶-۲).
+
+**سخت — Rating در دسترس نیست.** Log: `Rating error`. بررسی: لایسنس، DNS فایروال، Route به FortiGuard، `error-allow` یا `error-block` طبق سیاست امنیتی.
+
+### ۴) Lab (اجرا نشده)
+
+Static URL بدون لایسنس قابل‌تست است؛ Category فقط با لایسنس.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| FortiGuard | — | سرویس اطلاعات تهدید Fortinet |
+| URL | Uniform Resource Locator | نشانی وب |
+| SNI | Server Name Indication | نام سرور در TLS |
+| Rating | — | دسته‌ی اختصاص‌یافته به سایت |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) پنج Action وب‌فیلتر؟ *(پاسخ: 16-9-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) تفاوت Block و Warning؟ *(پاسخ: 16-9-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) چرا Static URL با Exempt لازم است؟ *(پاسخ: 16-9-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) Rating در دسترس نیست؛ سه علت و رفتار مناسب. *(پاسخ: 16-9-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *Static URL filters can exempt trusted sites from further inspection.*
+- *If the rating service is unavailable, the profile decides whether to allow or block.*
+- **Q1.** What is a local rating? *(پاسخ: 16-9-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 16
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -38980,6 +39112,18 @@ IPS به بازرسی محتوا در CPU/CP نیاز دارد و Offload کام
 **16-8-ت4** — ۱) بررسی Log و Signature ۲) تأیید مشروع‌بودن ورودی ۳) Exemption مستند فقط برای همان URL/Parameter ۴) پایش و بازبینی.
 
 **16-8-Q1** — Cross-Site Scripting.
+
+### پاسخ‌های درس افزوده‌ی 16-9 (فصل 16)
+
+**16-9-ت1** — Allow، Monitor، Block، Warning، Authenticate.
+
+**16-9-ت2** — Block مسدود می‌کند؛ Warning هشدار می‌دهد و کاربر می‌تواند ادامه دهد.
+
+**16-9-ت3** — برای سایت‌های مورد اعتماد که به‌اشتباه Block می‌شوند؛ با Exempt سریع و مستند باز می‌شوند.
+
+**16-9-ت4** — لایسنس منقضی، DNS/Route به FortiGuard، قطع ارتباط؛ رفتار: `error-allow` یا `error-block` طبق سیاست امنیتی و پایش.
+
+**16-9-Q1** — A category assigned locally on the firewall to a site, overriding or complementing the FortiGuard rating.
 
 ---
 
@@ -40850,6 +40994,133 @@ FortiGate: `diagnose debug application fnbamd -1`؛ سرور: AD Event 4625 (و�
 - *Work through authentication problems from the network layer upward.*
 - Q: What does Windows event 4740 indicate?
 
+<a id="l-17-8"></a>
+
+## درس 17-8 — روش‌های Firewall Authentication در FortiGate: Active، Passive، Local و Remote
+
+**فصل 17 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Identify and configure different methods of firewall authentication» · پیش‌نیاز: ۱۷-۰ تا ۱۷-۵**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** Policy بر اساس «کاربر» چگونه با روش‌های مختلف شناسایی کاربر ساخته می‌شود: **Active** (کاربر خودش Login می‌کند) و **Passive** (فایروال بدون پرسش از منبع دیگر می‌فهمد)، و کجا هر کدام مناسب است.
+
+**چرا لازم است؟** وقتی می‌گویید «فقط گروه مالی به ERP برود»، فایروال باید بداند هر IP متعلق به چه کسی است. اگر روش اشتباه انتخاب شود، یا کاربران مدام Login می‌کنند (آزاردهنده) یا اصلاً شناسایی نمی‌شوند (نقص امنیتی).
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) دو خانواده
+
+| خانواده | چگونه | مثال |
+|---|---|---|
+| Active | فایروال از کاربر Username/Password می‌خواهد | Captive Portal، Firewall Authentication (HTTP/HTTPS/FTP/Telnet) |
+| Passive | هویت از منبع دیگر گرفته می‌شود | FSSO (از Active Directory)، RSSO (از RADIUS Accounting) |
+
+#### ۲-۲) منبع حساب
+
+- **Local:** کاربر داخل خود FortiGate (`config user local`).
+- **Remote:** LDAP، RADIUS، TACACS+، Kerberos/FSSO.
+
+#### ۲-۳) جریان Active
+
+1. کاربر اولین درخواست HTTP/HTTPS را می‌زند.
+2. اولین Policy مطابق که کاربر/گروه دارد، تشخیص می‌دهد کاربر هنوز Authenticate نشده.
+3. فایروال درخواست را Redirect می‌کند به صفحه‌ی Login (Captive Portal).
+4. پس از موفقیت، یک ورودی در جدول Authentication ثبت و Policy اعمال می‌شود.
+5. پس از Timeout بیکاری (پیش‌فرض ۵ دقیقه، قابل‌تغییر) نیاز به Login مجدد.
+
+``` text
+config user setting
+ set auth-timeout 5
+ set auth-timeout-type idle-timeout
+ set auth-type http https ftp telnet
+end
+```
+
+#### ۲-۴) مثال Policy
+
+``` text
+config user local
+ edit "ali"
+  set type password
+  set passwd ***
+ next
+end
+config user group
+ edit "G-FIN"
+  set member "ali"
+ next
+end
+config firewall policy
+ edit 40
+  set name "FIN-to-ERP"
+  set srcintf "port2"
+  set dstintf "port3"
+  set srcaddr "all"
+  set dstaddr "SRV-ERP"
+  set groups "G-FIN"
+  set service "HTTPS"
+  set action accept
+ next
+end
+```
+
+برای بررسی کاربران فعال:
+
+``` text
+diagnose firewall auth list
+diagnose firewall auth clear
+```
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — کدام روش؟** شبکه‌ی مهمان: Active (Captive Portal). کارکنان دامنه‌ای در شبکه‌ی داخلی: Passive (FSSO) تا Login دوم نداشته باشند.
+
+**متوسط — چرا Policy «کاربر» همه‌ی ترافیک را نمی‌گیرد؟** Active Auth فقط برای پروتکل‌های پشتیبانی‌شده (HTTP/HTTPS/FTP/Telnet) صفحه‌ی Login می‌دهد. برای SSH یا برنامه‌های دیگر، کاربر باید قبلاً از طریق مرورگر Login کند یا از FSSO استفاده شود.
+
+**متوسط — HTTPS و گواهی.** Redirect HTTPS به صفحه‌ی Login نیاز به گواهی معتبر دارد؛ وگرنه کاربر هشدار می‌بیند. مستندات پورت‌های Authentication (HTTP و HTTPS) را بررسی و در Policy Local-in مجاز کنید.
+
+**سخت — کاربر Login می‌کند ولی دسترسی ندارد.**
+
+1. `diagnose firewall auth list` ⇒ کاربر هست؟ گروه؟
+2. گروه درست در Policy (`groups`)؟
+3. ترتیب Policy: Policy بالاتر بدون کاربر ترافیک را گرفته؟
+4. Timeout منقضی شده؟
+5. اگر LDAP: گروه Nested یا Base DN (درس ۱۷-۲).
+6. اگر چند کاربر پشت یک NAT: هویت به IP وابسته است ⇒ یک کاربر دیگری را «بهره‌مند» می‌کند؛ راه: FSSO/TS Agent یا Authentication per session.
+
+### ۴) Lab (اجرا نشده)
+
+یک Policy با گروه محلی؛ از PC مرورگر را باز کنید، Login و `diagnose firewall auth list` را ببینید.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| FSSO | Fortinet Single Sign-On | SSO فورتی‌نت |
+| RSSO | RADIUS Single Sign-On | SSO بر پایه‌ی RADIUS Accounting |
+| LDAP | Lightweight Directory Access Protocol | پروتکل دایرکتوری |
+| NAS | Network Access Server | سرور دسترسی شبکه |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) Active و Passive را تعریف کنید. *(پاسخ: 17-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) کدام روش برای مهمان؟ *(پاسخ: 17-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) چرا برای SSH Active Auth کار نمی‌کند؟ *(پاسخ: 17-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) کاربر Login شده ولی رد می‌شود؛ پنج بررسی. *(پاسخ: 17-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *Active authentication prompts the user; passive authentication learns identity from another source.*
+- *Use FSSO to avoid a second login for domain users.*
+- **Q1.** Which command lists authenticated firewall users? *(پاسخ: 17-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 17
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -41047,6 +41318,20 @@ RADIUS Reject: Shared Secret یا کاربر.
 چک‌لیست شش‌گامی: Reachability، Bind، کاربر، رمز، گروه، Policy.
 
 **17-7-Q1** — Invalid credentials.
+
+### پاسخ‌های درس افزوده‌ی 17-8 (فصل 17)
+
+**17-8-ت1** — Active: فایروال از کاربر Login می‌خواهد (Captive Portal). Passive: هویت از منبع دیگر (FSSO/RSSO) بدون پرسش از کاربر گرفته می‌شود.
+
+**17-8-ت2** — Active (Captive Portal).
+
+**17-8-ت3** — Active Auth فقط برای HTTP/HTTPS/FTP/Telnet صفحه‌ی Login دارد؛ برای SSH باید قبلاً Login مرورگری شود یا از FSSO استفاده کرد.
+
+**17-8-ت4** — ۱) `diagnose firewall auth list` ۲) گروه در Policy ۳) ترتیب Policy ۴) Timeout ۵) گروه Nested/Base DN در LDAP (و NAT مشترک).
+
+**17-8-Q1** — `diagnose firewall auth list`.
+
+---
 
 # فصل 18 — IPsec Site-to-Site: IKEv2، Phase 1/2، MTU و عیب‌یابی (G7)
 
@@ -50336,6 +50621,133 @@ Example: 20 + 22 + 15 + 10 + 18 = 85
 - *Never fabricate evidence; label untested items honestly.*
 - Q: Why run split-brain tests only in a lab?
 
+<a id="l-22-6"></a>
+
+## درس 22-6 — HA در عمق: Active-Active، Load Balancing، Virtual Cluster و Management Interface
+
+**فصل 22 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Identify and configure different operation modes for an FGCP HA cluster» · پیش‌نیاز: ۲۲-۰ تا ۲۲-۵**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی (بوت نشده)؛ دستورها `Unverified`؛ HA به دو دستگاه لایسنس‌دار نیاز دارد (Needs-License)؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** دو حالت FGCP (Active-Passive و Active-Active)، اینکه در Active-Active واقعاً چه چیزی تقسیم می‌شود، Virtual Cluster، Interface مدیریتی اختصاصی و کدام حالت را چه وقت انتخاب کنیم.
+
+**چرا لازم است؟** تصور «Active-Active یعنی ظرفیت دو برابر» اشتباه رایجی است. اگر آن را اشتباه بفهمید، فایروال را کم‌ظرفیت می‌خرید و Cluster بعد از Failover از بار پر می‌شود. سؤال آزمون هم دقیقاً همین تفاوت‌هاست.
+
+### ۲) توضیح از پایه
+
+| معیار | Active-Passive (a-p) | Active-Active (a-a) |
+|---|---|---|
+| ترافیک | فقط Primary پردازش می‌کند | Primary بخشی را به Subordinate می‌دهد |
+| ظرفیت پس از Failover | همان یک دستگاه | یک دستگاه (باید برای بار کامل طراحی شود) |
+| پیچیدگی | کم | بیشتر |
+| کاربرد | رایج‌ترین | بار UTM سنگین |
+
+#### ۲-۱) در Active-Active دقیقاً چه چیزی تقسیم می‌شود؟
+
+طبق مستند FortiOS، به‌صورت پیش‌فرض Primary ترافیکی را که **بازرسی عمیق (UTM/Proxy-based)** می‌خواهد بین اعضا پخش می‌کند؛ ترافیک عادی (بدون Profile) همچنان از Primary می‌گذرد، مگر اینکه گزینه‌ی `load-balance-all` فعال شود. Primary همیشه تمام ترافیک ورودی را دریافت می‌کند و بخشی را به Subordinate می‌فرستد؛ پس Primary نقطه‌ی عبور اصلی می‌ماند.
+
+``` text
+config system ha
+ set mode a-a
+ set schedule round-robin
+ set load-balance-all disable
+end
+```
+
+الگوریتم‌های Schedule (نمونه): `round-robin`، `weight-round-robin`، `least-connection`، `random`، `ip`، `ipport`، `hub`، `none`.
+
+#### ۲-۲) Virtual Cluster
+
+وقتی چند VDOM دارید، می‌توان VDOMها را به دو Virtual Cluster تقسیم کرد: Cluster 1 در عضو A Primary و Cluster 2 در عضو B Primary. بدین ترتیب هر دستگاه برای بخشی از VDOMها Active است و بار توزیع می‌شود (در عین حال هر دو Failover‌پذیرند). نیاز به Multi-VDOM (درس ۲۴).
+
+#### ۲-۳) Management Interface اختصاصی
+
+``` text
+config system ha
+ set ha-mgmt-status enable
+ config ha-mgmt-interfaces
+  edit 1
+   set interface "mgmt"
+   set gateway 10.50.0.1
+  next
+ end
+end
+```
+
+با این تنظیم می‌توانید به **هر عضو** مستقیماً (حتی Secondary) از شبکه‌ی Mgmt وصل شوید؛ بدون آن، مدیریت فقط به Primary می‌رسد.
+
+#### ۲-۴) سایر تنظیمات مرتبط
+
+``` text
+config system ha
+ set group-name "FGT-HA"
+ set hbdev "port7" 50 "port8" 50
+ set session-pickup enable
+ set monitor "port1" "port2"
+ set override disable
+end
+```
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — انتخاب حالت.** شعبه‌ی کوچک با ترافیک 300 Mbps و بدون UTM سنگین ⇒ Active-Passive.
+
+**متوسط — محاسبه‌ی ظرفیت.** مرکز با 3 Gbps ترافیک؛ هر دستگاه با UTM می‌تواند 2 Gbps. اگر Active-Active فرض شود ولی `load-balance-all` خاموش باشد، Primary همچنان همه‌ی ترافیک را می‌پذیرد.
+
+``` text
+Required capacity after failover = 3 Gbps
+Single unit capacity (UTM)       = 2 Gbps
+2 < 3  ->  after failover one unit is overloaded
+```
+
+نتیجه: باید مدل بزرگ‌تر یا Profileهای سبک‌تر؛ A-A ظرفیت را حل نمی‌کند، چون پس از Failover باز یک دستگاه می‌ماند.
+
+**متوسط — دسترسی به Secondary.** برای ارتقا باید به Subordinate وصل شوید؛ بدون Management Interface اختصاصی ممکن نیست. با `ha-mgmt-status enable` از Mgmt مستقیم.
+
+**سخت — Virtual Cluster.** دو VDOM: `VD-A` و `VD-B`. تنظیم: VD-A در vcluster1 با Priority بالاتر روی FGT-1 و VD-B در vcluster2 با Priority بالاتر روی FGT-2.
+
+``` text
+get system ha status
+diagnose sys ha history read
+```
+
+انتظار: هر دستگاه برای یک VDOM Primary است. در Failover یک دستگاه، VDOMهای او نیز به دستگاه دیگر می‌روند.
+
+**سخت — «A-A فعال است ولی Subordinate کم‌کار است».** علت: Policy بدون Profile ⇒ ترافیک تقسیم نمی‌شود. راه: `load-balance-all enable` (با سنجش اثر) یا اعمال Profileها طبق نیاز.
+
+### ۴) Lab (اجرا نشده)
+
+دو FortiGate VM لایسنس‌دار؛ a-p و سپس a-a؛ `get system ha status` و Session را مقایسه کنید.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| FGCP | FortiGate Clustering Protocol | پروتکل Cluster فورتی‌گیت |
+| a-p / a-a | Active-Passive / Active-Active | حالت‌های HA |
+| vcluster | Virtual Cluster | Cluster مجازی برای VDOM |
+| HBdev | Heartbeat Device | Interface ضربان‌قلب |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) تفاوت a-p و a-a؟ *(پاسخ: 22-6-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Virtual Cluster به چه چیزی نیاز دارد؟ *(پاسخ: 22-6-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) چرا A-A ظرفیت پس از Failover را حل نمی‌کند؟ *(پاسخ: 22-6-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) چگونه به Subordinate مستقیم وصل شویم؟ *(پاسخ: 22-6-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *In active-active mode the primary unit distributes only certain sessions to the subordinate units.*
+- *Size the cluster so that one unit can carry the full load after a failover.*
+- **Q1.** What does load-balance-all change? *(پاسخ: 22-6-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 22
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -50510,6 +50922,20 @@ Split-brain: HB قطع ولی هر دو دستگاه زنده‌اند و هر �
 Checksum Cluster هم‌خوانی Config بین اعضا را بررسی می‌کند.
 
 **22-0-Q1** — Loss of heartbeat between members that are both still running, so each assumes the primary role.
+
+### پاسخ‌های درس افزوده‌ی 22-6 (فصل 22)
+
+**22-6-ت1** — در a-p فقط Primary ترافیک را پردازش می‌کند؛ در a-a Primary بخشی از ترافیک (پیش‌فرض ترافیک نیازمند UTM/Proxy) را به Subordinate توزیع می‌کند.
+
+**22-6-ت2** — Multi-VDOM؛ VDOMها بین دو Virtual Cluster تقسیم می‌شوند.
+
+**22-6-ت3** — چون پس از افتادن یک عضو فقط یک دستگاه می‌ماند و باید کل بار را بردارد؛ ظرفیت طراحی باید بر پایه‌ی یک دستگاه باشد.
+
+**22-6-ت4** — با `ha-mgmt-status enable` و تعریف Interface مدیریتی اختصاصی روی هر عضو.
+
+**22-6-Q1** — With it enabled, the primary distributes all sessions (not only those requiring content inspection) to the cluster members.
+
+---
 
 # فصل 23 — Multi-Firewall و Asymmetric Routing (معماری ۵)
 
@@ -57916,6 +58342,152 @@ end
 - *Management access should never be exposed to the internet.*
 - Q: What do you check after finding an unknown admin?
 
+<a id="l-27-8"></a>
+
+## درس 27-8 — Log در FortiGate: مقصدها، سطح‌ها، مشاهده و عیب‌یابی
+
+**فصل 27 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Configure log settings and diagnose problems using the logs» · پیش‌نیاز: ۲۷-۱، ۲۶-۲**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ FortiAnalyzer Needs-License؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** Logها کجا ذخیره می‌شوند (Memory، Disk، FortiAnalyzer، Syslog، FortiCloud)، چه سطحی ثبت شود، چطور مشاهده کنیم و چطور از Log علت یک خرابی را بیابیم.
+
+**چرا لازم است؟** Log دوربین مدار بسته‌ی شبکه است. اگر روی Memory ثبت شود، با ریبوت گم می‌شود؛ اگر Disk کوچک باشد، پس از چند روز بازنویسی می‌شود؛ اگر هیچ‌چیز ثبت نشود، در حادثه کور هستید. آزمون NSE4 «تشخیص مشکل با Log» می‌خواهد؛ پس باید بدانید در Log کدام فیلد را بخوانید.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) مقصدها
+
+| مقصد | ماندگاری | نکته |
+|---|---|---|
+| Memory | موقت (ریبوت = حذف) | فقط رویدادهای اخیر |
+| Disk | محلی؛ در بعضی مدل‌ها/VM پیش‌فرض خاموش | ظرفیت کم، Rolling |
+| FortiAnalyzer | متمرکز | تحلیل و گزارش (Needs-License) |
+| Syslog | سرور مرکزی (rsyslog/SIEM) | درس ۲۶-۲ |
+| FortiCloud | ابر Fortinet | طبق لایسنس |
+
+#### ۲-۲) نوع Log
+
+- **Traffic:** Sessionها (Forward/Local).
+- **Event:** سیستم، ادمین، VPN، HA، Router.
+- **Security (UTM):** AV، IPS، Web، App.
+
+#### ۲-۳) سطح (Severity)
+
+0 Emergency، 1 Alert، 2 Critical، 3 Error، 4 Warning، 5 Notification، 6 Information، 7 Debug. Log را با آستانه‌ی حداقل (مثلاً Information) ثبت کنید.
+
+``` text
+config log memory filter
+ set severity information
+end
+config log disk setting
+ set status enable
+ set max-log-file-size 20
+ set diskfull overwrite
+end
+config log fortianalyzer setting
+ set status enable
+ set server 10.50.0.30
+ set reliable enable
+end
+config log syslogd setting
+ set status enable
+ set server 10.50.0.20
+ set mode reliable
+end
+```
+
+#### ۲-۴) Log در Policy
+
+``` text
+config firewall policy
+ edit 30
+  set logtraffic all
+ next
+end
+```
+
+`all` همه‌ی Sessionها؛ `utm` فقط رویداد UTM؛ `disable` هیچ.
+
+### ۳) مشاهده و جست‌وجو
+
+``` text
+execute log filter category 0
+execute log filter field srcip 10.10.0.5
+execute log filter field dstport 443
+execute log filter start-line 1
+execute log filter view-lines 20
+execute log display
+diagnose log test
+```
+
+`diagnose log test` Logهای نمونه تولید می‌کند تا مسیر ارسال را بیازمایید.
+
+نمونه Log Traffic و فیلدهای مهم:
+
+``` text
+date=2026-11-27 time=10:12:01 logid=0000000013 type=traffic subtype=forward level=notice
+srcip=10.10.0.5 dstip=198.51.100.8 dstport=443 action=deny policyid=0 service=HTTPS
+sentbyte=0 rcvdbyte=0 srcintf="port2" dstintf="port1"
+```
+
+فیلدها: `action` (accept/deny/close/timeout)، `policyid` (0 = Deny ضمنی)، `srcintf/dstintf`، `sentbyte/rcvdbyte`، `duration`.
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده.** `policyid=0 action=deny` ⇒ ترافیک مطابق هیچ Policy نشد؛ Policy یا Interface اشتباه.
+
+**متوسط — «Log نمی‌رسد».**
+
+1. Policy `logtraffic` فعال؟
+2. مقصد فعال (`config log disk setting`)؟
+3. Syslog: `execute ping`، Route، Source IP، پورت و `tcpdump` روی سرور.
+4. FAZ: در GUI وضعیت Connection و (طبق نسخه) `execute log fortianalyzer test-connectivity` (Unverified).
+5. سطح Severity بسیار بالا (فقط Critical) ⇒ Log کم.
+
+**متوسط — حجم Log.** 2 GB در روز ×۱۲ دستگاه × ۹۰ روز = 2160 GB؛ پس برای نگهداری ۹۰ روزه ≈ 2.1 TB (درس ۲۶-۱).
+
+**سخت — حادثه‌ی «اتصال دیشب قطع شد».**
+
+1. فیلتر زمانی روی Traffic با `dstip` سرور.
+2. `action=timeout` و `rcvdbyte=0` ⇒ بدون پاسخ از سرور.
+3. Event Log: تغییر Config/Link/HA در همان ساعت؟
+4. `date/time` با NTP هم‌گام (Timezone).
+5. نتیجه: لینک ISP در ۰۲:۱۰ قطع (Event Log: `Link-monitor status changed`).
+
+### ۵) Lab (اجرا نشده)
+
+Logging به Syslog را فعال، یک Deny ایجاد و Log را در سرور و `execute log display` مقایسه کنید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| FAZ | FortiAnalyzer | تحلیل‌گر Log فورتی‌نت |
+| Syslog | System Logging Protocol | ارسال Log شبکه‌ای |
+| UTM | Unified Threat Management | مدیریت یکپارچه‌ی تهدید |
+| SIEM | Security Information and Event Management | جمع‌آوری و همبستگی رویداد |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) چرا Memory Log کافی نیست؟ *(پاسخ: 27-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) `policyid=0` یعنی چه؟ *(پاسخ: 27-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) پنج گام وقتی Log به Syslog نمی‌رسد. *(پاسخ: 27-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) از Log علت قطع شبانه را چگونه می‌یابید؟ *(پاسخ: 27-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *Send logs to a central server so they survive a reboot or disk overwrite.*
+- *A traffic log with policy ID 0 means the session was denied by the implicit deny rule.*
+- **Q1.** Which log type records administrator logins? *(پاسخ: 27-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 27
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -58064,6 +58636,20 @@ Telnet/HTTP/SNMPv1-2c رمز و داده را بدون رمزنگاری می‌�
 **27-7-ت4** — حساب API با Profile Read-only، Trusted Host فقط مانیتورینگ، Token در Vault، چرخش دوره‌ای، Log تماس‌ها.
 
 **27-7-Q1** — Because a backup that was never restored may be corrupt or incomplete, so recovery is not proven.
+
+### پاسخ‌های درس افزوده‌ی 27-8 (فصل 27)
+
+**27-8-ت1** — چون با ریبوت پاک می‌شود و ظرفیت محدود است؛ برای ممیزی باید Log به Disk/FAZ/Syslog برود.
+
+**27-8-ت2** — Deny ضمنی؛ ترافیک با هیچ Policy مطابق نشد (Interface/Address/Service نامنطبق).
+
+**27-8-ت3** — ۱) `logtraffic` روی Policy ۲) فعال بودن مقصد ۳) Route/Source IP/پورت ۴) `tcpdump` و فایروال سرور ۵) سطح Severity.
+
+**27-8-ت4** — فیلتر زمانی روی Traffic، بررسی `action/rcvdbyte`، سپس Event Log همان ساعت (Link/HA/Config) و تطبیق زمان با NTP.
+
+**27-8-Q1** — Event log (system/admin events).
+
+---
 
 # پایان بخش ۹ (فصل‌های ۲۵ تا ۲۷)
 
