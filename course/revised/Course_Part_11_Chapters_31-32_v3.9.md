@@ -1578,6 +1578,96 @@ Owner (مالک سرویس)، Implementer (مجری)، Reviewer (بازبین ف
 - Policy جدید برای پروژه: Normal (CAB).
 - بستن IP مهاجم در حادثه: Emergency با بازبینی پس از ۲۴ ساعت.
 
+### تکمیل عمیق: از «مهندس پیکربندی» تا «مهندس عملیات»
+
+#### چرا این بخش را باید یاد بگیریم؟
+
+تصور کنید یک پزشک ماهر دارید که جراحی را عالی بلد است ولی بعد از عمل، بیمار را ویزیت نمی‌کند، پرونده نمی‌نویسد و دارو را ثبت نمی‌کند. بیمار ممکن است بمیرد، نه به‌خاطر ضعف جراحی، بلکه به‌خاطر نبود **فرایند**. شبکه هم همین است. بیشتر قطعی‌های جدی سازمان‌ها نه از ضعف دانش فنی، بلکه از «تغییر بدون ثبت»، «Backup بدون آزمون» و «حادثه بدون نقش مشخص» می‌آید. این فصل شما را از کسی که فقط دستور می‌زند، به کسی تبدیل می‌کند که سازمان به او اعتماد می‌کند.
+
+#### توضیح با زبان ساده
+
+عملیات (Operations) یعنی همه‌ی کارهای تکراری و پیش‌بینی‌پذیر که شبکه را سالم نگه می‌دارد. سه ستون دارد:
+
+1. **Run**: نگهداری روزانه؛ Health Check، Backup، بررسی هشدارها.
+2. **Change**: هر تغییر با درخواست، تأیید، اجرا و بستن.
+3. **Respond**: وقتی حادثه رخ داد، چه کسی چه می‌کند.
+
+ITIL (Information Technology Infrastructure Library، یعنی «کتابخانه‌ی زیرساخت فناوری اطلاعات») مجموعه‌ی بهترین‌روش‌های صنعتی برای همین سه ستون است. نیازی نیست همه‌ی ITIL را پیاده کنید؛ سه فرایند آن کافی است: Incident Management (مدیریت حادثه)، Change Management (مدیریت تغییر) و Problem Management (مدیریت مسئله‌ی ریشه‌ای).
+
+#### تفاوت Incident و Problem با مثال
+
+صبح کاربران نمی‌توانند به سرور فایل برسند. شما Policy را اصلاح می‌کنید و همه چیز درست می‌شود؛ این **Incident** بود (هدف: برگرداندن سرویس). بعد می‌پرسید «چرا Policy اشتباه شده بود؟ چرا Change Review نکرده بودیم؟»؛ این **Problem** است (هدف: جلوگیری از تکرار).
+
+#### مثال ساده — هزینه‌ی یک تغییر بدون ثبت
+
+یک مهندس شب ساعت ۲۳ برای «رفع سریع» یک Policy را حذف می‌کند. فردا صبح ERP کار نمی‌کند. هیچ‌کس نمی‌داند چه چیزی تغییر کرده. تیم ۴۰ دقیقه Log می‌خواند تا بفهمد. اگر CHG ثبت شده بود، ۲ دقیقه کافی بود: «دیشب Policy 47 حذف شد».
+
+#### مثال متوسط — سه نوع Change
+
+| نوع | تعریف | مثال | تأیید |
+|---|---|---|---|
+| Standard | تکراری، کم‌ریسک، از پیش تأییدشده | افزودن IP به Address Group | بدون CAB |
+| Normal | نیاز به بررسی | Policy جدید برای پروژه | CAB |
+| Emergency | حادثه‌ی جاری | بستن IP مهاجم | تأیید سریع + بازبینی بعدی |
+
+CAB = Change Advisory Board، یعنی «هیئت مشورتی تغییر»؛ گروهی که ریسک تغییرات بزرگ را بررسی می‌کند.
+
+#### مثال سخت — تغییر اضطراری که اشتباه شد
+
+حمله‌ی Brute-force به VPN. مهندس Emergency Change می‌زند و کل `203.0.113.0/24` را Block می‌کند. ۱۵ دقیقه بعد مشتری مهم (با IP در همین بلوک) نمی‌تواند وصل شود.
+
+درس: Emergency هم باید حداقل‌های ثبت داشته باشد: چه، چرا، کی، Rollback. مراحل درست:
+
+1. فقط IP مهاجم را Block کنید (نه کل بلوک).
+2. زمان و دلیل را در Ticket بنویسید.
+3. ظرف ۲۴ ساعت بازبینی کنید و Block اضافی را آزاد کنید.
+
+#### فرمول عملی: اندازه‌گیری سلامت عملیات
+
+``` text
+Change success rate = successful changes / total changes x 100
+MTTR = total repair time / number of incidents
+MTTD = total detection time / number of incidents
+```
+
+MTTD = Mean Time To Detect (میانگین زمان تشخیص)، MTTR = Mean Time To Repair (میانگین زمان رفع). مثال: ۴ حادثه با زمان رفع ۲۰، ۴۰، ۱۰ و ۳۰ دقیقه.
+
+``` text
+MTTR = (20 + 40 + 10 + 30) / 4 = 25 minutes
+```
+
+#### Lab پیشنهادی (روی Lab ایزوله، بدون دست‌زدن به تجهیز واقعی)
+
+1. یک قالب CHG بسازید.
+2. یک تغییر فرضی (افزودن Policy) را کامل ثبت کنید: Pre-check، مراحل، Post-check، Rollback.
+3. تغییر را در Lab اجرا کنید و زمان واقعی را ثبت کنید.
+4. یک‌بار عمداً Rollback را تمرین کنید.
+
+#### عیب‌یابی فرایند
+
+| علامت | علت محتمل | رفع |
+|---|---|---|
+| CHG‌ها ناقص‌اند | قالب اجباری نیست | فیلدهای الزامی |
+| Rollback کار نکرد | آزمون نشده بود | آزمون Rollback در Lab |
+| تأیید دیر می‌شود | CAB سنگین | Standard Change برای کارهای تکراری |
+
+#### پرسش‌های مرور با پاسخ
+
+**۱. چرا Emergency Change هم ثبت می‌شود؟** چون بعداً باید بدانید چه چیزی تغییر کرد و آیا اثر جانبی داشت.
+
+**۲. Incident و Problem چه فرقی دارند؟** Incident بازگرداندن سرویس است؛ Problem حذف علت ریشه‌ای.
+
+**۳. چرا Standard Change بدون CAB است؟** ریسک آن قبلاً سنجیده و روش آن ثبت شده است.
+
+**۴. MTTR چه چیزی را نشان می‌دهد؟** سرعت رفع، نه کیفیت پیشگیری.
+
+#### English Corner
+
+- *Change Advisory Board reviews high-risk changes before implementation.* هیئت مشورتی تغییرات پرریسک را قبل از اجرا بررسی می‌کند.
+- *Every change must have a rollback plan.* هر تغییر باید برنامه‌ی بازگشت داشته باشد.
+- Q: What is the difference between an incident and a problem?
+- Q: Why do we measure MTTR?
+
 ## درس 32-1 — Capstone III: عملیات روزانه و Change Management (ITIL) — فرایند، قالب CHG و مثال کامل
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۰ · ≈ 11 ساعت**
@@ -1751,6 +1841,99 @@ diagnose firewall iprope lookup 10.30.2.50 40000 10.30.3.10 1433 tcp ZN-APP
 Open tickets: 3 ; Alerts: CPU warn FW2 ; Pending change: CHG-114 tonight 23:00 ; Backups: OK
 ```
 
+### تکمیل عمیق: یک روز کاری واقعی و یک CHG کامل با سه پایان متفاوت
+
+#### چرا؟
+
+عملیات روزانه شبیه مسواک‌زدن است؛ کسل‌کننده، اما نبودنش هزینه‌ی سنگین دارد. در این درس یک «روز» را از ۰۸:۰۰ تا ۱۷:۰۰ قدم‌به‌قدم می‌گذرانیم تا ببینید چه چیزی کی بررسی می‌شود و چرا.
+
+#### یک روز کاری گام‌به‌گام
+
+``` text
+08:00  get system performance status       -> CPU, memory, uptime
+08:05  get system ha status               -> in-sync ?
+08:10  review overnight alerts            -> SIEM/Zabbix
+08:20  verify backup (file size + sha256) -> not zero bytes
+08:40  review Top Deny by srcip           -> scan / misconfig
+09:00  handle tickets / CHGs
+16:30  prepare handover note
+```
+
+**تفسیر عددی نمونه:**
+
+اگر CPU امروز 62٪ است و میانگین هفته‌ی گذشته 20٪، حتی اگر زیر آستانه‌ی ۷۰٪ باشد، «غیرعادی» است و باید دلیلش را بپرسید. Baseline یعنی همین مقایسه با حالت نرمال.
+
+#### بررسی Backup: چرا «وجود فایل» کافی نیست؟
+
+``` text
+ls -l cfg-2026-11-27.conf        -> 184320 bytes (normal ~180 KB)
+sha256sum cfg-2026-11-27.conf    -> store beside file
+grep -c "config firewall policy" cfg-2026-11-27.conf
+```
+
+فایل ۰ بایتی یا بدون بخش Policy یعنی Backup خراب. هر ماه یک Restore آزمایشی در Lab انجام دهید؛ Backup آزمون‌نشده، Backup نیست.
+
+#### CHG نمونه‌ی ساده
+
+درخواست: افزودن سرور گزارش‌گیری (10.30.2.50) به DB روی پورت 1433.
+
+- ریسک: کم؛ اثر: فقط Zone DB.
+- Window: ساعت ۲۲:۰۰ تا ۲۲:۳۰.
+- Rollback: غیرفعال کردن Policy 62 (کمتر از ۲ دقیقه).
+
+#### CHG نمونه‌ی متوسط — تغییر NAT
+
+تغییر IP Pool برای ۲۰۰ کاربر. ریسک متوسط چون قطع اتصال‌های جاری. Pre-check: ظرفیت Pool (محاسبه‌ی بالا)، تأیید ISP که IP Route شده. Post-check: `diagnose sys session list` با SNAT جدید؛ تست از یک کاربر.
+
+#### CHG نمونه‌ی سخت — تغییر شکست‌خورده با Rollback
+
+ساعت ۲۲:۰۵ Policy 62 اعمال شد. ۲۲:۱۰ گزارش «DB قطع شد». Post-check:
+
+``` text
+diagnose firewall iprope lookup 10.30.2.50 40000 10.30.3.10 1433 tcp ZN-APP
+ -> policy 61 (deny)
+```
+
+یعنی Policy 61 (Deny) بالاتر از 62 است. گام‌ها:
+
+1. ۲۲:۱۱ Rollback: `set status disable` روی 62.
+2. ۲۲:۱۲ تأیید بازگشت سرویس.
+3. ۲۲:۳۰ بستن CHG با «ناموفق».
+4. روز بعد CHG جدید با جابه‌جایی ترتیب.
+
+چون Rollback آماده بود، اثر فقط ۲ دقیقه شد.
+
+#### محاسبه‌ی ریسک ساده
+
+``` text
+Risk score = Likelihood (1-5) x Impact (1-5)
+Example: 2 x 4 = 8  -> medium -> require reviewer
+```
+
+#### Lab
+
+۱) چک‌لیست روزانه را روی Lab اجرا و خروجی‌ها را ذخیره کنید. ۲) CHG بالا را اجرا و Post-check بگیرید. ۳) عمداً ترتیب را غلط بگذارید و Rollback کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Post-check ناموفق | Policy پایین‌تر از Deny | تغییر ترتیب |
+| Backup خالی | دسترسی مقصد | بررسی مجوز |
+| CHG بدون Rollback | قالب ناقص | اجباری کردن فیلد |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Hash Backup؟** تشخیص خرابی/دستکاری.
+**۲. چرا Rollback قبل از شروع نوشته می‌شود؟** در بحران وقت فکر نیست.
+**۳. Baseline چه کمکی می‌کند؟** تشخیص غیرعادی حتی زیر آستانه.
+
+#### English Corner
+
+- *Run the post-check immediately after the change.* پس از تغییر بلافاصله Post-check را اجرا کنید.
+- *A backup is only as good as its last successful restore test.*
+- Q: What belongs in a pre-check?
+
 ## درس 32-2 — Capstone III: شبیه‌سازی حادثه کامل — سناریو، نقش‌ها، Timeline نمونه، MTTD/MTTR و PIR
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۰، ۲۹-۴ · ≈ 11 ساعت**
@@ -1912,6 +2095,91 @@ Timeline نمونه: T0 هشدار، T+5 تأیید، T+15 مهار، T+60 با�
 10:00 alert ; 10:05 triage ; 10:15 contain ; 10:50 recover ; next day PIR
 ```
 نقش‌ها: Incident Commander، Ops، Comms، Scribe.
+
+### تکمیل عمیق: یک حادثه‌ی کامل از هشدار تا گزارش پس از حادثه
+
+#### چرا؟
+
+آتش‌نشانان تمرین آتش می‌کنند، نه چون آتش دوست دارند، چون در شلوغی واقعی فرصت فکر نیست. شبیه‌سازی حادثه همین کار را برای تیم شبکه می‌کند: نقش‌ها و ترتیب کارها از قبل در ذهن باشد.
+
+#### نقش‌ها
+
+| نقش | کار |
+|---|---|
+| Incident Commander | تصمیم‌گیری و هماهنگی |
+| Operator | اجرای دستورها |
+| Scribe | ثبت Timeline |
+| Communicator | اطلاع به ذی‌نفعان |
+
+در تیم کوچک یک نفر چند نقش دارد، ولی **ثبت‌کننده** را جدا نگه دارید؛ کسی که دستور می‌زند فرصت نوشتن ندارد.
+
+#### سناریو: VPN شرکت از ساعت ۱۰:۰۰ کند و بعد قطع می‌شود
+
+``` text
+10:00 alert  : VPN failed logins 43 in 5 min from 203.0.113.50
+10:03 triage : many users, real accounts -> suspected brute force
+10:05 check  : any success after failures ?  (Event log)
+10:07 result : one success for user ali from same IP  -> serious
+10:08 contain: block IP, disable ali session, force password reset
+10:20 verify : no new logins from IP; ali re-enabled after reset + MFA
+10:50 recover: VPN normal; monitor 72h
+D+1   PIR    : written
+```
+
+#### تحلیل تصمیم‌ها
+
+- چرا ابتدا «موفقیت پس از شکست» بررسی شد؟ چون Brute-force بدون موفقیت یک «تلاش» است و با موفقیت یک «نفوذ».
+- چرا Block فقط IP؟ جلوگیری از آسیب به کاربران مشروع.
+- چرا Reset رمز و MFA؟ رمز ممکن است لو رفته باشد.
+
+#### بخش Evidence
+
+``` text
+execute log filter category 1
+execute log display
+sha256sum vpn-events-2026-11-27.log
+```
+
+Log خام را قبل از هر تغییر کپی و Hash کنید؛ بعداً ثابت می‌کند چه شد.
+
+#### سناریوی سخت‌تر: دو مشکل هم‌زمان
+
+در حین حادثه، ISP هم قطع می‌شود. اولویت: بازگرداندن اینترنت کاربران یا مهار VPN؟ قاعده: خطر نفوذ فعال بر ناراحتی عملیاتی غلبه دارد؛ ولی چون دو نفر دارید، Operator-A VPN، Operator-B ISP.
+
+#### PIR (Post-Incident Review)
+
+``` text
+Impact   : VPN degraded 50 min, 1 account compromised
+Root cause: weak password + no MFA
+Actions  : MFA for all (owner IT, due 14d); geo-restrict (owner NOC, 7d)
+MTTD 3 min ; MTTR 50 min
+```
+
+Blameless یعنی «چه سیستمی اجازه داد این رخ دهد؟» نه «چه کسی خطا کرد؟».
+
+#### Lab
+
+سناریو را روی Lab با Log ساختگی تمرین کنید؛ هر نقش را یک‌بار بازی کنید؛ Timeline را بنویسید.
+
+#### عیب‌یابی فرایند
+
+| علامت | علت | رفع |
+|---|---|---|
+| Timeline ناقص | Scribe نبود | تعیین نقش |
+| مهار دیر | نبود Playbook | تدوین Playbook |
+| تکرار حادثه | PIR بی‌پیگیری | Action Owner و تاریخ |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Evidence قبل از رفع؟** رفع ممکن است شواهد را پاک کند.
+**۲. Blameless چیست؟** بررسی سیستم نه فرد.
+**۳. چرا MFA بعد از حادثه؟** علت ریشه‌ای رمز ضعیف بود.
+
+#### English Corner
+
+- *Preserve evidence before remediation.* پیش از اصلاح، شواهد را حفظ کنید.
+- *The post-incident review is blameless.*
+- Q: Which roles should exist during an incident?
 
 ## درس 32-3 — Capstone IV: مهاجرت/ارتقای کامل در Lab — Plan زمان‌بندی‌شده، Post-check، Rollback و گزارش
 
@@ -2088,6 +2356,82 @@ Plan زمان‌بندی، Rollback، آزمون پیش/پس؛ مسیر ارتق
 
 نسخه‌ی فعلی ← با Upgrade Path Tool رسمی Fortinet مسیر را بگیرید (ممکن است مرحله‌ای باشد)؛ Backup، آزمون در Lab، پنجره‌ی تغییر، Verify، Rollback.
 
+### تکمیل عمیق: ارتقای نسخه‌ی FortiOS در Lab به‌صورت مرحله‌ای
+
+#### چرا؟
+
+ارتقا مثل تعویض موتور هواپیما در حین پرواز است؛ اگر آماده نباشید، همه‌چیز می‌افتد. هدف: ارتقای امن با Backup، مسیر درست، آزمون پیش/پس و Rollback.
+
+#### مفهوم Upgrade Path
+
+FortiOS همیشه از هر نسخه‌ای به هر نسخه‌ای نمی‌رود. Fortinet ابزار رسمی Upgrade Path Tool دارد که مسیر مرحله‌ای (مثلاً A→B→C) را مشخص می‌کند. مسیر را همیشه از ابزار/مستند رسمی همان مدل بگیرید؛ در Lab هم این عادت را بسازید.
+
+#### برنامه‌ی ارتقا (Plan)
+
+``` text
+T-14d  read Release Notes (known issues, config changes)
+T-7d   upgrade in Lab with copied config
+T-1d   full backup + hash + rollback image ready
+T0     maintenance window: upgrade primary path
+T+30m  verify: tunnels, HA, policy hit, UTM, logs
+T+24h  monitor; close change
+```
+
+#### Pre-check/Post-check جدول
+
+| مورد | قبل | بعد |
+|---|---|---|
+| نسخه | `get system status` | همان با نسخه‌ی جدید |
+| تعداد Policy | `show firewall policy` (شمارش edit) | یکسان |
+| Tunnel | `diagnose vpn tunnel list` | همه‌ی Tunnelها Up |
+| HA | `get system ha status` | in-sync |
+| Route | `get router info routing-table all` | بدون تفاوت غیرمنتظره |
+
+#### مثال ساده
+
+ارتقای یک VM تکی در Lab: Backup، بارگذاری Image، Reboot، Verify. زمان ≈ ۱۵ دقیقه.
+
+#### مثال متوسط — Cluster HA
+
+روش مستند Fortinet «Uninterruptible Upgrade»: ابتدا Secondary ارتقا می‌یابد و بوت می‌شود، Failover کنترل‌شده، سپس نفر دوم ارتقا می‌یابد. نکته: در طول ارتقا Cluster موقتاً نسخه‌ی ناهمسان دارد؛ این حالت موقت و طبق مستند مجاز است.
+
+#### مثال سخت — ارتقا که قابلیتی را می‌شکند
+
+پس از ارتقا SSL VPN Portal باز نمی‌شود. بررسی Release Notes: Syntax یا Default تغییر کرده. رفع: تطبیق Config با Syntax جدید یا Rollback به Image قبلی (Backup Image روی Flash). تصمیم Rollback با معیار قبلی: «اگر سرویس حیاتی تا ۳۰ دقیقه برنگشت».
+
+#### Rollback
+
+``` text
+execute restore image tftp old.out 10.50.0.30
+execute restore config tftp cfg-before.conf 10.50.0.30
+```
+
+برای دقیق بودن دستورها نسخه‌ی خودتان را از مستند رسمی بخوانید.
+
+#### Lab
+
+Upgrade Path را در ابزار رسمی ببینید؛ در Lab ارتقا و Rollback را یک‌بار انجام دهید و Pre/Post جدول را پر کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| بوت نمی‌شود | Image ناسازگار | Rollback از Console |
+| Config حذف شد | مسیر ارتقا اشتباه | Restore Backup |
+| Cluster out-of-sync | نسخه‌ی ناهمسان | تکمیل ارتقای عضو دوم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Release Notes؟** تغییر Syntax/Default/Bug.
+**۲. چرا Lab اول؟** کشف مشکلات بدون اثر.
+**۳. معیار Rollback؟** از قبل تعریف‌شده.
+
+#### English Corner
+
+- *Follow the supported upgrade path.*
+- *Always read the release notes before upgrading.*
+- Q: When do you roll back?
+
 ## درس 32-4 — ارزیابی نهایی و Portfolio: ماتریس مهارت، تحلیل شکاف، نگاشت نقش و نمونه‌ی Portfolio
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: کل دوره · ≈ 11 ساعت**
@@ -2242,6 +2586,81 @@ Plan زمان‌بندی، Rollback، آزمون پیش/پس؛ مسیر ارتق
 | IPsec | متوسط | مستندی |
 | HA | آشنا | اجرا نشده |
 
+### تکمیل عمیق: ارزیابی نهایی و ساخت Portfolio صادقانه
+
+#### چرا؟
+
+کارفرما به «گواهی» اعتماد نمی‌کند؛ به **شواهد** اعتماد می‌کند. Portfolio یعنی پوشه‌ای که ثابت می‌کند «چه کرده‌اید». اما یک Portfolio پر از ادعای بدون اجرا از یک Portfolio کوچک و صادق بی‌اعتبارتر است.
+
+#### سه سطح ادعا
+
+| سطح | معنی | مثال |
+|---|---|---|
+| اجراشده با شاهد | در Lab اجرا و Log/اسکرین‌شات دارید | Policy+NAT+آزمون منفی |
+| تأیید مستندی | از مستند رسمی خوانده و تطبیق داده‌اید | دستور HA |
+| اجرا نشده | فقط مفهوم | VDOM بدون لایسنس |
+
+همین سه برچسب را کنار هر مهارت بگذارید.
+
+#### ماتریس مهارت (نمونه‌ی پر)
+
+| حوزه | سطح | Evidence |
+|---|---|---|
+| Policy/NAT/VIP | اجراشده | CHG-07 + Log |
+| IPsec Site-to-Site | اجراشده | `diagnose vpn tunnel list` |
+| SD-WAN | تأیید مستندی | مرجع رسمی + برگه |
+| HA | اجرا نشده | Needs-License |
+
+#### محتوای Portfolio
+
+1. معماری (HLD + LLD).
+2. دو CHG کامل.
+3. یک RCA از حادثه‌ی Lab.
+4. Runbook.
+5. Index شواهد.
+
+#### مثال ساده
+
+یک صفحه‌ی خلاصه: «شبکه‌ی دو فایروالی؛ ۴ Policy؛ ۲ Tunnel؛ ۳ آزمون منفی».
+
+#### مثال متوسط — بخش «محدودیت‌ها»
+
+``` text
+Limitations:
+ - HA not executed (no second licensed VM)
+ - UTM profiles configured but signatures not updated (no FortiGuard license)
+ - Performance numbers from Lab only
+```
+
+نوشتن محدودیت اعتبار را بالا می‌برد.
+
+#### مثال سخت — مصاحبه
+
+پرسش: «Failover را چطور ثابت می‌کنی؟» پاسخ ضعیف: «کار می‌کرد». پاسخ قوی: «ping مداوم، قطع لینک در ساعت X، ۳ بسته گم شد، Log حاوی رویداد Link-monitor، و اینجا اسکرین‌شات».
+
+#### Lab
+
+ماتریس مهارت را با برچسب سه‌سطحی بسازید و برای هر ردیف اجراشده یک فایل شاهد پیوست کنید.
+
+#### عیب‌یابی Portfolio
+
+| مشکل | رفع |
+|---|---|
+| ادعا بدون شاهد | برچسب «تأیید مستندی» |
+| بیش‌ازحد شلوغ | ۵ کار شاخص |
+| اسرار در فایل | Sanitize |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا محدودیت‌ها را می‌نویسیم؟** صداقت و اعتماد.
+**۲. Evidence خوب چیست؟** قابل‌تکرار و زمان‌دار.
+**۳. چه چیزی در Portfolio نباید باشد؟** رمز، IP واقعی مشتری.
+
+#### English Corner
+
+- *Show evidence, not claims.*
+- Q: How would you prove failover in an interview?
+
 ## درس 32-5 — Roadmap یادگیری بعدی: مسیر گواهی، Labهای اجرا نشده، Automation و برنامه‌ی ۶ ماهه
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۴ · ≈ 11 ساعت**
@@ -2388,6 +2807,71 @@ Plan زمان‌بندی، Rollback، آزمون پیش/پس؛ مسیر ارتق
 ### مثال حل‌شده: برنامه‌ی ۹۰ روزه
 
 ماه ۱: مرور مبانی و Lab؛ ماه ۲: VPN/SD-WAN؛ ماه ۳: عیب‌یابی و آزمون؛ هر هفته یک Lab مستند.
+
+### تکمیل عمیق: ساخت برنامه‌ی یادگیری ۹۰ روزه با هدف مشخص
+
+#### چرا؟
+
+یادگیری بدون برنامه مثل رانندگی بدون مقصد است. این درس به شما یاد می‌دهد از «چه بخوانم؟» به «تا ۹۰ روز دیگر چه چیزی را ثابت خواهم کرد؟» برسید.
+
+#### مسیرهای شغلی
+
+| مسیر | مهارت اصلی | گواهی (طبق سایت رسمی) |
+|---|---|---|
+| Network Engineer | Routing/Switching/SD-WAN | CCNA → CCNP |
+| Security Engineer | فایروال/VPN/UTM | NSE 4 → NSE 7 |
+| SOC Analyst | Log/Detection | رشته‌ی Blue Team |
+
+نام‌ها و سطوح گواهی را همیشه از سایت رسمی Cisco و Fortinet بررسی کنید؛ تغییر می‌کنند.
+
+#### برنامه‌ی ۹۰ روز (نمونه)
+
+``` text
+Days 1-30   foundations: IP, routing, firewall policy/NAT (daily lab 1h)
+Days 31-60  VPN, SD-WAN, HA concepts, monitoring
+Days 61-90  troubleshooting + capstone + mock interview
+Weekly      1 documented lab + 1 review of mistakes
+```
+
+#### مثال ساده
+
+هدف هفته: «Policy+NAT+VIP». خروجی: یک CHG و یک آزمون منفی.
+
+#### مثال متوسط — اندازه‌گیری پیشرفت
+
+``` text
+Progress = labs completed / labs planned x 100
+10 / 12 x 100 = 83%
+```
+
+اگر کمتر از ۷۰٪ بود برنامه را کوچک کنید نه ترک.
+
+#### مثال سخت — گیر کردن روی یک موضوع
+
+BGP سخت است. روش: ۱) یک Lab دو‌روتری ۲) فقط Peer ۳) بعد Prefix ۴) بعد Policy ۵) بعد عیب‌یابی؛ هر مرحله یک شاهد.
+
+#### Lab
+
+برنامه‌ی ۹۰ روزه‌ی خودتان را با تاریخ و خروجی بنویسید.
+
+#### عیب‌یابی انگیزه
+
+| مشکل | رفع |
+|---|---|
+| خواندن بدون Lab | قانون ۵۰٪ Lab |
+| فراموشی | مرور اشتباهات هفتگی |
+| ترس از Lab | Snapshot قبل از هر تغییر |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا خروجی هفتگی؟** مسئولیت‌پذیری.
+**۲. چرا Snapshot؟** آزمون بدون ترس.
+**۳. گواهی کافی است؟** خیر؛ شواهد.
+
+#### English Corner
+
+- *Set a measurable goal for each week.*
+- Q: What will you prove in 90 days?
 
 ## درس 32-6 — آزمون نهایی دوره: سناریوی جامع، صورت مسئله، کلید پاسخ و Rubric
 
@@ -2537,6 +3021,76 @@ execute ping-options df-bit yes
 ### مثال حل‌شده: مدیریت زمان آزمون
 
 طراحی 30 دقیقه، پیاده 60، عیب‌یابی 60، مستندات 30؛ شواهد را همان لحظه ثبت کنید.
+
+### تکمیل عمیق: آزمون نهایی — راهبرد، زمان‌بندی و نمونه‌ی پاسخ برتر
+
+#### چرا؟
+
+آزمون نهایی فقط دانش را نمی‌سنجد؛ **مدیریت شرایط** را هم می‌سنجد: زمان، اولویت، ثبت شواهد و صداقت درباره‌ی آنچه نمی‌دانید.
+
+#### ساختار پیشنهادی ۱۸۰ دقیقه
+
+| بخش | زمان | وزن |
+|---|---|---|
+| طراحی (HLD/LLD) | 30 دقیقه | 20 |
+| پیاده‌سازی | 60 دقیقه | 20 |
+| عیب‌یابی سه خرابی | 60 دقیقه | 25 |
+| مستندسازی/CHG/RCA | 30 دقیقه | 15 |
+| صداقت و Evidence | در تمام مدت | 20 |
+
+#### راهبرد حل
+
+1. ابتدا صورت مسئله را دو بار بخوانید و نیازها را فهرست کنید.
+2. طراحی را قبل از دست‌زدن به CLI بنویسید.
+3. هر مرحله را بلافاصله تأیید و Evidence ذخیره کنید.
+4. اگر گیر کردید، ۱۰ دقیقه سقف بگذارید و بروید به بخش بعد.
+
+#### مثال: عیب‌یابی خرابی نمونه
+
+«کاربران به DMZ نمی‌رسند». روش ده‌گامی کوتاه:
+
+``` text
+1 scope        : all users? one user?
+2 route        : get router info routing-table details <dst>
+3 policy       : diagnose firewall iprope lookup ...
+4 session/nat  : diagnose sys session filter ...
+5 wire         : diagnose sniffer packet ...
+6 verify fix   : curl + negative test
+```
+
+#### نمونه‌ی پاسخ برتر برای «ادعا بدون اجرا»
+
+پاسخ ضعیف: «HA را تنظیم کردم». پاسخ برتر: «HA به‌دلیل نبود دو VM لایسنس‌دار اجرا نشد؛ پیکربندی را از مستند رسمی نوشتم و آزمون Failover را با شاخص «کمتر از ۵ ثانیه» طراحی کردم؛ اجرا نشده.»
+
+#### نمره‌دهی
+
+``` text
+Score = design + build + troubleshooting + docs + honesty
+20 + 18 + 22 + 12 + 20 = 92
+```
+
+#### Lab
+
+یک آزمون ۱۸۰ دقیقه‌ای شبیه‌سازی‌شده بدهید و زمان هر بخش را ثبت کنید.
+
+#### عیب‌یابی عملکرد در آزمون
+
+| مشکل | رفع |
+|---|---|
+| وقت‌کشی روی یک مسئله | سقف ۱۰ دقیقه |
+| بی‌شاهد | ذخیره‌ی خروجی بلافاصله |
+| پرش از طراحی | HLD کوتاه اول |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا طراحی اول؟** CLI بدون طرح خطا می‌سازد.
+**۲. چرا صداقت وزن دارد؟** اعتماد حرفه‌ای.
+**۳. اگر وقت کم آمد؟** اولویت با موارد حیاتی و توضیح محدودیت.
+
+#### English Corner
+
+- *State clearly what you did not test.*
+- Q: How do you prioritize under time pressure?
 
 ## پاسخ‌های فصل 32
 
