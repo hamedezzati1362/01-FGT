@@ -75,7 +75,21 @@
 5. رفتار شبکه را هنگام خرابی Tunnel/Hub تحلیل (Convergence) و Failover را طراحی کند.
 6. **Local Breakout** را در برابر مسیر مرکزی (Backhaul) با معیار امنیت/Performance انتخاب کند.
 
-### ۲) پیش‌نیازها
+### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+
+**چرا Overlay چندشعبه را «طراحی» کنیم؟** اتصال دو شعبه با یک Tunnel ساده است. اتصال ۳۰ شعبه به‌صورت دستی یعنی ده‌ها Tunnel، ده‌ها Route و کابوس نگهداری. طراحی Overlay یعنی قبل از ساخت درباره‌ی «شکل» (Hub-and-Spoke یا Mesh)، «مسیریابی» (Static یا پویا) و «مقیاس» تصمیم بگیرید. مثل طراحی شبکه‌ی جاده‌ای بین شهرها: اگر هر شهر مستقیم به همه‌ی شهرها جاده بکشد، هزینه‌ی نگهداری انفجاری می‌شود؛ اگر همه از یک مرکز بگذرند، مرکز پرترافیک می‌شود.
+
+**Overlay و Underlay:** Underlay همان اینترنت/ISP است؛ Overlay شبکه‌ی خصوصی مجازی روی آن (Tunnelها). شعبه‌ها فکر می‌کنند در یک شبکه‌ی خصوصی هستند.
+
+**سه الگو**
+
+1. **Full-mesh:** هر دو سایت مستقیم. تعداد Tunnel = N(N−1)/2.
+2. **Hub-and-Spoke:** همه به Hub. تعداد Tunnel = N. ترافیک Spoke↔Spoke از Hub می‌گذرد.
+3. **ADVPN:** پایه Hub-and-Spoke؛ هنگام نیاز بین دو Spoke Tunnel مستقیم (Shortcut) ساخته می‌شود؛ ارزان‌تر از Mesh و سریع‌تر از Hub-Spoke.
+
+**چرا Routing پویا؟** با Static Route برای هر شعبه‌ی جدید باید همه‌ی دستگاه‌ها ویرایش شوند و Failover خودکار ندارید. OSPF/BGP روی Tunnel مسیرها را خودکار می‌یابد و با قطع Hub به Hub دوم می‌رود.
+
+**جمع‌بندی اصلی درس:**
 
 IPsec (۱۸-۰)، BGP (۹-۰، ۹-۷)، Convergence (۵-۷)، Packet Flow (۱۲-۰)، SD-WAN (۲۱-۷ برای ترکیب).
 
@@ -133,6 +147,39 @@ Full-mesh tunnels = n(n-1)/2     example: n=20 -> 190
 - Hub fail: Hub دوم + HA؛ زمان Convergence ≈ Detect + BGP.
 
 ### ۵) مثال حل‌شده
+
+#### مثال ساده — شمارش Tunnel
+
+``` text
+Full mesh = N x (N - 1) / 2
+Hub&Spoke = N
+N = 10 -> 45 vs 10 ;  N = 50 -> 1225 vs 50
+```
+
+#### مثال متوسط — طراحی دو Hub
+
+۱۰ شعبه با دو Hub (Primary/Secondary):
+
+``` text
+Tunnels = spokes x hubs = 10 x 2 = 20
+```
+
+هر Spoke به هر دو Hub Tunnel دارد؛ Routing پویا Hub اصلی را با Metric بهتر ترجیح می‌دهد.
+
+#### مثال متوسط — زمان Failover
+
+``` text
+Failover = detection + convergence
+OSPF dead 40 s (default) -> with BFD ~ 1 s
+```
+
+برای هدف «کمتر از ۱۰ ثانیه» BFD یا Timerهای کوتاه (با آزمون) لازم است.
+
+#### مثال سخت — Hub گلوگاه
+
+ترافیک Spoke↔Spoke زیاد است و Hub اشباع می‌شود. شاهد: CPU/Throughput Hub و تأخیر. راه: ADVPN یا Tunnel مستقیم Partial بین جفت‌های پرترافیک. اثبات: ping/iperf بین دو Spoke قبل و بعد؛ مسیر traceroute از Hub به مستقیم تغییر می‌کند.
+
+#### مثال‌های اصلی درس (مرور)
 
 **نیاز:** 1 Hub (AS 65000) + Spoke1/Spoke2؛ BGP iBGP. Hub: `set auto-discovery-sender enable`، `set net-device disable`؛ Spokeها: `set auto-discovery-receiver enable`.
 
@@ -341,7 +388,13 @@ OSPF dead 40 s (default broadcast) ; with BFD ~ <1 s
 5. تعارض‌ها (Overlap، ادغام شرکت) را شناسایی و راه‌حل بدهد.
 6. طرح را با آزمون‌های قابل‌اندازه‌گیری (Route Count، Traceroute) تأیید کند.
 
-### ۲) مفهوم پایه: چیست و چرا؟
+### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+
+**چرا IP Plan قبل از Tunnel؟** طرح آدرس‌دهی بد بعداً همه‌چیز را گران می‌کند: Overlap بین شعب، Routeهای زیاد و ناتوانی از Summarize. مثل شماره‌گذاری پلاک خانه‌ها در یک شهر: اگر از اول منظم باشد، پست و آمبولانس راحت پیدا می‌کنند.
+
+**اصول:** هر شعبه یک بلوک پیوسته و هم‌تراز؛ فضای رشد؛ Loopback و شبکه‌ی Tunnel از بلوک جدا؛ مستندسازی. **Summarization** (خلاصه‌سازی) فقط وقتی مجاز است که بلوک پیوسته و رزرو شده باشد؛ وگرنه ترافیک به مقصدهای ناموجود (Blackhole) می‌رود.
+
+**جمع‌بندی اصلی درس:**
 
 قبل از ساخت اولین Tunnel باید دانست «هر شعبه چه آدرسی دارد و چه Prefixی در Routing اعلام می‌شود». آدرس‌دهی بد بعدها با هیچ پیکربندی جبران نمی‌شود: Overlap، Route زیاد روی Hub، ناتوانی در Summary و NAT ناخواسته. IP Plan یک **سند معماری** است، نه فهرست آدرس.
 
@@ -434,6 +487,31 @@ Overlap در موارد: شرکت ادغام‌شده با همان 192.168.1.0/
 | Null route | برای هر Summary روی Hub |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+#### مثال ساده — تخصیص
+
+``` text
+HQ        10.0.0.0/16
+Branch 1  10.1.0.0/24 ... Branch 50 10.50.0.0/24
+Tunnel    10.255.0.0/16
+```
+
+#### مثال متوسط — Summary
+
+۱۶ شعبه‌ی پیاپی در بایت سوم (10.1.0.0/24 تا 10.1.15.0/24):
+
+``` text
+16 networks = 2^4 -> /24 - 4 = /20
+Summary: 10.1.0.0/20  (10.1.0.0 - 10.1.15.255)
+```
+
+شرط: شروع بلوک مضرب ۱۶ در بایت سوم.
+
+#### مثال سخت — شرکت ادغام‌شده
+
+هر دو 10.1.0.0/24. NAT ۱:۱ موقت روی Tunnel و Renumber تدریجی؛ Policy و DNS با آدرس ترجمه‌شده هماهنگ. آزمون با اسکریپت Overlap (`ipaddress` پایتون).
+
+#### مثال‌های اصلی درس (مرور)
 
 **ساده (حل‌شده):** ۴ شعبه در یک منطقه با 10.1.4–7.0/24: Summary 10.1.4.0/22 با Null route؛ Hub فقط یک Route منطقه را به بقیه اعلام می‌کند؛ `get router info routing-table all` باید Route /22 و ۴ Route /24 (در Hub) را نشان دهد.
 
@@ -615,7 +693,13 @@ python3 -c "import ipaddress as i; print(i.ip_network('10.16.0.0/20').overlaps(i
 5. Neighbor Stuck در Init/Exstart/2-Way را عیب‌یابی کند.
 6. Area Design و LSA Filtering را برای مقیاس بسنجد.
 
-### ۲) مفهوم پایه: چیست و چرا؟
+### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+
+**چرا OSPF روی Tunnel؟** با Static Route هر شعبه‌ی جدید یعنی ویرایش همه‌ی دستگاه‌ها. OSPF مسیرها را خودکار می‌یابد. ولی Tunnel «شبکه‌ی چندجانبه‌ی مجازی» است و رفتار خاص دارد.
+
+**Network Type:** Broadcast (DR/BDR، پیش‌فرض اترنت)، Point-to-Point (بدون DR)، Point-to-Multipoint (Hub با چند Spoke، بدون DR). برای Hub-and-Spoke روی Hub معمولاً `point-to-multipoint` مناسب است. **Cost** برای ترجیح Hub اصلی؛ **MTU** باید یکسان باشد (ExStart).
+
+**جمع‌بندی اصلی درس:**
 
 OSPF روی Tunnel دو مزیت دارد: (۱) Route شعب خودکار یاد گرفته می‌شود؛ (۲) قطع Tunnel باعث حذف Route می‌شود و ترافیک به مسیر جایگزین می‌رود. ولی OSPF برای شبکه‌ی چندشعبه **فرض‌هایی** دارد (Multicast، Hello، DR/BDR) که روی Tunnel باید آگاهانه تنظیم شوند، وگرنه Neighbor ناپایدار یا Convergence کند می‌شود.
 
@@ -667,6 +751,30 @@ Area 0 در Hub؛ هر منطقه Area جدا با ABR؛ Stub/NSSA برای کا
 | Auth | MD5/SHA روی Tunnel |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+#### مثال ساده
+
+``` text
+config router ospf
+ config ospf-interface
+  edit "TO-SPOKES"
+   set interface "TO-SPOKES"
+   set network-type point-to-multipoint
+   set cost 10
+  next
+ end
+end
+```
+
+#### مثال متوسط — Hub اصلی/پشتیبان
+
+Hub1 cost 10، Hub2 cost 20؛ Spoke ترافیک را به Hub1 می‌فرستد و با خرابی به Hub2.
+
+#### مثال سخت — گیر در ExStart
+
+MTU Tunnel با MTU Interface مقابل متفاوت است. `get router info ospf neighbor` ExStart؛ رفع: MTU یکسان یا `mtu-ignore`. تأیید Full.
+
+#### مثال‌های اصلی درس (مرور)
 
 **ساده (حل‌شده):** Hub و Spoke1: Phase1/2 با Selector 0.0.0.0/0؛ IP Tunnel 10.250.1.1/30 و .2؛ OSPF point-to-point؛ `get router info ospf neighbor` ⇒ Full؛ `get router info routing-table ospf` ⇒ 10.1.4.0/24 via 10.250.1.2.
 
@@ -920,7 +1028,11 @@ Hub و دو Spoke بسازید؛ `get router info ospf neighbor` را بخوان
 5. Convergence BGP (Hold، BFD، MRAI) را محاسبه کند.
 6. عیب‌یابی Neighbor Active/Idle/Established-no-routes را انجام دهد.
 
-### ۲) مفهوم پایه: چیست و چرا؟
+### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+
+**چرا BGP در Overlay؟** برای مقیاس بالا و کنترل دقیق سیاست (ترجیح یک Hub/ISP). ولی iBGP قوانین خود را دارد: Full-mesh یا Route Reflector، و Next-hop. Hub می‌تواند RR باشد تا Spokeها فقط با Hub Peer شوند.
+
+**جمع‌بندی اصلی درس:**
 
 با ۴۰ شعبه و دو Hub، BGP مقیاس‌پذیرتر و قابل‌کنترل‌تر از OSPF است: Policy بر پایه‌ی Attribute، Route Reflector برای حذف Full-mesh، و جداسازی Control Plane شعب. ولی BGP به Reachability Next-hop وابسته است و Convergence پیش‌فرضش کند است؛ این دو باید آگاهانه طراحی شوند.
 
@@ -980,6 +1092,31 @@ Prefix-list ورودی از Spoke (فقط 10.n.x.0/24 خودش)، خروجی ب�
 | Cluster | Cluster-ID یکتا برای RRهای مستقل |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+#### مثال ساده — RR
+
+``` text
+config router bgp
+ set as 65000
+ config neighbor
+  edit "10.255.0.2"
+   set remote-as 65000
+   set route-reflector-client enable
+   set next-hop-self enable
+  next
+ end
+end
+```
+
+#### مثال متوسط — سیاست
+
+Local-pref بالاتر روی مسیرهای Hub1.
+
+#### مثال سخت — Prefix دریافت می‌شود ولی ترافیک نمی‌رود
+
+Next-hop غیرقابل‌دسترس: `next-hop-self` یا Route. بررسی `get router info bgp network`.
+
+#### مثال‌های اصلی درس (مرور)
 
 **ساده (حل‌شده):** Hub (AS 65000) با neighbor-range 10.250.0.0/16 و `route-reflector-client`؛ Spoke Neighbor به Hub؛ `get router info bgp summary` ⇒ Established، PfxRcd؛ `get router info bgp network` ⇒ Prefix شعب.
 
@@ -1220,7 +1357,11 @@ State باید Established و PfxRcd عدد باشد.
 5. Failover اینترنت شعبه را با Dual-ISP/SD-WAN طراحی کند.
 6. آزمون مثبت/منفی و Log را برای اثبات تفکیک مسیر انجام دهد.
 
-### ۲) مفهوم پایه: چیست و چرا؟
+### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+
+**چرا Local Breakout؟** ترافیک اینترنت شعبه را از Tunnel به HQ ببریم (Backhaul) یا مستقیم از شعبه خارج کنیم؟ Backhaul کنترل متمرکز می‌دهد ولی تأخیر و بار HQ؛ Breakout تأخیر کم ولی امنیت باید در هر شعبه اعمال شود. راه میانی: SaaS معتبر Breakout، بقیه Backhaul.
+
+**جمع‌بندی اصلی درس:**
 
 در سازمان چندشعبه، ترافیک اینترنت دو مسیر دارد: **Backhaul** (از Tunnel به Hub و از آن‌جا به اینترنت) و **Local Breakout** (مستقیم از ISP شعبه). Backhaul کنترل متمرکز می‌دهد ولی تأخیر و بار روی Hub و لینک مرکز ایجاد می‌کند (و امروزه بیشتر ترافیک SaaS/Cloud است). Breakout سریع است ولی هر شعبه باید امنیتش را خودش تأمین کند. تصمیم باید **بر اساس نوع ترافیک** باشد، نه یک انتخاب سراسری.
 
@@ -1282,6 +1423,20 @@ Dual-ISP شعبه با SD-WAN (Health-check/SLA)؛ در قطع هر دو ISP: Fa
 | Log | مرکزی reliable |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+#### مثال ساده
+
+Backhaul 50 ms در برابر Breakout 20 ms ⇒ صرفه‌جویی 30 ms.
+
+#### مثال متوسط — SD-WAN Rule
+
+Office365 با Breakout محلی؛ بقیه به HQ.
+
+#### مثال سخت — امنیت شعبه
+
+با Breakout، UTM (Web Filter، IPS) و Log به مرکز لازم است.
+
+#### مثال‌های اصلی درس (مرور)
 
 **ساده (حل‌شده):** Default Route محلی؛ Route 10.0.0.0/8 از Tunnel؛ Policy LAN→WAN با NAT و Web Filter. `traceroute` به example.com از ISP محلی؛ `traceroute` به ERP از Tunnel.
 
@@ -1494,7 +1649,11 @@ SaaS معتبر (Office365) با Breakout؛ بقیه Backhaul. با SD-WAN Rule 
 5. Shortcut ساخته‌نشده/Shortcut بدون اثر را عیب‌یابی کند.
 6. تصمیم ADVPN یا Hub-only را با معیار کمی بگیرد.
 
-### ۲) مفهوم پایه: چیست و چرا؟
+### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+
+**چرا ADVPN؟** Spokeها بدون عبور از Hub مستقیم صحبت می‌کنند. شرط: IKEv2، Routing پویا و تنظیم Hub/Spoke. NAT دوگانه می‌تواند مانع شود.
+
+**جمع‌بندی اصلی درس:**
 
 در Hub-and-Spoke خالص، ترافیک شعبه‌به‌شعبه دو بار از Hub عبور می‌کند (Latency و بار). ADVPN به Spokeها اجازه می‌دهد برای ترافیک مورد نیاز **Tunnel مستقیم** بسازند. مزیت: Latency کمتر، بار کمتر روی Hub؛ هزینه: پیچیدگی، وابستگی به نسخه، مشکل‌های NAT و Failover.
 
@@ -1544,6 +1703,29 @@ If branches <= ~10 -> hub-only is simpler
 | NAT | Spoke با IP عمومی/Port forward برای Shortcut |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+#### مثال ساده — Hub
+
+``` text
+config vpn ipsec phase1-interface
+ edit "HUB"
+  set type dynamic
+  set auto-discovery-sender enable
+ next
+end
+```
+
+Spoke: `auto-discovery-receiver enable`.
+
+#### مثال متوسط — Shortcut
+
+ترافیک A→B از Hub، Hub Shortcut Offer می‌دهد، Tunnel مستقیم ساخته و Route تغییر می‌کند.
+
+#### مثال سخت — Shortcut ولی Drop
+
+Policy Spoke↔Spoke نیست؛ افزودن Policy.
+
+#### مثال‌های اصلی درس (مرور)
 
 **ساده (حل‌شده):** Spoke1→Spoke2: traceroute اول ۲ Hop (Hub سپس Spoke2)؛ پس از Shortcut ۱ Hop (مستقیم)؛ `diagnose vpn tunnel list` ⇒ Tunnel Shortcut با نام _0 و Peer Spoke2.
 
@@ -1755,7 +1937,11 @@ Hub و دو Spoke؛ ترافیک بین Spokeها را مشاهده و Shortcut 
 3. سه عیب تزریق‌شده را با روش فرضیه‌محور رفع کند.
 4. گزارش RCA و Evidence Index بنویسد.
 
-### ۲) مفهوم پایه: چیست و چرا؟
+### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+
+**چرا آزمون معماری ۴؟** ترکیب IP Plan، Routing، Failover و Evidence را می‌سنجد: ده شعبه، دو Hub، Failover کمتر از هدف.
+
+**جمع‌بندی اصلی درس:**
 
 این درس آزمون عملی است: «صورت مسئله + کلید پاسخ + Rubric». کلید پاسخ پس از تلاش خودتان خوانده شود.
 
@@ -1785,6 +1971,22 @@ Hub و دو Spoke؛ ترافیک بین Spokeها را مشاهده و Shortcut 
 طراحی/IP Plan ۱۵؛ پیاده‌سازی Overlay/Routing ۲۰؛ Breakout/Policy ۱۵؛ Failover و اندازه‌گیری ۲۰؛ عیب‌یابی سه‌گانه با RCA ۲۰؛ Evidence/صداقت ۱۰.
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+#### مثال ساده
+
+``` text
+Tunnels = 10 x 2 = 20
+```
+
+#### مثال متوسط
+
+قطع Hub1 ⇒ ترافیک Hub2؛ ping مداوم.
+
+#### مثال سخت
+
+قطع Hub1 + MTU اشتباه روی Hub2 ⇒ Failover موفق ولی HTTPS کند؛ MSS Clamp. Rubric: IP plan ۲۰، Routing ۲۵، Failover ۲۵، Evidence ۲۰، گزارش ۱۰.
+
+#### مثال‌های اصلی درس (مرور)
 
 **ساده:** Tunnelها Up و BGP Established؛ Evidence: خروجی `summary`.
 
@@ -2103,7 +2305,13 @@ Overlay شبکه‌ی Tunnel روی ISP و Underlay خود ISP و لینک‌ه�
 5. معیارهای ظرفیت (کاربر هم‌زمان، Throughput) و دسترس‌پذیری را برآورد کند.
 6. طرح نهایی را با Rubric ریسک ارزیابی کند.
 
-### ۲) مفهوم پایه: چیست و چرا؟
+### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+
+**چرا معماری دسترسی راه‌دور؟** دورکاری دسترسی را از ساختمان به هر جای اینترنت می‌برد. هر نقطه‌ی ورود هدف حمله است. قبل از انتخاب فناوری (SSL-VPN، IPsec، ZTNA) بپرسید: چه چیزی را از چه کسی محافظت می‌کنیم؟
+
+**تهدیدها و کنترل‌ها:** سرقت رمز ⇒ MFA؛ دستگاه آلوده ⇒ Posture؛ آسیب‌پذیری Gateway ⇒ Patch؛ حرکت جانبی ⇒ Policy حداقلی. **ZTNA** دسترسی به «برنامه» بر اساس هویت و وضعیت دستگاه است (Needs-License).
+
+**جمع‌بندی اصلی درس:**
 
 دسترسی راه‌دور درِ ورودیِ اینترنتیِ شبکه‌ی داخلی است. بیشتر نفوذهای مهم (باج‌افزار) از VPN آسیب‌پذیر یا اعتبارنامه‌ی سرقت‌شده شروع شده‌اند. بنابراین انتخاب «چه فناوری» از سؤال «چه کسی، با چه دستگاهی، به چه چیزی، چگونه احراز و چگونه پایش» جدا نیست.
 
@@ -2161,6 +2369,22 @@ Throughput = concurrent users x avg Mbps  (e.g. 240 x 2 = 480 Mbps)
 | ظرفیت | کاربر هم‌زمان × Throughput + حاشیه |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+#### مثال ساده
+
+کاربر مالی فقط به ERP؛ Policy VPN او `all` نباشد.
+
+#### مثال متوسط — ظرفیت
+
+``` text
+300 users x 2 Mbps = 600 Mbps VPN throughput
+```
+
+#### مثال سخت — Split در برابر Full
+
+Split بار را کم می‌کند ولی ترافیک اینترنت بازرسی نمی‌شود؛ تصمیم بر اساس ریسک.
+
+#### مثال‌های اصلی درس (مرور)
 
 **ساده (حل‌شده):** ۳ گروه: کارمند/پیمانکار/مدیر؛ جدول انتخاب (بخش ۳). نتیجه: هر گروه یک «نوع دسترسی» و Least Privilege.
 
@@ -2338,7 +2562,11 @@ Required VPN throughput = users x per-user rate = 300 x 2 = 600 Mbps
 5. Log و مشکلات اتصال را عیب‌یابی کند.
 6. ریسک CVE و راه مهاجرت (۲۰-۷) را ارزیابی کند.
 
-### ۲) مفهوم پایه: چیست و چرا؟
+### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+
+**چرا SSL-VPN با احتیاط؟** روی 443 کار می‌کند و از اکثر محدودیت‌ها عبور می‌کند ولی سابقه‌ی آسیب‌پذیری مهم دارد. فقط در Lab ایزوله و با نسخه‌ی وصله‌شده، MFA و محدودیت مبدأ.
+
+**جمع‌بندی اصلی درس:**
 
 SSL VPN در 7.0.3 هنوز وجود دارد ولی (۱) آسیب‌پذیری‌های شناخته‌شده‌ی بحرانی در خط 7.0.x دارد (Fortinet PSIRT)، (۲) Tunnel mode در 7.6.3 حذف شده است. پس این درس برای **درک سازوکار و مهاجرت** است و عملی‌سازی فقط در Lab ایزوله (بدون اینترنت) انجام می‌شود.
 
@@ -2379,6 +2607,26 @@ CVEهای RCE/Credential-leak روی 7.0.x؛ سرویس عمومی → اسکن/
 | Source | محدود |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+#### مثال ساده
+
+``` text
+config vpn ssl settings
+ set tunnel-ip-pools "SSLVPN_TUNNEL_ADDR1"
+ set source-interface "port1"
+ set default-portal "tunnel-access"
+end
+```
+
+#### مثال متوسط — Policy
+
+`ssl.root → port3` برای گروه VPN.
+
+#### مثال سخت — ریسک
+
+PSIRT نسخه را بررسی؛ Local-in Policy؛ برنامه‌ی مهاجرت.
+
+#### مثال‌های اصلی درس (مرور)
 
 **ساده (حل‌شده):** Portal tunnel-access، IP Pool 10.212.134.0/24، Policy ssl.root→LAN برای گروه GRP-IT؛ اتصال با FortiClient و ping به سرور LAN.
 
@@ -2599,7 +2847,11 @@ diagnose debug application sslvpn -1
 5. مشکلات اتصال/نام/دسترسی را با Debug عیب‌یابی کند.
 6. ظرفیت و Rekey کلاینت‌های همزمان را بسنجد.
 
-### ۲) مفهوم پایه: چیست و چرا؟
+### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+
+**چرا IPsec Dial-up؟** سطح حمله‌ی تاریخی کمتر و Performance بهتر از SSL-VPN. Phase1 از نوع `dynamic`، Mode Config برای IP/DNS و هویت با گواهی/EAP.
+
+**جمع‌بندی اصلی درس:**
 
 IPsec Dial-up سطح حمله‌ی کمتری نسبت به SSL VPN دارد و مسیر پشتیبانی‌شده‌ی آینده است. ولی چالش‌ها: Peer ناشناس (IP پویا)، هویت قوی، تخصیص آدرس و DNS، و رفتار NAT-T کلاینت پشت NAT.
 
@@ -2640,6 +2892,30 @@ Split: `split-include` Subnetهای سازمانی؛ DNS داخلی با Suffix�
 | Redundancy | دو RADIUS |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+#### مثال ساده
+
+``` text
+config vpn ipsec phase1-interface
+ edit "DIALUP"
+  set type dynamic
+  set ike-version 2
+  set mode-cfg enable
+  set ipv4-start-ip 10.200.0.10
+  set ipv4-end-ip 10.200.0.200
+ next
+end
+```
+
+#### مثال متوسط — Split
+
+`ipv4-split-include` و DNS داخلی.
+
+#### مثال سخت — ping نمی‌رود
+
+Policy، Route برگشت، Selector.
+
+#### مثال‌های اصلی درس (مرور)
 
 **ساده (حل‌شده):** کلاینت با گواهی وصل؛ IP 10.212.1.5 از Mode Config؛ ping به LAN و resolve `erp.lab.local`.
 
@@ -2871,7 +3147,11 @@ diagnose vpn tunnel list
 4. بازبینی دوره‌ای کاربران/گروه‌ها و دسترسی‌ها را انجام دهد.
 5. معیارهای MTTD/MTTR را برای VPN اندازه بگیرد.
 
-### ۲) مفهوم پایه: چیست و چرا؟
+### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+
+**چرا MFA و پایش؟** رمز لورفته نباید کافی باشد. MFA مهم‌ترین کنترل؛ Local-in، Lockout و هشدار لایه‌های بعد.
+
+**جمع‌بندی اصلی درس:**
 
 Hardening تنظیمات ثابت است؛ **پایش** نشان می‌دهد آیا دفاع کار می‌کند. حمله به VPN معمولاً دیده می‌شود (ناموفق‌های بسیار) ولی اگر Alert نباشد، کسی نمی‌بیند.
 
@@ -2920,6 +3200,22 @@ MTTR = mean(restore/close time - detect time)
 | بازبینی | ماهانه |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+#### مثال ساده — قاعده‌ی هشدار
+
+``` text
+>= 10 failed logins in 5 min from one source -> alert
+```
+
+#### مثال متوسط — Local-in
+
+فقط Geo/IP مجاز.
+
+#### مثال سخت — Impossible Travel
+
+دو ورود موفق از دو قاره در ده دقیقه ⇒ هشدار بالا.
+
+#### مثال‌های اصلی درس (مرور)
 
 **ساده (حل‌شده):** Lockout بعد از ۳ تلاش؛ تست: ۴ رمز غلط ⇒ Block ۵ دقیقه.
 
@@ -3120,7 +3416,11 @@ IF success after >=10 failures THEN alert (high)
 4. آزمون منفی (کاربر غیرمجاز، سرویس غیرمجاز) را اجرا کند.
 5. گزارش و Rubric تحویل دهد.
 
-### ۲) مفهوم پایه: چیست و چرا؟
+### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+
+**چرا آزمون عملی؟** چهار ادعا را اثبات می‌کند: ورود مجاز، رد غیرمجاز، Split صحیح و MFA.
+
+**جمع‌بندی اصلی درس:**
 
 دورکاری یعنی در اصلی‌ترین ورودی شبکه را برای کاربران رها کرده‌اید. اگر رمز یک کاربر لو برود و MFA نباشد، مهاجم مستقیم در شبکه‌ی داخلی است. این آزمون سنجش می‌کند بتوانید دسترسی راه‌دور را هم کاربردی و هم امن بسازید و وقتی «وصل نمی‌شود» گفتند، علت را با شاهد پیدا کنید.
 
@@ -3203,6 +3503,20 @@ diagnose firewall iprope lookup 10.212.134.5 40000 10.20.0.10 443 tcp ssl.root
 | MFA | اجباری |
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+
+#### مثال ساده
+
+`get vpn ssl monitor` کاربر.
+
+#### مثال متوسط — اثبات Split
+
+`route print` کلاینت: فقط شبکه‌های سازمانی از VPN.
+
+#### مثال سخت — منفی
+
+کاربر مالی به Mgmt: `nc -zv` Timeout و Log Deny. Rubric: هر آزمون ۲۰ (نتیجه ۱۰ + شاهد ۱۰).
+
+#### مثال‌های اصلی درس (مرور)
 
 **ساده (حل‌شده):** کاربر FIN با MFA وصل می‌شود؛ `get vpn ssl monitor` نشان می‌دهد Tunnel IP 10.212.134.5؛ HTTPS به 10.20.0.10 باز می‌شود.
 
@@ -3377,7 +3691,11 @@ route print   (client)
 4. طرح **مهاجرت** از SSL VPN به IPsec را بنویسد.
 5. برای نیازهای مختلف (کلاینت مدیریت‌شده، BYOD، مرورگر) گزینه‌ی مناسب را انتخاب کند.
 
-### ۲) پیش‌نیازها
+### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+
+**چرا جدول تصمیم؟** انتخاب بین SSL-VPN و IPsec بر پایه‌ی ریسک و محدودیت شبکه‌ی کاربر باشد نه عادت. پروژه‌ی جدید: IPsec IKEv2 + MFA؛ SSL-VPN فقط با نسخه‌ی وصله‌شده و دلیل مشخص.
+
+**جمع‌بندی اصلی درس:**
 
 IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
@@ -3404,6 +3722,20 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 - مهاجرت به IPsec: Portalها، Realm، و برخی Bookmarkها منتقل نمی‌شوند؛ سناریوهای Web mode باید با Agentless VPN یا ZTNA بازطراحی شوند.
 
 ### ۵) مثال حل‌شده (تصمیم طراحی)
+
+#### مثال ساده
+
+کاربر هتل با UDP مسدود ⇒ SSL-VPN یا NAT-T/TCP.
+
+#### مثال متوسط
+
+IPsec برای کارمندان؛ SSL فقط پیمانکار.
+
+#### مثال سخت — مهاجرت
+
+Inventory ← پایلوت ← آموزش ← عبور ← خاموش‌کردن ← بازبینی Log.
+
+#### مثال‌های اصلی درس (مرور)
 
 **نیاز:** ۲۰۰ کارمند، لپ‌تاپ مدیریت‌شده، MFA، دسترسی به شبکه‌ی داخلی؛ ۱۰ پیمانکار فقط به یک وب‌اپ.
 
