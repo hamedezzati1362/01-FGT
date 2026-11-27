@@ -1382,147 +1382,139 @@ RPF fail یعنی Route برگشت به مبدأ از همان Interface ورو�
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. ده پرسش ثابت عیب‌یابی فایروال را به ترتیب بپرسد و برای هرکدام ابزار مناسب را انتخاب کند.
-2. ابزارها (ping، traceroute، sniffer، debug flow، session، routing، log) را در نقشه‌ی مسیر بسته جای دهد.
-3. از علامت «کار نمی‌کند» به فرضیه‌ی قابل‌آزمون برسد.
-4. هر گام را با Evidence ثبت کند.
-5. از ابزارهای سنگین (debug) ایمن استفاده کند.
+1. ده پرسش ثابت عیب‌یابی را به ترتیب بپرسید و برای هرکدام ابزار مناسب انتخاب کنید.
+2. ابزارها (ping، traceroute، sniffer، debug flow، session، routing، log) را روی نقشه‌ی مسیر بسته جای دهید.
+3. از علامت مبهم «کار نمی‌کند» به فرضیه‌ی قابل‌آزمون برسید.
+4. هر گام را با Evidence (خروجی دستور + زمان + فیلتر) ثبت کنید.
+5. ابزارهای سنگین (debug) را ایمن به‌کار ببرید.
+6. بعد از رفع، آزمون مثبت و منفی بزنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا چارچوب عیب‌یابی؟** پزشک خوب قبل از نسخه‌نوشتن می‌پرسد: «کجا درد دارد؟ از کی؟ چه کرده‌اید؟». عیب‌یاب خوب هم همین‌طور. بدون چارچوب، به سمت ابزار قدرتمند (Debug) می‌پرید و در داده غرق می‌شوید. ده پرسش مسیر را کوتاه و قابل‌تکرار می‌کند.
+پزشک خوب قبل از نسخه‌نوشتن می‌پرسد: «کجا درد دارد؟ از کی؟ چه کرده‌اید؟ تب دارید؟». سپس آزمایش مناسب می‌خواهد. پزشک بد مستقیم آنتی‌بیوتیک می‌دهد. عیب‌یاب شبکه هم همین است: مهندس تازه‌کار مستقیم `debug flow` می‌زند و در خروجی غرق می‌شود؛ مهندس ارشد اول Scope را می‌پرسد و ۸۰٪ مسیر را حذف می‌کند. چارچوب ده پرسش جلوی «حدس‌زدن» و «تغییر هم‌زمان چند چیز» را می‌گیرد و باعث می‌شود هر ساعت عیب‌یابی Evidence تولید کند.
 
-**ده پرسش:** ۱) چه کسی/چه چیزی تحت تأثیر است؟ ۲) از چه زمانی؟ ۳) چه چیزی تغییر کرد؟ ۴) DNS؟ ۵) Route؟ ۶) Policy؟ ۷) NAT/Session؟ ۸) روی سیم؟ ۹) لایه‌ی کاربرد؟ ۱۰) رفع تأیید شد؟
+### مفهوم پایه: چرا ترتیب مهم است؟
 
-**اصل:** هر پرسش ابزار مشخص دارد و هر پاسخ یک فرضیه را رد یا تأیید می‌کند.
+هر پرسش یک **فرضیه** را رد یا تأیید می‌کند. مثلاً اگر ثابت شد «بسته اصلاً به FortiGate نمی‌رسد»، دیگر Policy و NAT بی‌ربط‌اند. پرسش‌ها از «ارزان و رد‌کننده‌ی بزرگ» به «گران و جزئی» مرتب شده‌اند:
 
-**جمع‌بندی اصلی درس:** پزشکی که بیمار را می‌بیند اول ده سؤال استاندارد می‌پرسد: چه علامتی؟ از کی؟ تب هست؟ ... بعد آزمایش مناسب می‌فرستد. عیب‌یابی شبکه هم همین است. بدون چارچوب، هر مهندس از جایی شروع می‌کند، آزمایش‌های تکراری می‌گیرد و گاهی Policy سالم را خراب می‌کند. این درس «ده پرسش» را به ابزار نگاشت می‌کند.
+``` text
+Scope  ->  L1/L2  ->  arrives?  ->  route  ->  policy  ->  NAT/session
+       ->  leaves?  ->  reply?  ->  DNS/MTU/app  ->  verify
+```
 
-### ۳) توضیح عمیق فنی
-
-#### ۱) ده پرسش
+### ده پرسش و ابزارها
 
 | # | پرسش | ابزار |
 |---|---|---|
-| 1 | دقیقاً چه چیزی کار نمی‌کند، از کجا به کجا؟ | گفتگو، ticket |
-| 2 | آیا لایه‌ی ۱–۲ سالم است؟ | `get system interface physical`، لینک، VLAN |
-| 3 | آیا بسته به FortiGate می‌رسد؟ | sniffer ورودی |
-| 4 | آیا Route به مقصد و برگشت وجود دارد؟ | `get router info routing-table details` |
-| 5 | آیا Policy مطابق است؟ | policy lookup، debug flow |
-| 6 | آیا NAT درست انجام شد؟ | `diagnose sys session list` |
-| 7 | آیا Session ساخته شد و وضعیتش چیست؟ | session filter |
-| 8 | آیا بسته خارج می‌شود؟ | sniffer خروجی |
-| 9 | آیا پاسخ برمی‌گردد؟ | sniffer ورودی (مقصد→ما) |
-| 10 | آیا نام/MTU/سرویس‌های جانبی مشکل دارند؟ | DNS test، ping DF |
+| 1 | دقیقاً چه چیزی، از کجا به کجا، برای چه کسی؟ | گفتگو، Ticket |
+| 2 | از چه زمانی؟ چه چیزی تغییر کرد؟ | Log، CHG، Config diff |
+| 3 | لایه‌ی ۱–۲ سالم است؟ | `get system interface physical`، VLAN، لینک |
+| 4 | بسته به FortiGate می‌رسد؟ | sniffer ورودی |
+| 5 | Route رفت و برگشت هست؟ | `get router info routing-table details` |
+| 6 | Policy مطابق است؟ | `iprope lookup`، Debug Flow |
+| 7 | NAT/Session درست است؟ | `diagnose sys session list` |
+| 8 | بسته خارج می‌شود؟ | sniffer خروجی |
+| 9 | پاسخ برمی‌گردد؟ | sniffer (مقصد به ما) |
+| 10 | DNS/MTU/برنامه؟ | nslookup، ping DF، curl |
 
-#### ۲) نقشه‌ی ابزار روی مسیر بسته
-
-``` text
-Client -> [sniffer in] -> RPF/Route -> Policy -> NAT -> [sniffer out] -> Server
-             ^debug flow shows each decision^         ^session list shows result^
-```
-
-#### ۳) ابزارهای اصلی
+### نقشه‌ی ابزار روی مسیر بسته
 
 ``` text
-execute ping 8.8.8.8
-execute ping-options source 10.10.0.1
-execute traceroute 8.8.8.8
-diagnose sniffer packet any 'host 10.10.0.5 and tcp port 443' 4 20 l
-diagnose debug flow filter addr 10.10.0.5
-diagnose debug flow trace start 20
-diagnose debug enable
-get router info routing-table details 203.0.113.10
-diagnose sys session list
+ [PC] --(1)--> [port2 FGT port1] --(2)--> [ISP] --> [Server]
+   ^                |  ^   |
+   |                v  |   v
+   |            route policy NAT session
+ ping/curl      (get router) (iprope) (session list)
+ traceroute        sniffer on both interfaces
 ```
 
-#### ۴) ایمنی ابزار
+- **ping/traceroute:** از دید کاربر؛ ولی ICMP ممکن است Policy جدا داشته باشد.
+- **sniffer:** حقیقت روی سیم؛ مستقل از Policy.
+- **debug flow:** تصمیم داخلی فایروال (Route، Policy، NAT).
+- **session list:** وضعیت اتصال و NAT واقعی.
+- **log:** تاریخچه و الگو.
 
-Debug روی Production CPU مصرف می‌کند؛ همیشه فیلتر، محدودیت تعداد (`trace start 20`) و در پایان `diagnose debug disable` و `diagnose debug reset`. Sniffer را با شمارنده بزنید (مثلاً 20 بسته) نه بی‌پایان.
+### قاعده‌ی انتخاب ابزار از روی علامت
 
-#### ۵) از علامت تا فرضیه
-
-علامت: «سایت باز نمی‌شود». فرضیه‌ها: Route، Policy، NAT، DNS، MTU. هر فرضیه یک آزمایش و یک نتیجه‌ی صریح دارد؛ فرضیه‌ای که نتوان رد/تأیید کرد، بد تعریف شده است.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| ترتیب | پایین به بالا |
-| ابزار | کم‌هزینه‌تر اول |
-| ثبت | Evidence هر گام |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — Scope
-
-«اینترنت قطع است». فقط یک نفر؟ ⇒ کلاینت/Policy منبع. همه؟ ⇒ Route/لینک/DNS مشترک.
-
-#### مثال متوسط — پرونده
-
-کاربر 10.10.0.5 به https://app.example.com نمی‌رسد: DNS ok، Route ok، `iprope lookup` ⇒ policy 30، Session در SYN_SENT، Sniffer: SYN رفت و پاسخ نیامد ⇒ مشکل بالادست (مثلاً Source NAT IP مسدود). رفع: IP دیگر Pool؛ آزمون curl.
-
-#### مثال سخت — دو علت
-
-پس از رفع NAT هنوز کند؛ علت دوم MTU. درس: بعد از هر رفع آزمون کامل و ثبت.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** «کاربر 10.10.0.5 به 203.0.113.10:443 نمی‌رسد». پرسش ۳: Sniffer ورودی SYN را نشان می‌دهد ⇒ می‌رسد. پرسش ۴: Route Default هست. پرسش ۵: Lookup ID 2. پرسش ۸: SYN خارج می‌شود. پرسش ۹: SYN-ACK نمی‌آید ⇒ مشکل بیرون از فایروال (سرور/ISP). پاسخ: تیم سرور.
-
-**متوسط (تحلیل):** بسته در Sniffer ورودی دیده نمی‌شود. پرسش ۲ و ۳: لینک up؛ VLAN اشتباه سوییچ. اثبات: `get system interface physical` و MAC در ARP: `diagnose ip arp list`. رفع: VLAN سوییچ. درس: همیشه از پایین‌ترین لایه شروع کنید.
-
-**سخت (چندلایه):** «بعضی سایت‌ها باز می‌شوند، بعضی نه». ۱) ping همه موفق. ۲) Debug flow: Policy و NAT صحیح. ۳) Sniffer: بسته‌های کوچک عبور می‌کنند؛ بزرگ نه. ۴) `execute ping-options df-bit yes` با `data-size 1472` شکست؛ 1372 موفق ⇒ PMTU≈1400. علت: لینک تونل با MTU کمتر و فیلتر ICMP. رفع: MSS-clamp/MTU. معیار: بارگیری صفحه‌ی بزرگ موفق.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Network → Diagnostics → Packet Capture.
-2. Dashboard → FortiView.
-3. Log & Report → Forward Traffic.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-execute ping 8.8.8.8
-execute traceroute 8.8.8.8
-diagnose sniffer packet any 'host 10.10.0.5 and tcp port 443' 4 20 l
-diagnose debug flow filter addr 10.10.0.5
-diagnose debug flow trace start 20
-diagnose debug enable
-diagnose debug disable
-diagnose debug reset
-```
-
-### ۸) Verification (اثبات صحت)
-
-- هر گام Evidence دارد.
-- فرضیه‌ی نهایی با آزمایش تأیید شده.
-- Debug خاموش شده.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | ابزار اول | تفسیر |
 |---|---|---|
-| Sniffer خالی | فیلتر | Host/پورت و Interface |
-| Debug خروجی ندارد | offload/filter | offload را موقتاً غیرفعال (Lab) |
-| CPU بالا | Debug | disable |
+| Timeout | Route، sniffer | بسته گم شده |
+| Connection refused | Policy/سرویس | پاسخ RST |
+| کند | MTU، CPU، Session | مشکل کیفیت |
+| فقط بعضی کاربران | Policy/Address | Scope |
+| فقط HTTPS | MTU، SSL Inspection | لایه‌ی بالاتر |
+| بعد از تغییر | Config diff | علت زمانی |
 
-### ۱۰) نکات امنیتی
+### ایمنی ابزارهای سنگین
 
-- Capture حاوی داده‌ی حساس است؛ محدود و حذف.
-- Debug را خاموش کنید.
+- `debug flow` روی ترافیک زیاد CPU را بالا می‌برد: **حتماً فیلتر** و **محدودیت تعداد**.
+- همیشه پایان: `diagnose debug disable` و `diagnose debug reset`.
+- sniffer با `count` محدود.
+- در ساعت اوج، روی دستگاه Production فقط فیلتر باریک.
 
-### ۱۱) جمع‌بندی مفهومی
+### مثال‌های حل‌شده
 
-- ده پرسش ثابت.
-- ابزار هر پرسش.
-- Debug با فیلتر و شمارنده.
+#### مثال ساده — ثبت Evidence
 
-### ۱۲) تمرین و ارزیابی
+علامت: «سایت داخلی باز نمی‌شود» (فقط یک کاربر).
+
+``` text
+Q1 scope  : user 10.10.0.5 only (others ok)
+Q5 route  : via port3 ok
+Q6 policy : iprope lookup -> policy 0 (deny)
+Cause     : user is in a new subnet not in address group
+Fix       : add subnet to ADDR-USERS
+Verify    : lookup -> policy 15; curl OK
+```
+
+Scope «فقط یک کاربر» فوراً Policy/Address را مشکوک کرد.
+
+#### مثال متوسط — انتخاب ابزار
+
+علامت: Timeout به `app.example.com`.
+
+1. Q5 Route: وجود دارد.
+2. Q6 Lookup: policy 30.
+3. Q7 Session: فقط `SYN_SENT`.
+4. Q8 Sniffer port1: SYN خارج، SYN-ACK نیست.
+5. نتیجه: مشکل بالادست یا NAT.
+
+Debug Flow لازم نشد؛ sniffer کافی بود.
+
+#### مثال سخت — دو علت پشت‌سرهم
+
+پس از رفع NAT (Pool اشتباه)، سایت باز می‌شود ولی بارگذاری فایل بزرگ قطع می‌شود. Q10 آزمون کامل شکست خورد ⇒ علت دوم MTU (PMTUD بلاک). درس: بعد از هر رفع، **آزمون کامل** (نه فقط ping)، و هر علت جدا ثبت شود.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. یک خرابی NAT و یک خرابی Policy بسازید.
+2. ده پرسش را برای هرکدام پر کنید.
+3. Evidence را در قالب جدول ثبت کنید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| حدس‌زدن | بی‌چارچوب | ده پرسش |
+| چند تغییر هم‌زمان | بی‌انضباط | یکی‌یکی |
+| بی‌Evidence | ثبت نشده | الگوی ثبت |
+| CPU بالا | debug بدون فیلتر | disable/reset |
+
+### نکات امنیتی
+
+Debug و sniffer ممکن است داده‌ی حساس (رمز، توکن) نشان دهند؛ فایل pcap را ایمن نگه دارید و پس از پایان حذف کنید.
+
+### جمع‌بندی
+
+ده پرسش با ابزار مشخص؛ اول Scope، بعد پایین‌رفتن از لایه‌ها با Evidence؛ ابزار سنگین با فیلتر؛ پایان با آزمون مثبت و منفی.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا از لایه‌ی پایین شروع می‌کنیم؟ *(پاسخ: 14-1-ت1)*
 
@@ -1538,7 +1530,7 @@ diagnose debug reset
 
 **Q1.** Quick quiz (English): Which tool reveals the policy and route decision made for a packet? *(پاسخ: 14-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1547,123 +1539,16 @@ diagnose debug reset
 
 - *Start from the lowest layer and move up.* ← از پایین‌ترین لایه شروع کنید و بالا بروید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** ده پرسش (اجرا نشده). **Evidence:** `03-ops/ten-questions.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Troubleshooting tools
 - FortiOS 7.0 Troubleshooting guide
 
 <a id="l-14-2"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: ده پرسش روی یک پرونده‌ی واقعی
-
-**سناریو.** «کاربر 10.10.0.5 به https://app.example.com نمی‌رسد».
-
-``` text
-Q1 Scope?      only this user -> not a global outage
-Q2 DNS?        nslookup app.example.com -> 198.51.100.8 (ok)
-Q3 Route?      get router info routing-table details 198.51.100.8 -> via port1
-Q4 Policy?     diagnose firewall iprope lookup 10.10.0.5 50000 198.51.100.8 443 tcp port2 -> policy 30
-Q5 NAT?        session shows SNAT to 203.0.113.2
-Q6 Session?    diagnose sys session filter dst 198.51.100.8 -> state=SYN_SENT only
-Q7 Reply?      sniffer port1: SYN out, no SYN-ACK
-Q8 Upstream?   ISP/target blocks source 203.0.113.2
-Q9 Fix         use other pool IP / ticket to ISP
-Q10 Verify     curl -vk works; session established
-```
-
-نتیجه: مشکل خارج از فایروال است؛ Evidence با Sniffer (SYN بدون پاسخ) اثبات شد، نه حدس.
-
-**قاعده‌ی انتخاب ابزار:** علامت «Timeout» ⇒ Route/Sniffer؛ «Refused» ⇒ سرویس یا Policy Deny؛ «کند» ⇒ MTU/Session/CPU.
-
-**اشتباهات رایج:** پرش مستقیم به Debug Flow، نداشتن Baseline، تغییر هم‌زمان چند چیز.
-
-**پرسش‌های مصاحبه**
-1. *اولین کار در «اینترنت قطع است»؟* تعیین Scope.
-2. *چرا ترتیب مهم است؟* هر گام فرضیه‌ای را حذف می‌کند.
-3. *Evidence خوب چیست؟* خروجی دستور با زمان و فیلتر مشخص.
-
-### تکمیل عمیق: چارچوب ۱۰ پرسش — پرونده‌ی کامل از علامت تا اثبات
-
-#### چرا باید یاد بگیریم؟
-
-پزشک خوب قبل از نسخه‌نوشتن می‌پرسد: «کجا درد دارد؟ از کی؟ چه کرده‌اید؟». عیب‌یاب خوب هم همین‌طور. چارچوب ده پرسش جلوی «حدس‌زدن» را می‌گیرد و هر پاسخ یک ابزار مشخص دارد.
-
-#### ده پرسش و ابزارها
-
-| # | پرسش | ابزار |
-|---|---|---|
-| 1 | چه کسی/چه چیزی تحت تأثیر است؟ | گزارش/Log |
-| 2 | از چه زمانی؟ | Log/Change |
-| 3 | چه چیزی تغییر کرده؟ | CHG/Config diff |
-| 4 | DNS درست است؟ | nslookup |
-| 5 | Route درست است؟ | routing-table |
-| 6 | Policy مجاز است؟ | iprope lookup |
-| 7 | NAT/Session؟ | session list |
-| 8 | بسته روی سیم؟ | sniffer |
-| 9 | لایه‌ی کاربرد؟ | curl/Log برنامه |
-| 10 | رفع تأیید شد؟ | آزمون مثبت/منفی |
-
-#### مثال ساده — پرونده
-
-علامت: کاربر 10.10.0.5 به https://app.example.com نمی‌رسد.
-
-``` text
-Q1 scope  : only this user
-Q4 DNS    : nslookup -> 198.51.100.8 (ok)
-Q5 route  : get router info routing-table details 198.51.100.8 -> via port1
-Q6 policy : diagnose firewall iprope lookup 10.10.0.5 50000 198.51.100.8 443 tcp port2 -> policy 30
-Q7 session: state SYN_SENT only
-Q8 wire   : SYN out port1, no SYN-ACK
-Cause     : upstream blocks source NAT IP
-Fix       : alternate pool IP / ticket to ISP
-Q10 verify: curl OK
-```
-
-نتیجه: مشکل خارج از فایروال؛ اثبات با Sniffer.
-
-#### مثال متوسط — انتخاب ابزار بر اساس علامت
-
-| علامت | ابزار اول |
-|---|---|
-| Timeout | Route/Sniffer |
-| Refused | سرویس/Policy |
-| کند | MTU/CPU/Session |
-| فقط بعضی کاربران | Policy/NAT/Scope |
-
-#### مثال سخت — دو علت
-
-پس از رفع NAT، هنوز کند: دومین علت MTU. درس: بعد از هر رفع، آزمون کامل دوباره.
-
-#### Lab
-
-یک پرونده بسازید و ده پرسش را پر کنید.
-
-#### عیب‌یابی روش
-
-| علامت | علت | رفع |
-|---|---|---|
-| حدس | بی‌چارچوب | ده پرسش |
-| تغییر چندتایی | بی‌انضباط | یکی |
-| بی‌Evidence | ثبت نشد | الگو |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Scope اول؟** مسیر را کوتاه می‌کند.
-**۲. چرا ثبت؟** ردیابی.
-**۳. بعد از رفع؟** آزمون مثبت و منفی.
-
-#### English Corner
-
-- *Define scope first, then work down the stack with evidence.*
-- Q: Which tool do you use first for a timeout?
 
 ## درس 14-2 — Packet Sniffer در CLI و GUI و تحلیل pcap با Wireshark: از فیلتر تا نتیجه‌گیری
 
@@ -1671,163 +1556,147 @@ Q10 verify: curl OK
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. دستور sniffer را با verbosity، count و فیلتر BPF بنویسد.
-2. Capture را در GUI بگیرد و pcap را دانلود کند.
-3. خروجی را در Wireshark با Display Filter تحلیل کند.
-4. الگوهای SYN بدون SYN-ACK، RST، Retransmission و ICMP Frag-needed را بشناسد.
-5. اثر Offload و ایمنی Capture را بداند.
-6. از Capture به نتیجه‌ی قابل‌دفاع برسد.
+1. Sniffer را در CLI و GUI با فیلتر دقیق اجرا کنید.
+2. سطوح Verbosity (۱ تا ۶) را بشناسید و انتخاب کنید.
+3. pcap بگیرید و در Wireshark تحلیل کنید.
+4. با Sniffer ثابت کنید «بسته رسید/نرسید» و «پاسخ آمد/نیامد».
+5. دو Interface (ورودی و خروجی) را مقایسه کنید.
+6. NAT را روی سیم ببینید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Sniffer؟** Log می‌گوید «چه تصمیمی گرفته شد»؛ Sniffer می‌گوید «چه چیزی روی سیم رفت». برای «بسته رسید ولی پاسخ نیامد» فقط Sniffer جواب می‌دهد.
+Sniffer مثل دوربین مداربسته‌ی راهرو است: نه نظر می‌دهد نه تفسیر؛ فقط نشان می‌دهد چه کسی از کجا رد شد. وقتی Policy و Route را درست می‌دانید و باز هم کار نمی‌کند، تنها حقیقت مستقل روی سیم است. عبارت مشهور مهندسان: «Packet capture doesn't lie».
 
-**دستور و پارامترها:** `diagnose sniffer packet <interface> '<فیلتر>' <verbosity> <count> <timestamp>`. Verbosity 4 هدر + نام Interface، 6 هدر + Payload. فیلتر BPF مثل tcpdump.
-
-**قواعد ایمنی:** فیلتر دقیق، تعداد محدود، Interface مشخص (نه any با حجم زیاد).
-
-**جمع‌بندی اصلی درس:** دو نفر درباره‌ی اینکه «بسته رسید یا نرسید» بحث می‌کنند. Sniffer حکم می‌دهد: یا بسته روی Interface دیده می‌شود یا نمی‌شود. ولی اگر فیلتر را غلط بنویسید، «هیچ‌چیز دیده نمی‌شود» و نتیجه‌ی غلط می‌گیرید. مهارت واقعی این است که فیلتر درست بنویسید و خروجی را درست بخوانید.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) دستور
+### دستور پایه
 
 ``` text
-diagnose sniffer packet <interface> '<filter>' <verbosity> <count> <timestamp>
-diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 20 l
+diagnose sniffer packet <interface|any> '<filter>' <verbosity> <count> <timestamp>
 ```
 
-| Verbosity | محتوا |
+| پارامتر | معنی |
 |---|---|
-| 1 | فقط هدر بسته |
-| 2 | هدر + داده‌ی IP |
-| 3 | هدر + داده‌ی Ethernet (در صورت وجود) |
-| 4 | هدر + نام Interface |
-| 5 | هدر + داده‌ی IP + نام Interface |
-| 6 | هدر + داده‌ی Ethernet + نام Interface (مناسب برای تبدیل به pcap و دیدن MAC) |
+| interface | نام Interface یا any |
+| filter | سینتکس BPF مثل host، port، proto |
+| verbosity | ۱ تا ۶ |
+| count | تعداد بسته (۰ = بی‌پایان) |
+| timestamp | `a` = زمان مطلق |
 
-`any` همه‌ی Interfaceها؛ `l` زمان محلی؛ `0` count یعنی بی‌پایان (خطرناک).
+### سطوح Verbosity
 
-#### ۲) فیلترهای BPF
+| سطح | نمایش |
+|---|---|
+| 1 | فقط سرآیند IP |
+| 2 | سرآیند + payload (hex) |
+| 3 | سرآیند + payload + Ethernet |
+| 4 | سرآیند + نام Interface |
+| 5 | سرآیند + payload + Interface |
+| 6 | سرآیند + payload + Ethernet + Interface |
+
+در عمل: **4** برای دیدن مسیر و Interface؛ **6** برای ذخیره و تبدیل به pcap.
+
+### فیلترهای کاربردی
 
 ``` text
 'host 10.10.0.5'
-'net 10.20.0.0/24'
-'tcp and port 443'
+'host 10.10.0.5 and tcp port 443'
+'src 10.10.0.5 and dst 198.51.100.8'
 'icmp'
-'host 10.10.0.5 and not port 22'
-'src host 10.10.0.5 and dst port 53 and udp'
+'udp port 53'
+'not port 22'
 ```
 
-#### ۳) GUI
-
-Network → Diagnostics → Packet Capture: Interface، Filter، Count → Start → Download pcap. مزیت: فایل مستقیم برای Wireshark.
-
-#### ۴) تحلیل در Wireshark
+### نمونه خروجی سطح ۴
 
 ``` text
-tcp.flags.syn==1 and tcp.flags.ack==0     SYN only
-tcp.analysis.retransmission               retransmissions
-tcp.flags.reset==1                        resets
-icmp.type==3 and icmp.code==4             frag needed
-dns.flags.rcode != 0                      DNS errors
+diagnose sniffer packet any 'host 198.51.100.8 and tcp port 443' 4 20 a
+2026-11-27 10:15:01.100 port2 in  10.10.0.5.50000 -> 198.51.100.8.443: syn
+2026-11-27 10:15:01.101 port1 out 203.0.113.2.50000 -> 198.51.100.8.443: syn
 ```
 
-الگوها:
+دو چیز دیده می‌شود: ورود روی port2 با IP داخلی و **خروج روی port1 با IP عمومی** (NAT). اگر خط دوم نبود، بسته در FortiGate گم شده؛ اگر SYN-ACK نیامد، مشکل بالادست است.
+
+### pcap و Wireshark
+
+1. در CLI با سطح 6 اجرا و خروجی را در فایل متنی ذخیره کنید.
+2. با اسکریپت `fgt2eth.pl` (ابزار Fortinet) به pcap تبدیل کنید یا از GUI: Network > Packet Capture.
+3. در Wireshark: `tcp.analysis.retransmission`، `tcp.flags.syn==1`، `ip.addr==...`.
+
+### Packet Capture در GUI
+
+GUI: Network > Packet Capture ⇒ Interface، فیلتر، تعداد ⇒ Start ⇒ Download pcap. مزیت: سنگین نیست و مستقیم pcap می‌دهد.
+
+### خواندن الگوها
 
 | الگو | معنی |
 |---|---|
-| SYN بدون SYN-ACK | مقصد/مسیر/Policy مقصد |
-| SYN-ACK ولی ACK نیامد | Asymmetric/Drop در مسیر |
-| RST بلافاصله | پورت بسته یا Policy |
-| Retransmission فراوان | Loss یا MTU |
-| ICMP 3/4 | MTU مسیر |
+| SYN بدون SYN-ACK | مقصد/بالادست بلاک |
+| SYN ⇒ RST | سرویس بسته |
+| SYN ورودی ولی خروجی نیست | Policy/Route در FGT |
+| تکرار SYN | Retransmission، گم‌شدن |
+| ICMP frag needed | MTU |
 
-#### ۵) Offload
+### مثال‌های حل‌شده
 
-بسته‌های Offload‌شده روی NPU ممکن است در sniffer کامل دیده نشوند. در Lab: `config firewall policy / edit N / set auto-asic-offload disable`. در Production با احتیاط (`Unverified`).
+#### مثال ساده — بسته می‌رسد؟
 
-#### ۶) ایمنی
+دستور: `diagnose sniffer packet port2 'host 10.10.0.5 and icmp' 4 5 a`. اگر ICMP Echo دیده شد، بسته به FortiGate رسیده؛ اگر نه، مشکل پیش از FGT (کابل/VLAN/Switch).
 
-Capture حاوی داده‌ی حساس است؛ فیلتر باریک، count محدود، pcap را پس از تحلیل امن حذف کنید.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| verbosity | 4 عمومی؛ 6 برای pcap |
-| فیلتر | دقیق و محدود |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-``` text
-diagnose sniffer packet any 'host 10.10.0.5 and tcp port 443' 4 20 l
-```
-
-#### مثال متوسط — خواندن
+#### مثال متوسط — SYN بدون جواب
 
 ``` text
 port2 in  10.10.0.5.50000 -> 198.51.100.8.443: syn
 port1 out 203.0.113.2.50000 -> 198.51.100.8.443: syn
-port1 out ... syn   (retransmit)
+(no syn-ack)
 ```
 
-ورودی دیده، SNAT و خروج؛ بدون SYN-ACK ⇒ مشکل بعد از فایروال.
+FGT درست عمل کرد؛ مشکل بالادست (ISP/مقصد بلاک یا Pool مسیر نشده). اقدام: Ticket با این Evidence.
 
-#### مثال سخت — Offload
+#### مثال متوسط — SYN خارج نمی‌شود
 
-بسته‌های Offload‌شده ناقص دیده می‌شوند؛ موقت `auto-asic-offload disable` و آزمون، سپس برگردانید. برای Wireshark از Verbosity 6 و تبدیل به pcap.
+port2 SYN دیده شد، port1 هیچ. پس FGT بسته را گم کرده: Policy deny یا Route ⇒ حالا Debug Flow (درس بعد).
 
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** sniffer روی port2 با فیلتر host و tcp port 443: SYN، SYN-ACK، ACK ⇒ Handshake کامل ⇒ مسیر سالم.
-
-**متوسط (SYN بی‌پاسخ):** Sniffer port1: SYN خارج می‌شود بارها (retransmit) و SYN-ACK نیست. مراحل: ۱) Sniffer ورودی port2 SYN را می‌بیند. ۲) Policy/Session ok. ۳) مقصد جواب نمی‌دهد. نتیجه: مشکل بیرون از فایروال (سرور/ISP). Evidence: دو Capture با زمان.
-
-**سخت (Asymmetric):** SYN در port2، SYN-ACK در port3، ACK ندارد. مراحل: ۱) Sniffer any با نام Interface (verbosity 4). ۲) ترافیک برگشت از Interface دیگر. ۳) RPF/Route برگشت. رفع Route؛ آزمون: Handshake کامل روی یک Interface.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Network → Diagnostics → Packet Capture → Create New.
-2. Interface، Filter، Count را بنویسید؛ Start؛ Download.
-
-### ۷) پیاده‌سازی از مسیر CLI
+#### مثال سخت — MTU با Sniffer
 
 ``` text
-diagnose sniffer packet any 'host 10.10.0.5 and tcp port 443' 4 20 l
-diagnose sniffer packet port2 'icmp' 6 10 l
+port1 in  198.51.100.8 > 203.0.113.2: icmp: 198.51.100.8 unreachable - need to frag (mtu 1400)
 ```
 
-### ۸) Verification (اثبات صحت)
+مقصد/میانی PMTUD پیام داده؛ اگر این پیام به کلاینت نرسد (Policy ICMP) اتصال‌های بزرگ گیر می‌کنند. رفع: اجازه‌ی ICMP یا Clamp MSS.
 
-- Handshake کامل.
-- Timestamp و Interface.
+#### مثال سخت — مقایسه‌ی دو Interface
 
-### ۹) Troubleshooting
+برای NAT: ورودی بسته با Src داخلی، خروجی با Src Pool. اگر خروجی هنوز Src داخلی است، NAT اعمال نشده (Policy بدون NAT یا Central NAT).
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+### Lab هدایت‌شده (اجرا نشده)
+
+1. ping از PC و Sniffer در دو Interface.
+2. ساخت Deny و دیدن نبود بسته‌ی خروجی.
+3. ذخیره pcap و بازکردن در Wireshark.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| چیزی دیده نمی‌شود | فیلتر/Interface | any و فیلتر ساده |
-| بسته ناقص | Offload | auto-asic-offload (Lab) |
+| خروجی خالی | فیلتر اشتباه | ساده‌تر |
+| همه‌چیز می‌بینید | بی‌فیلتر | host/port |
+| بسته دیده نمی‌شود | Offload | موقتاً unset offload (آزمایشی) |
+| CPU بالا | بی‌count | count |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Capture حاوی داده‌ی حساس است.
+Sniffer ترافیک رمزنشده را آشکار می‌کند؛ دسترسی را به Admin محدود و pcap را حذف کنید.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- Sniffer شاهد عینی.
-- فیلتر دقیق.
-- Wireshark Filters.
-- Offload.
+Sniffer حقیقت روی سیم است: فیلتر دقیق، Verbosity 4 برای مسیر، دو Interface، الگوها (SYN بدون پاسخ، RST، frag needed)، و pcap برای Wireshark.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) verbosity 4 چه نشان می‌دهد؟ *(پاسخ: 14-2-ت1)*
 
@@ -1843,7 +1712,7 @@ diagnose sniffer packet port2 'icmp' 6 10 l
 
 **Q1.** Quick quiz (English): Which sniffer verbosity includes the interface name? *(پاسخ: 14-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1852,110 +1721,16 @@ diagnose sniffer packet port2 'icmp' 6 10 l
 
 - *Capture with a narrow filter.* ← با فیلتر محدود Capture کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Sniffer (اجرا نشده). **Evidence:** `03-ops/sniffer-notes.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Packet capture
 - Wireshark User Guide
 
 <a id="l-14-3"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Sniffer برای اثبات «بسته رسید ولی پاسخ نداد»
-
-**دستور**
-
-``` text
-diagnose sniffer packet any 'host 10.10.0.5 and host 198.51.100.8 and tcp port 443' 4 20 l
-```
-
-پارامترها: Interface، فیلتر BPF، Verbosity، تعداد بسته، زمان Local. Verbosity 4 هدر + نام Interface، 6 هدر+Payload.
-
-**خروجی نمونه و تفسیر**
-
-``` text
-12:01:01.100 port2 in  10.10.0.5.50000 -> 198.51.100.8.443: syn 123
-12:01:01.101 port1 out 203.0.113.2.50000 -> 198.51.100.8.443: syn 123
-12:01:02.101 port1 out 203.0.113.2.50000 -> 198.51.100.8.443: syn 123
-```
-
-- ورودی داریم ⇒ ترافیک به فایروال رسیده.
-- خروجی با SNAT ⇒ Policy و NAT کار کرده.
-- بدون SYN-ACK و Retransmit ⇒ مسئله بعد از فایروال.
-
-**ذخیره pcap:** خروجی `l` یا 6 را با اسکریپت fgt2eth به pcap تبدیل و در Wireshark با فیلتر `tcp.analysis.retransmission` ببینید.
-
-**اشتباهات رایج:** فیلتر غلط (فقط یک Host)، Interface `any` با حجم زیاد، فراموشی تعداد بسته و بار CPU.
-
-**پرسش‌های مصاحبه**
-1. *Sniffer بسته Offload شده را می‌بیند؟* ممکن است ببیند ناقص؛ برای Debug Offload را موقتاً بررسی کنید.
-2. *چرا دو سمت؟* مقایسه in و out.
-3. *Verbosity 6؟* Payload هم.
-
-### تکمیل عمیق: Packet Sniffer — فیلتر تا Wireshark
-
-#### چرا؟
-
-Log می‌گوید «چه تصمیمی گرفته شد»؛ Sniffer می‌گوید «چه چیزی روی سیم رفت». برای «بسته رسید ولی پاسخ نیامد» تنها Sniffer جواب می‌دهد.
-
-#### دستور
-
-``` text
-diagnose sniffer packet any 'host 10.10.0.5 and host 198.51.100.8 and tcp port 443' 4 20 l
-```
-
-پارامترها: Interface، فیلتر BPF، Verbosity (4 = هدر+Interface، 6 = هدر+Payload)، تعداد بسته، زمان Local.
-
-#### مثال ساده — خواندن خروجی
-
-``` text
-12:01:01.100 port2 in  10.10.0.5.50000 -> 198.51.100.8.443: syn 123
-12:01:01.101 port1 out 203.0.113.2.50000 -> 198.51.100.8.443: syn 123
-12:01:02.101 port1 out 203.0.113.2.50000 -> 198.51.100.8.443: syn 123
-```
-
-تفسیر: ورودی دیده شد؛ خروجی با SNAT خارج شد؛ Retransmit بدون SYN-ACK ⇒ مشکل بعد از فایروال.
-
-#### مثال متوسط — ذخیره‌ی pcap
-
-خروجی Verbosity 6 را با اسکریپت `fgt2eth.pl` به pcap تبدیل و در Wireshark با `tcp.analysis.retransmission` ببینید.
-
-#### مثال سخت — Offload
-
-بسته‌های Offload‌شده (NPU) ممکن است در Sniffer کامل دیده نشوند. برای عیب‌یابی می‌توان Offload را موقتاً برای آن Policy غیرفعال کرد (`set auto-asic-offload disable`) و پس از آزمون برگرداند.
-
-#### قواعد ایمنی
-
-فیلتر دقیق، تعداد بسته محدود، Interface مشخص؛ Payload حساس را ذخیره نکنید.
-
-#### Lab
-
-یک curl را با Sniffer دو Interface ببینید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| چیزی نمی‌بینم | فیلتر | ساده‌سازی |
-| بسته‌های ناقص | Offload | غیرفعال موقت |
-| CPU بالا | any بی‌فیلتر | محدود |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Verbosity 4؟** هدر و Interface.
-**۲. چرا دو Interface؟** قبل/بعد NAT.
-**۳. Offload؟** Sniffer را ناقص می‌کند.
-
-#### English Corner
-
-- *Capture on both interfaces to see the packet before and after NAT.*
-- Q: What does a SYN retransmission with no SYN-ACK suggest?
 
 ## درس 14-3 — Debug Flow: خواندن تصمیم فایروال خط‌به‌خط با مثال‌های Allowed، Denied و RPF
 
@@ -1963,168 +1738,133 @@ diagnose sniffer packet any 'host 10.10.0.5 and host 198.51.100.8 and tcp port 4
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. فیلتر Debug flow را بسازد و ایمن اجرا و خاموش کند.
-2. خروجی را (Route، Policy، NAT، Drop) خط‌به‌خط تفسیر کند.
-3. پیام‌های رایج (no matching policy، reverse path check fail، iprope_in_check) را بشناسد.
-4. با Lookup و Session نتیجه را تأیید کند.
-5. از Debug flow به رفع قابل‌اثبات برسد.
-6. Evidence را ثبت کند.
+1. Debug Flow را با فیلتر و محدودیت ایمن اجرا کنید.
+2. خروجی را خط‌به‌خط بخوانید (Route، Policy، NAT).
+3. سه نتیجه‌ی Allowed، Denied، RPF را تشخیص دهید.
+4. پیام‌های مهم و معنی آن‌ها را بشناسید.
+5. دستورهای پایان‌دادن را بدانید.
+6. با Sniffer و Session ترکیب کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Debug Flow؟** Sniffer بسته را نشان می‌دهد؛ Debug Flow «تصمیم» فایروال را: کدام Route، کدام Policy، NAT یا رد. مثل خواندن دفتر نگهبان به‌جای تماشای ورود و خروج.
+Sniffer می‌گوید «بسته رسید و نرفت»؛ Debug Flow می‌گوید **چرا**. مثل دیدن گزارش داور بعد از اینکه می‌بینید گل رد شد. بدون آن، مجبورید حدس بزنید. با آن، یک خط مثل `no matching policy` یا `reverse path check fail` علت را مستقیم می‌دهد.
 
-**راه‌اندازی ایمن:** reset، فیلتر آدرس/پورت، `trace start 20`، `diagnose debug enable`؛ در پایان `disable` و `reset`.
-
-**نتیجه‌ها:** Allowed by Policy-X؛ Denied (policy 0)؛ reverse path check fail؛ no session matched.
-
-**جمع‌بندی اصلی درس:** Debug flow «فیلم تصمیم‌گیری فایروال» است: بسته آمد، Session ساخته شد، Route پیدا شد، Policy انتخاب شد، NAT اعمال شد یا بسته Drop شد و دلیلش چه بود. اگر خواندنش را بلد باشید، بیشتر پرونده‌ها در چند دقیقه حل می‌شوند؛ اگر نه، خروجی فقط انبوهی متن است.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) اجرا
+### راه‌اندازی
 
 ``` text
 diagnose debug reset
 diagnose debug flow filter clear
 diagnose debug flow filter addr 10.10.0.5
-diagnose debug flow filter port 443
+diagnose debug flow filter dport 443
 diagnose debug flow show function-name enable
+diagnose debug console timestamp enable
 diagnose debug flow trace start 20
 diagnose debug enable
-... test ...
+# ... reproduce ...
 diagnose debug disable
 diagnose debug reset
 ```
 
-برای مدل‌های NPU طبق مستند، Offload باید غیرفعال باشد وگرنه بسته‌ها دیده نمی‌شوند.
+`trace start 20` فقط ۲۰ بسته را ردیابی می‌کند (ایمنی).
 
-#### ۲) خروجی Allowed
+### پیام‌های مهم
+
+| پیام | معنی |
+|---|---|
+| `vd-root received a packet` | ورود بسته |
+| `find a route: gw-... via ...` | Route پیدا شد |
+| `no route` / `Denied: failed to find route` | Route نیست |
+| `Allowed by Policy-N` | Policy مجاز |
+| `Denied by forward policy check (policy 0)` | Policy نیست |
+| `reverse path check fail, drop` | RPF |
+| `SNAT ...` | ترجمه‌ی مبدأ |
+| `DNAT ...` | ترجمه‌ی مقصد |
+| `iprope_in_check() check failed` | رد شدن در ورودی خود FGT |
+
+### سه نتیجه‌ی متفاوت
+
+**Allowed:**
 
 ``` text
-msg="vd-root received a packet(proto=6, 10.10.0.5:40000->203.0.113.10:443) from port2. flag [S]"
-msg="allocate a new session-00001234"
-msg="find a route: flag=00000000 gw-198.51.100.1 via port1"
-msg="Allowed by Policy-2: SNAT"
-msg="SNAT 10.10.0.5->198.51.100.2:40000"
+id=20085 trace_id=1 msg="vd-root received a packet(proto=6, 10.10.0.5:50000->198.51.100.8:443) from port2."
+id=20085 trace_id=1 msg="allocate a new session-00001a2b"
+id=20085 trace_id=1 msg="find a route: flag=00000000 gw-203.0.113.1 via port1"
+id=20085 trace_id=1 msg="Allowed by Policy-30: SNAT"
+id=20085 trace_id=1 msg="SNAT 10.10.0.5->203.0.113.2:50000"
 ```
 
-| خط | معنی |
-|---|---|
-| received a packet | ورود و Interface |
-| allocate a new session | Session |
-| find a route | Interface خروجی/Gateway |
-| Allowed by Policy-2 | Policy و NAT |
-
-#### ۳) خروجی Denied
+**Denied (policy):**
 
 ``` text
 msg="Denied by forward policy check (policy 0)"
 ```
 
-policy 0 = Implicit Deny: Policy مطابق نیست. بررسی: Interface/Zone، Source/Destination (بعد DNAT)، Service، Schedule.
-
-#### ۴) RPF
+**RPF:**
 
 ``` text
 msg="reverse path check fail, drop"
 ```
 
-Route برگشت Source از Interface ورودی نیست. رفع: Route یا طراحی Asymmetric.
+### روش تفسیر
 
-#### ۵) Local-in
+1. ورود: از کدام Interface (درست است؟).
+2. Route: gw و خروجی.
+3. Policy: شماره/Deny.
+4. NAT: چه ترجمه‌ای.
+5. پایان: Allowed یا Drop.
 
-``` text
-msg="iprope_in_check() check failed on policy 0, drop"
-```
-
-ترافیک به خود فایروال: allowaccess/Local-in.
-
-#### ۶) تأیید
-
-``` text
-diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
-diagnose sys session list
-```
-
-#### ۷) ایمنی
-
-Debug سنگین است؛ `trace start 20` تعداد بسته را محدود می‌کند و همیشه `disable` و `reset`.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| فیلتر | Addr+Port |
-| trace | ۲۰ بسته |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### مثال‌های حل‌شده
 
 #### مثال ساده — Allowed
 
-``` text
-msg="allocate a new session-0003f1"
-msg="find a route: gw-203.0.113.1 via port1"
-msg="Allowed by Policy-30: SNAT"
-```
+خطوط بالا: ورود port2، Route از port1، Policy 30 با SNAT. نتیجه: FortiGate سالم است؛ مشکل بعد از آن (بالادست) ⇒ Sniffer SYN-ACK.
 
-#### مثال متوسط — Denied و RPF
+#### مثال متوسط — Denied
 
-`Denied by forward policy check (policy 0)` ⇒ Policy نیست/Interface نامنطبق؛ `reverse path check fail` ⇒ Route برگشت.
+`Denied by forward policy check (policy 0)`. بررسی: ورود از port5 (نه ZN-USERS). رفع: افزودن Interface به Zone/Policy. پس از رفع Debug تازه: `Allowed by Policy-15`.
 
-#### مثال سخت — بی‌خروجی
+#### مثال متوسط — No route
 
-ترافیک نرسیده (Sniffer اثبات) یا Offload (فقط بسته‌ی اول). فراموشی `debug disable` CPU می‌خورد.
+`Denied: failed to find route`. `get router info routing-table details 198.51.100.8` ⇒ خالی. رفع: Default Route یا Static. تأیید: Debug ⇒ `find a route`.
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال سخت — RPF
 
-**ساده (حل‌شده):** خط «Allowed by Policy-2: SNAT» یعنی Policy 2 اجازه داد و SNAT شد؛ مسیر port1.
+لینک دوم اضافه شد؛ Sessionها قطع. Debug: `reverse path check fail`. Route به مبدأ از port3؛ بسته از port4. رفع: Route برگشت صحیح یا Policy Route/ `set src-check disable` (فقط موقت و با ریسک).
 
-**متوسط (Denied):** `Denied by forward policy check (policy 0)`: Source 10.10.0.5 از port2، مقصد 203.0.113.10:22. Service SSH در Policy 2 نیست. رفع: Policy جدا یا اصلاح Service؛ آزمون: Allowed.
+#### مثال سخت — SNAT ناخواسته
 
-**سخت (RPF):** `reverse path check fail`: مبدأ 10.30.0.5 از port4 آمد ولی Route 10.30.0.0/24 از port3. مراحل: ۱) `get router info routing-table details 10.30.0.5`. ۲) اصلاح Route/Distance. ۳) آزمون: Allowed. درس: RPF با Asymmetric.
+`Allowed by Policy-12: SNAT` ولی انتظار NAT نبود (ترافیک بین Zoneهای داخلی). رفع: `set nat disable`. نکته: Debug قبل از تغییر اثبات می‌کند.
 
-### ۷) پیاده‌سازی از مسیر CLI
+### Lab هدایت‌شده (اجرا نشده)
 
-``` text
-diagnose debug reset
-diagnose debug flow filter addr 10.10.0.5
-diagnose debug flow show function-name enable
-diagnose debug flow trace start 20
-diagnose debug enable
-diagnose debug disable
-diagnose debug reset
-```
+1. سه حالت را بسازید.
+2. Debug را با فیلتر اجرا و پایان دهید.
+3. پیام‌ها را جدول کنید.
 
-### ۸) Verification (اثبات صحت)
+### عیب‌یابی سریع
 
-- Allowed/Denied و Policy-ID.
-- پس از رفع، Allowed.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| خروجی خالی | فیلتر/Offload | فیلتر؛ Offload |
-| no session matched | Handshake | Asymmetric |
-| RPF fail | Route | Route برگشت |
+| خروجی نیست | فیلتر/enable | مرور |
+| خروجی طوفانی | بی‌فیلتر | filter و count |
+| trace قطع نمی‌شود | disable نشده | reset |
+| تغییر Offload | session شتاب | clear session |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Debug را خاموش کنید.
+Debug را روی Production با فیلتر باریک و زمان کوتاه اجرا کنید؛ در پایان حتماً disable/reset.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- Debug flow=تصمیم.
-- policy 0=Implicit Deny.
-- RPF.
-- فیلتر و شمارنده.
+Debug Flow: ورود، Route، Policy، NAT. سه نتیجه Allowed/Denied/RPF؛ پیام‌ها علت را مستقیم می‌گویند؛ همیشه فیلتر، count و پایان.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) trace start 20 چه می‌کند؟ *(پاسخ: 14-3-ت1)*
 
@@ -2140,7 +1880,7 @@ diagnose debug reset
 
 **Q1.** Quick quiz (English): What does "reverse path check fail" indicate? *(پاسخ: 14-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2148,137 +1888,16 @@ diagnose debug reset
 
 - *Always disable debug when finished.* ← پس از اتمام Debug را خاموش کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Debug flow (اجرا نشده). **Evidence:** `03-ops/debug-flow.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Debug flow
 - FortiOS 7.0 Troubleshooting guide
 
 <a id="l-14-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Debug Flow با سه نتیجه‌ی کاملاً متفاوت
-
-**راه‌اندازی**
-
-``` text
-diagnose debug reset
-diagnose debug flow filter addr 198.51.100.8
-diagnose debug flow filter dport 443
-diagnose debug flow show function-name enable
-diagnose debug flow trace start 20
-diagnose debug enable
-```
-
-**نتیجه A — Allowed**
-
-``` text
-msg="allocate a new session-0003f1"
-msg="find a route: gw-203.0.113.1 via port1"
-msg="Allowed by Policy-30: SNAT"
-msg="SNAT 10.10.0.5->203.0.113.2:50000"
-```
-
-**نتیجه B — Denied**
-
-``` text
-msg="Denied by forward policy check (policy 0)"
-```
-
-یعنی Policy نیست یا Interface/Address مطابق نیست؛ با iprope lookup همان 5-tuple علت را ببینید.
-
-**نتیجه C — RPF**
-
-``` text
-msg="reverse path check fail, drop"
-```
-
-یعنی Route برگشت به Interface دیگر است؛ `get router info routing-table details <src>`.
-
-**پایان کار:** `diagnose debug disable` و `diagnose debug reset`؛ فراموشی آن CPU و Log می‌خورد.
-
-**نکته.** Debug Flow فقط Session اولیه (بسته‌ی اول) را نشان می‌دهد؛ ادامه‌ی Session Offload شده دیده نمی‌شود.
-
-**پرسش‌های مصاحبه**
-1. *Policy 0؟* Implicit Deny.
-2. *چرا Trace محدود (20)؟* حفاظت CPU.
-3. *تفاوت Sniffer و Debug Flow؟* بسته در سیم در برابر تصمیم فایروال.
-
-### تکمیل عمیق: Debug Flow — سه نتیجه‌ی متفاوت
-
-#### چرا؟
-
-Sniffer بسته را نشان می‌دهد؛ Debug Flow «تصمیم فایروال» را: کدام Policy، کدام Route، NAT.
-
-#### راه‌اندازی ایمن
-
-``` text
-diagnose debug reset
-diagnose debug flow filter addr 198.51.100.8
-diagnose debug flow filter dport 443
-diagnose debug flow show function-name enable
-diagnose debug flow trace start 20
-diagnose debug enable
-```
-
-پایان: `diagnose debug disable` و `diagnose debug reset`.
-
-#### نتیجه‌ی A — Allowed
-
-``` text
-msg="allocate a new session-0003f1"
-msg="find a route: gw-203.0.113.1 via port1"
-msg="Allowed by Policy-30: SNAT"
-```
-
-#### نتیجه‌ی B — Denied
-
-``` text
-msg="Denied by forward policy check (policy 0)"
-```
-
-Policy مطابق نیست؛ با `iprope lookup` علت را ببینید (Interface، Address، Service).
-
-#### نتیجه‌ی C — RPF
-
-``` text
-msg="reverse path check fail, drop"
-```
-
-Route برگشت از Interface دیگر؛ `get router info routing-table details <src>`.
-
-#### مثال سخت — هیچ خروجی
-
-Debug Flow چیزی نشان نمی‌دهد: ترافیک به فایروال نمی‌رسد (Sniffer ثابت می‌کند) یا Session Offload‌شده است (فقط بسته‌ی اول دیده می‌شود).
-
-#### Lab
-
-سه نتیجه را عمداً تولید کنید (Policy حذف، Route غلط).
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| CPU بالا | Trace بی‌سقف | start 20 |
-| بی‌خروجی | ترافیک نیامده | Sniffer |
-| Policy 0 | Deny ضمنی | Lookup |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Policy 0؟** Implicit Deny.
-**۲. چرا سقف Trace؟** حفاظت CPU.
-**۳. Sniffer در برابر Debug Flow؟** بسته در برابر تصمیم.
-
-#### English Corner
-
-- *Always disable debug and reset filters when you finish.*
-- Q: What does policy 0 mean in a debug flow trace?
 
 ## درس 14-4 — Session، Routing و iprope: ابزارهای تکمیلی برای اثبات تصمیم‌ها
 
