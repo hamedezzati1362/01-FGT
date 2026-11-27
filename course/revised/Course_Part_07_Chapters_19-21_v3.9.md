@@ -2216,132 +2216,143 @@ IPsec Dial-up: dynamic Phase1، Mode Config، EAP/MFA، Policy گروهی، Rout
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده». SSL VPN فقط در Lab ایزوله (CVE).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. MFA، Lockout، Source/Geo، Posture را به‌صورت لایه‌ای پیاده کند.
-2. Logهای VPN را برای Detection تحلیل کند (آستانه، Baseline).
-3. Alert و Playbook پاسخ به ورود مشکوک را بنویسد.
-4. بازبینی دوره‌ای کاربران/گروه‌ها و دسترسی‌ها را انجام دهد.
-5. معیارهای MTTD/MTTR را برای VPN اندازه بگیرد.
+1. MFA را برای VPN و ادمین معماری کنید (FortiToken، OTP سه‌طرف، Push).
+2. Detection (تشخیص): Log، Alert و شاخص‌های حمله به VPN را تعریف کنید.
+3. Response (واکنش): قطع نشست، Block IP، Reset رمز را در Runbook بنویسید.
+4. Hardening دسترسی راه‌دور را در چک‌لیست جمع کنید.
+5. شکست MFA و حساب Break-glass را مدیریت کنید.
+6. گزارش دوره‌ای دسترسی راه‌دور را بسازید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا MFA و پایش؟** رمز لورفته نباید کافی باشد. MFA مهم‌ترین کنترل؛ Local-in، Lockout و هشدار لایه‌های بعد.
+رمز سخت‌ترین قفل نیست: لورفته می‌شود، حدس زده می‌شود، فیشینگ می‌شود. MFA (Multi-Factor Authentication، یعنی «احراز چندعاملی») مثل داشتن کلید + اثر انگشت است؛ حتی اگر رمز لو برود، مهاجم عامل دوم را ندارد. ولی MFA بدون پایش کافی نیست: شما باید ببینید چه کسی، از کجا، چه زمانی و چند بار وارد شد. VPN دروازه‌ی عمومی است؛ هر ناهنجاری باید سریع دیده و پاسخ داده شود.
 
-**جمع‌بندی اصلی درس:**
+### عامل‌ها
 
-Hardening تنظیمات ثابت است؛ **پایش** نشان می‌دهد آیا دفاع کار می‌کند. حمله به VPN معمولاً دیده می‌شود (ناموفق‌های بسیار) ولی اگر Alert نباشد، کسی نمی‌بیند.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) لایه‌های Hardening
-
-``` text
-Identity : MFA, strong auth (cert/EAP), lockout, password policy
-Network  : source/geo restriction, rate limit, DoS policy on WAN
-Device   : posture (patch, EDR, encryption), certificate per device
-Session  : idle timeout, max session, re-auth
-Access   : least privilege policy by group, segmentation behind VPN
-Platform : patch, minimal admin exposure
-```
-
-#### ۲) Detection
-
-| رویداد | داده | آستانه‌ی اولیه |
-|---|---|---|
-| Brute-force | Event: login ناموفق | > 10 در ۵ دقیقه از یک IP |
-| ورود موفق بعد از ناموفق‌ها | ترکیب | ≥ 5 ناموفق ⇒ موفق |
-| ورود از کشور/ASN غیرعادی | Geo | خارج از Baseline |
-| یک کاربر هم‌زمان دو IP | Session | هر وقوع |
-| ورود خارج از ساعات | زمان | سیاست |
-
-#### ۳) پاسخ
-
-Block Source (Address+Deny)، Lock کاربر، Reset رمز/توکن، پایان Session، بررسی حرکت جانبی (Log Traffic کاربر)، RCA.
-
-#### ۴) بازبینی دوره‌ای
-
-ماهانه: کاربران غیرفعال، گروه‌ها، Exceptionها؛ فصلی: آزمون MFA/Lockout، Patch.
-
-``` text
-MTTD = mean(detect time - first malicious event)
-MTTR = mean(restore/close time - detect time)
-```
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| عامل | مثال |
 |---|---|
-| آستانه‌ها | بر پایه‌ی Baseline |
-| پاسخ خودکار | Block موقت + تأیید انسانی |
-| بازبینی | ماهانه |
+| چیزی که می‌دانید | رمز |
+| چیزی که دارید | توکن/موبایل |
+| چیزی که هستید | بیومتریک |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### گزینه‌های MFA در FortiGate
 
-#### مثال ساده — قاعده‌ی هشدار
-
-``` text
->= 10 failed logins in 5 min from one source -> alert
-```
-
-#### مثال متوسط — Local-in
-
-فقط Geo/IP مجاز.
-
-#### مثال سخت — Impossible Travel
-
-دو ورود موفق از دو قاره در ده دقیقه ⇒ هشدار بالا.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Lockout بعد از ۳ تلاش؛ تست: ۴ رمز غلط ⇒ Block ۵ دقیقه.
-
-**متوسط (تحلیل):** Alert: ۲۰ ناموفق/۵ دقیقه از یک IP؛ پاسخ: Block IP؛ بررسی: آیا موفقی بود؟ Log موفق همان IP/کاربر؛ نتیجه: نفوذ نشد؛ ثبت.
-
-**سخت (حادثه):** ورود موفق بعد از ۱۲۰ ناموفق و دسترسی به ۱۷ سرور در ۱۰ دقیقه. Playbook: Contain (Session کاربر پایان، Block Source، Lock کاربر)، Scope (Traffic Log کاربر، سرورهای لمس‌شده)، Eradicate (چرخش اعتبارنامه‌ی کاربر و سرورها)، Recover، PIR. ریشه: نبود MFA یا Rate limit. اقدام: MFA الزامی، Alert، Segmentation.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-config system global
-    set admin-lockout-threshold 3
-    set admin-lockout-duration 300
-end
-execute log filter category 1
-execute log filter field action tunnel-up
-execute log display
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Alert آزمایشی با ۴ رمز غلط.
-- Log موفق/ناموفق.
-- PIR نمونه.
-- MTTD/MTTR اندازه‌گیری‌شده.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| روش | توضیح | نکته |
 |---|---|---|
-| Alert کاذب | Log | آستانه/Whitelist |
-| Alert نمی‌رسد | Syslog | مسیر Log |
+| FortiToken Mobile | OTP/Push | لایسنس: ۲ توکن رایگان؛ بیشتر Needs-License |
+| Email/SMS OTP | کد | SMS ضعیف‌تر |
+| RADIUS + MFA Provider (Azure MFA/Duo) | Push | Timeout بلندتر |
+| SAML (IdP) | SSO + MFA | بسته به مورد استفاده |
 
-### ۱۰) نکات امنیتی
+``` text
+config user local
+    edit "alice"
+        set type ldap
+        set ldap-server "LDAP-CORP"
+        set two-factor fortitoken
+        set fortitoken "FTKMOB1234567890"
+        set email-to "alice@example.com"
+    next
+end
+```
 
-- Log غیرقابل‌حذف؛ NTP.
-- MFA بدون استثنا.
-- دسترسی پس از VPN محدود.
+(سینتکس و محدودیت تعداد توکن‌ها در مستند 7.0 بررسی شود؛ Unverified.)
 
-### ۱۱) جمع‌بندی مفهومی
+### Detection
 
-- لایه‌های Hardening + Detection.
-- ورود موفق پس از ناموفق‌ها = بحرانی.
-- Playbook و PIR.
-- بازبینی دوره‌ای.
+شاخص‌ها:
 
-### ۱۲) تمرین و ارزیابی
+| شاخص | معنی |
+|---|---|
+| چندین `login-fail` از یک IP | Brute-force |
+| ورود موفق از کشور/ساعت غیرعادی | سوءاستفاده از حساب |
+| یک کاربر هم‌زمان از دو مکان | اشتراک/سرقت |
+| حجم داده‌ی زیاد | استخراج داده |
+| Tunnel پایدار بدون فعالیت | اتصال مشکوک |
+
+Log را به FortiAnalyzer/SIEM بفرستید؛ Alert برای آستانه‌ها.
+
+``` text
+execute log filter category 1
+execute log filter field subtype vpn
+execute log display
+diagnose vpn ssl list
+diagnose vpn ike gateway list
+```
+
+### Response — Runbook
+
+1. تأیید هشدار (کاربر، IP، زمان).
+2. قطع نشست: `diagnose vpn ike gateway clear name DIALUP_0` یا `execute vpn sslvpn del-tunnel`.
+3. Block: Local-in Policy/Address Group برای IP مشکوک.
+4. Reset رمز و Revoke توکن/گواهی.
+5. بررسی دسترسی انجام‌شده (Log).
+6. گزارش حادثه.
+
+### Hardening چک‌لیست
+
+1. MFA اجباری.
+2. Source محدود (Geo/IP).
+3. Patch فعال.
+4. TLS/IKE الگوریتم قوی.
+5. Lockout و Rate-limit.
+6. Policy حداقل (نه ALL).
+7. Log مرکزی و Alert.
+8. حساب Break-glass.
+9. بازبینی فصلی کاربران.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Brute-force
+
+Log: ۴۰ `login-fail` در ۲ دقیقه از 203.0.113.99. اقدام: Block IP (Local-in) و بررسی هیچ ورود موفق. `login-block-time` به‌صورت خودکار هم کمک می‌کند.
+
+#### مثال متوسط — MFA شکست
+
+کاربر OTP را وارد می‌کند و رد می‌شود. علت: ساعت FortiToken/گوشی اختلاف. رفع: همگام‌سازی زمان؛ در Push: Timeout.
+
+#### مثال متوسط — ورود غیرعادی
+
+alice ساعت ۳ شب از کشور دیگر وارد می‌شود و ۲ ساعت قبل در ایران بود (Impossible Travel). اقدام: Revoke نشست، تماس با کاربر، Reset رمز.
+
+#### مثال سخت — رمز لورفته با MFA Fatigue
+
+مهاجم رمز را دارد و Push را ده‌ها بار می‌فرستد تا کاربر خسته شود و تأیید کند (MFA Fatigue). دفاع: Number Matching، محدودیت تعداد Push، آموزش «هر Push ناخواسته را رد کنید و گزارش دهید»، Alert روی Pushهای رد‌شده.
+
+#### مثال سخت — قطع MFA Provider
+
+Azure MFA/Duo Down. Fail-open یا Fail-close؟ سیاست: ادمین‌ها Break-glass محلی (Fail-close برای کاربران، Fail-open ممنوع)، پایش سرویس، و Runbook ارتباط.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. MFA با FortiToken.
+2. Alert Brute-force.
+3. Runbook Response.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| OTP رد | زمان | همگام |
+| Push نمی‌رسد | Provider | بررسی |
+| Alert نیست | Log مرکزی | ارسال |
+| Brute-force | بدون Limit | Lockout |
+
+### نکات امنیتی
+
+MFA مقاوم به فیشینگ (FIDO2/Certificate) ترجیح؛ Number Matching؛ Break-glass؛ بازبینی دسترسی.
+
+### جمع‌بندی
+
+MFA + Detection + Response + Hardening؛ شاخص‌های Brute-force/Impossible Travel؛ MFA Fatigue؛ Runbook و Break-glass.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Lockout چیست؟ *(پاسخ: 20-4-ت1)*
 
@@ -2357,7 +2368,7 @@ execute log display
 
 **Q1.** Quick quiz (English): Which VPN log pattern most strongly indicates a successful brute-force attack? *(پاسخ: 20-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2367,11 +2378,11 @@ execute log display
 
 - *Alert on a successful login that follows many failures.* ← روی ورود موفق پس از شکست‌های متعدد هشدار بدهید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Hardening/Detection VPN. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/vpn-hardening.md`.
 
-### ۱۵) منابع
+### منابع
 
 - NIST SP 800-61
 - NIST SP 800-63B
@@ -2379,276 +2390,177 @@ execute log display
 
 <a id="l-20-5"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Hardening و Detection VPN
-
-کنترل‌ها: MFA، محدودیت جغرافیایی (Local-in Policy/Geo Address)، قفل پس از شکست، Log متمرکز و هشدار.
-
-``` text
-config firewall local-in-policy
- edit 1
-  set intf port1
-  set srcaddr GEO-ALLOWED
-  set dstaddr all
-  set service SSLVPN-PORT
-  set action accept
-  set schedule always
- next
-end
-```
-
-**هشدار نمونه:** ≥۱۰ شکست ورود در ۵ دقیقه از یک IP ⇒ Alert (قاعده‌ی SIEM).
-
-**پرسش‌های مصاحبه**
-1. *Local-in Policy؟* ترافیک به خود فایروال.
-2. *Brute-force؟* MFA + Lockout.
-3. *Detection؟* Log Event.
-
-### تکمیل عمیق: MFA، پایش و Hardening دسترسی راه‌دور
-
-#### چرا؟
-
-یک رمز لورفته نباید کافی باشد. MFA (Multi-Factor Authentication، یعنی «احراز هویت چندعاملی») مهم‌ترین کنترل است؛ پایش و Hardening لایه‌های بعدی‌اند.
-
-#### مثال ساده — کنترل‌ها
-
-1. MFA (OTP/Push) از طریق FortiToken یا RADIUS+NPS Extension.
-2. Local-in Policy برای محدودیت مبدأ.
-3. قفل پس از شکست.
-4. Log متمرکز و هشدار.
-
-#### مثال متوسط — Local-in
-
-``` text
-config firewall local-in-policy
- edit 1
-  set intf "port1"
-  set srcaddr "GEO-ALLOWED"
-  set dstaddr "all"
-  set service "SSLVPN-PORT"
-  set action accept
-  set schedule "always"
- next
- edit 2
-  set intf "port1"
-  set srcaddr "all"
-  set dstaddr "all"
-  set service "SSLVPN-PORT"
-  set action deny
-  set schedule "always"
- next
-end
-```
-
-یعنی فقط کشورها/IPهای مجاز اجازه دارند.
-
-#### قاعده‌ی هشدار
-
-``` text
-IF failed_vpn_logins >= 10 within 5 min from one source THEN alert (medium)
-IF success after >=10 failures THEN alert (high)
-```
-
-#### مثال سخت — Impossible Travel
-
-ورود موفق یک کاربر از ایران و ۱۰ دقیقه بعد از اروپا؛ فاصله/زمان ناممکن ⇒ هشدار بالا. نیاز به GeoIP و Correlation در SIEM.
-
-#### Lab
-
-قاعده‌ی هشدار را روی Log نمونه با `awk` تست کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| هشدار کاذب | VPN شرکت‌ها | Allowlist |
-| MFA شکست | زمان | NTP |
-| Lockout زیاد | آستانه | تنظیم |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا MFA؟** رمز تنها کافی نیست.
-**۲. Impossible Travel؟** دو ورود غیرممکن.
-**۳. NTP چرا برای MFA؟** TOTP زمان‌محور.
-
-#### English Corner
-
-- *MFA is the single most effective control against stolen credentials.*
-- Q: What is impossible travel detection?
-
 ## درس 20-5 — آزمون عملی دسترسی راه‌دور: SSL-VPN/IPsec Dial-up، MFA و Split Tunnel — صورت مسئله، کلید کامل و Rubric
 
 **فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۲۰-۱ تا ۲۰-۴ · ≈ 12 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. دسترسی راه‌دور (Portal یا Tunnel) را با گروه کاربری، MFA و Policy حداقلی طراحی کند.
-2. Split Tunnel در برابر Full Tunnel را با ریسک‌ها انتخاب و پیکربندی کند.
-3. سه خرابی (Authentication، Policy/Route، DNS/Split) را با شاهد رفع کند.
-4. آزمون منفی (کاربر غیرمجاز، سرویس غیرمجاز) را اجرا کند.
-5. گزارش و Rubric تحویل دهد.
+1. دسترسی راه‌دور را با گروه‌های جدا، MFA و Policy حداقلی طراحی و پیاده کنید.
+2. Split Tunnel را در برابر Full Tunnel با ریسک انتخاب و پیکربندی کنید.
+3. سه خرابی (Authentication، Policy/Route، DNS/Split) را با Evidence رفع کنید.
+4. آزمون منفی (کاربر غیرمجاز، سرویس غیرمجاز) را اجرا کنید.
+5. گزارش و RCA تحویل دهید.
+6. خود را با Rubric نمره دهید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا آزمون عملی؟** چهار ادعا را اثبات می‌کند: ورود مجاز، رد غیرمجاز، Split صحیح و MFA.
+آزمون چهار ادعا را اثبات می‌کند: ورود مجاز موفق، ورود غیرمجاز رد، Split صحیح، MFA فعال. دورکاری یعنی درِ اصلی شبکه برای کاربران باز است؛ اگر رمز کاربری لو برود و MFA یا Policy حداقلی نباشد، مهاجم به همه‌چیز می‌رسد. این Gate نشان می‌دهد شما هم می‌سازید، هم ثابت می‌کنید.
 
-**جمع‌بندی اصلی درس:**
+### صورت مسئله
 
-دورکاری یعنی در اصلی‌ترین ورودی شبکه را برای کاربران رها کرده‌اید. اگر رمز یک کاربر لو برود و MFA نباشد، مهاجم مستقیم در شبکه‌ی داخلی است. این آزمون سنجش می‌کند بتوانید دسترسی راه‌دور را هم کاربردی و هم امن بسازید و وقتی «وصل نمی‌شود» گفتند، علت را با شاهد پیدا کنید.
+۱۲۰ کاربر دورکار. گروه‌ها:
 
-نکته‌ی نسخه: SSL-VPN حالت Tunnel در FortiOS 7.0.3 وجود دارد ولی در 7.6.3 حذف شده است؛ برای طراحی جدید IPsec Dial-up (IKEv2) توصیه می‌شود. Needs-License برای FortiToken و FortiClient EMS.
+1. `GRP-FIN`: فقط به `10.20.0.10:443` و `10.20.0.11:445`.
+2. `GRP-IT`: SSH به شبکه‌ی Mgmt (`10.99.0.0/24`).
 
-### ۳) توضیح عمیق فنی
+الزام‌ها: MFA، Log تمام اتصال‌ها، Split Tunnel، DNS داخلی.
 
-#### ۱) صورت مسئله
+عیب‌های تزریق‌شده:
 
-۱۲۰ کاربر دورکار. گروه‌ها: GRP-FIN (دسترسی فقط به 10.20.0.10:443 و 10.20.0.11:445)، GRP-IT (SSH به Mgmt). الزام: MFA، لاگ همه‌ی اتصال‌ها، Split Tunnel برای اینترنت عمومی، DNS داخلی برای دامنه‌ی corp.local.
+1. کاربران FIN احراز می‌شوند ولی به سرور نمی‌رسند.
+2. نام داخلی `erp.corp.example` حل نمی‌شود.
+3. GRP-IT به همه‌ی 10.99.0.0/24 می‌رسد در حالی که فقط باید به 10.99.0.10 برسد (Policy بیش‌ازحد).
 
-#### ۲) طراحی
+### طراحی مرجع
 
 | مورد | تصمیم |
 |---|---|
-| نوع | SSL-VPN Tunnel (7.0.3) یا IPsec Dial-up |
-| احراز هویت | LDAP/AD + FortiToken |
-| Tunnel IP Pool | 10.212.134.0/24 |
-| Split Tunnel | بله، فقط 10.20.0.0/16 و 10.99.0.0/24 |
-| DNS | 10.20.0.2 |
-| Policy | یک Policy برای هر گروه با مقصد حداقلی |
+| نوع | IPsec Dial-up IKEv2 (ترجیح) یا SSL-VPN Tunnel (7.0.3) |
+| احراز | LDAP/AD + FortiToken (EAP/RADIUS) |
+| Pool | 10.212.134.0/24 |
+| Split | 10.20.0.0/16 و 10.99.0.0/24 |
+| DNS | 10.20.0.10 |
+| Policy | یک Policy برای هر گروه، سرویس مشخص |
+
+### کلید پاسخ — Policy حداقلی
 
 ``` text
-config vpn ssl settings
- set servercert "Fortinet_Factory"
- set tunnel-ip-pools "SSLVPN_TUNNEL_ADDR1"
- set tunnel-ipv6-pools "SSLVPN_TUNNEL_IPv6_ADDR1"
- set dns-server1 10.20.0.2
- set port 10443
- set source-interface "port1"
- set default-portal "tunnel-access"
-end
 config firewall policy
- edit 80
-  set name "SSLVPN-FIN"
-  set srcintf "ssl.root"
-  set dstintf "port3"
-  set srcaddr "all"
-  set dstaddr "SRV-FIN-WEB" "SRV-FIN-SMB"
-  set groups "GRP-FIN"
-  set action accept
-  set schedule "always"
-  set service "HTTPS" "SMB"
-  set logtraffic all
- next
+    edit 201
+        set name "VPN-FIN-ERP"
+        set srcintf "DIALUP"
+        set dstintf "ZN-SRV"
+        set srcaddr "all"
+        set dstaddr "HOST-ERP" "HOST-FS"
+        set groups "GRP-FIN"
+        set service "HTTPS" "SMB"
+        set action accept
+        set schedule "always"
+        set logtraffic all
+    next
+    edit 202
+        set name "VPN-IT-SSH"
+        set srcintf "DIALUP"
+        set dstintf "ZN-MGMT"
+        set srcaddr "all"
+        set dstaddr "HOST-MGMT-BASTION"
+        set groups "GRP-IT"
+        set service "SSH"
+        set action accept
+        set schedule "always"
+        set logtraffic all
+    next
 end
 ```
 
-(گواهی Factory برای Production نامناسب است؛ گواهی معتبر. پارامترها `Unverified`؛ در 7.0.3 با CLI help تأیید شود.)
+### کلید پاسخ — سه عیب
 
-#### ۳) خرابی‌ها و کلید
+**عیب ۱ (FIN نمی‌رسد):**
 
-**A: Authentication.** کاربر «Login failed». شاهد: Event Log: `ssl-login-fail` با reason. علل: LDAP Bind، رمز، عضویت گروه، یا FortiToken. رفع: `diagnose test authserver ldap AD user pass` (Unverified) و اصلاح گروه.
+1. Evidence: `diagnose firewall iprope lookup 10.212.134.5 40000 10.20.0.10 443 tcp DIALUP` ⇒ policy 0.
+2. علت: `srcintf` Policy روی `ssl.root` در حالی که کاربران Dial-up‌اند (Interface اشتباه).
+3. رفع: srcintf = DIALUP (یا ssl.root برای SSL).
+4. تأیید: Lookup ⇒ policy 201.
 
-**B: Policy/Route.** وصل می‌شود ولی به 10.20.0.10 نمی‌رسد. شاهد: Debug flow `no matching policy`/Denied. علت: Policy فاقد گروه یا dst نادرست. رفع: Policy.
+**عیب ۲ (DNS):**
 
-**C: DNS/Split.** با IP می‌رسد و با نام نه. علت: DNS Server به کلاینت نمی‌رسد یا Split-DNS. رفع: `set dns-server1` و Policy UDP 53 به DNS.
+1. Evidence: `nslookup erp.corp.example` ⇒ Timeout؛ `ipconfig /all` DNS عمومی.
+2. علت: `ipv4-dns-server1`/`dns-server1` تنظیم نیست یا Split DNS.
+3. رفع: DNS 10.20.0.10 و Policy UDP/53 به DNS برای گروه.
+4. تأیید: nslookup ⇒ IP داخلی.
 
-**آزمون منفی:** کاربر GRP-FIN به SSH Mgmt وصل نمی‌شود؛ Log deny با policyid.
+**عیب ۳ (Policy بیش‌ازحد IT):**
 
-#### ۴) Verification
+1. Evidence: Lookup به 10.99.0.50:22 ⇒ مجاز.
+2. علت: dstaddr = NET-MGMT.
+3. رفع: dstaddr = HOST-MGMT-BASTION.
+4. آزمون منفی: Lookup به 10.99.0.50 ⇒ policy 0.
 
-``` text
-get vpn ssl monitor
-diagnose debug application sslvpn -1
-diagnose debug enable
-diagnose firewall iprope lookup 10.212.134.5 40000 10.20.0.10 443 tcp ssl.root
-```
+### آزمون منفی
 
-#### ۵) Rubric
-
-طراحی ۱۵، پیکربندی ۲۵، تشخیص سه خرابی ۳۰، آزمون منفی ۱۵، Evidence و صداقت ۱۵. قبولی ۷۵.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| آزمون | انتظار |
 |---|---|
-| SSL-VPN یا IPsec Dial-up | طراحی جدید: IPsec |
-| Split Tunnel | با EDR |
-| MFA | اجباری |
+| کاربر FIN به SSH Mgmt | Deny |
+| کاربر IT به ERP | Deny |
+| کاربر غیرعضو | Deny/Reject احراز |
+| رمز درست و OTP غلط | Reject |
+| IP خارج از Geo مجاز | Block (در صورت تنظیم) |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### Rubric (۱۰۰)
 
-#### مثال ساده
+| معیار | امتیاز |
+|---|---|
+| طراحی و Policy حداقلی | 20 |
+| MFA | 15 |
+| Split/DNS | 15 |
+| رفع سه عیب با Evidence | 30 |
+| آزمون منفی | 10 |
+| RCA/صداقت | 10 |
 
-`get vpn ssl monitor` کاربر.
+### مثال‌های حل‌شده
 
-#### مثال متوسط — اثبات Split
+#### مثال ساده — Lookup
 
-`route print` کلاینت: فقط شبکه‌های سازمانی از VPN.
+alice(FIN) ⇒ ERP:443: Lookup ⇒ policy 201 ⇒ OK. Log user=alice group=GRP-FIN.
 
-#### مثال سخت — منفی
-
-کاربر مالی به Mgmt: `nc -zv` Timeout و Log Deny. Rubric: هر آزمون ۲۰ (نتیجه ۱۰ + شاهد ۱۰).
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** کاربر FIN با MFA وصل می‌شود؛ `get vpn ssl monitor` نشان می‌دهد Tunnel IP 10.212.134.5؛ HTTPS به 10.20.0.10 باز می‌شود.
-
-**متوسط (خرابی B):** وصل است ولی به سرور نمی‌رسد. مراحل: ۱) Lookup برای 10.212.134.5→10.20.0.10:443 ⇒ policy 0. ۲) Policy گروه GRP-FIN نیست یا dstaddr اشتباه. ۳) تصحیح. ۴) آزمون: Allowed و Hit افزایش. پاسخ: Policy ناقص.
-
-**سخت (Split Tunnel و نشت):** کاربر می‌گوید «اینترنت کند شد». بررسی: Full Tunnel فعال بود و ترافیک اینترنت از فایروال می‌رفت. راه: Split Tunnel با Routing Address 10.20.0.0/16؛ ریسک: ترافیک اینترنت کاربر محافظت نمی‌شود؛ جبران: FortiClient/EDR (Needs-License) و DNS امن. آزمون: traceroute به 8.8.8.8 از کلاینت مستقیم؛ به 10.20.0.10 از Tunnel.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. VPN → SSL-VPN Settings: Port، Cert، Tunnel pool، DNS.
-2. VPN → SSL-VPN Portals: Split Tunneling و Routing Address.
-3. User & Device: LDAP و FortiToken و گروه.
-4. Policy: Source ssl.root و Group.
-
-### ۷) پیاده‌سازی از مسیر CLI
+#### مثال متوسط — RCA عیب ۲
 
 ``` text
-get vpn ssl monitor
-diagnose debug application sslvpn -1
-diagnose debug enable
-diagnose debug disable
-diagnose firewall iprope lookup 10.212.134.5 40000 10.20.0.10 443 tcp ssl.root
+Impact   : internal names unresolved for VPN users, 40 min
+Cause    : DNS server not pushed to clients
+Fix      : set DNS 10.20.0.10 in mode-config + allow UDP/53
+Prevent  : post-change test list includes nslookup
 ```
 
-### ۸) Verification (اثبات صحت)
+#### مثال متوسط — Split
 
-- ورود با MFA موفق.
-- دسترسی فقط به مقاصد مجاز.
-- Log هر اتصال.
-- آزمون منفی رد.
+Split فقط 10.20.0.0/16 و 10.99.0.0/24؛ `route print` در کلاینت فقط همین‌ها را از VPN نشان می‌دهد. اینترنت مستقیم.
 
-### ۹) Troubleshooting
+#### مثال سخت — دو عیب هم‌زمان
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+DNS و Policy هر دو. ابتدا Policy (قطع دسترسی)، آزمون؛ سپس DNS. اگر یک‌جا تغییر کند و باز هم کار نکند، علت معلوم نیست.
+
+#### مثال سخت — صداقت
+
+Lab اجرا نشده؛ خروجی‌ها آموزشی/Unverified؛ هرگز Evidence جعلی ثبت نشود.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. طراحی را پیاده کنید.
+2. سه عیب را رفع کنید.
+3. آزمون منفی و RCA.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Login failed | Event log/LDAP | Bind/گروه/Token |
-| به سرور نمی‌رسد | Lookup | Policy گروه |
-| با نام نمی‌رسد | DNS | dns-server |
-| کند | Full tunnel | Split |
+| policy 0 | Interface/Group | Lookup |
+| نام نه | DNS | mode-config |
+| بیش‌ازحد | dstaddr | تنگ |
+| MFA | زمان | همگام |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- MFA.
-- گواهی معتبر.
-- Least privilege.
+آزمون دورکاری: Policy حداقلی، MFA، Split و DNS، سه عیب با Evidence، آزمون منفی، RCA و صداقت.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- گروه+MFA+Policy حداقلی.
-- Split Tunnel با EDR.
-- آزمون منفی.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا MFA؟ *(پاسخ: 20-5-ت1)*
 
@@ -2664,7 +2576,7 @@ diagnose firewall iprope lookup 10.212.134.5 40000 10.20.0.10 443 tcp ssl.root
 
 **Q1.** Quick quiz (English): Why is MFA recommended for remote access VPN? *(پاسخ: 20-5-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2673,88 +2585,14 @@ diagnose firewall iprope lookup 10.212.134.5 40000 10.20.0.10 443 tcp ssl.root
 
 - *Remote access must use multi-factor authentication.* ← دسترسی راه‌دور باید از MFA استفاده کند.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** آزمون دسترسی راه‌دور (اجرا نشده). **Evidence:** `03-ops/g-remote.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: SSL VPN; IPsec dial-up
 - FortiOS 7.0 SSL VPN guide
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: ارزیابی عملی دسترسی راه‌دور
-
-آزمون‌ها: ۱) اتصال موفق کاربر مجاز ۲) رد کاربر غیرمجاز ۳) Split Tunnel (ترافیک اینترنت مستقیم) ۴) MFA ۵) قطع و Reconnect.
-
-**Rubric:** هر مورد ۲۰ نمره با Evidence (Log، `get vpn ssl monitor`).
-
-**پرسش‌های مصاحبه**
-1. *Evidence Split؟* `route print` کلاینت.
-2. *آزمون منفی؟* کاربر خارج از گروه.
-3. *Reconnect؟* Session Timeout.
-
-### تکمیل عمیق: آزمون عملی دسترسی راه‌دور
-
-#### چرا؟
-
-این آزمون چهار ادعا را اثبات می‌کند: ورود مجاز، رد غیرمجاز، تونل صحیح و MFA.
-
-#### آزمون‌ها و شواهد
-
-| # | آزمون | انتظار | شاهد |
-|---|---|---|---|
-| 1 | کاربر مجاز | وصل | `get vpn ssl monitor` |
-| 2 | کاربر خارج گروه | رد | Log |
-| 3 | Split | اینترنت مستقیم | `route print` |
-| 4 | MFA | درخواست OTP | اسکرین‌شات |
-| 5 | Reconnect | وصل مجدد | Log |
-
-#### Rubric
-
-``` text
-Each test 20 points: correct result 10 + evidence 10
-```
-
-#### مثال متوسط — اثبات Split
-
-``` text
-route print   (client)
-10.20.0.0/24 -> VPN adapter
-0.0.0.0/0    -> local gateway
-```
-
-یعنی فقط مسیرهای سازمانی از VPN می‌رود.
-
-#### مثال سخت — منبع مجاز/غیرمجاز
-
-کاربر مالی به ERP می‌رسد و به Mgmt نه؛ آزمون منفی: `nc -zv 10.50.0.1 22` باید Timeout بدهد و Log Deny.
-
-#### Lab
-
-آزمون را اجرا و Evidence Index بسازید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Split کار نمی‌کند | Policy | Split-include |
-| MFA نمی‌آید | Auth Server | بررسی |
-| Reconnect ناموفق | Timeout | تنظیم |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Evidence Split؟** جدول Route کلاینت.
-**۲. آزمون منفی؟** Mgmt رد شود.
-**۳. نمره؟** نتیجه + شاهد.
-
-#### English Corner
-
-- *Show the client routing table as evidence of split tunneling.*
-- Q: What negative test proves least privilege?
 
 ## درس 20-7 — SSL VPN در برابر IPsec Remote Access: وضعیت نسخه‌ها، ریسک و مهاجرت
 
