@@ -291,6 +291,10 @@ get firewall ssl-ssh-profile
 - Fortinet Docs: [Inspection modes](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/721410/inspection-modes)، [Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison)، [SSL & SSH Inspection](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/929997/ssl-ssh-inspection)، [Inspection mode per policy](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/366651/inspection-mode-per-policy).
 - RFC 8446 — TLS 1.3؛ RFC 6066 (SNI)؛ RFC 5280 (X.509 PKI).
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: انتخاب Flow یا Proxy با معیار واقعی
 
 **سناریو.** شعبه با ۱ Gbps و نیاز به Web Filter با Category + Antivirus.
@@ -515,6 +519,10 @@ show webfilter profile
 - [Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison).
 
 <a id="l-16-2"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: ماتریس لایسنس قبل از وعده‌دادن به مدیر
 
@@ -768,6 +776,10 @@ end
 
 <a id="l-16-3"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: Web Filter برای HTTPS بدون Inspection
 
 **مسئله:** URL کامل در HTTPS رمز است؛ بدون SSL Inspection فقط **SNI/Domain** دیده می‌شود.
@@ -1005,6 +1017,10 @@ end
 - Fortinet Docs: [Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison)؛ EICAR (eicar.org).
 
 <a id="l-16-4"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: تست امن AV با EICAR و تفسیر
 
@@ -1247,6 +1263,10 @@ end
 
 <a id="l-16-5"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: تنظیم IPS با کاهش False Positive
 
 **روش:** ابتدا Monitor (Pass + Log)، دو هفته مشاهده، سپس Block برای امضاهای ایمن.
@@ -1484,6 +1504,10 @@ end
 - Fortinet Docs: [SSL & SSH Inspection](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/929997/ssl-ssh-inspection)؛ OpenSSL s_client manual.
 
 <a id="l-16-6"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: ساخت CA و توزیع به کلاینت‌ها
 
@@ -1726,6 +1750,10 @@ diagnose sys session stat
 ### ۱۵) منابع
 
 - Fortinet Docs: FortiOS 7.0 — Performance، Inspection modes؛ iperf3 documentation.
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: اندازه‌گیری هزینه‌ی UTM
 
@@ -2028,6 +2056,10 @@ diagnose debug flow filter addr 192.168.10.5
 - Fortinet Docs: [Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison)، FortiOS 7.0 Administration Guide — Security Profiles.
 - EICAR: www.eicar.org (فایل تست).
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: کارت ۱۰ پرسشی برای Web Filter (نمونه‌ی پر)
 
 | # | پرسش | پاسخ |
@@ -2248,6 +2280,19 @@ curl -sk "https://203.0.113.3/login?user=admin'--"
 ---
 
 <a id="l-16-9"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
+### تکمیل عمیق: جدول عیب‌یابی سریع — WAF
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| WAF هیچ حمله‌ای را نمی‌گیرد | حالت بازرسی/Profile | Proxy mode یا SSL Inspection ناقص |
+| درخواست مشروع بلوک | Log Signature | False Positive؛ Exemption مستند |
+| HTTPS دیده نمی‌شود | SSL Profile | Deep Inspection با گواهی سرور |
+| بار CPU بالا | `diagnose sys top` | محدودکردن WAF به Policy ورودی |
 
 ## درس 16-9 — Web Filter در FortiGate: دسته‌های FortiGuard، Static URL، Rating و عیب‌یابی
 
@@ -2984,6 +3029,10 @@ diagnose debug disable
 - Fortinet Docs: [FSSO polling connector agent installation](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/503764/fsso-polling-connector-agent-installation)، [FSSO](https://docs.fortinet.com/document/fortigate/7.0.8/administration-guide/450337)، [config user fsso-polling](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/516620/config-user-fsso-polling).
 - RFC 4511 (LDAP)، RFC 4120 (Kerberos)، RFC 2865 (RADIUS).
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: ردیابی یک ورود کاربر از پایه تا Policy
 
 **جریان LDAP + Group:** کاربر → FortiGate (Captive/VPN) → Bind با حساب سرویس → Search کاربر در Base DN → خواندن memberOf → تطبیق با User Group → Policy.
@@ -3199,6 +3248,10 @@ Get-ADUser svc-fgt | Select DistinguishedName
 - `phase0a/Golden_W2025_Runbook.md`.
 
 <a id="l-17-2"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: چک‌لیست Lab و آزمون سلامت AD
 
@@ -3433,6 +3486,10 @@ diagnose test authserver ldap LDAP-AD u.fin1 <PASSWORD>
 - RFC 4511 (LDAP)؛ Fortinet Docs: FortiOS 7.0 — LDAP servers، User groups.
 
 <a id="l-17-3"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: عیب‌یابی Bind و Group
 
@@ -3673,6 +3730,10 @@ diagnose test authserver radius RADIUS-NPS pap u.fin1 <PASSWORD>
 
 <a id="l-17-4"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: RADIUS و NPS با MFA
 
 **جریان:** FortiGate (NAS) → NPS (Shared Secret، پورت 1812) → AD → پاسخ Access-Accept + Attribute (Fortinet-Group-Name).
@@ -3901,6 +3962,10 @@ diagnose debug authd fsso list
 
 <a id="l-17-5"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: FSSO — انتخاب حالت با مثال
 
 | حالت | شرح | کاربرد |
@@ -4120,6 +4185,10 @@ end
 
 <a id="l-17-6"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: طراحی Guest امن
 
 **اصول:** VLAN/Zone جدا، فقط اینترنت، بدون دسترسی داخلی، محدودیت پهنای باند، انقضای حساب.
@@ -4326,6 +4395,10 @@ diagnose debug reset
 
 - درس‌های ۱۷-۰ تا ۱۷-۷
 - RFC 4511، RFC 2865
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: پرونده‌ی «کاربر LDAP وارد می‌شود ولی Policy مچ نمی‌شود»
 
@@ -4560,6 +4633,10 @@ diagnose debug reset
 ### ۱۵) منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Authentication; LDAP; RADIUS; FSSO
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: درخت تصمیم Authentication
 
@@ -5237,6 +5314,10 @@ diagnose sniffer packet wan1 "host 203.0.113.2 and (udp port 500 or udp port 450
 - Fortinet Docs: [config vpn ipsec phase1-interface](https://docs.fortinet.com/document/fortigate/7.0.5/cli-reference/371620/config-vpn-ipsec-phase1-interface)، [phase2-interface](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/371620/config-vpn-ipsec-phase2-interface)، [Phase 1 configuration](https://docs.fortinet.com/document/fortigate/7.0.2/administration-guide/790613/phase-1-configuration).
 - RFC 7296 — IKEv2؛ RFC 4303 — ESP؛ RFC 3947/3948 — NAT-T؛ RFC 3706 — DPD؛ RFC 8247 — Algorithm Requirements for IKEv2.
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: ردیابی لایه‌ای یک Tunnel که بالا نمی‌آید
 
 **لایه‌ها:** ۱) UDP/500 می‌رسد؟ ۲) Phase1 (IKE_SA) ۳) Phase2 (Child SA/Selector) ۴) Route و Policy ۵) داده.
@@ -5465,6 +5546,10 @@ diagnose vpn ike gateway list
 - RFC 7296
 
 <a id="l-18-2"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: برگه‌ی پارامتر برای دو سر
 
@@ -5718,6 +5803,10 @@ diagnose debug flow filter addr 192.168.20.5
 - Fortinet Docs: [config vpn ipsec phase1-interface](https://docs.fortinet.com/document/fortigate/7.0.5/cli-reference/371620/config-vpn-ipsec-phase1-interface)، [phase2-interface](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/371620/config-vpn-ipsec-phase2-interface).
 
 <a id="l-18-3"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: ساخت و اثبات Tunnel
 
@@ -5980,6 +6069,10 @@ diagnose vpn ike gateway list
 - RFC 7296
 
 <a id="l-18-4"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: خواندن Debug IKE
 
@@ -6246,6 +6339,10 @@ end
 
 <a id="l-18-5"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: محاسبه‌ی MTU Tunnel
 
 ``` text
@@ -6494,6 +6591,10 @@ diagnose vpn tunnel list
 - RFC 7296
 
 <a id="l-18-6"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: Interop FortiGate–Cisco IKEv2
 
@@ -6841,6 +6942,10 @@ diagnose debug reset
 - Fortinet FortiOS 7.0 Administration Guide: IPsec VPN
 - FortiOS 7.0 IPsec troubleshooting
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: کلید ارزیابی G7
 
 **Rubric:** Tunnel برقرار ۲۰، Routing ۱۵، Policy ۱۵، MTU ۱۵، عیب‌یابی خرابی تزریقی ۲۵، گزارش ۱۰.
@@ -7057,6 +7162,19 @@ Inner MTU = 1500 - overhead  ~ 1427 (conservative)
 ---
 
 <a id="l-18-8"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
+### تکمیل عمیق: جدول عیب‌یابی سریع — IPsec Mode
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Tunnel با AH پشت NAT بالا نمی‌آید | Capture پروتکل 51 | استفاده از ESP + NAT-T |
+| Tunnel بالا ولی ping نه | شمارنده‌ها/Route | Selector یا Route/Policy |
+| فقط HTTPS کند | MTU/MSS | سربار ESP؛ MSS Clamp |
+| Remote Access کاربر در هتل وصل نمی‌شود | UDP 500/4500 | پورت مسدود؛ NAT-T یا SSL VPN |
 
 ## درس 18-8 — IPsec Meshed و Partially Redundant: Full-Mesh، Hub-Spoke، Tunnel پشتیبان و DPD
 

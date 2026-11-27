@@ -245,6 +245,10 @@ diagnose vpn ike gateway list
 
 - Fortinet Docs: [ADVPN and shortcut paths](https://docs.fortinet.com/document/fortigate/7.0.9/administration-guide/985659/advpn-and-shortcut-paths)، [ADVPN with BGP](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/820072/advpn-with-bgp-as-the-routing-protocol)، [Enhanced BGP next hop updates and ADVPN shortcut override 7.0.4](https://docs.fortinet.com/document/fortigate/7.0.0/new-features/245878/enhanced-bgp-next-hop-updates-and-advpn-shortcut-override-7-0-4).
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: انتخاب Topology با عدد
 
 **۱۰ شعبه:** Full-mesh = N(N-1)/2 = 45 Tunnel؛ Hub-and-Spoke = 10 Tunnel.
@@ -506,6 +510,10 @@ Overlap در موارد: شرکت ادغام‌شده با همان 192.168.1.0/
 - Fortinet Docs: Static routes (blackhole)؛ FortiOS 7.0 Administration Guide
 
 <a id="l-19-2"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: IP Plan و Summarization
 
@@ -781,6 +789,10 @@ diagnose sniffer packet TO-SPOKE1 "proto 89" 4 20 l
 - Fortinet Docs: OSPF؛ IPsec VPN with dynamic routing (7.0)
 
 <a id="l-19-3"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: OSPF روی Tunnel
 
@@ -1087,6 +1099,10 @@ get router info bgp neighbors 10.250.1.2 received-routes
 
 <a id="l-19-4"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: BGP Overlay
 
 ``` text
@@ -1388,6 +1404,10 @@ get router info routing-table details 10.0.5.20
 
 <a id="l-19-5"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: Backhaul در برابر Breakout
 
 | معیار | Backhaul به HQ | Local Breakout |
@@ -1633,6 +1653,10 @@ get router info bgp network
 
 <a id="l-19-6"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: فرایند Shortcut
 
 ۱) Spoke A→B ترافیک از Hub ⇒ ۲) Hub به A و B Shortcut Offer ⇒ ۳) A و B Tunnel مستقیم ⇒ ۴) Routing به Shortcut.
@@ -1838,6 +1862,10 @@ diagnose debug flow trace start 10
 
 - درس‌های ۱۹-۱ تا ۱۹-۵
 - RFC 4271، RFC 2328
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: Rubric آزمون چندشعبه
 
@@ -2207,6 +2235,10 @@ Throughput = concurrent users x avg Mbps  (e.g. 240 x 2 = 480 Mbps)
 
 <a id="l-20-2"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: مدل تهدید دسترسی راه‌دور با مثال
 
 **سناریو.** ۳۰۰ کارمند دورکار. تهدیدها: سرقت رمز (Credential Stuffing)، دستگاه آلوده، آسیب‌پذیری Gateway.
@@ -2449,6 +2481,10 @@ diagnose debug reset
 - Fortinet Docs: SSL VPN (7.0)
 
 <a id="l-20-3"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: SSL VPN در 7.0.3 — فقط Lab
 
@@ -2712,6 +2748,10 @@ diagnose vpn ike gateway list
 
 <a id="l-20-4"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: IPsec Dial-up با IKEv2
 
 ``` text
@@ -2963,6 +3003,10 @@ execute log display
 - Fortinet Docs: Log and report (7.0)
 
 <a id="l-20-5"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: Hardening و Detection VPN
 
@@ -3245,6 +3289,10 @@ diagnose firewall iprope lookup 10.212.134.5 40000 10.20.0.10 443 tcp ssl.root
 - Fortinet FortiOS 7.0 Administration Guide: SSL VPN; IPsec dial-up
 - FortiOS 7.0 SSL VPN guide
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: ارزیابی عملی دسترسی راه‌دور
 
 آزمون‌ها: ۱) اتصال موفق کاربر مجاز ۲) رد کاربر غیرمجاز ۳) Split Tunnel (ترافیک اینترنت مستقیم) ۴) MFA ۵) قطع و Reconnect.
@@ -3422,6 +3470,10 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 
 - Fortinet Docs: [SSL VPN tunnel mode replaced with IPsec VPN (7.6.3)](https://docs.fortinet.com/document/fortigate/7.6.3/fortios-release-notes/173430/ssl-vpn-tunnel-mode-no-longer-supported)، [SSL VPN tunnel mode to IPsec VPN migration](https://docs.fortinet.com/document/fortigate/7.6.3/administration-guide/155142/ssl-vpn-tunnel-mode-to-ipsec-vpn-migration-new).
 - FortiGuard PSIRT Advisories (CVE-2022-42475، CVE-2023-27997) — مراجعه‌ی مستقیم.
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: جدول تصمیم SSL VPN در برابر IPsec RA
 
@@ -3668,6 +3720,19 @@ Portal web-access و tunnel-access؛ دو کاربر؛ مقایسه‌ی تجر�
 - **Q1.** Which interface name carries SSL-VPN tunnel traffic in policies? *(پاسخ: 20-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
 
 ---
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
+### تکمیل عمیق: جدول عیب‌یابی سریع — SSL-VPN
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Portal خالی | Authentication Rule | نگاشت گروه به Portal |
+| Tunnel بالا، ping نه | Policy `ssl.root` و Route برگشت | Policy/Route؛ افزودن |
+| DNS داخلی حل نمی‌شود | dns-server/Split DNS | تنظیم DNS Portal |
+| Web Mode به سرور نمی‌رسد | دسترسی فایروال به مقصد | Policy/Route از فایروال |
 
 ## پاسخ‌های فصل 20
 
@@ -3994,6 +4059,10 @@ end
 
 <a id="l-21-2"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: Dual-ISP کلاسیک با عدد
 
 ``` text
@@ -4246,6 +4315,10 @@ GUI: Network → SD-WAN → Performance SLAs (نمودار Latency/Jitter/Loss).
 
 <a id="l-21-3"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: ساخت SD-WAN
 
 ``` text
@@ -4489,6 +4562,10 @@ end
 - Fortinet Docs: [Maximize bandwidth (SLA) strategy](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/708464/maximize-bandwidth-sla-strategy)، [config system sdwan](https://docs.fortinet.com/document/fortigate/7.0.1/cli-reference/94620/config-system-sdwan).
 
 <a id="l-21-4"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: Rule و SLA
 
@@ -4755,6 +4832,10 @@ diagnose sys session filter clear
 - Fortinet Docs: SD-WAN
 
 <a id="l-21-5"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: Failover و Session
 
@@ -5035,6 +5116,10 @@ diagnose sys session list
 
 - Fortinet FortiOS 7.0 Administration Guide: SD-WAN
 - FortiOS 7.0 SD-WAN guide
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: Rubric G8
 
@@ -5333,6 +5418,10 @@ get router info routing-table all
 ### ۱۳) منابع
 
 - Fortinet Docs: [SD-WAN](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/19246/sd-wan)، [Link health monitor](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/580649/link-health-monitor)، [Maximize bandwidth (SLA) strategy](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/708464/maximize-bandwidth-sla-strategy)، [config system sdwan](https://docs.fortinet.com/document/fortigate/7.0.1/cli-reference/94620/config-system-sdwan).
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: خواندن Health-check
 

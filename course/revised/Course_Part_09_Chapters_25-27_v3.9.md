@@ -175,6 +175,10 @@ FortiGate: Network → OSPF/BGP؛ VPN → IPsec Tunnels. CSR: CLI. **Verificatio
 
 - Cisco: IOS XE OSPF/IKEv2 Configuration Guides؛ Fortinet Docs: FortiOS 7.0 CLI Reference (`config router ospf`، `phase1-interface`)؛ RFC 2328، RFC 7296.
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: نگاشت مفهوم با یک جدول عملی
 
 | مفهوم | Cisco | FortiGate |
@@ -484,6 +488,10 @@ diagnose sys session list
 
 <a id="l-25-2"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: برگه‌ی تطبیق
 
 برای هر قابلیت: دستور Cisco، دستور FortiGate، دستور Verify هر دو، تفاوت رفتار. مثال: `show ip route` ↔ `get router info routing-table all`; `show ip ospf neighbor` ↔ `get router info ospf neighbor`.
@@ -769,6 +777,10 @@ MTU (Exstart)، Network Type (DR/BDR در یک سر)، Auth، Hello/Dead، Timer
 
 <a id="l-25-3"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: OSPF و BGP بین FGT و CSR
 
 نقاط ناهمخوانی OSPF: Area، Network Type، MTU، Hello/Dead، Authentication. BGP: AS، Update-source، Next-hop، Route-map.
@@ -1018,6 +1030,10 @@ show crypto ikev2 sa
 - Cisco IOS-XE IKEv2
 
 <a id="l-25-4"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: IPsec چندسازنده
 
@@ -1287,6 +1303,10 @@ show crypto ipsec sa
 
 - Cisco IOS-XE IKEv2 guide
 - Fortinet FortiOS 7.0 Administration Guide: IPsec
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: Rubric معماری ۶
 
@@ -1646,6 +1666,10 @@ end
 
 - Fortinet Docs: [Device Manager](https://docs.fortinet.com/document/fortimanager/7.0.0/administration-guide/478145/device-manager)، [Add FortiAnalyzer](https://docs.fortinet.com/document/fortimanager/7.0.0/administration-guide/654379/add-fortianalyzer)، [Installing policy packages](https://docs.fortinet.com/document/fortimanager/7.0.7/administration-guide/153046/installing-policy-packages-and-device-settings)، [config log syslogd setting](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/456620/config-log-syslogd-setting).
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: چه زمانی FMG/FAZ؟
 
 معیار: بیش از ~۵ دستگاه، نیاز به Policy Package یکسان (FMG) یا Log متمرکز و گزارش (FAZ). هر دو Needs-License.
@@ -1896,6 +1920,10 @@ get system central-management
 - [Installing policy packages](https://docs.fortinet.com/document/fortimanager/7.0.7/administration-guide/153046/installing-policy-packages-and-device-settings)
 
 <a id="l-26-2"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: نقش‌ها
 
@@ -2168,6 +2196,10 @@ execute ping 192.168.90.20
 
 <a id="l-26-3"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: Syslog مرکزی
 
 ``` text
@@ -2425,6 +2457,10 @@ git diff HEAD~1 -- fgt-A.sanitized.conf
 
 <a id="l-26-4"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: Backup با Git
 
 Sanitize: حذف `ENC` و Secret؛ Diff هفتگی.
@@ -2666,6 +2702,10 @@ Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ �
 ``` text
 Audit alert: 'Configuration changed' by user net01 at 22:03 -> ticket CHG-0123
 ```
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: معماری مدیریت و عملیات
 
@@ -3023,6 +3063,10 @@ diagnose sys top 2 20
 
 - Fortinet Docs: [Sample logs by log type](https://docs.fortinet.com/document/fortigate/7.0.5/administration-guide/986892/sample-logs-by-log-type)، [config log syslogd setting](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/456620/config-log-syslogd-setting)؛ NIST SP 800-92 — Guide to Log Management.
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: Baseline با عدد
 
 Baseline: میانگین CPU 18٪، Session 25k، Throughput Peak 400 Mbps. هشدار: CPU > 70٪ برای ۱۰ دقیقه؛ Session > 80٪ ظرفیت.
@@ -3280,6 +3324,10 @@ execute log display
 - NIST SP 800-92
 
 <a id="l-27-2"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: انواع Log
 
@@ -3546,6 +3594,10 @@ snmpwalk -v3 -l authPriv -u <USER> -a SHA -A <AUTHPASS> -x AES -X <PRIVPASS> 192
 - NIST SP 800-137 (Continuous monitoring)
 
 <a id="l-27-3"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: SNMP و Zabbix
 
@@ -3830,6 +3882,10 @@ curl --cacert fgt-ca.pem -H "Authorization: Bearer $FGT_TOKEN" https://192.168.9
 
 <a id="l-27-4"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: API امن
 
 ``` text
@@ -4080,6 +4136,10 @@ execute backup config sftp hardening-test.conf 192.168.90.10 backup-user <PASSWO
 - Fortinet: Hardening your FortiOS
 
 <a id="l-27-5"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: Hardening
 
@@ -4339,6 +4399,10 @@ execute backup config tftp f.conf 10.99.0.5
 
 - Fortinet FortiOS 7.0 Administration Guide: Logging; SNMP; Backup
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
 ### تعمیق: Rubric G10
 
 Log ۲۰، Monitoring ۲۰، API ۱۵، Hardening ۲۵، Backup/Restore ۲۰.
@@ -4534,6 +4598,10 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 ### ۱۰) منابع
 
 - Fortinet: «Hardening your FortiOS» (مرجع رسمی؛ نسخه‌ی 7.0 را بررسی کنید)؛ CIS Fortinet FortiGate Benchmark؛ NIST SP 800-53 (CM، AU).
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
 
 ### تعمیق: امن‌سازی مدیریتی
 

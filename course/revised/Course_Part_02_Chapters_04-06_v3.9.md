@@ -1939,6 +1939,19 @@ Gi1/0/14  Broadcast  rising=20.00  falling=10.00  action=shutdown  current=87.3%
 
 <a id="l-4-9"></a>
 
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
+### تکمیل عمیق: جدول عیب‌یابی سریع — Storm Control و RA Guard
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| پورت err-disabled با Storm Control | `show storm-control` و `show interfaces status err-disabled` | Broadcast/حلقه؛ رفع علت، سپس بازیابی پورت |
+| Threshold خیلی حساس | Baseline ترافیک | افزایش آستانه بر پایه‌ی اندازه‌گیری |
+| RA جعلی دیده می‌شود | Capture `icmpv6.type == 134` | RA Guard روی پورت‌های Host |
+| RA Guard بی‌اثر | `show ipv6 nd raguard policies` | Policy attach نشده یا نقش پورت اشتباه |
+
 ## درس 4-9 — EtherChannel و LACP/PAgP: حالت‌ها، شرط تشکیل، Load Balancing و عیب‌یابی
 
 **فصل 4 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 2.1.c: Layer 2/Layer 3 LACP port-channel/EtherChannel و 2.2: port channel and LACP) · پیش‌نیاز: ۴-۱ تا ۴-۳**
@@ -2311,6 +2324,19 @@ Root path cost via SW2                 = 4 + 4 = 8     <- chosen
 ---
 
 <a id="l-4-11"></a>
+
+### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
+
+> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
+
+### تکمیل عمیق: جدول عیب‌یابی سریع — Rapid PVST+
+
+| علامت | شاهد برای بررسی | علت محتمل و رفع |
+|---|---|---|
+| Root سوییچ اشتباه است | `show spanning-tree vlan N` | Priority پیش‌فرض؛ `root primary` روی هسته |
+| یک لینک پرسرعت Block است | هزینه‌ها و Root Path Cost | روش Short/Long ناهمخوان یا Root اشتباه |
+| بعد از اتصال سوییچ جدید قطعی | Log `ROOTGUARD_BLOCK` | سوییچ جدید BPDU برتر داد؛ Priority یا Root Guard |
+| روشن‌شدن PC کند | `show spanning-tree interface detail` | نبود PortFast؛ فعال‌سازی + BPDU Guard |
 
 ## درس 4-11 — Port Security، DHCP Snooping، DAI و IP Source Guard در جزئیات: Trust، Rate Limit، Binding و Violation
 
