@@ -269,6 +269,71 @@ Heartbeat روی دو لینک (Redundant) و VLAN/Interface جدا. **پرسش�
 2. *Monitor Port؟* قطع ⇒ Failover.
 3. *Session Pickup؟* حفظ TCP در Failover (Needs-License ندارد، قابلیت پایه).
 
+### تکمیل عمیق: FGCP — چطور دو فایروال یکی می‌شوند؟
+
+#### چرا باید یاد بگیریم؟
+
+یک فایروال تکی یعنی یک نقطه‌ی شکست؛ اگر بسوزد، کل سازمان از اینترنت جدا می‌شود. HA (High Availability، یعنی «دسترس‌پذیری بالا») دو دستگاه را طوری به هم وصل می‌کند که اگر یکی بیفتد، دیگری بی‌وقفه کار را ادامه دهد. پروتکل FortiGate برای این کار FGCP (FortiGate Clustering Protocol) است.
+
+#### توضیح ساده
+
+دو دستگاه یک Cluster می‌سازند. یکی **Primary** (ترافیک را پردازش می‌کند) و دیگری **Secondary** (آماده‌باش). بین آنها یک یا چند لینک **Heartbeat** هست که مدام «من زنده‌ام» می‌گویند و Config و Session را همگام می‌کنند.
+
+#### انتخاب Primary (Election)
+
+طبق مستند Fortinet وقتی `override` غیرفعال است ترتیب مقایسه چنین است:
+
+1. تعداد Monitored Interface سالم (بیشتر بهتر)
+2. Age (مدت زمان بالا بودن؛ با Margin 300 ثانیه)
+3. Priority (بالاتر بهتر؛ پیش‌فرض 128)
+4. Serial Number (بزرگ‌تر)
+
+وقتی `override` فعال باشد، Priority پیش از Age بررسی می‌شود.
+
+#### مثال ساده
+
+A با Priority 200 و B با 100. اگر هر دو هم‌زمان بوت شوند و Override خاموش باشد، به دلیل برابری Age (در Margin) Priority تعیین‌کننده است ⇒ A Primary. اگر A بعد از قطع برگردد و B حالا Primary است و override خاموش، B Primary می‌ماند (Age بیشتر).
+
+#### مثال متوسط — Failover با Monitor
+
+Port1 (WAN) در Monitor است. با قطع کابل WAN در Primary، تعداد Monitored سالم کمتر می‌شود ⇒ Secondary (با WAN سالم) Primary می‌شود.
+
+``` text
+get system ha status
+diagnose sys ha history read
+```
+
+#### مثال سخت — Split-brain
+
+اگر همه‌ی لینک‌های Heartbeat قطع شوند، هر دو دستگاه خود را Primary می‌پندارند (Split-brain) و IP/MAC تکراری ایجاد می‌شود. جلوگیری: دو Heartbeat Interface مستقل (کابل مستقیم/دو سوئیچ)، و Monitor.
+
+#### همگام‌سازی
+
+Config از Primary به Secondary کپی می‌شود؛ `Configuration Status: in-sync`. Session Pickup: Sessionهای TCP نیز همگام می‌شوند تا هنگام Failover قطع نشوند (قابلیت پایه؛ مستند نسخه را بخوانید).
+
+#### Lab
+
+دو FortiGate VM (لایسنس معتبر) را در HA قرار دهید؛ این Lab برای ما «اجرا نشده» است و Needs-License.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| out-of-sync | تغییر محلی | `execute ha synchronize start` |
+| Failover بی‌دلیل | Heartbeat ناپایدار | لینک‌ها |
+| Split-brain | همه‌ی HB قطع | چندلینک |
+
+#### پرسش‌ها با پاسخ
+
+**۱. ترتیب Election (override خاموش)؟** Monitor، Age، Priority، Serial.
+**۲. Heartbeat چرا دو لینک؟** افزونگی.
+**۳. Split-brain؟** دو Primary.
+
+#### English Corner
+
+- *The primary is elected by monitored interfaces, age, priority and serial number.*
+- Q: What causes a split-brain and how can you prevent it?
+
 ## درس 22-1 — مفاهیم HA برای طراحی: SPOF، سطوح افزونگی، انتخاب مدل و تحلیل خرابی‌ها
 
 **فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰، ۱۱-۷، ۵-۷ · ≈ 8 ساعت**
@@ -411,6 +476,72 @@ HA فقط یک ردیف را می‌پوشاند؛ نقشه‌ی بقیه را �
 1. *RTO/RPO؟* زمان/داده‌ی قابل تحمل.
 2. *Active-Active؟* مقیاس ولی پیچیده.
 3. *SPOF پنهان؟* DNS، NTP.
+
+### تکمیل عمیق: مفاهیم HA برای طراحی — SPOF، RTO/RPO و سطوح افزونگی
+
+#### چرا؟
+
+HA فقط یک ردیف از فهرست خرابی‌هاست. طراح خوب ابتدا همه‌ی نقاط شکست (SPOF = Single Point of Failure) را فهرست می‌کند و بعد برای هر کدام راه‌حل می‌گذارد.
+
+#### نقشه‌ی SPOF
+
+| جزء | شکست | افزونگی |
+|---|---|---|
+| دستگاه | سوختن | HA Cluster |
+| لینک | قطع کابل | LAG / لینک دوم |
+| برق | قطع | دو PSU + UPS |
+| ISP | قطع | Dual-ISP/SD-WAN |
+| سوئیچ | خرابی | دو سوئیچ |
+| DNS/NTP | قطع | سرور دوم |
+
+#### RTO و RPO
+
+RTO = Recovery Time Objective (حداکثر زمان قابل‌قبول برای بازگشت سرویس)، RPO = Recovery Point Objective (حداکثر داده‌ی قابل‌ازدست‌دادن). برای فایروال: RTO معمولاً ثانیه تا دقیقه؛ RPO به Session و Config مربوط است.
+
+#### مثال ساده — محاسبه‌ی دسترس‌پذیری
+
+``` text
+Availability = uptime / (uptime + downtime)
+99.9%  -> ~8.76 hours downtime/year
+99.99% -> ~52.6 minutes downtime/year
+```
+
+#### مثال متوسط — Active-Passive در برابر Active-Active
+
+| معیار | A-P | A-A |
+|---|---|---|
+| سادگی | بالا | کمتر |
+| ظرفیت | یک دستگاه | تقسیم‌شده (محدود) |
+| UTM | ساده | سخت‌تر |
+
+A-A تنها برای بعضی ترافیک (مثلاً UTM) توزیع می‌کند و بسیاری از سازمان‌ها A-P را ترجیح می‌دهند.
+
+#### مثال سخت — SPOF پنهان
+
+HA کامل، ولی هر دو فایروال به یک سوئیچ وصل‌اند که برق مشترک دارد؛ خرابی سوئیچ همه را می‌برد. راه: دو سوئیچ، اتصال متقاطع.
+
+#### Lab
+
+نقشه‌ی SPOF شبکه‌ی خودتان را با ۱۰ ردیف بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| قطع با وجود HA | SPOF دیگر | نقشه |
+| Failover کند | Timer | تنظیم |
+| ظرفیت ناکافی | A-P | A-A یا ارتقا |
+
+#### پرسش‌ها با پاسخ
+
+**۱. 99.99٪ چند دقیقه؟** حدود ۵۲٫۶ دقیقه در سال.
+**۲. RTO چیست؟** زمان بازگشت.
+**۳. SPOF پنهان؟** برق/سوئیچ مشترک.
+
+#### English Corner
+
+- *Redundancy at one layer is useless if another layer is a single point of failure.*
+- Q: What does 99.99 percent availability allow per year?
 
 ## درس 22-2 — پیکربندی HA Active-Passive: برگه‌ی طراحی، GUI، CLI، Heartbeat، Monitor و Verification
 
@@ -624,6 +755,79 @@ end
 2. *Password؟* امنیت HA.
 3. *Config فقط روی Primary؟* همگام‌سازی.
 
+### تکمیل عمیق: پیکربندی HA Active-Passive — برگه، دستور و تأیید
+
+#### چرا؟
+
+HA با یک تنظیم اشتباه (Group-name، رمز، Heartbeat) برقرار نمی‌شود یا بدتر، ناپایدار می‌شود. برگه‌ی طراحی قبل از اجرا مانع خطاست.
+
+#### برگه‌ی طراحی
+
+``` text
+Group name : FGT-HA
+Mode       : a-p
+Password   : (vault)
+HB devices : port7 (prio 50), port8 (prio 50)
+Priority   : A=200, B=100
+Override   : disable
+Monitor    : port1, port2
+Session pickup : enable
+```
+
+پیش‌نیاز: همان مدل، همان نسخه‌ی FortiOS، همان لایسنس‌ها.
+
+#### مثال ساده — دستور
+
+``` text
+config system ha
+ set group-name "FGT-HA"
+ set mode a-p
+ set password ***
+ set hbdev "port7" 50 "port8" 50
+ set priority 200
+ set override disable
+ set session-pickup enable
+ set monitor "port1" "port2"
+end
+```
+
+روی دستگاه دوم همان تنظیم با Priority کمتر.
+
+#### مثال متوسط — تأیید
+
+``` text
+get system ha status
+```
+
+منتظر: `HA Health Status: OK`، دو عضو، `Configuration Status: in-sync`، Primary مورد انتظار.
+
+#### مثال سخت — نکته‌ی Interface
+
+در HA، Interface Heartbeat به‌صورت اختصاصی استفاده می‌شود؛ روی همان Interface ترافیک عادی نگذارید. MAC مجازی (`00:09:0f:09:xx:xx`) پس از Failover ثابت می‌ماند و سوئیچ‌ها ARP را دوباره یاد نمی‌گیرند؛ Gratuitous ARP ارسال می‌شود.
+
+#### Lab
+
+برگه را بنویسید و پیکربندی را (در صورت داشتن دو VM لایسنس‌دار) اجرا کنید؛ در غیر این صورت «اجرا نشده».
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| عضو دوم نمی‌پیوندد | Group-name/Password | یکسان |
+| in-sync نیست | نسخه/Config | همگام |
+| Failover بی‌دلیل | Monitor | بازبینی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا نسخه‌ی یکسان؟** سازگاری Sync.
+**۲. MAC مجازی چرا؟** پایداری ARP.
+**۳. چرا دو hbdev؟** افزونگی.
+
+#### English Corner
+
+- *Both cluster members must run the same firmware version.*
+- Q: What does the virtual MAC address achieve after a failover?
+
 ## درس 22-3 — آزمون Failover/Failback و Session Pickup: طراحی تست، اندازه‌گیری و تحلیل
 
 **فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۲ · ≈ 11 ساعت**
@@ -780,6 +984,73 @@ lost 3 packets x 1 s = ~3 s outage
 2. *Session UDP/Multicast؟* Pickup محدودیت.
 3. *Failback؟* دستی بهتر.
 
+### تکمیل عمیق: آزمون Failover/Failback با عدد
+
+#### چرا؟
+
+«HA داریم» تا وقتی که Failover را اندازه نگرفته‌اید فقط یک باور است. آزمون باید زمان قطع و حفظ Session را اندازه بگیرد.
+
+#### آزمون ساده
+
+از یک کاربر `ping -i 0.2 8.8.8.8` بزنید؛ کابل Primary را بکشید؛ شمارش بسته‌های گم‌شده.
+
+``` text
+lost = 15 packets ; interval = 0.2 s
+Outage = 15 x 0.2 = 3.0 s
+```
+
+معیار پذیرش نمونه: < 5 s.
+
+#### آزمون Session Pickup
+
+یک دانلود طولانی یا SSH باز نگه دارید؛ Failover را انجام دهید. با Pickup فعال، اتصال TCP باید ادامه یابد.
+
+``` text
+ssh user@10.20.0.10      # keep typing during failover
+```
+
+برای UDP/Multicast یا Sessionهای Offload‌شده محدودیت‌هایی طبق مستند وجود دارد.
+
+#### Failback
+
+با `override disable` برگشت خودکار رخ نمی‌دهد؛ Failback را در پنجره‌ی تغییر انجام دهید تا یک قطع دوم در ساعت کاری ایجاد نشود.
+
+#### مثال متوسط — سناریوهای آزمون
+
+| آزمون | انتظار |
+|---|---|
+| کشیدن کابل WAN Primary | Failover با Monitor |
+| خاموش‌کردن Primary | Failover < 5 s |
+| قطع یک Heartbeat | بدون Failover |
+| قطع هر دو HB | Split-brain (فقط در Lab) |
+
+#### مثال سخت — Failover ناموفق
+
+پس از Failover، کاربران اینترنت ندارند: ARP سوئیچ قدیمی، یا Secondary Route/NAT ناهمگام. شاهد: `get system ha status`، `diagnose sys ha checksum cluster`، Sniffer.
+
+#### Lab
+
+جدول بالا را اجرا و شواهد را ثبت کنید (اگر لایسنس دارید).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Session قطع | Pickup خاموش | فعال |
+| قطع طولانی | ARP | Gratuitous ARP |
+| Failback ناگهانی | override | غیرفعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Failover زمان؟** با ping اندازه‌گیری.
+**۲. چرا Failback کنترل‌شده؟** قطع دوم.
+**۳. Pickup؟** حفظ Session.
+
+#### English Corner
+
+- *Measure failover time instead of assuming it.*
+- Q: Why perform failback in a maintenance window?
+
 ## درس 22-4 — عیب‌یابی HA و ارتقای Cluster: Out-of-sync، Flap، Split-brain، Upgrade Path و Rollback
 
 **فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۲، ۲۲-۳، ۱۲-۶ · ≈ 11 ساعت**
@@ -931,6 +1202,67 @@ Out-of-sync: Checksum متفاوت. Flap: Heartbeat ناپایدار/Monitor. ا
 1. *Split-brain رفع؟* قطع یکی و بازگردانی.
 2. *Checksum؟* مقایسه Config.
 3. *ارتقا؟* ابتدا Secondary.
+
+### تکمیل عمیق: عیب‌یابی HA و ارتقا — Checksum، Flap و Split-brain
+
+#### چرا؟
+
+HA وقتی خراب می‌شود معمولاً در بدترین لحظه است. باید ابزار تشخیص را از قبل بشناسید.
+
+#### ابزارها
+
+``` text
+get system ha status
+diagnose sys ha checksum cluster
+diagnose sys ha checksum show
+diagnose sys ha history read
+execute ha synchronize start
+```
+
+#### مثال ساده — Out-of-sync
+
+`checksum cluster` در دو عضو را مقایسه کنید؛ اگر بخشی (مثلاً `firewall.policy`) متفاوت بود، همان بخش مشکل دارد. رفع: `execute ha synchronize start`.
+
+#### مثال متوسط — Flap
+
+Failover رفت و برگشتی هر چند دقیقه: علل: Heartbeat ناپایدار، Monitor Interface فلپ، CPU بالا. بررسی History و Log رویداد؛ لینک‌ها و Timerها (`hb-interval`, `hb-lost-threshold`).
+
+#### مثال سخت — Split-brain
+
+علامت: دو دستگاه هر دو Primary، IP تکراری. رفع در Lab/عملیات: ۱) یک دستگاه را از شبکه‌ی داده جدا کنید ۲) لینک HB را برقرار ۳) بازگرداندن عضو به‌عنوان Secondary ۴) تأیید Sync.
+
+#### ارتقا
+
+روش مستند: Uninterruptible Upgrade؛ ابتدا Secondary، سپس Failover، سپس عضو قدیمی. Release Notes و Upgrade Path را بخوانید.
+
+``` text
+Pre : get system ha status ; backup config
+Do  : upgrade secondary -> failover -> upgrade former primary
+Post: get system ha status (in-sync, same firmware)
+```
+
+#### Lab
+
+Out-of-sync را عمداً ایجاد (تغییر محلی) و با checksum تشخیص دهید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Checksum متفاوت | تغییر محلی | Sync |
+| Flap | HB | لینک |
+| ارتقا ناموفق | مسیر | Upgrade Path |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Checksum چه می‌گوید؟** تفاوت Config.
+**۲. چرا ابتدا Secondary؟** حداقل قطع.
+**۳. Flap؟** Failover مکرر.
+
+#### English Corner
+
+- *Compare cluster checksums to locate configuration drift.*
+- Q: In what order do you upgrade an HA pair?
 
 ## درس 22-5 — آزمون عملی HA: طراحی، Failover، Split-brain کنترل‌شده، Upgrade و RCA — کلید پاسخ و Rubric
 
@@ -1109,6 +1441,60 @@ execute ha manage 1 admin
 1. *Split-brain آزمون؟* قطع Heartbeat در Lab.
 2. *Evidence؟* `get system ha status` قبل/بعد.
 3. *Needs-License؟* HA روی VM نیازمند لایسنس معتبر برای هر عضو است؛ در Lab بدون لایسنس اجرا نشده.
+
+### تکمیل عمیق: آزمون عملی HA — Rubric و شواهد
+
+#### چرا؟
+
+این آزمون ثابت می‌کند که HA را ساخته، آزمایش و درباره‌ی آن مستند کرده‌اید.
+
+#### صورت مسئله
+
+دو FortiGate VM: HA A-P، Failover، Failback، Split-brain کنترل‌شده (Lab)، گزارش.
+
+#### شواهد لازم
+
+| بخش | شاهد |
+|---|---|
+| ساخت | `get system ha status` (in-sync) |
+| Failover | ping با عدد گم‌شده |
+| Failback | زمان و روش |
+| Split-brain | History + رفع |
+| گزارش | محدودیت‌ها |
+
+#### Rubric
+
+``` text
+Build 20 | Failover 25 | Failback 15 | Split-brain 20 | Report 20
+Example: 20 + 22 + 15 + 10 + 18 = 85
+```
+
+#### مثال سخت — شرط صداقت
+
+اگر دو VM لایسنس‌دار ندارید، بخش اجرا نشده است و نمره‌ی «اجرا» گرفته نمی‌شود؛ ولی طراحی و طرح آزمون می‌تواند با برچسب «تأیید مستندی» ارزیابی شود. هرگز خروجی ساختگی ننویسید.
+
+#### Lab
+
+یک گزارش یک‌صفحه‌ای با جدول بالا بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| نمره کم | شاهد ندارد | ثبت |
+| ادعای بی‌اجرا | بی‌صداقتی | برچسب |
+| Split-brain واقعی | تست در Production | فقط Lab |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Split-brain فقط Lab؟** اثر مخرب.
+**۲. ادعای بدون اجرا؟** نادرست.
+**۳. شاهد Failover؟** ping + Log.
+
+#### English Corner
+
+- *Never fabricate evidence; label untested items honestly.*
+- Q: Why run split-brain tests only in a lab?
 
 ## پاسخ‌های فصل 22
 
