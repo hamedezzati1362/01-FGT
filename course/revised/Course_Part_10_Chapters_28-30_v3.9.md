@@ -305,149 +305,151 @@ wireshark display filters:
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. از روی سؤال عیب‌یابی نقطه‌ی Capture (دو‌نقطه‌ای، قبل/بعد از NAT) را انتخاب کند.
-2. Filter دقیق BPF و محدودیت حجم/زمان بنویسد.
-3. Sniffer FortiGate (verbose، count، timestamp) را بخواند و به PCAP تبدیل کند.
-4. تأثیر Offload/Interface مجازی را بر کامل بودن Capture بداند.
-5. محدودیت‌های امنیتی/قانونی PCAP را رعایت کند.
-6. Capture را در Wireshark با Display filter تحلیل اولیه کند.
+1. از روی سؤال عیب‌یابی، نقطه‌ی Capture (دونقطه‌ای، سه‌نقطه‌ای، قبل/بعد از NAT) را انتخاب کنید.
+2. Filter دقیق BPF و محدودیت حجم/زمان بنویسید.
+3. Sniffer FortiGate (verbose، count، timestamp) را بخوانید و به PCAP تبدیل کنید.
+4. اثر Offload و Interface مجازی را بر کامل‌بودن Capture بدانید.
+5. محدودیت‌های امنیتی/قانونی PCAP را رعایت کنید.
+6. Capture را در Wireshark با Display Filter تحلیل اولیه کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Capture درست؟** Capture بد بدتر از نبودن است. قاعده: سه نقطه (کلاینت، FW in، FW out)، فیلتر دقیق، مدت کوتاه، حریم Payload (Snaplen/رمزنگاری فایل).
+Capture بد بدتر از نبودن است: ۲ گیگابایت فایل، بدون زمان، از نقطه‌ی اشتباه؛ هیچ‌چیز نمی‌گوید و ساعت‌ها هدر می‌دهد. Capture خوب مثل عکس‌برداری دقیق از صحنه‌ی تصادف است: از زاویه‌ی درست، با زمان ثبت‌شده، و فقط همان‌چه لازم. قاعده‌ی ارشد: اول سؤال، بعد نقطه، بعد فیلتر، بعد Capture.
 
-**جمع‌بندی اصلی درس:**
-
-Capture حقیقت میدانی است، ولی Capture بد (Filter باز، نقطه‌ی اشتباه، بدون زمان) مدت‌ها را هدر می‌دهد. اول سؤال، بعد نقطه، بعد Filter. و فراموش نکنید PCAP داده‌ی حساس (رمز، توکن، داده‌ی کاربر) دارد.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) از سؤال به نقطه
+### از سؤال به نقطه
 
 | سؤال | نقطه‌ها |
 |---|---|
 | بسته به فایروال می‌رسد؟ | Interface ورودی فایروال (یا SPAN بالاتر) |
 | فایروال آن را عبور می‌دهد؟ | ورودی و خروجی همان فایروال |
 | NAT چه کرد؟ | ورودی (آدرس اصلی) و خروجی (ترجمه‌شده) |
-| سرور پاسخ می‌دهد؟ | روی سرور |
+| سرور پاسخ می‌دهد؟ | روی خود سرور |
 | مسیر برگشت متقارن است؟ | هر دو مسیر/فایروال |
+| MTU/Fragment؟ | دو سر تونل |
 
-#### ۲) Sniffer FortiGate
+قاعده‌ی سه‌نقطه‌ای: **کلاینت، FW-in، FW-out** (و در صورت نیاز سرور).
 
 ``` text
-diagnose sniffer packet <interface|any> "<BPF filter>" <verbose> <count> <timestamp>
-diagnose sniffer packet port2 "host 10.1.4.10 and tcp port 443" 4 100 l
+[Client] --(A)--> [FW port2 (B)]  [FW port1 (C)] --(D)--> [Server]
+  A: client capture   B: FW in   C: FW out   D: server capture
 ```
 
-- verbose: 1 هدر، 3 هدر+Hex، 4 هدر+Interface، 6 هدر+Hex+Interface+Ethernet (طبق مستند Fortinet؛ `Unverified` برای تفاوت‌ها).
-- count: تعداد بسته؛ 0 تا Ctrl+C (خطرناک).
-- `l` (local timestamp).
-
-برای PCAP: خروجی verbose 3/6 را به فایل ذخیره و با ابزار تبدیل (fgt2eth.pl) به PCAP برسانید؛ یا Packet Capture GUI (Network → Diagnostics → Packet Capture) که مستقیماً PCAP می‌دهد.
-
-#### ۳) Filter (BPF)
+### Sniffer FortiGate
 
 ``` text
-host 10.1.4.10
-net 10.1.0.0/16
-tcp port 443
+diagnose sniffer packet <interface|any> '<BPF filter>' <verbose> <count> <timestamp>
+```
+
+| verbose | محتوا |
+|---|---|
+| 1 | سرآیند IP |
+| 3 | + Payload و Ethernet (hex) |
+| 4 | + نام Interface |
+| 6 | + Payload، Ethernet، Interface (برای PCAP) |
+
+``` text
+diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 100 a
+diagnose sniffer packet any 'host 10.10.0.5 and host 198.51.100.8' 6 0 a
+```
+
+`count 0` بی‌پایان (با Ctrl+C)؛ برای PCAP از سطح 6 و تبدیل با `fgt2eth.pl` (Perl، ابزار Fortinet/Community) یا استفاده از GUI Packet Capture که مستقیم PCAP می‌دهد.
+
+### GUI Packet Capture
+
+Network > Packet Capture: Interface، Filter، تعداد، Start، Download. مناسب‌تر برای فایل‌های حجیم و عدم تبدیل دستی.
+
+### Filter BPF
+
+``` text
+host 10.10.0.5
+host 10.10.0.5 and tcp port 443
+net 10.10.0.0/24 and not port 22
+tcp[tcpflags] & (tcp-syn|tcp-ack) = tcp-syn
 udp port 53
 icmp
-"host 10.1.4.10 and not port 22"
-"tcp[tcpflags] & (tcp-syn|tcp-rst) != 0"     # SYN or RST only
 ```
 
-#### ۴) Offload و محدودیت‌ها
+اصل: Filter باریک (Host + Port)، Snaplen محدود برای حریم، و مدت کوتاه (۳۰–۱۲۰ ثانیه).
 
-ترافیک Offloadشده (NPU) ممکن است در Sniffer دیده نشود/ناقص باشد (۱۲-۹). روی FortiGate-VM معمولاً NPU نیست. Capture روی Interface `any` ممکن است بسته را دو بار نشان دهد (ورود و خروج).
+### Offload و محدودیت‌ها
 
-#### ۵) امنیت و قانون
-
-PCAP شامل داده‌ی کاربران است: مجوز، حداقل زمان/حجم، ذخیره‌ی رمزشده، حذف پس از کار، عدم انتشار. TLS بدون Deep رمز می‌ماند ولی Header/SNI دیده می‌شود.
-
-#### ۶) Wireshark
-
-Display filter: `ip.addr==10.1.4.10`، `tcp.analysis.retransmission`، `tls.handshake.type==1`، `dns`. Statistics → Conversations/IO Graph/TCP Stream Graphs.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| مورد | اثر |
 |---|---|
-| نقطه‌ی Capture | دو‌نقطه‌ای |
-| Filter | باریک؛ Count محدود |
-| PCAP | موقت و رمزشده |
-| Offload | آگاهی |
+| NPU Offload | بسته‌های بعد از Session Setup در سخت‌افزار؛ Sniffer فقط چند بسته‌ی اول را می‌بیند |
+| Interface مجازی (VLAN/tunnel) | `any` بسته را دوبار نشان می‌دهد (ورود/خروج) |
+| TSO/GRO در کلاینت | بسته‌های بزرگتر از MTU در Capture کلاینت |
+| Snaplen | Payload بریده |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+راه‌حل Offload: موقتاً `set auto-asic-offload disable` روی Policy (فقط آزمایش، اثر عملکرد) یا Capture در سمت دیگر.
 
-#### مثال ساده
+### ملاحظات امنیتی و قانونی
 
-``` text
-tcpdump -ni eth0 -w c.pcap host 198.51.100.8 and tcp port 443 -c 200
-```
+PCAP ممکن است رمز، توکن، ایمیل شخصی داشته باشد. قاعده‌ها: مجوز مکتوب، حداقل فیلتر، Snaplen کم (فقط سرآیند در صورت امکان)، ذخیره‌ی رمزگذاری‌شده، حذف پس از پایان، دسترسی محدود.
 
-#### مثال متوسط
+### Wireshark — تحلیل اولیه
 
 ``` text
-diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 20 l
-diagnose sniffer packet port1 'host 198.51.100.8 and tcp port 443' 4 20 l
+ip.addr == 10.10.0.5 && tcp.port == 443
+tcp.flags.syn == 1 && tcp.flags.ack == 0
+tcp.analysis.retransmission
+dns
+tls.handshake
 ```
 
-#### مثال سخت
+Statistics > Conversations و Expert Information، خلاصه‌ی سریع مشکلات را می‌دهند.
 
-پس از NAT Src IP عوض می‌شود؛ جریان‌ها با Sequence و زمان تطبیق داده شوند.
+### مثال‌های حل‌شده
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال ساده — دو نقطه
 
-**ساده (حل‌شده):** Capture ping کلاینت↔سرور روی port2: `ip.addr` و `icmp`؛ Echo request/reply با زمان؛ RTT.
+مشکل: «سرور پاسخ نمی‌دهد». Capture FW-in: SYN دیده می‌شود. FW-out: SYN دیده می‌شود. هیچ SYN-ACK ⇒ سرور/بالادست. زمان ۲ دقیقه.
 
-**متوسط (تحلیل):** وب باز نمی‌شود: Capture دو‌نقطه‌ای: روی port2 SYN دیده می‌شود؛ روی port1 نه. نتیجه: بسته داخل فایروال Drop شده (Policy/Route)؛ ادامه با Debug Flow. بدون Capture دوم فقط حدس بود.
+#### مثال متوسط — NAT
 
-**سخت (Offload/NAT):** Debug/Sniffer هیچ بسته‌ای نمی‌بیند ولی ترافیک جاری است: Offload. اقدام کنترل‌شده در Lab/Window: غیرفعال موقت Offload (در مدل‌های NPU) یا Capture روی نقطه‌ی بیرونی (سوئیچ/SPAN)؛ ثبت. همچنین NAT: ورودی src=10.1.4.10، خروجی src=203.0.113.10؛ تطبیق Flow با پورت مبدأ.
+FW-in: src 10.10.0.5؛ FW-out: src 203.0.113.2. NAT درست. اگر FW-out هنوز 10.10.0.5 ⇒ NAT نشده.
 
-### ۶) پیاده‌سازی از مسیر GUI
+#### مثال متوسط — Offload
 
-1. Network → Diagnostics → Packet Capture: Interface، Filter، Packet count → Start → Download PCAP.
-2. Wireshark: File → Open.
+Capture فقط ۵ بسته‌ی اول Session را نشان می‌دهد. علت: Offload. برای آزمون Policy موقت بدون Offload یا Capture روی سرور.
 
-### ۷) پیاده‌سازی از مسیر CLI
+#### مثال سخت — حریم و قانون
 
-``` text
-diagnose sniffer packet port2 "host 10.1.4.10 and tcp port 443" 6 200 l
-diagnose sniffer packet any "host 10.1.4.10 and port 53" 4 50 l
-```
+مدیر ارشد: «همه‌ی ترافیک کارمندان را ۱ ساعت ضبط کن». مخاطرات: داده‌ی شخصی، قانون. پاسخ: Capture فقط برای Host مشکل‌دار، Snaplen 96 بایت، مجوز، حذف پس از تحلیل. مستندسازی.
 
-### ۸) Verification (اثبات صحت)
+#### مثال سخت — `any` و تکرار
 
-- PCAP قابل‌خواندن در Wireshark.
-- مقایسه دو نقطه با Filter یکسان.
-- حذف PCAP پس از کار.
+`diagnose sniffer packet any` هر بسته را چند بار (روی Interface‌ها و VLAN) نشان می‌دهد و Wireshark Retransmission کاذب می‌بیند. راه: Interface مشخص یا فیلتر `-i`/Interface نام.
 
-### ۹) Troubleshooting
+### Lab هدایت‌شده (اجرا نشده)
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+1. سه‌نقطه‌ای با فیلتر.
+2. PCAP و Wireshark.
+3. Offload و تأثیر.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Capture خالی | Filter/Interface | Offload/Filter اشتباه |
-| بسته‌ی تکراری | `any` | ورود+خروج |
-| Timestamp نامعتبر | NTP | NTP |
+| Capture خالی | فیلتر/Interface | سادگی |
+| بسته‌ی کم | Offload | موقت |
+| بسته تکراری | any | Interface |
+| فایل حجیم | بی‌فیلتر | host/port/count |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- PCAP حساس؛ مجوز و حذف.
-- عدم Capture بدون اجازه.
+مجوز؛ حداقل داده؛ رمزنگاری فایل؛ حذف؛ دسترسی محدود؛ ثبت (Evidence Chain).
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- سؤال→نقطه→Filter.
-- دو‌نقطه‌ای برای پیدا کردن محل Drop.
-- Offload و NAT را در نظر بگیرید.
-- امنیت PCAP.
+اول سؤال، بعد نقطه‌ی Capture (سه‌نقطه‌ای)؛ Filter باریک؛ Sniffer FortiGate و PCAP؛ اثر Offload؛ ملاحظات قانونی؛ تحلیل با Wireshark.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا Capture دو‌نقطه‌ای؟ *(پاسخ: 28-1-ت1)*
 
@@ -463,7 +465,7 @@ diagnose sniffer packet any "host 10.1.4.10 and port 53" 4 50 l
 
 **Q1.** Quick quiz (English): Why should captures be taken at two points around the firewall? *(پاسخ: 28-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -473,11 +475,11 @@ diagnose sniffer packet any "host 10.1.4.10 and port 53" 4 50 l
 
 - *Use narrow capture filters.* ← از Filter باریک استفاده کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Capture. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/capture.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Wireshark User Guide
 - Fortinet Docs: Packet capture / diagnose sniffer (7.0)
@@ -485,241 +487,155 @@ diagnose sniffer packet any "host 10.1.4.10 and port 53" 4 50 l
 
 <a id="l-28-2"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: نقطه‌ی Capture
-
-Sniff در سه نقطه: کلاینت، فایروال in، فایروال out. مقایسه نشان می‌دهد بسته کجا گم شد.
-
-``` text
-tcpdump -ni eth0 -w c.pcap host 198.51.100.8 and port 443
-```
-
-فیلتر دقیق، زمان کوتاه، حجم کم.
-
-**پرسش‌های مصاحبه**
-1. *چرا سه نقطه؟* مرز مسئله.
-2. *Snaplen؟* هدر کافی.
-3. *حریم؟* Payload حساس.
-
-### مثال حل‌شده: Capture سه‌نقطه‌ای
-
-جریان: Client → FW → Server. SYN در Client و FW-in دیده شد ولی در FW-out نه ⇒ فایروال حذف کرده (Policy/Route). اگر در FW-out دیده شد ولی در Server نه ⇒ بعد از فایروال. روش: ثبت زمان هر نقطه و مقایسه‌ی شماره‌ی Sequence.
-
-``` text
-diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 10 l
-diagnose sniffer packet port1 'host 198.51.100.8 and tcp port 443' 4 10 l
-```
-
-### تکمیل عمیق: Capture درست — کجا، چگونه و با چه فیلتری؟
-
-#### چرا؟
-
-Capture بد بدتر از نبودن است: حجم زیاد، فیلتر غلط، یا نقطه‌ای که چیزی نمی‌بیند. قاعده: **سه نقطه، فیلتر دقیق، مدت کوتاه**.
-
-#### سه نقطه‌ی Capture
-
-1. **کلاینت**: بسته‌ای که کاربر می‌فرستد/می‌گیرد.
-2. **فایروال ورودی**: آیا رسید؟
-3. **فایروال خروجی**: آیا خارج شد (بعد از NAT)؟
-
-مقایسه‌ی سه نقطه مرز مشکل را نشان می‌دهد.
-
-#### مثال ساده — دستور tcpdump
-
-``` text
-tcpdump -ni eth0 -w c.pcap host 198.51.100.8 and tcp port 443 -c 200
-```
-
-پارامترها: `-n` بدون تبدیل نام، `-i` Interface، `-w` ذخیره، `-c` تعداد.
-
-#### مثال متوسط — Sniffer فورتی‌گیت
-
-``` text
-diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 20 l
-diagnose sniffer packet port1 'host 198.51.100.8 and tcp port 443' 4 20 l
-```
-
-سطح 4: هدر و نام Interface. دو دستور را هم‌زمان در دو پنجره اجرا کنید و زمان‌ها را بخوانید.
-
-#### مثال سخت — ترجمه‌ی NAT در مقایسه
-
-در Port2 مبدأ 10.10.0.5 و در Port1 مبدأ 203.0.113.2 دیده می‌شود. Source Port معمولاً حفظ می‌شود یا تغییر می‌کند؛ برای تطبیق جریان‌ها از Sequence Number و زمان استفاده کنید نه IP.
-
-#### قواعد حریم و حجم
-
-Payload ممکن است داده‌ی حساس داشته باشد؛ فقط هدر (Snaplen کوچک) یا فیلتر دقیق؛ فایل را رمزنگاری کنید و پس از تحلیل حذف کنید.
-
-#### Lab
-
-یک ارتباط curl را در دو Interface Capture و جدول تطبیق زمان بسازید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| بسته‌ای نیست | فیلتر غلط | ساده‌کردن |
-| بسته ناقص | Offload | بررسی Offload |
-| حجم زیاد | فیلتر کلی | محدودکردن |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا سه نقطه؟** مرز مشکل.
-**۲. Snaplen چیست؟** طول ذخیره‌ی هر بسته.
-**۳. چرا حریم؟** Payload.
-
-#### English Corner
-
-- *Capture at multiple points to localize the problem.*
-- Q: Why filter captures tightly?
-
 ## درس 28-2 — تحلیل TCP و DNS در Capture: Handshake، Window، Retransmission، RTT، RST و الگوهای خرابی
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۰، ۲۸-۱، ۲-۰ · ≈ 9 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. فازهای TCP و فیلدهای مهم (Seq/Ack، Window، Flags، Options) را بخواند.
-2. RTT، Retransmission rate، Zero Window، Dup ACK و RST را تفسیر کند.
-3. DNS Query/Response (rcode، TTL، Latency) را تحلیل کند.
-4. الگو را به علت (Drop، MTU، Congestion، برنامه) نگاشت کند.
-5. با Wireshark Graphs محاسبات کمی انجام دهد.
-6. گزارش تحلیل با شواهد بنویسد.
+1. TCP Handshake، Seq/Ack، Window و Flagها را در Capture بخوانید.
+2. Retransmission، Duplicate ACK، Zero Window و Reset را تشخیص دهید.
+3. DNS Query/Response، RCODE، TTL و TCP Fallback را تحلیل کنید.
+4. با Wireshark Expert و Display Filter علت را بیابید.
+5. RTT و Latency را از Handshake محاسبه کنید.
+6. مثال‌های واقعی را به علت (شبکه/سرور/کلاینت) نسبت دهید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا TCP و DNS؟** بیشتر مشکلات نیمه‌کارکرده یا TCP است یا DNS. Handshake را باید مثل یک جمله بخوانید: SYN، SYN-ACK، ACK و RTT. Retransmission با Backoff نمایی و Dup ACK و پرچم TC در DNS.
+TCP مثل مکالمه‌ی تلفنی منظم است: سلام، علیک، تأیید دریافت هر جمله. وقتی مکالمه مشکل دارد، الگوی خاصی دارد: تکرار جمله (Retransmission)، «صدایتان را نمی‌شنوم» (Zero Window)، قطع ناگهانی (RST). مهندس ارشد از الگو علت را می‌خواند، نه حدس. DNS هم «دفترچه‌ی تلفن» است و بسیاری از خرابی‌ها فقط DNS هستند.
 
-**جمع‌بندی اصلی درس:**
-
-هر الگوی بسته یک «امضای خرابی» است. مهندس باید از روی الگو به علت برسد: «SYN بدون پاسخ» با «SYN→RST» و «Retransmission» سه علت متفاوت دارند.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) Handshake و RTT
+### TCP Handshake
 
 ``` text
-t0 SYN ->           t1 <- SYN/ACK           t2 ACK ->
-RTT_client_side = t2 - t0 (as seen at client)  ;  RTT_server_side = t1 - t0 (as seen at server)
+Client -> Server : SYN       seq=x
+Server -> Client : SYN, ACK  seq=y ack=x+1
+Client -> Server : ACK       ack=y+1
 ```
 
-در Capture روی فایروال: فاصله‌ی SYN تا SYN/ACK = RTT سمت سرور؛ SYN/ACK تا ACK = RTT سمت کلاینت (تقریباً).
-
-#### ۲) نقشه‌ی الگو→علت
-
-| الگو | معنی | علت‌های رایج |
-|---|---|---|
-| SYN بدون SYN/ACK | اتصال برقرار نمی‌شود | Policy/Route، پورت فیلتر، Asymmetric |
-| SYN→RST | پورت بسته | سرویس خاموش |
-| Retransmission | بسته‌ی گم‌شده | تلفات، MTU، Congestion |
-| Dup ACK ×3 | Fast retransmit | Loss/Reordering |
-| Zero Window | گیرنده پر | برنامه‌ی کند |
-| RST وسط جلسه | قطع | فایروال/IPS/برنامه |
-| ICMP 3/4 | Frag Needed | MTU |
-| TCP Window Scale ناسازگار | Throughput کم | میانی دستکاری |
+RTT اولیه = زمان بین SYN و SYN-ACK (در Capture نزدیک کلاینت).
 
 ``` text
-Retransmission rate = retransmitted segments / total segments
-Throughput limit ~= Window / RTT     (e.g. 64 KB / 100 ms = 5.2 Mbit/s)
+RTT ~ t(SYN-ACK) - t(SYN)
+Example: 10:15:01.100 -> 10:15:01.145 => 45 ms
 ```
 
-#### ۳) محدودیت Throughput (BDP)
+### پرچم‌ها
 
-``` text
-BDP = bandwidth x RTT   (bytes in flight needed)
-Example: 100 Mbit/s x 80 ms = 1 MB window needed; with 64 KB window -> ~6.5 Mbit/s
-```
-
-#### ۴) DNS
-
-- Query بدون Response: UDP Drop/سرور.
-- `rcode`: 0 OK، 2 SERVFAIL، 3 NXDOMAIN.
-- Latency: زمان Query→Response.
-- TTL و Cache؛ بزرگ‌بودن پاسخ و Fallback به TCP (EDNS0/MTU).
-
-#### ۵) Filterهای Wireshark
-
-``` text
-tcp.analysis.retransmission  tcp.analysis.duplicate_ack  tcp.analysis.zero_window
-tcp.flags.reset==1  icmp.type==3 and icmp.code==4
-dns.flags.rcode != 0   dns.time > 0.2
-```
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| پرچم | معنی |
 |---|---|
-| Throughput | محاسبه‌ی BDP |
-| DNS | Cache/Resolver |
-| Capture | Filter+دو نقطه |
+| SYN | شروع |
+| ACK | تأیید |
+| FIN | پایان مؤدبانه |
+| RST | قطع فوری (Reset) |
+| PSH | تحویل فوری |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### الگوهای مشکل
 
-#### مثال ساده
-
-SYN، SYN,ACK، ACK؛ RTT.
-
-#### مثال متوسط
-
-Retransmission با فواصل 0.2، 0.4، 0.8 ⇒ ACK نمی‌رسد.
-
-#### مثال سخت
-
-Query AAAA بی‌پاسخ 5 ثانیه سپس A موفق ⇒ DNS Server با AAAA مشکل دارد.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Capture: SYN، SYN/ACK، ACK؛ RTT ≈ 22 ms؛ اتصال سالم.
-
-**متوسط (محاسبه):** دانلود روی لینک 100 Mbps با RTT 80 ms فقط 6 Mbps. Window 64 KB ⇒ حد = 64KB/0.08 s ≈ 6.5 Mbit/s. علت: Window Scaling خاموش/دستکاری. رفع: فعال‌سازی Window Scale/بررسی میانی.
-
-**سخت (چندعلتی):** دانلود VPN: Retransmission 3٪ و ICMP Frag Needed نیامده. تحلیل: PMTUD Black hole + Loss واقعی لینک؛ جدا‌سازی: ping DF اندازه‌ها (MTU)؛ Interface Errors (Loss)؛ رفع: MSS Clamp و رفع خطای لینک؛ اندازه‌گیری Retrans قبل/بعد.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Wireshark: Statistics → TCP Stream Graphs (Time-Sequence، Throughput، RTT).
-2. Statistics → Conversations/IO Graph.
-3. Analyze → Expert Information.
-
-### ۷) پیاده‌سازی از مسیر CLI
+| الگو | معنی | علت‌های محتمل |
+|---|---|---|
+| SYN تکراری بدون SYN-ACK | مقصد جواب نمی‌دهد | Firewall/Route/سرور |
+| SYN → RST | پورت بسته | سرویس/Policy Reject |
+| Retransmission | بسته‌ی گم‌شده | تلفات لینک، MTU، شلوغی |
+| Duplicate ACK | گیرنده بسته‌ی بعدی را دریافت می‌کند ولی قبلی گم است | تلفات |
+| Zero Window | بافر گیرنده پر | سرور/کلاینت کند |
+| RST در میانه | قطع | Firewall/IPS/برنامه |
+| Window کوچک | Throughput پایین | Scaling خاموش |
+| Out-of-order | ترتیب‌شکنی | چند مسیر |
 
 ``` text
-diagnose sniffer packet any "host 10.1.4.10 and tcp" 4 300 l
+tcp.analysis.retransmission
+tcp.analysis.fast_retransmission
+tcp.analysis.duplicate_ack
+tcp.analysis.zero_window
+tcp.analysis.window_full
+tcp.flags.reset == 1
 ```
 
-### ۸) Verification (اثبات صحت)
+### Throughput و Window
 
-- جدول RTT/Retrans/Window.
-- نمودار Time-Sequence.
-- مقایسه‌ی قبل/بعد رفع.
+``` text
+Max throughput ~ Window / RTT
+Window 64 KB, RTT 50 ms:
+64,000 B x 8 / 0.05 s = 10.24 Mbps
+```
 
-### ۹) Troubleshooting
+با RTT زیاد و Window کوچک، حتی لینک ۱ Gbps کند است؛ Window Scaling باید فعال باشد (SYN: `WS=...`).
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+### DNS
+
+``` text
+dns.flags.response == 0         (queries)
+dns.flags.rcode != 0            (errors)
+dns.time > 0.5                  (slow responses)
+```
+
+| RCODE | معنی |
+|---|---|
+| 0 NOERROR | موفق |
+| 2 SERVFAIL | خطای Resolver/DNSSEC |
+| 3 NXDOMAIN | نام وجود ندارد |
+| 5 REFUSED | مجاز نیست |
+
+نکات: TTL (کش)، UDP→TCP Fallback (پاسخ بزرگ، TC bit)، چند Resolver.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Handshake
+
+SYN، SYN-ACK، ACK با RTT ۴۵ms: اتصال سالم. وب کند ⇒ مشکل بعد از Handshake (سرور/برنامه).
+
+#### مثال متوسط — Retransmission
+
+``` text
+t=0.000 SYN
+t=1.000 SYN (retransmit)
+t=3.000 SYN (retransmit)
+```
+
+فواصل ۱، ۲ ثانیه (Backoff). SYN-ACK نمی‌آید ⇒ مقصد/Policy بالادست. با Capture سمت دیگر: SYN رسیده؟ اگر نه ⇒ مسیر؛ اگر بله ⇒ سرور.
+
+#### مثال متوسط — DNS
+
+`nslookup` کند. Capture: Query در t=0، پاسخ t=2.1s. `dns.time` ۲٫۱ثانیه ⇒ Resolver اول Timeout (۲ثانیه) سپس Resolver دوم. رفع: Resolver خراب را حذف.
+
+#### مثال سخت — Zero Window
+
+آپلود به سرور تا ۲۰٪ پیش می‌رود، سپس Zero Window از سرور. علت: سرور دیسک کند/Thread پر. فایروال بی‌تقصیر؛ Evidence: `tcp.analysis.zero_window` از سرور. تفکیک نقش‌ها: شبکه سالم.
+
+#### مثال سخت — RST میانی
+
+اتصال پس از ۱۵ ثانیه RST می‌خورد. RST با TTL متفاوت (مثلاً TTL 64 در برابر TTL سرور 128) ⇒ RST تزریق‌شده توسط میانی (IPS/Firewall). مقایسه‌ی TTL و `ip.id`. سپس Log IPS/Policy فایروال.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. PCAP نمونه: Handshake و RTT.
+2. Retransmission و DNS Slow.
+3. Zero Window و RST.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| SYN بی‌پاسخ | Capture | Policy/Route |
-| Retransmission | Interface errors | Loss/MTU |
-| کند با Window کم | Window scale | Scaling/BDP |
-| DNS کند | dns.time | Resolver |
+| SYN بی‌جواب | مقصد | سمت دیگر |
+| RST | پورت/Policy | Log |
+| Zero Window | سرور | برنامه |
+| DNS کند | Resolver | حذف |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- PCAP حساس.
+PCAP DNS نام‌های داخلی را لو می‌دهد؛ حفاظت؛ تحلیل TTL برای کشف تزریق.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- الگو→علت.
-- RTT و BDP محاسبه می‌شود.
-- Retrans rate شاخص کیفیت.
-- DNS rcode/Latency.
+TCP: Handshake و الگوها (Retransmission، Dup ACK، Zero Window، RST)؛ Throughput = Window/RTT؛ DNS RCODE و زمان؛ تحلیل نقش‌ها (شبکه/سرور/کلاینت).
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) SYN→RST یعنی چه؟ *(پاسخ: 28-2-ت1)*
 
@@ -735,7 +651,7 @@ diagnose sniffer packet any "host 10.1.4.10 and tcp" 4 300 l
 
 **Q1.** Quick quiz (English): How does window size limit TCP throughput? *(پاسخ: 28-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -745,11 +661,11 @@ diagnose sniffer packet any "host 10.1.4.10 and tcp" 4 300 l
 
 - *Patterns in packets point to specific causes.* ← الگوها در بسته‌ها به علت‌های مشخص اشاره می‌کنند.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** TCP. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/tcp.md`.
 
-### ۱۵) منابع
+### منابع
 
 - RFC 9293
 - RFC 7323 (Window Scale)
@@ -757,239 +673,132 @@ diagnose sniffer packet any "host 10.1.4.10 and tcp" 4 300 l
 
 <a id="l-28-3"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Handshake
-
-``` text
-SYN -> SYN,ACK -> ACK    (RTT = time between SYN and SYN,ACK)
-RTT 80 ms; window 64240
-```
-
-Retransmission با فاصله‌ی نمایی (1,2,4 s). DNS: Query/Response با TXID.
-
-**پرسش‌های مصاحبه**
-1. *RTT از کجا؟* SYN→SYN,ACK.
-2. *Retrans Backoff؟* دو برابر.
-3. *DNS TCP؟* پاسخ بزرگ.
-
-### مثال حل‌شده: تفسیر Retransmission
-
-``` text
-#10 t=1.000 seq=1000 len=1460
-#11 t=1.200 seq=1000 len=1460  [Retransmission]
-#12 t=1.600 seq=1000 len=1460  [Retransmission]
-```
-
-فواصل 0.2 و 0.4 ⇒ Backoff نمایی؛ ACK نرسیده؛ مسیر برگشت یا Drop. اگر Dup ACK دیده شود Fast Retransmit است نه Timeout. DNS: Query بدون Response بعد از 2 s و تکرار ⇒ سرور DNS/Policy UDP/53.
-
-### تکمیل عمیق: TCP و DNS در Capture — خواندن هر خط
-
-#### چرا؟
-
-بیشتر مشکلات «نیمه‌کارکرده» یا TCP‌اند یا DNS. خواندن Handshake و DNS باید برایتان مثل خواندن یک جمله‌ی ساده باشد.
-
-#### TCP: خواندن یک Handshake
-
-``` text
-1  0.000  10.10.0.5.50000 > 198.51.100.8.443 [SYN] seq=0 win=64240 mss=1460 ws=7
-2  0.082  198.51.100.8.443 > 10.10.0.5.50000 [SYN,ACK] seq=0 ack=1 win=65535 mss=1380 ws=9
-3  0.083  10.10.0.5.50000 > 198.51.100.8.443 [ACK] seq=1 ack=1
-```
-
-تفسیر: RTT=82ms؛ MSS سرور 1380 (کوچک‌تر از 1460) یعنی در مسیر چیزی MSS را کاهش داده (احتمالاً IPsec/Clamping)؛ هر دو سمت WS دارند.
-
-#### Retransmission و Backoff
-
-``` text
-t=1.000 seq=1000 ; t=1.200 retrans ; t=1.600 retrans ; t=2.400 retrans
-```
-
-فواصل 0.2، 0.4، 0.8: دو برابر شدن (Exponential Backoff). علت: ACK نمی‌رسد.
-
-#### Dup ACK و Fast Retransmit
-
-سه Dup ACK متوالی یعنی گیرنده بسته‌ی بعدی را دیده ولی قبلی گم شده؛ فرستنده بدون انتظار Timeout دوباره می‌فرستد. این Loss خفیف است، نه قطع.
-
-#### DNS: خواندن Query و Response
-
-``` text
-0.000 10.10.0.5 > 10.20.0.5 DNS A? app.example.com (id 0x1a2b)
-0.012 10.20.0.5 > 10.10.0.5 DNS A 198.51.100.8 (id 0x1a2b) TTL 300
-```
-
-زمان پاسخ 12ms نرمال. اگر پاسخ پس از 2s بیاید یا Query تکرار شود، مشکل DNS/UDP53/Policy است.
-
-#### مثال متوسط — DNS بزرگ و TCP/53
-
-پاسخ بزرگ (DNSSEC) با فلگ TC (Truncated) ⇒ کلاینت با TCP تکرار می‌کند. اگر TCP/53 بسته باشد، نیمی از پرس‌وجوها شکست می‌خورند.
-
-#### مثال سخت — سایت باز می‌شود ولی کند
-
-Capture نشان می‌دهد: Query AAAA بی‌پاسخ ۵ ثانیه، سپس A موفق. علت: DNS Server به AAAA پاسخ نمی‌دهد. رفع: رفع سرور یا غیرفعال‌سازی IPv6 در کلاینت (در صورت سیاست).
-
-#### Lab
-
-با `dig` و Capture یک پرس‌وجوی AAAA و A را مقایسه کنید.
-
-#### عیب‌یابی
-
-| علامت | شاهد | رفع |
-|---|---|---|
-| MSS کوچک | MSS در SYN-ACK | بررسی Tunnel/Clamp |
-| DNS کند | فاصله Query/Response | سرور/Policy |
-| TC flag | پاسخ truncated | باز کردن TCP/53 |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Backoff چیست؟** دو برابر شدن فاصله‌ی تلاش.
-**۲. Dup ACK؟** نشانه‌ی گم‌شدن یک بسته.
-**۳. TC flag؟** پاسخ بریده؛ TCP لازم.
-
-#### English Corner
-
-- *Three duplicate ACKs trigger a fast retransmit.*
-- Q: What does the TC flag in a DNS response mean?
-
 ## درس 28-3 — TLS در Capture: Handshake، SNI، Certificate، Alert، TLS 1.3 و اثر Inspection
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۰، ۱۶-۰، ۱۶-۵ · ≈ 8 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Handshake TLS 1.2/1.3 را در Capture بخواند.
-2. SNI، Cipher، Certificate chain و Alertها را تفسیر کند.
-3. اثر Deep Inspection را در Capture (Issuer) اثبات کند.
-4. QUIC/ECH و محدودیت دید را بشناسد.
-5. مشکلات Pinning/CA/Cipher را عیب‌یابی کند.
+1. TLS Handshake (1.2 و 1.3) را در Capture بخوانید.
+2. SNI، Cipher Suite، Version و Certificate را بیابید.
+3. Alertهای TLS را تفسیر کنید.
+4. تفاوت TLS 1.3 (رمزشدن Certificate) را در تحلیل بدانید.
+5. اثر SSL Inspection را روی Handshake ببینید.
+6. خطاهای رایج (Chain، Expired، SNI، Pinning) را تشخیص دهید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا TLS در Capture؟** بیشتر ترافیک رمز است؛ باید بدانید کدام بخش دیده می‌شود: SNI و (در TLS 1.2) گواهی؛ در TLS 1.3 گواهی رمز است. Alertها علت را می‌گویند: `unknown_ca`، `handshake_failure`.
+بیشتر ترافیک امروز TLS است؛ Capture آن شبیه نامه‌ی مهر و موم‌شده است. ولی «پاکت» (Handshake) قابل‌خواندن است: چه سایتی (SNI)، چه نسخه‌ای، چه رمزنگاری‌ای، آیا Certificate معتبر بود، چرا قطع شد. خیلی از «سایت باز نمی‌شود»ها را فقط با Handshake و Alert می‌شود حل کرد، بدون رمزگشایی محتوا.
 
-**جمع‌بندی اصلی درس:**
-
-TLS اکثر ترافیک را می‌پوشاند؛ ولی Handshake اطلاعات زیادی (SNI، نسخه، Cipher، گاهی گواهی) آشکار می‌کند. Capture TLS به شما می‌گوید «کجا شکست خورد» و «چه کسی دخالت کرد».
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) Handshake
+### Handshake TLS 1.2
 
 ``` text
-TLS 1.2: ClientHello(SNI,versions,ciphers) -> ServerHello, Certificate, ServerKeyExchange -> ClientKeyExchange, Finished
-TLS 1.3: ClientHello(SNI, key_share) -> ServerHello(key_share) + {EncryptedExtensions, Certificate, Finished} encrypted
+C -> S : ClientHello   (versions, ciphers, SNI, extensions)
+S -> C : ServerHello   (chosen version/cipher)
+S -> C : Certificate   (chain)
+S -> C : ServerKeyExchange / ServerHelloDone
+C -> S : ClientKeyExchange, ChangeCipherSpec, Finished
+S -> C : ChangeCipherSpec, Finished
 ```
 
-در 1.3 گواهی رمز است؛ فقط SNI/ClientHello دیده می‌شود (مگر ECH).
+### Handshake TLS 1.3
 
-#### ۲) Alertها
+``` text
+C -> S : ClientHello (key_share, SNI, supported_versions)
+S -> C : ServerHello (key_share) + {EncryptedExtensions, Certificate, Finished}  (encrypted)
+C -> S : {Finished}
+```
+
+در 1.3 Certificate رمز می‌شود و در Capture دیده نمی‌شود؛ فقط SNI (مگر ECH) و نسخه.
+
+### فیلتر Wireshark
+
+``` text
+tls.handshake.type == 1                          (ClientHello)
+tls.handshake.type == 2                          (ServerHello)
+tls.handshake.type == 11                         (Certificate; TLS 1.2 only visible)
+tls.handshake.extensions_server_name
+tls.alert_message
+tcp.flags.reset == 1
+```
+
+### Alertهای رایج
 
 | Alert | معنی | علت |
 |---|---|---|
-| unknown_ca | CA ناشناخته | CA فایروال نصب نیست |
-| bad_certificate | گواهی بد | Pinning/نام |
-| certificate_expired | منقضی | تاریخ |
-| handshake_failure | Cipher/نسخه | ناسازگاری |
-| protocol_version | نسخه | قدیمی |
+| handshake_failure (40) | توافق نشد | Cipher/Version |
+| bad_certificate (42) | گواهی بد | خراب |
+| certificate_expired (45) | منقضی | تاریخ |
+| unknown_ca (48) | CA ناشناس | Chain/Trust |
+| protocol_version (70) | نسخه‌ی پشتیبانی‌نشده | TLS قدیمی |
+| internal_error (80) | خطای سرور | سرور |
+| close_notify (0) | پایان عادی | - |
 
-#### ۳) اثبات Inspection
-
-``` text
-openssl s_client -connect example.com:443 -servername example.com 2>/dev/null | openssl x509 -noout -issuer
-```
-
-Issuer = CA فایروال ⇒ Deep Inspection فعال؛ Issuer = CA عمومی ⇒ بدون رمزگشایی.
-
-#### ۴) QUIC و ECH
-
-QUIC (UDP 443) با TLS 1.3؛ Deep Inspection سخت؛ سیاست بلاک QUIC. ECH SNI را رمز می‌کند؛ Web Filter بر پایه‌ی SNI کور می‌شود (آینده).
-
-دقت مرجع: ECH در RFC 9849 (مارس ۲۰۲۶، Proposed Standard) تعریف شده و روی TLS 1.3 و DTLS 1.3 کار می‌کند؛ SNI را رمز می‌کند و ابزارهای مبتنی بر SNI (Web Filter، Application Control، رمزگشایی انتخابی) دید خود را از دست می‌دهند. رویکرد مستند Fortinet: جلوگیری/مسدودسازی ECH و تنظیم SNI در پروفایل SSL Inspection بر اساس SNI بیرونی؛ رفتار دقیق QUIC/HTTP/3 را در مستند نسخه‌ی خود بسنجید ([RFC 9849](https://datatracker.ietf.org/doc/rfc9849/)).
-
-#### ۵) فیلترها
+### تحلیل Cipher/Version
 
 ``` text
-tls.handshake.type == 1            # ClientHello
-tls.handshake.extensions_server_name
-tls.alert_message
-tls.handshake.certificate
-quic
+tls.handshake.ciphersuite
+tls.record.version
 ```
 
-### ۴) طراحی و تصمیم‌گیری
+Cipherهای قدیمی (RC4، 3DES، CBC بدون AEAD)، نسخه‌ی 1.0/1.1 ⇒ هشدار. سیاست: حداقل TLS 1.2، ترجیح AEAD (GCM/ChaCha).
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| QUIC | بلاک تا TCP/TLS |
-| Pinning | Exemption |
-| Cipher | حداقل TLS 1.2 |
+### SSL Inspection و Handshake
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+با Deep Inspection دو Handshake جدا: کلاینت↔FortiGate (Certificate صادرشده توسط CA فایروال) و FortiGate↔سرور (Certificate واقعی). در Capture سمت کلاینت Issuer = CA فایروال. در Capture سمت سرور Issuer = CA عمومی.
 
-#### مثال ساده
+### مثال‌های حل‌شده
 
-``` text
-tls.handshake.type == 1
-```
+#### مثال ساده — SNI
 
-#### مثال متوسط
+ClientHello با SNI `app.example.com`. فایروال Web Filter بدون Deep Inspection فقط همین را می‌بیند و بر اساس آن بلاک می‌کند.
 
-Alert Unknown CA ⇒ SSL Inspection بدون نصب CA.
+#### مثال متوسط — handshake_failure
 
-#### مثال سخت
+Client TLS 1.0 فقط؛ سرور حداقل 1.2. Alert 40 یا 70 ⇒ رفع: به‌روزرسانی کلاینت (یا آگاهانه TLS 1.0 در سرور داخلی قدیمی با ریسک).
 
-ClientHello فقط TLS1.0/1.1 و سرور 1.2 می‌خواهد ⇒ handshake_failure.
+#### مثال متوسط — unknown_ca
 
-#### مثال‌های اصلی درس (مرور)
+کاربران پس از Deep Inspection خطای گواهی. Capture: Alert `unknown_ca` از کلاینت پس از دیدن Certificate با Issuer = CA فایروال. علت: CA روی کلاینت نصب نیست. رفع: GPO.
 
-**ساده (حل‌شده):** ClientHello با SNI=example.com؛ ServerHello TLS1.3؛ Application Data.
+#### مثال سخت — Pinning
 
-**متوسط (تحلیل):** Alert `unknown_ca` فقط برای یک برنامه: CA فایروال در Trust Store آن برنامه نیست (Java/Firefox)؛ رفع: نصب CA یا Exemption.
+اپ موبایل بعد از Inspection قطع شد: Client بدون Alert چه، سریع FIN/RST پس از Certificate. مشخصه‌ی Certificate Pinning. رفع: Exempt (FQDN) نه Category کامل.
 
-**سخت (طراحی):** پس از فعال‌کردن Deep Inspection، برنامه‌ی بانکی Alert می‌دهد (Pinning). تحلیل: گواهی ارائه‌شده با Pin مطابق نیست؛ راه: Exemption آن FQDN/Category؛ ثبت؛ آزمون منفی: سایر سایت‌ها هنوز Inspect می‌شوند (Issuer).
+#### مثال سخت — MTU و ClientHello
 
-### ۶) پیاده‌سازی از مسیر GUI
+ClientHello بزرگ (Post-Quantum Key Share در مرورگرهای جدید، ~1.5KB+) در Fragment گم می‌شود (MTU/MSS)؛ سایت باز نمی‌شود ولی بقیه باز می‌شود. Capture: ClientHello Retransmission بدون ServerHello. رفع: MSS Clamp/PMTUD، بررسی IPS/Inspection که Fragment را درست نمی‌بیند. (الگوی واقعی در مرورگرهای جدید.)
 
-1. Wireshark: Filter tls؛ Statistics → Protocol Hierarchy.
+### Lab هدایت‌شده (اجرا نشده)
 
-### ۷) پیاده‌سازی از مسیر CLI
+1. Capture Handshake 1.2 و 1.3.
+2. Alertها را ایجاد و بخوانید.
+3. Deep Inspection و Issuer.
 
-``` text
-openssl s_client -connect example.com:443 -servername example.com
-diagnose sniffer packet any "host 10.1.4.10 and tcp port 443" 4 100 l
-```
+### عیب‌یابی سریع
 
-### ۸) Verification (اثبات صحت)
-
-- Issuer مقایسه.
-- SNI در ClientHello.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| unknown_ca | Alert | CA/Store |
-| handshake_failure | Cipher/نسخه | سازگاری |
-| QUIC دور می‌زند | UDP 443 | بلاک |
+| unknown_ca | CA | نصب |
+| handshake_failure | Cipher/Version | به‌روزرسانی |
+| قطع بعد از Certificate | Pinning | Exempt |
+| ClientHello گم | MTU | MSS |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- PCAP؛ Exemption مستند.
+TLS ≥ 1.2؛ حذف Cipher ضعیف؛ Capture TLS محتوای رمز دارد (حریم)؛ Keylog فقط در Lab.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- TLS1.3 گواهی رمز.
-- Alertها علت را می‌گویند.
-- Issuer اثبات Inspection.
-- QUIC/ECH محدودیت دید.
+TLS Handshake: SNI، Version، Cipher، Certificate (1.2) یا رمزشده (1.3)؛ Alertها؛ اثر Inspection؛ دام‌ها (Pinning، MTU، unknown_ca).
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) SNI چیست و کجا دیده می‌شود؟ *(پاسخ: 28-3-ت1)*
 
@@ -1005,7 +814,7 @@ diagnose sniffer packet any "host 10.1.4.10 and tcp port 443" 4 100 l
 
 **Q1.** Quick quiz (English): Which command-line tool can show the issuer of the certificate presented through a firewall? *(پاسخ: 28-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1015,107 +824,17 @@ diagnose sniffer packet any "host 10.1.4.10 and tcp port 443" 4 100 l
 
 - *The certificate issuer reveals whether inspection is active.* ← Issuer گواهی نشان می‌دهد Inspection فعال است یا نه.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** TLS. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/tls.md`.
 
-### ۱۵) منابع
+### منابع
 
 - RFC 8446
 - RFC 6066
 - Wireshark TLS docs
 
 <a id="l-28-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: TLS
-
-ClientHello (SNI) → ServerHello → Certificate (TLS1.2؛ در 1.3 رمز) → Finished. Alert نمونه: `handshake_failure`، `unknown_ca`.
-
-``` text
-wireshark filter: tls.handshake.type == 1
-```
-
-**پرسش‌های مصاحبه**
-1. *SNI چرا دیده می‌شود؟* قبل از رمز (ECH استثنا).
-2. *unknown_ca؟* CA نامعتبر.
-3. *TLS1.3 تفاوت؟* Certificate رمز.
-
-### مثال حل‌شده: Handshake TLS شکست‌خورده
-
-**Capture:** ClientHello (SNI=app.example.com) ← ServerHello ← Alert(fatal, `unknown_ca`) از کلاینت.
-
-تفسیر: کلاینت گواهی ارائه‌شده را به CA معتبر وصل نکرد؛ علت رایج: SSL Inspection بدون نصب CA سازمانی. رفع: توزیع CA یا Exemption. فیلتر: `tls.alert_message`.
-
-### تکمیل عمیق: TLS در Capture — Handshake، SNI، گواهی و Alert
-
-#### چرا؟
-
-امروز بیشتر ترافیک رمز است. بدون دانستن اینکه کدام بخش TLS هنوز دیده می‌شود، تحلیل ممکن نیست.
-
-#### آنچه دیده می‌شود
-
-| مرحله | TLS 1.2 | TLS 1.3 |
-|---|---|---|
-| ClientHello (SNI) | دیده می‌شود | دیده می‌شود (مگر ECH) |
-| ServerHello | دیده می‌شود | دیده می‌شود |
-| Certificate | دیده می‌شود | رمز |
-| Application Data | رمز | رمز |
-
-SNI = Server Name Indication، یعنی «نام سرور مقصد»؛ فایروال بدون Inspection هم می‌تواند آن را ببیند و Web Filter بر اساس آن عمل می‌کند.
-
-#### مثال ساده — ClientHello
-
-``` text
-wireshark filter: tls.handshake.type == 1
-fields: SNI=app.example.com ; supported_versions=TLS1.3,1.2 ; ALPN=h2,http/1.1
-```
-
-#### مثال متوسط — Alert
-
-``` text
-TLS Alert (Level: Fatal, Description: Unknown CA)  [from client]
-```
-
-یعنی کلاینت گواهی را به CA معتبر وصل نکرد. علت رایج: SSL Inspection بدون نصب CA سازمانی.
-
-#### مثال سخت — Handshake Failure
-
-ClientHello فقط TLS1.0/1.1 پیشنهاد می‌دهد؛ سرور حداقل TLS1.2 می‌خواهد ⇒ `handshake_failure`. رفع: ارتقای کلاینت/Policy.
-
-#### بررسی گواهی
-
-``` text
-openssl s_client -connect app.example.com:443 -servername app.example.com </dev/null | openssl x509 -noout -subject -issuer -dates
-```
-
-Issuer باید CA مورد انتظار باشد؛ اگر نام CA فایروال است، Inspection فعال است.
-
-#### Lab
-
-یک اتصال را با و بدون Inspection مقایسه کنید و Issuer را ثبت کنید.
-
-#### عیب‌یابی
-
-| علامت | Alert/شاهد | رفع |
-|---|---|---|
-| unknown_ca | Alert 48 | توزیع CA |
-| handshake_failure | Alert 40 | هماهنگی نسخه/Cipher |
-| certificate_expired | Alert 45 | تمدید |
-
-#### پرسش‌ها با پاسخ
-
-**۱. SNI چرا دیده می‌شود؟** قبل از رمز.
-**۲. TLS1.3 چه چیزی را پنهان می‌کند؟** گواهی.
-**۳. Issuer فایروال یعنی؟** Inspection.
-
-#### English Corner
-
-- *SNI reveals the destination hostname in the clear.*
-- Q: What does an unknown_ca alert mean?
 
 ## درس 28-4 — ده‌پرسش عیب‌یابی و بلوک‌های TS: چارچوب، سه پرونده‌ی کامل و کتابخانه‌ی TS
 
