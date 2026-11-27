@@ -3751,153 +3751,132 @@ Rule انتخاب می‌کند «چه ترافیکی روی چه لینکی»؛
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده) و CSR1000v؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. رفتار Session/NAT هنگام Failover را پیش‌بینی و اندازه بگیرد.
-2. Clear فیلترشده و Timeout را درست به‌کار ببرد.
-3. سرویس‌های حساس به IP (بانک/Partner) را طراحی کند.
-4. Failback کنترل‌شده با Hold-down بسازد.
-5. معماری ۳ را مستند و آزمون کند.
+1. Failover و Failback را به‌صورت عملی آزمون و اندازه‌گیری کنید.
+2. اثر Failover بر Session و NAT را توضیح و مدیریت کنید.
+3. مشکل «IP ثابت خروجی» (Whitelist شریک/بانک) را حل کنید.
+4. سرویس‌های ورودی (VIP) را در Dual-ISP پایدار نگه دارید.
+5. Flapping را کنترل کنید (`recoverytime`، Failback دستی).
+6. گزارش اثر Failover برای کسب‌وکار بنویسید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Failover را «باید» آزمایش کرد؟** Failover فقط عوض‌شدن Route نیست. وقتی ISP1 قطع می‌شود، پنج چیز تغییر می‌کند: Route، IP عمومی (NAT)، Sessionهای موجود، DNS (اگر وابسته به ISP) و Cache سوییچ/ARP. اگر آزمایش نکرده باشید، در اولین قطع واقعی با «اینترنت دارم ولی برنامه‌ی X قطع است» روبه‌رو می‌شوید.
+Failover فقط عوض‌شدن Route نیست؛ تجربه‌ی کاربر است. وقتی ISP1 قطع می‌شود: تماس‌های جاری قطع می‌شوند؟ بانک IP جدید را می‌پذیرد؟ سایت عمومی از بیرون در دسترس می‌ماند؟ بسیاری از قطعی‌های «با وجود Dual-ISP» از همین‌جا می‌آیند: طراحان تنها «Route دوم» را دیدند، نه اثر آن را بر Session، NAT و DNS.
 
-**چه چیزهایی قطع می‌شود و چه چیزی نه؟**
+### چه اتفاقی می‌افتد؟
 
-- **اتصال‌های جدید:** با لینک دوم برقرار می‌شوند.
-- **اتصال‌های قدیمی:** به IP ISP1 وابسته‌اند و پس از Failover معمولاً قطع می‌شوند (مگر Session روی لینک قبلی بماند و پاسخ‌ها برنگردند).
-- **سرویس‌های ورودی:** اگر IP عمومی VIP به ISP1 وابسته بود، از بیرون در دسترس نیست؛ راه: BGP یا DNS با TTL کم.
-
-**Failback:** بازگشت به لینک اصلی. اگر فوری باشد، یک قطع دوم ایجاد می‌کند؛ بهتر است با تأخیر یا دستی در پنجره‌ی تغییر انجام شود.
-
-**جمع‌بندی اصلی درس:**
-
-Failover ترافیک جدید را جابه‌جا می‌کند؛ Sessionهای موجود با SNAT قدیمی ممکن است قفل شوند و IP خروجی عوض می‌شود که برای Partnerهای Whitelist‌شده مشکل است.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) رفتار Session
-
-Session TCP روی WAN1 با IP1؛ پس از قطع WAN1 بسته‌های برگشتی نمی‌رسند. تا Timeout یا Clear قفل. ترافیک جدید از WAN2 با IP2.
-
-#### ۲) Clear فیلترشده
-
-``` text
-diagnose sys session filter clear
-diagnose sys session filter dev <wan1-index>
-diagnose sys session list
-diagnose sys session clear
-diagnose sys session filter clear
-```
-
-(یا فیلتر بر `src`/`dst`.) در SD-WAN تنظیماتی برای پاک‌کردن Session هنگام تغییر مسیر هست (`Unverified`).
-
-#### ۳) سرویس‌های حساس به IP
-
-Whitelist Partner: IP خروجی ثابت می‌خواهد. راه‌ها: IP Pool مشترک از PI/BGP، یا Failover فقط برای ترافیک غیرحساس و Policy Route برای سرویس حساس روی ISP ثابت؛ یا هماهنگی Partner برای هر دو IP.
-
-#### ۴) Failback کنترل‌شده
-
-recoverytime بیشتر از failtime؛ Hold-down؛ شاید Failback دستی در ساعات کم‌ترافیک.
-
-#### ۵) ماتریس آزمون
-
-| آزمون | انتظار | اندازه |
-|---|---|---|
-| قطع WAN1 | Failover ≤ هدف | ping |
-| Session TCP طولانی | قفل/Clear | session list |
-| بازگشت WAN1 | Failback بدون Flap | Log |
-| سرویس Partner | IP صحیح/Re-login | Partner |
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Session | Clear فیلترشده |
-| IP ثابت | Rule/Pool/BGP |
-| Failback | Hold-down |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — اندازه‌گیری
-
-``` text
-ping -i 0.2 8.8.8.8
-lost 25 packets x 0.2 s = 5.0 s
-```
-
-#### مثال متوسط — جدول قبل/بعد
-
-| مورد | قبل از Failover | بعد از Failover |
+| مورد | قبل (ISP1) | بعد (ISP2) |
 |---|---|---|
 | Default Route | via ISP1 | via ISP2 |
 | IP عمومی کاربر | 203.0.113.2 | 198.51.100.2 |
-| Sessionهای باز | روی ISP1 | قطع/جدید |
-| IP VIP وب | ISP1 | از بیرون در دسترس نیست |
+| Sessionهای باز | روی ISP1 | قطع/Session جدید |
+| IP VIP وب | IP ISP1 | از بیرون در دسترس نیست |
+| DNS | A record ISP1 | باید به ISP2 هم اشاره کند |
 
-#### مثال متوسط — پاک‌سازی انتخابی Session
+### آزمون Failover
 
 ``` text
-diagnose sys session filter src 10.10.0.0/24
-diagnose sys session clear
-diagnose sys session filter clear
+# 1) baseline
+ping -t 8.8.8.8          (from LAN PC)
+# 2) cut ISP1 link
+# 3) record: first loss -> first success
+Failover time = t(first success after cut) - t(cut)
+# 4) restore ISP1
+Failback time = t(route returns to ISP1) - t(restore)
 ```
 
-یا `set snat-route-change enable` در Policy تا Sessionهای SNAT با تغییر Route مسیر را عوض کنند.
-
-#### مثال سخت — VoIP پس از Failover
-
-تماس جاری قطع می‌شود چون IP عمومی عوض شد؛ تماس جدید برقرار می‌شود. برای حفظ تماس: IP ثابت (BGP)، یا Session Border Controller. این ریسک را باید در مستند طراحی بنویسید و با مدیر تصمیم بگیرید.
-
-#### مثال سخت — Failback ناگهانی
-
-پس از برگشت ISP1، Failback فوری، تماس‌ها دوباره قطع. راه: `recoverytime` بالا یا Failback دستی. آزمون: قطع و وصل ISP1 سه بار با ping مداوم و ثبت Loss هر بار.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** قطع wan1: ping 4 ثانیه قطع؛ دانلود قدیمی قفل؛ Clear فیلترشده؛ دانلود جدید OK.
-
-**متوسط (تحلیل):** پس از Failback کاربران قطع‌ووصل می‌شوند: Failback فوری با Session؛ راه: recoverytime بلند، Hold-down، یا ساعت‌محور.
-
-**سخت (IP ثابت):** بانک فقط IP ISP1 را می‌پذیرد؛ Failover ISP2 Login را می‌شکند. تصمیم: Policy Route/SD-WAN Rule برای IP بانک روی ISP1 (و در قطع ISP1 پذیرش Down) یا IP Pool مشترک با BGP؛ ثبت ریسک و RTO.
-
-### ۷) پیاده‌سازی از مسیر CLI
+نمونه:
 
 ``` text
+Detect = interval x failtime = 1000 ms x 5 = 5 s
+Failover total ~ 5 s + routing update (~1 s) = ~6 s
+```
+
+برای Failback: `recoverytime` تعداد Pingهای موفق لازم قبل از بازگشت.
+
+### Session و NAT
+
+- Session قدیمی: IP مبدأ NAT شده‌ی ISP1؛ پاسخ به ISP1 می‌رود (قطع). Session جدید از ISP2.
+- اگر Sessionهای قدیمی باقی بمانند و برنامه Timeout بلند داشته باشد، کاربر «کار نمی‌کند» می‌بیند تا Session بمیرد:
+
+``` text
+diagnose sys session filter clear
 diagnose sys session filter dev 3
-diagnose sys session list
 diagnose sys session clear
-diagnose sys session filter clear
 ```
 
-### ۸) Verification (اثبات صحت)
+(ابتدا Policy/Route را بررسی کنید؛ Clear بدون فیلتر خطرناک است.)
 
-- Matrix آزمون.
-- Log Failover/Failback.
+### IP ثابت خروجی
 
-### ۹) Troubleshooting
+بانک/شریک فقط IP ISP1 را Whitelist کرده. گزینه‌ها:
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| گزینه | توضیح |
+|---|---|
+| Policy Route/SD-WAN Rule Manual | ترافیک آن مقصد فقط ISP1؛ اگر ISP1 قطع، آن سرویس قطع (آگاهانه) |
+| Whitelist هر دو IP | درخواست از شریک (ساده‌ترین) |
+| IP مستقل (PI/BGP) | IP یکتا از هر دو ISP (هزینه/پیچیدگی) |
+| Proxy/VPN به مرکز | IP ثابت مرکز |
+
+### سرویس‌های ورودی
+
+برای VIP با IP ISP1: اگر ISP1 قطع شود از بیرون در دسترس نیست. راه‌ها: DNS با دو A record و Health-check خارجی (GSLB)، یا IP مستقل/BGP، یا VIP دوم روی ISP2 با DNS Failover. TTL کوتاه (۶۰–۳۰۰ ثانیه) در DNS.
+
+### Flapping
+
+لینک ناپایدار ⇒ رفت‌وبرگشت. راه‌ها: `recoverytime` بالا (مثلاً ۶۰)، Hold-down، Failback دستی در ساعت کم‌ترافیک.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — اندازه‌گیری
+
+ping مستمر: ۶ بسته قطع (۶ ثانیه) ⇒ Failover ≈ ۶ ثانیه (در هدف ۱۰ ثانیه).
+
+#### مثال متوسط — تماس ویدیویی
+
+Teams قطع و دوباره وصل می‌شود (۶–۱۰ ثانیه) چون IP عمومی عوض شد. توضیح به کاربر: اتصال جدید خودکار؛ Session Persistence بین ISPها ممکن نیست (IP عمومی عوض می‌شود).
+
+#### مثال متوسط — VIP
+
+سایت `www.example.com` با A record ISP1. قطع ISP1 ⇒ سایت از بیرون پایین. راه: DNS Failover با TTL 60 و Health-check؛ یا Cloud/CDN جلوی هر دو.
+
+#### مثال سخت — Failback و تماس
+
+ISP1 برگشت و Failback فوری؛ تماس‌ها دوباره قطع. راه: `recoverytime` بالا یا Failback دستی. آزمون: Failback فقط خارج از ساعت کار.
+
+#### مثال سخت — IP ثابت
+
+بانک فقط IP ISP1. قطع ISP1 ⇒ ورود به بانک شکست. تصمیم: Rule ثابت برای بانک روی ISP1 (آگاهانه) + درخواست Whitelist IP ISP2 + طرح اضطراری (VPN به مرکز).
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Failover/Failback را اندازه‌گیری کنید.
+2. Session را با فیلتر پاک کنید.
+3. VIP و DNS Failover.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| قفل | session list | Session قدیمی |
-| IP عوض | NAT | Pool |
-| Flap | Log | recoverytime |
+| Session گیر | NAT قدیم | Clear |
+| Flapping | recoverytime | افزایش |
+| بانک رد | IP | Whitelist |
+| سایت قطع | VIP ISP1 | DNS Failover |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Clear بدون Filter ممنوع.
+Clear با فیلتر؛ Policy هر دو خروجی یکسان؛ Log Failover؛ DNS با TTL مناسب.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- Failover ≠ Session ادامه.
-- Clear فیلترشده.
-- IP ثابت طراحی خاص.
-- Failback کنترل‌شده.
+Failover = Route + Session + NAT + IP + DNS؛ اندازه‌گیری با فرمول؛ IP ثابت و VIP نیاز طراحی؛ Flapping با recoverytime.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا دانلود پس از Failover قفل می‌شود؟ *(پاسخ: 21-4-ت1)*
 
@@ -3913,7 +3892,7 @@ diagnose sys session filter clear
 
 **Q1.** Quick quiz (English): Why can an ISP failover break connections to partners that whitelist your IP? *(پاسخ: 21-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3922,91 +3901,16 @@ diagnose sys session filter clear
 
 - *Clear stale sessions with a filter.* ← Sessionهای کهنه را با Filter پاک کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Failover. **Evidence:** `03-ops/failover.md`.
 
-### ۱۵) منابع
+### منابع
 
 - درس ۱۳-۷
 - Fortinet Docs: SD-WAN
 
 <a id="l-21-5"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Failover و Session
-
-پس از Failover، Sessionهای موجود تا انقضا روی لینک قبلی می‌مانند؛ برای رفتار سریع `set snat-route-change enable` (برای SNAT) یا پاک‌سازی Session محدود. IP عمومی عوض می‌شود ⇒ اتصالات پایدار (مثل SSH/VoIP) قطع می‌شوند؛ برای IP ثابت: BGP با دو ISP یا Cloud Anchor.
-
-**آزمون:** `ping -t` مداوم؛ قطع کابل ISP1؛ ثبت تعداد بسته‌ی گم‌شده × فاصله‌ی ping.
-
-**پرسش‌های مصاحبه**
-1. *چرا VoIP قطع؟* IP منبع عوض.
-2. *Failback خودکار؟* ممکن است ناپایدار؛ hold-down.
-3. *Clear Session؟* با فیلتر.
-
-### تکمیل عمیق: Failover عملی، Session و NAT
-
-#### چرا؟
-
-Failover فقط تغییر Route نیست؛ باید ببینیم Sessionها، NAT و IP عمومی چه می‌شوند.
-
-#### مثال ساده — اندازه‌گیری
-
-``` text
-ping -i 0.2 8.8.8.8
-# cut ISP1
-lost = 25 packets x 0.2 s = 5.0 s
-```
-
-#### Session و NAT
-
-پس از Failover IP عمومی تغییر می‌کند؛ اتصال‌هایی که به IP مبدأ وابسته‌اند (SSH، VoIP، بانک) قطع می‌شوند و باید دوباره برقرار شوند. تنها راه‌حل واقعی «IP ثابت» BGP با ISPها یا Cloud Anchor است.
-
-#### مثال متوسط — پاک‌سازی انتخابی
-
-``` text
-diagnose sys session filter src 10.10.0.0/24
-diagnose sys session filter dst 0.0.0.0/0
-diagnose sys session clear
-diagnose sys session filter clear
-```
-
-یا `set snat-route-change enable` در Policy برای تغییر مسیر Session با SNAT.
-
-#### مثال سخت — Failback
-
-بازگشت ISP1 و Failback فوری ممکن است Session را دوباره قطع کند. راه: `recoverytime` بیشتر یا Failback دستی در Window.
-
-#### مثال: Persist VoIP
-
-در Rule VoIP یک مسیر ثابت با Failover سریع و Failback غیرفعال تا از Flap جلوگیری شود.
-
-#### Lab
-
-Failover را اجرا و جدول «قبل/بعد» (Route، Session، IP عمومی) را پر کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| قطع بعد از Failover | IP عوض شد | BGP/NAT |
-| Session قدیم | Timeout | Clear |
-| Flap | Failback سریع | recoverytime |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا IP عوض می‌شود؟** NAT با IP ISP.
-**۲. راه‌حل IP ثابت؟** BGP.
-**۳. چرا Failback تأخیری؟** Flap.
-
-#### English Corner
-
-- *A failover that changes the public IP will break sessions that depend on it.*
-- Q: Why delay failback?
 
 ## درس 21-5 — Gate G8: آزمون عملی Dual-ISP و SD-WAN — صورت مسئله، کلید پاسخ کامل و Rubric
 
@@ -4014,210 +3918,198 @@ Failover را اجرا و جدول «قبل/بعد» (Route، Session، IP عم�
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. SD-WAN با دو Member (ISP-A و ISP-B)، Health-check و Service Rule را طراحی و پیاده‌سازی کند.
-2. Failover و Failback را با اندازه‌گیری (Failtime/Recoverytime) آزمون کند.
-3. تفاوت Mode (priority/load-balance/Best Quality) را انتخاب و توجیه کند.
-4. سه خرابی (Health-check اشتباه، Policy ناهمخوان، Route) را رفع کند.
-5. گزارش و Rubric را تحویل دهد.
+1. SD-WAN دو Member (ISP-A و ISP-B)، Health-check و Rule را طراحی و پیاده کنید.
+2. Failover و Failback را با اندازه‌گیری (failtime/recoverytime) آزمون کنید.
+3. Mode‌ها (priority/load-balance/best-quality) را انتخاب و توجیه کنید.
+4. سه خرابی را رفع کنید (Health-check اشتباه، Policy ناهمخوان، Route).
+5. گزارش و Rubric تحویل دهید.
+6. صداقت (اجرا نشده/Unverified) را رعایت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا G8؟** Gate یعنی ایست بازرسی. G8 ثابت می‌کند Dual-ISP و SD-WAN را از طراحی تا اثبات انجام می‌دهید: Member، Health-check، SLA، Rule، Failover، Failback و گزارش. فقط ساختن کافی نیست؛ باید با عدد نشان دهید Failover زیر هدف است و Brownout شناسایی می‌شود.
+دو ISP داریم. اگر ISP-A قطع شد، ترافیک مالی باید خودکار به ISP-B برود و پس از بازگشت A در زمان مشخص برگردد. «قطع شد ولی Failover نشد» یا «Failover شد ولی Voice خراب است» یعنی معماری شکست خورده. G8 اثبات می‌کند طراحی، SLA، Rule، Failover و Brownout (خرابی تدریجی کیفیت) را از طراحی تا Evidence می‌توانید.
 
-**صورت مسئله‌ی نمونه:** شعبه با ISP1 (اصلی) و ISP2 (پشتیبان). Voice باید تأخیر زیر 100 ms و Loss زیر 2٪ داشته باشد؛ Failover زیر 5 ثانیه؛ Failback کنترل‌شده.
+### صورت مسئله
 
-**مراحل حل:** ۱) برگه‌ی طراحی ۲) ساخت SD-WAN ۳) SLA ۴) Rule Voice ۵) آزمون قطع کامل ۶) آزمون Brownout با تزریق Loss ۷) Failback ۸) Evidence ۹) گزارش.
+FortiGate شعبه: `port1` (ISP-A، 198.51.100.2/30، GW 198.51.100.1) و `port4` (ISP-B، 203.0.113.2/30، GW 203.0.113.1). LAN `10.10.0.0/24`. نیاز:
 
-**جمع‌بندی اصلی درس:**
+1. ترافیک عادی از A.
+2. Failover به B زیر ۵ ثانیه.
+3. Voice: تأخیر زیر ۱۰۰ms، Loss زیر ۲٪.
+4. Failback بعد از ۶۰ ثانیه ثبات.
+5. Teams با Best Quality.
 
-دو ISP داریم. اگر ISP-A قطع شد، ترافیک مالی باید خودکار به ISP-B برود و پس از بازگشت A ظرف زمان مشخص برگردد. «قطع شد ولی Failover نشد» رایج‌ترین گزارش است و علتش اغلب Health-check نادرست یا Policy بدون SD-WAN است. این Gate سنجش همین است.
+عیب‌های تزریق‌شده:
 
-### ۳) توضیح عمیق فنی
+1. Health-check روی Gateway ISP (Ping به GW) ولی GW به ICMP پاسخ نمی‌دهد ⇒ همیشه dead.
+2. Policy هنوز با `port1` (نه Zone) ⇒ SD-WAN اثر ندارد.
+3. Default Route قدیمی روی port1 هنوز وجود دارد.
 
-#### ۱) صورت مسئله
-
-FortiGate شعبه: port1 (ISP-A، 198.51.100.2/30، GW 198.51.100.1) و port4 (ISP-B، 203.0.113.2/30، GW 203.0.113.1). LAN 10.10.0.0/24. نیاز: ترافیک عادی از A؛ Failover به B ظرف زیر ۱۰ ثانیه؛ Failback پس از ۳۰ ثانیه پایداری A؛ ترافیک ویدئو (Microsoft Teams) ترجیحاً با کمترین Latency.
-
-#### ۲) طراحی مرجع (FortiOS 7.0)
+### طراحی مرجع
 
 | مورد | مقدار |
 |---|---|
 | Members | port1 (seq 1)، port4 (seq 2) |
 | Health-check | HC-GLOBAL: server 8.8.8.8 و 1.1.1.1، ping، interval 1000 ms |
-| failtime / recoverytime | 5 / 10 |
-| Rule 1 | Teams: Mode best-quality (latency) |
-| Rule 2 | Default: priority-mode (member 1 اول) |
+| failtime / recoverytime | 5 / 60 |
+| Rule 1 | Teams: Mode best quality (latency) |
+| Rule 2 | Default: priority (member 1 اول) |
+
+``` text
+Detect time    = interval x failtime = 1000 ms x 5 = 5 s  (borderline vs < 5 s target)
+Tuned          = interval 500 ms x failtime 5 = 2.5 s
+```
+
+برای رسیدن به «زیر ۵ ثانیه»، interval را ۵۰۰ms کنید (بار Probe بیشتر؛ ملاحظه‌ی ISP).
+
+### کلید پاسخ — پیکربندی
 
 ``` text
 config system sdwan
- set status enable
- config zone
-  edit "virtual-wan-link"
-  next
- end
- config members
-  edit 1
-   set interface "port1"
-   set gateway 198.51.100.1
-  next
-  edit 2
-   set interface "port4"
-   set gateway 203.0.113.1
-  next
- end
- config health-check
-  edit "HC-GLOBAL"
-   set server "8.8.8.8" "1.1.1.1"
-   set protocol ping
-   set interval 1000
-   set failtime 5
-   set recoverytime 10
-   set members 1 2
-  next
- end
- config service
-  edit 1
-   set name "Teams"
-   set mode sla
-   set dst "Microsoft-Teams"
-   config sla
-    edit "HC-GLOBAL"
-     set id 1
-    next
-   end
-   set priority-members 1 2
-  next
-  edit 2
-   set name "Default"
-   set mode manual
-   set dst "all"
-   set priority-members 1 2
-  next
- end
+    set status enable
+    config members
+        edit 1
+            set interface "port1"
+            set gateway 198.51.100.1
+        next
+        edit 2
+            set interface "port4"
+            set gateway 203.0.113.1
+        next
+    end
+    config health-check
+        edit "HC-GLOBAL"
+            set server "8.8.8.8" "1.1.1.1"
+            set protocol ping
+            set interval 500
+            set failtime 5
+            set recoverytime 60
+            set members 1 2
+            config sla
+                edit 1
+                    set latency-threshold 100
+                    set packetloss-threshold 2
+                next
+            end
+        next
+    end
+    config service
+        edit 1
+            set name "TEAMS"
+            set mode priority
+            set dst "Microsoft-Teams"
+            set health-check "HC-GLOBAL"
+            set priority-members 1 2
+        next
+        edit 2
+            set name "DEFAULT"
+            set mode manual
+            set priority-members 1
+        next
+    end
 end
 ```
 
-نکته‌ی 7.0: `mode` و گزینه‌های `sla`/`manual`/`priority`/`load-balance` با CLI help تأیید شود؛ تغییرات 7.4.1 در Failtime/Recoverytime مرتبط نیست؛ `Unverified`.
+(`mode priority` در 7.0: `set mode priority` + `set health-check` + `set priority-zone`/`priority-members`. جزئیات سینتکس در مستند 7.0 بررسی شود؛ Unverified.)
 
-Policy باید `srcintf LAN` و `dstintf virtual-wan-link` (Zone SD-WAN) داشته باشد، نه Interface فیزیکی.
+### کلید پاسخ — سه عیب
 
-#### ۳) خرابی‌ها و کلید
+**عیب ۱ (Health-check به GW):**
 
-**خرابی A:** Health-check فقط Gateway ISP را می‌زند؛ ISP قطع ولی Gateway زنده ⇒ Failover نمی‌شود. شاهد: `diagnose sys sdwan health-check` وضعیت alive. رفع: Server خارجی (8.8.8.8).
+1. Evidence: `diagnose sys sdwan health-check` ⇒ Seq(1): `state(dead)`، packet-loss 100٪؛ ولی ping عادی از LAN به اینترنت OK.
+2. علت: Server = GW ISP که ICMP را رد می‌کند.
+3. رفع: Server = 8.8.8.8/1.1.1.1.
+4. تأیید: `state(alive)`.
 
-**خرابی B:** Policy `dstintf port1` است نه Zone SD-WAN ⇒ Service Rule اعمال نمی‌شود. شاهد: `diagnose sys sdwan service` و Session: خروجی ثابت port1. رفع: Policy به Zone.
+**عیب ۲ (Policy با Interface):**
 
-**خرابی C:** Route Static Default هنوز با Distance کمتر از SD-WAN ⇒ ترافیک از Static. شاهد: `get router info routing-table all`. رفع: حذف Static Default یا Distance بزرگ‌تر.
+1. Evidence: `session list` ⇒ `dev=port1` همیشه؛ Failover تأثیر ندارد.
+2. علت: Policy `dstintf port1` به‌جای Zone.
+3. رفع: `dstintf "virtual-wan-link"`.
+4. تأیید: قطع A ⇒ Session جدید `dev=port4`.
 
-#### ۴) آزمون Failover
+**عیب ۳ (Default Route قدیمی):**
+
+1. Evidence: `get router info routing-table all` ⇒ Default Static روی port1 با Distance 10 بدون SD-WAN.
+2. علت: Route قدیمی.
+3. رفع: حذف Route و Default از Zone.
+4. تأیید: Route با `sdwan` (یا `virtual-wan-link`).
+
+### آزمون Failover/Failback
 
 ``` text
-diagnose sys sdwan health-check
-diagnose sys sdwan member
-diagnose sys sdwan service
-# 1 ping -t to 8.8.8.8 from LAN host
-# 2 disable ISP-A (cable or interface down)
-# 3 measure packets lost -> time to failover
-# 4 enable ISP-A; measure failback after recoverytime
+1 ping -t 8.8.8.8
+2 cut ISP-A (port1)
+3 measure loss window (target < 5 s)
+4 restore ISP-A
+5 verify failback only after 60 s stable (recoverytime)
+6 inject loss 5% on A (Brownout) -> Voice moves to B
 ```
 
-معیار: Failover ≤ 10 s، Failback ≈ 10–30 s، بدون قطع Sessionهای فعال مهم (Session Pickup/Preserve برای Session موجود طبق Rule).
+### Rubric (۱۰۰)
 
-#### ۵) Rubric
-
-طراحی ۱۵، پیکربندی ۲۵، تشخیص ۳ خرابی ۳۰، آزمون Failover/Failback با اندازه‌گیری ۲۰، Evidence و صداقت ۱۰. قبولی ۷۵.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| معیار | امتیاز |
 |---|---|
-| Mode | priority برای Failover ساده؛ SLA برای حساس به Latency |
-| Health-check | Server خارجی نه Gateway |
-| Policy | به Zone SD-WAN |
+| طراحی و پارامتر | 15 |
+| پیاده‌سازی SD-WAN | 20 |
+| Failover/Failback با اندازه‌گیری | 20 |
+| سه عیب با Evidence | 25 |
+| Brownout و Rule | 10 |
+| گزارش/صداقت | 10 |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### مثال‌های حل‌شده
 
-#### مثال ساده — کلید پاسخ
+#### مثال ساده — Detect time
 
-| بخش | شاهد |
-|---|---|
-| Build | `diagnose sys sdwan member` |
-| SLA | `health-check` با `sla_map` |
-| Failover | ping + Log |
-| Failback | زمان و روش |
+interval 500ms × failtime 5 = ۲٫۵ ثانیه تشخیص؛ + بروزرسانی ≈ ۳ ثانیه؛ هدف ۵ ثانیه رعایت.
 
-#### مثال متوسط — محاسبه‌ی نمره
+#### مثال متوسط — RCA عیب ۱
 
 ``` text
-Build 20 | SLA 20 | Failover 25 | Failback 10 | Evidence 15 | Report 10
-Example: 20 + 18 + 22 + 8 + 12 + 8 = 88
+Impact : SD-WAN considered A dead; all traffic on B, 3 days, cost overrun
+Cause  : health-check target = ISP gateway (ICMP filtered)
+Fix    : use 8.8.8.8 and 1.1.1.1
+Prevent: validate health-check targets with independent ping before enabling
 ```
 
-#### مثال سخت — نتیجه‌ی مرزی
+#### مثال متوسط — Brownout
 
-Failover 5.2 ثانیه در حالی که هدف کمتر از ۵ بود. تصمیم صادقانه: «مردود» یا «شرطی قبول» با برنامه‌ی بهبود (کاهش interval/failtime) و آزمون مجدد؛ هرگز عدد را گرد نکنید.
+Loss 5٪ روی A: Link Monitor کلاسیک Up می‌ماند؛ SLA (Loss<2٪) fail ⇒ Voice به B. نشان‌دهنده‌ی مزیت SD-WAN.
 
-#### مثال سخت — دو خرابی تزریقی
+#### مثال سخت — Failback ناپایدار
 
-قطع ISP1 + Loss 8٪ روی ISP2. انتظار: Voice روی بهترین لینک موجود با اعلام نقض SLA؛ شاهد: `health-check` و Log. اگر هر دو لینک SLA را نقض کنند، رفتار Rule و هشدار باید مستند شود.
+A هر ۳۰ ثانیه قطع/وصل؛ `recoverytime 60` مانع Flapping می‌شود. بدون آن Voice مدام قطع.
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال سخت — صداقت
 
-**ساده (حل‌شده):** Health-check به 8.8.8.8 با failtime 5 و interval 1000 ms: زمان تشخیص ≈ 5 ثانیه؛ پس Failover حدود ۵–۷ ثانیه. محاسبه: failtime × interval = 5 × 1 s = 5 s.
+Lab اجرا نشده؛ زمان‌های ۵ ثانیه و ۲٫۵ ثانیه محاسبه‌ی مدل است نه اندازه‌گیری؛ در گزارش «Unverified» ثبت.
 
-**متوسط (خرابی B):** Policy dstintf=port1. مراحل: ۱) `diagnose sys sdwan service` نشان می‌دهد Rule ساخته شده ولی Hit ندارد. ۲) `session list` ⇒ خروجی port1. ۳) تغییر dstintf به Zone. ۴) Hit افزایش و Session از member انتخابی. پاسخ: Policy باید Zone SD-WAN را هدف بگیرد.
+### Lab هدایت‌شده (اجرا نشده)
 
-**سخت (Failback ناپایدار):** A هر چند دقیقه Flap می‌کند و ترافیک مرتب بین دو ISP می‌پرد. تحلیل: recoverytime کوتاه؛ A ناپایدار برمی‌گردد. رفع: افزایش recoverytime به 30–60، Health-check با دو Server، و در صورت نیاز Hold. آزمون: ۳ بار قطع/وصل؛ حداکثر یک Failback. ریسک: Failback دیرتر ⇒ مصرف ISP گران‌تر.
+1. SD-WAN را بسازید.
+2. سه عیب را رفع کنید.
+3. Failover و Brownout را اندازه‌گیری کنید.
 
-### ۶) پیاده‌سازی از مسیر GUI
+### عیب‌یابی سریع
 
-1. Network → SD-WAN → Interface Members: افزودن port1 و port4.
-2. Performance SLA: ساخت HC-GLOBAL.
-3. SD-WAN Rules: Teams و Default.
-4. Policy & Objects: خروجی Zone SD-WAN.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-diagnose sys sdwan health-check
-diagnose sys sdwan member
-diagnose sys sdwan service
-get router info routing-table all
-diagnose sys session list
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Health-check alive برای هر دو.
-- Failover ≤ 10 s.
-- Failback پس از recoverytime.
-- Rule Hit و Session روی member درست.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| Failover نمی‌شود | Health-check | Server خارجی |
-| Rule اثر ندارد | Policy dstintf | Zone SD-WAN |
-| ترافیک از Static | routing-table | Distance/حذف Static |
-| Flap | recoverytime | افزایش |
+| dead دائمی | هدف Health-check | سرور |
+| اثر ندارد | Policy | Zone |
+| مسیر قدیمی | Route | حذف |
+| Flapping | recoverytime | افزایش |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- Policy حداقلی.
-- ثبت تغییرات.
+G8: SD-WAN با Health-check/SLA، Failover زیر ۵ ثانیه (محاسبه و اندازه‌گیری)، سه عیب با Evidence، Brownout، Rubric و صداقت.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- SD-WAN=Member+Health-check+Rule.
-- Policy به Zone.
-- Failover/Failback اندازه‌گیری.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا Health-check به Gateway کافی نیست؟ *(پاسخ: 21-5-ت1)*
 
@@ -4233,7 +4125,7 @@ diagnose sys session list
 
 **Q1.** Quick quiz (English): Why should the policy destination be the SD-WAN zone? *(پاسخ: 21-5-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -4242,80 +4134,14 @@ diagnose sys session list
 
 - *A health check should probe a remote target.* ← Health-check باید مقصد دور را پایش کند.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** G8 Dual-ISP/SD-WAN (اجرا نشده). **Evidence:** `03-ops/g8-sdwan.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: SD-WAN
 - FortiOS 7.0 SD-WAN guide
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Rubric G8
-
-مراحل: ساخت SD-WAN ۲۰، SLA ۲۰، Failover ۲۵، Failback ۱۰، Evidence ۱۵، گزارش ۱۰. قطع لینک تزریقی با ثبت زمان.
-
-**پرسش‌های مصاحبه**
-1. *Evidence Failover؟* `diagnose sys sdwan health-check` و Log.
-2. *Brownout؟* لینک بالا ولی کیفیت بد.
-3. *SLA Target؟* از نیاز اپلیکیشن.
-
-### تکمیل عمیق: آزمون G8 — صورت مسئله و کلید
-
-#### چرا؟
-
-G8 ثابت می‌کند Dual-ISP و SD-WAN را از طراحی تا اثبات انجام می‌دهید.
-
-#### صورت مسئله
-
-شعبه با ISP1 (اصلی) و ISP2 (پشتیبان)؛ Voice باید زیر 100ms و Loss زیر 2٪ باشد؛ Failover زیر 5 ثانیه.
-
-#### کلید
-
-1. SD-WAN با دو Member و Health-check.
-2. SLA (100ms/30ms/2٪).
-3. Rule Voice با mode sla.
-4. آزمون: قطع ISP1 ⇒ Failover < 5 s.
-5. آزمون Brownout با `tc netem`.
-6. Failback کنترل‌شده.
-
-#### محاسبه‌ی نمره
-
-``` text
-Build 20 | SLA 20 | Failover 25 | Failback 10 | Evidence 15 | Report 10
-Example: 20 + 18 + 22 + 8 + 12 + 8 = 88
-```
-
-#### مثال سخت — مرز SLA
-
-تأخیر 98ms (حاشیه‌ی بسیار کم): Flap ممکن است رخ دهد. راه: آستانه‌ی حاشیه‌دار یا Hysteresis؛ مستند.
-
-#### Lab
-
-آزمون را اجرا و Evidence Index بسازید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Failover دیر | failtime بالا | کاهش |
-| Flap | آستانه نزدیک | حاشیه |
-| Evidence ناقص | ثبت نشد | الگو |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Evidence Failover؟** ping + Log + health-check.
-**۲. Hysteresis؟** جلوگیری از Flap.
-**۳. آزمون Brownout؟** تزریق تأخیر.
-
-#### English Corner
-
-- *Test brownouts, not only hard failures.*
-- Q: How do you avoid flapping near a threshold?
 
 ## درس 21-7 — SD-WAN از درون: Health-check، SLA، استراتژی‌ها، Failover/Failback و تفاوت با Routing
 
