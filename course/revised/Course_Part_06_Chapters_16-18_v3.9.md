@@ -3243,120 +3243,157 @@ RADIUS/NPS احراز مرکزی با MFA؛ Secret و NAS-IP هماهنگ؛ Attr
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده»؛ وابستگی لایسنس هر قابلیت صریح ذکر شده است.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. حالت مناسب FSSO را (DC Agent/Collector/Polling) انتخاب کند.
-2. Polling را پیکربندی و کاربران را ببیند.
-3. Group Filter و Policy را درست بنویسد.
-4. مشکلات NTLM/زمان/Event Log را تشخیص دهد.
+1. FSSO (Fortinet Single Sign-On) را تعریف و جای آن را در جریان هویت بگویید.
+2. سه حالت را مقایسه و انتخاب کنید: DC Agent، Collector Agent با Polling، FortiGate Polling (بدون Agent).
+3. Collector Agent را نصب و FortiGate را متصل کنید.
+4. FSSO User Group را در Policy به‌کار ببرید.
+5. محدودیت‌ها (Multi-user IP، NAT، Terminal Server) را بشناسید.
+6. FSSO را با `diagnose debug authd fsso` عیب‌یابی کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا FSSO؟** کاربر وارد ویندوز می‌شود و انتظار دارد بدون Login دوم از فایروال رد شود. FSSO (Fortinet Single Sign-On) IP↔User را از رویدادهای DC می‌گیرد. حالت‌ها: Collector Agent (+DC Agent) یا Agentless (Polling).
+کاربر وقتی صبح به Windows وارد می‌شود، یک بار رمز می‌زند. SSO (Single Sign-On، یعنی «ورود یگانه») یعنی FortiGate همان ورود را ببیند و دوباره از کاربر رمز نخواهد. بدون FSSO، Policy گروهی با Captive Portal رمز می‌پرسد؛ کاربران ناراضی می‌شوند. FSSO از Event Logهای Domain Controller «چه کسی از کدام IP وارد شد» را یاد می‌گیرد و نگاشت IP→User را می‌سازد.
 
-**جمع‌بندی اصلی درس:** FSSO کاربر را بدون Login دوباره به فایروال می‌شناساند. در 7.0، Polling بدون Agent ساده است ولی محدودیت دارد (Kerberos، ورود هم‌زمان)؛ Collector Agent مقیاس‌پذیرتر است.
+### نقش FSSO در جریان
 
-### ۳) توضیح عمیق فنی
+``` text
+ User logs on -> [DC] security event 4624
+                   |
+              [Collector Agent] reads events (polling)
+                   |  (TCP 8000)
+              [FortiGate] maps IP -> user -> groups
+                   |
+              Policy match by group
+```
 
-#### ۱) انتخاب حالت
+### سه حالت
 
-| شرایط | حالت |
+| حالت | چگونه | مزیت | عیب |
+|---|---|---|---|
+| DC Agent | Agent روی هر DC | Real-time | نصب روی DC |
+| Collector Agent (Polling) | یک Collector Event Log را می‌خواند | ساده | تأخیر Polling |
+| FortiGate Polling (Agentless) | FortiGate مستقیم DCها را می‌خواند | بدون نصب | محدودیت ظرفیت/نسخه |
+
+(محدودیت‌های دقیق Agentless در مستند FSSO polling connector 7.0 بررسی شود؛ طبق مستند محدودیت تعداد کاربر دارد.)
+
+انتخاب Lab: Collector Agent Polling (ساده و مرسوم).
+
+### پیکربندی Collector
+
+1. نصب FSSO Collector Agent روی یک سرور عضو دامنه.
+2. حساب سرویس با دسترسی Event Log Reader و عضو Distributed COM Users.
+3. Password به FortiGate (Shared).
+4. Groups را انتخاب (Directory Access).
+
+### FortiGate
+
+``` text
+config user fsso
+    edit "FSSO-CORP"
+        set server "10.20.0.12"
+        set password <SECRET>
+        set port 8000
+        set ldap-server "LDAP-CORP"
+    next
+end
+config user group
+    edit "UG-FSSO-Internet"
+        set group-type fsso-service
+        set member "CORP/GG-INTERNET-USERS"
+    next
+end
+```
+
+Policy:
+
+``` text
+config firewall policy
+    edit 60
+        set name "FSSO-USERS-INTERNET"
+        set srcintf "ZN-USERS"
+        set dstintf "port1"
+        set srcaddr "all"
+        set dstaddr "all"
+        set groups "UG-FSSO-Internet"
+        set service "HTTP" "HTTPS" "DNS"
+        set action accept
+        set schedule "always"
+        set nat enable
+        set logtraffic all
+    next
+end
+```
+
+### آزمون
+
+``` text
+diagnose debug authd fsso list
+diagnose debug authd fsso server-status
+```
+
+`list` فهرست IP→User→Groups و `server-status` اتصال به Collector.
+
+### محدودیت‌ها
+
+| مورد | اثر |
 |---|---|
-| ≤ چند صد کاربر، Kerberos، ساده | FortiGate Polling |
-| NTLM یا بار زیاد | Collector Agent/DC Agent |
-| Terminal Server | Terminal Server Agent |
+| چند کاربر پشت یک IP (Terminal Server، NAT) | فقط یک کاربر شناخته؛ نیاز TS Agent |
+| IP ثابت دستگاه بدون Logon | کاربر ناشناس؛ fallback Captive Portal |
+| Logoff | تأخیر پاک شدن |
+| ساعت | اختلاف ⇒ Eventها نادیده |
 
-#### ۲) تنظیم Polling (طبق مستند 7.0)
+### مثال‌های حل‌شده
 
-پیش‌نیاز: LDAP Server موفق. سپس Security Fabric → External Connectors → FSSO (Poll Active Directory Server) با حساب مجاز خواندن Event Log. `polling-frequency` بین 1 تا 30 ثانیه (پیش‌فرض 10).
+#### مثال ساده — اتصال
 
-#### ۳) Group Filter
+`server-status`: «connected». سپس alice Logon؛ `list`: `10.10.0.5  alice  CORP/GG-INTERNET-USERS`. Policy 60 اعمال شد.
 
-فقط کاربران عضو گروه‌های Filter به لیست FSSO می‌روند؛ اگر گروه را نگذارید، کاربر دیده نمی‌شود.
+#### مثال متوسط — Policy گروهی
 
-#### ۴) رویدادها
+alice در گروه ⇒ اینترنت؛ bob خارج از گروه ⇒ Deny (Lookup/Log: `policy 0`). Log `user=alice group=...`.
 
-Polling فقط Kerberos 4768/4769 را می‌خواند؛ NTLM پشتیبانی نمی‌شود؛ ورود هم‌زمان زیاد ممکن است ورودی را از دست بدهد.
+#### مثال متوسط — Fallback
 
-> **دقت مفهومی (طبق مستند Fortinet):** این محدودیت مربوط به **FortiGate Polling Connector** است. **Collector Agent در حالت Polling** مجموعه‌ی رویداد گسترده‌تری می‌خواند (مثلاً 4768 و 4776 و بسته به تنظیم 4769 و 4624) و NTLM را هم پوشش می‌دهد؛ ولی خودش با NTLM به DCها احراز هویت می‌کند و با Windows Server 2025 گزینه‌ی «Enforce Kerberos» لازم می‌شود. پس برای محیط NTLM-محور Collector/DC Agent مناسب‌تر از FortiGate Polling است. ([مرجع](https://community.fortinet.com/fortigate-3/technical-tip-enforcing-kerberos-instead-of-ntlm-on-fsso-collector-agent-226817))
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| حالت | طبق جدول |
-| Fallback | Captive Portal |
-| Redundancy | چند Collector (تا ۵ طبق مستند) |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-Agentless در Lab با حساب سرویس.
-
-#### مثال متوسط — Group Filter
-
-فقط گروه‌های لازم؛ جدول سبک.
+کاربر بدون Logon (BYOD) ⇒ FSSO او را نمی‌شناسد؛ Policy دوم با Captive Portal (۱۷-۵) برای او.
 
 #### مثال سخت — Terminal Server
 
-چند کاربر پشت یک IP ⇒ TS Agent. بررسی `diagnose debug authd fsso list`.
+۲۰ کاربر روی یک RDS با یک IP؛ FSSO یک نفر را می‌شناسد و همه با دسترسی او. راه: Terminal Services Agent (Port Range per user) یا Policy جدا برای RDS.
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال سخت — NAT قبل از FortiGate
 
-**ساده:** کاربر u.fin1 به PC Login می‌کند؛ `diagnose debug authd fsso list` او را با IP و گروه نشان می‌دهد.
+اگر کاربران پشت NAT دیگری باشند، IP ثابت می‌شود و FSSO نگاشت را اشتباه دارد. راه: FortiGate را قبل از NAT قرار دهید یا از Agent/Portal استفاده کنید.
 
-**متوسط:** کاربر دیده نمی‌شود: گروه در Filter نبود؛ افزودن گروه؛ آزمون.
+### Lab هدایت‌شده (اجرا نشده)
 
-**سخت:** نیمی از کاربران دیده نمی‌شوند: آن‌ها با NTLM (IP به‌جای نام) به File Server وصل می‌شوند و Kerberos Ticket ندارند. راه‌حل: اصلاح DNS/SPN تا Kerberos استفاده شود یا گذار به Collector Agent.
+1. Collector و اتصال.
+2. Logon کاربر و `fsso list`.
+3. Policy گروهی و آزمون منفی.
 
-### ۶) پیاده‌سازی از مسیر GUI
+### عیب‌یابی سریع
 
-1. User & Authentication → LDAP (از ۱۷-۲).
-2. Security Fabric → External Connectors → Create New → FSSO.
-3. Poll Active Directory Server: IP، User، Password، LDAP Server.
-4. User Groups → FSSO → Members.
-5. Policy: Source = گروه FSSO.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-config user fsso-polling
-    edit 1
-        set server "192.168.90.40"
-        set ldap-server "LDAP-AD"
-        set polling-frequency 10
-    next
-end
-diagnose debug authd fsso list
-```
-
-### ۸) Verification (اثبات صحت)
-
-- `fsso list` کاربر و IP.
-- Policy Hit و Log با User.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| کاربر نیست | `fsso list` | Group Filter/Kerberos/ساعت |
-| IP→User اشتباه | Terminal Server | Agent مخصوص |
-| کند/ناقص | Load | Collector |
+| connected نیست | Password/پورت 8000 | بررسی |
+| لیست خالی | Event Log/دسترسی | حساب سرویس |
+| کاربر اشتباه | RDS/NAT | TS Agent |
+| تأخیر | Polling | تنظیم |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- حساب Polling حداقل دسترسی؛ شبکه‌ی مدیریت.
+Password Collector قوی؛ ارتباط Collector⇄FortiGate در شبکه‌ی مدیریت؛ حساب سرویس حداقل؛ Policy گروهی + Deny پیش‌فرض.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- حالت را با NTLM/بار انتخاب کنید.
-- Group Filter الزامی.
-- Fallback داشته باشید.
+FSSO نگاشت IP→User را از Logon می‌سازد؛ سه حالت؛ محدودیت RDS/NAT؛ fallback Captive Portal؛ عیب‌یابی با `authd fsso`.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Polling چه رویدادهایی را می‌خواند؟ *(پاسخ: 17-4-ت1)*
 
@@ -3370,7 +3407,7 @@ diagnose debug authd fsso list
 
 **Q1.** Quick quiz (English): Why can FSSO polling miss users who authenticate with NTLM? *(پاسخ: 17-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3380,105 +3417,16 @@ diagnose debug authd fsso list
 
 - *Choose the FSSO mode by authentication protocol and scale.* ← حالت FSSO را بر اساس پروتکل احراز و مقیاس انتخاب کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **Lab:** FSSO. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/fsso.md`. **Rollback:** حذف Connector.
 
-### ۱۵) منابع
+### منابع
 
 - [FSSO polling connector agent installation](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/503764/fsso-polling-connector-agent-installation)
 - [FSSO](https://docs.fortinet.com/document/fortigate/7.0.8/administration-guide/450337)
 
 <a id="l-17-5"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: FSSO — انتخاب حالت با مثال
-
-| حالت | شرح | کاربرد |
-|---|---|---|
-| Agent-based DC Agent | روی هر DC نصب | سازمان‌های بزرگ |
-| Collector Agent polling | خواندن Event Log | ساده |
-| Agentless (Polling) | FortiGate خودش DC را می‌خواند | Lab/کوچک |
-
-**Group Filter:** فقط گروه‌های لازم؛ در غیر این صورت Collector سنگین می‌شود.
-
-``` text
-diagnose debug authd fsso list
-diagnose debug authd fsso server-status
-```
-
-**عیب‌یابی:** IP در جدول نیست ⇒ Event 4768 نمی‌آید یا ساعت/DNS مشکل؛ کاربران NAT‌شده Terminal Server نیاز به TS Agent دارند.
-
-**پرسش‌های مصاحبه**
-1. *FSSO چه مشکلی را حل می‌کند؟* Policy بر اساس کاربر بدون Login جدا.
-2. *محدودیت؟* IP-مبنا؛ Multi-user در یک IP.
-3. *Workstation Check؟* اعتبارسنجی ورود.
-
-### تکمیل عمیق: FSSO — انتخاب حالت و عیب‌یابی
-
-#### چرا؟
-
-کاربر وارد ویندوز می‌شود و انتظار دارد بدون Login دوم از فایروال رد شود. FSSO (Fortinet Single Sign-On) این را ممکن می‌کند.
-
-#### حالت‌ها
-
-| حالت | کار | مناسب |
-|---|---|---|
-| Collector Agent + DC Agent | نصب روی ویندوز | سازمان‌های بزرگ |
-| Agentless (Polling) | FortiGate DC را می‌خواند | Lab/کوچک |
-
-#### مثال ساده — Agentless
-
-``` text
-config user fsso-polling
- edit 1
-  set server "10.20.0.5"
-  set user "corp\\svc-fsso"
-  set ldap-server "AD"
- next
-end
-```
-
-#### مثال متوسط — Group Filter
-
-فقط گروه‌هایی که در Policy لازم‌اند را بخوانید؛ بدون Filter، Collector سنگین و جدول بزرگ می‌شود.
-
-#### بررسی
-
-``` text
-diagnose debug authd fsso list
-diagnose debug authd fsso server-status
-```
-
-#### مثال سخت — Terminal Server
-
-چند کاربر پشت یک IP (RDS/Citrix): FSSO فقط یک کاربر را می‌بیند. راه: TS Agent با تفکیک بر اساس پورت.
-
-#### Lab
-
-FSSO را با یک DC Lab تست کنید و جدول را بخوانید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| کاربر نمی‌آید | Event نمی‌رسد | دسترسی Log |
-| گروه ناقص | Filter | تصحیح |
-| TS | یک IP | TS Agent |
-
-#### پرسش‌ها با پاسخ
-
-**۱. FSSO چه حل می‌کند؟** Policy کاربری بی‌Login دوم.
-**۲. Group Filter؟** سبک‌سازی.
-**۳. TS Agent؟** چندکاربره.
-
-#### English Corner
-
-- *FSSO maps IP addresses to users from domain controller events.*
-- Q: Why does a terminal server need a dedicated agent?
 
 ## درس 17-5 — Captive Portal، مهمان و Firewall Authentication: طراحی ایمن Guest
 
@@ -3486,117 +3434,137 @@ FSSO را با یک DC Lab تست کنید و جدول را بخوانید.
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده»؛ وابستگی لایسنس هر قابلیت صریح ذکر شده است.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Captive Portal و Firewall Authentication (Policy-level) را مقایسه کند.
-2. شبکه‌ی Guest ایزوله با حساب موقت طراحی کند.
-3. HTTPS Redirect و گواهی Portal را درست بسازد.
-4. Timeout/Re-auth و محدودیت دسترسی را تنظیم کند.
+1. Firewall Authentication و Captive Portal را توضیح دهید.
+2. Portal را روی Policy/Interface فعال کنید.
+3. Guest Access (کاربر موقت، Voucher/Sponsor) را بشناسید.
+4. HTTPS Portal و گواهی را درست تنظیم کنید.
+5. Timeout و Session Authentication را مدیریت کنید.
+6. مشکلات رایج (Redirect HTTPS، گواهی، DNS) را رفع کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Captive Portal و Guest امن؟** مهمان باید اینترنت داشته باشد ولی نه شبکه‌ی داخلی. Portal هویت را (حتی ساده) ثبت می‌کند و با Policy ایزوله، انقضا و Client Isolation امن می‌شود.
+اگر کسی FSSO ندارد (مهمان، BYOD، دستگاه غیردامنه‌ای)، نمی‌توانید «ناشناس» را مجاز یا ممنوع کنید. Captive Portal مثل «میز پذیرش» است: قبل از ورود، شما را به صفحه‌ی ورود می‌برد و پس از احراز، IP شما با هویت نگاشت می‌شود. در هتل و فرودگاه همین است.
 
-**جمع‌بندی اصلی درس:** کاربر بدون هویت (مهمان/BYOD) نمی‌تواند با FSSO دیده شود. Captive Portal قبل از دسترسی صفحه‌ی ورود می‌دهد؛ هویت و Policy بر اساس ورود ساخته می‌شود.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) دو روش
-
-- **Captive Portal روی Interface/Zone:** همه‌ی ترافیک آن شبکه قبل از Login مسدود و به Portal هدایت می‌شود.
-- **Authentication در Policy:** فقط ترافیک آن Policy نیازمند Login است.
-
-#### ۲) طراحی Guest
-
-Zone/VLAN جدا (Guest) ← فقط اینترنت (HTTP/HTTPS/DNS) ← بدون دسترسی به داخل ← حساب موقت (زمان‌دار) یا Sponsor ← Log.
-
-#### ۳) HTTPS و گواهی
-
-Redirect HTTPS بدون گواهی معتبر هشدار می‌دهد؛ گواهی Portal معتبر یا CA داخلی. بدون آن کاربر عادت به «ادامه‌ی ناامن» می‌کند.
-
-#### ۴) Timeout
-
-Idle Timeout، Session Timeout و Re-auth؛ برای مهمان کوتاه.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Guest دسترسی | فقط اینترنت؛ Isolation داخلی |
-| حساب | موقت/Sponsor |
-| Timeout | کوتاه |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-Policy GUEST→INTERNET (HTTP/HTTPS/DNS، nat)؛ GUEST→INTERNAL deny.
-
-#### مثال متوسط — آزمون
-
-مهمان به 10.20.0.10 timeout؛ به اینترنت پس از Portal باز.
-
-#### مثال سخت — حقوقی
-
-مدت نگهداری Log و رضایت کاربر با بخش حقوقی.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده:** Guest به Portal هدایت می‌شود، با guest1 وارد و اینترنت دارد.
-
-**متوسط:** Portal باز نمی‌شود: allowaccess/Policy DNS؛ کاربر باید DNS را بتواند resolve کند.
-
-**سخت:** Login Loop: گواهی Portal نامعتبر و مرورگر Redirect را رد می‌کند؛ رفع: گواهی معتبر/CA؛ شواهد Capture و Log.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Network → Interfaces → VLAN Guest → Security Mode: Captive Portal.
-2. User & Authentication → User Definition → Local User موقت.
-3. Policy: Guest→WAN با Web Filter.
-4. Log & Report.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### سازوکار
 
 ``` text
-config system interface
-    edit "VLAN50"
-        set security-mode captive-portal
-        set security-groups "GRP-GUEST"
-    next
+1 User opens http://example.com
+2 FortiGate: no identity for 10.10.0.77 -> redirect to portal
+3 User enters credentials (LDAP/RADIUS/Local)
+4 Success -> IP mapped to user/group
+5 Policy by group applies until auth timeout
+```
+
+### فعال‌سازی
+
+``` text
+config user setting
+    set auth-timeout 30
+    set auth-type http https
+    set auth-cert "Fortinet_Factory"
 end
-config user local
-    edit "guest1"
-        set type password
-        set passwd <GUEST-PASSWORD>
+
+config firewall policy
+    edit 70
+        set name "GUEST-PORTAL"
+        set srcintf "ZN-GUEST"
+        set dstintf "port1"
+        set srcaddr "all"
+        set dstaddr "all"
+        set groups "UG-GUEST"
+        set service "HTTP" "HTTPS" "DNS"
+        set action accept
+        set schedule "always"
+        set nat enable
+        set logtraffic all
     next
 end
 ```
 
-### ۸) Verification (اثبات صحت)
+نکات:
 
-- Redirect، Login، دسترسی اینترنت، آزمون منفی: Guest→داخل Block.
+1. `auth-timeout` دقیقه‌ی بی‌فعالیتی.
+2. پورت Portal: HTTP 1000، HTTPS 1003 (پیش‌فرض).
+3. Policy احراز باید قبل از Policy عمومی بیاید.
+4. DNS و HTTPS Portal باید برای کاربر قابل‌دسترس باشند (Policy DNS مجاز قبل از احراز).
 
-### ۹) Troubleshooting
+### Guest
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+``` text
+config user local
+    edit "guest01"
+        set type password
+        set passwd <SECRET>
+        set status enable
+    next
+end
+```
+
+برای مهمان واقعی: حساب موقت با Expiration (GUI: User & Device > Guest Management با Sponsor/Voucher؛ Needs-License ممکن است برای بعضی امکانات).
+
+### گواهی HTTPS Portal
+
+با گواهی Factory هشدار مرورگر ظاهر می‌شود. استفاده از گواهی CA سازمان یا عمومی با نام DNS (مثل `portal.corp.example`) مناسب است.
+
+``` text
+config user setting
+    set auth-cert "Portal_Cert"
+    set auth-redirect-addr "portal.corp.example"
+end
+```
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Portal
+
+مهمان: باز کردن سایت HTTP ⇒ صفحه‌ی ورود ⇒ guest01 ⇒ اینترنت. `diagnose firewall auth list` ⇒ `10.10.0.77 guest01 UG-GUEST`.
+
+#### مثال متوسط — HTTPS Redirect
+
+کاربر `https://site`؛ فایروال نمی‌تواند Redirect بدهد بدون هشدار گواهی (TLS قبل از Portal). راه: Captive Portal Detection در OS؛ یا کاربران ابتدا HTTP/آدرس Portal؛ یا SSL Deep Inspection (با CA نصب). این خطای رایج «Portal نمی‌آید» است.
+
+#### مثال متوسط — Timeout
+
+`auth-timeout 30`: پس از ۳۰ دقیقه بی‌فعالیتی دوباره ورود. برای مهمان کوتاه، برای کارمند طولانی‌تر یا FSSO.
+
+#### مثال سخت — ترتیب Policy
+
+Policy عمومی `all` بالاتر از Portal؛ ترافیک مهمان بدون احراز عبور می‌کند. رفع: ترتیب و Policy عمومی دقیق‌تر. آزمون: Lookup بدون کاربر.
+
+#### مثال سخت — DNS
+
+کاربر Portal را نمی‌بیند چون DNS (UDP 53) قبل از احراز بسته است. رفع: Policy DNS بدون گروه در بالا.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Policy و Portal.
+2. Guest و ورود.
+3. `auth list`.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Portal باز نمی‌شود | Capture | DNS/Policy/گواهی |
-| Loop | مرورگر | گواهی |
-| Guest به داخل | nmap | Policy گسترده |
+| Portal نمی‌آید | HTTPS/DNS | HTTP/DNS Policy |
+| هشدار گواهی | Factory Cert | گواهی سازمان |
+| بدون احراز عبور | ترتیب | Policy |
+| دوباره ورود | timeout | تنظیم |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- حساب مهمان زمان‌دار؛ بدون دسترسی داخلی؛ Log.
+حساب Guest با انقضا؛ Guest در Zone جدا با Policy محدود؛ Log ورود؛ Rate Limit؛ HTTPS Portal.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- Portal برای IP بدون هویت.
-- Isolation Guest.
-- گواهی معتبر.
+Captive Portal برای کاربران بدون SSO؛ Policy احراز، DNS قبل از احراز، گواهی مناسب، Timeout؛ Guest جدا و محدود.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Captive Portal چیست؟ *(پاسخ: 17-5-ت1)*
 
@@ -3610,7 +3578,7 @@ end
 
 **Q1.** Quick quiz (English): Why must a guest network be isolated from internal networks? *(پاسخ: 17-5-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3620,99 +3588,15 @@ end
 
 - *Keep guest accounts time-limited and isolated.* ← حساب‌های مهمان زمان‌دار و ایزوله باشند.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **Lab:** Captive Portal. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/captive.md`. **Rollback:** `set security-mode none`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet Docs: FortiOS 7.0 — Captive portal، Firewall authentication.
 
 <a id="l-17-6"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: طراحی Guest امن
-
-**اصول:** VLAN/Zone جدا، فقط اینترنت، بدون دسترسی داخلی، محدودیت پهنای باند، انقضای حساب.
-
-``` text
-Policy GUEST->INTERNET  svc HTTP,HTTPS,DNS  nat  utm  schedule always  captive-portal enable
-Policy GUEST->INTERNAL  deny log
-```
-
-**آزمون:** Guest به 10.20.0.10 ⇒ Timeout؛ به اینترنت ⇒ پس از Portal باز. **حریم/قانون:** ثبت Log هویت طبق قوانین محلی.
-
-**پرسش‌های مصاحبه**
-1. *چرا Portal HTTPS؟* حفاظت رمز.
-2. *Client Isolation؟* مهمان‌ها همدیگر را نبینند.
-3. *انقضا؟* حساب موقت خودکار.
-
-### تکمیل عمیق: Captive Portal و Guest امن
-
-#### چرا؟
-
-مهمان باید اینترنت داشته باشد ولی به شبکه‌ی داخلی دسترسی نه. Captive Portal هویت را (حتی ساده) ثبت می‌کند.
-
-#### طراحی
-
-``` text
-GUEST VLAN -> Policy GUEST->INTERNET (HTTP/HTTPS/DNS, nat, utm, captive-portal)
-GUEST -> INTERNAL : deny log
-Client isolation, bandwidth limit, account expiry
-```
-
-#### مثال ساده — Policy
-
-``` text
-config firewall policy
- edit 300
-  set name "GUEST-NET"
-  set srcintf "port-guest"
-  set dstintf "port1"
-  set srcaddr "all"
-  set dstaddr "all"
-  set service "HTTP" "HTTPS" "DNS"
-  set action accept
-  set nat enable
-  set groups "G-GUEST"
-  set logtraffic all
- next
-end
-```
-
-#### مثال متوسط — آزمون
-
-مهمان به 10.20.0.10 ⇒ Timeout؛ به اینترنت ⇒ پس از Portal باز.
-
-#### مثال سخت — حریم و قانون
-
-ثبت هویت و Log مطابق قانون محلی؛ مدت نگهداری، دسترسی و رضایت کاربر را با بخش حقوقی مشخص کنید.
-
-#### Lab
-
-Portal را در Lab با یک حساب مهمان موقت بسازید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Portal نمی‌آید | HTTPS Redirect | Policy |
-| دسترسی داخلی | Policy | Deny |
-| حساب منقضی نمی‌شود | تنظیم | expiry |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Client isolation؟** مهمان‌ها همدیگر را نبینند.
-**۲. چرا Log؟** ردیابی.
-**۳. چرا انقضا؟** حساب‌های موقت.
-
-#### English Corner
-
-- *Guest networks must be isolated from internal resources.*
-- Q: What controls would you apply to a guest portal?
 
 ## درس 17-6 — آزمون عملی هویت و عیب‌یابی Authentication: سه پرونده‌ی واقعی با شواهد، کلید و Rubric
 
@@ -3720,110 +3604,114 @@ Portal را در Lab با یک حساب مهمان موقت بسازید.
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده) و CSR1000v؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. سه سناریوی خرابی Auth (LDAP، FSSO، RADIUS+MFA) را با روش فرضیه‌محور تشخیص و رفع کند.
-2. برای هر لایه (شبکه، DNS/ساعت، TLS، Bind، Search، گروه، نگاشت، Policy) شاهد جمع کند.
-3. RCA و Evidence Index بنویسد.
-4. آزمون مثبت/منفی دسترسی هویتی را اجرا کند.
-5. Rubric خودارزیابی را با صداقت (اجرا نشده/Unverified) تکمیل کند.
+1. یک پرونده‌ی هویتی را با مسیر LDAP → Group → Policy → Log عیب‌یابی کنید.
+2. آزمون عملی (Gate) هویت را با Rubric بشناسید.
+3. Evidence هر گام را بخوانید (`fnbamd`، `authd`، `auth list`).
+4. خطاهای مفهومی (IP→User، Nested Group) را تفکیک کنید.
+5. RCA بنویسید.
+6. آزمون مثبت و منفی بزنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا آزمون عملی هویت؟** سه مشکل واقعی هویت را می‌سنجد: Auth موفق ولی Policy نه، RADIUS Reject، FSSO خالی.
+هویت چند حلقه دارد: AD، LDAP، گروه، FSSO/Portal، Policy. خرابی در هر حلقه علامت مشابه دارد («کاربر Deny می‌شود»). بدون روش، حدس می‌زنید. این درس یک زنجیره‌ی بررسی می‌دهد که حلقه‌ی معیوب را در چند دقیقه پیدا می‌کند.
 
-**جمع‌بندی اصلی درس:** هویت زنجیره‌ای از حلقه‌هاست: کاربر → فایروال → سرور Auth → Directory → گروه → نگاشت IP→User → Policy. خرابی هر حلقه علامت یکسان («لاگین نمی‌شود» یا «دسترسی ندارم») می‌دهد. این آزمون مهارت جداسازی حلقه‌ی خراب را می‌سنجد.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) روش
+### زنجیره‌ی بررسی
 
 ``` text
-symptom -> scope(one user / group / all) -> hypotheses by layer -> cheapest evidence -> test -> root cause -> fix -> verify positive+negative -> document
+1 AD   : user exists, enabled, in group?
+2 LDAP : test authserver ok?
+3 Group: remote DN matches?
+4 Map  : IP -> user known (fsso list / auth list)?
+5 Policy: lookup matches group policy?
+6 Log  : user/group in traffic log?
 ```
 
-نقشه‌ی لایه‌ها: شبکه (ping/Sniffer 389/636/1812/8000) → DNS/ساعت → TLS (گواهی LDAPS) → Bind (حساب سرویس) → Search (cnid/dn) → گروه (DN/Nested) → FSSO/نگاشت → Policy (Source/ترتیب).
-
-#### ۲) سناریوها
-
-**S1 — LDAP:** کاربران Login نمی‌شوند. `diagnose test authserver ldap ...` ⇒ bind error 49 یا Can't contact. علت‌ها (تزریق): DN حساب سرویس غلط / رمز منقضی / پورت 636 بسته.
-
-**S2 — FSSO:** فقط کاربران Mac دیده نمی‌شوند. `diagnose debug authd fsso list` بدون آن‌ها. علت: NTLM/نبود Kerberos یا Group Filter.
-
-**S3 — RADIUS+MFA:** VPN پس از رمز OTP می‌خواهد ولی Reject. علت: Shared Secret/Policy NPS/Timeout کوتاه.
-
-#### ۳) کلید پاسخ (خلاصه)
-
-| S | شواهد | علت | رفع | آزمون |
-|---|---|---|---|---|
-| S1 | authserver: bind failed؛ NPS/AD event | DN/رمز | DN دقیق از AD، رمز | authserver موفق + Login |
-| S2 | fsso list بدون Mac | NTLM/Group Filter | Collector/Captive یا Filter | کاربر در لیست + Policy |
-| S3 | NPS Event: policy not matched | گروه/Secret | Policy/Secret | OTP موفق، Reject برای گروه دیگر |
-
-#### ۴) Rubric (۱۰۰)
-
-رفع سه سناریو ۳۰؛ شواهد خام و لایه‌ای ۲۵؛ RCA ۲۰؛ آزمون مثبت/منفی ۱۵؛ صداقت ۱۰.
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-`auth list` گروه خالی ⇒ Group Match اشتباه.
-
-#### مثال متوسط
-
-NPS Reason 16 ⇒ Secret یکسان.
-
-#### مثال سخت
-
-FSSO Event نمی‌گیرد ⇒ مجوز خواندن Event Log DC. Rubric: تشخیص ۳۰، Evidence ۳۰، رفع ۲۰، آزمون منفی ۱۰، صداقت ۱۰.
-
-#### مثال‌های اصلی درس (مرور)
-
-**S1 (ساده):** bind error: DN حساب سرویس با `CN=Users` ولی کاربر در OU=ServiceAccounts؛ DN را از `Get-ADUser` بخوانید و اصلاح کنید؛ `authserver` ⇒ success.
-
-**S2 (متوسط):** Mac‌ها با NTLM به File Server وصل‌اند و Kerberos Ticket ندارند؛ Polling فقط Kerberos را می‌خواند. راه‌حل: Collector Agent/DC Agent یا Captive Portal برای Mac؛ آزمون: کاربر Mac در لیست.
-
-**S3 (سخت):** VPN: پس از OTP قطع؛ `Access-Reject`؛ NPS Event: «Network Policy not matched»؛ دلیل: گروه کاربر در شرط Policy نیست؛ رفع؛ آزمون منفی: کاربر خارج از گروه Reject؛ Timeout RADIUS 10 s برای OTP.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### دستورها
 
 ``` text
-diagnose test authserver ldap LDAP-AD <user> <password>
+diagnose test authserver ldap LDAP-CORP alice <password>
 diagnose debug authd fsso list
-diagnose test authserver radius RADIUS-NPS pap <user> <password>
+diagnose firewall auth list
 diagnose debug application fnbamd -1
 diagnose debug enable
-diagnose debug disable
-diagnose debug reset
+diagnose firewall iprope lookup 10.10.0.5 40000 198.51.100.8 443 tcp port2
 ```
 
-### ۸) Verification (اثبات صحت)
+### پرونده ۱ — alice Deny می‌شود
 
-- Evidence Index: برای هر سناریو شاهد قبل/بعد.
-- آزمون مثبت/منفی.
+1. AD: alice عضو GG-Internet-Users است (PowerShell).
+2. LDAP Test: موفق.
+3. `fsso list`: آدرس 10.10.0.5 نیست ⇒ نگاشت نشده.
+4. علت: Collector Event را نمی‌خواند (حساب سرویس بدون دسترسی).
+5. رفع: دسترسی؛ Logon دوباره؛ `list` الان alice.
+6. آزمون: Lookup ⇒ policy 60؛ Log user=alice.
 
-### ۹) Troubleshooting
+### پرونده ۲ — همه Deny
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+`server-status`: disconnected. پورت 8000 بسته بین Collector و FortiGate. رفع: Policy/Firewall ویندوز. تأیید: connected.
+
+### پرونده ۳ — گروه اشتباه
+
+alice احراز و نگاشت شد ولی Policy دیگری برنده می‌شود. `fsso list` گروه: `CORP/GG-OTHER`. alice در گروه اشتباه (AD). رفع AD. آزمون: Log group.
+
+### Rubric آزمون هویت
+
+| معیار | امتیاز |
+|---|---|
+| زنجیره‌ی بررسی | 25 |
+| Evidence | 25 |
+| رفع | 25 |
+| آزمون منفی | 15 |
+| RCA | 10 |
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — فقط یک کاربر
+
+فقط bob Deny؛ بقیه OK. مشکوک: عضویت گروه bob. AD: bob در `GG-Internet-Users` نیست؛ رفع و Logon مجدد.
+
+#### مثال متوسط — بعد از تغییر گروه
+
+عضویت در AD عوض شد ولی کاربر هنوز Deny. علت: Token/FSSO Cache. رفع: Logoff/Logon، `diagnose firewall auth clear` برای همان IP.
+
+#### مثال متوسط — IP→User
+
+کاربر دو IP (Wi-Fi/LAN) دارد؛ فقط یکی نگاشت. بررسی `fsso list`. رفع: Logon روی IP جدید یا Portal.
+
+#### مثال سخت — Nested و Cache
+
+گروه تودرتو ⇒ Policy کار نمی‌کند؛ کاربر جدید عضو شد ولی هنوز Deny (Cache). راه: گروه Flat و `clear`. تأیید.
+
+#### مثال سخت — دو علت
+
+FSSO قطع (8000) + گروه اشتباه. یکی‌یکی؛ هر رفع با آزمون. ثبت Evidence.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. سه خرابی بسازید.
+2. زنجیره را اجرا و ثبت کنید.
+3. RCA.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Auth شکست | fnbamd debug | لایه‌ی خراب را با جدول لایه‌ها بیابید |
-| Policy مطابق نمی‌شود | Debug Flow | گروه/نگاشت/ترتیب |
+| user ناشناس | FSSO | بررسی |
+| گروه اشتباه | AD | اصلاح |
+| بعد از تغییر هنوز Deny | Cache | clear |
+| Policy اشتباه | ترتیب | Lookup |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- Debug رمز را آشکار می‌کند؛ پاک‌سازی.
-- Evidence بدون Secret.
+زنجیره‌ی AD ⇒ LDAP ⇒ Group ⇒ Map ⇒ Policy ⇒ Log؛ Evidence هر حلقه؛ Cache و Nested دام‌اند؛ RCA.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- روش فرضیه‌محور و لایه‌ای.
-- شواهد خام.
-- RCA و آزمون مثبت/منفی.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) bind error 49 یعنی چه؟ *(پاسخ: 17-6-ت1)*
 
@@ -3839,7 +3727,7 @@ diagnose debug reset
 
 **Q1.** Quick quiz (English): Which approach finds the failing layer fastest in an authentication problem? *(پاسخ: 17-6-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3848,90 +3736,14 @@ diagnose debug reset
 
 - *Test authentication independently of policies first.* ← ابتدا Authentication را جدا از Policy تست کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** آزمون Auth. **Evidence:** `03-ops/rca-auth.md`.
 
-### ۱۵) منابع
+### منابع
 
 - درس‌های ۱۷-۰ تا ۱۷-۷
 - RFC 4511، RFC 2865
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: پرونده‌ی «کاربر LDAP وارد می‌شود ولی Policy مچ نمی‌شود»
-
-``` text
-diagnose test authserver ldap AD ali pass -> succeeded
-diagnose firewall auth list              -> user ali, group (empty)
-```
-
-علت: Group Matching غلط (Base DN گروه‌ها یا Group تو در تو). رفع: Group Object صحیح در `config user group` با `match` و Base DN درست؛ آزمون با کاربر دوم.
-
-**Rubric:** تشخیص ۳۰، Evidence ۳۰، رفع ۲۰، آزمون منفی ۱۰، صداقت ۱۰.
-
-**پرسش‌های مصاحبه**
-1. *چرا Auth موفق ولی Policy نه؟* Group Mapping.
-2. *firewall auth list؟* کاربران فعال.
-3. *Timeout Auth؟* `auth-timeout`.
-
-### تکمیل عمیق: آزمون عملی هویت — سه پرونده با Rubric
-
-#### چرا؟
-
-این آزمون سه مشکل واقعی هویت را می‌سنجد.
-
-#### پرونده ۱ — Auth موفق، Policy نه
-
-``` text
-diagnose test authserver ldap AD ali pass -> succeeded
-diagnose firewall auth list -> user ali, group (none)
-```
-
-علت: Group Match اشتباه ⇒ تصحیح `group-name` و آزمون.
-
-#### پرونده ۲ — RADIUS Reject
-
-NPS Event 6273 Reason 16 ⇒ Secret یا Credential؛ Secret یکسان.
-
-#### پرونده ۳ — FSSO خالی
-
-Collector Event نمی‌گیرد ⇒ مجوز خواندن Event Log DC؛ تصحیح.
-
-#### Rubric
-
-``` text
-Diagnosis 30 | Evidence 30 | Fix 20 | Negative test 10 | Honesty 10
-```
-
-#### مثال سخت — دو علت
-
-پس از رفع Secret، کاربر وصل شد ولی Policy نه: دو علت جدا، یکی‌یکی.
-
-#### Lab
-
-سه پرونده را ایجاد و رفع کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| چندعلتی | هم‌زمان | یکی‌یکی |
-| Evidence ناقص | ثبت | الگو |
-| Lockout | آزمون زیاد | حساب تست |
-
-#### پرسش‌ها با پاسخ
-
-**۱. firewall auth list؟** کاربران فعال.
-**۲. Reason 16؟** Credential/Secret.
-**۳. چرا حساب تست؟** جلوگیری از Lockout.
-
-#### English Corner
-
-- *Use a dedicated test account to avoid locking real users.*
-- Q: How do you confirm a user is mapped to the right group?
 
 ## درس 17-7 — عیب‌یابی Authentication بر اساس شواهد: از Bind تا Policy (LDAP، RADIUS، FSSO)
 
@@ -3939,146 +3751,109 @@ Diagnosis 30 | Evidence 30 | Fix 20 | Negative test 10 | Honesty 10
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. مسیر Authentication (کاربر → FortiGate → Auth Server → گروه → Policy) را مرحله‌به‌مرحله بکشد.
-2. با `diagnose test authserver` و Debug fnbamd علت شکست Bind/رمز/گروه را بیابد.
-3. خطاهای رایج LDAP (Bind DN، Base DN، Filter، LDAPS)، RADIUS (Shared Secret، NAS-IP) و FSSO را تشخیص دهد.
-4. نتیجه را با Event Log اثبات و رفع کند.
-5. گزارش RCA با شواهد بنویسد.
+1. عیب‌یابی Authentication را بر اساس «شواهد» (نه حدس) انجام دهید.
+2. خروجی `fnbamd`، `authd` و Log را بخوانید.
+3. خطاهای LDAP (Bind، DN، TLS)، RADIUS (Secret، Timeout) و FSSO را تفکیک کنید.
+4. جدول «علامت ⇒ علت ⇒ آزمون ⇒ رفع» بسازید.
+5. تفاوت Authentication و Authorization را بدانید.
+6. حساب Break-glass و قفل (Lockout) را مدیریت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا درخت تصمیم؟** عیب‌یابی هویت لایه‌لایه است: شبکه ← Bind ← کاربر ← گروه ← Policy ← MFA. هر شاخه یک شاهد.
+«کاربر نمی‌تواند وارد شود» یکی از شایع‌ترین تیکت‌هاست. بدون ابزار درست، مجبورید رمز را Reset کنید و امیدوار باشید. با شواهد، ظرف دو دقیقه می‌گویید «رمز درست ولی گروه ناقص» یا «RADIUS Secret اشتباه».
 
-**جمع‌بندی اصلی درس:** «کاربر وارد نمی‌شود» از مبهم‌ترین گزارش‌هاست. می‌تواند رمز اشتباه باشد، سرور احراز هویت در دسترس نباشد، کاربر عضو گروه نباشد، یا Policy گروه را نشناسد. اگر زنجیره را نشناسید، ساعت‌ها حدس می‌زنید؛ اگر بشناسید، در پنج دقیقه می‌دانید حلقه‌ی شکسته کجاست.
+### Authentication در برابر Authorization
 
-### ۳) توضیح عمیق فنی
-
-#### ۱) زنجیره‌ی Authentication
-
-``` text
-User -> FortiGate (portal / VPN / captive) -> Auth server (LDAP/RADIUS)
-   1 reachability (UDP/TCP 389/636/1812)
-   2 bind / shared secret
-   3 user lookup (Base DN, filter)
-   4 password check
-   5 group membership returned
-   6 firewall policy matches group
-```
-
-#### ۲) ابزار
-
-``` text
-diagnose test authserver ldap AD-LDAP user01 'Password'
-diagnose test authserver radius RAD01 pap user01 'Password'
-diagnose debug application fnbamd -1
-diagnose debug enable
-...
-diagnose debug disable
-diagnose debug reset
-diagnose debug authd fsso list
-```
-
-(`Unverified`؛ رمز واقعی در Lab؛ هرگز در گزارش ثبت نشود.)
-
-#### ۳) نگاشت علامت به علت
-
-| علامت / پیام | علت | رفع |
+| مفهوم | سؤال | مثال خطا |
 |---|---|---|
-| LDAP bind failed / invalid credentials | Bind DN یا رمز سرویس | حساب سرویس |
-| user not found | Base DN/Identifier/Filter | `cnid`, `dn` |
-| سرور unreachable | Route/Policy/Firewall سرور | UDP/TCP پورت |
-| RADIUS Access-Reject | Shared Secret یا کاربر | Secret/NPS |
-| لاگین ok ولی دسترسی نه | گروه به Policy وصل نیست | Group در Policy |
-| FSSO: کاربر دیده نمی‌شود | Collector Agent/Polling | `fsso list` |
+| Authentication | کیست؟ | رمز غلط، حساب قفل |
+| Authorization | چه اجازه‌ای؟ | گروه اشتباه، Policy |
+| Accounting | چه کرد؟ | Log |
 
-#### ۴) نمونه Debug
+### ابزار
 
 ``` text
-fnbamd: ldap_connect ... 10.20.0.2:636
-fnbamd: ldap_bind  result=49 (Invalid credentials)
-```
-
-کد 49 یعنی اعتبار Bind نادرست.
-
-#### ۵) روش
-
-ابتدا Reachability، سپس Bind سرویس، سپس کاربر، سپس گروه، سپس Policy. هر گام یک Evidence.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| LDAPS | TLS 636 |
-| حساب سرویس | Least privilege |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-`nc -zv 10.20.0.5 636` باز ⇒ گام بعد.
-
-#### مثال متوسط
-
-Log دو سمت: FortiGate `fnbamd` و AD Event 4625.
-
-#### مثال سخت — Lockout
-
-حساب سرویس قفل شد (Event 4740)؛ Unlock و رمز در Vault.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** `diagnose test authserver ldap AD-LDAP user01 ...` پاسخ موفق همراه گروه‌ها؛ یعنی سرور و Bind سالم است.
-
-**متوسط (گروه):** لاگین موفق ولی دسترسی ندارد. مراحل: ۱) تست authserver: گروه CN=VPN-FIN نیامد. ۲) کاربر عضو نیست. ۳) افزودن عضویت. ۴) تست دوباره ⇒ گروه؛ ۵) Policy hit. پاسخ: عضویت گروه.
-
-**سخت (چندعلتی):** پس از تغییر رمز حساب سرویس، همه‌ی کاربران رد می‌شوند. مراحل: ۱) Debug fnbamd: result=49. ۲) رمز Bind در FortiGate قدیمی. ۳) به‌روزرسانی. ۴) تست. RCA: رمز سرویس بدون CHG تغییر کرد؛ اقدام: Vault و Alert.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. User & Authentication → LDAP Servers → Test Connectivity / Test User Credentials.
-2. User Groups → Remote Groups.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-diagnose test authserver ldap AD-LDAP user01 Password
-diagnose debug application fnbamd -1
-diagnose debug enable
-diagnose debug disable
 diagnose debug reset
+diagnose debug application fnbamd -1
+diagnose debug application authd -1
+diagnose debug enable
+# reproduce login
+diagnose debug disable
 ```
 
-### ۸) Verification (اثبات صحت)
+### جدول علامت ⇒ علت
 
-- Bind OK.
-- گروه برگشت.
-- Policy hit.
+| پیام/علامت | علت | آزمون | رفع |
+|---|---|---|---|
+| `Can't contact LDAP server` | شبکه/پورت | telnet 636 | Policy/Firewall |
+| `Invalid credentials (49)` | رمز/DN Bind | LDAP test | حساب سرویس |
+| `certificate verify failed` | CA/نام | بررسی CA | Import |
+| RADIUS Timeout | Secret/IP/پورت | NPS Log 6274 | هماهنگ |
+| RADIUS Reject | Network Policy | NPS 6273 | شرط |
+| user ناشناس | FSSO | `fsso list` | Collector |
+| احراز OK ولی Deny | Authorization | `iprope lookup` | گروه/Policy |
+| حساب قفل | Lockout | AD | Unlock |
 
-### ۹) Troubleshooting
+### Lockout
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+اگر حساب سرویس LDAP با رمز اشتباه چندبار تلاش کند، AD آن را قفل می‌کند ⇒ همه‌ی احرازها شکست. راه: رمز درست، پایش Event 4740، «Password never expires» برای حساب سرویس (طبق سیاست)، و آستانه‌ی Lockout مناسب.
+
+### Break-glass
+
+یک ادمین محلی با رمز بسیار قوی (در گاوصندوق) که وابسته به LDAP/RADIUS نیست؛ استفاده‌ی آن Alert دارد.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — رمز غلط
+
+`authenticate 'alice' against 'LDAP-CORP' failed! (Invalid credentials)`. تست با رمز درست ⇒ OK. نتیجه: رمز کاربر.
+
+#### مثال متوسط — DN اشتباه
+
+Bind سرویس موفق ولی کاربر پیدا نمی‌شود: `dn` ریشه اشتباه (`DC=corp` به‌جای `DC=corp,DC=example`). رفع و آزمون.
+
+#### مثال متوسط — RADIUS
+
+NPS Event 6273 (Denied): «Authentication failed due to... no matching network policy». رفع: Network Policy گروه/Condition.
+
+#### مثال سخت — LDAPS و زمان
+
+LDAPS ناگهان شکست؛ علت: گواهی DC منقضی. علامت: `certificate has expired`. رفع: تمدید و پایش انقضا. درس: هشدار ۳۰ روز قبل.
+
+#### مثال سخت — قفل ادمین
+
+LDAP Down؛ ادمین‌ها نمی‌توانند وارد شوند. Break-glass نجات داد. ثبت و بازبینی: افزونگی LDAP (دو DC)، پایش.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. شش خطا را بسازید.
+2. جدول را پر کنید.
+3. Break-glass و Alert.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Invalid credentials | Bind | حساب |
-| user not found | Base DN | dn/cnid |
-| Reject | Secret | Shared secret |
+| همه نمی‌توانند | LDAP/RADIUS Down | افزونگی |
+| یک نفر | حساب | AD |
+| بعد از ارتقا | CA/TLS | بررسی |
+| ادمین قفل | وابسته به AD | Break-glass |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- LDAPS.
-- رمز در Vault.
-- Debug را خاموش کنید.
+MFA برای ادمین؛ Break-glass با Alert؛ Log احراز مرکزی؛ حساب سرویس حداقل و پایش.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- زنجیره‌ی ۶ گام.
-- Debug fnbamd.
-- Policy و گروه.
+شواهد (`fnbamd`، NPS، Log) به‌جای حدس؛ Authentication ≠ Authorization؛ Lockout و انقضای گواهی دام‌اند؛ Break-glass و افزونگی.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) کد 49 LDAP؟ *(پاسخ: 17-7-ت1)*
 
@@ -4094,7 +3869,7 @@ diagnose debug reset
 
 **Q1.** Quick quiz (English): What does LDAP result code 49 mean? *(پاسخ: 17-7-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -4103,90 +3878,13 @@ diagnose debug reset
 
 - *Test each hop of the authentication chain.* ← هر گام زنجیره‌ی Authentication را آزمون کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** عیب‌یابی Auth (اجرا نشده). **Evidence:** `03-ops/auth-rca.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Authentication; LDAP; RADIUS; FSSO
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: درخت تصمیم Authentication
-
-``` text
-User cannot login
- -> Server reachable? (ping/port 389|1812)   no -> network/firewall
- -> Bind ok? (diagnose test authserver)       no -> DN/secret/cert
- -> User found?                               no -> Base DN/filter
- -> Group matched? (firewall auth list)       no -> group mapping
- -> Policy hit? (iprope lookup/log)           no -> policy order
-```
-
-هر شاخه یک Evidence مشخص دارد؛ ثبت زمان و خروجی.
-
-**پرسش‌های مصاحبه**
-1. *اول چه؟* دسترسی شبکه به سرور.
-2. *چرا Log سرور مقابل؟* دلیل رد (NPS 6273، AD 4625).
-3. *Lockout؟* آزمون با حساب تست.
-
-### تکمیل عمیق: درخت تصمیم عیب‌یابی Authentication
-
-#### چرا؟
-
-عیب‌یابی هویت لایه‌لایه است؛ یک درخت تصمیم زمان را کم می‌کند.
-
-#### درخت
-
-``` text
-User cannot login
- 1 network to auth server? (ping, port 389/636/1812)    no -> network/firewall
- 2 bind/secret ok? (diagnose test authserver)           no -> DN/secret/cert
- 3 user found?                                          no -> Base DN / filter
- 4 group matched? (diagnose firewall auth list)         no -> group mapping
- 5 policy hit? (iprope lookup / log)                    no -> policy order
- 6 MFA ok?                                              no -> time / token
-```
-
-#### مثال ساده
-
-گام ۱: `nc -zv 10.20.0.5 636` ⇒ باز ⇒ گام ۲.
-
-#### مثال متوسط — خواندن Log دو سمت
-
-FortiGate: `diagnose debug application fnbamd -1`؛ سرور: AD Event 4625 (ورود ناموفق).
-
-#### مثال سخت — Lockout
-
-حساب سرویس به‌دلیل رمز اشتباه قفل شد؛ همه‌ی ورودی‌ها شکست. شاهد: Event 4740. رفع: Unlock، رمز صحیح، رمز در Vault.
-
-#### Lab
-
-درخت را روی ۳ خرابی تمرین کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| همه شکست | حساب سرویس | Unlock |
-| بعضی شکست | گروه | تصحیح |
-| MFA | ساعت | NTP |
-
-#### پرسش‌ها با پاسخ
-
-**۱. اولین گام؟** شبکه به سرور.
-**۲. 4740؟** قفل شدن حساب.
-**۳. fnbamd؟** Debug Authentication.
-
-#### English Corner
-
-- *Work through authentication problems from the network layer upward.*
-- Q: What does Windows event 4740 indicate?
-
-<a id="l-17-8"></a>
 
 ## درس 17-8 — روش‌های Firewall Authentication در FortiGate: Active، Passive، Local و Remote
 
