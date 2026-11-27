@@ -43,3 +43,40 @@
 ## ۴) نتیجه
 
 بیشتر دستورهای پرکاربرد وجود دارند و نام/ساختارشان درست است. تفاوت‌های مهم نسخه (7.4.1 برای IKE log filter و Failtime/Recoverytime SD-WAN، 7.6.3 برای SSL-VPN) در متن درس‌ها آمده است. **هیچ دستور هنوز «اجراشده با شاهد» نیست.**
+
+
+---
+
+# دور دوم: بررسی مفهومی با منابع رسمی Fortinet و Cisco (۲۰۲۶-۱۱-۲۷)
+
+هدف: درستی **مفاهیم و رفتارها** (نه منوی GUI و تفاوت‌های جزئی نسخه). هر مورد با مستند رسمی/پشتیبانی شده بررسی شد.
+
+## الف) موارد تأییدشده (بدون تغییر)
+
+| موضوع | نتیجه | مرجع |
+|---|---|---|
+| HSRP: Priority 100، Hello 3/Hold 10، MAC مجازی 0000.0c07.acXX، Preempt پیش‌فرض خاموش | تأیید | [Cisco HSRP](https://www.cisco.com/c/en/us/td/docs/switches/lan/c9000/lyr3-fwd/fhrp/fhrp-configuration-guide/hsrp.html) |
+| BGP: Keepalive 60، Hold 180، eBGP TTL=1، AD eBGP 20 / iBGP 200 | تأیید | [Cisco BGP](https://www.cisco.com/c/en/us/td/docs/switches/lan/c9000/lyr3-fwd/bgp/bgp-configuration-guide/routing-bgp.html) |
+| STP: Hello 2، Forward Delay 15، Max Age 20، Priority 32768 با مضرب 4096، Extended System ID | تأیید | [Cisco STP](https://www.cisco.com/c/en/us/td/docs/routers/ios/config/17-x/lan-wan/b-lan-wan/m_lsw-span-tree-prot.html) |
+| OSPF: Hello/Dead 10/40 (Broadcast/P2P) و 30/120 (NBMA)، Priority پیش‌فرض 1، DR غیر-Preemptive، Priority 0 = هرگز DR | تأیید | [Cisco OSPF](https://www.cisco.com/c/en/us/support/docs/ip/open-shortest-path-first-ospf/13689-17.html) |
+| Port Security: Max=1، Violation=shutdown، Sticky پیش‌فرض خاموش، `errdisable recovery cause psecure-violation` | تأیید | [Cisco Port Security](https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst9300/software/release/16-9/configuration_guide/sec/b_169_sec_9300_cg/b_169_sec_9300_cg_chapter_011011.html) |
+| EtherChannel: LACP active/passive، PAgP desirable/auto، `on` فقط با `on`، LACP و PAgP ناسازگارند | تأیید | [Cisco EtherChannel](https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst2960cx_3650cx/software/release/15-2_6_e/configuration_guide/b_1526e_consolidated_3560cx_2960cx_cg/configuring_etherchannels.pdf) |
+| FortiGate: DNAT قبل از Route و Policy؛ RPF؛ Policy Route اول؛ Route دو بار در عمر Session | تأیید | [Fortinet Routing concepts](https://docs.fortinet.com/document/fortigate/7.4.1/administration-guide/139692/routing-concepts) |
+| FGCP: `hb-interval` پیش‌فرض ۲ (×۱۰۰ms)؛ Session pickup TCP را همگام می‌کند و UDP/ICMP پیش‌فرض نه | تأیید | [Fortinet Session pickup](https://docs.fortinet.com/document/fortigate/8.0.2/administration-guide/955521/session-pickup) |
+
+## ب) اشتباهات پیدا شده و اصلاح‌شده در متن درس‌ها
+
+| # | درس | اشتباه قبلی | اصلاح (طبق مستند) | مرجع |
+|---|---|---|---|---|
+| 1 | ۱۰-۴ (PBR) | «بسته‌ی غیرمطابق با Route-map بدون Sequence پایانی Drop می‌شود» | بسته‌ی غیرمطابق **با جدول مسیریابی عادی ارسال می‌شود**؛ خطر واقعی Sequence بدون `match` با `set` است | [Cisco PBR](https://www.cisco.com/c/en/us/td/docs/dcn/nx-os/nexus9000/106x/configuration/unicast-routing-configuration/cisco-nexus-9000-series-nx-os-unicast-routing-configuration-guide/m_configuring_policy-based_routing_101x.pdf) |
+| 2 | ۱۳-۳ (VIP/Hairpin) | `nat-source-vip` به‌عنوان تنظیم Hairpin | `nat-source-vip` برای SNAT ترافیک خروجی سرور نگاشت‌شده با IP خارجی VIP است؛ Hairpin با Policy/`extintf` یا Split DNS حل می‌شود | [Fortinet Hairpin NAT](https://docs.fortinet.com/document/fortigate/8.0.2/administration-guide/736522/hairpin-nat) |
+| 3 | ۱۱-۵ و ۱۳-۴ (Timeout) | UDP=۶۰ ثانیه؛ Half-open=۶۰ ثانیه؛ ICMP=۱۰ | مقدار سراسری TCP=۳۶۰۰؛ UDP طبق مستند حدود ۱۸۰ و Service می‌تواند override کند؛ Half-open/ICMP عدد مستند قطعی نیافت (حذف عدد) | [Fortinet session-ttl](https://docs.fortinet.com/document/fortigate/7.6.4/cli-reference/325536976/config-system-session-ttl) |
+| 4 | ۱۴-۲ (Sniffer) | جدول Verbosity ناقص/نادقیق (3 = payload) | 1 هدر؛ 2 هدر+IP؛ 3 هدر+Ethernet؛ 4 هدر+Interface؛ 5 هدر+IP+Interface؛ 6 هدر+Ethernet+Interface | [Fortinet sniffer](https://docs.fortinet.com/document/fortigate/8.0.0/administration-guide/680228/performing-a-sniffer-trace-or-packet-capture) |
+| 5 | ۱۰-۳ (ECMP) | «پیش‌فرض `maximum-paths` در OSPF = ۴» | عدد ثابت در مستند رسمی نیست؛ بسته به پلتفرم/نسخه؛ با `show ip protocols` | [Cisco IOS Routing Command Reference](https://www.cisco.com/c/en/us/td/docs/ios/iproute_pi/command/reference/iri_book/iri_pi1.html) |
+| 6 | ۱۰-۳ (CEF) | `include-ports` بدون Source/Destination | `ip cef load-sharing algorithm include-ports source destination`؛ پیش‌فرض universal | [Cisco CEF load-balancing](https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/ipswitch_cef/configuration/15-mt/isw-cef-15-mt-book/isw-cef-load-balancing.html) |
+
+## ج) محدودیت این بررسی
+
+- این بررسی **نمونه‌ای** است: حدود ۳۰ ادعای پرخطر از ۲۱۳ درس بررسی شد؛ همه‌ی جمله‌های دوره به‌صورت خط‌به‌خط با منبع رسمی تطبیق داده نشده‌اند.
+- مفاهیم پایه‌ی رایج (OSI، Subnetting، IPv6، VLAN/Trunk، ACL، NAT، DNS/NTP، Syslog/SNMP، QoS) از دانش استاندارد آمده و در این دور جداگانه با مرجع رسمی چک نشده‌اند.
+- دورهای بعدی پیشنهادی: (۱) فصل ۲ تا ۴ Cisco، (۲) فصل ۵ تا ۱۰ مسیریابی، (۳) فصل ۱۱ تا ۱۵ مفاهیم فایروال و FortiGate، (۴) فصل ۱۶ تا ۲۲ (UTM، Auth، IPsec، SD-WAN، HA)، (۵) فصل ۲۳ تا ۳۲.

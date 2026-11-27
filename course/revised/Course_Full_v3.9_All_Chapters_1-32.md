@@ -1,6 +1,6 @@
 # دوره‌ی کامل Enterprise Network & Security — نسخه‌ی ترکیبی v3.9 (فصل ۱ تا ۳۲)
 
-> این فایل ترکیب ۱۱ فایل بخش است. وضعیت صادقانه و نقاط ضعف در `Final_Change_Report_v3.9.md`.
+> این فایل ترکیب ۱۱ فایل بخش است. وضعیت صادقانه و نقاط ضعف در `Final_Change_Report_v3.9.md` و بررسی منابع رسمی در `Docs_Verification_Report_v3.9.md`.
 
 
 
@@ -18369,7 +18369,7 @@ show ip route 10.1.1.0
 
 #### ۱) شرط
 
-مسیرها با **Metric و AD برابر** و حداکثر `maximum-paths` (OSPF پیش‌فرض 4، EIGRP 4).
+مسیرها با **Metric و AD برابر** و حداکثر `maximum-paths` (مقدار پیش‌فرض بسته به پلتفرم/نسخه‌ی IOS فرق دارد؛ با `show ip protocols` مقدار فعلی را ببینید).
 
 ``` text
 router ospf 1
@@ -18542,7 +18542,7 @@ interface GigabitEthernet0/1
 ```
 
 - `permit 10` با Match: ترافیک مالی.
-- `permit 20` بدون Match/Set: بقیه‌ی ترافیک عادی (بدون آن، ترافیک غیرمطابق **Drop** می‌شود در حالت deny/نبود sequence).
+- Sequence پایانی (مثلاً `permit 20`) بدون Match و Set اختیاری است و فقط خوانایی می‌دهد: طبق مستند Cisco بسته‌ای که با هیچ Sequence مطابق نشود (یا با `deny` مطابق شود) **Drop نمی‌شود**؛ از PBR خارج و با جدول مسیریابی عادی ارسال می‌شود. (نکته: Route-map بدون `match` روی همه‌ی بسته‌ها `set` را اعمال می‌کند؛ پس Sequence خالی با `set` خطرناک است.)
 - اگر Next-hop اول با Track پایین رفت، Next-hop دوم (192.0.2.5) استفاده می‌شود.
 
 #### ۳) next-hop در برابر default next-hop
@@ -18616,7 +18616,7 @@ show ip policy
 | Match صفر | ACL/Interface ورودی | ACL و ip policy روی Interface درست |
 | Failover ندارد | Track | verify-availability |
 | ترافیک گم | Next-hop مرده | ARP/Reachability |
-| ترافیک غیرمطابق قطع | permit 20 | sequence پایانی |
+| ترافیک غیرمطابق قطع | بررسی Set/Next-hop | Next-hop مرده یا Route-map بدون match؛ نه Drop به‌دلیل نبود sequence |
 
 ### ۱۰) نکات امنیتی
 
@@ -18628,7 +18628,7 @@ show ip policy
 - PBR قبل از RIB.
 - Interface ورودی.
 - Track و Failover.
-- permit پایانی.
+- بسته‌ی غیرمطابق با جدول مسیریابی عادی می‌رود.
 
 ### ۱۲) تمرین و ارزیابی
 
@@ -18638,7 +18638,7 @@ show ip policy
 
 **ت3.** (متوسط) تفاوت next-hop و default next-hop؟ *(پاسخ: 10-4-ت3)*
 
-**ت4.** (متوسط) چرا `permit 20` پایانی لازم است؟ *(پاسخ: 10-4-ت4)*
+**ت4.** (متوسط) بسته‌ای که با هیچ Sequence از Route-map PBR مطابقت نکند چه می‌شود؟ *(پاسخ: 10-4-ت4)*
 
 **ت5.** (سخت) Failover PBR را طراحی کنید. *(پاسخ: 10-4-ت5)*
 
@@ -19330,7 +19330,7 @@ CEF و Forwarding (۵-۰)، Redistribution و AD/Metric (۵-۱، ۱۰-۱)، Asym
 #### ۴-۱) شرط تشکیل ECMP
 
 - Prefix یکسان و **Metric (و AD) برابر**.
-- حداکثر تعداد مسیر موازی محدود است (IOS: پیش‌فرض 4، قابل‌تنظیم با `maximum-paths`؛ `Unverified` برای Image).
+- حداکثر تعداد مسیر موازی محدود است (IOS: حد پیش‌فرض بسته به پلتفرم/نسخه است و با `maximum-paths` تنظیم می‌شود؛ مقدار فعلی را با `show ip protocols` ببینید).
 - BGP برای ECMP علاوه بر برابری Attributeها نیاز به `maximum-paths` دارد (و ملاحظات AS_PATH).
 - Static Route: دو Route با همان Prefix و AD برابر ← ECMP.
 
@@ -19520,7 +19520,7 @@ AD مسیر خارجی OSPF برابر ۱۱۰ و EIGRP External برابر ۱۷�
 
 **10-3-ت1** — Metric و AD برابر.
 
-شرط ECMP: چند مسیر با Metric و AD برابر به همان Prefix، و تعداد مسیرها ≤ `maximum-paths` (OSPF پیش‌فرض ۴). اگر Cost حتی یک واحد فرق کند ECMP نمی‌شود؛ برای تنظیم Cost یکسان `ip ospf cost` به‌کار می‌رود.
+شرط ECMP: چند مسیر با Metric و AD برابر به همان Prefix، و تعداد مسیرها ≤ `maximum-paths` (مقدار پیش‌فرض بسته به پلتفرم/نسخه فرق دارد). اگر Cost حتی یک واحد فرق کند ECMP نمی‌شود؛ برای تنظیم Cost یکسان `ip ospf cost` به‌کار می‌رود.
 
 **10-3-ت2** — هر جریان همیشه از یک مسیر.
 
@@ -19530,13 +19530,13 @@ Per-flow یعنی هر جریان (مثلاً یک اتصال TCP) با Hash ر�
 
 Per-packet بسته‌ها را بین مسیرها می‌چرخاند و چون تأخیر مسیرها متفاوت است، بسته‌ها نامرتب می‌رسند؛ TCP آن را Loss فرض می‌کند و سرعت را پایین می‌آورد و فایروال Stateful ممکن است Session را بشکند. پس برای TCP بد است.
 
-**10-3-ت4** — ۴.
+**10-3-ت4** — بسته به پلتفرم/نسخه؛ در بسیاری از Imageها ۴.
 
-مقدار پیش‌فرض `maximum-paths` در OSPF برابر ۴ مسیر است (قابل افزایش تا حد پلتفرم). اگر ۶ مسیر برابر داشته باشید فقط ۴ تا در RIB می‌آید.
+مقدار پیش‌فرض `maximum-paths` در OSPF به پلتفرم و نسخه‌ی IOS بستگی دارد (در مستند Cisco عدد ثابتی داده نشده؛ در بسیاری از Imageها ۴ است و حداکثر مجاز بسته به پلتفرم می‌تواند ۸ یا ۱۶ باشد). با `show ip protocols` خط «Maximum path» را ببینید. اگر تعداد مسیرهای برابر از این حد بیشتر باشد فقط به همان تعداد در RIB می‌آید.
 
 **10-3-ت5** — الگوریتم Hash با پورت؛ آزمون با چند جریان.
 
-توزیع ۹۰/۱۰ معمولاً نشانه‌ی Hash ناهموار (چند جریان بزرگ با Src/Dst ثابت) است. راه: الگوریتم Hash که پورت را هم لحاظ کند (`ip cef load-sharing algorithm include-ports`)، و آزمون با iperf چند جریان.
+توزیع ۹۰/۱۰ معمولاً نشانه‌ی Hash ناهموار (چند جریان بزرگ با Src/Dst ثابت) است. راه: الگوریتم Hash که پورت را هم لحاظ کند (`ip cef load-sharing algorithm include-ports source destination`؛ پیش‌فرض الگوریتم universal است)، و آزمون با iperf چند جریان.
 
 **10-3-ت6** — Symmetric hash/Active-Standby.
 
@@ -19562,9 +19562,9 @@ PBR روی Interface ورودی ترافیک (`ip policy route-map`) اعمال 
 
 `set ip next-hop` حتی اگر مسیر مشخص در RIB باشد، Next-hop تعیین‌شده را ترجیح می‌دهد؛ `set ip default next-hop` فقط وقتی استفاده می‌شود که RIB مسیر مشخصی (غیر از Default) نداشته باشد.
 
-**10-4-ت4** — تا ترافیک غیرمطابق با مسیریابی عادی برود و Drop نشود.
+**10-4-ت4** — با جدول مسیریابی عادی ارسال می‌شود (Drop نمی‌شود).
 
-Sequence پایانی بدون Match و Set یعنی «مابقی ترافیک عادی». بدون آن، ترافیک غیرمطابق با Route-map (که deny ضمنی دارد) از PBR خارج و عادی مسیریابی می‌شود یا (بسته به پیاده‌سازی) Drop می‌شود؛ برای اطمینان همیشه یک `permit` پایانی بگذارید.
+طبق مستند Cisco، بسته‌ای که با هیچ Sequence از Route-map مطابقت نکند یا با `deny` مطابق شود، از PBR خارج شده و با جدول مسیریابی عادی ارسال می‌شود (برخلاف تصور رایج «deny ضمنی = Drop»). پس Sequence پایانی خالی لازم نیست؛ خطر واقعی Sequence بدون `match` با `set` است که همه‌ی بسته‌ها را به همان Next-hop می‌برد.
 
 **10-4-ت5** — IP SLA+Track، verify-availability، Next-hop دوم، آزمون قطع لینک.
 
@@ -20610,11 +20610,11 @@ end
 | پروتکل | Timeout تقریبی |
 |---|---|
 | TCP Established | ۳۶۰۰ ثانیه |
-| TCP Half-open (SYN) | ۶۰ ثانیه |
-| UDP | ۶۰ ثانیه (DNS کمتر) |
-| ICMP | ۱۰ ثانیه |
+| TCP Half-open (SYN) | کوتاه (در حد ثانیه‌ها تا چند ده ثانیه؛ عدد دقیق را از مستند نسخه بخوانید) |
+| UDP | چند ده ثانیه تا حدود ۱۸۰ ثانیه (بسته به نسخه و Service) |
+| ICMP | کوتاه |
 
-مقادیر پیش‌فرض بسته به نسخه فرق دارند؛ با `get system session-ttl` ببینید. Session بیکار حذف می‌شود؛ سرویس‌های طولانی (SSH، DB) Keepalive یا Timeout بیشتر می‌خواهند.
+فقط عدد TCP Established و مفهوم «Timeout سراسری و Timeout هر Service» مرجع است: طبق مستند Fortinet مقدار سراسری پیش‌فرض ۳۶۰۰ ثانیه است، Timeout هر پورت/Service آن را بازنویسی می‌کند و برای UDP مقدار `udp-idle-timer` در تعریف Service مقدار سراسری را override می‌کند. مقادیر دقیق بسته به نسخه فرق دارند؛ با `get system session-ttl` و `show full-configuration` ببینید. Session بیکار حذف می‌شود؛ سرویس‌های طولانی (SSH، DB) Keepalive یا Timeout بیشتر می‌خواهند.
 
 #### ۲) MTU و MSS
 
@@ -24140,7 +24140,9 @@ IP عمومی باید به FortiGate برسد: IP روی Interface WAN یا Rou
 | روش | توضیح |
 |---|---|
 | Split DNS | DNS داخلی نام را به IP داخلی می‌دهد (توصیه) |
-| SNAT برای Hairpin | `set nat-source-vip enable` یا Policy با NAT |
+| Policy مخصوص Hairpin | VIP با `extintf any` یا Policy با Incoming Interface = Interface داخلی و Destination = VIP (بدون NAT طبق مستند قدیمی؛ نسخه‌ها فرق دارند) |
+
+نکته: `set nat-source-vip enable` تنظیم Hairpin نیست؛ طبق مستند Fortinet باعث می‌شود ترافیک خروجی سرور نگاشت‌شده با IP خارجی VIP ترجمه (SNAT) شود.
 
 #### ۵) آزمون
 
@@ -24313,7 +24315,7 @@ diagnose sys session filter clear
 |---|---|
 | TCP Established | 3600 s |
 | TCP Half-open | ثانیه‌ها |
-| UDP | 60 s |
+| UDP | چند ده ثانیه تا حدود ۱۸۰ ثانیه (بسته به نسخه/Service) |
 | ICMP | ثانیه‌ها |
 
 ``` text
@@ -25351,10 +25353,12 @@ diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 20 l
 
 | Verbosity | محتوا |
 |---|---|
-| 1 | هدر کوتاه |
-| 3 | هدر + payload (hex) |
+| 1 | فقط هدر بسته |
+| 2 | هدر + داده‌ی IP |
+| 3 | هدر + داده‌ی Ethernet (در صورت وجود) |
 | 4 | هدر + نام Interface |
-| 6 | هدر + payload + Ethernet (برای تبدیل به pcap) |
+| 5 | هدر + داده‌ی IP + نام Interface |
+| 6 | هدر + داده‌ی Ethernet + نام Interface (مناسب برای تبدیل به pcap و دیدن MAC) |
 
 `any` همه‌ی Interfaceها؛ `l` زمان محلی؛ `0` count یعنی بی‌پایان (خطرناک).
 
@@ -37425,7 +37429,7 @@ Out-of-sync یعنی Config اعضا یکی نیست و checksum متفاوت ا
 
 **22-2-ت5** — نسخه، Group، Password، لایسنس، HB.
 
-عضو دوم Join نمی‌شود: نسخه، Group name، Password، لایسنس و Heartbeat را بررسی کنید.
+عضو دوم Join نمی‌شود — روش بررسی: ۱) `get system status` روی هر دو: نسخه/Build و Serial. ۲) `get system ha status` روی Primary: آیا عضو دوم دیده می‌شود؟ ۳) Group name و Password یکسان؟ ۴) Heartbeat: کابل، `hbdev` و VLAN. ۵) لایسنس هر دو. رفع معمول: هم‌نسخه‌سازی یا Group/Password یکسان؛ پس از Join checksum را مقایسه کنید.
 
 **22-2-ت6** — جدول بالا.
 
@@ -37456,7 +37460,7 @@ Failback کنترل‌شده از Flap و قطع‌های پیاپی جلوگی�
 
 **22-3-ت5** — Monitor/HB timers.
 
-Failover کند: Monitor، Heartbeat timers و Link Failed Threshold را بررسی کنید.
+Failover کند (مثلاً ۱۲ ثانیه): ۱) `diagnose sys ha history read` علت و زمان را نشان می‌دهد. ۲) Monitor Interface: آیا خرابی لینک سریع دیده شد؟ ۳) Heartbeat interval و lost-threshold (پیش‌فرض‌ها را از مستند بخوانید؛ `Unverified`). ۴) کاهش محتاطانه و آزمون ۱۰ بار قطع/وصل. ریسک: Timer خیلی کم Flap می‌دهد؛ معیار: Failover < ۵ ثانیه بدون Flap.
 
 **22-3-ت6** — ۵ آزمون.
 
@@ -37487,7 +37491,7 @@ Out-of-sync معمولاً از تغییر مستقیم روی Secondary یا ض
 
 **22-4-ت5** — HB، Reboot، Re-sync.
 
-Split-brain رفع: HB را وصل، یک عضو را Reboot، Primary را تعیین و Re-sync کنید.
+Split-brain رفع: ۱) تأیید: روی هر دو `get system ha status` Primary. ۲) Heartbeat را وصل کنید (دو لینک). ۳) عضوی را که نباید Primary باشد Reboot کنید. ۴) پس از Join `diagnose sys ha checksum cluster` را بررسی و در صورت نیاز Sync. ۵) Alert روی تغییر Primary. ۶) در RCA: چرا هر دو HB قطع شدند (سوییچ مشترک؟).
 
 **22-4-ت6** — Partition قبلی.
 
@@ -39269,7 +39273,7 @@ WEB→DB در Log مسیر ممنوع طراحی بود و باید بررسی/�
 
 **24-1-ت5** — Log طولانی‌تر و مالک.
 
-Backup شبانه قطع شد: Log طولانی‌تر (۳۰ روز) و مشورت مالک برای مسیرهای کم‌تکرار.
+Backup شبانه قطع شد — تحلیل: Log deny: BACKUP→DB 445 ساعت 02:00. در Discovery ۱۴ روزه دیده نشده چون Backup هفتگی بود. رفع: Policy مجزا برای BACKUP→DB با Service 445 و Schedule شبانه؛ آموزه: Log ≥ ۳۰ روز و مشورت مالک برای کارهای کم‌تکرار؛ پیش از Deny نهایی دوره‌ی Monitor.
 
 **24-1-ت6** — جدول.
 
@@ -39331,7 +39335,7 @@ Management VDOM VDOM سرویس‌های سیستمی (DNS، FortiGuard) است�
 
 **24-3-ت5** — IP، Route، Policy دو جهت.
 
-ping بین VDOM ندارد: IP دو سر vlk، Route هر VDOM و Policy دو جهت را بررسی کنید.
+ping بین VDOM ندارد — بررسی به ترتیب: ۱) IP روی دو سر vlk (vlk0 در DMZ و vlk1 در INT) و Subnet یکسان. ۲) Route در هر VDOM به Subnet VDOM دیگر از طریق vlk. ۳) Policy دو جهت. ۴) `diagnose debug flow` داخل هر VDOM (`config vdom / edit X`). ۵) آزمون ping. علت رایج: Policy فقط یک‌طرفه.
 
 **24-3-ت6** — DMZ/INT.
 
@@ -42545,7 +42549,7 @@ allowaccess snmp برای پاسخ SNMP لازم است.
 
 **27-5-ت5** — Backup، خراب، Restore، مقایسه.
 
-Restore آزمایشی: Backup، خرابی عمدی، Restore و مقایسه.
+Restore آزمایشی در Lab: ۱) Backup بگیرید و Hash ثبت کنید. ۲) Config را عمداً خراب کنید (مثلاً Policy حذف). ۳) Restore. ۴) پس از Boot: تعداد Policy/Route/Interface و Hash/Diff با نسخه‌ی اصلی. ۵) زمان Restore را ثبت کنید (RTO). ریسک: Backup حاوی رمز؛ رمزگذاری و محدودیت دسترسی.
 
 **27-5-ت6** — ۷ مورد.
 
@@ -43642,7 +43646,7 @@ BDP = 100 Mbit/s x 0.08 s = 8 Mbit = 1 MB
 
 **28-2-ت6** — سؤال، نقطه، Filter، الگوها، محاسبات، علت، رفع، تأیید.
 
-گزارش تحلیل PCAP: سؤال، نقطه‌ی Capture، Filter، الگوها، محاسبات، علت، رفع و تأیید.
+گزارش تحلیل PCAP باید این بخش‌ها را داشته باشد: سؤال (چه مشکلی؟)، نقطه‌ی Capture، Filter، الگوهای دیده‌شده با شماره‌ی بسته، محاسبات (مثلاً RTT، BDP)، علت، رفع و تأیید. هر ادعا یک شماره‌ی بسته به‌عنوان Evidence دارد.
 
 **28-2-Q1** — Throughput is limited to the window size divided by the round-trip time.
 
@@ -43688,7 +43692,7 @@ Debug بار CPU و Log زیاد و ریسک اطلاعات حساس دارد.
 
 **28-4-ت5** — شواهد مستقل برای هر علت، رفع یکی و اندازه‌گیری، سپس دیگری.
 
-چندعلتی: شواهد مستقل برای هر علت؛ رفع یکی و اندازه‌گیری؛ سپس دیگری.
+چندعلتی در PCAP: برای هر علت شاهد مستقل پیدا کنید (مثلاً Retransmission برای Loss و RST برای Policy)، یکی را رفع و اثرش را اندازه بگیرید، سپس دومی؛ اگر هر دو را هم‌زمان رفع کنید نمی‌دانید کدام اثر داشت.
 
 **28-4-ت6** — قالب یکسان، دسته‌بندی، جستجو، نسخه‌دار، بازبینی فصلی، پیوند به Runbook.
 
@@ -44464,7 +44468,7 @@ Baseline تا انحراف از رفتار عادی تشخیص داده شود �
 
 **29-1-ت6** — جدول بالا بسط داده شود.
 
-چک‌لیست تشخیص: منبع Log، قانون، آستانه، مالک و اقدام.
+چک‌لیست تشخیص: منبع Log (Traffic/Event/UTM)، قانون (مثلاً ۱۰ ورود ناموفق در ۵ دقیقه)، آستانه، مالک، اقدام اول و تاریخ بازبینی. هر قانون با آزمون (تولید رویداد تست) تأیید شود.
 
 **29-1-Q1** — Because attackers can change IPs and hashes easily but their behaviors change much less.
 
@@ -44506,7 +44510,7 @@ Exposure window فاصله‌ی انتشار Advisory تا اعمال Patch اس
 
 **29-3-ت6** — Coverage، Time-to-patch، تعداد EoL، Exception فعال، Trend.
 
-شاخص‌ها: Coverage، Time-to-patch، تعداد EoL، Exception فعال و Trend.
+شاخص‌های مدیریت آسیب‌پذیری: Coverage (درصد دارایی‌های پایش‌شده)، Time-to-patch (میانه‌ی روز)، تعداد EoL، Exception فعال با تاریخ پایان و روند ماهانه. هدف: روند رو به بهبود و Exceptionهای محدود.
 
 **29-3-Q1** — Internet exposure, available exploits and high asset criticality.
 
@@ -45301,7 +45305,7 @@ Policy با IP داخلی (post-DNAT) چون DNAT قبل از Policy انجام 
 
 **30-1-ت6** — ستون‌ها: مبدأ، مقصد، Policy، NAT، Gap، Test؛ ۱۰ سطر.
 
-جدول نگاشت: مبدأ، مقصد، Policy، NAT، Gap و Test؛ ۱۰ سطر نمونه.
+جدول نگاشت Migration: ستون‌ها مبدأ، مقصد، Policy قدیمی، Policy جدید، NAT، Gap، آزمون؛ حداقل ۱۰ سطر نمونه (Users→Internet، VIP وب، IPsec، ...). هر Gap (ویژگی بی‌معادل) با تصمیم و مالک ثبت شود.
 
 **30-1-Q1** — Because the two platforms process traffic differently, so identical text can behave differently.
 
@@ -45328,7 +45332,7 @@ Post-check: Test Matrix، Log/Session، Monitoring و آزمون مثبت/منف
 
 **30-2-ت6** — طبق قالب؛ با زمان‌بندی و مسئولان.
 
-Plan T-7d تا T+1d با زمان‌بندی و مسئول.
+Plan: T-7d Inventory و Baseline؛ T-3d آزمون Lab و Rollback؛ T-1d اطلاع‌رسانی؛ T0 Cutover با Checkpoint؛ T+1d بازبینی. هر ردیف مسئول و زمان دارد.
 
 **30-2-Q1** — So the decision is made objectively before pressure and emotions affect judgment.
 
@@ -46589,7 +46593,7 @@ ADR ثبت تصمیم معماری با زمینه، گزینه‌ها، تصم�
 
 **31-1-ت6** — ساختار بالا با محتوای هر بخش.
 
-ساختار سند طراحی: نیازمندی، HLD، LLD، آزمون، ریسک.
+سند طراحی: نیازمندی (R-xx با معیار)، HLD (نمودار و Zone)، LLD (آدرس، Interface، Route، Policy)، آزمون و ردیابی، ریسک و Gap، وضعیت (طراحی‌شده/اجرا نشده/اجراشده با شاهد).
 
 **31-1-Q1** — So that success is measurable and can be verified objectively later.
 
@@ -46645,7 +46649,7 @@ Rollback ≤ ۱۵ دقیقه و باید زمان‌سنجی شود.
 
 **31-3-ت6** — جدول بالا با مسئول و زمان.
 
-برنامه‌ی Build با مسئول و زمان.
+برنامه‌ی Build: ترتیب (Interface، Route، Policy، VPN، Logging)، مسئول، زمان و Checkpoint پس از هر مرحله با Evidence.
 
 **31-3-Q1** — So a failure can be attributed to the stage just built instead of an unknown layer.
 
@@ -47839,7 +47843,7 @@ Post-check Lookup=61: ترتیب Policy؛ Rollback و CHG جدید.
 
 **32-1-ت6** — قالب بالا.
 
-قالب CHG: عنوان، مالک، دلیل، ریسک، Window، Pre/Post-check، Rollback.
+قالب CHG: شناسه، عنوان، مالک/مجری/بازبین، دلیل، ریسک و اثر، Window، Pre-check، مراحل، Post-check، Rollback و تأیید. هر بخش یک ردیف.
 
 **32-1-Q1** — That the change works as intended and nothing else broke.
 
@@ -47870,7 +47874,7 @@ PIR: Summary، Impact، Timeline، Root cause، Actions.
 
 **32-2-ت6** — سناریو و نقش‌ها.
 
-Game Day: سناریو، نقش‌ها و Timeline.
+Game Day: سناریو (قطع ISP-A و کیفیت پایین ISP-B)، نقش‌ها (IC، Operator، Scribe، Communicator)، Timeline و معیار موفقیت (MTTD < ۵ دقیقه، MTTR < ۴۵ دقیقه) و PIR.
 
 **32-2-Q1** — To avoid confusion and ensure decisions, actions and records are handled.
 
@@ -47901,7 +47905,7 @@ IPsec بعد Upgrade down: Debug سریع؛ Rollback اگر در زمان.
 
 **32-3-ت6** — جدول.
 
-Plan T-7d تا T+1d: جدول زمان و کار.
+Plan: T-7d تا T+1d با Checkpoint C1 تا C5 و نقطه‌ی تصمیم Rollback (مثلاً ساعت ۲۲:۴۰). هر ردیف زمان، کار و معیار ادامه دارد.
 
 **32-3-Q1** — To avoid delaying the decision and extending the outage.
 
@@ -47932,7 +47936,7 @@ Portfolio Firewall Engineer: Capstone I، Runbook و برچسب صادقانه.
 
 **32-4-ت6** — Lab، شاهد، زمان.
 
-برنامه‌ی پر کردن شکاف: Lab، شاهد، زمان.
+برنامه‌ی پر کردن شکاف: مهارت، سطح فعلی، سطح هدف، Lab لازم، Evidence و تاریخ؛ مثلاً FortiGate Policy/NAT سطح ۲→۳ با ۱۰ Lab و Evidence Index تا پایان ماه ۳.
 
 **32-4-Q1** — It shows real skill level and guides focused improvement.
 
@@ -47963,7 +47967,7 @@ Automation امن: Read-only و Pilot.
 
 **32-5-ت6** — جدول.
 
-برنامه‌ی ۶ ماهه: ماه، هدف، Evidence.
+برنامه‌ی ۶ ماهه: ماه ۱ Lab فصل ۱ تا ۴؛ ماه ۲ OSPF/HSRP؛ ماه ۳ FortiGate Policy/NAT؛ ماه ۴ IPsec/SD-WAN؛ ماه ۵ Logging/Automation؛ ماه ۶ Capstone و Portfolio؛ هر ماه Evidence مشخص.
 
 **32-5-Q1** — To verify real progress rather than assumed progress.
 
@@ -47990,7 +47994,7 @@ MSS = PMTU − 40.
 
 **32-6-ت5** — سه مرحله با Rollback.
 
-CHG سه مرحله با Rollback.
+CHG سه‌مرحله‌ای: ۱) Health-check به 8.8.8.8 (Rollback: Config قبلی)، ۲) Policy VIP (Rollback: غیرفعال)، ۳) MSS-clamp (Rollback: حذف). Window شبانه، Post-check: Failover 4 s، وب 200 و دانلود VPN 100MB.
 
 **32-6-ت6** — ریشه، شاخص، اقدام.
 

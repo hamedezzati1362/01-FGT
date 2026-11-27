@@ -150,3 +150,8 @@ Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خ�
 - وضعیت جدید «تأیید مستندی» = در مستندات رسمی هست ولی اجرا نشده؛ هنوز هیچ دستور «اجراشده با شاهد» نیست.
 - اصلاحات: log-filter (تغییر نحو 7.4.1)، سطح Debug fnbamd (255)، `auto-asic-offload` (نیازمند تأیید)، HA failover (فقط آزمون).
 - Runbook Phase 0B اختیاری باقی ماند.
+
+## D-344 — بررسی مفهومی با منابع رسمی Fortinet/Cisco (۲۰۲۶-۱۱-۲۷)
+- درخواست کاربر: همه‌ی مطالب با منابع رسمی FortiGate و Cisco چک شوند؛ تفاوت منو/نسخه مهم نیست، مفهوم مهم است.
+- دور ۱ و ۲ انجام شد؛ ۶ اشتباه مفهومی اصلاح شد (PBR، Hairpin/nat-source-vip، Timeoutهای Session، Sniffer verbosity، maximum-paths، CEF include-ports). جزئیات در `Docs_Verification_Report_v3.9.md`.
+- بررسی نمونه‌ای است؛ دورهای بعدی فصل‌به‌فصل ادامه می‌یابد.

@@ -549,7 +549,9 @@ IP عمومی باید به FortiGate برسد: IP روی Interface WAN یا Rou
 | روش | توضیح |
 |---|---|
 | Split DNS | DNS داخلی نام را به IP داخلی می‌دهد (توصیه) |
-| SNAT برای Hairpin | `set nat-source-vip enable` یا Policy با NAT |
+| Policy مخصوص Hairpin | VIP با `extintf any` یا Policy با Incoming Interface = Interface داخلی و Destination = VIP (بدون NAT طبق مستند قدیمی؛ نسخه‌ها فرق دارند) |
+
+نکته: `set nat-source-vip enable` تنظیم Hairpin نیست؛ طبق مستند Fortinet باعث می‌شود ترافیک خروجی سرور نگاشت‌شده با IP خارجی VIP ترجمه (SNAT) شود.
 
 #### ۵) آزمون
 
@@ -722,7 +724,7 @@ diagnose sys session filter clear
 |---|---|
 | TCP Established | 3600 s |
 | TCP Half-open | ثانیه‌ها |
-| UDP | 60 s |
+| UDP | چند ده ثانیه تا حدود ۱۸۰ ثانیه (بسته به نسخه/Service) |
 | ICMP | ثانیه‌ها |
 
 ``` text
@@ -1760,10 +1762,12 @@ diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 20 l
 
 | Verbosity | محتوا |
 |---|---|
-| 1 | هدر کوتاه |
-| 3 | هدر + payload (hex) |
+| 1 | فقط هدر بسته |
+| 2 | هدر + داده‌ی IP |
+| 3 | هدر + داده‌ی Ethernet (در صورت وجود) |
 | 4 | هدر + نام Interface |
-| 6 | هدر + payload + Ethernet (برای تبدیل به pcap) |
+| 5 | هدر + داده‌ی IP + نام Interface |
+| 6 | هدر + داده‌ی Ethernet + نام Interface (مناسب برای تبدیل به pcap و دیدن MAC) |
 
 `any` همه‌ی Interfaceها؛ `l` زمان محلی؛ `0` count یعنی بی‌پایان (خطرناک).
 
