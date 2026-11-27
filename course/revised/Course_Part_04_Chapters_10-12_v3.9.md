@@ -4393,6 +4393,56 @@ show system global | grep hostname
 
 <a id="l-12-2"></a>
 
+### تعمیق: برگه‌ی اولین بوت با خروجی نمونه و تصمیم‌ها
+
+**سناریو.** FortiGate جدید برای شعبه رسیده؛ باید قبل از هر Policy «شناسنامه»اش را ثبت کنید.
+
+**گام ۱ — خروجی‌های حیاتی.**
+
+``` text
+FGT-BR1 # get system status
+Version: FortiGate-60F v7.0.3,build...
+Serial-Number: FGT60FTK...
+Operation Mode: NAT
+Current virtual domain: root
+Virtual domain configuration: disable
+License Status: Valid
+Hostname: FGT-BR1
+```
+
+تفسیر: نسخه با نسخه‌ی هدف دوره مقایسه می‌شود؛ Virtual domain disable یعنی تک‌VDOM؛ License Valid یعنی FortiCare/FortiGuard فعال است (برای UTM لازم).
+
+**گام ۲ — تنظیمات پایه (ترتیب).**
+
+``` text
+config system global
+ set hostname FGT-BR1
+ set timezone 26
+end
+config system ntp
+ set ntpsync enable
+ set type fortiguard
+end
+config system dns
+ set primary 1.1.1.1
+ set secondary 8.8.8.8
+end
+```
+
+**گام ۳ — ثبت Inventory.** جدول: Hostname، Serial، Version، License تا تاریخ، IP مدیریت، مالک، تاریخ بوت. و Backup اولیه: `execute backup config tftp ...`.
+
+**گام ۴ — اختلاف نسخه.** اگر Image شما 7.2.x است، پیش از استفاده از درس‌ها Release Notes را برای تغییر رفتار (SD-WAN، SSL-VPN، لاگ) بخوانید؛ هر دستور مشکوک را در Evidence با «نسخه‌ی واقعی» ثبت کنید.
+
+**اشتباهات رایج**
+- فراموشی NTP: Logها، گواهی و Kerberos/VPN آسیب می‌بینند.
+- رمز پیش‌فرض و Admin پیش‌فرض.
+- نداشتن Backup پیش از تغییر.
+
+**پرسش‌های مصاحبه**
+1. *اولین کار روی دستگاه جدید؟* تأیید نسخه/لایسنس/سریال و Backup.
+2. *Operation Mode NAT در برابر Transparent؟* NAT مسیریابی L3 می‌کند؛ Transparent مثل Bridge.
+3. *VDOM چیست و کی فعال می‌شود؟* جداسازی مجازی؛ فقط در صورت نیاز و لایسنس.
+
 ## درس 12-2 — Interface، VLAN، Role، Administrative Access و سخت‌سازی پورت‌های FortiGate
 
 **فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۱، ۳-۱، ۴-۱ · ≈ 10 ساعت**
@@ -4610,6 +4660,56 @@ diagnose ip arp list
 
 <a id="l-12-3"></a>
 
+### تعمیق: طراحی Interfaceهای یک شعبه و پرونده‌ی «VLAN کار نمی‌کند»
+
+**سناریو.** شعبه با WAN (port1)، Trunk داخلی (port2) با VLAN 10 Users و VLAN 20 Servers، DMZ (port3) و Mgmt (mgmt).
+
+**جدول طراحی**
+
+| Interface | IP | Role | allowaccess | یادداشت |
+|---|---|---|---|---|
+| port1 | 198.51.100.2/30 | wan | - | بدون مدیریت |
+| port2.10 | 10.10.0.1/24 | lan | ping | Users |
+| port2.20 | 10.20.0.1/24 | lan | ping | Servers |
+| port3 | 10.30.0.1/24 | dmz | ping | وب |
+| mgmt | 10.99.0.1/24 | lan | https ssh ping | با Trusted host |
+
+**پیکربندی VLAN**
+
+``` text
+config system interface
+ edit "VLAN10"
+  set vdom "root"
+  set interface "port2"
+  set vlanid 10
+  set ip 10.10.0.1 255.255.255.0
+  set allowaccess ping
+  set role lan
+ next
+end
+```
+
+**عیب‌یابی «VLAN10 Ping Gateway ندارد»**
+
+``` text
+get system interface physical        ! port2 up, speed 1000 full
+diagnose ip arp list                  ! no entry for 10.10.0.x -> L2 issue
+```
+
+شاهد: ARP بدون ورودی ⇒ پورت سوییچ Access روی VLAN 1 است؛ باید Trunk (`switchport mode trunk` + `allowed vlan 10,20`).
+
+**Hardening WAN.** اگر لاگ‌ها تلاش ورود به HTTPS از اینترنت نشان می‌دهد: allowaccess را از port1 حذف کنید، مدیریت فقط از Mgmt، Trusted host، MFA.
+
+**اشتباهات رایج**
+- allowaccess https روی WAN.
+- VLAN بدون Trunk روی سوییچ.
+- Speed/Duplex ناهماهنگ (کند ولی Up).
+
+**پرسش‌های مصاحبه**
+1. *Role چه اثری دارد؟* GUI/Fabric؛ نه مسیر بسته.
+2. *Zone چه فایده؟* گروه‌کردن Interfaceها در Policy.
+3. *LACP چه می‌کند؟* تجمیع لینک برای پهنای باند و افزونگی.
+
 ## درس 12-3 — Zone و Objectها: Address، Service، Group، Schedule و استاندارد نام‌گذاری
 
 **فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۲، ۱۱-۲ · ≈ 10 ساعت**
@@ -4813,6 +4913,57 @@ end
 - Fortinet FortiOS 7.0 Administration Guide: Firewall objects; Zones
 
 <a id="l-12-4"></a>
+
+### تعمیق: استانداردسازی Objectها و ممیزی ۲۰۰ Object
+
+**سناریو.** FortiGate پس از ۳ سال ۲۰۰ Address و ۴۰ Service دارد؛ بسیاری تکراری و بی‌مصرف‌اند.
+
+**گام ۱ — Export و Where-used.** برای هر Object: Policy مصرف‌کننده را فهرست کنید.
+
+**گام ۲ — دسته‌بندی.**
+
+``` text
+used & standard name      : keep
+used & bad name           : rename (update policies automatically by object)
+unused & no owner         : disable review -> delete after 30 days
+duplicates (same subnet)  : merge into one object, repoint policies
+```
+
+**گام ۳ — الگوی نام.**
+
+``` text
+NET-USERS     (subnet)     SRV-DB      (host)
+RNG-GUEST     (range)      FQDN-UPDATE (fqdn)
+TCP-8443      (service)    GRP-SERVERS (group)
+ZN-SERVER     (zone)
+```
+
+هر Object یک Comment با مالک و دلیل: `set comment "owner NOC; REQ-123"`.
+
+**گام ۴ — Zone و intrazone.**
+
+``` text
+config system zone
+ edit "ZN-SERVER"
+  set intrazone deny
+  set interface "port3" "VLAN20"
+ next
+end
+```
+
+با `intrazone deny` ترافیک بین اعضای Zone بدون Policy رد می‌شود (مستند Fortinet).
+
+**گام ۵ — آزمون.** پس از Merge، Policy Lookup برای ۵ جریان مهم و مقایسه با قبل.
+
+**اشتباهات رایج**
+- Object FQDN برای سرویس‌هایی که DNS ندارد.
+- تغییر Object مشترک بدون Where-used.
+- Interface عضو Zone در Policy مستقیم.
+
+**پرسش‌های مصاحبه**
+1. *چرا Group؟* خوانایی و یک نقطه‌ی تغییر.
+2. *ریسک FQDN؟* وابستگی به DNS و تغییر ناگهانی IP.
+3. *Zone چه کاری می‌کند؟* Policy کوتاه‌تر و مدیریت ساده‌تر.
 
 ## درس 12-4 — Static Route، Default Route، Policy Route، Distance/Priority و Failover
 
@@ -5030,6 +5181,69 @@ diagnose firewall proute list
 
 <a id="l-12-5"></a>
 
+### تعمیق: طراحی Route و Failover دو ISP با اعداد و آزمون
+
+**سناریو.** ISP-A (port1، GW 198.51.100.1) اصلی؛ ISP-B (port4، GW 203.0.113.1) پشتیبان. هدف: Failover زیر ۱۰ ثانیه.
+
+**گام ۱ — Route.**
+
+``` text
+config router static
+ edit 1
+  set gateway 198.51.100.1
+  set device "port1"
+  set distance 10
+  set priority 1
+ next
+ edit 2
+  set gateway 203.0.113.1
+  set device "port4"
+  set distance 10
+  set priority 10
+ next
+end
+```
+
+Distance برابر و Priority کمتر برای A ⇒ A فعال و B آماده (طبق مستند Fortinet).
+
+**گام ۲ — Link-monitor.**
+
+``` text
+config system link-monitor
+ edit "ISP-A"
+  set srcintf "port1"
+  set server "8.8.8.8"
+  set gateway-ip 198.51.100.1
+  set interval 1000
+  set failtime 5
+  set recoverytime 5
+  set update-static-route enable
+ next
+end
+```
+
+zaman تشخیص ≈ failtime × interval = ۵ × ۱ ثانیه = ۵ ثانیه؛ با Convergence حدود ۶–۸ ثانیه.
+
+**گام ۳ — آزمون.** `ping -t 8.8.8.8` از LAN با Interval ۲۰۰ میلی‌ثانیه؛ ISP-A را قطع؛ شمارش بسته‌های گمشده × ۰٫۲ ثانیه.
+
+``` text
+lost 38 packets x 0.2 s = 7.6 s  (target < 10 s: PASS)
+```
+
+**گام ۴ — Failback.** recoverytime ۵ ⇒ پس از ۵ موفقیت A برمی‌گردد؛ برای جلوگیری از Flap مقدار بزرگ‌تر یا Hold بگذارید.
+
+**نکته‌ی مستند.** Link-monitor فقط خرابی کامل را می‌بیند؛ برای افت کیفیت (Latency/Jitter/Loss) از Performance SLA در SD-WAN استفاده کنید.
+
+**اشتباهات رایج**
+- Monitor روی Gateway فقط.
+- Policy Route بدون NAT/Route برگشت ⇒ RPF.
+- Distance متفاوت به‌جای Priority وقتی ECMP می‌خواهید.
+
+**پرسش‌های مصاحبه**
+1. *Distance و Priority؟* Distance بین منابع، Priority بین Routeهای هم‌Distance.
+2. *RPF چیست؟* بررسی Route معکوس مبدأ از Interface ورودی.
+3. *Blackhole Route؟* برای Summary و جلوگیری از حلقه.
+
 ## درس 12-5 — Admin، RBAC، MFA و سخت‌سازی مدیریت FortiGate
 
 **فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۲، ۱۲-۱ · ≈ 10 ساعت**
@@ -5240,6 +5454,67 @@ show system admin
 
 <a id="l-12-6"></a>
 
+### تعمیق: طراحی سه‌سطحی دسترسی و آزمون Lockout
+
+**سناریو.** تیم ۴ نفره: دو مهندس، یک NOC، یک ممیز. ورودهای ناموفق از یک IP خارجی گزارش شده.
+
+**گام ۱ — Profile.**
+
+``` text
+config system accprofile
+ edit "NET-ENG"
+  set netgrp read-write
+  set fwgrp read-write
+  set loggrp read
+  set sysgrp read
+ next
+ edit "NOC-RO"
+  set netgrp read
+  set fwgrp read
+  set loggrp read
+ next
+end
+```
+
+**گام ۲ — Admin با Trusted host و MFA.**
+
+``` text
+config system admin
+ edit "noc01"
+  set accprofile "NOC-RO"
+  set trusthost1 10.99.0.0 255.255.255.0
+  set two-factor fortitoken
+ next
+end
+```
+
+**گام ۳ — Hardening.**
+
+``` text
+config system global
+ set admintimeout 10
+ set admin-lockout-threshold 3
+ set admin-lockout-duration 300
+ set admin-https-ssl-versions tlsv1-2 tlsv1-3
+end
+```
+
+مستند: threshold ۱ تا ۱۰ (پیش‌فرض ۳)، duration پیش‌فرض ۶۰ ثانیه.
+
+**گام ۴ — آزمون.** سه ورود ناموفق از Host مجاز ⇒ قفل ۳۰۰ ثانیه؛ ورود از IP غیرمجاز با رمز درست ⇒ رد (Trusted host)؛ NOC تلاش تغییر Policy ⇒ رد.
+
+**گام ۵ — Break-glass.** حساب اضطراری با رمز طولانی در گاوصندوق، Alert روی ورود و Rotate پس از استفاده.
+
+**اشتباهات رایج**
+- Super-admin برای همه.
+- Trusted host خالی.
+- رمز در ریپو/سند.
+
+**پرسش‌های مصاحبه**
+1. *Local-in در برابر Trusted host؟* Local-in ترافیک به فایروال را فیلتر می‌کند؛ Trusted host ورود Admin را؛ هر دو را با هم استفاده کنید.
+2. *MFA چرا؟* رمز لورفته بدون عامل دوم کافی نیست.
+3. *Alert چه باشد؟* Admin login failed و Config changed.
+
 ## درس 12-6 — Backup/Restore، Firmware Upgrade، Rollback و Lifecycle
 
 **فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۱، ۱۲-۵ · ≈ 10 ساعت**
@@ -5405,6 +5680,50 @@ diagnose sys session stat
 
 - Fortinet FortiOS 7.0 Administration Guide: Backup and restore; Firmware
 - Fortinet Upgrade Path Tool
+
+### تعمیق: برنامه‌ی Upgrade با Backup، Path و Rollback — نمونه‌ی ساعت‌به‌ساعت
+
+**سناریو.** ارتقا از 6.4.x به 7.0.3 روی FortiGate مرکزی (HA دوتایی).
+
+**گام ۱ — پیش‌نیاز (T-3d).**
+1. Upgrade Path Tool: نسخه‌های میانی لازم؟
+2. Release Notes: Known Issues و تغییرات رفتاری (SSL-VPN، SD-WAN، لاگ).
+3. Backup رمزگذاری‌شده + Hash.
+4. Lab آزمون با همان Config (در صورت امکان).
+
+**گام ۲ — Window (T0).**
+
+| ساعت | کار | Checkpoint |
+|---|---|---|
+| 22:00 | Backup هر دو + تأیید checksum | C1 |
+| 22:10 | Upgrade Secondary | C2: in-sync |
+| 22:30 | Failover به Secondary | C3: بدون قطع طولانی |
+| 22:35 | Upgrade Primary قبلی | C4 |
+| 22:55 | Post-check | C5 |
+
+**گام ۳ — Post-check.**
+
+``` text
+get system status
+get system ha status
+diagnose sys ha checksum cluster
+get router info routing-table all
+diagnose sys session stat
+```
+
+**Rollback:** اگر C3 یا C4 تا 22:40 شکست خورد، Boot از Partition قبلی (FortiGate دو Image نگه می‌دارد) یا Restore Config+Firmware.
+
+**گام ۴ — گزارش.** مدت واقعی، انحراف، درس. مثال: Sync ۶ دقیقه کند بود ⇒ در برنامه‌ی بعد منتظر in-sync بمانید.
+
+**اشتباهات رایج**
+- Upgrade مستقیم بدون Path.
+- Backup بدون رمزگذاری.
+- نداشتن زمان تصمیم Rollback.
+
+**پرسش‌های مصاحبه**
+1. *چرا Secondary اول؟* با Failover سرویس حفظ می‌شود.
+2. *EoS/EoL؟* پایان پشتیبانی؛ برنامه‌ی جایگزینی.
+3. *چه چیزی بعد از Upgrade مقایسه می‌کنید؟* Session، Route، IPsec، Policy hit، Log.
 
 ## درس 12-8 — Transit، Local-in و Local-out: سه نوع ترافیک و سه مسیر پردازش
 
@@ -5914,6 +6233,46 @@ Prevent  : change management interface only with console ready + scheduled rever
 ```
 
 **درس:** در CLI فرمان `set allowaccess` کل فهرست را جایگزین می‌کند (نه افزودن)؛ برای افزودن از `append` استفاده کنید (`Unverified` در 7.0.3): `append allowaccess https`.
+
+### تعمیق: روش «تغییر ایمن Interface مدیریت» با اثبات
+
+**سناریو.** باید `allowaccess` و IP Interface مدیریتی را تغییر دهید در حالی که از همان Interface متصل هستید.
+
+**روش ایمن (چهار لایه)**
+1. **کنسول آماده** (یا Out-of-band) پیش از تغییر.
+2. **Backup** و ثبت وضعیت فعلی: `show system interface mgmt`.
+3. **Revert خودکار:** از `cfg-save revert` با `cfg-revert-timeout` (پیش‌فرض ۶۰۰ ثانیه) استفاده کنید تا اگر تأیید نکردید، تنظیم به آخرین ذخیره برگردد (طبق مستند).
+
+``` text
+config system global
+ set cfg-save revert
+ set cfg-revert-timeout 300
+end
+...change...
+execute cfg save      ! confirm only after you verified access
+```
+
+4. **تغییر کوچک و آزمون:** اول `append` یا اضافه‌کردن، نه جایگزینی؛ در CLI فرمان `set allowaccess` فهرست را جایگزین می‌کند.
+
+**آزمون پس از تغییر**
+
+``` text
+ping 10.99.0.1                 ! L3
+curl -k https://10.99.0.1      ! service
+get system status              ! on console
+```
+
+**اگر قفل شدید:** کنسول → بازگردانی allowaccess؛ علت را در RCA ثبت کنید.
+
+**درس‌های سه پرونده‌ی آزمون**
+- مدیریت قفل: کنسول.
+- Route اشتباه: `get router info routing-table details` و Distance.
+- VLAN: ARP incomplete و Trunk.
+
+**پرسش‌های مصاحبه**
+1. *چرا cfg-save revert؟* شبکه‌ی ایمنی برای تغییر مدیریتی.
+2. *چرا `set allowaccess` خطرناک است؟* فهرست قبلی را جایگزین می‌کند.
+3. *چه چیزی در RCA می‌نویسید؟* علت، اثر، زمان، پیشگیری.
 
 ## پاسخ‌های فصل 12
 
