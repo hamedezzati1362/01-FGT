@@ -1764,6 +1764,70 @@ Throughput = concurrent users x avg Mbps  (e.g. 240 x 2 = 480 Mbps)
 2. *چرا Gateway هدف حمله است؟* در معرض اینترنت.
 3. *Split در برابر Full؟* ریسک در برابر پهنای باند.
 
+### تکمیل عمیق: معماری دسترسی راه‌دور — مدل تهدید و مقایسه‌ی VPN/ZTNA
+
+#### چرا باید یاد بگیریم؟
+
+دورکاری دسترسی به شبکه را از یک ساختمان محدود به «هر جای اینترنت» گسترش داده است. هر نقطه‌ی ورود از اینترنت، هدف حمله است. پس قبل از انتخاب فناوری (SSL VPN، IPsec، ZTNA) باید بپرسیم: **چه چیزی را از چه کسی محافظت می‌کنیم؟**
+
+#### مدل تهدید
+
+| تهدید | مثال | کنترل |
+|---|---|---|
+| سرقت رمز | Credential Stuffing | MFA |
+| دستگاه آلوده | لپ‌تاپ بدون آنتی‌ویروس | Posture Check |
+| آسیب‌پذیری Gateway | Exploit روی VPN | Patch و کاهش سطح |
+| حرکت جانبی | کاربر VPN به همه‌ی شبکه | Policy حداقلی |
+
+#### مقایسه
+
+| معیار | IPsec RA | SSL VPN | ZTNA |
+|---|---|---|---|
+| سطح دسترسی | شبکه | شبکه/برنامه | برنامه |
+| بررسی دستگاه | ممکن | ممکن | پایه‌ای |
+| لایسنس | پایه | پایه | EMS (Needs-License) |
+
+ZTNA = Zero Trust Network Access، یعنی «دسترسی شبکه‌ای مبتنی بر اعتماد صفر»؛ هر درخواست بر پایه‌ی هویت و وضعیت دستگاه ارزیابی می‌شود.
+
+#### مثال ساده — Least Privilege
+
+کاربر مالی فقط به سرور ERP (10.20.0.10:443) نیاز دارد؛ Policy VPN او نباید `all` باشد.
+
+#### مثال متوسط — Split در برابر Full Tunnel
+
+Split: فقط ترافیک سازمانی از VPN؛ پهنای باند کمتر ولی ترافیک اینترنت بازرسی نمی‌شود. Full: همه از VPN؛ کنترل بیشتر ولی بار روی فایروال.
+
+#### مثال سخت — طراحی برای ۳۰۰ کاربر
+
+نیاز: ۳۰۰ کاربر هم‌زمان با ۲ Mbps هر کدام: ۶۰۰ Mbps. باید ظرفیت VPN فایروال (نه فقط Throughput کلی) را در دیتاشیت بررسی کنید.
+
+``` text
+Required VPN throughput = users x per-user rate = 300 x 2 = 600 Mbps
+```
+
+#### Lab
+
+یک جدول تهدید/کنترل برای سازمان فرضی بنویسید.
+
+#### عیب‌یابی طراحی
+
+| علامت | علت | رفع |
+|---|---|---|
+| دسترسی گسترده | Policy all | حداقل |
+| کندی | Full tunnel | Split |
+| ظرفیت کم | دیتاشیت | بررسی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. ZTNA چیست؟** دسترسی برنامه‌محور و بر اساس اعتماد صفر.
+**۲. Split Tunnel خطر؟** بازرسی نشدن ترافیک اینترنت.
+**۳. ظرفیت VPN را از کجا؟** دیتاشیت.
+
+#### English Corner
+
+- *Remote access gateways are internet-facing and must be hardened.*
+- Q: What is the difference between split and full tunnel?
+
 ## درس 20-2 — SSL VPN در 7.0.3 (فقط Lab ایزوله): سازوکار، Portal، Realm، Tunnel، Split و Hardening
 
 **فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۲۰-۱، ۲۰-۷، ۱۷-۲ · ≈ 9 ساعت**
@@ -1944,6 +2008,82 @@ Portal `tunnel-access` + Policy `SSLVPN -> LAN` با گروه. **هشدار:** S
 1. *Realm؟* آدرس/ظاهر Portal جدا.
 2. *Split Tunnel؟* مسیرهای مشخص.
 3. *Host Check؟* وضعیت دستگاه.
+
+### تکمیل عمیق: SSL VPN در 7.0.3 — فقط Lab، با درک ریسک
+
+#### چرا؟
+
+SSL VPN محبوب است چون روی 443 کار می‌کند و از اکثر محدودیت‌ها عبور می‌کند، ولی تاریخچه‌ی آسیب‌پذیری‌های مهم دارد؛ باید با چشم باز استفاده شود.
+
+#### اجزا
+
+- **Portal**: صفحه‌ی ورود و دسترسی (Web mode/Tunnel mode).
+- **Realm**: آدرس/ظاهر جدا.
+- **Tunnel IP Pool**: آدرس داخلی کلاینت.
+- **Policy**: `ssl.root -> LAN`.
+
+#### مثال ساده — تنظیم
+
+``` text
+config vpn ssl settings
+ set servercert "Fortinet_Factory"
+ set tunnel-ip-pools "SSLVPN_TUNNEL_ADDR1"
+ set port 10443
+ set source-interface "port1"
+ set default-portal "tunnel-access"
+end
+```
+
+Source Interface و Port را به حداقل لازم محدود کنید. گواهی Factory برای Lab است؛ در تولید گواهی معتبر.
+
+#### مثال متوسط — Policy
+
+``` text
+config firewall policy
+ edit 200
+  set srcintf "ssl.root"
+  set dstintf "port3"
+  set srcaddr "all"
+  set dstaddr "SRV-ERP"
+  set groups "G-VPN"
+  set service "HTTPS"
+  set action accept
+  set logtraffic all
+ next
+end
+```
+
+#### مثال سخت — ریسک و کاهش
+
+PSIRT Fortinet برای SSL-VPN در نسخه‌های ۷.x هشدارهای جدی داشته است. کاهش: نسخه‌ی وصله‌شده، MFA، محدودیت جغرافیا (Local-in)، غیرفعال‌سازی Web mode در صورت نیاز، پایش Log، و برنامه‌ی مهاجرت به IPsec (وضعیت نسخه را از مستند رسمی بخوانید).
+
+#### Lab
+
+SSL VPN را فقط در Lab ایزوله و بدون دسترسی از اینترنت راه‌اندازی کنید.
+
+``` text
+get vpn ssl monitor
+diagnose debug application sslvpn -1
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| اتصال نمی‌شود | Policy/Portal | بررسی |
+| Split نمی‌کند | Routing | Split-include |
+| گواهی خطا | Factory | گواهی معتبر |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Realm؟** آدرس/ظاهر Portal جدا.
+**۲. چرا Local-in؟** محدودکردن مبدأ.
+**۳. ریسک اصلی؟** آسیب‌پذیری Gateway.
+
+#### English Corner
+
+- *Patch promptly and add MFA; limit who can reach the SSL VPN portal.*
+- Q: Why is the factory certificate unsuitable for production?
 
 ## درس 20-3 — IPsec Dial-up (Remote Access): IKEv2، هویت، Mode Config، Split/Full، DNS و Policy
 
@@ -2135,6 +2275,85 @@ end
 2. *PSK گروهی؟* ضعیف؛ گواهی بهتر.
 3. *DNS Leak؟* DNS داخلی ارسال شود.
 
+### تکمیل عمیق: IPsec Dial-up (Remote Access) با IKEv2
+
+#### چرا؟
+
+IPsec RA سطح حمله‌ی تاریخی کمتری نسبت به SSL VPN دارد و Performance بهتری (NPU) می‌دهد. نصب FortiClient و تنظیم درست لازم است.
+
+#### ساختار
+
+Phase1 از نوع `dynamic` (چون IP کلاینت ناشناخته است)، Mode Config برای دادن IP/DNS به کلاینت.
+
+``` text
+config vpn ipsec phase1-interface
+ edit "DIALUP"
+  set type dynamic
+  set interface "port1"
+  set ike-version 2
+  set peertype any
+  set mode-cfg enable
+  set ipv4-start-ip 10.200.0.10
+  set ipv4-end-ip 10.200.0.200
+  set ipv4-netmask 255.255.255.0
+  set ipv4-dns-server1 10.20.0.5
+  set proposal aes256-sha256
+  set dhgrp 14
+  set authmethod signature
+  set certificate "vpn-cert"
+ next
+end
+```
+
+#### مثال متوسط — Phase2 و Policy
+
+Phase2 با `dst-subnet 0.0.0.0/0` معمولاً برای Dial-up و Policy `DIALUP -> LAN` با گروه کاربران.
+
+#### مثال سخت — Split Tunnel و DNS
+
+``` text
+set ipv4-split-include "INTERNAL-NETS"
+set ipv4-dns-server1 10.20.0.5
+```
+
+اگر DNS داخلی داده نشود، کاربر نام سرورها را حل نمی‌کند؛ اگر Split-DNS لازم است، دامنه را مشخص کنید.
+
+#### هویت
+
+PSK گروهی ضعیف است (همه یک رمز)؛ گواهی (Certificate) یا EAP با RADIUS+MFA بهتر است.
+
+#### آزمون
+
+``` text
+diagnose vpn ike gateway list
+diagnose vpn tunnel list
+```
+
+اتصال کاربر مجاز، رد کاربر غیرگروه، دسترسی به منبع مجاز و رد منبع غیرمجاز.
+
+#### Lab
+
+یک Dial-up را با کلاینت Lab تست کنید (اجرا نشده تا اطلاع بعدی).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| وصل می‌شود ولی ping نه | Policy/Route | بررسی |
+| DNS حل نمی‌شود | dns-server | تنظیم |
+| AUTH_FAILED | هویت | گواهی/PSK |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Mode Config؟** اعطای IP/DNS.
+**۲. PSK گروهی؟** ضعیف.
+**۳. Split-include؟** مسیرهای تونل.
+
+#### English Corner
+
+- *Prefer certificates or EAP with MFA over a shared group PSK.*
+- Q: What does mode-config provide to the client?
+
 ## درس 20-4 — MFA، پایش و Hardening دسترسی راه‌دور: Detection، Alert، پاسخ و بازبینی
 
 **فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۲۰-۲، ۲۰-۳، ۲۷-۰، ۲۹-۰ · ≈ 8 ساعت**
@@ -2307,6 +2526,78 @@ end
 1. *Local-in Policy؟* ترافیک به خود فایروال.
 2. *Brute-force؟* MFA + Lockout.
 3. *Detection؟* Log Event.
+
+### تکمیل عمیق: MFA، پایش و Hardening دسترسی راه‌دور
+
+#### چرا؟
+
+یک رمز لورفته نباید کافی باشد. MFA (Multi-Factor Authentication، یعنی «احراز هویت چندعاملی») مهم‌ترین کنترل است؛ پایش و Hardening لایه‌های بعدی‌اند.
+
+#### مثال ساده — کنترل‌ها
+
+1. MFA (OTP/Push) از طریق FortiToken یا RADIUS+NPS Extension.
+2. Local-in Policy برای محدودیت مبدأ.
+3. قفل پس از شکست.
+4. Log متمرکز و هشدار.
+
+#### مثال متوسط — Local-in
+
+``` text
+config firewall local-in-policy
+ edit 1
+  set intf "port1"
+  set srcaddr "GEO-ALLOWED"
+  set dstaddr "all"
+  set service "SSLVPN-PORT"
+  set action accept
+  set schedule "always"
+ next
+ edit 2
+  set intf "port1"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "SSLVPN-PORT"
+  set action deny
+  set schedule "always"
+ next
+end
+```
+
+یعنی فقط کشورها/IPهای مجاز اجازه دارند.
+
+#### قاعده‌ی هشدار
+
+``` text
+IF failed_vpn_logins >= 10 within 5 min from one source THEN alert (medium)
+IF success after >=10 failures THEN alert (high)
+```
+
+#### مثال سخت — Impossible Travel
+
+ورود موفق یک کاربر از ایران و ۱۰ دقیقه بعد از اروپا؛ فاصله/زمان ناممکن ⇒ هشدار بالا. نیاز به GeoIP و Correlation در SIEM.
+
+#### Lab
+
+قاعده‌ی هشدار را روی Log نمونه با `awk` تست کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| هشدار کاذب | VPN شرکت‌ها | Allowlist |
+| MFA شکست | زمان | NTP |
+| Lockout زیاد | آستانه | تنظیم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا MFA؟** رمز تنها کافی نیست.
+**۲. Impossible Travel؟** دو ورود غیرممکن.
+**۳. NTP چرا برای MFA؟** TOTP زمان‌محور.
+
+#### English Corner
+
+- *MFA is the single most effective control against stolen credentials.*
+- Q: What is impossible travel detection?
 
 ## درس 20-5 — آزمون عملی دسترسی راه‌دور: SSL-VPN/IPsec Dial-up، MFA و Split Tunnel — صورت مسئله، کلید کامل و Rubric
 
@@ -2504,6 +2795,65 @@ diagnose firewall iprope lookup 10.212.134.5 40000 10.20.0.10 443 tcp ssl.root
 2. *آزمون منفی؟* کاربر خارج از گروه.
 3. *Reconnect؟* Session Timeout.
 
+### تکمیل عمیق: آزمون عملی دسترسی راه‌دور
+
+#### چرا؟
+
+این آزمون چهار ادعا را اثبات می‌کند: ورود مجاز، رد غیرمجاز، تونل صحیح و MFA.
+
+#### آزمون‌ها و شواهد
+
+| # | آزمون | انتظار | شاهد |
+|---|---|---|---|
+| 1 | کاربر مجاز | وصل | `get vpn ssl monitor` |
+| 2 | کاربر خارج گروه | رد | Log |
+| 3 | Split | اینترنت مستقیم | `route print` |
+| 4 | MFA | درخواست OTP | اسکرین‌شات |
+| 5 | Reconnect | وصل مجدد | Log |
+
+#### Rubric
+
+``` text
+Each test 20 points: correct result 10 + evidence 10
+```
+
+#### مثال متوسط — اثبات Split
+
+``` text
+route print   (client)
+10.20.0.0/24 -> VPN adapter
+0.0.0.0/0    -> local gateway
+```
+
+یعنی فقط مسیرهای سازمانی از VPN می‌رود.
+
+#### مثال سخت — منبع مجاز/غیرمجاز
+
+کاربر مالی به ERP می‌رسد و به Mgmt نه؛ آزمون منفی: `nc -zv 10.50.0.1 22` باید Timeout بدهد و Log Deny.
+
+#### Lab
+
+آزمون را اجرا و Evidence Index بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Split کار نمی‌کند | Policy | Split-include |
+| MFA نمی‌آید | Auth Server | بررسی |
+| Reconnect ناموفق | Timeout | تنظیم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Evidence Split؟** جدول Route کلاینت.
+**۲. آزمون منفی؟** Mgmt رد شود.
+**۳. نمره؟** نتیجه + شاهد.
+
+#### English Corner
+
+- *Show the client routing table as evidence of split tunneling.*
+- Q: What negative test proves least privilege?
+
 ## درس 20-7 — SSL VPN در برابر IPsec Remote Access: وضعیت نسخه‌ها، ریسک و مهاجرت
 
 **فصل ۲۰ · درس افزوده (پس از ۲۰-۵) · پیش‌نیاز: ۱۸-۰، ۲۰-۱ تا ۲۰-۵ · ≈ ۵ ساعت**
@@ -2627,6 +2977,56 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 1. *چرا مهاجرت؟* ریسک آسیب‌پذیری.
 2. *UDP مسدود؟* NAT-T/TCP.
 3. *Patch؟* پایش PSIRT.
+
+### تکمیل عمیق: SSL VPN در برابر IPsec RA — جدول تصمیم
+
+#### چرا؟
+
+انتخاب بین دو فناوری باید بر اساس ریسک، محدودیت شبکه‌ی کاربر و عملیات باشد نه عادت.
+
+#### جدول تصمیم
+
+| معیار | SSL VPN | IPsec RA |
+|---|---|---|
+| عبور از شبکه‌های محدود (443) | آسان | سخت‌تر (UDP 500/4500) |
+| سابقه‌ی آسیب‌پذیری | بالا | کمتر |
+| Performance | متوسط | بهتر (NPU) |
+| مدیریت کلاینت | FortiClient/وب | FortiClient |
+
+#### مثال ساده
+
+کاربران هتل/فرودگاه که UDP مسدود دارند ⇒ SSL VPN یا IPsec over TCP (در صورت پشتیبانی نسخه).
+
+#### مثال متوسط — تصمیم برای پروژه‌ی جدید
+
+IPsec IKEv2 + MFA + گواهی؛ SSL VPN فقط برای سناریوی مشخص و با نسخه‌ی وصله‌شده.
+
+#### مثال سخت — مهاجرت
+
+مراحل: ۱) Inventory کاربران ۲) پایلوت IPsec ۳) آموزش ۴) عبور تدریجی ۵) خاموش‌کردن SSL VPN ۶) بازبینی Log.
+
+#### Lab
+
+جدول تصمیم را برای سازمان فرضی خودتان پر کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| UDP مسدود | شبکه‌ی کاربر | NAT-T/TCP |
+| کلاینت قدیمی | نسخه | ارتقا |
+| مهاجرت کند | آموزش | پایلوت |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا مهاجرت؟** ریسک.
+**۲. UDP مسدود چه کنیم؟** NAT-T/TCP.
+**۳. پایلوت چرا؟** کاهش ریسک.
+
+#### English Corner
+
+- *Choose the technology by risk and network constraints, not habit.*
+- Q: What do you do when UDP 500 and 4500 are blocked?
 
 ## پاسخ‌های فصل 20
 
@@ -2972,6 +3372,80 @@ end
 2. *Session قدیم؟* روی ISP قبل می‌ماند.
 3. *چرا Monitor؟* قطع بالادستی بدون Down شدن لینک.
 
+### تکمیل عمیق: Dual-ISP کلاسیک — چرا فقط «دو Route» کافی نیست؟
+
+#### چرا باید یاد بگیریم؟
+
+بسیاری از سازمان‌ها دو ISP می‌گیرند و فکر می‌کنند «اگر یکی قطع شد، دیگری خودکار کار می‌کند». ولی قطع واقعی اغلب این‌گونه نیست: کابل سالم است و لینک Up است، اما ISP در بالادست مشکل دارد. فایروال هنوز Route اول را فعال می‌بیند و ترافیک را به چاه می‌فرستد. برای تشخیص چنین قطعی به **Link Monitor** (پایش سلامت مسیر) نیاز داریم.
+
+#### توضیح ساده
+
+دو Static Route پیش‌فرض داریم؛ یکی با Distance کمتر (ترجیح بیشتر) و دیگری با Distance بیشتر (پشتیبان). فقط Route با Distance کمتر در جدول فعال است. Link Monitor مرتب یک هدف خارجی (مثلاً 8.8.8.8) را از آن لینک پینگ می‌کند؛ اگر چند بار پاسخ نیامد، Route آن لینک را غیرفعال می‌کند تا Route دوم فعال شود.
+
+``` text
+Route 1: 0.0.0.0/0 via 203.0.113.1 dev port1 distance 10
+Route 2: 0.0.0.0/0 via 198.51.100.1 dev port2 distance 20
+```
+
+#### مثال ساده — تنظیم و محاسبه‌ی زمان تشخیص
+
+``` text
+config system link-monitor
+ edit "ISP1"
+  set srcintf "port1"
+  set server "8.8.8.8"
+  set gateway-ip 203.0.113.1
+  set interval 1000
+  set failtime 5
+  set recoverytime 5
+ next
+end
+```
+
+``` text
+Detection time = interval x failtime = 1 s x 5 = 5 s
+```
+
+یعنی ≈ ۵ ثانیه پس از قطع، Failover آغاز می‌شود. مقادیر پیش‌فرض را از مستند نسخه تأیید کنید.
+
+#### مثال متوسط — NAT برای هر خروجی
+
+باید برای هر ISP یک Policy جدا (یا Policy با NAT خودکار روی Interface خروجی) وجود داشته باشد تا ترافیک با IP همان ISP خارج شود.
+
+#### مثال سخت — Session قدیمی
+
+پس از Failover، Sessionهای موجود روی لینک قدیم می‌مانند تا Timeout شوند؛ کاربران «اینترنت قطع است» می‌گویند، در حالی که اتصال جدید کار می‌کند. راه: `set snat-route-change enable` (برای SNAT)، یا پاک‌سازی Sessionهای مربوط با فیلتر.
+
+``` text
+diagnose sys session filter dst 8.8.8.8
+diagnose sys session clear
+```
+
+هشدار: Clear بدون فیلتر همه‌ی Sessionها را می‌بندد.
+
+#### Lab
+
+دو Interface WAN با دو Route و Link Monitor بسازید؛ Gateway اول را قطع کنید و زمان Failover را بشمارید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Failover نمی‌شود | Monitor ندارد | افزودن |
+| پس از Failover هنوز قطع | Session قدیمی | Clear/snat-route-change |
+| Failback ناپایدار | recoverytime کم | افزایش |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Distance در برابر Priority؟** Distance انتخاب Route؛ Priority تساوی را می‌شکند.
+**۲. چرا Monitor؟** قطع بالادست.
+**۳. زمان تشخیص؟** interval × failtime.
+
+#### English Corner
+
+- *Link state alone does not prove that the upstream path works.*
+- Q: How do you calculate the failure detection time?
+
 ## درس 21-2 — ساخت SD-WAN عملی: Zone، Member، Health-check، Route و Policy
 
 **فصل ۲۱ · بازنویسی عمیق · پیش‌نیاز: ۲۱-۷ (مفاهیم)، ۲۱-۱، ۱۲-۰ · ≈ ۶ ساعت**
@@ -3152,6 +3626,76 @@ end
 2. *Health-check؟* پایش کیفیت.
 3. *Route؟* Default روی Zone.
 
+### تکمیل عمیق: ساخت SD-WAN گام‌به‌گام
+
+#### چرا؟
+
+Dual-ISP کلاسیک فقط «بالا/پایین» را می‌فهمد. SD-WAN کیفیت (تأخیر، Jitter، Loss) را اندازه می‌گیرد و بر اساس برنامه مسیر انتخاب می‌کند: Voice روی لینک کم‌تأخیر، دانلود روی لینک ارزان.
+
+#### اجزا
+
+1. **Zone**: گروه Memberها (مثلاً `virtual-wan-link`).
+2. **Member**: Interface + Gateway.
+3. **Health-check**: پایش کیفیت.
+4. **Rule (Service)**: انتخاب مسیر.
+5. **Route**: Default Route به Zone.
+6. **Policy**: به Zone (نه Interface تکی).
+
+#### مثال ساده — ساخت
+
+``` text
+config system sdwan
+ set status enable
+ config members
+  edit 1
+   set interface "port1"
+   set gateway 203.0.113.1
+  next
+  edit 2
+   set interface "port2"
+   set gateway 198.51.100.1
+  next
+ end
+ config health-check
+  edit "HC1"
+   set server "8.8.8.8"
+   set members 1 2
+  next
+ end
+end
+```
+
+#### مثال متوسط — Route و Policy
+
+Static Route 0.0.0.0/0 با `sdwan-zone virtual-wan-link`؛ Policy `LAN -> virtual-wan-link`. Policyهای قبلی که به port1/port2 اشاره می‌کنند باید به Zone منتقل شوند؛ Interface عضو SD-WAN را نمی‌توان مستقیم در Policy استفاده کرد.
+
+#### مثال سخت — مهاجرت بدون قطع
+
+مراحل: ۱) Backup ۲) ساخت SD-WAN ۳) انتقال Policyها با آزمون Lookup ۴) حذف Routeهای قدیمی ۵) آزمون Failover ۶) Rollback آماده. در Maintenance Window با Rollback کمتر از ۱۰ دقیقه.
+
+#### Lab
+
+SD-WAN را با دو Member بسازید و `diagnose sys sdwan health-check` را بخوانید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Policy ساخته نمی‌شود | Interface عضو | Zone |
+| Member همیشه dead | Server/Gateway | بررسی |
+| ترافیک از یک لینک | Rule | بررسی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Member چیست؟** Interface عضو.
+**۲. Zone چرا؟** Policy یکپارچه.
+**۳. Health-check؟** پایش کیفیت.
+
+#### English Corner
+
+- *Policies reference the SD-WAN zone, not individual member interfaces.*
+- Q: What does a health check measure?
+
 ## درس 21-3 — SD-WAN Rule و Performance SLA: انتخاب مسیر بر اساس برنامه و کیفیت
 
 **فصل ۲۱ · بازنویسی عمیق · پیش‌نیاز: ۲۱-۲، ۲۱-۷ · ≈ ۶ ساعت**
@@ -3327,6 +3871,96 @@ end
 2. *Failback؟* طبق recoverytime.
 3. *Rule بدون Match؟* Implicit Rule.
 
+### تکمیل عمیق: Rule و SLA — انتخاب مسیر بر اساس کیفیت
+
+#### چرا؟
+
+همه‌ی ترافیک ارزش یکسان ندارد؛ تماس VoIP به تأخیر حساس است و Backup شبانه نه. SD-WAN Rule همین تفاوت را اعمال می‌کند.
+
+#### SLA
+
+SLA (Service Level Agreement) در اینجا آستانه‌های کیفیت لینک است:
+
+``` text
+config health-check
+ edit "HC1"
+  config sla
+   edit 1
+    set latency-threshold 100
+    set jitter-threshold 30
+    set packetloss-threshold 2
+   next
+  end
+ next
+end
+```
+
+یعنی لینک «خوب» است اگر تأخیر ≤ 100ms، Jitter ≤ 30ms، Loss ≤ 2٪.
+
+#### استراتژی‌ها
+
+| Mode | معنی |
+|---|---|
+| manual | ترتیب دستی |
+| best-quality | بهترین کیفیت |
+| lowest-cost (sla) | ارزان‌ترین لینک که SLA را رعایت کند |
+| load-balance | توزیع |
+
+#### مثال ساده — Rule برای Voice
+
+``` text
+config service
+ edit 1
+  set name "VOICE"
+  set mode sla
+  set dst "SIP-PEERS"
+  config sla
+   edit "HC1"
+    set id 1
+   next
+  end
+  set priority-members 1 2
+ next
+end
+```
+
+Voice روی عضو 1 تا زمانی که SLA شکسته نشود؛ بعد عضو 2.
+
+#### مثال متوسط — Brownout
+
+لینک بالا ولی کیفیت بد (Loss 8٪). Health-check ساده «alive» می‌گوید؛ SLA می‌گوید «violated» و Rule مسیر را عوض می‌کند. همین مزیت SD-WAN است.
+
+#### مثال سخت — Rule Match
+
+اگر هیچ Rule مطابق نیست، ترافیک با **Implicit Rule** (بر اساس Route/Cost) می‌رود. با `diagnose sys sdwan service` ببینید کدام Rule و کدام Member انتخاب شد.
+
+#### Lab
+
+با `tc netem` (روی Lab) تأخیر/Loss به یک لینک تزریق و تغییر مسیر را مشاهده کنید.
+
+``` text
+tc qdisc add dev eth1 root netem delay 150ms loss 5%
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Rule اعمال نمی‌شود | dst/service | بررسی |
+| Flapping | آستانه نزدیک | Hysteresis |
+| همه از یک لینک | Rule پایین | ترتیب |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Brownout چیست؟** لینک بالا با کیفیت بد.
+**۲. Implicit Rule؟** پیش‌فرض.
+**۳. چرا SLA؟** اندازه‌گیری کیفیت.
+
+#### English Corner
+
+- *SLA thresholds let SD-WAN react to brownouts, not just outages.*
+- Q: What happens when no SD-WAN rule matches?
+
 ## درس 21-4 — Failover عملی، Session و NAT در Dual-ISP/SD-WAN: آزمون، Clear، IP ثابت و معماری ۳
 
 **فصل 21 · بازنویسی عمیق · پیش‌نیاز: ۲۱-۱، ۲۱-۲، ۲۱-۳، ۱۳-۷ · ≈ 8 ساعت**
@@ -3477,6 +4111,66 @@ diagnose sys session filter clear
 1. *چرا VoIP قطع؟* IP منبع عوض.
 2. *Failback خودکار؟* ممکن است ناپایدار؛ hold-down.
 3. *Clear Session؟* با فیلتر.
+
+### تکمیل عمیق: Failover عملی، Session و NAT
+
+#### چرا؟
+
+Failover فقط تغییر Route نیست؛ باید ببینیم Sessionها، NAT و IP عمومی چه می‌شوند.
+
+#### مثال ساده — اندازه‌گیری
+
+``` text
+ping -i 0.2 8.8.8.8
+# cut ISP1
+lost = 25 packets x 0.2 s = 5.0 s
+```
+
+#### Session و NAT
+
+پس از Failover IP عمومی تغییر می‌کند؛ اتصال‌هایی که به IP مبدأ وابسته‌اند (SSH، VoIP، بانک) قطع می‌شوند و باید دوباره برقرار شوند. تنها راه‌حل واقعی «IP ثابت» BGP با ISPها یا Cloud Anchor است.
+
+#### مثال متوسط — پاک‌سازی انتخابی
+
+``` text
+diagnose sys session filter src 10.10.0.0/24
+diagnose sys session filter dst 0.0.0.0/0
+diagnose sys session clear
+diagnose sys session filter clear
+```
+
+یا `set snat-route-change enable` در Policy برای تغییر مسیر Session با SNAT.
+
+#### مثال سخت — Failback
+
+بازگشت ISP1 و Failback فوری ممکن است Session را دوباره قطع کند. راه: `recoverytime` بیشتر یا Failback دستی در Window.
+
+#### مثال: Persist VoIP
+
+در Rule VoIP یک مسیر ثابت با Failover سریع و Failback غیرفعال تا از Flap جلوگیری شود.
+
+#### Lab
+
+Failover را اجرا و جدول «قبل/بعد» (Route، Session، IP عمومی) را پر کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| قطع بعد از Failover | IP عوض شد | BGP/NAT |
+| Session قدیم | Timeout | Clear |
+| Flap | Failback سریع | recoverytime |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا IP عوض می‌شود؟** NAT با IP ISP.
+**۲. راه‌حل IP ثابت؟** BGP.
+**۳. چرا Failback تأخیری؟** Flap.
+
+#### English Corner
+
+- *A failover that changes the public IP will break sessions that depend on it.*
+- Q: Why delay failback?
 
 ## درس 21-5 — Gate G8: آزمون عملی Dual-ISP و SD-WAN — صورت مسئله، کلید پاسخ کامل و Rubric
 
@@ -3695,6 +4389,59 @@ diagnose sys session list
 1. *Evidence Failover؟* `diagnose sys sdwan health-check` و Log.
 2. *Brownout؟* لینک بالا ولی کیفیت بد.
 3. *SLA Target؟* از نیاز اپلیکیشن.
+
+### تکمیل عمیق: آزمون G8 — صورت مسئله و کلید
+
+#### چرا؟
+
+G8 ثابت می‌کند Dual-ISP و SD-WAN را از طراحی تا اثبات انجام می‌دهید.
+
+#### صورت مسئله
+
+شعبه با ISP1 (اصلی) و ISP2 (پشتیبان)؛ Voice باید زیر 100ms و Loss زیر 2٪ باشد؛ Failover زیر 5 ثانیه.
+
+#### کلید
+
+1. SD-WAN با دو Member و Health-check.
+2. SLA (100ms/30ms/2٪).
+3. Rule Voice با mode sla.
+4. آزمون: قطع ISP1 ⇒ Failover < 5 s.
+5. آزمون Brownout با `tc netem`.
+6. Failback کنترل‌شده.
+
+#### محاسبه‌ی نمره
+
+``` text
+Build 20 | SLA 20 | Failover 25 | Failback 10 | Evidence 15 | Report 10
+Example: 20 + 18 + 22 + 8 + 12 + 8 = 88
+```
+
+#### مثال سخت — مرز SLA
+
+تأخیر 98ms (حاشیه‌ی بسیار کم): Flap ممکن است رخ دهد. راه: آستانه‌ی حاشیه‌دار یا Hysteresis؛ مستند.
+
+#### Lab
+
+آزمون را اجرا و Evidence Index بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Failover دیر | failtime بالا | کاهش |
+| Flap | آستانه نزدیک | حاشیه |
+| Evidence ناقص | ثبت نشد | الگو |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Evidence Failover؟** ping + Log + health-check.
+**۲. Hysteresis؟** جلوگیری از Flap.
+**۳. آزمون Brownout؟** تزریق تأخیر.
+
+#### English Corner
+
+- *Test brownouts, not only hard failures.*
+- Q: How do you avoid flapping near a threshold?
 
 ## درس 21-7 — SD-WAN از درون: Health-check، SLA، استراتژی‌ها، Failover/Failback و تفاوت با Routing
 
@@ -3947,6 +4694,72 @@ diagnose sys sdwan service
 1. *مقدار پیش‌فرض failtime؟* ۵.
 2. *Probe پروتکل؟* ping/http/tcp-echo/dns.
 3. *Weight/Cost؟* برای lowest-cost.
+
+### تکمیل عمیق: SD-WAN از درون — Health-check، SLA و Failback
+
+#### چرا؟
+
+بدون فهمیدن اینکه Health-check چطور کار می‌کند، نمی‌توانید رفتار عجیب (مثلاً تغییر مسیر بی‌دلیل) را توضیح دهید.
+
+#### خواندن خروجی
+
+``` text
+diagnose sys sdwan health-check
+Health Check(HC1):
+Seq(1 port1): state(alive), packet-loss(0.000%) latency(12.31) jitter(0.82) sla_map=0x1
+Seq(2 port2): state(dead)
+```
+
+تفسیر: Member 1 زنده با کیفیت خوب و `sla_map=0x1` (SLA 1 را رعایت می‌کند)؛ Member 2 مرده.
+
+#### پارامترها
+
+| پارامتر | معنی |
+|---|---|
+| interval | فاصله‌ی پروب (ms) |
+| failtime | تعداد شکست متوالی برای dead |
+| recoverytime | تعداد موفقیت متوالی برای alive |
+| probe-timeout | مهلت پاسخ |
+
+مقادیر پیش‌فرض را از مستند نسخه بخوانید.
+
+#### مثال ساده — زمان‌ها
+
+``` text
+Down detection = interval x failtime ; Up detection = interval x recoverytime
+500 ms x 5 = 2.5 s ; 500 ms x 5 = 2.5 s
+```
+
+#### مثال متوسط — Probe پروتکل
+
+ping، http، tcp-echo، dns؛ برای وب از http مفیدتر است چون ping ممکن است مسدود/Rate-limit شود.
+
+#### مثال سخت — اشتباه رایج
+
+یک سرور واحد برای Health-check (مثلاً 8.8.8.8) اگر مقصد مشکل پیدا کند، هر دو لینک را «dead» می‌کند. راه: دو سرور متفاوت و `update-static-route`/`members` هوشمند.
+
+#### Lab
+
+Health-check را با دو پروب مختلف مقایسه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| هر دو dead | یک سرور | دو سرور |
+| ping مسدود | Rate limit | http |
+| flap | آستانه | تنظیم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. sla_map؟** وضعیت SLAها.
+**۲. چرا دو سرور؟** SPOF Health-check.
+**۳. failtime؟** شمارش شکست.
+
+#### English Corner
+
+- *Use more than one probe target so a remote outage does not mark all links dead.*
+- Q: What do interval and failtime determine together?
 
 ## پاسخ‌های فصل 21
 
