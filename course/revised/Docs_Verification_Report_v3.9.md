@@ -80,3 +80,23 @@
 - این بررسی **نمونه‌ای** است: حدود ۳۰ ادعای پرخطر از ۲۱۳ درس بررسی شد؛ همه‌ی جمله‌های دوره به‌صورت خط‌به‌خط با منبع رسمی تطبیق داده نشده‌اند.
 - مفاهیم پایه‌ی رایج (OSI، Subnetting، IPv6، VLAN/Trunk، ACL، NAT، DNS/NTP، Syslog/SNMP، QoS) از دانش استاندارد آمده و در این دور جداگانه با مرجع رسمی چک نشده‌اند.
 - دورهای بعدی پیشنهادی: (۱) فصل ۲ تا ۴ Cisco، (۲) فصل ۵ تا ۱۰ مسیریابی، (۳) فصل ۱۱ تا ۱۵ مفاهیم فایروال و FortiGate، (۴) فصل ۱۶ تا ۲۲ (UTM، Auth، IPsec، SD-WAN، HA)، (۵) فصل ۲۳ تا ۳۲.
+
+
+## دور سوم (۲۰۲۶-۱۱-۲۷)
+
+### تأییدشده
+| موضوع | نتیجه | مرجع |
+|---|---|---|
+| DHCP Snooping: همه‌ی Interfaceها Untrusted؛ Binding Table؛ DAI از Binding استفاده می‌کند؛ DAI Rate-limit پیش‌فرض ۱۵ pps روی Untrusted | تأیید | [Cisco DAI](https://www.cisco.com/c/en/us/td/docs/switches/lan/c9000/sec-crypto/fhs-sisf/fhs-and-sisf-configuration-guide/dynamic-arp-inspection.html) |
+| OSPF Area: Stub بدون LSA 4/5؛ Totally Stubby فقط 1/2 و Default (3)؛ NSSA با LSA 7 | تأیید | [Cisco OSPF Areas](https://www.cisco.com/c/en/us/support/docs/ip/open-shortest-path-first-ospf/13703-8.html) |
+| NAT: Inside Local/Global، PAT با `overload` و پورت | تأیید | [Cisco NAT](https://www.cisco.com/c/en/us/td/docs/switches/lan/c9000/lyr3-fwd/nat/nat-configuration-guide/nat.html) |
+| QoS: Policing در برابر Shaping؛ EF=46 با LLQ؛ صف اولویت با Policer محدود شود | تأیید | [Cisco Policing vs Shaping](https://www.cisco.com/c/en/us/support/docs/quality-of-service-qos/qos-policing/19645-policevsshape.html) |
+| FortiGate SSL Inspection: پروفایل‌های certificate-inspection و deep-inspection؛ CA پیش‌فرض Fortinet_CA_SSL؛ Firefox Trust Store جدا | تأیید | [Fortinet Deep inspection](https://docs.fortinet.com/document/fortigate/7.0.4/administration-guide/122078/deep-inspection) |
+| IPsec 7.0: DPD پیش‌فرض on-demand؛ NAT-T پیش‌فرض enable؛ keylife P1=۸۶۴۰۰؛ P2=۴۳۲۰۰؛ PFS پیش‌فرض enable؛ ike-version پیش‌فرض ۱ | تأیید | [phase1-interface 7.0](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/370620/config-vpn-ipsec-phase1-interface) |
+
+### اصلاح/دقیق‌سازی در درس‌ها
+| درس | تغییر | مرجع |
+|---|---|---|
+| ۱۷-۴ (FSSO) | محدودیت «فقط Kerberos» مخصوص FortiGate Polling Connector است؛ Collector Agent در Polling رویدادهای بیشتری (مثلاً 4776) می‌خواند | [Fortinet FSSO polling](https://docs.fortinet.com/document/fortigate/7.4.2/administration-guide/503764/fsso-polling-connector-agent-installation) |
+| ۱۴-۶ (Log) | `policyid=0` فقط Implicit Deny نیست؛ ترافیک Local بدون Policy هم policyid=0 دارد؛ `subtype` را بخوانید | [Fortinet: Local traffic logs and policy ID 0](https://community.fortinet.com/t5/FortiGate/Technical-Tip-Local-traffic-logs-and-policy-ID-0/ta-p/196654) |
+| ۶-۷ (NSSA) | NSSA برخلاف Stub Default خودکار نمی‌گیرد؛ باید `default-information-originate` روی ABR | [Cisco NSSA](https://www.cisco.com/c/en/us/support/docs/ip/open-shortest-path-first-ospf/6208-nssa.html) |

@@ -6083,7 +6083,7 @@ E2 metric = external cost only; E1 = external + internal cost
 | Standard | 1,2,3,4,5 | عمومی |
 | Stub | بدون 5 (Default Route از ABR) | LSDB کوچک |
 | Totally Stubby | بدون 3،4،5 (فقط Default) | حداقل LSDB |
-| NSSA | بدون 5 ولی 7 | Stub با ASBR داخلی |
+| NSSA | بدون 5 ولی 7؛ Default خودکار نمی‌گیرد (باید `default-information-originate` روی ABR داده شود) | Stub با ASBR داخلی |
 
 #### ۴) Virtual-link
 

@@ -2427,7 +2427,7 @@ Debug لحظه است؛ Log حافظه‌ی بلندمدت است. «ساعت ۹
 date=2026-11-26 time=10:05:11 type="traffic" subtype="forward" level="notice" srcip=10.10.0.5 srcport=40000 srcintf="port2" dstip=203.0.113.10 dstport=443 dstintf="port1" policyid=2 action="accept" service="HTTPS" sentbyte=5320 rcvdbyte=48200
 ```
 
-policyid=0 و action=deny ⇒ Implicit Deny. rcvdbyte=0 ⇒ پاسخی نیامده.
+policyid=0 و action=deny ⇒ معمولاً Implicit Deny. rcvdbyte=0 ⇒ پاسخی نیامده. نکته‌ی مستند Fortinet: policyid=0 فقط مخصوص Implicit Deny نیست؛ ترافیک Local (Local-in/Local-out) بدون Policy تعریف‌شده هم با policyid=0 ثبت می‌شود؛ پس `subtype` (forward یا local) را هم بخوانید.
 
 #### ۲) فیلتر
 

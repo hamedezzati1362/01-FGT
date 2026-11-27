@@ -1,6 +1,6 @@
 # دوره‌ی کامل Enterprise Network & Security — نسخه‌ی ترکیبی v3.9 (فصل ۱ تا ۳۲)
 
-> این فایل ترکیب ۱۱ فایل بخش است. وضعیت صادقانه و نقاط ضعف در `Final_Change_Report_v3.9.md` و بررسی منابع رسمی در `Docs_Verification_Report_v3.9.md`.
+> ترکیب ۱۱ فایل بخش. وضعیت صادقانه: `Final_Change_Report_v3.9.md`؛ بررسی منابع رسمی: `Docs_Verification_Report_v3.9.md`.
 
 
 
@@ -11695,7 +11695,7 @@ E2 metric = external cost only; E1 = external + internal cost
 | Standard | 1,2,3,4,5 | عمومی |
 | Stub | بدون 5 (Default Route از ABR) | LSDB کوچک |
 | Totally Stubby | بدون 3،4،5 (فقط Default) | حداقل LSDB |
-| NSSA | بدون 5 ولی 7 | Stub با ASBR داخلی |
+| NSSA | بدون 5 ولی 7؛ Default خودکار نمی‌گیرد (باید `default-information-originate` روی ABR داده شود) | Stub با ASBR داخلی |
 
 #### ۴) Virtual-link
 
@@ -26018,7 +26018,7 @@ Debug لحظه است؛ Log حافظه‌ی بلندمدت است. «ساعت ۹
 date=2026-11-26 time=10:05:11 type="traffic" subtype="forward" level="notice" srcip=10.10.0.5 srcport=40000 srcintf="port2" dstip=203.0.113.10 dstport=443 dstintf="port1" policyid=2 action="accept" service="HTTPS" sentbyte=5320 rcvdbyte=48200
 ```
 
-policyid=0 و action=deny ⇒ Implicit Deny. rcvdbyte=0 ⇒ پاسخی نیامده.
+policyid=0 و action=deny ⇒ معمولاً Implicit Deny. rcvdbyte=0 ⇒ پاسخی نیامده. نکته‌ی مستند Fortinet: policyid=0 فقط مخصوص Implicit Deny نیست؛ ترافیک Local (Local-in/Local-out) بدون Policy تعریف‌شده هم با policyid=0 ثبت می‌شود؛ پس `subtype` (forward یا local) را هم بخوانید.
 
 #### ۲) فیلتر
 
@@ -30277,6 +30277,8 @@ FSSO کاربر را بدون Login دوباره به فایروال می‌شن
 #### ۴) رویدادها
 
 Polling فقط Kerberos 4768/4769 را می‌خواند؛ NTLM پشتیبانی نمی‌شود؛ ورود هم‌زمان زیاد ممکن است ورودی را از دست بدهد.
+
+> **دقت مفهومی (طبق مستند Fortinet):** این محدودیت مربوط به **FortiGate Polling Connector** است. **Collector Agent در حالت Polling** مجموعه‌ی رویداد گسترده‌تری می‌خواند (مثلاً 4768 و 4776 و بسته به تنظیم 4769 و 4624) و NTLM را هم پوشش می‌دهد؛ ولی خودش با NTLM به DCها احراز هویت می‌کند و با Windows Server 2025 گزینه‌ی «Enforce Kerberos» لازم می‌شود. پس برای محیط NTLM-محور Collector/DC Agent مناسب‌تر از FortiGate Polling است. ([مرجع](https://community.fortinet.com/fortigate-3/technical-tip-enforcing-kerberos-instead-of-ntlm-on-fsso-collector-agent-226817))
 
 ### ۴) طراحی و تصمیم‌گیری
 

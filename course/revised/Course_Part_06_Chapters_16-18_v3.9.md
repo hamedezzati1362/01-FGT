@@ -2262,6 +2262,8 @@ FSSO کاربر را بدون Login دوباره به فایروال می‌شن
 
 Polling فقط Kerberos 4768/4769 را می‌خواند؛ NTLM پشتیبانی نمی‌شود؛ ورود هم‌زمان زیاد ممکن است ورودی را از دست بدهد.
 
+> **دقت مفهومی (طبق مستند Fortinet):** این محدودیت مربوط به **FortiGate Polling Connector** است. **Collector Agent در حالت Polling** مجموعه‌ی رویداد گسترده‌تری می‌خواند (مثلاً 4768 و 4776 و بسته به تنظیم 4769 و 4624) و NTLM را هم پوشش می‌دهد؛ ولی خودش با NTLM به DCها احراز هویت می‌کند و با Windows Server 2025 گزینه‌ی «Enforce Kerberos» لازم می‌شود. پس برای محیط NTLM-محور Collector/DC Agent مناسب‌تر از FortiGate Polling است. ([مرجع](https://community.fortinet.com/fortigate-3/technical-tip-enforcing-kerberos-instead-of-ntlm-on-fsso-collector-agent-226817))
+
 ### ۴) طراحی و تصمیم‌گیری
 
 | سؤال طراحی | گزینه‌ها و معیار انتخاب |
