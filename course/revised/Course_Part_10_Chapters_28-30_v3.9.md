@@ -842,125 +842,133 @@ TLS Handshake: SNI، Version، Cipher، Certificate (1.2) یا رمزشده (1.3
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. چارچوب ده‌پرسش را برای هر مشکل اجرا کند.
-2. بلوک TS با فرضیه‌های رتبه‌بندی‌شده و شواهد بنویسد.
-3. سه پرونده‌ی کامل (VPN، HTTPS کند، MTU) را حل و RCA کند.
-4. کتابخانه‌ی TS قابل‌استفاده‌ی مجدد بسازد.
-5. مقایسه‌ی شواهد و رد فرضیه را تمرین کند.
+1. چارچوب ده‌پرسش را برای هر مشکل اجرا کنید.
+2. بلوک TS (Troubleshooting) با فرضیه‌های رتبه‌بندی‌شده و شواهد بنویسید.
+3. سه پرونده‌ی کامل (VPN، HTTPS کند، MTU) را حل و RCA کنید.
+4. کتابخانه‌ی TS قابل‌استفاده‌ی مجدد بسازید.
+5. مقایسه‌ی شواهد و رد فرضیه را تمرین کنید.
+6. گزارش ۱‌صفحه‌ای ارائه دهید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا ده پرسش و بلوک TS؟** عیب‌یاب خوب سؤال می‌پرسد و ثبت می‌کند: Symptom، Scope، Hypothesis، Test، Evidence، Cause، Fix، Verify.
+عیب‌یاب خوب مثل کارآگاه است: فهرست مظنونان (فرضیه‌ها) می‌سازد، برای هرکدام آزمایش ارزان دارد و بر اساس شواهد حذف می‌کند. عیب‌یاب ضعیف همه را همزمان متهم می‌کند و هیچ‌کدام را اثبات نمی‌کند. «بلوک TS» قالبی است که این روش را ثبت‌پذیر و قابل‌تکرار می‌کند: هر عضو تیم همان ساختار را می‌خواند و می‌نویسد.
 
-**جمع‌بندی اصلی درس:**
-
-چارچوب ثابت سرعت و کیفیت می‌دهد. بلوک TS = «دانش تیم» به شکل قابل‌تکرار.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) ده پرسش
-
-1 چه تغییر کرد؟ 2 چه کسی/چه سرویسی؟ 3 از کی؟ 4 کدام لایه؟ 5 بسته به فایروال می‌رسد؟ 6 Route؟ 7 Policy؟ 8 NAT/Session؟ 9 Profile/Inspection؟ 10 بسته خارج می‌شود و برمی‌گردد؟
-
-#### ۲) قالب TS
+### بلوک TS
 
 ``` text
-ID / Date / Owner
-Symptom: ...   Scope: who/what/since   Last change: ...
-Evidence log: (time, command, output snippet)
-Hypotheses ranked: H1 (likelihood, cheap test) ...
-Tests & results -> accepted/rejected
-Root cause
-Fix + verification (positive and negative)
-Prevention + owner/date
+TS-ID       : TS-2026-0147
+Symptom     : who/what/when
+Scope       : users/sites affected; not affected
+Change      : recent changes (CHG)
+Hypotheses  : H1..Hn ranked by likelihood x cost to test
+Tests       : command / capture / expected result for each
+Evidence    : outputs with timestamps (file names)
+Cause       : the surviving hypothesis, proven
+Fix         : minimal change + rollback
+Verify      : positive and negative tests
+Prevent     : monitoring / checklist / design change
 ```
 
-#### ۳) رتبه‌بندی فرضیه
+### ده‌پرسش (یادآوری)
+
+۱ علامت دقیق؟ ۲ Scope؟ ۳ از چه زمانی/چه تغییری؟ ۴ L1/L2؟ ۵ Route؟ ۶ Policy؟ ۷ NAT/Session؟ ۸ DNS؟ ۹ MTU/TLS؟ ۱۰ Verify؟
+
+### رتبه‌بندی فرضیه
 
 ``` text
-Priority ~= likelihood x impact / test cost
+Score = Likelihood (1-5) x (6 - Cost to test (1-5))
 ```
 
-اول فرضیه‌های محتمل و ارزان (ping/Policy/Route) بعد گران (Capture عمیق).
+فرضیه‌ی محتمل و ارزان‌آزمون اول. مثال: «DNS خراب» (محتمل ۴، هزینه ۱) امتیاز ۲۰؛ «باگ Firmware» (۱، ۵) امتیاز ۱.
 
-#### ۴) پرونده‌ها
+### پرونده ۱ — VPN
 
-**پرونده A: VPN Up ولی ترافیک نه.** شواهد: Bytes out>0، in=0؛ Debug Flow سمت مقابل Denied policy 0. علت: Policy سمت مقابل. رفع: Policy؛ آزمون مثبت/منفی؛ پیشگیری: چک‌لیست دوطرفه.
+**Symptom:** تونل بالا ولی ترافیک نمی‌رسد (شعبه B).
 
-**پرونده B: HTTPS کند.** شواهد: CPU 85٪، `sys top` ipsengine؛ TLS Handshake طولانی. علت: IPS+Deep روی همه. رفع: Sensor انتخابی؛ Baseline بعد.
-
-**پرونده C: بزرگ‌ها قفل.** شواهد: ping DF 1372 شکست؛ Retrans؛ نبود ICMP 3/4. علت: MTU/PMTUD. رفع: MSS Clamp 1360 و ICMP؛ تأیید.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| قالب TS | یکسان برای تیم |
-| کتابخانه | نسخه‌دار |
-| بازبینی | فصلی |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-بلوک TS: HTTPS یک کاربر Timeout؛ Sniffer: SYN بدون SYN-ACK؛ علت: IP Pool مسدود؛ رفع و Verify.
-
-#### مثال متوسط
-
-اگر «همه‌ی کاربران»: Route/لینک؛ «یک نفر»: کلاینت/Policy منبع.
-
-#### مثال سخت
-
-ECMP با دو لینک MTU متفاوت ⇒ MSS Clamp.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** پرونده A با بلوک TS کامل؛ زمان رفع ۱۲ دقیقه.
-
-**متوسط (تحلیل):** پرونده B: دو علت هم‌زمان: Profile و Interface errors؛ جدا‌سازی با شواهد؛ رفع جداگانه و اندازه‌گیری.
-
-**سخت (چندلایه):** پرونده C همراه با Asymmetric جزئی (۵٪ Flow). بلوک TS: H1 MTU (آزمون ping DF)، H2 Asymmetric (Sniffer)؛ هر دو تأیید؛ رفع دو علت؛ پیشگیری: استاندارد MTU و Route متقارن.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-diagnose debug flow filter addr 10.1.4.10
-diagnose debug flow trace start 20
-diagnose debug enable
-diagnose debug disable
-diagnose debug reset
-get system performance status
-```
-
-### ۸) Verification (اثبات صحت)
-
-- سه TS Block کامل با Evidence.
-- کتابخانه‌ی TS.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| فرضیه | آزمون | نتیجه |
 |---|---|---|
-| فرضیه ثابت نمی‌شود | آزمون | رد/بعدی |
-| دو علت | شواهد جدا | رفع جدا |
+| H1 Route | `get router info routing-table details` | سالم |
+| H2 Policy | `iprope lookup` | policy 0 |
+| H3 Selector | `diagnose vpn tunnel list` | سالم |
 
-### ۱۰) نکات امنیتی
+Cause: Policy یک‌طرفه. Fix: Policy معکوس. Verify: ping، شمارنده‌ی enc/dec.
 
-- Debug را Disable کنید.
-- Evidence بدون Secret.
+### پرونده ۲ — HTTPS کند
 
-### ۱۱) جمع‌بندی مفهومی
+**Symptom:** HTTP سریع، HTTPS کند فقط از شعبه.
 
-- ده پرسش + TS Block.
-- رتبه‌بندی فرضیه.
-- چندعلتی را جدا کنید.
-- کتابخانه‌ی دانش.
+| فرضیه | آزمون | نتیجه |
+|---|---|---|
+| H1 DNS | `dig` | سالم |
+| H2 MTU | `ping -f -l 1400` | شکست |
+| H3 SSL Inspection CPU | `diagnose sys top` | سالم |
 
-### ۱۲) تمرین و ارزیابی
+Cause: MTU تونل/ICMP بلاک. Fix: MSS Clamp 1360. Verify: SYN با `mss 1360`، سرعت.
+
+### پرونده ۳ — MTU/Fragment
+
+**Symptom:** RDP قطع می‌شود، ping کوچک خوب.
+
+| فرضیه | آزمون | نتیجه |
+|---|---|---|
+| H1 ISP | ping طولانی | ok |
+| H2 MTU | `ping -f` | MTU 1400 |
+| H3 NIC کلاینت | Capture | ok |
+
+Cause: Fragment UDP RDP روی تونل. Fix: MTU Interface تونل 1400 + `tcp-mss`. Verify: پایداری ۳۰ دقیقه.
+
+### کتابخانه‌ی TS
+
+فهرست الگوها: «تونل بالا ولی ترافیک نه»، «HTTPS کند»، «فقط یک کاربر»، «بعد از ارتقا»، «بعد از تغییر Policy». هر کدام فرضیه‌ها و آزمون‌های آماده.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — رتبه‌بندی
+
+DNS: 4×(6−1)=20؛ MTU: 3×(6−2)=12؛ Firmware bug: 1×(6−5)=1. ترتیب آزمون: DNS ⇒ MTU ⇒ Firmware.
+
+#### مثال متوسط — رد فرضیه
+
+H1 «Firewall Policy». `iprope lookup` ⇒ policy 30 (مجاز) و Session ساخته شده؛ H1 رد. Evidence ذخیره.
+
+#### مثال متوسط — Scope
+
+«فقط کاربران VLAN 20». Scope ⇒ Policy/Address VLAN 20؛ H اولیه از «DNS عمومی» به «Policy VLAN» تغییر.
+
+#### مثال سخت — دو علت
+
+بعد از رفع MTU هنوز کند. علت دوم: Resolver ثانویه Timeout (۲ثانیه). هر علت جدا، Evidence، رفع. بلوک TS دو Cause دارد.
+
+#### مثال سخت — Confirmation Bias
+
+مهندس مطمئن است «ISP خراب است» و فقط شواهد موافق جمع می‌کند. آزمون رد‌کننده: ping از لینک دوم و Capture سرور نشان داد SYN به سرور نمی‌رسد؛ نه ISP؛ Policy بالادست. درس: همیشه یک آزمون که فرضیه را رد کند.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. سه بلوک TS را پر کنید.
+2. رتبه‌بندی فرضیه.
+3. گزارش ۱‌صفحه‌ای.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| همه‌چیز مشکوک | بی‌رتبه | Score |
+| بی‌Evidence | ثبت نشده | بلوک TS |
+| یک علت | تعصب | آزمون رد‌کننده |
+| تکرار | بی‌Prevent | بخش Prevent |
+
+### جمع‌بندی
+
+بلوک TS: Symptom، Scope، Hypotheses، Tests، Evidence، Cause، Fix، Verify، Prevent؛ رتبه‌بندی Score؛ سه پرونده؛ کتابخانه‌ی الگو؛ آزمون رد‌کننده.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) ده پرسش را فهرست کنید. *(پاسخ: 28-4-ت1)*
 
@@ -976,7 +984,7 @@ get system performance status
 
 **Q1.** Quick quiz (English): Why rank hypotheses by likelihood and test cost? *(پاسخ: 28-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -985,104 +993,16 @@ get system performance status
 
 - *Keep an evidence log for every incident.* ← برای هر حادثه Evidence Log نگه دارید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** TS. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ts.md`.
 
-### ۱۵) منابع
+### منابع
 
 - درس ۱۴-۷
 - ITIL Problem Management
 
 <a id="l-28-5"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: بلوک TS
-
-هر پرونده: علامت، فرضیه، آزمون، Evidence، نتیجه.
-
-**پرسش‌های مصاحبه**
-1. *ده پرسش؟* چارچوب 14-1.
-2. *Evidence؟* pcap/Log.
-3. *نتیجه؟* علت ریشه.
-
-### مثال حل‌شده: بلوک TS کامل
-
-``` text
-Symptom   : HTTPS to app times out for 1 user
-Hypothesis: MTU black hole
-Test      : ping -f -l 1400 / sniffer on port2
-Evidence  : large packets retransmit, small pass
-Cause     : PMTUD ICMP blocked
-Fix       : MSS clamp 1360
-Verify    : curl OK, no retrans
-```
-
-### تکمیل عمیق: ده پرسش عیب‌یابی و بلوک TS در عمل
-
-#### چرا؟
-
-عیب‌یاب خوب حدس نمی‌زند؛ سؤال می‌پرسد. ده پرسش، مسیر را کوتاه و قابل‌تکرار می‌کند.
-
-#### ده پرسش
-
-1. چه کسی تحت تأثیر است؟
-2. از چه زمانی؟
-3. چه چیزی تغییر کرده؟
-4. DNS درست است؟
-5. Route درست است؟
-6. Policy مجاز است؟
-7. NAT/Session درست است؟
-8. بسته روی سیم دیده می‌شود؟
-9. لایه‌ی کاربرد (TLS/برنامه) چه می‌گوید؟
-10. رفع را چگونه تأیید می‌کنیم؟
-
-#### مثال ساده — بلوک TS
-
-``` text
-Symptom   : HTTPS to app times out for one user
-Q1 scope  : only user A
-Q3 change : none
-Q4 DNS    : ok
-Q8 wire   : SYN seen, no SYN-ACK
-Cause     : upstream blocks user A source NAT IP
-Fix       : change pool IP
-Verify    : curl 200
-```
-
-#### مثال متوسط — اولویت پرسش‌ها
-
-اگر پاسخ Q1 «همه‌ی کاربران» باشد، مستقیماً سراغ Route/لینک بروید؛ اگر «یک نفر»، سراغ کلاینت/Policy/NAT منبع.
-
-#### مثال سخت — پرونده‌ی چندلایه
-
-سایت گاهی باز می‌شود. Capture: برخی اتصال‌ها با MSS 1380 و برخی با MSS 1460؛ مسیر ECMP با دو لینک که یکی Tunnel دارد. نتیجه: MTU متفاوت؛ رفع: MSS Clamp روی Policy.
-
-#### Lab
-
-سه پرونده‌ی نوشته‌شده را با بلوک TS تمرین کنید.
-
-#### عیب‌یابی روش
-
-| علامت | علت | رفع |
-|---|---|---|
-| دور باطل | حدس | ده پرسش |
-| تغییر هم‌زمان | بی‌انضباطی | یک تغییر در هر زمان |
-| شاهد ناقص | ثبت نشد | ثبت خروجی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا پرسش «چه چیزی تغییر کرد؟»** اغلب علت همان است.
-**۲. چرا Scope اول؟** مسیر تحقیق را کوتاه می‌کند.
-**۳. بلوک TS چیست؟** قالب ثبت.
-
-#### English Corner
-
-- *Ask what changed first.*
-- Q: How does scope narrow the search?
 
 ## درس 28-5 — آزمون عملی فصل ۲۸: تحلیل سه PCAP و RCA — صورت مسئله، کلید پاسخ و Rubric
 
@@ -1090,31 +1010,34 @@ Verify    : curl 200
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. سه PCAP را با Display Filter تحلیل کند.
-2. الگوهای SYN-بی‌پاسخ، Retransmission/MTU و DNS/TLS شکست را تشخیص دهد.
-3. برای هر PCAP RCA بنویسد.
-4. رفع پیشنهادی و آزمون تأیید را بنویسد.
-5. Evidence با شماره‌ی بسته ثبت کند.
+1. سه PCAP را با Display Filter تحلیل کنید.
+2. الگوهای SYN بی‌پاسخ، Retransmission/MTU و شکست DNS/TLS را تشخیص دهید.
+3. برای هر PCAP RCA بنویسید.
+4. رفع پیشنهادی و آزمون تأیید را بنویسید.
+5. Evidence را با شماره‌ی بسته ثبت کنید.
+6. Rubric را اجرا و صداقت را ثبت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا آزمون PCAP؟** تحلیل‌گر یعنی بتواند از الگو به علت برسد: SYN با Backoff ⇒ Drop؛ RST با TTL متفاوت ⇒ Middlebox؛ Window=0 ⇒ گیرنده.
+PCAP بی‌طرف‌ترین شاهد است: دو مهندس بر سر علت بحث می‌کنند؛ فایل PCAP حکم می‌دهد. ولی فقط وقتی بدانید چه چیزی را باید در آن ببینید. این آزمون سه پرونده‌ی کلاسیک را می‌سنجد: سایت باز نمی‌شود، دانلود می‌ایستد، HTTPS خطا می‌دهد.
 
-**جمع‌بندی اصلی درس:**
+### صورت مسئله
 
-PCAP بی‌طرف‌ترین شاهد است. دو مهندس بر سر علت بحث می‌کنند؛ یک فایل PCAP حکم می‌دهد. ولی تنها وقتی که بدانید چه را در آن ببینید. این آزمون سه الگوی کلاسیک را می‌سنجد.
+سه فایل:
 
-### ۳) توضیح عمیق فنی
+1. `case1.pcap`: سایت باز نمی‌شود.
+2. `case2.pcap`: دانلود می‌ایستد.
+3. `case3.pcap`: HTTPS خطا.
 
-#### ۱) صورت مسئله
+برای هرکدام: الگو، علت، رفع، آزمون تأیید و Evidence (شماره‌ی بسته).
 
-سه فایل: `case1.pcap` (سایت باز نمی‌شود)، `case2.pcap` (دانلود می‌ایستد)، `case3.pcap` (HTTPS خطا). برای هرکدام: الگو، علت، رفع، آزمون.
-
-#### ۲) فیلترهای پایه
+### فیلترهای پایه
 
 ``` text
 tcp.flags.syn==1 && tcp.flags.ack==0
@@ -1125,88 +1048,93 @@ dns.flags.rcode != 0
 tls.alert_message
 ```
 
-#### ۳) کلید
+### کلید پاسخ
 
-**Case 1:** ۵ بسته SYN از کلاینت با Retransmit (۱، ۳، ۷ ثانیه) و هیچ SYN-ACK. علت: مقصد/Firewall سرور SYN را نمی‌پذیرد یا مسیر برگشت. رفع: بررسی Policy/Route/سرور؛ Capture در مقصد.
+**Case 1 — SYN بی‌پاسخ:**
 
-**Case 2:** Handshake و چند بسته‌ی کوچک ok؛ بسته‌ی بزرگ (1514 بایت) Retransmit مکرر؛ ICMP نوع 3 کد 4 در جهت مخالف یا غایب. علت: MTU مسیر کمتر. رفع: MSS-clamp/اجازه‌ی ICMP.
+1. الگو: ۵ SYN با Retransmit (۱، ۳، ۷ ثانیه)، هیچ SYN-ACK (بسته‌ی #1، #3، #7).
+2. علت‌های محتمل: Firewall سرور/بالادست، Route برگشت.
+3. آزمون جداکننده: Capture سمت سرور: SYN رسید؟ نه ⇒ مسیر/Firewall میانی؛ بله ⇒ سرور/Route برگشت.
+4. رفع: طبق نتیجه (Policy/Route).
+5. تأیید: Handshake کامل، `curl` OK.
 
-**Case 3:** TLS Handshake: ClientHello سپس Alert (fatal) `certificate_unknown` یا `handshake_failure`. علت: گواهی نامعتبر/Inspection/SNI. رفع: گواهی CA مورد اعتماد کلاینت، یا Exempt در SSL Inspection.
+**Case 2 — MTU:**
 
-#### ۴) قالب Evidence
+1. الگو: Handshake و چند بسته‌ی کوچک OK؛ بسته‌ی ۱۵۱۴ بایت Retransmit مکرر (#40، #42، #47)؛ ICMP نوع 3 کد 4 غایب.
+2. علت: MTU مسیر کمتر و PMTUD بلاک.
+3. رفع: MSS Clamp (1360) و اجازه‌ی ICMP Type 3.
+4. تأیید: SYN با `mss 1360`، دانلود کامل.
 
-``` text
-case: 2
-frames: 41-58 (large segments retransmitted), 60 (ICMP 3/4)
-finding: PMTU 1400 ; MSS 1460
-fix: tcp-mss 1360 ; allow ICMP frag-needed
-verify: download 100MB x3 without retransmission
-```
+**Case 3 — TLS:**
 
-#### ۵) Rubric
+1. الگو: ClientHello سپس Alert fatal `unknown_ca`/`handshake_failure` (#5).
+2. علت: CA ناشناس بعد از Inspection یا ناسازگاری Version/Cipher.
+3. رفع: نصب CA یا Exempt یا به‌روزرسانی TLS.
+4. تأیید: Handshake کامل و HTTP 200.
 
-الگوی هر Case ۱۵×۳، RCA ۲۰، رفع و آزمون ۱۵، Evidence با شماره‌ی بسته ۱۵، صداقت ۵. قبولی ۷۵.
+### قالب Evidence
 
-### ۴) طراحی و تصمیم‌گیری
+| Case | فایل | بسته‌ها | فیلتر | نتیجه |
+|---|---|---|---|---|
+| 1 | case1.pcap | #1,#3,#7 | `tcp.flags.syn==1` | SYN بی‌پاسخ |
+| 2 | case2.pcap | #40,#42,#47 | `tcp.analysis.retransmission` | بسته‌ی بزرگ |
+| 3 | case3.pcap | #5 | `tls.alert_message` | unknown_ca |
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+### Rubric (۱۰۰)
+
+| معیار | امتیاز |
 |---|---|
-| فیلتر | دقیق |
-| ثبت | شماره بسته |
+| الگو درست | 30 |
+| علت و فرضیه‌ی رد‌شده | 25 |
+| رفع و آزمون تأیید | 20 |
+| Evidence با شماره‌ی بسته | 15 |
+| صداقت/نکات قانونی | 10 |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### مثال‌های حل‌شده
 
-#### مثال ساده
+#### مثال ساده — Case 1
 
-SYN با Backoff 1،2،4 ثانیه بی‌پاسخ.
+زمان‌بندی SYN: ۰، ۱، ۳، ۷ ثانیه (Backoff دوبرابری). نشان‌دهنده‌ی «SYN گم می‌شود»، نه «سرور پورت را رد می‌کند» (RST می‌داد).
 
-#### مثال متوسط — TTL
+#### مثال متوسط — Case 2
 
-RST با TTL 62 در برابر 54 ⇒ احتمال تزریق توسط IPS.
-
-#### مثال سخت
-
-قالب RCA با شماره‌ی بسته؛ Rubric: الگو ۲۵، Evidence ۲۵، علت ۲۵، رفع ۲۵.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Case 1: فقط SYN. نتیجه: پاسخی نیامده؛ مسیر/سرور.
-
-**متوسط (Case 2):** بسته‌ی ۱۵۱۴ بایتی با DF Retransmit؛ بسته‌های ≤ ۱۴۰۰ می‌رسد؛ PMTU≈1400؛ رفع MSS 1360؛ آزمون دانلود.
-
-**سخت (Case 3):** TLS Alert certificate_unknown پس از ServerHello/Certificate. مراحل: ۱) Certificate در frame 12؛ Issuer ناشناخته. ۲) علت: SSL Inspection با CA داخلی که روی کلاینت نصب نیست. ۳) رفع: نصب CA یا Exempt. ۴) آزمون: Handshake کامل.
-
-### ۷) پیاده‌سازی از مسیر CLI
+بسته‌های کوچک سالم و بزرگ گم ⇒ MTU. با `ping -f -l 1400` ⇒ شکست؛ 1372 ⇒ موفق؛ MTU ≈ 1400. محاسبه‌ی MSS:
 
 ``` text
-tcp.flags.syn==1 && tcp.flags.ack==0
-tcp.analysis.retransmission
-tls.alert_message
+MSS = 1400 - 40 = 1360
 ```
 
-### ۸) Verification (اثبات صحت)
+#### مثال متوسط — Case 3
 
-- شماره بسته‌ها در Evidence.
-- آزمون پس از رفع.
+`unknown_ca` از کلاینت پس از Certificate با Issuer = «FGT-SSL-CA». CA فایروال روی کلاینت نیست. رفع: GPO یا Exempt. این الگو در همه‌ی Deep Inspection مشابه است.
 
-### ۹) Troubleshooting
+#### مثال سخت — دو علت در یک PCAP
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+Case 2 شامل Retransmission MTU و هم Zero Window در انتها. دو علت: MTU (شبکه) و سرور کند (برنامه). هر کدام جدا Evidence. اگر فقط یکی را رفع کنید، مشکل نیمه‌کاره می‌ماند.
+
+#### مثال سخت — حریم و قانون
+
+PCAP حاوی Cookie/Token بود. پیش از ارسال به فروشنده: Snaplen کوتاه/حذف Payload (`editcap`/`tshark` فیلتر)، مجوز مکتوب، رمزنگاری فایل. بدون این، نشت داده.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. سه PCAP نمونه را تحلیل کنید.
+2. جدول Evidence.
+3. RCA.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| SYN بی‌پاسخ | مقصد/Firewall | Capture دو سمت |
-| بزرگ می‌ایستد | MTU | MSS |
-| TLS alert | گواهی | CA/Exempt |
+| بی‌جواب | مقصد/مسیر | سمت دیگر |
+| بسته‌ی بزرگ گم | MTU | Clamp |
+| Alert TLS | CA/Cipher | نصب/به‌روزرسانی |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- PCAP حاوی داده‌ی حساس است.
+آزمون PCAP: سه الگو (SYN بی‌پاسخ، MTU، TLS Alert)، Evidence با شماره‌ی بسته، RCA و آزمون تأیید، رعایت حریم؛ صداقت (Lab اجرا نشده).
 
-### ۱۱) جمع‌بندی مفهومی
-
-- سه الگو.
-- Evidence با شماره بسته.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) SYN بدون SYN-ACK؟ *(پاسخ: 28-5-ت1)*
 
@@ -1222,7 +1150,7 @@ tls.alert_message
 
 **Q1.** Quick quiz (English): Which wireshark filter finds retransmissions? *(پاسخ: 28-5-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1230,101 +1158,14 @@ tls.alert_message
 
 - *Cite frame numbers as evidence.* ← شماره‌ی فریم‌ها را به‌عنوان Evidence ذکر کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** آزمون PCAP (اجرا نشده). **Evidence:** `03-ops/pcap-rca.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Wireshark User Guide
 - RFC 1191
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Rubric
-
-تحلیل هر PCAP ۲۵: الگو، Evidence، علت، رفع؛ ۲۵ گزارش.
-
-**پرسش‌های مصاحبه**
-1. *RCA؟* علت ریشه.
-2. *PCAP حساس؟* حذف Payload.
-3. *ثبت؟* شماره‌ی بسته.
-
-### مثال حل‌شده: نمره‌ی یک PCAP
-
-PCAP دارای RST بعد از ClientHello: الگو ۲۵ (RST ناگهانی) + Evidence ۲۵ (شماره‌ی بسته) + علت ۲۵ (IPS/Policy بسته) + رفع ۲۵؛ نمره‌ی کامل فقط با ذکر منبع RST (کلاینت/سرور/Middlebox) بر پایه‌ی TTL/زمان‌بندی.
-
-### تکمیل عمیق: آزمون عملی — تحلیل سه PCAP و RCA
-
-#### چرا؟
-
-این آزمون نشان می‌دهد تحلیل‌گر هستید یا فقط می‌توانید Wireshark را باز کنید.
-
-#### PCAP-A: «سایت بالا نمی‌آید»
-
-مشاهده: SYN تکراری با فواصل 1، 2، 4 ثانیه، بدون پاسخ.
-
-``` text
-Pattern : SYN retransmission with exponential backoff
-Meaning : packet dropped before reaching server or reply lost
-Next    : sniff at firewall in/out, check route and policy
-```
-
-#### PCAP-B: «اتصال قطع می‌شود»
-
-مشاهده: RST از IP سرور (TTL مشاهده‌شده 63 در حالی که سرور TTL 64 می‌فرستد؟). تحلیل TTL: اگر RST با TTL متفاوت از بسته‌های قبلی سرور بیاید، احتمال تزریق توسط Middlebox (IPS/فایروال) است.
-
-#### PCAP-C: «کند است»
-
-مشاهده: Window=0 تکراری. علت: گیرنده کند (برنامه). رفع در سمت سرور/کلاینت، نه شبکه.
-
-#### قالب RCA
-
-``` text
-PCAP    : B
-Pattern : RST from middlebox (TTL mismatch)
-Evidence: packet #214 TTL 62 vs data TTL 54
-Cause   : IPS signature reset the session
-Fix     : tune signature / exemption with owner
-Verify  : new capture without RST
-```
-
-#### Rubric
-
-``` text
-Pattern 25 | Evidence 25 | Cause 25 | Fix & verify 25
-```
-
-نمره‌ی کامل فقط با ذکر شماره‌ی بسته و منطق است.
-
-#### مثال متوسط — اشتباه رایج
-
-تحلیل‌گر RST را به «سرور خراب» نسبت داد بدون بررسی TTL؛ پس از آزمون، IPS علت بود. درس: شاهد دوم لازم است.
-
-#### Lab
-
-سه pcap عمومی انتخاب و برای هر یک بلوک RCA بنویسید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| نتیجه‌گیری عجولانه | شاهد واحد | شاهد دوم |
-| بسته‌ی ناقص | Offload | Capture در نقطه‌ی دیگر |
-| حجم زیاد | بی‌فیلتر | فیلتر |
-
-#### پرسش‌ها با پاسخ
-
-**۱. TTL چه می‌گوید؟** تعداد Hop و تشخیص تزریق.
-**۲. Window=0 مشکل کجاست؟** گیرنده.
-**۳. SYN بی‌پاسخ؟** Drop در مسیر.
-
-#### English Corner
-
-- *A RST with a different TTL may be injected by a middlebox.*
-- Q: How do you prove where a packet was dropped?
 
 ## پاسخ‌های فصل 28
 
