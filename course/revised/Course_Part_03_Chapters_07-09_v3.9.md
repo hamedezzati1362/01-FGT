@@ -1989,6 +1989,174 @@ show ip dhcp conflict  (addresses detected as in use)
 
 ---
 
+<a id="l-7-10"></a>
+
+## درس 7-10 — NAT روی IOS XE: Static، Dynamic با Pool، PAT و چهار آدرس NAT
+
+**فصل 7 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 4.3: Configure NAT/PAT on IOS XE routers) · پیش‌نیاز: ۷-۳**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** سه نوع NAT (Static، Dynamic با Pool، PAT/Overload)، چهار اصطلاح آدرس (Inside/Outside Local/Global)، و اینکه NAT در چه ترتیبی نسبت به Routing انجام می‌شود. در درس ۷-۳ Static و PAT را دیدید؛ اینجا Dynamic با Pool و عیب‌یابی عمیق را کامل می‌کنیم.
+
+**چرا لازم است؟** ۲۰۰ کامپیوتر دارید و فقط ۵ آدرس عمومی. NAT مثل یک «میز پذیرش» است که نام داخلی را به یک شماره‌ی بیرونی تبدیل می‌کند. تصمیم اینکه کدام نوع NAT را به‌کار ببرید یعنی بدانید چند کاربر هم‌زمان خارج می‌شوند و آیا سرور داخلی باید از بیرون در دسترس باشد.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) چهار آدرس
+
+| اصطلاح | معنی | مثال |
+|---|---|---|
+| Inside Local | آدرس واقعی میزبان داخلی | 10.10.0.5 |
+| Inside Global | آدرس عمومی میزبان داخلی (پس از NAT) | 203.0.113.2 |
+| Outside Global | آدرس واقعی مقصد بیرونی | 198.51.100.8 |
+| Outside Local | آدرس مقصد بیرونی آن‌طور که داخل می‌بیند (معمولاً برابر Outside Global) | 198.51.100.8 |
+
+حفظ: «Inside» = دستگاه ما؛ «Local» = آنچه داخل می‌بیند؛ «Global» = آنچه اینترنت می‌بیند.
+
+#### ۲-۲) سه نوع
+
+| نوع | نگاشت | ظرفیت | کاربرد |
+|---|---|---|---|
+| Static | یک‌به‌یک ثابت | یک Inside ↔ یک Global | انتشار سرور |
+| Dynamic | یک‌به‌یک از Pool | به‌اندازه‌ی Pool | چند IP عمومی، هر کاربر یک IP |
+| PAT (Overload) | چند به یک با پورت | هزاران | استفاده‌ی عمومی |
+
+PAT = Port Address Translation؛ تفاوت کاربران با شماره‌ی پورت Source ساخته می‌شود.
+
+#### ۲-۳) ترتیب عملیات
+
+- **Inside → Outside:** ابتدا Routing، سپس NAT. (روتر برای مقصد مسیر پیدا می‌کند و سپس آدرس مبدأ را عوض می‌کند.)
+- **Outside → Inside:** ابتدا NAT، سپس Routing. (آدرس مقصد ترجمه می‌شود و سپس مسیر یافته می‌شود.)
+
+این ترتیب توضیح می‌دهد چرا ACL روی Interface Outside باید آدرس **Inside Global** را ببیند و ACL Inside آدرس **Inside Local** را.
+
+### ۳) دستورها (Unverified)
+
+**Interfaceها**
+
+``` text
+interface GigabitEthernet0/0
+ ip nat inside
+interface GigabitEthernet0/1
+ ip nat outside
+```
+
+**Dynamic NAT (بدون Overload)**
+
+``` text
+access-list 10 permit 10.10.0.0 0.0.0.255
+ip nat pool PUB 203.0.113.10 203.0.113.14 netmask 255.255.255.248
+ip nat inside source list 10 pool PUB
+```
+
+پنج آدرس (۱۰ تا ۱۴). پنج کاربر هم‌زمان می‌توانند خارج شوند؛ کاربر ششم تا آزادشدن یک نگاشت (Timeout پیش‌فرض ۲۴ ساعت) نمی‌تواند.
+
+**PAT با Pool**
+
+``` text
+ip nat inside source list 10 pool PUB overload
+```
+
+**PAT با آدرس Interface**
+
+``` text
+ip nat inside source list 10 interface GigabitEthernet0/1 overload
+```
+
+**Static**
+
+``` text
+ip nat inside source static 10.30.0.10 203.0.113.20
+ip nat inside source static tcp 10.30.0.10 443 203.0.113.20 443
+```
+
+**مشاهده و پاک‌سازی**
+
+``` text
+show ip nat translations
+show ip nat statistics
+clear ip nat translation *
+clear ip nat translation inside 10.10.0.5
+debug ip nat
+undebug all
+```
+
+خروجی نمونه:
+
+``` text
+Pro Inside global        Inside local       Outside local      Outside global
+tcp 203.0.113.2:1024     10.10.0.5:49152    198.51.100.8:443   198.51.100.8:443
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — ظرفیت Dynamic.** Pool از 203.0.113.10 تا 203.0.113.14.
+
+``` text
+Addresses in pool = 14 - 10 + 1 = 5
+```
+
+پس حداکثر ۵ میزبان هم‌زمان. با `show ip nat statistics` عدد `misses` افزایش می‌یابد وقتی Pool پر شود.
+
+**متوسط — PAT و ظرفیت.** با یک IP عمومی و PAT، هر Inside Global تا حدود ۶۴ هزار نگاشت پورت می‌دهد (پورت‌های بالا). اگر ۲۰۰ کاربر هر کدام ۵۰۰ اتصال داشته باشند:
+
+``` text
+Total translations = 200 x 500 = 100,000
+Capacity per IP ~ 64,000
+Needed IPs = ceil(100000 / 64000) = 2
+```
+
+پس یک IP کافی نیست؛ دو IP در Pool با Overload.
+
+**متوسط — Static برای سرور وب.** `ip nat inside source static tcp 10.30.0.10 443 203.0.113.20 443`؛ از بیرون به `203.0.113.20:443` ⇒ ترجمه به سرور داخلی. حتماً ACL بیرونی باید 443 را به **203.0.113.20** (Inside Global) اجازه دهد.
+
+**سخت — «NAT برای بعضی کاربران کار می‌کند».** `access-list 10 permit 10.10.0.0 0.0.0.127` فقط /25 اول را می‌پوشاند؛ کاربران 10.10.0.128 تا .255 ترجمه نمی‌شوند. اشتباه Wildcard. `show ip nat statistics` و `show access-lists 10` (Match count). رفع: `0.0.0.255`.
+
+**سخت — دو علت هم‌زمان.** NAT ترجمه نمی‌کند و `show ip nat translations` خالی است.
+
+1. `ip nat inside`/`outside` روی Interface اشتباه یا ناقص؟
+2. ACL تطبیق دارد؟
+3. Default Route به سمت Outside؟
+4. اگر ترجمه ایجاد می‌شود ولی پاسخ نمی‌آید: ISP آدرس Inside Global را Route نکرده یا ACL Outside آن را می‌بندد.
+5. `debug ip nat` (فقط لحظه‌ای): خط‌های `NAT*: s=10.10.0.5->203.0.113.2` را ببینید.
+
+### ۵) Lab (اجرا نشده)
+
+یک روتر با سه Interface (Inside، Outside، سرور)؛ Dynamic با Pool سه‌آدرسی، سپس PAT و Static؛ ظرفیت را با ۴ کلاینت بیازمایید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| NAT | Network Address Translation | ترجمه‌ی آدرس |
+| PAT | Port Address Translation | ترجمه با پورت |
+| ACL | Access Control List | فهرست کنترل دسترسی |
+| Wildcard | — | ماسک معکوس ACL |
+| ISP | Internet Service Provider | ارائه‌دهنده‌ی اینترنت |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) Inside Local و Inside Global را تعریف کنید. *(پاسخ: 7-10-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) تفاوت Dynamic NAT و PAT؟ *(پاسخ: 7-10-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) Pool از 198.51.100.20 تا 198.51.100.29؛ چند میزبان هم‌زمان؟ *(پاسخ: 7-10-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (متوسط) ACL `permit 10.10.4.0 0.0.0.255` کدام شبکه را می‌پوشاند؟ *(پاسخ: 7-10-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت5.** (سخت) NAT ترجمه می‌کند ولی پاسخ برنمی‌گردد؛ چهار علت. *(پاسخ: 7-10-ت5 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *Dynamic NAT maps each inside host to a unique address from a pool.*
+- *PAT uses unique source port numbers to share one global address.*
+- **Q1.** Which address does the internet see for an inside host? *(پاسخ: 7-10-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 7
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -2392,6 +2560,20 @@ Only when there is congestion on a link.
 **7-9-ت4** — ۱) VLAN/کابل کلاینت ۲) `ip helper-address` روی Interface ۳) مسیر Relay به Server ۴) Pool مناسب giaddr و آدرس‌های excluded ۵) DHCP Snooping Trust و ACL پورت 67/68.
 
 **7-9-Q1** — UDP 67 (server) and 68 (client).
+
+### پاسخ‌های درس افزوده‌ی 7-10 (فصل 7)
+
+**7-10-ت1** — Inside Local آدرس واقعی (خصوصی) میزبان داخلی؛ Inside Global آدرس عمومی همان میزبان پس از NAT.
+
+**7-10-ت2** — Dynamic هر میزبان را به یک آدرس یکتا از Pool نگاشت می‌کند (ظرفیت = تعداد آدرس‌ها)؛ PAT چند میزبان را با شماره‌ی پورت روی یک (یا چند) آدرس مشترک می‌کند (ظرفیت بسیار بیشتر).
+
+**7-10-ت3** — 29 − 20 + 1 = 10 آدرس ⇒ حداکثر ۱۰ میزبان هم‌زمان.
+
+**7-10-ت4** — شبکه‌ی 10.10.4.0/24 (آدرس‌های 10.10.4.0 تا 10.10.4.255).
+
+**7-10-ت5** — ۱) ISP آدرس Inside Global را Route نکرده ۲) ACL Outside آن را می‌بندد ۳) Route برگشت/Default ناقص ۴) تعارض Pool با Interface یا آدرس تکراری.
+
+**7-10-Q1** — The inside global address.
 
 ---
 

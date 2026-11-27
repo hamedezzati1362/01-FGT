@@ -186,3 +186,6 @@ Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خ�
 ## D-351 — تکمیل گام‌به‌گام دامنه‌های 1.x تا 2.x CCNA
 - درس‌های جدید: 3-8 (لایه‌ی ۱/کابل/فیبر/خطاها، CCNA 1.1)، 3-9 (CDP/LLDP، 2.3)، 3-10 (show/ping/traceroute/Capture، 2.4)، 7-9 (DHCPv4 روی IOS، 1.7)، 4-9 (EtherChannel/LACP، 2.1.c).
 - کاربر گفت ابتدا همه‌ی درس‌ها کامل شوند و سپس دستور بعدی را می‌دهد.
+
+## D-352 — تکمیل CCNA 3.1/3.2 و 4.3
+- درس‌های جدید: 5-9 (Static Routing کامل IPv4/IPv6: default/network/host/floating، LPM)، 7-10 (NAT: Dynamic با Pool، PAT، چهار آدرس، ترتیب عملیات، عیب‌یابی).

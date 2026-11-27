@@ -4474,6 +4474,156 @@ R1# show ip ospf neighbor
 - Cisco: «OSPF Support for Fast Hello Packets» و «Bidirectional Forwarding Detection» (IOS XE Configuration Guides).
 
 
+<a id="l-5-9"></a>
+
+## درس 5-9 — Static Routing کامل: Default، Network، Host و Floating Static برای IPv4 و IPv6
+
+**فصل 5 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 3.1: Interpret a routing table و 3.2: Troubleshoot IPv4 and IPv6 static routing — default, network, host, floating static) · پیش‌نیاز: ۵-۱ تا ۵-۳، ۲-۷**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** چهار نوع Static Route (پیش‌فرض، شبکه، میزبان، Floating) هم در IPv4 و هم در IPv6؛ خواندن جدول مسیر؛ و عیب‌یابی «Route هست ولی ترافیک نمی‌رود».
+
+**چرا لازم است؟** روتر مثل راننده‌ای است که فقط وقتی مقصد را بداند حرکت می‌کند. Static Route یعنی شما خودتان نقشه را به او می‌دهید: «برای رفتن به شبکه‌ی X از در Y خارج شو». ساده‌ترین مسیریابی است و هنوز در لبه‌ی سازمان (Default Route به ISP) و شعب کوچک کاربرد فراوان دارد. IPv6 هم همان منطق را دارد ولی با Syntax و چند نکته‌ی متفاوت (Link-local Next-hop).
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) جدول مسیر را بخوانیم
+
+``` text
+R1# show ip route
+Codes: L - local, C - connected, S - static, O - OSPF, * - candidate default
+Gateway of last resort is 198.51.100.1 to network 0.0.0.0
+
+S*    0.0.0.0/0 [1/0] via 198.51.100.1
+      10.0.0.0/8 is variably subnetted, 4 subnets, 2 masks
+C        10.10.0.0/24 is directly connected, GigabitEthernet0/0
+L        10.10.0.1/32 is directly connected, GigabitEthernet0/0
+S        10.20.0.0/24 [1/0] via 10.99.0.2
+S        10.30.0.5/32 [1/0] via 10.99.0.3
+```
+
+هر خط: **کد منبع** + **Prefix/طول** + **[AD/Metric]** + **Next-hop یا Interface**.
+
+- `[1/0]`: Administrative Distance=1 و Metric=0.
+- `C`: شبکه‌ی مستقیم؛ `L`: آدرس خود Interface (/32).
+- روتر **طولانی‌ترین Prefix مطابق** (Longest Prefix Match) را انتخاب می‌کند: برای 10.30.0.5 مسیر /32 از /24 و Default برنده است.
+- اگر دو مسیر هم‌Prefix باشند، **AD کمتر** برنده است؛ اگر AD هم برابر بود، Metric.
+
+#### ۲-۲) چهار نوع Static IPv4
+
+| نوع | دستور | معنی |
+|---|---|---|
+| Network | `ip route 10.20.0.0 255.255.255.0 10.99.0.2` | شبکه‌ی مشخص |
+| Default | `ip route 0.0.0.0 0.0.0.0 198.51.100.1` | هر مقصدی که مسیر بهتری ندارد |
+| Host | `ip route 10.30.0.5 255.255.255.255 10.99.0.3` | یک میزبان (/32) |
+| Floating | `ip route 0.0.0.0 0.0.0.0 203.0.113.1 250` | مسیر پشتیبان با AD بالا |
+
+**Floating Static:** AD پیش‌فرض Static برابر 1 است. اگر مسیر پشتیبان با AD=250 بگذارید، تا وقتی مسیر اصلی (AD کمتر) در جدول هست، پشتیبان «روی آب شناور» و ناپیدا می‌ماند؛ با افتادن مسیر اصلی، وارد جدول می‌شود. برای اینکه AD پشتیبان از مسیر یادگرفته‌شده توسط OSPF (110) هم بالاتر باشد، مقدار بالاتر از 110 (مثلاً 200 یا 250) انتخاب می‌شود.
+
+#### ۲-۳) Static IPv6
+
+ابتدا `ipv6 unicast-routing` (بدون آن روتر IPv6 را Route نمی‌کند).
+
+| نوع | دستور |
+|---|---|
+| Network | `ipv6 route 2001:db8:20::/64 2001:db8:12::2` |
+| Default | `ipv6 route ::/0 2001:db8:12::2` |
+| Host | `ipv6 route 2001:db8:20::5/128 2001:db8:12::3` |
+| Floating | `ipv6 route ::/0 2001:db8:13::2 200` |
+| Link-local Next-hop | `ipv6 route 2001:db8:20::/64 GigabitEthernet0/1 FE80::2` |
+
+**نکته‌ی Link-local:** آدرس FE80:: فقط روی همان لینک معنا دارد (چند Interface می‌توانند FE80::1 داشته باشند)؛ پس باید Interface خروجی هم نوشته شود. اشاره‌ی فقط به Interface (`ipv6 route ... Gi0/1`) روی اترنت چندپخشی توصیه نمی‌شود؛ بهتر است Next-hop ذکر شود (Fully specified).
+
+### ۳) Verification
+
+``` text
+show ip route static
+show ip route 10.30.0.5
+show ipv6 route static
+show ipv6 route 2001:db8:20::5
+show ipv6 neighbors
+ping 10.20.0.1 source 10.10.0.1
+ping ipv6 2001:db8:20::1
+traceroute 10.20.0.1
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — Default Route.** شعبه با یک روتر و یک ISP؛ تنها لازم: `ip route 0.0.0.0 0.0.0.0 198.51.100.1`. تأیید: `Gateway of last resort is 198.51.100.1`.
+
+**متوسط — Longest Prefix Match.** جدول: `10.20.0.0/16` از Static و `10.20.5.0/24` از OSPF و `0.0.0.0/0`. بسته به 10.20.5.9: /24 برنده است (حتی اگر AD آن 110 بالاتر از Static با AD=1 باشد). **اولویت اول Prefix طولانی‌تر است؛ AD فقط بین مسیرهای هم‌Prefix مقایسه می‌شود.**
+
+**متوسط — Floating.** دو ISP:
+
+``` text
+ip route 0.0.0.0 0.0.0.0 198.51.100.1
+ip route 0.0.0.0 0.0.0.0 203.0.113.1 250
+```
+
+با `show ip route 0.0.0.0` فقط مسیر اول (AD=1) دیده می‌شود. اگر Interface ISP1 قطع شود (Line Down)، مسیر اول حذف و مسیر دوم نصب می‌شود. **هشدار:** اگر لینک بالا باشد ولی ISP بالادست مشکل داشته باشد، Static معمولی Route را حذف نمی‌کند؛ باید `ip sla` و Track به Route وصل شود (مفهوم مشابه Link Monitor فصل ۱۲).
+
+**متوسط — IPv6 با Link-local.**
+
+``` text
+ipv6 unicast-routing
+ipv6 route 2001:db8:20::/64 GigabitEthernet0/1 FE80::2
+```
+
+اگر Interface را ننویسید خطا: `% Interface has to be specified for a link-local nexthop`.
+
+**سخت — Route هست ولی ping نمی‌رود.**
+
+``` text
+S  10.20.0.0/24 [1/0] via 10.99.0.2
+```
+
+مراحل:
+
+1. `ping 10.99.0.2` (Next-hop قابل‌دسترس؟). اگر نه، Route نصب شده ولی بی‌فایده (در IOS Static فقط وقتی Next-hop از طریق Interface Up قابل‌حل باشد نصب می‌شود).
+2. `show arp` (برای Next-hop؛ در IPv6: `show ipv6 neighbors`).
+3. روتر مقابل مسیر برگشت دارد؟ (ping با `source` برای آزمودن).
+4. Mask اشتباه؟ `10.20.0.0/24` در برابر شبکه‌ی واقعی /16.
+5. ACL یا فایروال؟
+
+**سخت — جداول متناقض.** دو روتر هرکدام Default Route به دیگری دارند ⇒ حلقه (TTL کم می‌شود). نشانه: traceroute رفت‌وبرگشت بین دو Hop. رفع: یکی از Routeها نادرست است؛ Default فقط به سمت خروجی.
+
+### ۵) Lab (اجرا نشده)
+
+سه روتر در خط؛ Static، Default، Host و Floating را بسازید؛ با قطع Interface رفتار Floating را مشاهده کنید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| AD | Administrative Distance | اعتبار منبع مسیر |
+| LPM | Longest Prefix Match | انتخاب طولانی‌ترین Prefix |
+| NDP | Neighbor Discovery Protocol | ARP در IPv6 |
+| SLA | Service Level Agreement (IP SLA) | پایش مسیر |
+| Floating Static | — | Static با AD بالا برای پشتیبان |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) Default Route در IPv4 و IPv6 چگونه نوشته می‌شود؟ *(پاسخ: 5-9-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) AD پیش‌فرض Static چند است؟ *(پاسخ: 5-9-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) برای 10.1.1.9 مسیرهای 10.1.0.0/16 (AD 1)، 10.1.1.0/24 (AD 110) و 0.0.0.0/0 هست؛ کدام انتخاب می‌شود؟ *(پاسخ: 5-9-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (متوسط) Floating Static برای OSPF (AD 110) چه AD باید داشته باشد؟ *(پاسخ: 5-9-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت5.** (سخت) Route IPv6 با Next-hop FE80::2 خطا می‌دهد؛ علت و رفع. *(پاسخ: 5-9-ت5 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *A floating static route has a higher administrative distance than the primary route.*
+- *The router always selects the longest matching prefix first.*
+- **Q1.** Why does a link-local next hop require an exit interface? *(پاسخ: 5-9-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 5
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -4896,6 +5046,21 @@ An MTU mismatch between the two interfaces.
 
 **5-7-Q1** — Detection usually dominates, because dead timers or probes take seconds while propagation, SPF and installation take milliseconds.
 
+### پاسخ‌های درس افزوده‌ی 5-9 (فصل 5)
+
+**5-9-ت1** — IPv4: `ip route 0.0.0.0 0.0.0.0 <next-hop>`؛ IPv6: `ipv6 route ::/0 <next-hop>`.
+
+**5-9-ت2** — 1.
+
+**5-9-ت3** — مسیر 10.1.1.0/24؛ چون Prefix طولانی‌تر است و LPM قبل از AD ارزیابی می‌شود.
+
+**5-9-ت4** — بیشتر از 110 (مثلاً 200 یا 250) تا فقط هنگام نبود مسیر OSPF نصب شود.
+
+**5-9-ت5** — چون FE80::2 فقط روی همان لینک معتبر است و روتر نمی‌داند از کدام Interface؛ باید Interface هم نوشته شود: `ipv6 route <prefix> GigabitEthernet0/1 FE80::2`.
+
+**5-9-Q1** — Because the same link-local address can exist on every interface, so the router needs the interface to know on which link to send.
+
+---
 
 # فصل 6 — Routing II: OSPF پیشرفته، IPv6 و FHRP (Lab A)
 
