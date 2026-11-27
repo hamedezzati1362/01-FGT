@@ -43,6 +43,11 @@
 
 # فصل 19 — Hub-and-Spoke، OSPF/BGP روی FortiGate و Local Breakout
 
+> **یادداشت علمی v4.0 — فصل 19:** عمومی: Hub-and-Spoke، OSPF/BGP، Local Breakout. مختص محصول: ADVPN FortiOS.
+> فرض: Summary هم‌تراز و Null Route؛ ADVPN وابسته به Next-hop و نسخه.
+> مراجع: RFC 4271/2328؛ Fortinet ADVPN docs.
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۹، ۱۸.
 **اهداف:** توپولوژی Hub-and-Spoke با چند Tunnel؛ Routing پویا (OSPF/BGP) روی Tunnel؛ Local Breakout؛ معماری ۴ (چندشعبه). Gate: چهار شعبه از مسیر Hub ارتباط دارند و قطع یک Tunnel بقیه را نمی‌شکند.
 **نسخه:** FortiOS 7.0.3 اسمی؛ دستورها آزمایش‌نشده؛ ADVPN در `Unverified`.
@@ -1667,6 +1672,11 @@ Overlay شبکه‌ی Tunnel روی ISP و Underlay خود ISP و لینک‌ه�
 
 # فصل 20 — Remote Access VPN: SSL VPN (ایزوله) و Dial-up IPsec
 
+> **یادداشت علمی v4.0 — فصل 20:** عمومی: دسترسی راه‌دور، ZTNA مفهوم. مختص محصول: SSL VPN، IPsec Dial-up. SSL VPN به CVEهای تاریخی و حذف Tunnel mode در 7.6.3 (طبق متن درس) حساس است.
+> فرض: Lab ایزوله؛ ادعاهای CVE/نسخه باید از PSIRT رسمی بازبینی شود.
+> مراجع: Fortinet PSIRT (بازبینی لازم).
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۷، ۱۸.
 **اهداف:** دسترسی راه‌دور کاربران؛ SSL VPN Web/Tunnel؛ Dial-up IPsec؛ MFA مفهومی؛ Split Tunnel.
 **هشدار امنیتی:** نسخه‌های 7.0.x دارای CVE شناخته‌شده در SSL VPN هستند (مثل CVE-2022-42475، CVE-2023-27997). **فقط در Lab ایزوله، بدون اتصال به اینترنت.** در تولید باید Patch شود. SSL VPN Tunnel ممکن است Needs-License باشد (`Unverified`).
@@ -3190,6 +3200,11 @@ SSL VPN Tunnel mode حذف شد و با IPsec جایگزین شد (7.6.3).
 ---
 
 # فصل 21 — Dual-ISP و SD-WAN (G8)
+
+> **یادداشت علمی v4.0 — فصل 21:** عمومی: Dual-ISP، SLA، Failover. مختص محصول: SD-WAN FortiOS 7.0.
+> فرض: زمان‌های Detect تقریب آموزشی؛ سینتکس SD-WAN باید با نسخه تطبیق شود.
+> مرجع: Fortinet Docs 7.0.
+
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۳، ۱۹.
 **اهداف:** دو ISP؛ Failover با Link Monitor؛ SD-WAN Zone/Member/Rule/Health-check؛ Performance SLA؛ معماری ۳. Gate G8: قطع ISP1 بدون قطع جلسه‌ی مهم؛ SD-WAN Rule با Health-check.

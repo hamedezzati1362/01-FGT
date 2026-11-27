@@ -40,6 +40,11 @@
 
 # فصل 22 — High Availability: FGCP، Session Sync و Failover
 
+> **یادداشت علمی v4.0 — فصل 22:** عمومی: SPOF، RTO/RPO. مختص محصول: FGCP. زمان‌ها و Election نیازمند تطبیق با مستند نسخه.
+> فرض: A-P، Heartbeat جدا؛ Failover زمانی تضمین نیست.
+> مرجع: Fortinet FGCP docs (در این بازنگری بازخوانی نشد).
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۳، ۲۱.
 **اهداف:** مفهوم HA (Active-Passive، Active-Active)؛ FGCP؛ Heartbeat؛ Priority و Override؛ Session Sync؛ Monitor Interface؛ تست Failover.
 **هشدار لایسنس:** HA در VM به لایسنس مناسب نیاز دارد (`Needs-License`) و در Evaluation ممکن است محدود باشد؛ همه‌ی دستورها `Unverified`.
@@ -1683,6 +1688,11 @@ Checksum Cluster هم‌خوانی Config بین اعضا را بررسی می�
 
 # فصل 23 — Multi-Firewall و Asymmetric Routing (معماری ۵)
 
+> **یادداشت علمی v4.0 — فصل 23:** عمومی: Asymmetric Routing و Stateful. مختص محصول: RPF/`asymroute`/FGSP در FortiOS.
+> فرض: رفتار RPF/Session وابسته به نسخه؛ غیرفعال‌سازی کنترل‌ها فقط موقت.
+> مرجع: Fortinet Docs.
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۰، ۱۵، ۲۲.
 **اهداف:** چند فایروال پشت‌سرهم/موازی؛ Asymmetric Routing و اثر آن بر Stateful؛ `asymroute`؛ Policy Routing؛ عیب‌یابی با Sniffer.
 **اشتباهات رایج:** فعال‌کردن asymroute بدون درک؛ نادیده‌گرفتن Session؛ Route دوطرفه ناهمسان.
@@ -2821,6 +2831,11 @@ Asymmetric: رفت و برگشت یک ارتباط از دو مسیر/دستگا
 **23-0-Q1** — Sniffer shows SYN on one firewall and SYN/ACK on another, and the session exists only on the first.
 
 # فصل 24 — معماری Data Center و Segmentation (G9)
+
+> **یادداشت علمی v4.0 — فصل 24:** عمومی: Segmentation، East-West. مختص محصول: VDOM/Zone.
+> فرض: Lab/طراحی؛ لایسنس VDOM وابسته به مدل.
+> مرجع: Fortinet Docs.
+
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۵، ۲۲، ۲۳.
 **اهداف:** Segmentation Data Center؛ VRF/VDOM (مفهومی)؛ East-West در برابر North-South؛ Micro-segmentation؛ معماری ۷. Gate G9: سه Zone Data Center با Policy حداقلی و تست Isolation.

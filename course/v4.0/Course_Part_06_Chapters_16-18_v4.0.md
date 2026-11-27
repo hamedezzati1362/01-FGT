@@ -45,6 +45,11 @@
 
 # فصل 16 — UTM: آنتی‌ویروس، IPS، Application Control، Web Filter و SSL Inspection
 
+> **یادداشت علمی v4.0 — فصل 16:** عمومی: UTM، TLS Inspection. مختص محصول: **Flow/Proxy در FortiOS 7.0** (جدول رسمی تأییدشده)، لایسنس FortiGuard.
+> فرض: بازرسی Flow دارای وضعیت Stream است؛ تفاوت‌ها به Profile/نسخه وابسته‌اند.
+> مراجع: Fortinet Docs 7.0 Inspection modes (تأییدشده)؛ OWASP برای WAF.
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۳، ۱۴.
 **اهداف:** Security Profile و Profile Group؛ AV؛ Web Filter (Static URL به‌جای Category)؛ IPS و DoS؛ Application Control؛ SSL/SSH Inspection؛ اثر Performance و عیب‌یابی.
 **هشدار لایسنس (مهم):** طبق مستند Fortinet: AV و IPS به لایسنس **FortiGuard AV/IPS** برای به‌روزرسانی Signature؛ Web Filter و DNS Filter (Category) به **Web/DNS Security**؛ و Signature **Application Control** جزو سرویس‌های پایه‌ی قرارداد FortiCare است (لایسنس امنیتی جدا نمی‌خواهد ولی FortiCare معتبر لازم است). اگر لایسنس منقضی شود FortiGate همچنان فایروال می‌ماند: AV/IPS با Signature قدیمی اسکن می‌کنند و فقط به‌روزرسانی قطع می‌شود، ولی Category در Web/DNS Filter کار نمی‌کند. در Lab ایزوله و Evaluation این وابستگی `Needs-License` و وضعیتش `Unverified` است. هر درس بخش «بدون لایسنس چه می‌توان کرد» دارد (Static URL، Custom IPS، DoS، Port-based). **همه‌ی دستورها آزمایش‌نشده روی Image.**
@@ -2400,6 +2405,11 @@ IPS به بازرسی محتوا در CPU/CP نیاز دارد و Offload کام
 
 # فصل 17 — Authentication: AD، LDAP، RADIUS، FSSO و Captive Portal
 
+> **یادداشت علمی v4.0 — فصل 17:** عمومی: AAA، LDAP/Kerberos/RADIUS. مختص محصول: FSSO. **محدودیت 4768/4769 و NTLM فقط برای Agentless Polling Connector در مستند 7.0.0**.
+> فرض: روش Agentless؛ DC Agent/Collector Agent تأیید نشدند.
+> مراجع: RFC 4511/4120/2865؛ Fortinet Docs 7.0.0 (FSSO polling؛ تأییدشده).
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۳، فصل ۷ (DNS/DHCP).
 **اهداف:** Active Directory روی Windows Server (VM Lab)؛ LDAP و گروه‌ها؛ RADIUS (NPS)؛ FSSO؛ Captive Portal؛ Policy مبتنی بر هویت؛ عیب‌یابی Auth.
 **Windows:** Domain Controller روی Golden Windows Server (`phase0a/Golden_W2025_Runbook.md`)؛ همه‌ی دستورهای Windows را شما اجرا می‌کنید. **رمزها نمونه‌اند.**
@@ -4300,6 +4310,11 @@ RADIUS Reject: Shared Secret یا کاربر.
 ---
 
 # فصل 18 — IPsec Site-to-Site: IKEv2، Phase 1/2، MTU و عیب‌یابی (G7)
+
+> **یادداشت علمی v4.0 — فصل 18:** عمومی: IPsec/IKEv2/ESP. مختص محصول: پارامترهای FortiGate/CSR.
+> فرض: الگوریتم‌ها نمونه‌ی پایه‌اند نه تنها پاسخ؛ MTU محاسبه‌ی تقریبی است.
+> مراجع: RFC 4301، 4303، 7296، 8247؛ Fortinet/Cisco.
+
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۳، ۱۴؛ فصل ۵ (Routing).
 **اهداف:** مفهوم IPsec (IKE Phase 1/2، SA، Proposal)؛ ساخت Tunnel بین دو FortiGate (و بعداً CSR)؛ Static Route و Policy برای ترافیک Tunnel؛ MTU/MSS؛ عیب‌یابی «Tunnel بالا ولی ترافیک نه».

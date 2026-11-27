@@ -40,6 +40,11 @@
 
 # فصل 28 — Packet Analysis و بلوک‌های عیب‌یابی
 
+> **یادداشت علمی v4.0 — فصل 28:** عمومی: TCP/DNS/TLS در Capture. مختص محصول: Sniffer FortiOS/Offload.
+> فرض: TLS 1.3 Certificate رمز؛ تحلیل بر پایه‌ی RFC.
+> مراجع: RFC 9293 (TCP)، RFC 8446 (TLS 1.3)، RFC 1035.
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۲، ۱۴.
 **اهداف:** تحلیل بسته با Wireshark و Sniffer FortiGate؛ TCP Handshake، Retransmission، DNS، TLS؛ ده‌پرسش عیب‌یابی؛ بلوک‌های TS تکرارپذیر.
 **اشتباهات رایج:** Filter بیش‌ازحد باز؛ تحلیل بدون Baseline؛ فراموشی Disable Debug.
@@ -1351,6 +1356,11 @@ TLS alert certificate_unknown یعنی گواهی ناشناخته.
 
 # فصل 29 — Blue Team، Lifecycle و Vulnerability Management
 
+> **یادداشت علمی v4.0 — فصل 29:** عمومی: Detection/IR/Vulnerability Mgmt. مختص محصول: لاگ‌های FortiOS.
+> فرض: نگاشت ATT&CK مفهومی؛ SLA پیشنهادی نه الزام.
+> مراجع: NIST SP 800-61، MITRE ATT&CK، CISA KEV.
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۲۷، ۲۸.
 **اهداف:** تشخیص و پاسخ (Detection/Response)؛ Lifecycle دستگاه؛ Patch و Vulnerability؛ Threat Hunting ساده؛ Incident Report.
 **هشدار:** فقط روی Lab ایزوله و مجاز. هیچ حمله‌ی واقعی بیرون از Lab.
@@ -2333,11 +2343,21 @@ Baseline تا انحراف از رفتار عادی تشخیص داده شود �
 
 استثنا باید تاریخ پایان داشته باشد تا فراموش و حفره نشود؛ بازبینی دوره‌ای.
 
-**29-1-ت5** — ناموفق مکرر + ورود موفق + خروجی بالا ⇒ احتمال نفوذ؛ Severity بحرانی؛ Contain/Scope/RCA.
+**29-1-ت5** — Correlate سه رویداد و Severity
 
-**29-1-ت6** — جدول بالا بسط داده شود.
+مثال: (الف) ۴۰ شکست SSH از X، (ب) ورود موفق از X، (ج) تغییر Policy ده دقیقه بعد.
+**استدلال:** هر یک جدا Medium/High؛ توالی (الف→ب→ج) از یک Src نشانه‌ی احتمالی سوءاستفاده از حساب و تغییر ماندگار است ⇒ **Critical** (با فرض زمان نزدیک و یک Src). اگر ج از Admin شناخته‌شده در Window باشد، سناریو تغییر می‌کند؛ پس Severity باید با Context (ساعت، مبدأ، Ticket) تنظیم شود.
 
-چک‌لیست تشخیص: منبع Log (Traffic/Event/UTM)، قانون (مثلاً ۱۰ ورود ناموفق در ۵ دقیقه)، آستانه، مالک، اقدام اول و تاریخ بازبینی. هر قانون با آزمون (تولید رویداد تست) تأیید شود.
+**29-1-ت6** — ۵ Detection کامل
+
+| # | داده | منطق/آستانه | Runbook |
+|---|---|---|---|
+| 1 | Event Admin | ≥۱۰ شکست/۵ د | بلاک و بررسی |
+| 2 | Event Admin | موفق پس از ≥۵ شکست | Critical |
+| 3 | Config change | خارج از Window | بررسی CHG |
+| 4 | Traffic | Src به ≥۲۰ Dst/دقیقه | ایزوله |
+| 5 | Traffic | Upload > Baseline×N | بررسی اتلاف داده |
+آستانه‌ها از Baseline.
 
 **29-1-Q1** — Because attackers can change IPs and hashes easily but their behaviors change much less.
 
@@ -2354,9 +2374,14 @@ Session قبلی باقی است؛ Clear فیلترشده انجام شود.
 
 **29-2-ت4** — حساب‌های موجود روی سرور، سرویس‌ها، Tokenها و Credentialهایی که سرور به آن‌ها دسترسی داشت.
 
-**29-2-ت5** — Triage، Evidence، Quarantine، Scope، Eradicate/Rebuild، Recover/Verify، PIR با Owner/زمان.
+**29-2-ت5** — Playbook Compromise سرور DMZ
 
-**29-2-ت6** — Scan/Brute-force، سرور Compromise، حساب لو رفته؛ هرکدام Trigger/Approvals/دستور.
+۱) تأیید و Scope ۲) ایزوله‌سازی شبکه‌ای (نه خاموشی) ۳) Evidence (Memory/Disk/Log/PCAP، Hash) ۴) بررسی حرکت جانبی (Log DMZ→Internal) ۵) Eradication: بازسازی از Image پاک، تغییر Secretها، Patch ۶) Recovery و پایش ۷) PIR.
+**استدلال:** سرور DMZ در معرض اینترنت است؛ بازسازی از Image امن‌تر از «پاک‌سازی» است.
+
+**29-2-ت6** — سه Playbook اولویت‌دار
+
+اولویت از Likelihood×Impact: ۱) ورود غیرمجاز به Admin فایروال ۲) Ransomware/حرکت جانبی ۳) قطع VPN/ISP (اختلال). برای هر مورد Trigger، نقش‌ها، Containment، Evidence، Recovery، ارتباط. اولویت‌بندی باید با ریسک واقعی سازمان بازبینی شود.
 
 **29-2-Q1** — Because a block applies to new connections while existing sessions may continue.
 
@@ -2375,11 +2400,19 @@ EoL پایان پشتیبانی و Patch امنیتی محصول است.
 
 Exposure window فاصله‌ی انتشار Advisory تا اعمال Patch است.
 
-**29-3-ت5** — اولویت بر Exposure، Canary، HA یکی‌یکی، Backup/Rollback، Verification، هدف Time-to-patch.
+**29-3-ت5** — Patch ۲۰ دستگاه با ۲ Window
 
-**29-3-ت6** — Coverage، Time-to-patch، تعداد EoL، Exception فعال، Trend.
+**فرض:** ۲۰ FortiGate، دو Window ماهانه.
+1. Inventory و اولویت (Exposure، KEV، حیاتی بودن).
+2. گروه‌بندی: ۲ دستگاه Staging/کم‌ریسک اول (Canary).
+3. Window ۱: ۱۰ دستگاه (از کم‌اهمیت)، Window ۲: ۱۰ باقی (HA: Secondary اول).
+4. برای KEV+اینترنتی خارج از Window با Emergency Change یا Mitigation.
+5. Test Matrix، Rollback، به‌روزرسانی Inventory.
+**استدلال:** Window ثابت نباید Patch فوری را عقب بیندازد.
 
-شاخص‌های مدیریت آسیب‌پذیری: Coverage (درصد دارایی‌های پایش‌شده)، Time-to-patch (میانه‌ی روز)، تعداد EoL، Exception فعال با تاریخ پایان و روند ماهانه. هدف: روند رو به بهبود و Exceptionهای محدود.
+**29-3-ت6** — داشبورد Metrics آسیب‌پذیری
+
+Metrics: درصد دستگاه‌ها روی نسخه‌ی پشتیبانی‌شده، تعداد CVE باز بر اساس شدت/KEV، زمان میانگین Patch (MTTP) در برابر SLA، تعداد Exception و انقضا، EoS نزدیک. **هشدار:** معیار به تنهایی نتیجه نمی‌دهد؛ Exposure و Context را اضافه کنید.
 
 **29-3-Q1** — Internet exposure, available exploits and high asset criticality.
 
@@ -2405,13 +2438,13 @@ Containment جلوگیری از گسترش حادثه است.
 
 ریشه: SSH روی WAN و رمز ضعیف.
 
-**29-4-ت5** — قالب.
+**29-4-ت5** — PIR
 
-PIR با قالب: Summary، Impact، Timeline، Root cause، Actions.
+Summary، Impact، Timeline (MTTD/MTTR)، Root Cause (5 Why)، What went well، What failed، Actions (Owner/Due/معیار)، Lessons. Blameless: سازوکار را اصلاح کنید نه فرد را.
 
-**29-4-ت6** — حذف SSH WAN، MFA، Alert.
+**29-4-ت6** — اقدام پیشگیرانه
 
-اقدام پیشگیرانه: حذف SSH از WAN، MFA، Alert.
+اقدام باید SMART باشد: مثلاً «حذف SSH از WAN تا ۲۴ ساعت، Owner NetOps، معیار: nmap بسته». اقدام مبهم («آموزش») بدون معیار ارزشی ندارد؛ هر اقدام را به علت ریشه وصل کنید.
 
 **29-4-Q1** — The mean time between the start of an incident and its detection.
 
@@ -2421,13 +2454,24 @@ PIR با قالب: Summary، Impact، Timeline، Root cause، Actions.
 
 **29-0-ت2** — IOC نشانه‌ی مشخص و زودگذر (IP/Hash)؛ TTP رفتار و روش مهاجم و پایدارتر.
 
-**29-0-ت3** — تشخیص Scan از Deny زیاد، بررسی Allow موفق، Block IP، Clear Session، بررسی Local-in، ثبت Evidence، PIR.
+**29-0-ت3** — Playbook Port Scan
 
-**29-0-ت4** — ۱) Deny چندپورتی از یک IP؛ ۲) Login ناموفق مکرر؛ ۳) حجم خروجی غیرعادی به IP ناشناس.
+**Trigger:** ≥۲۰ مقصد/پورت از یک Src در ۱ دقیقه (Deny یا Allow).
+**گام‌ها:** ۱) تأیید: Src داخلی یا خارجی؟ مجاز (Scanner آسیب‌پذیری)؟ ۲) Scope: چه هدف‌هایی، موفق؟ ۳) اگر خارجی: Block/نادیده طبق سیاست (اسکن اینترنتی عادی است)؛ اگر داخلی: Host مشکوک، ایزوله‌سازی شبکه‌ای ۴) Evidence (Log، PCAP) ۵) بررسی ورود موفق پس از اسکن ۶) ثبت/Tuning.
+**استدلال:** اسکن خارجی به‌تنهایی حادثه نیست؛ اسکن داخلی نشانه‌ی احتمالی نفوذ (T1046) است و اولویت بالاتر دارد.
+
+**29-0-ت4** — سه Detection از Log
+
+۱) Brute-force: ≥۱۰ ورود ناموفق/۵ دقیقه از یک Src. ۲) Admin موفق پس از شکست‌ها (Correlation). ۳) Deny Spike از یک Src داخلی به چند Dst (Scan). **هر Detection:** داده‌ی ورودی، منطق، آستانه (از Baseline)، Severity، Runbook و آزمون.
 
 **29-0-Q1** — Because containment actions can alter or erase logs and sessions that are needed for analysis.
 
 # فصل 30 — Migration: از Cisco ASA/Router به FortiGate (معماری ۸، G11)
+
+> **یادداشت علمی v4.0 — فصل 30:** عمومی: Migration/Cutover. مختص محصول: ASA→FortiGate، FortiConverter (لایسنس).
+> فرض: معادل‌سازی مفهومی؛ ترتیب NAT بین سازندگان متفاوت.
+> مراجع: مستندات سازندگان.
+
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۳، ۲۷.
 **اهداف:** برنامه‌ریزی مهاجرت؛ Inventory و Mapping Policy؛ Cutover و Rollback؛ تست پیش و پس. Gate G11: Plan کامل با Rollback و Evidence.
@@ -3431,11 +3475,13 @@ G11: Migration با Plan، Go/No-Go، Cutover/Rollback زمان‌دار، Test 
 
 Policy با IP داخلی (post-DNAT) چون DNAT قبل از Policy انجام می‌شود.
 
-**30-1-ت5** — VIP/Policy NAT/IP Pool، Policy با آدرس درست، Test Matrix، بررسی Hairpin/ALG.
+**30-1-ت5** — Twice-NAT به FGT
 
-**30-1-ت6** — ستون‌ها: مبدأ، مقصد، Policy، NAT، Gap، Test؛ ۱۰ سطر.
+Twice-NAT = تغییر هم‌زمان مبدأ و مقصد شرطی. در FortiGate: Policy مقصد‌محور با VIP برای DNAT و IP Pool برای SNAT، یا Central NAT. **آزمون:** دو مقصد متفاوت (یکی با، یکی بدون ترجمه) و `session list`. **فرض:** ترتیب NAT در FortiOS با ASA متفاوت است؛ تبدیل خودکار را بازبینی کنید.
 
-جدول نگاشت Migration: ستون‌ها مبدأ، مقصد، Policy قدیمی، Policy جدید، NAT، Gap، آزمون؛ حداقل ۱۰ سطر نمونه (Users→Internet، VIP وب، IPsec، ...). هر Gap (ویژگی بی‌معادل) با تصمیم و مالک ثبت شود.
+**30-1-ت6** — Mapping Table و Gap List
+
+جدول: Rule مبدأ، معادل FGT، تفاوت Semantics، وضعیت (کامل/نیازمند بازبینی/بدون معادل)، آزمون. Gap: چیزهایی که معادل مستقیم ندارند (مثلاً Twice-NAT پیچیده، Policy ضمنی سطح امنیت) با راه‌حل و ریسک.
 
 **30-1-Q1** — Because the two platforms process traffic differently, so identical text can behave differently.
 
@@ -3458,11 +3504,13 @@ Out-of-band دسترسی مستقل از مسیر اصلی تا اگر قطع ش
 
 Post-check: Test Matrix، Log/Session، Monitoring و آزمون مثبت/منفی.
 
-**30-2-ت5** — اگر حیاتی: Rollback؛ وگرنه رفع محدود و ادامه؛ ثبت دلیل/زمان.
+**30-2-ت5** — ۲ آزمون از ۱۰ شکست خورد
 
-**30-2-ت6** — طبق قالب؛ با زمان‌بندی و مسئولان.
+**تصمیم:** وابسته به بحرانی بودن. اگر هر دو آزمون بحرانی‌اند ⇒ رفع در Window اگر زمان دارد؛ در غیر این‌صورت Rollback. اگر غیربحرانی و Workaround مشخص، Go مشروط با Gap ثبت‌شده. **ثبت:** آزمون، شاهد، علت، تصمیم، مالک، موعد.
 
-Plan: T-7d Inventory و Baseline؛ T-3d آزمون Lab و Rollback؛ T-1d اطلاع‌رسانی؛ T0 Cutover با Checkpoint؛ T+1d بازبینی. هر ردیف مسئول و زمان دارد.
+**30-2-ت6** — Plan ده‌مرحله‌ای Cutover
+
+۱ Freeze ۲ Backup+Hash ۳ تأیید Peer/ISP ۴ قطع OLD ۵ NEW در سرویس ۶ ARP/MAC ۷ Test Matrix ۸ VPN/UTM ۹ Go/Rollback ۱۰ اعلان و Monitoring. هر مرحله زمان، مسئول، آزمون.
 
 **30-2-Q1** — So the decision is made objectively before pressure and emotions affect judgment.
 
@@ -3488,13 +3536,13 @@ Policy hit صفر معمولاً Mapping اشتباه است.
 
 اختلاف‌ها: قابل‌قبول یا بحرانی.
 
-**30-3-ت5** — Rollback و RCA.
+**30-3-ت5** — No-Go
 
-No-Go: Rollback و RCA.
+No-Go یعنی معیار Go برقرار نیست. اقدام: تعویق، ثبت علت، رفع و Rehearsal دوباره؛ اعلام به ذی‌نفعان؛ Window جدید. «ادامه‌ی امیدوارانه» ممنوع.
 
-**30-3-ت6** — جدول.
+**30-3-ت6** — Test Matrix
 
-Test Matrix: آزمون، قبل، بعد و معیار.
+جدول آزمون‌های قبل/بعد با معیار عددی (Session ±۱۰٪، Latency، VPN، Deny غیرمنتظره). علاوه بر ping، آزمون برنامه‌ای (HTTPS، VIP، ERP).
 
 **30-3-Q1** — To compare the state before and after the change with numbers.
 
@@ -3519,13 +3567,13 @@ IPsec down پس از Cutover: Proposal پیش‌فرض نسخه‌ی جدید ت
 
 Session کمتر: Timeout یا Offload.
 
-**30-4-ت5** — در Lab: بازگرداندن کابل/IP و Test Matrix.
+**30-4-ت5** — آزمون Rollback
 
-Rollback آزمایشی در Lab: بازگرداندن کابل/IP و اجرای Test Matrix.
+در Lab/پنجره‌ی قبلی: Cutover را اجرا، سپس Rollback و زمان‌سنجی؛ معیار ≤۱۰ دقیقه؛ بازگرداندن تغییرات جانبی (سوئیچ، DNS) هم باشد؛ ثبت.
 
-**30-4-ت6** — طبق متن.
+**30-4-ت6** — Plan T-7d تا T+1d
 
-Plan T-7d تا T+1d با Checkpoint.
+T-7d Inventory/Baseline/Backup؛ T-3d Convert/Diff/Lab؛ T-1d Dry run/Rollback/Go-No-Go؛ T0 Cutover؛ T+1h Post-check؛ T+1d Monitoring/Close. هر نقطه Entry/Exit.
 
 **30-4-Q1** — To be sure the old state can be restored within the change window.
 
@@ -3537,9 +3585,13 @@ Plan T-7d تا T+1d با Checkpoint.
 
 **30-0-ت2** — تا قوانین مرده/تکراری/Any-Any منتقل نشوند و پیچیدگی/ریسک کم شود.
 
-**30-0-ت3** — Trigger: ۳۰ دقیقه بدون سرویس حیاتی؛ روش: بازگرداندن Gateway/کابل و Config قبلی و آزمون.
+**30-0-ت3** — Rollback Trigger و روش
 
-**30-0-ت4** — جدول سرویس/مبدأ/مقصد/انتظار/قبل/بعد برای ۱۰ سرویس شامل آزمون منفی.
+**Trigger (از قبل):** سرویس بحرانی >۱۰ دقیقه یا آزمون بحرانی شکست بدون رفع تا ۱۵ دقیقه یا تصمیم IC. **روش:** اعلام، بازگرداندن کابل/IP/VIP، تأیید OLD، اعلام. **استدلال:** تصمیم در لحظه با فشار روانی بد است؛ Trigger عددی بحث را حذف می‌کند.
+
+**30-0-ت4** — Test Matrix ۱۰ سرویس
+
+برای هر سرویس: مسیر، آزمون مثبت، آزمون منفی، مالک، Baseline قبل/بعد (DNS، HTTPS، VIP، VPN، ERP، Mail، Backup، AD/LDAP، Monitoring، Log). **نکته:** سرویس کم‌ترافیک/فصلی (VPN شریک) را حتماً بگنجانید.
 
 **30-0-Q1** — Because the processing models differ, and the goal is the same behavior, not the same text.
 

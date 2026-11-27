@@ -40,6 +40,11 @@
 
 # فصل 25 — Multi-Vendor: FortiGate در کنار Cisco CSR (معماری ۶)
 
+> **یادداشت علمی v4.0 — فصل 25:** عمومی: Interop OSPF/BGP/IPsec. مختص محصول: Cisco CSR (IOS-XE) ↔ FortiGate.
+> فرض: جدول معادل مفهومی؛ نام گزینه‌ها با نسخه تطبیق شود.
+> مراجع: RFC 7296، 2328، 4271؛ مستندات دو سازنده.
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۹، ۱۸، ۱۹.
 **اهداف:** اتصال FGT و CSR با BGP/OSPF؛ IPsec چندسازنده؛ تفاوت Terminology؛ Troubleshooting مقایسه‌ای.
 **نسخه:** CSR1000v 17.03.02 (IOS-XE) و FortiOS 7.0.3 اسمی؛ آزمایش‌نشده.
@@ -1276,6 +1281,11 @@ Debug را در هر دو سمت هم‌زمان بگیرید.
 
 # فصل 26 — FortiManager و FortiAnalyzer (معماری ۹) و جایگزین‌های بدون لایسنس
 
+> **یادداشت علمی v4.0 — فصل 26:** عمومی: مدیریت مرکزی، Config as Code. مختص محصول: FMG/FAZ (لایسنس).
+> فرض: محاسبات هزینه/خطا مدل ساده؛ Needs-License.
+> مرجع: Fortinet Docs.
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۲۲، ۲۵.
 **هشدار لایسنس:** FortiManager (FMG) و FortiAnalyzer (FAZ) VM به لایسنس/Evaluation نیاز دارند (`Needs-License`). این فصل **مفهوم و طراحی** را آموزش می‌دهد و **جایگزین عملی بدون لایسنس** (rsyslog/Zabbix و Backup خودکار) را در Lab اجرا می‌کند. هیچ ادعای اجرا روی FMG/FAZ نشده است.
 **اهداف:** مدیریت مرکزی؛ Policy Package؛ Log مرکزی؛ جایگزین.
@@ -2487,6 +2497,11 @@ Install Preview تا اثر نصب پیش از اعمال دیده شود.
 **26-0-Q1** — To separate devices, administrators and policy sets into administrative domains (for example per tenant or version).
 
 # فصل 27 — Logging، Monitoring، Performance، API، Hardening و Backup (G10)
+
+> **یادداشت علمی v4.0 — فصل 27:** عمومی: Logging، SNMP، API، Hardening. مختص محصول: FortiOS 7.0 و Zabbix.
+> فرض: OIDها و سینتکس نیازمند تطبیق با MIB/مستند نسخه؛ آستانه‌ها از Baseline.
+> مراجع: RFC 5424، SNMPv3 (RFC 3414)؛ Fortinet MIB.
+
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۴، ۲۶.
 **اهداف:** Logging؛ SNMP و Zabbix؛ Performance Baseline؛ REST API؛ Hardening؛ Backup/Restore. Gate G10: مانیتورینگ+Log+Hardening+Backup با شاهد.

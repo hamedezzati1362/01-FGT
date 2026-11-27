@@ -39,6 +39,11 @@
 
 # فصل 31 — Capstone I و II: طراحی و پیاده‌سازی شبکه‌ی سازمانی
 
+> **یادداشت علمی v4.0 — فصل 31:** عمومی: روش معماری (HLD/LLD/ADR). مختص محصول: پروژه‌ی مرجع «لب».
+> فرض: همه‌ی اعداد نمونه؛ Lab اجرا نشده.
+> مرجع: ISO/IEC/IEEE 42010 (مفهومی).
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** Gateهای G1 تا G11.
 **ماهیت:** پروژه‌ی جامع؛ نه درس جدید. دانشجو طراحی، پیاده‌سازی، تست و مستندسازی می‌کند.
 **Capstone I:** طراحی کامل (IP Plan، VLAN، Routing، Firewall، VPN) و سند طراحی.
@@ -1471,13 +1476,13 @@ ADR ثبت تصمیم معماری با زمینه، گزینه‌ها، تصم�
 
 معیار پذیرش عددی تا موفقیت قابل‌اندازه‌گیری و بحث بعدی کم شود.
 
-**31-1-ت5** — سطح‌بندی دسترس‌پذیری، ADR، پذیرش ریسک مستند.
+**31-1-ت5** — تضاد بودجه و دسترس‌پذیری
 
-سطح‌بندی دسترس‌پذیری، ADR و پذیرش ریسک مستند.
+**تضاد:** ۹۹٫۹٪ با یک ISP ممکن نیست. گزینه‌ها: ۱) Dual-ISP (هزینه) ۲) هدف ۹۹٪ با پذیرش ریسک امضاشده ۳) LTE پشتیبان ارزان. **تصمیم و ثبت:** ADR با Context/Options/Decision/Consequences؛ مالک بودجه امضا می‌کند.
 
-**31-1-ت6** — ساختار بالا با محتوای هر بخش.
+**31-1-ت6** — HLD ۱۲ بخشی
 
-سند طراحی: نیازمندی (R-xx با معیار)، HLD (نمودار و Zone)، LLD (آدرس، Interface، Route، Policy)، آزمون و ردیابی، ریسک و Gap، وضعیت (طراحی‌شده/اجرا نشده/اجراشده با شاهد).
+۱ هدف/دامنه ۲ نیازمندی ۳ نمودار ۴ IP/VLAN ۵ Routing ۶ Firewall/UTM ۷ HA/SD-WAN ۸ Log/Backup ۹ ADR ۱۰ ریسک ۱۱ آزمون ۱۲ زمان/هزینه. هر بخش به R# وصل شود.
 
 **31-1-Q1** — So that success is measurable and can be verified objectively later.
 
@@ -1503,13 +1508,13 @@ Overlap Pool VPN با Servers: Pool را تغییر دهید.
 
 NAT فقط روی Edge.
 
-**31-2-ت5** — SD-WAN و Capture.
+**31-2-ت5** — Asymmetric در LLD
 
-Asymmetric در LLD: SD-WAN و Capture.
+LLD باید مسیر رفت و برگشت هر جریان را بنویسد؛ اگر دو لینک/Hub هست، تقارن (Local-Pref، SNAT، Hash) یا Session Sync را مشخص کند. بدون این، Asymmetric در اجرا ظاهر می‌شود.
 
-**31-2-ت6** — جدول.
+**31-2-ت6** — LLD Internal
 
-LLD Internal: جدول Interface، Route و Policy.
+جدول Interface/Zone، Route (Default به Edge)، Policy حداقلی Users/Servers/Mgmt، `intrazone deny`، Log. هر ردیف به R#.
 
 **31-2-Q1** — For traceability and audit.
 
@@ -1529,11 +1534,13 @@ Guest به Internal باید Block باشد؛ آزمون منفی.
 
 Rollback ≤ ۱۵ دقیقه و باید زمان‌سنجی شود.
 
-**31-3-ت5** — شواهد مستقل: ping DF برای MTU؛ زمان Failover برای Timer؛ رفع و اندازه‌گیری جدا.
+**31-3-ت5** — دو علت هم‌زمان در S4
 
-**31-3-ت6** — جدول بالا با مسئول و زمان.
+یک متغیر را هر بار تغییر دهید؛ Checkpoint S3 را دوباره بسنجید تا وابستگی پنهان رد شود؛ شاهد مستقل برای هر علت؛ Rollback به S4-pre در صورت نیاز.
 
-برنامه‌ی Build: ترتیب (Interface، Route، Policy، VPN، Logging)، مسئول، زمان و Checkpoint پس از هر مرحله با Evidence.
+**31-3-ت6** — Build ۶ مرحله‌ای با Go/No-Go
+
+مراحل S1–S6 با Entry/Exit و Go/No-Go: Go فقط اگر Checkpoint مثبت و منفی Pass و Backup post گرفته شود؛ No-Go ⇒ رفع یا Rollback.
 
 **31-3-Q1** — So a failure can be attributed to the stage just built instead of an unknown layer.
 
@@ -1559,13 +1566,13 @@ Sign-off مشروط: با Gap و تاریخ.
 
 F2 (Failover کند): Health-check را به Server خارجی تغییر دهید.
 
-**31-4-ت5** — پذیرفته‌ی مشروط.
+**31-4-ت5** — دو آزمون اجرا نشده
 
-دو آزمون اجرانشده: پذیرفته‌ی مشروط.
+هرگز «Pass» ننویسید. در جدول Gap: ID، دلیل (لایسنس/Lab)، ریسک، اقدام، مالک، موعد؛ Sign-off مشروط.
 
-**31-4-ت6** — جدول.
+**31-4-ت6** — Evidence Index
 
-Evidence Index: جدول شناسه، آزمون، فایل، زمان، نتیجه، وضعیت.
+ستون‌ها: E-ID، T-ID، R#، فایل، دستور، زمان، Hash، نتیجه. ممیز باید از R تا Evidence قابل‌ردیابی باشد.
 
 **31-4-Q1** — Acceptance with documented gaps that must be closed later.
 
@@ -1590,13 +1597,13 @@ Runbook گام‌های مستند برای وضعیت مشخص است.
 
 Handover: As-Built، LLD، Runbook و دسترسی.
 
-**31-5-ت5** — قالب بالا.
+**31-5-ت5** — Runbook Failover ISP
 
-Runbook Failover ISP: ۸ گام با خروجی مورد انتظار.
+Trigger (Alert SD-WAN)، Pre-check (کدام ISP، تغییر اخیر)، گام‌ها (`diagnose sys sdwan health-check`، مسیر، Session)، Verify (آزمون مثبت/منفی)، Rollback، Escalation (۳۰ دقیقه، تماس ISP)، آخرین آزمون.
 
-**31-5-ت6** — فصلی و پس از حادثه.
+**31-5-ت6** — نگهداری Runbook
 
-نگهداری: بازبینی فصلی و پس از حادثه.
+Owner، نسخه، بازبینی با هر Change/Upgrade و حداقل هر ۶ ماه، آزمون توسط همکار، Known Issues، بازخورد پس از حادثه.
 
 **31-5-Q1** — To reveal ambiguous or missing steps.
 
@@ -1621,13 +1628,13 @@ Runbook Failover ISP: ۸ گام با خروجی مورد انتظار.
 
 خودارزیابی: نمره با دلیل برای هر معیار.
 
-**31-6-ت5** — خارج از طراحی؛ ریسک؛ پیشنهاد.
+**31-6-ت5** — اگر دو ISP قطع شود؟
 
-«اگر دو ISP قطع شود؟»: خارج از طراحی؛ ریسک؛ پیشنهاد (LTE).
+پاسخ: خارج از طراحی فعلی (Dual-ISP یک خرابی را می‌پوشاند)؛ ریسک شناخته و پذیرفته‌شده در ماتریس؛ گزینه‌ی کاهش: لینک LTE/ماهواره با هزینه‌ی مشخص؛ اثر کسب‌وکار؛ پیشنهاد بازنگری در فاز بعد. استدلال: اعتراف به محدودیت قوی‌تر از ادعای بی‌پایه است.
 
-**31-6-ت6** — اقدام، مالک، تاریخ.
+**31-6-ت6** — برنامه‌ی بهبود
 
-برنامه‌ی بهبود: اقدام، مالک، تاریخ.
+فهرست Gapها با اولویت، اقدام SMART، مالک، موعد، معیار. شامل اجرای آزمون‌های اجرا نشده و تأیید دستورها روی FortiOS بوت‌شده.
 
 **31-6-Q1** — Because claiming unverified results undermines trust and can cause real outages.
 
@@ -1648,17 +1655,22 @@ Runbook Failover ISP: ۸ گام با خروجی مورد انتظار.
 
 آزمون‌های اجرانشده «طراحی‌شده/اجرا نشده» ثبت می‌شوند نه «موفق».
 
-**31-0-ت5** — اهمیت×ریسک؛ «باید»ها اول؛ Evidence هفتگی.
+**31-0-ت5** — ۱۲ نیازمندی در ۴ هفته
 
-۱۲ نیازمندی در ۴ هفته: اهمیت×ریسک؛ «باید»ها اول؛ Evidence هفتگی.
+اولویت‌بندی با MoSCoW (Must/Should/Could/Won't) و ریسک؛ Must (مثلاً R1 ERP، R2 دسترس‌پذیری، R3 Guest) هفته ۱–۲؛ Should بعد؛ Could در صورت زمان؛ مواردی که ۴ هفته جا نمی‌شود را صراحتاً «خارج از دامنه» ثبت کنید.
 
-**31-0-ت6** — جدول بالا با امتیاز و شواهد.
+**31-0-ت6** — Rubric خودارزیابی
 
-Rubric خودارزیابی: معیار، امتیاز، شاهد.
+Rubric ۱۰۰ نمره‌ای (نیازمندی، طراحی، پیاده‌سازی، آزمون/Evidence، Runbook، دفاع، صداقت) با معیار مشاهده‌پذیر برای هر نمره و ستون «شاهد».
 
 **31-0-Q1** — Because without a test and evidence the requirement is only an unverified claim.
 
 # فصل 32 — Capstone III و IV: عملیات، حادثه و ارزیابی نهایی
+
+> **یادداشت علمی v4.0 — فصل 32:** عمومی: ITIL، IR، PIR. مختص محصول: ارتقا FortiOS.
+> فرض: سناریوها آموزشی و بدون اجرا؛ زمان‌ها مدل‌اند.
+> مراجع: ITIL 4، NIST SP 800-61.
+
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** Capstone I و II.
 **Capstone III:** عملیات: مانیتورینگ، Change، Incident (شبیه‌سازی).
@@ -3024,13 +3036,13 @@ CHG ناموفق: Rollback، ثبت علت و درس.
 
 Window: زمان کم‌ترافیک با تیم آماده.
 
-**32-1-ت5** — ترتیب Policy؛ Rollback؛ CHG جدید.
+**32-1-ت5** — Post-check Lookup=61
 
-Post-check Lookup=61: ترتیب Policy؛ Rollback و CHG جدید.
+اگر Lookup پس از Change Policy ID 61 (غیرمنتظره) را نشان دهد: Policy دیگری برنده است. بررسی ترتیب/Shadow، Interface/Address، Hit Count؛ رفع و Lookup مجدد؛ ثبت.
 
-**32-1-ت6** — قالب بالا.
+**32-1-ت6** — قالب CHG
 
-قالب CHG: شناسه، عنوان، مالک/مجری/بازبین، دلیل، ریسک و اثر، Window، Pre-check، مراحل، Post-check، Rollback و تأیید. هر بخش یک ردیف.
+CHG-ID، عنوان، نوع، Window، دلیل، ریسک، Plan، Test پیش/پس، Rollback، تأییدها، Evidence، نتیجه.
 
 **32-1-Q1** — That the change works as intended and nothing else broke.
 
@@ -3055,13 +3067,13 @@ Status دوره‌ای اطمینان مدیریت را می‌دهد و تما�
 
 Scribe Timeline را ثبت می‌کند.
 
-**32-2-ت5** — قالب.
+**32-2-ت5** — PIR
 
-PIR: Summary، Impact، Timeline، Root cause، Actions.
+Root Cause، Timeline، MTTD/MTTR، چه چیزی خوب بود/نبود، اقدام SMART، بدون سرزنش. ارزش PIR در اقدام‌های قابل‌اندازه‌گیری است.
 
-**32-2-ت6** — سناریو و نقش‌ها.
+**32-2-ت6** — Game Day
 
-Game Day: سناریو (قطع ISP-A و کیفیت پایین ISP-B)، نقش‌ها (IC، Operator، Scribe، Communicator)، Timeline و معیار موفقیت (MTTD < ۵ دقیقه، MTTR < ۴۵ دقیقه) و PIR.
+سناریو چندمرحله‌ای، نقش‌ها (IC، Ops، Comms، Scribe)، Inject، Timeline، Communication Log، PIR. هدف: نقاط ضعف Runbook و ارتباط قبل از حادثه‌ی واقعی.
 
 **32-2-Q1** — To avoid confusion and ensure decisions, actions and records are handled.
 
@@ -3086,13 +3098,13 @@ Rollback زمان‌دار برای تصمیم به‌موقع.
 
 Session count حدود ±۱۰٪.
 
-**32-3-ت5** — Debug سریع؛ Rollback اگر در زمان.
+**32-3-ت5** — IPsec بعد از Upgrade down؛ تصمیم
 
-IPsec بعد Upgrade down: Debug سریع؛ Rollback اگر در زمان.
+**علامت:** تونل Down پس از Upgrade. **فرضیه‌ها:** Default Proposal عوض شده، Syntax/Selector تبدیل‌شده، Peer ناسازگار. **تفکیک:** Debug IKE دو سمت. **تصمیم:** اگر رفع سریع ممکن نیست و سرویس بحرانی است ⇒ Rollback طبق Trigger؛ سپس Lab و ارتقای مجدد با Proposal صریح.
 
-**32-3-ت6** — جدول.
+**32-3-ت6** — Plan T-7d تا T+1d برای ارتقا
 
-Plan: T-7d تا T+1d با Checkpoint C1 تا C5 و نقطه‌ی تصمیم Rollback (مثلاً ساعت ۲۲:۴۰). هر ردیف زمان، کار و معیار ادامه دارد.
+T-14d نسخه/Release Notes؛ T-10d Upgrade Path؛ T-7d Lab؛ T-3d CHG/Rehearsal؛ T-1d Backup/Go-No-Go؛ T0 ارتقا (HA: Secondary اول)؛ T+1d پایش و Close.
 
 **32-3-Q1** — To avoid delaying the decision and extending the outage.
 
@@ -3117,13 +3129,13 @@ Lab اجرا نشده شاهد عملی نمی‌دهد و سطح را کم می
 
 Portfolio: پروژه، Evidence، Runbook، PIR.
 
-**32-4-ت5** — Capstone I، Runbook، برچسب صادقانه.
+**32-4-ت5** — Portfolio Firewall Engineer
 
-Portfolio Firewall Engineer: Capstone I، Runbook و برچسب صادقانه.
+PIR، Runbookهای آزموده، HLD/LLD، Evidence Index (Lab واقعی)، اسکریپت Backup/Diff، ADR. هیچ داده‌ی واقعی مشتری؛ Sanitize.
 
-**32-4-ت6** — Lab، شاهد، زمان.
+**32-4-ت6** — برنامه‌ی پر کردن شکاف
 
-برنامه‌ی پر کردن شکاف: مهارت، سطح فعلی، سطح هدف، Lab لازم، Evidence و تاریخ؛ مثلاً FortiGate Policy/NAT سطح ۲→۳ با ۱۰ Lab و Evidence Index تا پایان ماه ۳.
+Gap = سطح هدف − سطح فعلی؛ اولویت = Gap × ارتباط با نقش؛ اقدام (Lab/مطالعه)، زمان، Evidence.
 
 **32-4-Q1** — It shows real skill level and guides focused improvement.
 
@@ -3148,13 +3160,13 @@ Portfolio Firewall Engineer: Capstone I، Runbook و برچسب صادقانه.
 
 Automation امن: Read-only و Pilot.
 
-**32-5-ت5** — کاهش دامنه.
+**32-5-ت5** — برنامه شکست خورد
 
-برنامه شکست خورد: دامنه را کم کنید.
+علت ریشه‌ای: اهداف زیاد، بی‌معیار، بی‌بازبینی. اصلاح: ≤۳ هدف ماهانه، معیار SMART، بازبینی هفتگی، شریک پاسخگویی؛ بازنگری دلیل شکست به‌صورت PIR.
 
-**32-5-ت6** — جدول.
+**32-5-ت6** — برنامه‌ی ۶ ماهه
 
-برنامه‌ی ۶ ماهه: ماه ۱ Lab فصل ۱ تا ۴؛ ماه ۲ OSPF/HSRP؛ ماه ۳ FortiGate Policy/NAT؛ ماه ۴ IPsec/SD-WAN؛ ماه ۵ Logging/Automation؛ ماه ۶ Capstone و Portfolio؛ هر ماه Evidence مشخص.
+ماه ۱ Policy/NAT/Debug؛ ۲ IPsec و مسیریابی؛ ۳ SD-WAN/HA؛ ۴ هویت/UTM؛ ۵ عملیات/Automation؛ ۶ گواهی و Portfolio. هر ماه Evidence و Demo.
 
 **32-5-Q1** — To verify real progress rather than assumed progress.
 
@@ -3179,13 +3191,13 @@ Automation امن: Read-only و Pilot.
 
 MSS = PMTU − 40.
 
-**32-6-ت5** — سه مرحله با Rollback.
+**32-6-ت5** — CHG برای رفع‌های آزمون نهایی
 
-CHG سه‌مرحله‌ای: ۱) Health-check به 8.8.8.8 (Rollback: Config قبلی)، ۲) Policy VIP (Rollback: غیرفعال)، ۳) MSS-clamp (Rollback: حذف). Window شبانه، Post-check: Failover 4 s، وب 200 و دانلود VPN 100MB.
+سه Fix با ترتیب بر اساس اثر کسب‌وکار (وب مشتری، سپس اینترنت کاربران، سپس MTU)، هر کدام Plan، Test، Rollback؛ آزمون بعد از هر Fix.
 
-**32-6-ت6** — ریشه، شاخص، اقدام.
+**32-6-ت6** — PIR آزمون نهایی
 
-PIR: ریشه، شاخص، اقدام.
+سه علت چندلایه (Health-check، MTU، Policy/VIP)، Timeline، Root Cause (هر کدام علت اثبات‌شده با شاهد)، اقدام پیشگیرانه (Checklist، Test Matrix)، صداقت درباره‌ی Lab اجرانشده.
 
 **32-6-Q1** — To know which change solved which problem.
 
@@ -3210,13 +3222,13 @@ Change Success Rate = ۴۷/۵۰ = ۹۴٪.
 
 CAB هیئت تأیید تغییرات پرریسک است.
 
-**32-0-ت5** — ثبت، تأیید Owner، اجرا، Verify، ثبت رسمی.
+**32-0-ت5** — Emergency Change در بامداد
 
-Emergency Change: ثبت، تأیید Owner، اجرا، Verify، ثبت رسمی.
+رفع فوری با تأیید سریع (تلفنی) و ثبت زمان؛ Rollback آماده؛ بعداً CHG کامل، Review و ریشه‌یابی؛ جلوگیری از «Emergency دائمی».
 
-**32-0-ت6** — ثبت، ارزیابی، تأیید، اجرا، Verify، Close.
+**32-0-ت6** — فرایند Change
 
-فرایند Change: ثبت، ارزیابی، تأیید، اجرا، Verify، Close.
+Request ⇒ Assess ⇒ Approve ⇒ Schedule ⇒ Implement (Backup) ⇒ Verify ⇒ Close ⇒ PIR (در صورت شکست). نوع Standard/Normal/Emergency با تأیید متناسب.
 
 **32-0-Q1** — An urgent change to restore service that is documented and reviewed afterwards.
 

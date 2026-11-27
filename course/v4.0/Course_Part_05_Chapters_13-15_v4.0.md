@@ -45,6 +45,11 @@
 
 # فصل 13 — FortiGate II: Policy، Session، NAT، VIP، IP Pool و Central NAT (تک‌فایروالی کامل)
 
+> **یادداشت علمی v4.0 — فصل 13:** عمومی: Policy First-Match، NAT، Session. مختص محصول: VIP، IP Pool، Central NAT در FortiOS.
+> فرض: اثر تغییر بر Session موجود وابسته به نسخه/Offload/Proxy؛ «Session هرگز دوباره ارزیابی نمی‌شود» تعمیم نادرست است.
+> مراجع: Fortinet Docs 7.0؛ جزئیات Session/Route-change نیازمند بررسی.
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۲ (Baseline)، فصل ۱۱ (G4).
 **اهداف:** Firewall Policy (اجزا، ترتیب، Log)؛ NAT (Policy NAT، IP Pool، Central NAT)؛ VIP/Port-forward و Hairpin؛ Session Table؛ مدیریت Policy (Shadow، تداخل Object، Hit Count)؛ سناریوهای خرابی؛ **Gate G5**. هر موضوع با GUI و CLI.
 **نسخه:** FortiOS 7.0.3 اسمی؛ همه‌ی دستورها آزمایش‌نشده روی Image شما (در بوت اول مقایسه شوند).
@@ -1404,6 +1409,11 @@ RPF fail یعنی Route برگشت به مبدأ از همان Interface ورو�
 **13-7-Q1** — Because clearing without a filter removes every session and disconnects all users.
 
 # فصل 14 — ابزارهای عیب‌یابی FortiOS: Sniffer، Debug Flow، Session، Routing، MTU/MSS و Log
+
+> **یادداشت علمی v4.0 — فصل 14:** عمومی: روش علامت/شاهد/فرضیه، Sniffing. مختص محصول: `diagnose` FortiOS.
+> فرض: خروجی‌ها نمونه‌ی آموزشی؛ Offload بر Sniffer اثر می‌گذارد؛ علامت ≠ علت.
+> مرجع: Fortinet Docs 7.0؛ Wireshark.
+
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۳.
 **اهداف:** چارچوب ۱۰ پرسش؛ Packet Sniffer؛ Debug Flow؛ Session/Routing/iprope؛ MTU/MSS/DNS/TCP؛ Log Analysis؛ آزمون Packet Walk.
@@ -2870,6 +2880,11 @@ Packet Walk از Log: srcintf، dstintf، policy، NAT و نتیجه.
 **14-7-Q1** — Because a sniffer is cheaper and tells you whether the packet arrived before you inspect policy and route behavior.
 
 # فصل 15 — دوفایروالی با DMZ (Edge و Internal) — معماری ۲
+
+> **یادداشت علمی v4.0 — فصل 15:** عمومی: DMZ، دوفایروالی، Double NAT. مختص محصول: FortiGate.
+> فرض: آدرس‌دهی نمونه؛ NAT فقط Edge یک توصیه‌ی طراحی است نه قانون.
+> مرجع: Fortinet Docs 7.0.
+
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۳، ۱۴.
 **اهداف:** طراحی و ساخت دو FortiGate (Edge و Internal) با DMZ (Web) و Zone سرورها (App/DB)؛ Routing بین فایروال‌ها؛ NAT در دو نقطه؛ Packet Walk در هر دو فایروال؛ عیب‌یابی؛ **Gate G6**.

@@ -49,6 +49,11 @@
 
 # فصل 10 — Redistribution، ECMP، PBR، VRF-lite و Asymmetric Routing
 
+> **یادداشت علمی v4.0 — فصل 10:** عمومی: Redistribution، ECMP، PBR، VRF-lite، Asymmetric. مختص محصول: Cisco IOS.
+> فرض: Metric/AD پیش‌فرض؛ ECMP و Hash به پلتفرم وابسته است.
+> مراجع: Cisco؛ RFC 4271/2328 برای رفتار پروتکل.
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۹ (BGP)، فصل ۶ (OSPF).
 **اهداف:** انتقال مسیر بین پروتکل‌ها بدون حلقه؛ توزیع بار با ECMP؛ هدایت ترافیک با PBR؛ جداسازی جداول مسیریابی با VRF-lite؛ تحلیل و رفع مسیر نامتقارن.
 **چرا برای فایروال؟** فایروال Stateful با مسیر نامتقارن خراب می‌شود؛ ECMP/PBR/VRF همان ابزارهایی هستند که باعث نامتقارن‌شدن یا جداسازی می‌شوند.
@@ -1892,6 +1897,11 @@ IP SLA به‌همراه Track Object می‌تواند Next-hop مرده را �
 
 # فصل 11 — مبانی فایروال
 
+> **یادداشت علمی v4.0 — فصل 11:** عمومی: مدل تهدید، Stateful/Stateless، Defense in Depth، Packet Flow مفهومی. مختص محصول: کمتر.
+> فرض: مدل ساده‌شده؛ فرمول Risk تقریب آموزشی (حدود اعتبار در متن).
+> مراجع: NIST SP 800-30/800-61 (مفهومی)؛ MITRE ATT&CK.
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۷ (ACL/NAT)، فصل ۸، فصل ۱۰ (مسیر نامتقارن).
 **اهداف:** Stateless/Stateful؛ Session؛ Zone و Trust Boundary؛ Default Deny و Least Privilege؛ مسیر بسته در فایروال؛ ترافیک عبوری در برابر ترافیک خود فایروال؛ تفاوت Routing، Policy، ACL، NAT؛ Segmentation؛ **Gate G4**.
 **چرا اینجا؟** قبل از FortiGate باید «چرا» را بدانید تا هر منو و دستور برایتان معنی داشته باشد.
@@ -3640,6 +3650,11 @@ A negative test: connect from the DMZ to the database and verify it is denied an
 **11-7-Q1** — Because the return packet matches an existing session entry created by the outbound packet.
 
 # فصل 12 — FortiGate I: معماری، Interface، Zone، Object، Routing، Admin و Backup (معماری ۱)
+
+> **یادداشت علمی v4.0 — فصل 12:** عمومی: Interface/Zone/Object/Routing. مختص محصول: **FortiOS 7.0.x**، Packet Flow مدل مفهومی ساده‌شده.
+> فرض: Transit؛ ترتیب دقیق داخلی FortiOS به نسخه/Offload/Local-in/Local-out وابسته؛ جدول رسمی ترتیب کامل در این بازنگری تأیید نشد.
+> مراجع: Fortinet Docs 7.0 (Policy routes، Local out، تأییدشده).
+
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۱ (G4)، فصل ۸ (CP1).
 **اهداف:** اولین بوت و تأیید نسخه؛ Interface/VLAN؛ Zone و Object؛ Static Route/Default؛ Admin/RBAC و سخت‌سازی مدیریت؛ Backup/Restore. **هر کار هم با GUI و هم با CLI** آموزش داده می‌شود.

@@ -45,6 +45,11 @@
 
 # فصل 7 — IP Services: DHCP، DNS، NTP، NAT، ACL، Syslog و QoS
 
+> **یادداشت علمی v4.0 — فصل 7:** عمومی: DHCP/DNS/NTP/NAT/ACL/Syslog/QoS مفاهیم. مختص محصول: Cisco IOS.
+> فرض: IPv4؛ NAT و ACL نمونه‌های Stateless/NAT Cisco؛ QoS مفهومی.
+> مراجع: RFC 2131، 1034/1035، 5905، 3022، 5424.
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۶.
 **اهداف:** DHCP/Relay، DNS/NTP، NAT/PAT، ACL، Syslog/SNMP، QoS، Service Matrix.
 **معیار تسلط:** Relay و Scope؛ NAT قابل‌اثبات؛ ACL با ترتیب درست؛ لاگ با ساعت درست.
@@ -2785,6 +2790,11 @@ Only when there is congestion on a link.
 
 # فصل 8 — Hardening، AAA، Automation و As-Built (CP1)
 
+> **یادداشت علمی v4.0 — فصل 8:** عمومی: Hardening، AAA، Automation. مختص محصول: IOS.
+> فرض: خروجی‌ها آموزشی؛ AAA با RADIUS/TACACS+ مفهومی.
+> مرجع: RFC 2865 (RADIUS)؛ مستند Cisco.
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۷.
 **اهداف:** Hardening، AAA، JSON/YAML/REST، Netmiko، Ansible، Git، As-Built؛ **CP1**.
 **معیار تسلط:** Baseline امن؛ بکاپ خودکار read-only؛ As-Built کامل.
@@ -5163,6 +5173,11 @@ Rotate the secret immediately, clean the history and enable secret scanning.
 ---
 
 # فصل 9 — BGP عملی و Route Filtering
+
+> **یادداشت علمی v4.0 — فصل 9:** عمومی: BGP Path Vector (RFC 4271)؛ ترتیب Best Path و Attributeها. مختص محصول: **ترتیب Cisco تأییدشده با سند 13753؛ ترتیب FortiGate تأیید نشده**.
+> فرض: مسیرهای معتبر، Next-hop قابل‌دسترس، بدون `as-path ignore`. «AS_PATH کوتاه‌تر» قاعده‌ی مطلق نیست.
+> مراجع: RFC 4271، RFC 7454؛ Cisco Doc ID 13753 (تأییدشده).
+
 
 **مدت:** ۳۶ ساعت (۶ روز × ۶ ساعت) | **پیش‌نیاز:** فصل ۶ (OSPF)، فصل ۷ (ACL/NAT).
 **اهداف:** ۱) مفهوم BGP و تفاوت eBGP/iBGP. ۲) برپایی Peering و اعلام شبکه. ۳) iBGP با Loopback و `next-hop-self`. ۴) کنترل مسیر با Local Preference، AS-Path Prepend و MED. ۵) فیلتر مسیر با Prefix-List و Route-Map. ۶) عیب‌یابی BGP.

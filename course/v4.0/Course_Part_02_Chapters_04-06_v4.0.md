@@ -45,6 +45,11 @@
 
 # فصل 4 — Switching II: STP، EtherChannel و امنیت L2
 
+> **یادداشت علمی v4.0 — فصل 4:** عمومی: STP/RSTP، EtherChannel (LACP 802.1AX)، امنیت L2. مختص محصول: PVST+، دستورات IOS، پیش‌فرض‌ها.
+> فرض: توپولوژی Lab؛ زمان‌های همگرایی تقریبی‌اند نه تضمین.
+> مراجع: IEEE 802.1D/1w/1Q/1AX؛ Cisco.
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۳.
 **اهداف:** STP/RSTP، Root، PortFast/BPDU Guard، EtherChannel/LACP، Port-Security، DHCP Snooping/DAI، طراحی سه‌لایه؛ **Gate G2**.
 **معیار تسلط:** Root عمدی؛ جلوگیری از Loop؛ Channel بدون Mismatch؛ ≥ ۶ از ۷ مورد G2.
@@ -2977,6 +2982,11 @@ Because all traffic would flow through a low-capacity edge device instead of the
 
 # فصل 5 — Routing I: Static، Floating و OSPF
 
+> **یادداشت علمی v4.0 — فصل 5:** عمومی: Static/Floating، OSPF (RFC 2328). مختص محصول: Admin Distance پیش‌فرض و دستورات IOS.
+> فرض: Reference Bandwidth، Hello/Dead پیش‌فرض Ethernet؛ فرمول‌ها تقریب آموزشی (حدود اعتبار مشخص شده).
+> مرجع: RFC 2328؛ Cisco OSPF docs.
+
+
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۴.
 **اهداف:** Route Table/LPM/AD، Static، Default/Floating/IP SLA، OSPF (مفهوم + پیاده‌سازی)، عیب‌یابی Adjacency.
 **معیار تسلط:** پیش‌بینی مسیر بسته؛ مسیر برگشت؛ OSPF سه‌روتری؛ ≥ ۴ از ۵ خطای OSPF.
@@ -5760,6 +5770,11 @@ An MTU mismatch between the two interfaces.
 ---
 
 # فصل 6 — Routing II: OSPF پیشرفته، IPv6 و FHRP (Lab A)
+
+> **یادداشت علمی v4.0 — فصل 6:** عمومی: OSPF Multi-Area، OSPFv3، FHRP (HSRP/VRRP RFC 5798). مختص محصول: HSRP اختصاصی Cisco.
+> فرض: توپولوژی Lab؛ زمان Failover FHRP به Timer/Preempt وابسته است.
+> مراجع: RFC 2328، RFC 5340، RFC 5798.
+
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۵.
 **اهداف:** DR/BDR، OSPF چندناحیه‌ای، OSPFv3، HSRP، Lab A کامل؛ **Gate G3**.
