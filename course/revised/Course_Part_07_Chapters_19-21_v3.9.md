@@ -377,179 +377,132 @@ OSPF dead 40 s (default broadcast) ; with BFD ~ <1 s
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک مرجع؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. IP Plan سلسله‌مراتبی برای ۴۰ شعبه بنویسد که قابل‌خلاصه‌سازی باشد.
-2. Summary را با محاسبه‌ی باینری و بررسی «Black hole» تعیین کند.
-3. Tunnel IP (/30، /32، Unnumbered) را با توجه به Routing پویا انتخاب کند.
-4. ظرفیت Hub (تعداد Tunnel، SA، Throughput، Route) را برآورد کند.
-5. تعارض‌ها (Overlap، ادغام شرکت) را شناسایی و راه‌حل بدهد.
-6. طرح را با آزمون‌های قابل‌اندازه‌گیری (Route Count، Traceroute) تأیید کند.
+1. IP Plan سلسله‌مراتبی برای ده‌ها شعبه طراحی کنید (HQ، Region، Branch، Tunnel، Loopback).
+2. Summary Route (Route Aggregation) را محاسبه و ایمن اعلام کنید.
+3. Null Route (blackhole) برای جلوگیری از Loop را بنویسید.
+4. Overlap بین شعبه‌ها را تشخیص و رفع کنید.
+5. ظرفیت و رشد آینده را در طراحی لحاظ کنید.
+6. طراحی را با ابزار (ipaddress در Python) راستی‌آزمایی کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا IP Plan قبل از Tunnel؟** طرح آدرس‌دهی بد بعداً همه‌چیز را گران می‌کند: Overlap بین شعب، Routeهای زیاد و ناتوانی از Summarize. مثل شماره‌گذاری پلاک خانه‌ها در یک شهر: اگر از اول منظم باشد، پست و آمبولانس راحت پیدا می‌کنند.
+شهری را تصور کنید که خیابان‌هایش بدون الگو شماره‌گذاری شده: برای تحویل بسته، هر تپه و کوچه باید جداگانه در نقشه ثبت شود. شهر منظم اما «منطقه ۱، محله ۵، پلاک ۱۲» دارد؛ مأمور فقط منطقه را می‌شناسد و بقیه محلی حل می‌شود. IP Plan سلسله‌مراتبی همین است: Hub فقط یک Route برای هر منطقه نگه می‌دارد، نه ۵۰ Route. جدول مسیر کوچک‌تر یعنی همگرایی سریع‌تر و عیب‌یابی ساده‌تر. اشتباه در این مرحله بعدها تقریباً بدون Renumbering جبران‌پذیر نیست.
 
-**اصول:** هر شعبه یک بلوک پیوسته و هم‌تراز؛ فضای رشد؛ Loopback و شبکه‌ی Tunnel از بلوک جدا؛ مستندسازی. **Summarization** (خلاصه‌سازی) فقط وقتی مجاز است که بلوک پیوسته و رزرو شده باشد؛ وگرنه ترافیک به مقصدهای ناموجود (Blackhole) می‌رود.
+### اصول طراحی
 
-**جمع‌بندی اصلی درس:**
+1. **بلوک پیوسته و هم‌تراز** برای هر منطقه (Summary ممکن).
+2. **جدا کردن نقش‌ها:** LAN شعبه، Tunnel، Loopback، Management.
+3. **رشد:** هر منطقه ظرفیت دو برابر اولیه.
+4. **یکتایی سراسری:** بدون Overlap حتی بین شرکت‌های ادغام‌شده.
+5. **مستندسازی:** جدول واحد (IPAM) نه Excel پراکنده.
 
-قبل از ساخت اولین Tunnel باید دانست «هر شعبه چه آدرسی دارد و چه Prefixی در Routing اعلام می‌شود». آدرس‌دهی بد بعدها با هیچ پیکربندی جبران نمی‌شود: Overlap، Route زیاد روی Hub، ناتوانی در Summary و NAT ناخواسته. IP Plan یک **سند معماری** است، نه فهرست آدرس.
-
-سه مسئله‌ی بنیادی:
-1. **یکتایی:** هیچ دو سایت Prefix هم‌پوشان نداشته باشند.
-2. **قابلیت خلاصه‌سازی (Summarization):** شعب یک منطقه با یک Prefix قابل‌اعلام باشند تا جدول مسیر کوچک و Convergence سریع بماند.
-3. **رشد:** برای شعبه‌های جدید جا گذاشته شود، بدون Re-IP.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) الگوی سلسله‌مراتبی
+### نمونه‌ی IP Plan
 
 ``` text
-10.0.0.0/8 company
-  10.0.0.0/16      HQ (data center, users, mgmt)
-  10.1.0.0/16      Region A  (branches 10.1.0.0/24 ... 10.1.255.0/24)
-  10.2.0.0/16      Region B
-  10.3.0.0/16      Region C
-  10.250.0.0/16    Tunnel interconnect (p2p /30 or /32)
-  10.254.0.0/24    Loopbacks (management, BGP peering)
-  10.255.0.0/16    Reserved / future
+10.0.0.0/8            company
+  10.0.0.0/16         HQ (DC, users, mgmt)
+  10.1.0.0/16         Region A (branches 10.1.X.0/24)
+  10.2.0.0/16         Region B
+  10.3.0.0/16         Region C
+  10.250.0.0/16       Tunnel interconnect (p2p /30)
+  10.254.0.0/24       Loopbacks (/32 each)
+  10.255.0.0/16       Reserved
 ```
 
-هر منطقه یک /16 دارد ← تا ۲۵۶ شعبه‌ی /24؛ خلاصه‌ی منطقه = یک Route.
+برای هر Tunnel یک `/30` از 10.250.0.0/16: ۴۰ شعبه × ۴ آدرس = ۱۶۰ آدرس، بسیار کمتر از ظرفیت ۶۵۵۳۶.
 
-#### ۲) محاسبه‌ی Summary (باینری)
+### محاسبه‌ی Summary
 
-فرض: چهار شعبه 10.1.4.0/24، 10.1.5.0/24، 10.1.6.0/24، 10.1.7.0/24.
+قاعده: بلوک مجموعه‌ای از شبکه‌ها باید با مرز توان ۲ هم‌تراز باشد.
 
 ``` text
-10.1.4.0 = 00001010.00000001.00000100.00000000
-10.1.5.0 = 00001010.00000001.00000101.00000000
-10.1.6.0 = 00001010.00000001.00000110.00000000
-10.1.7.0 = 00001010.00000001.00000111.00000000
-common prefix = first 22 bits  (octet3: 000001xx)
-Summary = 10.1.4.0/22   covers 10.1.4.0 - 10.1.7.255
+Branches: 10.1.4.0/24, 10.1.5.0/24, 10.1.6.0/24, 10.1.7.0/24
+3rd octet: 4,5,6,7  -> binary 000001xx
+Common prefix of 3rd octet = 6 bits  -> /16 + 6 = /22
+Summary = 10.1.4.0/22   (10.1.4.0 - 10.1.7.255)
 ```
 
-شرط: بلوک باید **هم‌تراز (aligned)** باشد (شروع 4 بر 4 بخش‌پذیر). اگر شعب 10.1.3..6 بودند، یک /22 تنها پوشش نمی‌داد.
+بررسی هم‌ترازی: عدد 4 باید مضرب 4 باشد (بلوک چهارتایی). اگر شعبه‌ها از 10.1.5.0 شروع شوند، /22 هم‌تراز نیست.
 
-#### ۳) Black hole در Summary
-
-اگر Summary 10.1.4.0/22 را اعلام کنید ولی فقط ۳ شعبه موجود باشد، ترافیک به 10.1.7.0/24 (ناموجود) به Hub می‌آید و پس از Longest Prefix Match مسیری ندارد؛ بسته Drop می‌شود. این رفتار قابل‌قبول (Fail-closed) است؛ خطرناک وقتی است که Default Route وجود دارد و ترافیک ناموجود به اینترنت نشت می‌کند. راه‌حل: **Null route (Blackhole route)** برای Summary روی Hub:
+### Null Route برای Summary
 
 ``` text
 config router static
-    edit 200
-        set dst 10.1.4.0 255.255.252.0
+    edit 100
+        set dst 10.1.0.0 255.255.0.0
         set blackhole enable
         set distance 254
     next
 end
 ```
 
-(`blackhole` در Static Route FortiOS؛ `Unverified` برای جزئیات 7.0.3.) Routeهای دقیق‌تر شعب (LPM) همچنان برنده‌اند.
+چرا؟ اگر Summary /16 اعلام شده ولی فقط 10.1.4.0/24 موجود است و بسته‌ای به 10.1.9.5 برسد، بدون Null Route ممکن است با Default برگردد و Loop بسازد. Null Route آن را Drop می‌کند.
 
-#### ۴) Tunnel Interface IP
-
-| روش | توضیح | مزیت | محدودیت |
-|---|---|---|---|
-| /30 هر لینک | دو IP برای دو سر | استاندارد، Routing پویا ساده | مصرف آدرس (۴ به‌ازای هر Tunnel) |
-| /32 دو سر | IP محلی و Remote /32 | کم‌مصرف؛ در FortiOS برای Tunnel بدون Subnet مشترک | باید Route Static/پویا به Remote /32 |
-| Unnumbered | بدون IP روی Tunnel | کمترین آدرس | محدودیت پروتکل‌ها (BGP با Loopback) |
-
-برای ۴۰ شعبه: ۴۰ × /30 = ۱۶۰ آدرس از 10.250.0.0/16؛ کاملاً کافی.
-
-#### ۵) برآورد ظرفیت Hub
+### Overlap
 
 ``` text
-Tunnels      = number of spokes x tunnels per spoke   (e.g. 40 x 2 = 80)
-IKE/IPsec SA = 2 SA per tunnel (IKE SA + Child SA)      -> ~160
-Routes       = spokes x prefixes per spoke + summaries  (e.g. 40 x 3 = 120)
-Throughput   = sum of expected branch traffic through hub (peak, not average)
+python3 -c "import ipaddress as i; print(i.ip_network('10.16.0.0/20').overlaps(i.ip_network('10.16.8.0/24')))"
 ```
 
-باید با **Datasheet مدل** (IPsec VPN Throughput، تعداد Tunnel مجاز، Concurrent Sessions) با Profile فعال بسنجید؛ عدد Datasheet معمولاً برای بسته‌های بزرگ/بدون UTM است. اگر Hub مرکز Backhaul اینترنت هم باشد، بار چندبرابر می‌شود.
+خروجی `True` یعنی هم‌پوشانی. ابزار IPAM و اسکریپت بررسی قبل از اضافه‌کردن شعبه.
 
-#### ۶) مهاجرت و ادغام (Overlap)
+### مثال‌های حل‌شده
 
-Overlap در موارد: شرکت ادغام‌شده با همان 192.168.1.0/24، شعبه‌ی قدیمی با Subnet تکراری. راه‌حل‌ها: (۱) Re-IP تدریجی (امن‌ترین، گران)؛ (۲) NAT یک‌طرفه/دوطرفه روی Tunnel (VIP/IP Pool) با جدول «آدرس واقعی ↔ آدرس مجازی»؛ (۳) VRF/VDOM جدا (مرز Routing). هر NAT = بدهی عیب‌یابی (Log آدرس مجازی).
+#### مثال ساده — Summary
 
-### ۴) طراحی و تصمیم‌گیری
+چهار شعبه 10.1.4–7.0/24؛ Summary 10.1.4.0/22 + Null Route. Hub یک Route منطقه را به Spoke/Region Router می‌دهد؛ جدول به‌جای ۴ ورودی ۱ ورودی.
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Summary در چه سطحی؟ | Region /16؛ نه بر پایه‌ی تعداد فعلی شعب |
-| Tunnel IP | /30 برای سادگی؛ /32 برای صرفه‌جویی (با Route Remote) |
-| Overlap | Re-IP > NAT > VRF/VDOM |
-| ظرفیت Hub | عدد Datasheet با UTM/بسته‌ی واقعی؛ حاشیه ۳۰٪ |
-| Null route | برای هر Summary روی Hub |
+#### مثال متوسط — شعبه‌ی پنجم
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — تخصیص
+شعبه‌ی 10.1.8.0/24 اضافه می‌شود؛ /22 آن را پوشش نمی‌دهد. گزینه‌ها: ۱) Summary /21 (10.1.0.0/21) با ظرفیت 8 شعبه ۲) Region /16 کلی. تصمیم: در طراحی اولیه /21 یا /20 رزرو کنید.
 
 ``` text
-HQ        10.0.0.0/16
-Branch 1  10.1.0.0/24 ... Branch 50 10.50.0.0/24
-Tunnel    10.255.0.0/16
+/21 -> 8 x /24 (10.1.0.0 - 10.1.7.255)
+/20 -> 16 x /24 (10.1.0.0 - 10.1.15.255)
 ```
 
-#### مثال متوسط — Summary
+#### مثال متوسط — Tunnel /30
 
-۱۶ شعبه‌ی پیاپی در بایت سوم (10.1.0.0/24 تا 10.1.15.0/24):
+Hub–Spoke1: 10.250.1.0/30 ⇒ Hub .1، Spoke .2. Loopback Hub 10.254.0.1/32. Peering BGP با Loopback (پایدارتر از IP Tunnel).
 
-``` text
-16 networks = 2^4 -> /24 - 4 = /20
-Summary: 10.1.0.0/20  (10.1.0.0 - 10.1.15.255)
-```
+#### مثال سخت — ادغام شرکت‌ها
 
-شرط: شروع بلوک مضرب ۱۶ در بایت سوم.
+دو شرکت هر دو 10.1.0.0/24 دارند. راه‌ها: ۱) NAT 1:1 موقت روی Tunnel و Renumber تدریجی ۲) برای شعبه‌ی جدید آدرس جدید. NAT هزینه‌ی عیب‌یابی دارد (DNS و برنامه‌های Embedded IP). برنامه‌ی Renumber با Change Window و آزمون.
 
-#### مثال سخت — شرکت ادغام‌شده
+#### مثال سخت — Summary ناقص
 
-هر دو 10.1.0.0/24. NAT ۱:۱ موقت روی Tunnel و Renumber تدریجی؛ Policy و DNS با آدرس ترجمه‌شده هماهنگ. آزمون با اسکریپت Overlap (`ipaddress` پایتون).
+Region A /16 ولی شعبه‌ای در منطقه‌ی دیگر 10.1.200.0/24 گرفته؛ Hub ترافیک آن را به Region A می‌فرستد ⇒ قطع. درس: سیاست تخصیص: فقط IPAM تخصیص دهد.
 
-#### مثال‌های اصلی درس (مرور)
+### Lab هدایت‌شده (اجرا نشده)
 
-**ساده (حل‌شده):** ۴ شعبه در یک منطقه با 10.1.4–7.0/24: Summary 10.1.4.0/22 با Null route؛ Hub فقط یک Route منطقه را به بقیه اعلام می‌کند؛ `get router info routing-table all` باید Route /22 و ۴ Route /24 (در Hub) را نشان دهد.
+1. IP Plan برای ۱۶ شعبه بنویسید.
+2. Summary را محاسبه و Null Route بنویسید.
+3. Overlap را با Python بررسی کنید.
 
-**متوسط (حل‌شده):** شعبه‌ی ۵ با 10.1.8.0/24 اضافه می‌شود: /22 دیگر آن را پوشش نمی‌دهد ولی Region /16 (10.1.0.0/16) پوشش می‌دهد. نتیجه: اگر ISP/Region-level Summary استفاده شود، اضافه‌شدن شعبه نیاز به تغییر Summary ندارد؛ برای همین Summary سطح منطقه (/16) پایدارتر از Summary چهارتایی است. تصمیم: Summary را در مرز منطقه بگذارید، نه بر پایه‌ی تعداد فعلی.
+### عیب‌یابی سریع
 
-**سخت (تحلیل):** شرکت ادغام‌شده 10.0.0.0/8 را به‌طور پراکنده استفاده می‌کند و ۶ شعبه با شما Overlap دارند. تحلیل: (الف) Overlap دقیق را با اسکریپت بیابید؛ (ب) برای ۶ شعبه NAT دوطرفه به بلوک 172.20.0.0/16 اختصاص دهید و جدول Mapping بسازید؛ (ج) Re-IP تدریجی را برنامه‌ریزی کنید (۱۲ ماه)؛ (د) Policy/Logging بر پایه‌ی آدرس واقعی حفظ شود (Log فقط آدرس مجازی دارد؛ لذا سیستم Log باید Mapping را بشناسد). ریسک: خرابی Route برگشت، DNS (جواب با آدرس واقعی)، Applicationهایی که IP را داخل Payload می‌گذارند (ALG).
-
-### ۸) Verification (اثبات صحت)
-
-- اسکریپت بررسی Overlap (مثلاً Python ipaddress) روی IP Plan بدون خطا.
-- `get router info routing-table all`: Summaryها و Null routeها.
-- traceroute به آدرس ناموجود داخل Summary: Drop در Hub (نه نشت به اینترنت).
-- Route Count Hub مطابق برآورد.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| Route مبهم بین دو شعبه | `get router info routing-table details <ip>` | Overlap؛ باید Re-IP/NAT |
-| ترافیک آدرس ناموجود به اینترنت نشت می‌کند | traceroute/Log | نبود Null route با وجود Default Route؛ افزودن blackhole |
-| Summary اعلام نمی‌شود | `get router info bgp network` / OSPF area-range | Summary در Protocol تنظیم نشده یا Prefix هم‌تراز نیست |
-| Hub CPU بالا با ۴۰ Tunnel | `diagnose sys top`، IKE counters | ظرفیت/Rekey همزمان؛ توزیع Lifetime |
+| Loop | Summary بدون Null | blackhole |
+| قطع منطقه‌ای | تخصیص خارج بلوک | IPAM |
+| Overlap | ادغام | NAT/Renumber |
+| جدول بزرگ | بدون Summary | طراحی |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- IP Plan را در مخزن نسخه‌دار و با مالک ثبت کنید؛ تغییر بدون Review ممنوع.
-- Null route برای جلوگیری از نشت ترافیک.
-- NAT روی Tunnel را مستند کنید (Log و Audit).
+Null Route برای Summary؛ Prefix-list ورودی/خروجی؛ جلوگیری از Leak Summary به اینترنت.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- IP Plan سلسله‌مراتبی = پایه‌ی Summary و رشد.
-- Summary فقط روی بلوک هم‌تراز؛ Null route برای ایمنی.
-- Tunnel IP: /30 ساده، /32 کم‌مصرف.
-- ظرفیت Hub را با Profile واقعی بسنجید.
-- Overlap: Re-IP بهترین؛ NAT بدهی است.
+سلسله‌مراتب (HQ/Region/Branch/Tunnel/Loopback)؛ Summary هم‌تراز و Null Route؛ بررسی Overlap؛ ظرفیت رشد؛ IPAM.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا Summary باید «هم‌تراز» باشد؟ *(پاسخ: 19-1-ت1)*
 
@@ -565,7 +518,7 @@ Summary: 10.1.0.0/20  (10.1.0.0 - 10.1.15.255)
 
 **Q1.** Quick quiz (English): Why must a summary prefix be aligned to its block boundary? *(پاسخ: 19-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -577,11 +530,11 @@ Summary: 10.1.0.0/20  (10.1.0.0 - 10.1.15.255)
 - *Summarize routes at regional boundaries.* ← مسیرها را در مرز منطقه‌ها خلاصه کنید.
 - *Add a null route for every summary.* ← برای هر Summary یک Null route اضافه کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** IP Plan چندشعبه. **هدف:** طرح ۴۰ شعبه + Summary + Null route. **وضعیت:** اجرا نشده. **مراحل:** (۱) جدول IP Plan؛ (۲) اسکریپت Overlap؛ (۳) تنظیم blackhole Route؛ (۴) آزمون traceroute. **Verification:** مطابق بخش ۸. **Rollback:** حذف Routeها. **Evidence:** `02-design/hub-spoke-plan.md`.
 
-### ۱۵) منابع
+### منابع
 
 - RFC 4632 — CIDR
 - RFC 1918
@@ -589,216 +542,79 @@ Summary: 10.1.0.0/20  (10.1.0.0 - 10.1.15.255)
 
 <a id="l-19-2"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: IP Plan و Summarization
-
-``` text
-HQ      10.0.0.0/16
-Branch1 10.1.0.0/24 ... Branch50 10.50.0.0/24
-Summary at hub: 10.0.0.0/10 would cover 10.0-63 (only if reserved)
-```
-
-قاعده: هر شعبه یک /24 رزرو + فضای رشد؛ Summary فقط اگر بلوک پیوسته و رزرو شده باشد؛ وگرنه Blackhole.
-
-**پرسش‌های مصاحبه**
-1. *Overlap؟* مشکل IPsec/NAT.
-2. *Summary خطر؟* مسیر ناموجود.
-3. *Loopback ID؟* ثبات Router-ID.
-
-### تکمیل عمیق: IP Plan و Summarization چندشعبه
-
-#### چرا؟
-
-طرح آدرس‌دهی بد، بعداً همه‌چیز را گران می‌کند: Overlap بین شعب، Routeهای زیاد و ناتوانی از Summarize. اینجا IP Plan را از ابتدا تمیز می‌سازیم.
-
-#### مثال ساده — تخصیص
-
-``` text
-HQ        10.0.0.0/16
-Branch 1  10.1.0.0/24
-Branch 2  10.2.0.0/24
-...
-Branch 50 10.50.0.0/24
-Tunnel    10.255.0.0/16 (overlay)
-```
-
-هر شعبه یک /24 (۲۵۴ Host) با فضای رشد.
-
-#### مثال متوسط — Summarization
-
-برای ۱۶ شعبه با آدرس‌های پیاپی در بایت سوم (10.1.0.0/24 تا 10.1.15.0/24) می‌توان یک Summary داد.
-
-``` text
-16 networks = 2^4 -> borrow 4 bits from the /24 -> /24 - 4 = /20
-Summary: 10.1.0.0/20  (covers 10.1.0.0 - 10.1.15.255)
-Check: 10.1.15.0/24 is inside, 10.1.16.0/24 is outside
-```
-
-مراحل: ۱) تعداد شبکه‌ها باید توان ۲ باشد (۱۶) ۲) شروع بلوک باید مضرب ۱۶ در بایت سوم باشد (۰ مضرب ۱۶ است) ۳) Prefix برابر ۲۴ منهای ۴ می‌شود.
-
-مثال مخالف: اگر شعبه‌ها از 10.1.4.0/24 شروع شوند، بلوک ۱۶تایی هم‌تراز نیست و Summary /20 شبکه‌های دیگر را هم می‌پوشاند.
-
-#### قاعده
-
-Summary فقط زمانی مجاز است که بلوک پیوسته، هم‌تراز (Aligned) و رزرو شده باشد؛ وگرنه ترافیک به مقصدهای ناموجود (Blackhole) می‌رود.
-
-#### مثال سخت — شرکت ادغام‌شده
-
-دو شرکت ادغام می‌شوند و هر دو 10.1.0.0/24 دارند (Overlap). راه: NAT بین آنها (۱:۱)، یا Renumbering تدریجی؛ NAT موقت و Renumber دائمی.
-
-#### Lab
-
-یک IP Plan برای ۳۰ شعبه بنویسید و با `ipaddress` پایتون Overlap را بررسی کنید.
-
-``` text
-python3 -c "import ipaddress as i; print(i.ip_network('10.16.0.0/20').overlaps(i.ip_network('10.16.8.0/24')))"
-```
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Blackhole | Summary بیش‌ازحد | Null route دقیق |
-| Overlap | طرح ناقص | NAT/Renumber |
-| Route زیاد | بدون Summary | رزرو بلوک |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Aligned؟** Prefix دقیق.
-**۲. Overlap چه می‌کند؟** مسیر مبهم.
-**۳. Summary خطر؟** Blackhole.
-
-#### English Corner
-
-- *Summarize only contiguous, aligned address blocks.*
-- Q: What is a route blackhole caused by over-summarization?
-
 ## درس 19-2 — Tunnelهای Hub–Spoke و OSPF روی Tunnel: طراحی، Network Type، Cost، Convergence و عیب‌یابی
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۱۹-۱، ۱۸-۲، ۶-۱ (OSPF) · ≈ 8 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک مرجع؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Hub–Spoke را با Phase1 dynamic/Static و Selector باز بسازد.
-2. OSPF را روی Tunnel Interface با Network Type درست راه بیندازد و Hello/Dead/Cost را تنظیم کند.
-3. رفتار OSPF هنگام خرابی Tunnel را (Detect، LSA، SPF) تحلیل و زمان Convergence را محاسبه کند.
-4. Policy و Local-in لازم برای OSPF را بنویسد.
-5. Neighbor Stuck در Init/Exstart/2-Way را عیب‌یابی کند.
-6. Area Design و LSA Filtering را برای مقیاس بسنجد.
+1. Hub-and-Spoke را با IPsec Route-based بسازید.
+2. IP Tunnel، Phase1/Phase2 و Static Route اولیه را بنویسید.
+3. OSPF را روی Tunnel (point-to-multipoint/point-to-point) تنظیم کنید.
+4. Neighbor، LSDB و Route را تأیید کنید.
+5. Failover دو Hub را درک کنید.
+6. خطاهای رایج (MTU OSPF، Network Type، Passive) را رفع کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا OSPF روی Tunnel؟** با Static Route هر شعبه‌ی جدید یعنی ویرایش همه‌ی دستگاه‌ها. OSPF مسیرها را خودکار می‌یابد. ولی Tunnel «شبکه‌ی چندجانبه‌ی مجازی» است و رفتار خاص دارد.
+Static Route برای دو شعبه کافی است؛ برای ۲۰ شعبه، هر تغییر یعنی ۲۰ ویرایش دستی و احتمال اشتباه. OSPF (Open Shortest Path First) مثل سیستم GPS است که خودش تغییر مسیرها را پخش می‌کند: شعبه‌ی جدید اضافه شود یا تونلی قطع شود، جدول به‌روز می‌شود. برای overlay چندشعبه، Routing پویا استاندارد است.
 
-**Network Type:** Broadcast (DR/BDR، پیش‌فرض اترنت)، Point-to-Point (بدون DR)، Point-to-Multipoint (Hub با چند Spoke، بدون DR). برای Hub-and-Spoke روی Hub معمولاً `point-to-multipoint` مناسب است. **Cost** برای ترجیح Hub اصلی؛ **MTU** باید یکسان باشد (ExStart).
-
-**جمع‌بندی اصلی درس:**
-
-OSPF روی Tunnel دو مزیت دارد: (۱) Route شعب خودکار یاد گرفته می‌شود؛ (۲) قطع Tunnel باعث حذف Route می‌شود و ترافیک به مسیر جایگزین می‌رود. ولی OSPF برای شبکه‌ی چندشعبه **فرض‌هایی** دارد (Multicast، Hello، DR/BDR) که روی Tunnel باید آگاهانه تنظیم شوند، وگرنه Neighbor ناپایدار یا Convergence کند می‌شود.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) Network Type روی Tunnel
-
-- **Point-to-point:** هر Tunnel یک لینک دو‌نقطه‌ای؛ بدون DR/BDR؛ Hello 10 / Dead 40 پیش‌فرض؛ **انتخاب پیش‌فرض برای Hub–Spoke با Tunnel جدا.**
-- **Broadcast:** DR/BDR انتخاب می‌شود؛ روی Tunnelهای Dynamic/چندسر مناسب نیست.
-- **Point-to-multipoint:** Hub برای Spokeهای زیاد روی یک Interface؛ Neighbor هر Spoke جدا؛ نیاز به تنظیم Cost و بدون DR.
-
-در FortiOS با Phase1 `type dynamic` و Interface واحد روی Hub، چند Spoke روی یک Tunnel Interface‌اند؛ OSPF باید point-to-multipoint باشد یا هر Spoke Interface جدا (`net-device enable`) داشته باشد (`Unverified` در جزئیات).
-
-#### ۲) پارامترها
+### توپولوژی
 
 ``` text
-Hello 10 s / Dead 40 s      default; Dead = 4 x Hello
-Fast failover               Hello 1 / Dead 3-4, or BFD (RFC 5880)
-Cost (cost = ref-bw / bw)   set explicit cost per tunnel: primary 10, backup 100
-Authentication              MD5 or SHA (RFC 5709) on tunnel interfaces
+            [HUB 198.51.100.10]
+             /        \
+   10.250.1.0/30   10.250.2.0/30
+           /            \
+   [SPOKE1]            [SPOKE2]
+   10.1.1.0/24         10.1.2.0/24
 ```
 
-#### ۳) Convergence (تحلیل زمان)
+### تونل (Hub)
 
 ``` text
-Total = Detect + LSA flood + SPF delay + Install
-Example: Dead 40 s, LSA flood ~50 ms, SPF throttle ~200 ms, FIB ~10 ms  -> ~40.3 s
-With BFD (300 ms x 3): ~0.9 s + 0.26 s -> ~1.2 s
-```
-
-نتیجه: در Tunnelهای IPsec، Detect را با DPD/BFD کوتاه کنید؛ Hello/Dead تنها کافی نیست چون Tunnel ممکن است Up بماند در حالی که مسیر عملاً مرده است.
-
-#### ۴) Local-in و Policy
-
-OSPF Hello/LSA به خود FortiGate می‌رسد (Local-in). Policy عبوری برای OSPF لازم **نیست**؛ ولی (۱) اگر Local-in Policy دارید باید OSPF (proto 89) را مجاز کنید؛ (۲) Policy داده بین Tunnel↔LAN جدا لازم است. اگر Selector Phase 2 فقط Subnetهای مشخص باشد، Hello (آدرس Tunnel) ممکن است خارج از Selector باشد ⇒ Selector باز (0.0.0.0/0) توصیه می‌شود.
-
-#### ۵) مقیاس
-
-Area 0 در Hub؛ هر منطقه Area جدا با ABR؛ Stub/NSSA برای کاهش LSA؛ Summary روی ABR (range). Spokeهای زیاد در Area 0 = LSDB بزرگ؛ در ≥ ۵۰ شعبه BGP ترجیح داده می‌شود (۱۹-۳).
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Network type | p2p برای Tunnel جدا؛ p2mp برای Interface مشترک Hub |
-| Failover | BFD یا Hello/Dead کوتاه |
-| Cost | صریح؛ اصلی 10، پشتیبان 100 |
-| Area | Area 0 Hub؛ منطقه‌ها Area جدا |
-| Auth | MD5/SHA روی Tunnel |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-``` text
-config router ospf
- config ospf-interface
-  edit "TO-SPOKES"
-   set interface "TO-SPOKES"
-   set network-type point-to-multipoint
-   set cost 10
-  next
- end
-end
-```
-
-#### مثال متوسط — Hub اصلی/پشتیبان
-
-Hub1 cost 10، Hub2 cost 20؛ Spoke ترافیک را به Hub1 می‌فرستد و با خرابی به Hub2.
-
-#### مثال سخت — گیر در ExStart
-
-MTU Tunnel با MTU Interface مقابل متفاوت است. `get router info ospf neighbor` ExStart؛ رفع: MTU یکسان یا `mtu-ignore`. تأیید Full.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Hub و Spoke1: Phase1/2 با Selector 0.0.0.0/0؛ IP Tunnel 10.250.1.1/30 و .2؛ OSPF point-to-point؛ `get router info ospf neighbor` ⇒ Full؛ `get router info routing-table ospf` ⇒ 10.1.4.0/24 via 10.250.1.2.
-
-**متوسط (تحلیل):** Neighbor در Init: Hub Hello Spoke را می‌بیند ولی Spoke Hello Hub را نه. اولین فرضیه: Policy/Local-in Spoke بسته OSPF را رد می‌کند؛ دوم: یک سر Hello 10 و دیگری 1؛ سوم: Auth ناهمسان. شواهد: Sniffer روی Tunnel (proto 89)، `diagnose ip ... ospf` / Debug OSPF. رفع: یکسان‌سازی Hello/Auth و مجازکردن Local-in.
-
-**سخت (طراحی+محاسبه):** دو Tunnel (ISP1 و ISP2) از Spoke به Hub؛ می‌خواهید ISP1 اصلی باشد. Cost 10 برای Tunnel1 و 100 برای Tunnel2. هنگام قطع ISP1 با Dead 40: ۴۰ ثانیه Black hole. با BFD 300ms×3 و SPF throttle: ≈ 1.2 s. محاسبه: بدون BFD، ۴۰ ثانیه قطع برای VoIP غیرقابل‌قبول؛ با BFD قابل‌قبول. همچنین Failback: وقتی ISP1 برمی‌گردد، Cost پایین‌تر باعث بازگشت می‌شود؛ برای جلوگیری از Flap، Hold-down/Dampening در لینک ناپایدار.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. VPN → IPsec Tunnels: Tunnel Hub–Spoke با Selector 0.0.0.0/0 (طبق ۱۸-۲).
-2. Network → Interfaces → Tunnel Interface: IP/Remote IP (یا /32).
-3. Network → OSPF: Router ID، Areas، Networks (10.250.0.0/16)، Interfaces (Network Type=Point-to-Point، Hello/Dead، Cost، Authentication).
-4. Policy & Objects: Policy Tunnel↔LAN دوطرفه.
-5. Monitor → Routing Monitor و Network → OSPF Neighbors.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-config system interface
-    edit "TO-SPOKE1"
-        set ip 10.250.1.1 255.255.255.255
-        set remote-ip 10.250.1.2 255.255.255.252
+config vpn ipsec phase1-interface
+    edit "SPK1"
+        set interface "port1"
+        set ike-version 2
+        set peertype any
+        set net-device enable
+        set proposal aes256-sha256
+        set dhgrp 14
+        set remote-gw 203.0.113.21
+        set psksecret <SECRET>
+        set dpd on-idle
     next
 end
+config vpn ipsec phase2-interface
+    edit "SPK1-P2"
+        set phase1name "SPK1"
+        set proposal aes256-sha256
+        set pfs enable
+        set dhgrp 14
+        set src-subnet 0.0.0.0 0.0.0.0
+        set dst-subnet 0.0.0.0 0.0.0.0
+    next
+end
+config system interface
+    edit "SPK1"
+        set ip 10.250.1.1 255.255.255.255
+        set remote-ip 10.250.1.2 255.255.255.255
+    next
+end
+```
+
+برای Hub با Spokeهای زیاد از `dialup` (Peer Type با Dynamic) و `net-device enable` استفاده می‌شود تا ایفیس تونل به ازای هر Spoke خودکار ساخته شود.
+
+### OSPF روی Tunnel
+
+``` text
 config router ospf
     set router-id 10.254.0.1
     config area
@@ -808,56 +624,87 @@ config router ospf
     config network
         edit 1
             set prefix 10.250.0.0 255.255.0.0
+            set area 0.0.0.0
         next
     end
-    config ospf-interface
-        edit "TO-SPOKE1"
-            set interface "TO-SPOKE1"
+    config interface
+        edit "SPK1"
             set network-type point-to-point
+            set cost 10
             set hello-interval 10
             set dead-interval 40
-            set cost 10
         next
     end
+    config redistribute "connected"
+        set status enable
+    end
 end
+```
+
+نکته‌ها:
+
+1. `network-type point-to-point` برای تونل ۱:۱ (بدون DR/BDR).
+2. `point-to-multipoint` برای Hub با چند Spoke روی یک Interface.
+3. MTU تونل با MTU OSPF هماهنگ؛ عدم تطابق ⇒ Stuck in ExStart.
+4. Spoke: LAN با `passive-interface` (فقط Prefix اعلام شود).
+
+### تأیید
+
+``` text
 get router info ospf neighbor
 get router info ospf database
 get router info routing-table ospf
-diagnose sniffer packet TO-SPOKE1 "proto 89" 4 20 l
+get router info ospf interface SPK1
 ```
 
-### ۸) Verification (اثبات صحت)
+وضعیت مطلوب: Neighbor در `Full`.
 
-- Neighbor Full برای هر Spoke.
-- Route شعب در Hub و Route Summary در Spoke.
-- قطع Tunnel (Shutdown): زمان حذف Route و ping پیوسته؛ اندازه‌گیری Convergence.
-- Failback: بازگشت به مسیر اصلی بدون Flap بیش از ۱ بار.
+### مثال‌های حل‌شده
 
-### ۹) Troubleshooting
+#### مثال ساده — Neighbor
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+`get router info ospf neighbor` ⇒ `10.254.1.1 Full/ - ... SPK1`. Route به 10.1.1.0/24 با `O`.
+
+#### مثال متوسط — Network Type
+
+دو سمت یکی broadcast و دیگری point-to-point؛ Neighbor بالا می‌آید ولی Route‌ها ناقص یا Hello Mismatch. رفع: هر دو point-to-point.
+
+#### مثال متوسط — ExStart
+
+Neighbor در ExStart/Exchange گیر کرده. علت: MTU تونل متفاوت. رفع: `set mtu-ignore enable` (موقت/با آگاهی) یا هماهنگ‌کردن MTU.
+
+#### مثال سخت — دو Hub
+
+Spoke به Hub1 و Hub2 تونل دارد؛ OSPF cost: Hub1=10، Hub2=100 ⇒ Primary/Backup. قطع Hub1 ⇒ OSPF طی Dead-interval (۴۰ ثانیه) یا سریع‌تر با BFD (`set bfd enable`) به Hub2 می‌رود. آزمون: قطع Hub1، `get router info routing-table ospf`.
+
+#### مثال سخت — Redistribute خطرناک
+
+Hub `redistribute static` همه‌ی Staticها را اعلام می‌کند، شامل Default به ISP ⇒ Spokeها به اینترنت از Hub می‌روند ناخواسته. راه: Route-map/Prefix-list برای redistribute و Default فقط عمدی.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. دو Spoke و Hub؛ OSPF.
+2. Failover با دو Hub.
+3. MTU Mismatch و رفع.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Neighbor Init | Sniffer proto 89؛ Local-in | Hello یک‌طرفه: Policy/Auth/Hello ناهمسان |
-| Exstart/Exchange | `ospf neighbor` | MTU ناسازگار؛ هم‌سان کنید (فصل ۱۸-۴) |
-| Neighbor Flap | Log OSPF؛ DPD | DPD/لینک ناپایدار؛ زمان‌ها |
-| Route Spoke در Hub نیست | `ospf database` | Network statement/Area/Passive |
-| Convergence کند | محاسبه Dead | BFD/Fast Hello |
+| Neighbor نیست | Tunnel/Network | بررسی |
+| ExStart | MTU | هماهنگ |
+| Route نیست | network statement | prefix |
+| Loop | redistribute | filter |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Authentication MD5/SHA روی Tunnel؛ Passive-interface روی LAN شعبه.
-- OSPF Filtering تا Spoke مسیرهای نامطلوب ندهد.
-- Policy حداقلی بین Spokeها.
+احراز OSPF (MD5/SHA) روی Interface؛ Passive در LAN؛ فیلتر Prefix؛ جلوگیری از تزریق Route.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- OSPF روی Tunnel: Network Type مناسب (p2p/p2mp).
-- Convergence = Detect + LSA + SPF؛ Detect غالب است؛ BFD.
-- Selector باز و Local-in برای OSPF.
-- Cost صریح برای Primary/Backup.
-- در مقیاس بزرگ: Area و Summary یا BGP.
+Hub-and-Spoke با IPsec Route-based؛ OSPF با Network Type مناسب؛ MTU هماهنگ؛ Passive LAN؛ دو Hub با Cost و BFD؛ redistribute با فیلتر.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Hello/Dead پیش‌فرض OSPF روی Tunnel p2p چند ثانیه است و Dead چه رابطه‌ای با Hello دارد؟ *(پاسخ: 19-2-ت1)*
 
@@ -873,7 +720,7 @@ diagnose sniffer packet TO-SPOKE1 "proto 89" 4 20 l
 
 **Q1.** Quick quiz (English): Why do tunnels often need BFD or very short dead timers for fast failover? *(پاسخ: 19-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -886,11 +733,11 @@ diagnose sniffer packet TO-SPOKE1 "proto 89" 4 20 l
 - *Set explicit OSPF costs to define primary and backup tunnels.* ← برای تعیین Tunnel اصلی و پشتیبان Cost را صریح تنظیم کنید.
 - *Convergence time is dominated by failure detection.* ← زمان Convergence عمدتاً به کشف خرابی بستگی دارد.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** OSPF روی Tunnel. **هدف:** Neighbor Full + Failover زیر ۲ ثانیه با BFD. **وضعیت:** اجرا نشده. **مراحل:** Tunnel، OSPF، Cost، BFD، قطع لینک. **Verification:** مطابق بخش ۸. **Rollback:** حذف OSPF Interface. **Evidence:** `03-ops/ospf-tunnel.md`.
 
-### ۱۵) منابع
+### منابع
 
 - RFC 2328 — OSPFv2
 - RFC 5880 — BFD
@@ -898,241 +745,41 @@ diagnose sniffer packet TO-SPOKE1 "proto 89" 4 20 l
 
 <a id="l-19-3"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: OSPF روی Tunnel
-
-``` text
-config router ospf
- set router-id 1.1.1.1
- config area
-  edit 0.0.0.0
-  end
- config network
-  edit 1
-   set prefix 10.99.0.0 255.255.255.0
-  next
- end
- config ospf-interface
-  edit TO-SPOKE
-   set interface TO-SPOKE
-   set network-type point-to-multipoint
-  next
- end
-end
-```
-
-Point-to-multipoint برای Hub بدون انتخاب DR؛ Cost را برای ترجیح Hub اصلی تنظیم کنید. **اثبات:** `get router info ospf neighbor` (Full).
-
-**پرسش‌های مصاحبه**
-1. *MTU mismatch؟* گیر در ExStart.
-2. *Hello/Dead؟* 10/40 پیش‌فرض.
-3. *چرا P2MP؟* بدون DR.
-
-### تکمیل عمیق: OSPF روی Tunnel — Network Type، Cost و Convergence
-
-#### چرا؟
-
-Static Route در ۳۰ شعبه یعنی ویرایش دستی ۳۰ دستگاه؛ OSPF خودکار یاد می‌گیرد. ولی روی Tunnel رفتار خاصی دارد (Multi-access مجازی).
-
-#### Network Type
-
-| نوع | DR/BDR | کاربرد |
-|---|---|---|
-| broadcast | دارد | LAN |
-| point-to-point | ندارد | Tunnel دونقطه‌ای |
-| point-to-multipoint | ندارد | Hub با چند Spoke |
-
-در Hub-and-Spoke، Network Type `point-to-multipoint` روی Hub مناسب است؛ DR/BDR لازم نیست.
-
-#### مثال ساده — پیکربندی
-
-``` text
-config router ospf
- set router-id 1.1.1.1
- config area
-  edit 0.0.0.0
-  next
- end
- config network
-  edit 1
-   set prefix 10.255.0.0 255.255.0.0
-  next
- end
- config ospf-interface
-  edit "TO-SPOKES"
-   set interface "TO-SPOKES"
-   set network-type point-to-multipoint
-   set cost 10
-  next
- end
-end
-```
-
-#### مثال متوسط — Cost برای ترجیح Hub
-
-Hub1 cost 10، Hub2 cost 20؛ Spoke ترافیک را به Hub1 می‌فرستد و با خرابی Hub1 به Hub2.
-
-#### Convergence
-
-``` text
-Dead interval default broadcast = 40 s ; P2P/P2MP often 40 s (verify)
-With BFD: detection ~ 300 ms x 3 = ~1 s
-```
-
-برای Failover زیر ۵ ثانیه از BFD یا Timerهای کوتاه (با آزمون) استفاده کنید.
-
-#### مثال سخت — MTU
-
-Tunnel با MTU کمتر ⇒ OSPF در ExStart گیر می‌کند. رفع: MTU برابر یا `mtu-ignore`.
-
-#### Lab
-
-Hub و دو Spoke بسازید؛ `get router info ospf neighbor` را بخوانید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| ExStart | MTU | یکسان |
-| DR روی Tunnel | broadcast | P2MP |
-| Failover کند | Dead timer | BFD |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا P2MP؟** بدون DR.
-**۲. Cost برای؟** ترجیح مسیر.
-**۳. BFD؟** تشخیص سریع.
-
-#### English Corner
-
-- *Use point-to-multipoint for hub interfaces that terminate many spokes.*
-- Q: How can you speed up OSPF failure detection?
-
 ## درس 19-3 — BGP روی FortiGate برای Overlay: iBGP، Route Reflector، Next-hop، Local-pref، Failover و Filtering
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۹-۰، ۹-۷ · ≈ 8 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک مرجع؛ Lab «اجرا نشده». از مستند: ADVPN با BGP → iBGP بین Hub و Spoke، `net-device disable` روی Hub.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. iBGP با Route Reflector و neighbor-group/neighbor-range را برای Spokeهای پویا بسازد.
-2. Next-hop در iBGP و Reachability Loopback/Tunnel را تحلیل کند.
-3. Failover دو Hub را با Local-pref/MED/Weight طراحی و اندازه‌گیری کند.
-4. Route Filtering (Prefix-list، Route-map، Max-prefix) را برای جلوگیری از Leak اعمال کند.
-5. Convergence BGP (Hold، BFD، MRAI) را محاسبه کند.
-6. عیب‌یابی Neighbor Active/Idle/Established-no-routes را انجام دهد.
+1. چرا و کی BGP را برای Overlay انتخاب کنیم (در برابر OSPF) بگویید.
+2. iBGP و eBGP را روی Tunnel تنظیم کنید.
+3. Route Reflector را برای Hub به‌کار ببرید.
+4. Prefix-list، Route-map و Local-Preference را برای کنترل مسیر بنویسید.
+5. Neighbor و جدول BGP را تأیید کنید.
+6. عیب‌یابی (Idle/Active، Next-hop، Loop) را انجام دهید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا BGP در Overlay؟** برای مقیاس بالا و کنترل دقیق سیاست (ترجیح یک Hub/ISP). ولی iBGP قوانین خود را دارد: Full-mesh یا Route Reflector، و Next-hop. Hub می‌تواند RR باشد تا Spokeها فقط با Hub Peer شوند.
+OSPF برای یک «شهر» کوچک عالی است؛ ولی برای ده‌ها شعبه با سیاست‌های مختلف (کدام Prefix از کدام مسیر برود، کدام Hub اول) به ابزار «سیاست‌محور» نیاز دارید. BGP (Border Gateway Protocol) مثل سرویس پستی بین‌شهری است که نه تنها مسیر را پخش می‌کند، بلکه به شما اجازه می‌دهد قوانین بگذارید: «بسته‌ی شعبه‌ی A از Hub1 برود و فقط اگر آن قطع شد Hub2». مقیاس‌پذیری و کنترل، دلیل غالب انتخاب BGP در SD-WAN و ADVPN است.
 
-**جمع‌بندی اصلی درس:**
+### iBGP در برابر eBGP
 
-با ۴۰ شعبه و دو Hub، BGP مقیاس‌پذیرتر و قابل‌کنترل‌تر از OSPF است: Policy بر پایه‌ی Attribute، Route Reflector برای حذف Full-mesh، و جداسازی Control Plane شعب. ولی BGP به Reachability Next-hop وابسته است و Convergence پیش‌فرضش کند است؛ این دو باید آگاهانه طراحی شوند.
+| ویژگی | iBGP | eBGP |
+|---|---|---|
+| AS | یکسان | متفاوت |
+| AD | 200 | 20 |
+| Next-hop | تغییر نمی‌کند (`next-hop-self`) | تغییر می‌کند |
+| Loop prevention | Split-horizon (Route Reflector لازم) | AS-path |
 
-### ۳) توضیح عمیق فنی
+در Overlay معمولاً iBGP با یک AS (مثلاً 65000) و Hub به‌عنوان Route Reflector.
 
-#### ۱) چرا iBGP و Route Reflector؟
-
-همه‌ی روترها در یک AS (مثلاً 65000) هستند؛ **iBGP Split-horizon:** مسیر یادگرفته‌شده از iBGP Peer به iBGP Peer دیگر داده نمی‌شود. برای n روتر Full-mesh = n(n−1)/2 Session؛ با ۴۰ Spoke + ۲ Hub ≈ ۸۶۱ Session. **Route Reflector (RR)** Hub را واسطه می‌کند: هر Spoke فقط با Hub (و Hub دوم) Peer می‌شود؛ تعداد Session ≈ ۲×۴۰ = ۸۰.
-
-``` text
-Full mesh sessions = n(n-1)/2     n=42 -> 861
-Route reflector    = clients x RR count   40 x 2 = 80
-```
-
-نکات RR: Cluster-ID یکتا برای RRهای مستقل (جلوگیری از Loop)؛ ORIGINATOR_ID/CLUSTER_LIST برای Loop prevention.
-
-#### ۲) Peering و Next-hop
-
-- **Peering روی IP Tunnel یا Loopback.** Loopback پایدارتر است ولی نیاز به Route Static/IGP برای رسیدن به Loopback دارد (طبق مستند ADVPN: Loopback از طریق IKE نصب می‌شود).
-- **Next-hop:** در iBGP، Next-hop تغییر نمی‌کند؛ Spoke باید Next-hop را از طریق IGP/Static حل کند؛ اگر Next-hop (Spoke دیگر) قابل‌دسترس نباشد، Route «Inaccessible» است (درس ۹-۰). گزینه‌ی `next-hop-self` روی RR (در 7.0 برای Client/Peer؛ `Unverified`).
-- **TTL:** iBGP TTL 255؛ eBGP با GTSM.
-
-#### ۳) Policy مسیر
-
-``` text
-Primary hub   : local-preference 200  (inbound from hub1)
-Secondary hub : local-preference 100
-Spokes advertise: own LAN /24 only   (prefix-list)
-Hub advertises: summaries + default if needed
-Max-prefix    : per spoke 20 (warning), protect memory
-```
-
-Failover: با قطع Hub1، Spoke مسیر Hub2 را (Local-pref پایین‌تر) انتخاب می‌کند. ترافیک Spoke→Spoke از Hub زنده می‌گذرد (یا ADVPN).
-
-#### ۴) Convergence BGP
-
-``` text
-Detect: Hold 180 s default  | BFD 300ms x 3 ~ 0.9 s
-Propagate: MRAI (eBGP 30 s / iBGP 5 s typical - Unverified) + RR processing
-Compute/Install: best-path + FIB, ~ tens of ms
-```
-
-برای Failover سریع: BFD روی BGP، Hold/Keepalive کوتاه‌تر (مثلاً 9/3)، Soft-reconfiguration، `advertisement-interval` کم برای iBGP.
-
-#### ۵) فیلترینگ و امنیت
-
-Prefix-list ورودی از Spoke (فقط 10.n.x.0/24 خودش)، خروجی به Spoke (Summary + Default)، `maximum-prefix`، Password/Auth، Route-map برای Community (Tagging مسیرهای شعب).
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| iBGP یا eBGP؟ | iBGP + RR در یک AS (طبق مستند ADVPN)؛ eBGP با ASN مجزا برای هر شعبه در مقیاس خیلی بزرگ |
-| Peering | Tunnel IP ساده؛ Loopback پایدار‌تر |
-| Failover | Local-pref + BFD + Hold کوتاه |
-| Filter | Prefix-list ورودی/خروجی + Max-prefix |
-| Cluster | Cluster-ID یکتا برای RRهای مستقل |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — RR
-
-``` text
-config router bgp
- set as 65000
- config neighbor
-  edit "10.255.0.2"
-   set remote-as 65000
-   set route-reflector-client enable
-   set next-hop-self enable
-  next
- end
-end
-```
-
-#### مثال متوسط — سیاست
-
-Local-pref بالاتر روی مسیرهای Hub1.
-
-#### مثال سخت — Prefix دریافت می‌شود ولی ترافیک نمی‌رود
-
-Next-hop غیرقابل‌دسترس: `next-hop-self` یا Route. بررسی `get router info bgp network`.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Hub (AS 65000) با neighbor-range 10.250.0.0/16 و `route-reflector-client`؛ Spoke Neighbor به Hub؛ `get router info bgp summary` ⇒ Established، PfxRcd؛ `get router info bgp network` ⇒ Prefix شعب.
-
-**متوسط (تحلیل):** Route شعبه‌ی 3 در Spoke 7 دیده نمی‌شود. فرضیه‌ها: (۱) Spoke3 مسیر را اعلام نمی‌کند (`network` ندارد یا Prefix-list)؛ (۲) RR `route-reflector-client` ندارد؛ (۳) Route-map Hub Filter می‌کند؛ (۴) Next-hop غیرقابل‌دسترس. آزمون: `get router info bgp neighbors <ip> advertised-routes` در Spoke3، `received-routes` در Hub، `routing-table` در Spoke7. نمونه علت: Spoke3 با Prefix-list خروجی اشتباه.
-
-**سخت (محاسبه+طراحی):** Hub1 قطع می‌شود. با Hold 180 s ≈ ۱۸۰ ثانیه Black hole تا Session Down؛ ولی اگر Tunnel Down شود، BGP Session روی TCP روی Tunnel با Tunnel قطع می‌شود و کشف سریع‌تر است. طراحی: DPD 5s×3 + BFD روی Tunnel؛ Local-pref برای Hub2؛ Soft-reconfig. هدف RTO < 10 s؛ تحلیل: Detect ≈ 1 s (BFD)، BGP Update iBGP ≈ 5 s (MRAI)، Install ≈ 0.1 s ⇒ ≈ 6 s ✓. آزمون: قطع Hub1 و ping پیوسته. ریسک: Failback باعث Flap ⇒ Hold-down.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Network → BGP: AS، Router ID.
-2. Neighbor Groups/Neighbors (بعضی گزینه‌ها مثل neighbor-group فقط CLI).
-3. Networks: Prefixهای قابل‌اعلام.
-4. Network → Routing Objects → Prefix Lists/Route Maps.
-5. Monitor → Routing Monitor.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### پیکربندی Hub (Route Reflector)
 
 ``` text
 config router bgp
@@ -1142,14 +789,13 @@ config router bgp
         edit "SPOKES"
             set remote-as 65000
             set route-reflector-client enable
-            set soft-reconfiguration enable
-            set maximum-prefix 20
-            set maximum-prefix-warning-only enable
+            set next-hop-self enable
+            set update-source "Lo0"
         next
     end
     config neighbor-range
         edit 1
-            set prefix 10.250.0.0 255.255.0.0
+            set prefix 10.254.1.0 255.255.255.0
             set neighbor-group "SPOKES"
         next
     end
@@ -1159,44 +805,115 @@ config router bgp
         next
     end
 end
-get router info bgp summary
-get router info bgp network
-get router info bgp neighbors 10.250.1.2 advertised-routes
-get router info bgp neighbors 10.250.1.2 received-routes
 ```
 
-### ۸) Verification (اثبات صحت)
+`neighbor-range` پذیرش خودکار Spokeها از بازه‌ی Loopback (بدون ثبت جدا برای هر کدام).
 
-- همه‌ی Spokeها Established؛ تعداد Prefix دریافتی طبق برنامه.
-- Route Spoke→Spoke از طریق Hub (traceroute).
-- قطع Hub1: زمان بازیابی < هدف؛ مسیر Hub2 انتخاب (`get router info bgp network` Local-pref).
-- Prefix-list: اعلام Prefix غیرمجاز از Spoke رد می‌شود (آزمون منفی).
+### پیکربندی Spoke
 
-### ۹) Troubleshooting
+``` text
+config router bgp
+    set as 65000
+    set router-id 10.254.1.1
+    config neighbor
+        edit "10.254.0.1"
+            set remote-as 65000
+            set update-source "Lo0"
+        next
+    end
+    config network
+        edit 1
+            set prefix 10.1.1.0 255.255.255.0
+        next
+    end
+end
+```
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+Peering با Loopback به‌جای IP Tunnel: پایدارتر (اگر تونل جابه‌جا شود Session نمی‌ماند). Reachability Loopback از طریق Static/OSPF روی Tunnel.
+
+### کنترل مسیر
+
+``` text
+config router prefix-list
+    edit "PL-BRANCH"
+        config rule
+            edit 1
+                set prefix 10.1.0.0 255.255.0.0
+                set ge 24
+                set le 24
+            next
+        end
+    next
+end
+config router route-map
+    edit "RM-PREFER-HUB1"
+        config rule
+            edit 1
+                set match-ip-address "PL-BRANCH"
+                set set-local-preference 200
+            next
+        end
+    next
+end
+```
+
+Local-Preference بالاتر = ترجیح بیشتر (فقط داخل AS). Prefix-list ورودی از پذیرش Prefix اشتباه (Leak/Hijack) جلوگیری می‌کند.
+
+### تأیید
+
+``` text
+get router info bgp summary
+get router info bgp neighbors 10.254.1.1
+get router info bgp network
+get router info routing-table bgp
+```
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Established
+
+`get router info bgp summary` ⇒ `10.254.1.1 ... Up/Down 00:05:12  State/PfxRcd 1`. یعنی Established و یک Prefix.
+
+#### مثال متوسط — Idle/Active
+
+State=Active: Spoke به Hub وصل نمی‌شود. علت‌ها: Reachability Loopback نیست، `update-source` اشتباه، TCP 179 بسته. آزمون: `execute ping-options source 10.254.1.1; execute ping 10.254.0.1`.
+
+#### مثال متوسط — Next-hop
+
+iBGP Prefix را از Hub به Spoke2 می‌رساند ولی Next-hop آدرس Spoke1 (غیرقابل‌دسترس). رفع: `next-hop-self` روی RR یا Reachability به Next-hop.
+
+#### مثال سخت — دو Hub با Local-Pref
+
+Hub1 با LP=200، Hub2 با LP=100 برای 10.0.0.0/16 (HQ). Spoke Hub1 را ترجیح می‌دهد. قطع Hub1 ⇒ BGP Hold-timer (پیش‌فرض ۱۸۰ ثانیه) یا BFD سریع‌تر. اصلاح: `set bfd enable`، `keepalive 5 holdtime 15`. آزمون Failover.
+
+#### مثال سخت — Leak
+
+Spoke به‌اشتباه Prefix مشتری را اعلام می‌کند و Hub به همه‌ی Spokeها RR می‌کند. راه: Prefix-list ورودی روی Hub (فقط Prefixهای مجاز هر Spoke) و `maximum-prefix`.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. iBGP Hub/Spoke با Loopback.
+2. Local-Pref و Failover.
+3. Prefix-list و آزمون Leak.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Neighbor Active | `get router info bgp summary` | Reachability Peer/Policy/AS/neighbor-range؛ TCP 179 |
-| Established ولی PfxRcd=0 | `advertised-routes` | Filter/network ندارد |
-| Route نصب نمی‌شود | `bgp network` | Next-hop غیرقابل‌دسترس/AD |
-| Failover کند | Hold/BFD | تنظیم Timer/BFD |
-| Route Leak | `advertised-routes` Hub | Prefix-list خروجی ناقص |
+| Idle/Active | Reachability/179 | Loopback |
+| Prefix نمی‌آید | network/RR | بررسی |
+| Next-hop نامعتبر | next-hop-self | فعال |
+| Failover کند | Timer | BFD |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Prefix-list و Max-prefix؛ Authentication BGP.
-- Route Reflector نباید Prefix ناخواسته را بین شعب پخش کند (Filter).
-- Hub را از اینترنت محافظت کنید.
+Password MD5/TCP-AO؛ Prefix-list ورودی؛ `maximum-prefix`؛ Peer فقط از Loopback مجاز؛ GTSM.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- iBGP+RR جایگزین Full-mesh؛ ۸۶۱ ← ۸۰ Session.
-- Next-hop باید قابل‌دسترس باشد.
-- Local-pref برای Primary Hub.
-- Convergence = BFD + MRAI + Compute.
-- Filter و Max-prefix اجباری.
+BGP برای سیاست و مقیاس؛ iBGP با RR روی Hub؛ Peering با Loopback؛ Local-Pref و Prefix-list؛ BFD و Timer برای Failover.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) iBGP Split-horizon چیست؟ *(پاسخ: 19-3-ت1)*
 
@@ -1212,7 +929,7 @@ get router info bgp neighbors 10.250.1.2 received-routes
 
 **Q1.** Quick quiz (English): How does a route reflector reduce the number of iBGP sessions? *(پاسخ: 19-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1224,121 +941,17 @@ get router info bgp neighbors 10.250.1.2 received-routes
 - *Use route reflectors instead of a full iBGP mesh.* ← به‌جای Full-mesh iBGP از RR استفاده کنید.
 - *Filter prefixes on both inbound and outbound.* ← Prefix را هم ورودی و هم خروجی فیلتر کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** BGP Overlay. **هدف:** iBGP+RR، Failover Hub. **وضعیت:** اجرا نشده/Unverified. **Verification:** مطابق بخش ۸. **Rollback:** حذف BGP. **Evidence:** `03-ops/bgp-tunnel.md`.
 
-### ۱۵) منابع
+### منابع
 
 - [ADVPN with BGP](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/820072/advpn-with-bgp-as-the-routing-protocol)
 - [ADVPN and shortcut paths](https://docs.fortinet.com/document/fortigate/7.0.9/administration-guide/985659/advpn-and-shortcut-paths)
 - RFC 4271، RFC 4456 (Route Reflection)، RFC 7454
 
 <a id="l-19-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: BGP Overlay
-
-``` text
-config router bgp
- set as 65000
- set router-id 1.1.1.1
- config neighbor
-  edit 10.99.0.2
-   set remote-as 65000
-   set route-reflector-client enable
-   set next-hop-self enable
-  next
- end
-end
-```
-
-Metric: Local-pref بالاتر ⇒ ترجیح خروج. **اثبات:** `get router info bgp summary` (State/PfxRcd عدد).
-
-**پرسش‌های مصاحبه**
-1. *iBGP Full mesh؟* RR حل می‌کند.
-2. *next-hop-self؟* برای Peerهای پشت Tunnel.
-3. *Local-pref در برابر MED؟* داخل AS در برابر بین AS.
-
-### تکمیل عمیق: BGP Overlay — iBGP، Route Reflector و Local-pref
-
-#### چرا؟
-
-برای مقیاس بالا و کنترل دقیق سیاست مسیریابی (مثلاً ترجیح یک Hub یا ISP)، BGP قوی‌تر از OSPF است. ولی باید قواعدش را بدانید.
-
-#### iBGP و مشکل Full-mesh
-
-در iBGP هر Router باید با همه‌ی Routerهای دیگر Peer باشد (چون مسیر یادگرفته‌شده از iBGP را به iBGP دیگر نمی‌دهد). با N Router: N(N-1)/2 Peer. **Route Reflector (RR)** این مشکل را حل می‌کند: Hub همه‌ی Spokeها را Client خود می‌کند و مسیرها را بازتاب می‌دهد.
-
-#### مثال ساده — پیکربندی RR
-
-``` text
-config router bgp
- set as 65000
- set router-id 1.1.1.1
- config neighbor
-  edit "10.255.0.2"
-   set remote-as 65000
-   set route-reflector-client enable
-   set next-hop-self enable
-  next
- end
- config network
-  edit 1
-   set prefix 10.0.0.0 255.255.0.0
-  next
- end
-end
-```
-
-#### مثال متوسط — Best Path (ترتیب مستند)
-
-Weight (Cisco) / Local-pref بالاتر، طول AS-path کوتاه‌تر، Origin، MED کمتر، eBGP بر iBGP، IGP metric کمتر، Router-ID. برای ترجیح Hub: Local-pref بالاتر روی مسیرهای Hub1.
-
-``` text
-route-map PREF-HUB1 permit 10
- set local-preference 200
-```
-
-#### مثال سخت — Next-hop
-
-مسیر یاد گرفته شد ولی Inactive: Next-hop دسترسی‌پذیر نیست. راه: `next-hop-self` یا Route به Next-hop.
-
-#### تأیید
-
-``` text
-get router info bgp summary
-get router info bgp network
-get router info routing-table bgp
-```
-
-State باید Established و PfxRcd عدد باشد.
-
-#### Lab
-
-یک Hub به‌عنوان RR و دو Spoke Client بسازید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Idle | TCP179/Policy | Local-in |
-| Route Inactive | Next-hop | next-hop-self |
-| انتخاب اشتباه | Local-pref | route-map |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا RR؟** حذف Full-mesh.
-**۲. Local-pref؟** سیاست داخل AS.
-**۳. Next-hop-self؟** دسترسی‌پذیری.
-
-#### English Corner
-
-- *A route reflector removes the need for a full iBGP mesh.*
-- Q: Why can a BGP route be learned but not installed?
 
 ## درس 19-4 — Local Breakout و Policy اینترنت شعبه: Backhaul در برابر Breakout، Split مسیر، SaaS، UTM و Failover
 
