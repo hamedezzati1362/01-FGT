@@ -2458,6 +2458,24 @@ get vpn ipsec tunnel summary
 
 <a id="l-30-4"></a>
 
+### ضمیمه: مثال کامل — مقایسه‌ی Baseline و Post-check
+
+| معیار | قبل | بعد | تفاوت | تصمیم |
+|---|---|---|---|---|
+| Session count | 41000 | 39000 | −4.9٪ | قابل‌قبول (±10٪) |
+| Routeها | 118 | 118 | 0 | OK |
+| IPsec | up | up | - | OK |
+| Policy 20 hit | 1.0M | 0 | −100٪ | بررسی (Mapping) |
+| Log ingestion | ok | ok | - | OK |
+
+**تحلیل Policy 20:** hit صفر ⇒ Interface Mapping اشتباه (port2↔port3). رفع: Mapping؛ پس از ۱۵ دقیقه Hit برگشت.
+
+**تصمیم Go/No-Go:** همه‌ی بحرانی‌ها OK (IPsec، Routeها، Log) و اختلاف قابل‌قبول ⇒ Go. اگر IPsec down بود ⇒ No-Go و Rollback.
+
+``` text
+Evidence: E-31..E-38 (baseline, post-check, diffs, decision, timestamp, operator)
+```
+
 ## درس 30-4 — Gate G11: آزمون عملی Migration — صورت مسئله، کلید پاسخ کامل و Rubric
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۱ تا ۳۰-۳ · ≈ 12 ساعت**

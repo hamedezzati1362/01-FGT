@@ -5254,6 +5254,35 @@ show system interface port2
 
 - Fortinet FortiOS 7.0 Administration Guide: Interfaces; Routing
 
+### ضمیمه: پرونده‌ی کامل حل‌شده — «بعد از تغییر Interface دیگر وارد فایروال نمی‌شوم»
+
+**ورودی (گزارش):** مدیر شبکه ساعت ۲۳:۱۰ allowaccess روی port2 را ویرایش کرده و اتصال SSH/HTTPS قطع شده؛ ping به 10.99.0.1 جواب می‌دهد.
+
+**گام ۱ — تعریف علامت:** ping ok (لایه‌ی ۳ سالم)؛ https/ssh نه ⇒ مشکل Local-in یا allowaccess، نه لینک.
+
+**گام ۲ — اقدام اضطراری:** اتصال از کنسول (نه از شبکه).
+
+``` text
+config system interface
+ edit "port2"
+  set allowaccess https ssh ping
+ next
+end
+```
+
+**گام ۳ — Verification:** `show system interface port2` سپس ورود از شبکه با https. انتظار: صفحه‌ی ورود باز می‌شود.
+
+**گام ۴ — RCA کوتاه:**
+
+``` text
+Cause    : allowaccess overwritten with 'ping' only (set replaces the list)
+Impact   : management lost for 14 min
+Fix      : restored via console
+Prevent  : change management interface only with console ready + scheduled revert
+```
+
+**درس:** در CLI فرمان `set allowaccess` کل فهرست را جایگزین می‌کند (نه افزودن)؛ برای افزودن از `append` استفاده کنید (`Unverified` در 7.0.3): `append allowaccess https`.
+
 ## پاسخ‌های فصل 12
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).

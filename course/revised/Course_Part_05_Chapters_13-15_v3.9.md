@@ -2528,6 +2528,36 @@ execute log display
 
 - Fortinet FortiOS 7.0 Administration Guide: Log & Report
 
+### ضمیمه: پرونده‌ی کامل حل‌شده — خواندن Log تا Packet Walk
+
+**ورودی:** کاربر 10.10.0.5 به پورتال 10.20.0.30:443 نمی‌رسد. Log:
+
+``` text
+srcip=10.10.0.5 srcintf="port2" dstip=10.20.0.30 dstport=443 dstintf="port3" policyid=0 action="deny"
+```
+
+**گام ۱ — تفسیر:** policyid=0 و action=deny ⇒ Implicit Deny؛ هیچ Policy مطابق نیست.
+
+**گام ۲ — Lookup:**
+
+``` text
+diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.30 443 tcp port2
+```
+
+نتیجه: policy 0. بررسی: Policy موجود Users→Servers فقط TCP-8443 است.
+
+**گام ۳ — رفع:** افزودن 443 به Service یا Policy جدید با Service HTTPS؛ Log All.
+
+**گام ۴ — Packet Walk پس از رفع:**
+
+``` text
+ingress port2 -> RPF ok -> route 10.20.0.0/24 via port3 -> policy 62 accept -> egress port3
+```
+
+**گام ۵ — آزمون:** `curl -vk https://10.20.0.30` ⇒ 200؛ Log: action=accept policyid=62؛ آزمون منفی SSH ⇒ Deny.
+
+**درس:** Log اثبات می‌کند چه شد؛ Lookup نشان می‌دهد چرا.
+
 ## درس 14-7 — روش نظام‌مند عیب‌یابی: از علامت تا علت و رفع (با پرونده‌های واقعی)
 
 **فصل ۱۴ · درس افزوده (تکمیل ۱۴-۶) · پیش‌نیاز: ۱۲-۰، ۱۲-۸، ۱۳-۷، ۵-۰ · ≈ ۸ ساعت**
@@ -3490,6 +3520,29 @@ show firewall policy
 - Fortinet FortiOS 7.0 Administration Guide: Virtual IPs
 
 <a id="l-15-3"></a>
+
+### ضمیمه: پرونده‌ی کامل حل‌شده — «VIP وب از اینترنت باز نمی‌شود»
+
+**ورودی:** VIP-WEB-443 (203.0.113.10 → 10.30.0.10) ساخته شده؛ از اینترنت Timeout.
+
+**گام ۱ — Debug flow:**
+
+``` text
+diagnose debug flow filter addr 203.0.113.10
+diagnose debug flow trace start 20
+diagnose debug enable
+ -> "Denied by forward policy check (policy 0)"
+```
+
+**گام ۲ — علت:** Policy 2 با dstaddr=10.30.0.10 (آدرس داخلی) نوشته شده؛ باید VIP باشد (DNAT قبل از Policy).
+
+**گام ۳ — رفع:** dstaddr را به VIP-WEB-443 تغییر دهید.
+
+**گام ۴ — Verify:** Debug: «Allowed by Policy-2»؛ `session list`: DNAT 203.0.113.10:443 → 10.30.0.10:443.
+
+**گام ۵ — آزمون منفی:** SSH به 203.0.113.10 ⇒ Deny (policyid=99 با Log).
+
+**گام ۶ — پایان:** `diagnose debug disable` و `diagnose debug reset`.
 
 ## درس 15-3 — ساخت Internal: Users، Servers، Mgmt و Routing به Edge با آزمون کامل
 

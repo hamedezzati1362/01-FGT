@@ -2531,6 +2531,25 @@ diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
 
 <a id="l-24-3"></a>
 
+### ضمیمه: پرونده‌ی کامل حل‌شده — «Policy Deny بین Web و DB اثر ندارد»
+
+**ورودی:** Policy 61 (DENY-WEB-to-DB) ساخته شده ولی telnet از WEB به DB:1433 موفق است.
+
+**گام ۱ — Lookup:**
+
+``` text
+diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
+ -> policy 12 (ALL, accept)
+```
+
+**گام ۲ — علت:** Policy 12 قدیمی (ZN-WEB→ZN-DB ALL) بالاتر از 61 قرار دارد (Shadow).
+
+**گام ۳ — رفع:** Policy 61 را بالاتر از 12 ببرید؛ 12 را Disable کنید؛ پس از دو هفته مشاهده حذف.
+
+**گام ۴ — آزمون منفی:** telnet 1433 ⇒ Timeout؛ Log: action=deny policyid=61.
+
+**گام ۵ — Evidence:** خروجی Lookup قبل/بعد، Log، زمان، نام مجری.
+
 ## درس 24-3 — Lab عملی VDOM: ساخت، Inter-VDOM Link، Policy و محدودیت منابع
 
 **فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۲۴-۱، ۲۴-۲ · ≈ 11 ساعت**

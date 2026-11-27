@@ -23221,6 +23221,35 @@ show system interface port2
 
 - Fortinet FortiOS 7.0 Administration Guide: Interfaces; Routing
 
+### ضمیمه: پرونده‌ی کامل حل‌شده — «بعد از تغییر Interface دیگر وارد فایروال نمی‌شوم»
+
+**ورودی (گزارش):** مدیر شبکه ساعت ۲۳:۱۰ allowaccess روی port2 را ویرایش کرده و اتصال SSH/HTTPS قطع شده؛ ping به 10.99.0.1 جواب می‌دهد.
+
+**گام ۱ — تعریف علامت:** ping ok (لایه‌ی ۳ سالم)؛ https/ssh نه ⇒ مشکل Local-in یا allowaccess، نه لینک.
+
+**گام ۲ — اقدام اضطراری:** اتصال از کنسول (نه از شبکه).
+
+``` text
+config system interface
+ edit "port2"
+  set allowaccess https ssh ping
+ next
+end
+```
+
+**گام ۳ — Verification:** `show system interface port2` سپس ورود از شبکه با https. انتظار: صفحه‌ی ورود باز می‌شود.
+
+**گام ۴ — RCA کوتاه:**
+
+``` text
+Cause    : allowaccess overwritten with 'ping' only (set replaces the list)
+Impact   : management lost for 14 min
+Fix      : restored via console
+Prevent  : change management interface only with console ready + scheduled revert
+```
+
+**درس:** در CLI فرمان `set allowaccess` کل فهرست را جایگزین می‌کند (نه افزودن)؛ برای افزودن از `append` استفاده کنید (`Unverified` در 7.0.3): `append allowaccess https`.
+
 ## پاسخ‌های فصل 12
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -26090,6 +26119,36 @@ execute log display
 
 - Fortinet FortiOS 7.0 Administration Guide: Log & Report
 
+### ضمیمه: پرونده‌ی کامل حل‌شده — خواندن Log تا Packet Walk
+
+**ورودی:** کاربر 10.10.0.5 به پورتال 10.20.0.30:443 نمی‌رسد. Log:
+
+``` text
+srcip=10.10.0.5 srcintf="port2" dstip=10.20.0.30 dstport=443 dstintf="port3" policyid=0 action="deny"
+```
+
+**گام ۱ — تفسیر:** policyid=0 و action=deny ⇒ Implicit Deny؛ هیچ Policy مطابق نیست.
+
+**گام ۲ — Lookup:**
+
+``` text
+diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.30 443 tcp port2
+```
+
+نتیجه: policy 0. بررسی: Policy موجود Users→Servers فقط TCP-8443 است.
+
+**گام ۳ — رفع:** افزودن 443 به Service یا Policy جدید با Service HTTPS؛ Log All.
+
+**گام ۴ — Packet Walk پس از رفع:**
+
+``` text
+ingress port2 -> RPF ok -> route 10.20.0.0/24 via port3 -> policy 62 accept -> egress port3
+```
+
+**گام ۵ — آزمون:** `curl -vk https://10.20.0.30` ⇒ 200؛ Log: action=accept policyid=62؛ آزمون منفی SSH ⇒ Deny.
+
+**درس:** Log اثبات می‌کند چه شد؛ Lookup نشان می‌دهد چرا.
+
 ## درس 14-7 — روش نظام‌مند عیب‌یابی: از علامت تا علت و رفع (با پرونده‌های واقعی)
 
 **فصل ۱۴ · درس افزوده (تکمیل ۱۴-۶) · پیش‌نیاز: ۱۲-۰، ۱۲-۸، ۱۳-۷، ۵-۰ · ≈ ۸ ساعت**
@@ -27052,6 +27111,29 @@ show firewall policy
 - Fortinet FortiOS 7.0 Administration Guide: Virtual IPs
 
 <a id="l-15-3"></a>
+
+### ضمیمه: پرونده‌ی کامل حل‌شده — «VIP وب از اینترنت باز نمی‌شود»
+
+**ورودی:** VIP-WEB-443 (203.0.113.10 → 10.30.0.10) ساخته شده؛ از اینترنت Timeout.
+
+**گام ۱ — Debug flow:**
+
+``` text
+diagnose debug flow filter addr 203.0.113.10
+diagnose debug flow trace start 20
+diagnose debug enable
+ -> "Denied by forward policy check (policy 0)"
+```
+
+**گام ۲ — علت:** Policy 2 با dstaddr=10.30.0.10 (آدرس داخلی) نوشته شده؛ باید VIP باشد (DNAT قبل از Policy).
+
+**گام ۳ — رفع:** dstaddr را به VIP-WEB-443 تغییر دهید.
+
+**گام ۴ — Verify:** Debug: «Allowed by Policy-2»؛ `session list`: DNAT 203.0.113.10:443 → 10.30.0.10:443.
+
+**گام ۵ — آزمون منفی:** SSH به 203.0.113.10 ⇒ Deny (policyid=99 با Log).
+
+**گام ۶ — پایان:** `diagnose debug disable` و `diagnose debug reset`.
 
 ## درس 15-3 — ساخت Internal: Users، Servers، Mgmt و Routing به Edge با آزمون کامل
 
@@ -38799,6 +38881,25 @@ diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
 
 <a id="l-24-3"></a>
 
+### ضمیمه: پرونده‌ی کامل حل‌شده — «Policy Deny بین Web و DB اثر ندارد»
+
+**ورودی:** Policy 61 (DENY-WEB-to-DB) ساخته شده ولی telnet از WEB به DB:1433 موفق است.
+
+**گام ۱ — Lookup:**
+
+``` text
+diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
+ -> policy 12 (ALL, accept)
+```
+
+**گام ۲ — علت:** Policy 12 قدیمی (ZN-WEB→ZN-DB ALL) بالاتر از 61 قرار دارد (Shadow).
+
+**گام ۳ — رفع:** Policy 61 را بالاتر از 12 ببرید؛ 12 را Disable کنید؛ پس از دو هفته مشاهده حذف.
+
+**گام ۴ — آزمون منفی:** telnet 1433 ⇒ Timeout؛ Log: action=deny policyid=61.
+
+**گام ۵ — Evidence:** خروجی Lookup قبل/بعد، Log، زمان، نام مجری.
+
 ## درس 24-3 — Lab عملی VDOM: ساخت، Inter-VDOM Link، Policy و محدودیت منابع
 
 **فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۲۴-۱، ۲۴-۲ · ≈ 11 ساعت**
@@ -41122,6 +41223,22 @@ Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ �
 
 - Fortinet FortiManager Administration Guide
 - FortiAnalyzer Administration Guide
+
+### ضمیمه: پرونده‌ی کامل حل‌شده — Install با Preview و Rollback
+
+**سناریو:** افزودن Policy 62 به ۵ شعبه از طریق FortiManager (Needs-License).
+
+1. **Revision:** پیش از تغییر یک Revision/Backup ثبت کنید (برچسب «before-CHG0123»).
+2. **تغییر:** در Policy Package شعبه‌ها Policy 62 را اضافه کنید.
+3. **Install Preview:** برای هر شعبه فقط ۱ خط تغییر (`+ policy 62`) دیده می‌شود؛ اگر Object مشترک هم تغییر کرده بود باید جدا بررسی می‌شد.
+4. **Install در Window:** ساعت 22:00؛ نتیجه: ۴ موفق، ۱ شکست (FGFM).
+5. **رفع شکست:** Connectivity/FGFM شعبه‌ی پنجم؛ Install مجدد.
+6. **Verify:** Policy Lookup روی هر شعبه؛ Hit Count.
+7. **Rollback در صورت نیاز:** نصب Revision قبلی؛ ۸ دقیقه.
+
+``` text
+Audit alert: 'Configuration changed' by user net01 at 22:03 -> ticket CHG-0123
+```
 
 ## پاسخ‌های فصل 26
 
@@ -44999,6 +45116,24 @@ get vpn ipsec tunnel summary
 
 <a id="l-30-4"></a>
 
+### ضمیمه: مثال کامل — مقایسه‌ی Baseline و Post-check
+
+| معیار | قبل | بعد | تفاوت | تصمیم |
+|---|---|---|---|---|
+| Session count | 41000 | 39000 | −4.9٪ | قابل‌قبول (±10٪) |
+| Routeها | 118 | 118 | 0 | OK |
+| IPsec | up | up | - | OK |
+| Policy 20 hit | 1.0M | 0 | −100٪ | بررسی (Mapping) |
+| Log ingestion | ok | ok | - | OK |
+
+**تحلیل Policy 20:** hit صفر ⇒ Interface Mapping اشتباه (port2↔port3). رفع: Mapping؛ پس از ۱۵ دقیقه Hit برگشت.
+
+**تصمیم Go/No-Go:** همه‌ی بحرانی‌ها OK (IPsec، Routeها، Log) و اختلاف قابل‌قبول ⇒ Go. اگر IPsec down بود ⇒ No-Go و Rollback.
+
+``` text
+Evidence: E-31..E-38 (baseline, post-check, diffs, decision, timestamp, operator)
+```
+
 ## درس 30-4 — Gate G11: آزمون عملی Migration — صورت مسئله، کلید پاسخ کامل و Rubric
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۱ تا ۳۰-۳ · ≈ 12 ساعت**
@@ -47249,6 +47384,21 @@ diagnose sys ha checksum cluster
 - FortiOS 7.0 Release Notes
 
 <a id="l-32-4"></a>
+
+### ضمیمه: مثال کامل — برنامه‌ی ساعت‌به‌ساعت Upgrade
+
+| ساعت | کار | Checkpoint |
+|---|---|---|
+| 21:30 | Backup هر دو، Hash، تأیید checksum | C1 |
+| 22:00 | Upgrade Secondary و Boot | C2: in-sync |
+| 22:20 | Failover به Secondary (جدید) | C3: سرویس بدون قطع طولانی |
+| 22:25 | Upgrade Primary قبلی | C4: checksum |
+| 22:45 | Post-check کامل (Test Matrix) | C5 |
+| 23:00 | اعلام پایان و Monitoring | - |
+
+**نقطه‌ی تصمیم Rollback:** اگر تا 22:40 C3 یا C4 موفق نشد ⇒ Rollback (Boot از Partition قبلی).
+
+**گزارش:** مدت ۵۵ دقیقه (Plan ۶۰)، انحراف: Sync ۶ دقیقه کند بود؛ درس: پیش از Failover منتظر in-sync بمانید.
 
 ## درس 32-4 — ارزیابی نهایی و Portfolio: ماتریس مهارت، تحلیل شکاف، نگاشت نقش و نمونه‌ی Portfolio
 

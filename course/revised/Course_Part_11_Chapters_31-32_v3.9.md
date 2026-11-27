@@ -1900,6 +1900,21 @@ diagnose sys ha checksum cluster
 
 <a id="l-32-4"></a>
 
+### ضمیمه: مثال کامل — برنامه‌ی ساعت‌به‌ساعت Upgrade
+
+| ساعت | کار | Checkpoint |
+|---|---|---|
+| 21:30 | Backup هر دو، Hash، تأیید checksum | C1 |
+| 22:00 | Upgrade Secondary و Boot | C2: in-sync |
+| 22:20 | Failover به Secondary (جدید) | C3: سرویس بدون قطع طولانی |
+| 22:25 | Upgrade Primary قبلی | C4: checksum |
+| 22:45 | Post-check کامل (Test Matrix) | C5 |
+| 23:00 | اعلام پایان و Monitoring | - |
+
+**نقطه‌ی تصمیم Rollback:** اگر تا 22:40 C3 یا C4 موفق نشد ⇒ Rollback (Boot از Partition قبلی).
+
+**گزارش:** مدت ۵۵ دقیقه (Plan ۶۰)، انحراف: Sync ۶ دقیقه کند بود؛ درس: پیش از Failover منتظر in-sync بمانید.
+
 ## درس 32-4 — ارزیابی نهایی و Portfolio: ماتریس مهارت، تحلیل شکاف، نگاشت نقش و نمونه‌ی Portfolio
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: کل دوره · ≈ 11 ساعت**

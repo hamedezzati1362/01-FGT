@@ -1754,6 +1754,22 @@ Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ �
 - Fortinet FortiManager Administration Guide
 - FortiAnalyzer Administration Guide
 
+### ضمیمه: پرونده‌ی کامل حل‌شده — Install با Preview و Rollback
+
+**سناریو:** افزودن Policy 62 به ۵ شعبه از طریق FortiManager (Needs-License).
+
+1. **Revision:** پیش از تغییر یک Revision/Backup ثبت کنید (برچسب «before-CHG0123»).
+2. **تغییر:** در Policy Package شعبه‌ها Policy 62 را اضافه کنید.
+3. **Install Preview:** برای هر شعبه فقط ۱ خط تغییر (`+ policy 62`) دیده می‌شود؛ اگر Object مشترک هم تغییر کرده بود باید جدا بررسی می‌شد.
+4. **Install در Window:** ساعت 22:00؛ نتیجه: ۴ موفق، ۱ شکست (FGFM).
+5. **رفع شکست:** Connectivity/FGFM شعبه‌ی پنجم؛ Install مجدد.
+6. **Verify:** Policy Lookup روی هر شعبه؛ Hit Count.
+7. **Rollback در صورت نیاز:** نصب Revision قبلی؛ ۸ دقیقه.
+
+``` text
+Audit alert: 'Configuration changed' by user net01 at 22:03 -> ticket CHG-0123
+```
+
 ## پاسخ‌های فصل 26
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
