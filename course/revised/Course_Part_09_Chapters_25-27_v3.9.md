@@ -2378,6 +2378,63 @@ CPU warn = P95 x 1.5 = 61%
 
 مراحل: ۱) Baseline از دورهٔ نرمال ۲) آستانه بر اساس ظرفیت و P95 ۳) بازبینی ماهانه. هشدار با Duration (مثلاً ۱۰ دقیقه) برای کاهش Alert Fatigue.
 
+### تکمیل عمیق: Baseline — بدون «نرمال»، «غیرعادی» معنا ندارد
+
+#### چرا باید یاد بگیریم؟
+
+پزشک وقتی می‌گوید «فشار خون ۱۶۰ بالاست» که بداند فشار نرمال شما ۱۲۰ است. اگر فشار همیشگی کسی ۱۶۰ باشد، همین عدد نرمال اوست. در شبکه هم «CPU ۶۰٪» برای یک دستگاه عادی و برای دستگاه دیگر فاجعه است. **Baseline** یعنی ثبت رفتار عادی تا انحراف را تشخیص دهید.
+
+#### توضیح ساده
+
+سه سؤال: چه چیزی را اندازه بگیریم (CPU، Session، پهنای باند، خطا)؟ هر چند وقت یک‌بار؟ چه عددی «هشدار» است؟
+
+#### مثال ساده — ساخت Baseline
+
+داده‌ی ۷ روز: CPU میانگین ۱۸٪، P95 برابر ۴۱٪؛ Session میانگین ۲۵,۰۰۰ و Peak ۳۸,۰۰۰؛ ظرفیت مدل ۲۰۰,۰۰۰ Session.
+
+P95 یعنی ۹۵٪ زمان مقدار کمتر یا مساوی این عدد بود (۵٪ بالاترین‌ها حذف می‌شود تا اوج‌های لحظه‌ای گمراه نکنند).
+
+#### مثال متوسط — تعیین آستانه
+
+``` text
+Session warn = 50% of capacity = 0.5 x 200000 = 100000
+Session crit = 80% of capacity = 0.8 x 200000 = 160000
+CPU warn     = P95 x 1.5      = 41 x 1.5 ~ 61 %
+```
+
+مراحل: ۱) ظرفیت از مستند مدل ۲) درصد ۳) P95 ۴) ضریب ۵) مدت پایداری (مثلاً ۱۰ دقیقه) تا هشدار کاذب کم شود.
+
+#### مثال سخت — فصل‌بندی
+
+پایان ماه مالی ترافیک ۳ برابر می‌شود. Baseline یک ماه عادی هشدار کاذب می‌دهد. راه: Baseline جدا برای «روز عادی» و «پایان ماه» یا آستانه‌ی وابسته به تقویم.
+
+#### Alert Fatigue
+
+اگر روزی ۲۰۰ هشدار بیاید، هیچ‌کس نمی‌خواند. قاعده: هشدار باید **اقدام‌پذیر** باشد؛ اگر کسی کاری نمی‌کند، حذفش کنید یا به گزارش تبدیلش کنید.
+
+#### Lab
+
+یک هفته داده‌ی Zabbix یا SNMP جمع کنید و جدول Baseline را بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| هشدار زیاد | آستانه‌ی نزدیک به نرمال | P95 × ضریب |
+| هشدار دیر | آستانه بالا | کاهش |
+| نویز شبانه | کار Backup | Maintenance window |
+
+#### پرسش‌ها با پاسخ
+
+**۱. P95 چیست؟** ۹۵٪ مقادیر زیر آن.
+**۲. چرا مدت پایداری؟** حذف اوج لحظه‌ای.
+**۳. Alert Fatigue؟** هشدار زیاد و بی‌اقدام.
+
+#### English Corner
+
+- *A baseline tells you what normal looks like.*
+- Q: Why use the 95th percentile instead of the maximum?
+
 ## درس 27-1 — Logging در FortiGate: انواع Log، سطح ثبت، Policy Logging، ذخیره‌ی محلی و طراحی حجم/Retention
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰، ۲۶-۲، ۱۴-۷ · ≈ 8 ساعت**
@@ -2587,6 +2644,81 @@ date=2026-11-27 srcip=10.10.0.5 dstip=198.51.100.8 policyid=30 action=accept
 
 اگر Disk Log پر است، به Syslog/FAZ منتقل کنید.
 
+### تکمیل عمیق: Logging در FortiGate — چه چیزی، کجا و با چه هزینه‌ای؟
+
+#### چرا؟
+
+Log‌ها حافظه‌ی شبکه‌اند. Log ناقص یعنی در حادثه کور هستید؛ Log بیش‌ازحد یعنی دیسک پر و CPU درگیر. تعادل لازم است.
+
+#### انواع Log
+
+| نوع | محتوا | مثال |
+|---|---|---|
+| Traffic | Sessionها | accept/deny |
+| Event | سیستم/ادمین/VPN | ورود ادمین |
+| UTM | AV/IPS/Web | virus blocked |
+| Local | ترافیک به خود فایروال | Local-in |
+
+#### مثال ساده — Log در Policy
+
+``` text
+config firewall policy
+ edit 30
+  set logtraffic all     # or utm
+ next
+end
+```
+
+`all` هر Session؛ `utm` فقط رویدادهای UTM. برای Policy Deny پایانی همیشه `all`.
+
+#### مثال متوسط — Implicit Deny
+
+``` text
+config log setting
+ set fwpolicy-implicit-log enable
+end
+```
+
+بدون آن ترافیک رد‌شده‌ی Implicit Deny ثبت نمی‌شود و نشانه‌ای از اسکن نمی‌بینید.
+
+#### مثال سخت — دیسک پر
+
+Log روی دیسک محلی در ۴۸ ساعت پر می‌شود و Rolling فعال است؛ حادثه‌ی هفته‌ی قبل از بین رفته. راه: ارسال به Syslog/FAZ با نگهداری ۹۰ روز و محاسبه‌ی ظرفیت.
+
+``` text
+Storage = log_per_day x days x devices
+2 GB x 90 x 12 = 2160 GB
+```
+
+#### Lab
+
+یک Policy با Log all بسازید، ترافیک تولید و در GUI/CLI Log را فیلتر کنید.
+
+``` text
+execute log filter category 0
+execute log filter field srcip 10.10.0.5
+execute log display
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Log نیست | logtraffic disable | فعال‌سازی |
+| Log ناقص | دیسک/Rate | Syslog |
+| زمان اشتباه | NTP/Timezone | تنظیم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. تفاوت all و utm؟** تمام Session در برابر فقط UTM.
+**۲. چرا Syslog؟** ماندگاری و تحلیل.
+**۳. چرا NTP؟** ترتیب رویدادها.
+
+#### English Corner
+
+- *Enable logging on the final deny policy.*
+- Q: Why send logs off the device?
+
 ## درس 27-2 — مانیتورینگ با SNMP و Zabbix: معیارها، Template، Trigger، Baseline و کاهش Alert نویزی
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰، ۲۷-۱ · ≈ 8 ساعت**
@@ -2781,6 +2913,89 @@ snmpwalk -v2c -c ro-comm 10.50.0.1 1.3.6.1.4.1.12356.101.4.1.3
 OID بالا از MIB فورتی‌نت (fgSysCpuUsage؛ مسیر را از MIB رسمی نسخه تأیید کنید). تفسیر عدد: درصد CPU.
 
 در Zabbix: Item ← Trigger `avg(/FGT/cpu,10m)>70` ← Action ایمیل. آزمون: بار مصنوعی با iperf و دیدن Trigger.
+
+### تکمیل عمیق: SNMP و Zabbix — از نیاز تا هشدار واقعی
+
+#### چرا؟
+
+نمی‌شود صبح‌ها وارد ۱۰ فایروال شد و CPU را دید. مانیتورینگ این کار را خودکار می‌کند: عدد را می‌گیرد، ذخیره می‌کند، با آستانه مقایسه می‌کند و خبر می‌دهد.
+
+#### SNMP
+
+SNMP = Simple Network Management Protocol، یعنی «پروتکل ساده‌ی مدیریت شبکه». نسخه‌ها: v1/v2c (رمز Community به‌صورت متن ساده) و v3 (احراز هویت و رمزنگاری). در محیط واقعی v3 را ترجیح دهید.
+
+#### مثال ساده — فعال‌سازی
+
+``` text
+config system snmp sysinfo
+ set status enable
+end
+config system snmp community
+ edit 1
+  set name "ro-comm"
+  config hosts
+   edit 1
+    set ip 10.50.0.20 255.255.255.255
+   next
+  end
+ next
+end
+```
+
+فقط IP سرور مانیتورینگ مجاز است؛ و Interface مدیریتی باید SNMP را مجاز کند (`allowaccess snmp`).
+
+#### مثال متوسط — خواندن
+
+``` text
+snmpwalk -v2c -c ro-comm 10.50.0.1 1.3.6.1.2.1.1.1
+```
+
+اگر خروجی بیاید، SNMP کار می‌کند. OIDهای اختصاصی Fortinet (CPU، Memory، Session) را از MIB رسمی همان نسخه بگیرید.
+
+#### مثال سخت — Trigger در Zabbix
+
+``` text
+avg(/FGT-1/system.cpu.util,10m) > 70
+```
+
+یعنی میانگین CPU در ۱۰ دقیقه بیش از ۷۰٪. آزمون: بار مصنوعی با iperf و دیدن Trigger. همچنین Trigger «No data for 5m» برای تشخیص قطع SNMP.
+
+#### SNMPv3 (نمونه)
+
+``` text
+config system snmp user
+ edit "mon"
+  set security-level auth-priv
+  set auth-proto sha256
+  set priv-proto aes256
+ next
+end
+```
+
+رمزها را در Vault نگه دارید.
+
+#### Lab
+
+SNMP را در Lab فعال، با snmpwalk تست و یک Trigger بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Timeout | allowaccess/ACL | بررسی |
+| Community اشتباه | نام | تطبیق |
+| داده‌ی نامعتبر | OID اشتباه | MIB رسمی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا v3؟** رمزنگاری.
+**۲. چرا Host محدود؟** سطح حمله.
+**۳. No data Trigger؟** تشخیص قطع پایش.
+
+#### English Corner
+
+- *Prefer SNMPv3 with authentication and privacy.*
+- Q: Why restrict SNMP to the monitoring host?
 
 ## درس 27-3 — REST API و Automation امن: احراز هویت، Trusted Host، GET/PUT، Idempotency، Rollback و آزمون
 
@@ -2977,6 +3192,78 @@ curl -sk -H "Authorization: Bearer $TOKEN" https://10.50.0.1/api/v2/monitor/syst
 
 آزمون منفی: Profile فقط‌خواندنی با روش PUT ⇒ رد.
 
+### تکمیل عمیق: REST API و Automation امن
+
+#### چرا؟
+
+کارهای تکراری (Backup، گزارش، افزودن Address) را با دست انجام ندهید؛ ولی API بدون امنیت یک در پشتی است. این درس خودکارسازی را با کمترین ریسک نشان می‌دهد.
+
+#### اصول
+
+1. **حداقل دسترسی**: Profile فقط‌خواندنی برای مانیتورینگ.
+2. **Trusted Host**: فقط IP مجاز.
+3. **توکن در Vault** نه در Script.
+4. **Log و ممیزی** درخواست‌ها.
+
+#### مثال ساده — ساخت کاربر API
+
+``` text
+config system api-user
+ edit "zabbix"
+  set accprofile "ro-profile"
+  config trusthost
+   edit 1
+    set type ipv4-trusthost
+    set ipv4-trusthost 10.50.0.20 255.255.255.255
+   next
+  end
+ next
+end
+```
+
+#### مثال متوسط — GET
+
+``` text
+curl -sk -H "Authorization: Bearer $TOKEN" https://10.50.0.1/api/v2/monitor/system/status
+```
+
+نتیجه JSON با نسخه. اگر از IP غیرمجاز زده شود ⇒ رد.
+
+#### مثال سخت — تغییر خودکار با Rollback
+
+افزودن Address با POST، سپس آزمون، سپس در صورت شکست حذف؛ و همیشه قبل از تغییر Backup بگیرید.
+
+``` text
+curl -sk -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"name":"SRV-RPT","subnet":"10.30.2.50 255.255.255.255"}' \
+  https://10.50.0.1/api/v2/cmdb/firewall/address
+```
+
+پاسخ باید `status: success` باشد. خطاها را بخوانید و Script را متوقف کنید.
+
+#### Lab
+
+یک Script کوتاه Backup روزانه با API بنویسید؛ توکن را از متغیر محیطی بخوانید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| 403 | Trusted Host/Profile | اصلاح |
+| 401 | توکن | تجدید |
+| 424/خطای وابستگی | ترتیب ساخت | رفع ترتیب |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Trusted Host؟** محدودکردن منبع.
+**۲. چرا Profile فقط‌خواندنی؟** حداقل دسترسی.
+**۳. توکن کجا؟** Vault.
+
+#### English Corner
+
+- *Use least-privilege API users bound to trusted hosts.*
+- Q: Why not hard-code tokens in scripts?
+
 ## درس 27-4 — Hardening مدیریتی عملی و Backup/Restore: اجرای چک‌لیست، آزمون منفی و اثبات بازیابی
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۷، ۱۲-۸، ۲۶-۳ · ≈ 8 ساعت**
@@ -3153,6 +3440,82 @@ nmap -p 22,23,80,443,8443 10.50.0.1   (from Users VLAN)
 انتظار: همه filtered/closed. از Mgmt: فقط 443 و 22 (در صورت نیاز). هر مورد باز ⇒ Local-in Policy/allowaccess را اصلاح کنید.
 
 Backup: `execute backup config tftp ...` و آزمون Restore در Lab با Diff.
+
+### تکمیل عمیق: Hardening مدیریتی و Backup/Restore — با آزمون واقعی
+
+#### چرا؟
+
+قوی‌ترین Policy فایروال بی‌فایده است اگر پنل مدیریت از اینترنت با رمز admin/admin باز باشد. Hardening یعنی بستن «در پشتی»‌های مدیریتی.
+
+#### چک‌لیست
+
+1. Admin فقط از Trusted Host و Mgmt VLAN.
+2. غیرفعال HTTP/Telnet؛ فقط HTTPS/SSH.
+3. MFA برای ادمین.
+4. Timeout.
+5. تغییر/غیرفعال Admin پیش‌فرض.
+6. TLS قوی.
+7. Banner قانونی.
+8. Backup رمزگذاری‌شده.
+
+#### مثال ساده — تنظیمات
+
+``` text
+config system global
+ set admintimeout 10
+ set admin-https-ssl-versions tlsv1-2 tlsv1-3
+ set admin-lockout-threshold 5
+ set admin-lockout-duration 300
+end
+```
+
+#### مثال متوسط — اسکن پورت
+
+``` text
+nmap -p 22,23,80,443,8443 10.50.0.1   # from Users VLAN
+```
+
+انتظار: همه filtered/closed. از Mgmt فقط 443/22 (در صورت نیاز). مورد باز اضافی ⇒ `allowaccess`/Local-in را اصلاح کنید.
+
+#### مثال سخت — Restore واقعی
+
+Backup بدون آزمون Restore ارزشی ندارد.
+
+``` text
+execute backup config tftp prod.conf 10.50.0.30
+# in Lab:
+execute restore config tftp prod.conf 10.50.0.30
+diff before.txt after.txt    # compare 'show' outputs
+```
+
+مراحل: ۱) Backup ۲) Restore در Lab ۳) مقایسه‌ی Policy/Route ۴) ثبت زمان Restore (RTO) ۵) مستندسازی.
+
+``` text
+RTO = restore time ; RPO = time since last backup
+```
+
+#### Lab
+
+Restore را در Lab اجرا و زمان بگیرید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Lockout ادمین | آستانه | حساب اضطراری Console |
+| Restore شکست | نسخه‌ی ناسازگار | همان نسخه |
+| پورت باز | allowaccess | بستن |
+
+#### پرسش‌ها با پاسخ
+
+**۱. RTO و RPO؟** زمان بازیابی/حداکثر داده‌ی از دست‌رفته.
+**۲. چرا Console اضطراری؟** در Lockout.
+**۳. Backup رمزگذاری؟** Secretها.
+
+#### English Corner
+
+- *A backup that has never been restored is only a hope.*
+- Q: What do RTO and RPO measure?
 
 ## درس 27-5 — Gate G10: آزمون عملی Logging، Monitoring، Hardening و Backup — کلید پاسخ کامل و Rubric
 
@@ -3331,6 +3694,66 @@ Log ۲۰، Monitoring ۲۰، API ۱۵، Hardening ۲۵، Backup/Restore ۲۰.
 
 مثال: همه موفق جز Restore آزمون‌نشده ⇒ 80 از 100.
 
+### تکمیل عمیق: آزمون G10 — سناریوی کامل با نمره‌گذاری
+
+#### چرا؟
+
+G10 ثابت می‌کند می‌توانید «عملیات» را سر پا نگه دارید: Log می‌بینید، مانیتور دارید، API امن است و Backup قابل‌اتکا.
+
+#### صورت مسئله
+
+برای Lab: ۱) Log به Syslog برسد ۲) Zabbix CPU و Session بخواند و Trigger بسازد ۳) کاربر API فقط‌خواندنی ۴) Hardening چک‌لیست ۵) Backup و Restore آزمایشی.
+
+#### کلید پاسخ
+
+| بخش | شاهد |
+|---|---|
+| Logging | فایل Log روی سرور + زمان |
+| Monitoring | اسکرین‌شات Trigger یا خروجی snmpwalk |
+| API | GET موفق + رد منفی از IP دیگر |
+| Hardening | خروجی nmap و `show system global` |
+| Backup/Restore | Diff پس از Restore |
+
+#### محاسبه‌ی نمره
+
+``` text
+Logging 20 | Monitoring 20 | API 15 | Hardening 25 | Backup/Restore 20
+Example: 20 + 18 + 15 + 22 + 10 = 85
+```
+
+Restore آزمون‌نشده ۱۰ نمره از دست می‌دهد.
+
+#### مثال متوسط — خطای رایج
+
+دانشجو Syslog را فعال کرد ولی Source Interface درست نبود؛ Log نرسید. شاهد: tcpdump روی سرور بدون بسته. رفع: `set source-ip` یا Route.
+
+#### مثال سخت — آزمون منفی API
+
+درخواست با Profile فقط‌خواندنی و متد PUT باید رد شود؛ اگر موفق شد، Profile اشتباه است.
+
+#### Lab
+
+آزمون را کامل انجام دهید و Evidence را در Index ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Log نمی‌رسد | Route/Source IP | بررسی |
+| SNMP Timeout | ACL | اصلاح |
+| Restore ناموفق | نسخه | هم‌نسخه |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا آزمون منفی API؟** اثبات محدودیت.
+**۲. Evidence Restore؟** Diff.
+**۳. Syslog چه چیزی لازم دارد؟** Route و Source.
+
+#### English Corner
+
+- *Run a negative test to prove the restriction works.*
+- Q: How do you verify a restore?
+
 ## درس 27-7 — Hardening، Backup/Restore و API: امن‌سازی مدیریتی و بازیابی قابل‌اثبات
 
 **فصل ۲۷ · درس افزوده (پس از ۲۷-۵) · پیش‌نیاز: ۱۲-۸، ۲۶-۰، ۲۷-۰ · ≈ ۶ ساعت**
@@ -3463,6 +3886,67 @@ config log eventfilter ; set system enable ; end
 ```
 
 Backup قبل از تغییر، سپس حذف ادمین بلااستفاده و ثبت Evidence از `show system admin` قبل/بعد.
+
+### تکمیل عمیق: امن‌سازی مدیریتی — پرونده‌ی «ادمین ناشناس» و اسکن پورت
+
+#### چرا؟
+
+مدیریت آسیب‌پذیرترین سطح است؛ مهاجم با ادمین شدن، همه‌چیز دارد.
+
+#### مثال ساده — ممیزی ادمین‌ها
+
+``` text
+show system admin
+config log eventfilter
+ set system enable
+end
+```
+
+فهرست ادمین‌ها را با فهرست مجاز مقایسه کنید؛ هر مورد اضافی را بررسی.
+
+#### مثال متوسط — Local-in Policy
+
+``` text
+config firewall local-in-policy
+ edit 1
+  set intf "port1"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "HTTPS" "SSH"
+  set action deny
+  set schedule "always"
+ next
+end
+```
+
+یعنی از WAN ورود مدیریتی رد شود؛ استثنای IP مجاز را بالاتر بگذارید.
+
+#### مثال سخت — ادمین ناشناس
+
+بررسی Log Event: ورود ادمین «backup2» از IP خارجی در ساعت ۰۳:۱۰. اقدام: ۱) غیرفعال‌سازی ۲) تغییر رمز همه ۳) بررسی تغییرات Config (`diff` با Backup) ۴) بررسی Persistence (Script، SSH Key) ۵) PIR.
+
+#### Lab
+
+یک ادمین آزمایشی بسازید، ورود را Log کنید و مسیر هشدار را تست کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ورود مدیریتی از اینترنت | allowaccess | بستن |
+| ادمین ناشناس | کنترل ضعیف | ممیزی |
+| Log ادمین ندارد | eventfilter | فعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Local-in چیست؟** ترافیک به خود فایروال.
+**۲. چرا diff Config؟** کشف تغییر ناخواسته.
+**۳. چرا PIR؟** جلوگیری از تکرار.
+
+#### English Corner
+
+- *Management access should never be exposed to the internet.*
+- Q: What do you check after finding an unknown admin?
 
 ## پاسخ‌های فصل 27
 
