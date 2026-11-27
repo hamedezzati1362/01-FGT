@@ -16686,6 +16686,75 @@ interface GigabitEthernet0/1
 2. *Hold Time چطور بین دو سر تعیین می‌شود؟* در OPEN هر دو سر مقدار پیشنهاد می‌دهند و کوچک‌تر برنده می‌شود؛ Keepalive معمولاً یک‌سوم آن است.
 3. *چرا TCP برقرار است ولی Session Established نمی‌شود؟* OPEN رد شده است (ASN اشتباه، Capability ناسازگار، MD5 متفاوت)؛ NOTIFICATION علت را در Log می‌دهد.
 
+### تکمیل عمیق: ماشین حالت BGP و پیام‌ها — از Idle تا Established
+
+#### چرا؟
+
+وقتی BGP در حالتی گیر می‌کند، نام حالت دقیقاً می‌گوید کجا مشکل است. حفظ مراحل عیب‌یابی را ساده می‌کند.
+
+#### حالت‌ها
+
+``` text
+Idle -> Connect -> Active -> OpenSent -> OpenConfirm -> Established
+```
+
+| حالت | معنی | علت گیر |
+|---|---|---|
+| Idle | تلاش نمی‌کند | پیکربندی/Policy |
+| Connect | TCP در حال برقراری | TCP/179 |
+| Active | تلاش مجدد TCP | ناموفق بودن TCP |
+| OpenSent | Open ارسال شد | پارامتر ناهمخوان |
+| OpenConfirm | Keepalive منتظر | تایمر |
+| Established | آماده | — |
+
+#### پیام‌ها
+
+Open، Keepalive، Update، Notification. Notification علت قطع را می‌گوید (مثلاً Bad Peer AS).
+
+#### مثال ساده — تایمر
+
+``` text
+Keepalive = 60 s ; Hold = 180 s (typical defaults, verify)
+```
+
+اگر Hold بدون Keepalive تمام شود، Session قطع می‌شود.
+
+#### مثال متوسط — Capability
+
+در Open، پشتیبانی از 4-byte AS، Route Refresh و Address Family مذاکره می‌شود؛ ناهمخوانی باعث رد Open می‌شود.
+
+#### مثال سخت — Active مداوم
+
+TCP به 179 برقرار نمی‌شود؛ بررسی: Route، ACL/Policy، `update-source`، رمز MD5 ناهمخوان (پیام بی‌پاسخ).
+
+``` text
+show ip bgp summary
+show ip bgp neighbors 10.99.0.2
+```
+
+#### Lab
+
+یک پارامتر را عمداً ناهمخوان کنید (AS اشتباه) و Notification را ببینید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Active | TCP | Policy/Route |
+| OpenSent گیر | پارامتر | AS/ID |
+| Notification | پارامتر | خواندن کد |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Active یعنی؟** TCP برقرار نیست.
+**۲. Hold timer؟** مهلت Keepalive.
+**۳. Notification؟** علت قطع.
+
+#### English Corner
+
+- *A BGP session stuck in Active usually means the TCP connection cannot be established.*
+- Q: What messages does BGP use?
+
 ## درس 9-2 — eBGP عملی: Peering، اعلام Prefix با `network`/Redistribute، AD، Verification و خطاهای رایج
 
 **فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۰، ۹-۱ · ≈ 8 ساعت**
@@ -16911,6 +16980,63 @@ ISP-LG# show route 203.0.113.0/24         ! at the ISP side (Looking Glass)
 2. *تفاوت network و redistribute؟* network فقط Prefix دقیق را و با Origin IGP اعلام می‌کند؛ redistribute همه‌ی مسیرها را با Origin Incomplete.
 3. *Null0 چه می‌کند؟* Summary را در RIB نگه می‌دارد تا BGP اعلام کند و ترافیک بی‌مقصد را دور می‌ریزد.
 
+### تکمیل عمیق: eBGP عملی — Peering و اعلام Prefix
+
+#### چرا؟
+
+eBGP بین سازمان و ISP است؛ کوچک‌ترین خطا یعنی اعلام Prefix نادرست به اینترنت.
+
+#### مثال ساده — Peering
+
+``` text
+router bgp 65001
+ neighbor 203.0.113.1 remote-as 64500
+ network 198.51.100.0 mask 255.255.255.0
+```
+
+`network` فقط وقتی مسیر دقیقاً همان Prefix در جدول Routing هست اعلام می‌کند (Route به Null0 برای Summary).
+
+#### مثال متوسط — بررسی
+
+``` text
+show ip bgp summary
+show ip bgp neighbors 203.0.113.1 advertised-routes
+show ip bgp neighbors 203.0.113.1 received-routes
+```
+
+PfxRcd عدد باشد و Advertised فقط Prefix خودتان.
+
+#### مثال سخت — اعلام اشتباه
+
+اعلام `0.0.0.0/0` یا Prefixهای ISP به ISP دیگر (Transit Leak). جلوگیری: Outbound Prefix-list فقط Prefix خودتان.
+
+#### eBGP پیش‌فرض‌ها
+
+TTL=1 (مستقیم)؛ برای Loopback Peering `ebgp-multihop`. Admin Distance eBGP = 20.
+
+#### Lab
+
+دو روتر با دو AS بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Prefix اعلام نمی‌شود | Route نیست | Null0 |
+| Idle | TCP | Policy |
+| Leak | بدون Filter | Prefix-list |
+
+#### پرسش‌ها با پاسخ
+
+**۱. network شرط؟** Route دقیق.
+**۲. چرا Outbound filter؟** جلوگیری از Leak.
+**۳. AD eBGP؟** 20.
+
+#### English Corner
+
+- *Always filter outbound BGP advertisements to your own prefixes only.*
+- Q: Why must the network statement match a route in the routing table?
+
 ## درس 9-3 — iBGP: Full-mesh/RR، Loopback Peering، `next-hop-self`، Synchronization و Split-horizon
 
 **فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۱، ۹-۲، ۶-۱ · ≈ 8 ساعت**
@@ -17115,6 +17241,62 @@ Core3# show ip bgp 8.8.8.0/24
 2. *Next-hop-self کجا گذاشته می‌شود؟* روی روتر مرزی که مسیر خارجی را به iBGP می‌دهد.
 3. *Synchronization چیست؟* قدیمی و در IOS جدید پیش‌فرض خاموش است.
 
+### تکمیل عمیق: iBGP — Full-mesh، RR و next-hop-self
+
+#### چرا؟
+
+iBGP قواعد ویژه‌ای دارد که مبتدیان را گیج می‌کند: مسیر از iBGP به iBGP دیگر داده نمی‌شود، Next-hop عوض نمی‌شود.
+
+#### قاعده‌ی کلیدی
+
+مسیر یادگرفته‌شده از iBGP Peer به iBGP Peer دیگر ارسال نمی‌شود (برای جلوگیری از حلقه). بنابراین باید Full-mesh یا Route Reflector.
+
+#### مثال ساده — شمارش
+
+``` text
+Full mesh peers = N x (N - 1) / 2
+N = 10 -> 45 ; with RR -> 9 (clients to RR)
+```
+
+#### مثال متوسط — next-hop-self
+
+eBGP Next-hop را به iBGP حفظ می‌کند؛ اگر داخلی به آن Next-hop Route نداشته باشد، مسیر Inactive می‌شود.
+
+``` text
+neighbor 10.0.0.2 next-hop-self
+```
+
+#### مثال سخت — Loopback Peering
+
+Peering روی Loopback برای افزونگی: `update-source Loopback0` و IGP برای رسیدن به Loopback.
+
+#### Synchronization
+
+قدیمی؛ در نسخه‌های جدید غیرفعال.
+
+#### Lab
+
+سه روتر iBGP با RR بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| مسیر Inactive | Next-hop | next-hop-self |
+| مسیر نمی‌رسد | iBGP rule | RR |
+| Idle | Loopback | IGP |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا iBGP Full mesh؟** قاعده‌ی حلقه.
+**۲. RR؟** بازتاب.
+**۳. update-source؟** منبع TCP.
+
+#### English Corner
+
+- *iBGP does not re-advertise routes learned from another iBGP peer.*
+- Q: Why is next-hop-self often needed on iBGP edges?
+
 ## درس 9-4 — کنترل مسیر BGP: Weight، Local-Pref، AS-Path Prepend، MED، Community — طراحی ورودی/خروجی با مثال
 
 **فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۱ تا ۹-۳، ۹-۷ · ≈ 9 ساعت**
@@ -17314,6 +17496,73 @@ route-map TO-B permit 20
 1. *Weight در برابر Local-Pref؟* Weight فقط روی همان روتر (Cisco)، Local-Pref در کل AS.
 2. *چرا ورود کنترل‌پذیر نیست؟* تصمیم دست ISPهای دیگر است؛ فقط «تأثیر» می‌گذاریم.
 3. *Community no-export چه می‌کند؟* مسیر را به eBGP Peerها نمی‌دهد.
+
+### تکمیل عمیق: کنترل مسیر BGP — Weight، Local-Pref، AS-Path، MED
+
+#### چرا؟
+
+BGP سیاست‌محور است؛ مهندس تعیین می‌کند ترافیک از کدام ISP خارج و از کدام وارد شود.
+
+#### کنترل خروجی
+
+| ویژگی | دامنه | جهت |
+|---|---|---|
+| Weight (Cisco) | محلی روتر | خروجی |
+| Local-Pref | داخل AS | خروجی |
+
+مقدار بالاتر ترجیح دارد.
+
+#### کنترل ورودی
+
+| ویژگی | اثر |
+|---|---|
+| AS-Path Prepend | AS-Path بلندتر ⇒ کمتر ترجیح |
+| MED | به همسایه پیشنهاد (کمتر بهتر) |
+| Community | درخواست از ISP |
+
+#### مثال ساده — Local-Pref
+
+``` text
+route-map FROM-ISP1 permit 10
+ set local-preference 200
+neighbor 203.0.113.1 route-map FROM-ISP1 in
+```
+
+#### مثال متوسط — Prepend
+
+``` text
+route-map TO-ISP2 permit 10
+ set as-path prepend 65001 65001 65001
+```
+
+ISP2 مسیر طولانی‌تر می‌بیند ⇒ ترافیک ورودی ترجیحاً از ISP1.
+
+#### مثال سخت — محدودیت
+
+Prepend فقط یک «پیشنهاد» است؛ ISP می‌تواند Local-pref بالاتر بدهد و آن را نادیده بگیرد. Community قابل‌اعتمادتر (طبق مستند ISP).
+
+#### Lab
+
+دو ISP با Local-pref و Prepend.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ورودی عوض نمی‌شود | ISP Local-pref | Community |
+| خروجی عوض نمی‌شود | Weight/Local-pref | تصحیح |
+| MED نادیده | AS متفاوت | همان AS |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Local-pref بر چه؟** خروجی.
+**۲. Prepend بر چه؟** ورودی.
+**۳. MED؟** پیشنهاد به همسایه.
+
+#### English Corner
+
+- *Local preference influences outbound traffic; AS-path prepending influences inbound traffic.*
+- Q: Why is AS-path prepending only a suggestion?
 
 ## درس 9-5 — Route Filtering در BGP: Prefix-List، AS-Path ACL، Route-map، Max-prefix و دفاع از Route Leak
 
@@ -17520,6 +17769,69 @@ router bgp 65010
 2. *`^$` چیست؟* AS_PATH خالی؛ یعنی فقط Prefixهای خودمان.
 3. *RPKI چه کمکی می‌کند؟* مبدأ Prefix (ASN) را اعتبارسنجی می‌کند و Hijack را کم می‌کند.
 
+### تکمیل عمیق: Route Filtering در BGP
+
+#### چرا؟
+
+بدون فیلتر، یک اشتباه شما می‌تواند اینترنت را مختل کند (Route Leak) یا یک ISP مسیر نادرست به شما بدهد.
+
+#### ابزارها
+
+| ابزار | استفاده |
+|---|---|
+| Prefix-list | فیلتر بر اساس Prefix |
+| AS-path ACL | فیلتر بر اساس مسیر AS |
+| Route-map | منطق ترکیبی |
+| Max-prefix | محافظت از تعداد |
+
+#### مثال ساده — Outbound
+
+``` text
+ip prefix-list MY-NETS permit 198.51.100.0/24
+neighbor 203.0.113.1 prefix-list MY-NETS out
+```
+
+#### مثال متوسط — Inbound
+
+پذیرش فقط Default یا Prefixهای مشخص از ISP؛ رد Prefixهای خصوصی (Bogons).
+
+``` text
+ip prefix-list BOGONS deny 10.0.0.0/8 le 32
+ip prefix-list BOGONS deny 192.168.0.0/16 le 32
+ip prefix-list BOGONS permit 0.0.0.0/0 le 24
+```
+
+#### مثال سخت — Max-prefix
+
+``` text
+neighbor 203.0.113.1 maximum-prefix 1000 80 restart 5
+```
+
+اگر تعداد Prefix از ۱۰۰۰ گذشت Session قطع (هشدار در ۸۰٪).
+
+#### Lab
+
+فیلتر Outbound/Inbound بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Prefix رد می‌شود | Prefix-list | بررسی |
+| Session قطع | Max-prefix | تنظیم |
+| Leak | بدون Filter | افزودن |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Outbound filter؟** جلوگیری از Leak.
+**۲. Bogon؟** آدرس‌های نامعتبر عمومی.
+**۳. Max-prefix؟** محافظت.
+
+#### English Corner
+
+- *Filter both directions and set a maximum-prefix limit on every external peer.*
+- Q: What is a route leak?
+
 ## درس 9-6 — عیب‌یابی BGP و آزمون فصل ۹: روش لایه‌ای، پنج پرونده‌ی کامل، کلید و Rubric
 
 **فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۰ تا ۹-۵، ۹-۷ · ≈ 12 ساعت**
@@ -17699,6 +18011,67 @@ Prevent   : post-change checklist (show ip bgp summary), SNMP/Syslog alert on ne
 1. *Session Established ولی ترافیک نمی‌آید؟* Prefix دریافت نشده/فیلتر شده یا RIB نصب نشده یا Forwarding (CEF/ARP).
 2. *PfxRcd=0 را چطور بررسی می‌کنید؟* `received-routes` (با soft-reconfig) یا Log طرف مقابل؛ فیلتر ورودی را ببینید.
 3. *دو عیب هم‌زمان را چطور جدا می‌کنید؟* لایه‌ی پایین‌تر اول؛ هر رفع یک آزمون.
+
+### تکمیل عمیق: عیب‌یابی BGP — روش لایه‌ای و آزمون
+
+#### چرا؟
+
+عیب‌یابی BGP را لایه‌لایه انجام دهید: TCP، Session، Prefix، Policy، Forwarding.
+
+#### لایه‌ها
+
+``` text
+L1 TCP/179 reachable?           telnet x 179 / policy / route
+L2 Session Established?         show ip bgp summary
+L3 Prefix received/advertised?  received-routes / advertised-routes
+L4 Best path & policy?          show ip bgp <prefix>
+L5 Forwarding?                  traceroute / CEF / firewall
+```
+
+#### مثال ساده
+
+State=Active ⇒ L1. State=Established و PfxRcd=0 ⇒ فیلتر/ISP.
+
+#### مثال متوسط — Prefix دریافت می‌شود ولی استفاده نمی‌شود
+
+مسیر Inactive: Next-hop دسترسی‌پذیر نیست. یا مسیر بهتر دیگری (AD) وجود دارد.
+
+#### مثال سخت — پنج پرونده
+
+1. Idle: ACL 179.
+2. Active: MD5.
+3. Established بدون Prefix: Outbound filter ISP.
+4. Prefix هست ولی ترافیک نمی‌رود: Next-hop.
+5. نشت: Prefix-list.
+
+#### Lab
+
+پنج پرونده را شبیه‌سازی کنید.
+
+#### Rubric
+
+``` text
+Layered method 30 | Evidence 30 | Fix 20 | Verify 10 | Report 10
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Active | TCP | Policy |
+| PfxRcd 0 | فیلتر | ISP |
+| Inactive | Next-hop | Route |
+
+#### پرسش‌ها با پاسخ
+
+**۱. اولین لایه؟** TCP/179.
+**۲. Inactive؟** Next-hop.
+**۳. PfxRcd 0؟** فیلتر.
+
+#### English Corner
+
+- *Troubleshoot BGP layer by layer: TCP, session, prefixes, policy, forwarding.*
+- Q: What does PfxRcd 0 on an established session suggest?
 
 ## درس 9-7 — انتخاب بهترین مسیر BGP (کامل)، پایداری و امنیت Session
 
@@ -18525,6 +18898,62 @@ E2 metric = seed 100 (no internal cost added)
 2. *AD مسیر EIGRP External؟* ۱۷۰.
 3. *چرا Redistribution دوطرفه خطرناک است؟* Route Feedback و حلقه (درس ۱۰-۲).
 
+### تکمیل عمیق: Redistribution — Seed Metric و Route Type با محاسبه
+
+#### چرا باید یاد بگیریم؟
+
+در سازمان‌های واقعی چند پروتکل مسیریابی کنار هم‌اند (OSPF در هسته، EIGRP در شعب، BGP به ISP). Redistribution مسیرهای یک پروتکل را به پروتکل دیگر «ترجمه» می‌کند؛ ولی اگر درست نباشد، حلقه یا مسیر نادرست می‌سازد.
+
+#### مفهوم Seed Metric
+
+هر پروتکل متریک متفاوتی دارد؛ هنگام ورود مسیر خارجی باید یک متریک اولیه (Seed) داد.
+
+``` text
+OSPF -> EIGRP : need bandwidth, delay, reliability, load, MTU
+EIGRP -> OSPF : default seed metric 20, type E2 (verify)
+RIP seed metric : hop count (16 = unreachable)
+```
+
+#### مثال ساده — E1 در برابر E2
+
+E2: متریک خارجی ثابت (cost داخلی OSPF اضافه نمی‌شود). E1: متریک خارجی + cost داخلی تا ASBR.
+
+``` text
+E2 total = external metric (e.g. 20)
+E1 total = external metric + internal cost to ASBR = 20 + 15 = 35
+```
+
+#### مثال متوسط — پروژه OSPF⇄EIGRP
+
+OSPF Area 0 و EIGRP AS 100؛ روتر مرزی هر دو را اجرا می‌کند. ورود EIGRP به OSPF: `redistribute eigrp 100 metric 20 metric-type 1 subnets`. ورود OSPF به EIGRP: `redistribute ospf 1 metric 10000 100 255 1 1500`.
+
+#### مثال سخت — Subnets
+
+بدون کلمه‌ی `subnets` در Cisco فقط شبکه‌های Classful وارد OSPF می‌شوند؛ خطای رایج.
+
+#### Lab
+
+دو روتر با دو پروتکل بسازید و Redistribution یک‌طرفه را آزمون کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| مسیر وارد نمی‌شود | metric | تنظیم |
+| Subnet ناقص | subnets | افزودن |
+| متریک عجیب | نوع E1/E2 | مقایسه |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Seed Metric؟** متریک اولیه.
+**۲. E1 و E2؟** با و بدون Cost داخلی.
+**۳. subnets؟** وارد کردن زیرشبکه‌ها.
+
+#### English Corner
+
+- *External type 1 adds the internal cost to the ASBR; type 2 does not.*
+- Q: Why must a seed metric be defined during redistribution?
+
 ## درس 10-2 — Redistribution دوطرفه، Route Feedback و جلوگیری از حلقه با Tag
 
 **فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۱۰-۱ · ≈ 9 ساعت**
@@ -18735,6 +19164,64 @@ BR3# traceroute 10.0.1.5               ! 2 hops, no loop
 2. *OSPF Tag را چگونه حمل می‌کند؟* در LSA نوع ۵ فیلد External Route Tag.
 3. *جایگزین بدون دوطرفه؟* Default Route از مرکز به شعب و Summary از شعب به مرکز.
 
+### تکمیل عمیق: Redistribution دوطرفه و جلوگیری از حلقه
+
+#### چرا؟
+
+Redistribution دوطرفه در دو نقطه مرزی خطرناک‌ترین حالت است: مسیری که از A به B رفت می‌تواند از نقطه‌ی دیگر به A برگردد و حلقه یا مسیر زیرین (Suboptimal) بسازد (Route Feedback).
+
+#### مثال ساده — دو نقطه‌ی مرزی
+
+``` text
+OSPF --- R1 --- EIGRP
+OSPF --- R2 --- EIGRP
+```
+
+R1 مسیر EIGRP را به OSPF می‌دهد؛ R2 آن را از OSPF می‌گیرد و دوباره به EIGRP تزریق می‌کند.
+
+#### مثال متوسط — راه‌حل با Tag
+
+``` text
+route-map EIGRP-TO-OSPF permit 10
+ set tag 100
+route-map OSPF-TO-EIGRP deny 10
+ match tag 100
+route-map OSPF-TO-EIGRP permit 20
+```
+
+مسیری که با Tag 100 وارد OSPF شد دوباره به EIGRP نمی‌رود.
+
+#### مثال سخت — Administrative Distance
+
+مسیر E2 در OSPF (AD 110) و EIGRP External (AD 170): R2 ممکن است مسیر OSPF را ترجیح دهد و ترافیک را به‌جای کوتاه‌ترین، از مسیر دیگر بفرستد. با Tag و Filter کنترل کنید.
+
+#### قاعده‌ی طلایی
+
+Redistribution دوطرفه فقط با Tag/Prefix-list و فقط در صورت نیاز؛ ترجیحاً یک‌طرفه + Default.
+
+#### Lab
+
+حلقه را عمداً بسازید و با Tag رفع کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| حلقه | Feedback | Tag |
+| مسیر زیرین | AD | Filter |
+| ناپایداری | دو نقطه | یک‌طرفه |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Route Feedback؟** برگشت مسیر به مبدأ.
+**۲. Tag چرا؟** نشان‌گذاری.
+**۳. بهتر؟** یک‌طرفه + Default.
+
+#### English Corner
+
+- *Tag routes at redistribution points to prevent them from being redistributed back.*
+- Q: What is route feedback?
+
 ## درس 10-3 — ECMP و توزیع بار: Equal-cost، Hashing و Load Balancing
 
 **فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۶-۱، ۱۰-۱ · ≈ 8 ساعت**
@@ -18924,6 +19411,55 @@ ip cef load-sharing algorithm include-ports source destination
 1. *شرط ECMP؟* مسیرهای برابر Metric و AD و ≤ `maximum-paths` (پلتفرم‌محور).
 2. *چرا یک جریان فقط یک لینک؟* Hash روی Src/Dst/Port؛ ترتیب بسته‌ها حفظ می‌شود.
 3. *تفاوت Per-flow و Per-packet؟* Per-flow ترتیب را حفظ می‌کند و با Stateful سازگار است.
+
+### تکمیل عمیق: ECMP و توزیع بار
+
+#### چرا؟
+
+دو لینک برابر باید هر دو استفاده شوند؛ ولی «توزیع» به Hash بستگی دارد نه یکنواخت بودن بار.
+
+#### مثال ساده
+
+دو مسیر هزینه‌ی برابر ⇒ هر دو در جدول؛ ترافیک بر اساس Hash (منبع/مقصد/پورت) تقسیم می‌شود.
+
+``` text
+get router info routing-table all
+```
+
+#### مثال متوسط — Hash
+
+یک Flow همیشه یک مسیر را می‌رود (برای جلوگیری از جابه‌جایی بسته‌ها). بنابراین یک اتصال بزرگ فقط یک لینک را پر می‌کند.
+
+``` text
+Two 1G links ; one 900 Mbps flow -> uses one link ; second link idle
+```
+
+#### مثال سخت — فایروال و ECMP
+
+رفت و برگشت ممکن است Hash متفاوت بگیرند ⇒ نامتقارن ⇒ Session قطع. راه: Hash متقارن یا SNAT.
+
+#### Lab
+
+دو مسیر برابر بسازید و توزیع Flowها را مشاهده کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| یک لینک خالی | Hash | Flow بیشتر |
+| قطع Session | نامتقارن | SNAT |
+| مسیر دوم نیست | هزینه نابرابر | تنظیم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. ECMP؟** مسیر برابر.
+**۲. چرا یک Flow یک مسیر؟** ترتیب بسته‌ها.
+**۳. خطر برای فایروال؟** نامتقارن.
+
+#### English Corner
+
+- *ECMP balances flows, not packets, so a single large flow uses only one path.*
+- Q: Why can ECMP cause trouble for stateful firewalls?
 
 ## درس 10-4 — Policy-Based Routing (PBR): مسیریابی بر اساس سیاست با Route-map، Track و Failover
 
@@ -19153,6 +19689,65 @@ R1# traceroute 8.8.8.8 source 10.10.30.5     ! normal routing table
 2. *تفاوت next-hop و default next-hop؟* default فقط وقتی مسیر مشخص نیست.
 3. *Local PBR برای چه؟* ترافیک تولیدشده توسط خود روتر.
 
+### تکمیل عمیق: Policy-Based Routing
+
+#### چرا؟
+
+Routing عادی فقط به مقصد نگاه می‌کند؛ PBR می‌تواند بر اساس منبع، سرویس یا برنامه مسیر را تغییر دهد (مثلاً Voice از لینک A).
+
+#### مثال ساده — Cisco
+
+``` text
+access-list 110 permit ip 10.10.1.0 0.0.0.255 any
+route-map PBR permit 10
+ match ip address 110
+ set ip next-hop 198.51.100.1
+interface Gi0/1
+ ip policy route-map PBR
+```
+
+#### مثال متوسط — FortiGate
+
+``` text
+config router policy
+ edit 1
+  set input-device "port2"
+  set src "10.10.1.0/24"
+  set gateway 198.51.100.1
+  set output-device "port2"
+ next
+end
+```
+
+بر اساس مستند، اگر هیچ PBR مطابق نباشد، Routing عادی اعمال می‌شود (Drop نمی‌شود).
+
+#### مثال سخت — Next-hop غیرقابل‌دسترس
+
+اگر Next-hop PBR پایین باشد، رفتار به تنظیم بستگی دارد؛ همیشه Verify و Health-check.
+
+#### Lab
+
+یک PBR بسازید و با traceroute مسیر را ببینید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| PBR اعمال نمی‌شود | ACL/ترتیب | بررسی |
+| قطع | Next-hop | Monitor |
+| برگشت نامتقارن | PBR یک‌طرفه | دو طرفه |
+
+#### پرسش‌ها با پاسخ
+
+**۱. PBR بر چه چیزی؟** منبع/سرویس.
+**۲. عدم تطابق؟** Routing عادی.
+**۳. خطر؟** نامتقارن.
+
+#### English Corner
+
+- *Policy-based routing overrides the destination-based routing table for matching traffic.*
+- Q: What happens when no policy route matches?
+
 ## درس 10-5 — VRF-lite: چند جدول مسیریابی مستقل، Overlap آدرس و ارتباط با فایروال
 
 **فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۶-۱، ۱۰-۴ · ≈ 10 ساعت**
@@ -19373,6 +19968,65 @@ show ip arp vrf CUST-B
 2. *RD چه کاری می‌کند؟* Prefixهای هم‌آدرس را در BGP/VPNv4 یکتا می‌کند.
 3. *آیا VRF امنیت است؟* جداسازی مسیریابی است؛ سیاست فایروال هم لازم است.
 
+### تکمیل عمیق: VRF-lite و Overlap آدرس
+
+#### چرا؟
+
+دو مشتری هر دو 10.1.1.0/24 دارند؛ بدون جداسازی مسیر، تداخل است. VRF (Virtual Routing and Forwarding) جدول مسیر مستقل می‌دهد.
+
+#### مثال ساده
+
+``` text
+ip vrf CUST-A
+ip vrf CUST-B
+interface Gi0/1
+ ip vrf forwarding CUST-A
+ ip address 10.1.1.1 255.255.255.0
+interface Gi0/2
+ ip vrf forwarding CUST-B
+ ip address 10.1.1.1 255.255.255.0
+```
+
+هر دو آدرس یکسان بدون تداخل.
+
+#### مثال متوسط — بررسی
+
+``` text
+show ip route vrf CUST-A
+ping vrf CUST-A 10.1.1.5
+```
+
+#### مثال سخت — پروتکل در VRF
+
+OSPF/BGP باید در هر VRF جدا اجرا شود (`router ospf 1 vrf CUST-A`)؛ فراموشی باعث «مسیر نیست».
+
+#### معادل FortiGate
+
+VDOM (جدا کننده‌ی بیشتر) یا VRF در FortiOS 7.x (محدود). مقایسه تقریبی است.
+
+#### Lab
+
+دو VRF با آدرس یکسان بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ping نه | VRF نادرست | `vrf` |
+| مسیر نیست | پروتکل | در VRF |
+| نشت | Leak ناخواسته | بررسی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. VRF چیست؟** جدول مسیر مجازی.
+**۲. Overlap؟** مجاز در VRF جدا.
+**۳. VRF=VDOM؟** نه دقیقاً.
+
+#### English Corner
+
+- *VRFs allow overlapping address space by separating routing tables.*
+- Q: What must you remember when running a routing protocol in a VRF?
+
 ## درس 10-6 — Asymmetric Routing: تحلیل رفت و برگشت، اثر بر فایروال و راه‌حل‌ها
 
 **فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۱۰-۳، ۱۱-۱، ۱۱-۳ · ≈ 10 ساعت**
@@ -19549,6 +20203,52 @@ FW2: diagnose sniffer packet any 'host 203.0.113.50 and tcp port 443' 4 20 l
 1. *سه علت Asymmetric؟* ECMP، دو ISP با Policy متفاوت، Redistribution ناهمگون.
 2. *چرا Stateless مشکل ندارد؟* هر بسته مستقل بررسی می‌شود.
 3. *FGSP چیست؟* Session sync بین فایروال‌های مستقل (غیر Cluster) برای Asymmetric.
+
+### تکمیل عمیق: Asymmetric Routing — اثر بر فایروال
+
+#### چرا؟
+
+مسیر نامتقارن برای روتر مشکل نیست، ولی برای فایروال Stateful مرگبار است. این درس رفت و برگشت را تحلیل می‌کند.
+
+#### مثال ساده
+
+``` text
+Client -> R1 -> FW-A -> Server
+Server -> R2 -> FW-B -> Client
+```
+
+FW-B فقط SYN-ACK را می‌بیند ⇒ Session ندارد ⇒ Drop.
+
+#### مثال متوسط — علل
+
+دو ISP، ECMP، Policy Route، Multi-homed server.
+
+#### مثال سخت — شواهد
+
+Sniffer هم‌زمان روی دو فایروال: هر کدام فقط یک جهت. راه‌حل: متقارن‌سازی، SNAT، یا Session Sync.
+
+#### Lab
+
+یک توپولوژی دو مسیره بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| SYN-ACK Drop | نامتقارن | SNAT/طراحی |
+| متناوب | ECMP | Hash |
+| فقط یک کاربر | Policy Route | تصحیح |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا فایروال مشکل دارد؟** Session.
+**۲. شاهد؟** Sniffer دوطرفه.
+**۳. راه‌حل اول؟** متقارن‌سازی.
+
+#### English Corner
+
+- *Asymmetric paths are harmless for routers but break stateful inspection.*
+- Q: How do you prove a flow is asymmetric?
 
 ## درس 10-7 — طراحی مسیر چندفایروالی و آزمون جامع فصل ۱۰: پروژه‌ی حل‌شده‌ی کامل
 
@@ -19763,6 +20463,56 @@ example: 62 lost x 0.2 = 12.4 s
 2. *Failover را چطور سریع می‌کنید؟* BFD برای BGP/OSPF و Track با Interval کوچک.
 3. *گزارش پروژه چه دارد؟* طرح، Configها بدون رمز، Evidence Index، ریسک و Rollback.
 
+### تکمیل عمیق: طراحی مسیر چندفایروالی و آزمون جامع
+
+#### چرا؟
+
+این درس ترکیب مفاهیم فصل است: مسیر، Redistribution، ECMP، PBR و فایروال.
+
+#### مثال ساده — طراحی
+
+``` text
+Branch -> Edge FW pair (ECMP) -> ISP A/B
+SNAT to egress interface IP so return path = forward path
+```
+
+#### مثال متوسط — آزمون
+
+قطع یک لینک؛ ping مداوم؛ شمارش Loss.
+
+#### مثال سخت — خرابی تزریقی
+
+Redistribution حلقه + نامتقارن: ابتدا Tag، سپس SNAT.
+
+#### Rubric
+
+``` text
+Design 25 | Routing 25 | Failover 25 | Evidence 15 | Report 10
+```
+
+#### Lab
+
+آزمون را اجرا کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| حلقه | Redistribution | Tag |
+| Drop | نامتقارن | SNAT |
+| Failover کند | Timer | BFD |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا SNAT؟** برگشت از همان.
+**۲. چرا Tag؟** حلقه.
+**۳. شاهد Failover؟** ping.
+
+#### English Corner
+
+- *Source NAT to the egress interface keeps return traffic on the same firewall.*
+- Q: What is the first fix for a redistribution loop?
+
 ## درس 10-8 — Route Leaking میان VRFها و جدول Global: طراحی کنترل‌شده
 
 **فصل ۱۰ · درس افزوده (تکمیل ۱۰-۵) · پیش‌نیاز: درس‌های ۱۰-۱ تا ۱۰-۵ · ≈ ۶ ساعت**
@@ -19940,6 +20690,50 @@ R1# show running-config | include ip route vrf
 - Cisco: «Configuring VRF-lite» و «Route leaking / Inter-VRF routing» (IOS XE IP Routing Configuration Guides).
 - RFC 4364 — BGP/MPLS IP VPNs (مفهوم VRF و Route Target).
 
+### تکمیل عمیق: Route Leaking بین VRFها
+
+#### چرا؟
+
+VRFها ایزوله‌اند؛ گاهی باید فقط چند مسیر مشخص (مثلاً DNS مشترک) بین آنها نشت کند. این کار باید کنترل‌شده باشد.
+
+#### مثال ساده — Static Leak
+
+``` text
+ip route vrf CUST-A 10.99.0.0 255.255.255.0 10.99.1.1 global
+```
+
+مسیر را از VRF به Global نشت می‌دهد.
+
+#### مثال متوسط — Import/Export (VRF-lite با RD/RT)
+
+با Route Target می‌توان مسیر انتخابی را import/export کرد.
+
+#### مثال سخت — ریسک
+
+نشت بی‌قید، ایزولاسیون را می‌شکند و Overlap را خراب می‌کند. فقط Prefix مشخص با Filter.
+
+#### Lab
+
+یک نشت کنترل‌شده بسازید و آزمون منفی بزنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| نشت ناخواسته | Filter ندارد | Prefix-list |
+| مسیر نیست | جهت | export/import |
+| Overlap | آدرس | NAT |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا نشت؟** سرویس مشترک.
+**۲. ریسک؟** ایزولاسیون.
+**۳. کنترل؟** Prefix-list.
+
+#### English Corner
+
+- *Leak only specific prefixes between VRFs and filter everything else.*
+- Q: Why can route leaking undermine isolation?
 
 ## درس 10-9 — ECMP: Hashing، Load Balancing واقعی و خرابی‌های پنهان
 
@@ -20100,6 +20894,55 @@ R1# show interfaces GigabitEthernet0/1 | include rate
 - RFC 2991 — Multipath Issues in Unicast and Multicast Next-Hop Selection.
 - RFC 2992 — Analysis of an Equal-Cost Multi-Path Algorithm.
 
+### تکمیل عمیق: ECMP — Hashing و خرابی‌های پنهان
+
+#### چرا؟
+
+ECMP ساده به نظر می‌رسد ولی خطاهای پنهان دارد: Polarization، یک لینک پر و دیگری خالی، قطع هنگام خرابی.
+
+#### مثال ساده — Hash 5-tuple
+
+Hash روی IP منبع/مقصد، پروتکل، پورت‌ها؛ توزیع به تعداد Flow بستگی دارد.
+
+``` text
+Flows = 1000 ; paths = 2 -> ~500 each (statistically)
+Flows = 2 ; paths = 2 -> might land on the same path
+```
+
+#### مثال متوسط — Polarization
+
+دو لایه با Hash یکسان همه‌ی Flowها را روی یک مسیر می‌ریزند. راه: Seed/Algorithm متفاوت.
+
+#### مثال سخت — خرابی
+
+قطع یک لینک: Flowهای آن لینک Rehash می‌شوند؛ Session قطع می‌شود (اگر Stateful بین راه).
+
+#### Lab
+
+توزیع Flow را با iperf چند Stream ببینید.
+
+``` text
+iperf3 -c 10.20.0.10 -P 16 -t 20
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| یک لینک پر | Flow کم | Stream بیشتر |
+| Polarization | Hash یکسان | Seed |
+| قطع در خرابی | Rehash | طراحی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Polarization؟** همه روی یک مسیر.
+**۲. چرا Flow بیشتر؟** توزیع.
+**۳. خرابی؟** Rehash.
+
+#### English Corner
+
+- *With few flows, hashing may place them all on one path.*
+- Q: What is hash polarization?
 
 ## پاسخ‌های فصل 10
 
@@ -20581,6 +21424,65 @@ any     -> any      : implicit deny + log
 - Microsoft: STRIDE Threat Modeling.
 - MITRE ATT&CK — Lateral Movement (مفهومی).
 
+### تکمیل عمیق: مدل تهدید و Defense in Depth قبل از نوشتن اولین Policy
+
+#### چرا باید یاد بگیریم؟
+
+Policy بدون مدل تهدید مثل قفل‌گذاری بی‌دانستن اینکه دزد از کجا می‌آید است. اول باید بپرسید: «چه چیزی ارزش دارد؟ چه کسی می‌خواهد آن را؟ از کدام مسیر؟».
+
+#### مدل ساده
+
+``` text
+Asset      : ERP database, customer data
+Threat     : external attacker, malware, insider, misconfiguration
+Path       : internet -> web -> app -> db ; user PC -> server
+Control    : segmentation, policy, IPS, MFA, logging
+Residual   : what remains after controls
+```
+
+#### Defense in Depth
+
+لایه‌های مستقل: محیط (فایروال)، شبکه (Segmentation)، میزبان (EDR/Patch)، برنامه (WAF)، داده (رمزنگاری)، هویت (MFA)، پایش (Log). شکست یک لایه نباید همه را بشکند.
+
+#### مثال ساده — مرز اعتماد
+
+Trust Boundary جایی است که سطح اعتماد تغییر می‌کند: اینترنت→DMZ، DMZ→داخل، Users→Servers.
+
+#### مثال متوسط — امتیاز ریسک
+
+``` text
+Risk = Likelihood (1-5) x Impact (1-5)
+Web exposed to internet: 4 x 5 = 20 (high)
+Internal print server  : 2 x 2 = 4  (low)
+```
+
+#### مثال سخت — کنترل جایگزین
+
+سرور قدیمی بدون Patch که نمی‌توان ارتقا داد: کنترل جبرانی: Segmentation شدید، فقط پورت لازم، IPS، پایش.
+
+#### Lab
+
+یک جدول دارایی/تهدید/کنترل برای شبکه‌ی خودتان بنویسید.
+
+#### عیب‌یابی طراحی
+
+| علامت | علت | رفع |
+|---|---|---|
+| کنترل بی‌هدف | بدون مدل | مدل تهدید |
+| یک لایه | بدون عمق | لایه‌ها |
+| ریسک نامعلوم | بدون امتیاز | ارزیابی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Trust boundary؟** تغییر سطح اعتماد.
+**۲. Defense in depth؟** لایه‌های مستقل.
+**۳. کنترل جبرانی؟** جایگزین وقتی Patch ممکن نیست.
+
+#### English Corner
+
+- *Threat modeling asks what to protect, from whom, and via which path.*
+- Q: What is a compensating control?
+
 ## درس 11-1 — فایروال چیست؟ Stateless در برابر Stateful، و چرا هر دو مهم‌اند
 
 **فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۰، ۲-۱ · ≈ 9 ساعت**
@@ -20772,6 +21674,66 @@ Sessions = users x sessions per user = 50 x 50 = 2500
 1. *تفاوت Packet filter و Stateful؟* حافظه‌ی وضعیت اتصال.
 2. *UDP و ICMP چطور؟* شبه‌Session با Timeout.
 3. *NGFW چه اضافه می‌کند؟* برنامه، کاربر، محتوا، IPS (بعضی Needs-License).
+
+### تکمیل عمیق: Stateless در برابر Stateful — با مثال
+
+#### چرا؟
+
+فهمیدن این تفاوت بسیاری از رفتارهای «عجیب» را توضیح می‌دهد: چرا ACL نیاز به قاعده‌ی برگشت دارد و چرا فایروال نیاز ندارد.
+
+#### توضیح ساده
+
+- **Stateless (ACL)**: هر بسته به‌تنهایی بررسی می‌شود؛ حافظه ندارد.
+- **Stateful**: برای هر اتصال یک Session نگه می‌دارد؛ بسته‌ی برگشت را با Session تطبیق می‌دهد.
+
+#### مثال ساده
+
+کاربر به وب (443) می‌رود. با ACL Stateless باید هم «outbound 443» و هم «inbound established/پورت‌های بالا» را بنویسید. با Stateful فقط «outbound 443» کافی است.
+
+``` text
+Stateless:  permit tcp src any eq 443 dst 10.10.0.0/24 established
+Stateful :  (return traffic accepted automatically via session)
+```
+
+#### مثال متوسط — حمله‌ی ACK Scan
+
+ACL ساده با `established` بسته‌ی ACK ساختگی را می‌پذیرد؛ فایروال Stateful بسته‌ی بدون Session را رد می‌کند.
+
+#### مثال سخت — محدودیت Stateful
+
+Stateful ترافیک نامتقارن را نمی‌پسندد (درس 23)، و Session Table ظرفیت دارد (DoS با SYN Flood).
+
+#### جدول مقایسه
+
+| ویژگی | Stateless | Stateful |
+|---|---|---|
+| حافظه | ندارد | Session |
+| سرعت | بالا | کمی کمتر |
+| امنیت | محدود | بیشتر |
+| ترافیک برگشت | قاعده‌ی جدا | خودکار |
+
+#### Lab
+
+یک ACL ساده Stateless را برای وب بنویسید و مشکلات آن را فهرست کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| برگشت رد | بدون قاعده | Stateful |
+| ACK scan | established | Stateful |
+| Session پر | SYN flood | DoS Policy |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا ACL قاعده‌ی برگشت؟** حافظه ندارد.
+**۲. Stateful محدودیت؟** نامتقارن و ظرفیت.
+**۳. ACK scan؟** بسته‌ی بی‌Session.
+
+#### English Corner
+
+- *A stateful firewall allows return traffic by matching it to an existing session.*
+- Q: Why can a stateless ACL be fooled by crafted ACK packets?
 
 ## درس 11-2 — Zone، Trust Boundary، Default Deny و Least Privilege: از ماتریس تا Policy
 
@@ -20995,6 +21957,62 @@ WEB      -         -            -        1433 (app tier)
 2. *Default Deny با Log چرا؟* برای ممیزی و Alert.
 3. *Trust Boundary چیست؟* مرزی که ترافیک از سطح اعتماد کمتر به بیشتر یا برعکس عبور می‌کند.
 
+### تکمیل عمیق: Zone، Default Deny و Least Privilege از ماتریس تا Policy
+
+#### چرا؟
+
+قبل از نوشتن Policy یک ماتریس نیاز بکشید؛ بعد هر خانه یا «Allow با سرویس مشخص» یا «Deny» است.
+
+#### ماتریس نمونه
+
+| از ↓ / به → | Internet | DMZ | Servers | Mgmt |
+|---|---|---|---|---|
+| Users | HTTP/S,DNS | HTTPS | HTTPS,SMB | — |
+| Guest | HTTP/S,DNS | — | — | — |
+| Mgmt | — | SSH | SSH | همه |
+| Internet | — | HTTPS (VIP) | — | — |
+
+خانه‌ی خالی = Deny.
+
+#### مثال ساده — تبدیل به Policy
+
+هر خانه‌ی پر یک Policy؛ در پایان Deny All با Log.
+
+#### مثال متوسط — Least Privilege
+
+به‌جای `Users -> Servers ALL` بنویسید `Users -> SRV-ERP HTTPS`. مقصد دقیق، سرویس دقیق.
+
+#### مثال سخت — دور زدن Zone
+
+در Zone با `intrazone allow` دو Interface همان Zone آزادانه صحبت می‌کنند؛ حتماً `deny` و Policy صریح.
+
+#### آزمون
+
+برای هر Policy یک آزمون مثبت و برای هر خانه‌ی خالی یک آزمون منفی (چند نمونه).
+
+#### Lab
+
+ماتریس را برای سازمان فرضی خودتان بکشید و ۱۰ Policy بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Policy ALL | تنبلی | تنگ |
+| Zone باز | intrazone | deny |
+| بی‌آزمون | غفلت | آزمون منفی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. خانه‌ی خالی؟** Deny.
+**۲. Least privilege؟** حداقل لازم.
+**۳. آزمون منفی؟** اثبات بستن.
+
+#### English Corner
+
+- *Every empty cell in the access matrix is an implicit deny that should be tested.*
+- Q: What does least privilege mean for a firewall rule?
+
 ## درس 11-3 — مسیر بسته در فایروال: Transit، Local-in، Local-out و ترتیب DNAT/Route/Policy/SNAT
 
 **فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۱، ۱۱-۲ · ≈ 10 ساعت**
@@ -21208,6 +22226,57 @@ diagnose debug enable
 2. *Local-out چیست؟* ترافیک تولیدشده توسط خود فایروال (NTP، FortiGuard).
 3. *Route چند بار جستجو می‌شود؟* معمولاً دو بار در عمر Session (بسته‌ی اول و اولین پاسخ).
 
+### تکمیل عمیق: مسیر بسته — Transit، Local-in و Local-out
+
+#### چرا؟
+
+مسیر بسته تعیین می‌کند کدام کنترل اعمال شود. بدون این نقشه، Policy اشتباه می‌نویسید.
+
+#### سه مسیر
+
+``` text
+Transit   : A -> Firewall -> B       (firewall policy)
+Local-in  : A -> Firewall itself    (allowaccess / local-in policy)
+Local-out : Firewall itself -> B    (service config, routing)
+```
+
+#### مثال ساده
+
+- SSH به فایروال ⇒ Local-in.
+- Users→Server ⇒ Transit.
+- فایروال به NTP ⇒ Local-out.
+
+#### مثال متوسط — ترتیب
+
+در Transit: Session، DoS، RPF، DNAT، Route، Policy، UTM، SNAT.
+
+#### مثال سخت — اشتباه رایج
+
+مهندس Policy `Users -> any SSH` برای باز کردن SSH به فایروال نوشت؛ بی‌اثر است چون Local-in است.
+
+#### Lab
+
+برای شش ترافیک مختلف نوع و کنترل را بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| SSH به FW نه | allowaccess | افزودن |
+| Update نه | Local-out Route | تنظیم |
+| Policy بی‌اثر | نوع اشتباه | شناسایی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. SSH به FW؟** Local-in.
+**۲. Policy عادی کافی است؟** خیر.
+**۳. Local-out مثال؟** NTP.
+
+#### English Corner
+
+- *Identify whether traffic is transit, local-in or local-out before writing a rule.*
+- Q: Which control applies to SSH connections to the firewall?
+
 ## درس 11-4 — ACL، Policy و NAT: تفاوت‌ها، ارتباط‌ها و ترکیب درست
 
 **فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۱، ۱۱-۳ · ≈ 10 ساعت**
@@ -21397,6 +22466,61 @@ Public DNS  : web.example.com -> 203.0.113.10 (for internet)
 1. *DNAT کجا Policy را عوض می‌کند؟* Policy روی VIP نوشته می‌شود.
 2. *PAT ظرفیت؟* حدود ۶۴ هزار پورت به‌ازای IP و مقصد.
 3. *Hairpin چیست؟* دسترسی داخلی به IP عمومی سرور داخلی.
+
+### تکمیل عمیق: ACL، Policy و NAT — تفاوت‌ها و ترکیب
+
+#### چرا؟
+
+این سه مفهوم اغلب با هم قاطی می‌شوند؛ هرکدام سؤال متفاوتی را جواب می‌دهند.
+
+#### سه سؤال
+
+| ابزار | سؤال |
+|---|---|
+| ACL/Policy | اجازه هست؟ |
+| NAT | آدرس چه شود؟ |
+| Routing | از کجا برود؟ |
+
+#### مثال ساده — ترکیب
+
+Users→Internet: Route می‌گوید «از port1»، Policy می‌گوید «مجاز»، NAT می‌گوید «با IP عمومی».
+
+#### مثال متوسط — ترتیب
+
+DNAT قبل از Policy؛ SNAT بعد از Policy. پس Policy ورودی VIP باید به IP عمومی نگاه کند.
+
+#### مثال سخت — خطای Overlap
+
+NAT یک‌به‌یک روی Tunnel برای شبکه‌های هم‌پوشان: Policy باید به آدرس «ترجمه‌شده» اشاره کند.
+
+``` text
+Original : 192.168.1.10 (remote site B)
+Translated at A: 10.222.1.10
+Policy at A uses 10.222.1.10
+```
+
+#### Lab
+
+سه ترافیک را از نظر Route/Policy/NAT تحلیل کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Policy مچ نمی‌شود | آدرس قبل/بعد NAT | تصحیح |
+| Route اشتباه | Interface | بررسی |
+| NAT بی‌اثر | Policy | فعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. سه سؤال؟** مجاز؟ آدرس؟ مسیر؟
+**۲. DNAT/Policy؟** DNAT اول.
+**۳. Policy و آدرس ترجمه‌شده؟** باید هماهنگ.
+
+#### English Corner
+
+- *Routing, policy and NAT answer three different questions about a packet.*
+- Q: Does a firewall policy match the pre-NAT or post-NAT destination address?
 
 ## درس 11-5 — Session، Timeout، MTU/MSS و ریشه‌ی خرابی‌های «نیمه‌کارکرده» TCP/UDP
 
@@ -21598,6 +22722,60 @@ MSS = PMTU - 40 = 1438 - 40 = 1398 ; use 1380 for margin
 2. *MSS-clamp کجاست؟* روی فایروال/تونل در SYN.
 3. *MTU و Fragmentation؟* IPv4 می‌تواند Fragment کند، DF=1 نمی‌تواند.
 
+### تکمیل عمیق: Session، Timeout، MTU/MSS و خرابی «نیمه‌کارکرده»
+
+#### چرا؟
+
+اتصال‌هایی که «باز می‌شوند ولی قطع می‌شوند» معمولاً از Timeout یا MTU می‌آیند.
+
+#### Timeout
+
+``` text
+TCP established default = 3600 s
+UDP default = 60 s ; DNS shorter
+```
+
+(پیش‌فرض‌ها را از مستند نسخه بخوانید.)
+
+#### مثال ساده — SSH بی‌کار
+
+SSH پس از ۱ ساعت بی‌کاری قطع می‌شود: Session Timeout. رفع: Keepalive در کلاینت یا Timeout سفارشی برای Service.
+
+#### مثال متوسط — MTU/MSS
+
+``` text
+MSS = MTU - 40 ; Path MTU 1400 -> MSS 1360
+```
+
+نشانه: ping کار می‌کند ولی HTTPS نه.
+
+#### مثال سخت — دو علت
+
+UDP DNS با پاسخ بزرگ + TCP/53 بسته + MTU: ترکیب. تشخیص با Capture.
+
+#### Lab
+
+Timeout را با اتصال بی‌کار آزمایش کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| قطع بعد ۱ ساعت | Timeout | Keepalive |
+| ping ok، HTTPS نه | MTU | Clamp |
+| DNS گاهی | TCP/53 | باز |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Timeout TCP؟** ۳۶۰۰ ثانیه (پیش‌فرض).
+**۲. MSS؟** MTU منهای ۴۰.
+**۳. Keepalive؟** جلوگیری از قطع.
+
+#### English Corner
+
+- *Idle sessions are removed when their timeout expires.*
+- Q: How do you calculate TCP MSS from the MTU?
+
 ## درس 11-6 — کارگاه طراحی Policy، ۱۰ پرسش مسیر بسته و آزمون G4: پروژه‌ی حل‌شده‌ی کامل
 
 **فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۰ تا ۱۱-۷ · ≈ 12 ساعت**
@@ -21792,6 +22970,59 @@ log: srcip=10.30.0.10 dstip=10.20.0.20 dstport=1433 policyid=90 action=deny
 2. *Log Deny چه می‌دهد؟* Evidence و Alert.
 3. *بهبود طرح؟* MFA/SSO، Segment بیشتر، WAF.
 
+### تکمیل عمیق: کارگاه طراحی Policy و آزمون G4
+
+#### چرا؟
+
+G4 طراحی Policy کامل را از ماتریس تا آزمون می‌سنجد.
+
+#### کار
+
+۱. ماتریس. ۲. Policy. ۳. ۱۰ پرسش مسیر بسته. ۴. آزمون مثبت/منفی.
+
+#### ده پرسش مسیر بسته
+
+``` text
+1 ingress interface? 2 session exists? 3 RPF ok? 4 DNAT? 5 route? 6 policy? 7 UTM? 8 SNAT? 9 egress? 10 reply path?
+```
+
+#### مثال ساده
+
+Users→ERP HTTPS: ingress port2، session جدید، RPF ok، بدون DNAT، route port3، policy 10، SNAT نه، egress port3، reply از همان.
+
+#### مثال متوسط — خطای تزریقی
+
+Policy با srcintf اشتباه: پاسخ سؤال ۶ «policy 0».
+
+#### Rubric
+
+``` text
+Matrix 20 | Policies 30 | Packet path 20 | Tests 20 | Report 10
+```
+
+#### Lab
+
+یک کارگاه کامل انجام دهید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Policy بی‌دلیل | ماتریس ناقص | بازنگری |
+| آزمون منفی نیست | غفلت | افزودن |
+| Path ناقص | فراموشی SNAT | چک‌لیست |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا ده پرسش؟** پوشش.
+**۲. Reply path؟** برگشت.
+**۳. آزمون منفی؟** مرز.
+
+#### English Corner
+
+- *Walk the ten packet-path questions for every new policy.*
+- Q: Which stage of the packet path decides the egress interface?
+
 ## درس 11-7 — Stateful Inspection از درون: State Table، TCP State و Timeout
 
 **فصل ۱۱ · درس افزوده (تکمیل ۱۱-۱) · پیش‌نیاز: ۱۱-۰، ۱۱-۱، فصل ۲ (TCP) · ≈ ۶ ساعت**
@@ -21977,6 +23208,59 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 - NIST SP 800-41 Rev.1 — Guidelines on Firewalls and Firewall Policy (Stateful Inspection).
 - RFC 9293 — Transmission Control Protocol (TCP).
 - Linux kernel documentation: nf_conntrack sysctl.
+
+### تکمیل عمیق: Stateful Inspection از درون — State Table و TCP State
+
+#### چرا؟
+
+دانستن اینکه Session چطور ساخته و حذف می‌شود، رفتارهای عجیب را توضیح می‌دهد.
+
+#### TCP State
+
+``` text
+SYN_SENT -> SYN_RECV -> ESTABLISHED -> FIN_WAIT -> TIME_WAIT -> CLOSED
+```
+
+فایروال Session را با SYN می‌سازد؛ بسته‌ی بعدی باید با آن همخوان باشد (Sequence در Window).
+
+#### مثال ساده
+
+بسته‌ی SYN-ACK بدون SYN ⇒ Session ندارد ⇒ Drop.
+
+#### مثال متوسط — Timeoutها
+
+هر State Timeout دارد؛ SYN_SENT کوتاه، ESTABLISHED طولانی، TIME_WAIT کوتاه.
+
+#### مثال سخت — SYN Flood
+
+هزاران SYN ساختگی Session Table را پر می‌کنند. دفاع: DoS Policy با آستانه (`tcp_syn_flood`) و SYN Cookies.
+
+#### Lab
+
+Session را در هر State ببینید.
+
+``` text
+diagnose sys session list | grep proto_state
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Drop بسته‌ی ACK | بی‌Session | نامتقارن |
+| Table پر | SYN flood | DoS |
+| قطع زود | Timeout | تنظیم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Session با چه ساخته می‌شود؟** SYN.
+**۲. SYN flood؟** پر شدن جدول.
+**۳. Timeout هر State؟** متفاوت.
+
+#### English Corner
+
+- *A stateful firewall creates a session on the first SYN and validates later packets against it.*
+- Q: How does a DoS policy protect the session table?
 
 ## پاسخ‌های فصل 11
 
@@ -22473,6 +23757,67 @@ diagnose sniffer packet any "host 8.8.8.8 and port 443" 4 20 l
 - Fortinet Community: «Central NAT: Packet processing, troubleshooting steps and traffic flow» و «FortiGate Debug Flow Functions» (غیررسمی؛ `Unverified` تا تأیید روی Lab).
 - Fortinet Docs: FortiOS 7.0 CLI Reference (`diagnose debug flow`).
 
+### تکمیل عمیق: Packet Flow در FortiGate — مسیر یک بسته از ورود تا خروج
+
+#### چرا باید یاد بگیریم؟
+
+بدون نقشه‌ی ذهنی از مسیر بسته، هر عیب‌یابی حدس است. اگر بدانید بسته ابتدا Anti-spoofing (RPF) می‌شود، سپس DNAT، سپس Routing، سپس Policy و بعد SNAT، هر خطایی را می‌توانید به یکی از این ایستگاه‌ها نسبت دهید.
+
+#### ایستگاه‌ها (مسیر Transit)
+
+``` text
+1 Ingress interface        (link, VLAN)
+2 Session lookup           (existing session? -> fast path)
+3 DoS policy / anomaly
+4 RPF (reverse path check)
+5 DNAT (VIP) / pre-routing
+6 Routing decision (route lookup, PBR first)
+7 Firewall policy lookup
+8 UTM / inspection
+9 SNAT (policy NAT / IP pool)
+10 Egress interface
+```
+
+#### مثال ساده — دنبال‌کردن SYN
+
+Users (10.10.0.5) به 198.51.100.8:443: ورودی port2 ⇒ Session جدید ⇒ RPF موفق ⇒ Route به port1 ⇒ Policy 30 ⇒ SNAT ⇒ خروج.
+
+#### مثال متوسط — جای هر خطا
+
+| علامت Debug | ایستگاه |
+|---|---|
+| reverse path check fail | RPF |
+| no route to host | Routing |
+| Denied by forward policy check | Policy |
+| no session matched | Session/نامتقارن |
+
+#### مثال سخت — VIP و Policy
+
+با VIP، DNAT قبل از Routing و Policy انجام می‌شود؛ پس Policy باید به **IP عمومی (VIP)** اشاره کند نه IP داخلی؛ Route باید به IP ترجمه‌شده نگاه کند.
+
+#### Lab
+
+برای ۳ جریان (Users→Internet، Internet→VIP، Users→Mgmt) ایستگاه‌ها را فهرست کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| RPF | Route | تصحیح |
+| Policy 0 | Interface/Address | تصحیح |
+| نامتقارن | مسیر | طراحی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. DNAT قبل یا بعد Route؟** قبل.
+**۲. SNAT؟** بعد از Policy.
+**۳. PBR؟** پیش از Routing عادی.
+
+#### English Corner
+
+- *Destination NAT happens before the routing decision; source NAT happens after policy.*
+- Q: At which stage does the reverse path check occur?
+
 ## درس 12-1 — معماری FortiGate، اولین بوت و تأیید نسخه
 
 **فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۰، ۱۱-۳ · ≈ 9 ساعت**
@@ -22688,6 +24033,69 @@ end
 1. *اولین کار روی دستگاه جدید؟* تأیید نسخه/لایسنس/سریال و Backup.
 2. *Operation Mode NAT در برابر Transparent؟* NAT مسیریابی L3 می‌کند؛ Transparent مثل Bridge.
 3. *VDOM چیست و کی فعال می‌شود؟* جداسازی مجازی؛ فقط در صورت نیاز و لایسنس.
+
+### تکمیل عمیق: معماری FortiGate و اولین بوت
+
+#### چرا؟
+
+قبل از پیکربندی باید بدانید با چه چیزی کار می‌کنید: FortiOS، VM یا سخت‌افزار، NPU/CPU و روش‌های دسترسی.
+
+#### اجزا
+
+| جزء | نقش |
+|---|---|
+| FortiOS | سیستم‌عامل |
+| CPU | پردازش عمومی/UTM |
+| NPU (SPU) | Offload ترافیک |
+| Management plane | CLI/GUI/API |
+| Data plane | عبور ترافیک |
+
+#### مثال ساده — تأیید نسخه
+
+``` text
+get system status
+```
+
+نسخه، Serial، HA، Virtual Domain، License Status را می‌خوانید. در این دوره FortiOS 7.0.3 «نامی» است و بوت نشده.
+
+#### مثال متوسط — اولین دسترسی
+
+کنسول یا HTTPS مدیریتی روی Interface مدیریتی؛ پیش‌فرض ادمین بدون رمز در بعضی مدل‌هاست و باید بلافاصله تغییر کند.
+
+``` text
+config system admin
+ edit admin
+  set password ***
+ next
+end
+```
+
+#### مثال سخت — لایسنس VM
+
+FortiGate VM بدون لایسنس معتبر عملاً محدود (Trial) است؛ بسیاری از قابلیت‌ها Needs-License هستند و اجرا نشده.
+
+#### Lab
+
+نسخه و ظرفیت مدل را از دیتاشیت رسمی بخوانید و جدول بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| GUI باز نمی‌شود | allowaccess | CLI |
+| ویژگی نیست | لایسنس/مدل | دیتاشیت |
+| نسخه ناهمخوان | Release Notes | بررسی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. NPU؟** شتاب سخت‌افزاری.
+**۲. چرا رمز اول؟** امنیت.
+**۳. Needs-License؟** نیاز به اشتراک.
+
+#### English Corner
+
+- *Change the default administrator credentials during the first boot.*
+- Q: What are the management plane and data plane?
 
 ## درس 12-2 — Interface، VLAN، Role، Administrative Access و سخت‌سازی پورت‌های FortiGate
 
@@ -22956,6 +24364,70 @@ diagnose ip arp list                  ! no entry for 10.10.0.x -> L2 issue
 2. *Zone چه فایده؟* گروه‌کردن Interfaceها در Policy.
 3. *LACP چه می‌کند؟* تجمیع لینک برای پهنای باند و افزونگی.
 
+### تکمیل عمیق: Interface، VLAN، Role و دسترسی مدیریتی
+
+#### چرا؟
+
+Interface نقطه‌ی ورود ترافیک و مدیریت است؛ تنظیم اشتباه `allowaccess` مدیریت را به اینترنت می‌دهد.
+
+#### مثال ساده — VLAN Interface
+
+``` text
+config system interface
+ edit "vlan10"
+  set vdom "root"
+  set interface "port2"
+  set vlanid 10
+  set ip 10.10.0.1 255.255.255.0
+  set allowaccess ping
+  set role lan
+ next
+end
+```
+
+#### مثال متوسط — حداقل مدیریت
+
+روی WAN فقط `ping` یا هیچ؛ روی Mgmt: `https ssh ping`. هرگز `http`/`telnet`.
+
+#### مثال سخت — Trusted Host
+
+``` text
+config system admin
+ edit "netadmin"
+  set trusthost1 10.50.0.0 255.255.255.0
+ next
+end
+```
+
+حتی با رمز لورفته، ورود فقط از Mgmt ممکن است.
+
+#### Role
+
+Roleها (lan/wan/dmz/undefined) رفتار GUI و پیش‌فرض‌ها را تغییر می‌دهند؛ برای WAN Role wan.
+
+#### Lab
+
+یک VLAN و حداقل دسترسی بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ping نمی‌آید | allowaccess | افزودن |
+| ورود از اینترنت | allowaccess | حذف |
+| VLAN کار نمی‌کند | Trunk | سوئیچ |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Trusted Host؟** مبدأ مجاز ادمین.
+**۲. چرا WAN بی‌مدیریت؟** سطح حمله.
+**۳. VLAN ID؟** برچسب 802.1Q.
+
+#### English Corner
+
+- *Management access on the WAN interface should be disabled.*
+- Q: What does a trusted host restrict?
+
 ## درس 12-3 — Zone و Objectها: Address، Service، Group، Schedule و استاندارد نام‌گذاری
 
 **فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۲، ۱۱-۲ · ≈ 10 ساعت**
@@ -23210,6 +24682,87 @@ end
 1. *چرا Group؟* خوانایی و یک نقطه‌ی تغییر.
 2. *ریسک FQDN؟* وابستگی به DNS و تغییر ناگهانی IP.
 3. *Zone چه کاری می‌کند؟* Policy کوتاه‌تر و مدیریت ساده‌تر.
+
+### تکمیل عمیق: Zone و Objectها — استاندارد نام‌گذاری
+
+#### چرا؟
+
+Objectهای شلوغ و بی‌نام ممیزی را غیرممکن می‌کنند. نام‌گذاری استاندارد زمان عیب‌یابی را نصف می‌کند.
+
+#### قرارداد نام
+
+``` text
+Address : NET-USERS, SRV-ERP, HOST-DC1
+Group   : GRP-SERVERS
+Service : SVC-APP-8443
+Zone    : ZN-DMZ
+```
+
+#### مثال ساده
+
+``` text
+config firewall address
+ edit "NET-USERS"
+  set subnet 10.10.0.0 255.255.255.0
+  set comment "VLAN10 users, owner NOC"
+ next
+end
+config firewall service custom
+ edit "SVC-APP-8443"
+  set tcp-portrange 8443
+ next
+end
+```
+
+#### مثال متوسط — Zone
+
+``` text
+config system zone
+ edit "ZN-DMZ"
+  set interface "port2" "port5"
+  set intrazone deny
+ next
+end
+```
+
+`intrazone deny` ترافیک بین Interfaceهای همان Zone را پیش‌فرض می‌بندد.
+
+#### مثال سخت — Schedule
+
+``` text
+config firewall schedule recurring
+ edit "WORK-HOURS"
+  set day monday tuesday wednesday thursday friday
+  set start 08:00
+  set end 18:00
+ next
+end
+```
+
+Session موجود پس از پایان Schedule تا انقضا می‌ماند.
+
+#### Lab
+
+ده Object با قرارداد نام بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Object تکراری | بی‌قرارداد | ادغام |
+| intrazone باز | پیش‌فرض | deny |
+| Schedule | Session | Clear |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا comment؟** مالک و دلیل.
+**۲. intrazone؟** داخل Zone.
+**۳. Schedule و Session؟** قدیمی می‌ماند.
+
+#### English Corner
+
+- *Use consistent object naming and always record an owner in the comment.*
+- Q: What does intrazone deny do?
 
 ## درس 12-4 — Static Route، Default Route، Policy Route، Distance/Priority و Failover
 
@@ -23490,6 +25043,88 @@ lost 38 packets x 0.2 s = 7.6 s  (target < 10 s: PASS)
 2. *RPF چیست؟* بررسی Route معکوس مبدأ از Interface ورودی.
 3. *Blackhole Route؟* برای Summary و جلوگیری از حلقه.
 
+### تکمیل عمیق: Static Route، Policy Route و Failover با Link Monitor
+
+#### چرا؟
+
+Routing تعیین می‌کند ترافیک از کدام Interface خارج شود؛ هر خطا در Route، Policy درست را بی‌اثر می‌کند.
+
+#### مثال ساده — دو Default
+
+``` text
+config router static
+ edit 1
+  set gateway 203.0.113.1
+  set device "port1"
+  set distance 10
+ next
+ edit 2
+  set gateway 198.51.100.1
+  set device "port2"
+  set distance 20
+ next
+end
+```
+
+Distance کمتر ترجیح دارد؛ در تساوی Priority.
+
+#### مثال متوسط — Link Monitor
+
+``` text
+config system link-monitor
+ edit "ISP1"
+  set srcintf "port1"
+  set server "8.8.8.8"
+  set interval 1000
+  set failtime 5
+ next
+end
+```
+
+``` text
+Detection time = interval x failtime = 1000 ms x 5 = 5 s
+Lost packets x ping interval: 38 x 0.2 s = 7.6 s outage
+```
+
+#### مثال سخت — Policy Route
+
+PBR قبل از جدول Routing ارزیابی می‌شود؛ مطابقت ⇒ Gateway PBR؛ عدم مطابقت ⇒ Routing عادی.
+
+``` text
+config router policy
+ edit 1
+  set input-device "port2"
+  set src "10.10.1.0/24"
+  set dst "0.0.0.0/0"
+  set gateway 198.51.100.1
+  set output-device "port2"
+ next
+end
+```
+
+#### Lab
+
+Failover را اجرا و زمان قطع را اندازه بگیرید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Failover نمی‌شود | Monitor | افزودن |
+| PBR اثر ندارد | ترتیب | بررسی |
+| Session قدیم | Clear | فیلتر |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Distance/Priority؟** انتخاب و شکست تساوی.
+**۲. PBR کجا؟** قبل از Routing.
+**۳. زمان تشخیص؟** interval×failtime.
+
+#### English Corner
+
+- *Policy routes are evaluated before the normal routing table.*
+- Q: How is the failure detection time calculated?
+
 ## درس 12-5 — Admin، RBAC، MFA و سخت‌سازی مدیریت FortiGate
 
 **فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۲، ۱۲-۱ · ≈ 10 ساعت**
@@ -23761,6 +25396,67 @@ end
 2. *MFA چرا؟* رمز لورفته بدون عامل دوم کافی نیست.
 3. *Alert چه باشد؟* Admin login failed و Config changed.
 
+### تکمیل عمیق: Admin، RBAC و MFA
+
+#### چرا؟
+
+ادمین کامل بودن همه، یعنی خطای هر کس خطای کل است. RBAC دسترسی را به نقش می‌دهد.
+
+#### مثال ساده — Profile
+
+``` text
+config system accprofile
+ edit "noc-ro"
+  set netgrp read
+  set fwgrp read
+  set loggrp read
+ next
+end
+config system admin
+ edit "noc1"
+  set accprofile "noc-ro"
+  set trusthost1 10.50.0.0 255.255.255.0
+ next
+end
+```
+
+#### مثال متوسط — MFA
+
+FortiToken یا RADIUS+MFA برای ادمین (`two-factor fortitoken`). حساب Break-glass (اضطراری) جدا و در Vault.
+
+#### مثال سخت — ممیزی
+
+``` text
+config log eventfilter
+ set system enable
+end
+```
+
+هر ورود/تغییر ادمین ثبت شود؛ هفتگی با CHGها تطبیق دهید.
+
+#### Lab
+
+سه نقش بسازید و رفتار را آزمون کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| همه super_admin | سهل‌انگاری | Profile |
+| قفل شدن | MFA زمان | NTP |
+| تغییر بی‌ردپا | Log غیرفعال | فعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. RBAC؟** نقش‌محور.
+**۲. Break-glass؟** حساب اضطراری.
+**۳. چرا Trusted Host؟** مبدأ.
+
+#### English Corner
+
+- *Keep a sealed break-glass account for emergencies.*
+- Q: Why enable MFA for administrators?
+
 ## درس 12-6 — Backup/Restore، Firmware Upgrade، Rollback و Lifecycle
 
 **فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۱، ۱۲-۵ · ≈ 10 ساعت**
@@ -23970,6 +25666,69 @@ diagnose sys session stat
 1. *چرا Secondary اول؟* با Failover سرویس حفظ می‌شود.
 2. *EoS/EoL؟* پایان پشتیبانی؛ برنامه‌ی جایگزینی.
 3. *چه چیزی بعد از Upgrade مقایسه می‌کنید؟* Session، Route، IPsec، Policy hit، Log.
+
+### تکمیل عمیق: Backup/Restore، ارتقا و Lifecycle
+
+#### چرا؟
+
+بدون Backup تست‌شده و مسیر ارتقا درست، یک اشتباه ساده می‌تواند ساعت‌ها قطعی بسازد.
+
+#### مثال ساده — Backup
+
+``` text
+execute backup config tftp cfg-2026-11-27.conf 10.50.0.30
+sha256sum cfg-2026-11-27.conf
+```
+
+#### مثال متوسط — ارتقا
+
+1. Release Notes و Upgrade Path.
+2. Backup + Image قبلی.
+3. Lab.
+4. Window.
+5. Verify.
+6. Rollback.
+
+``` text
+Pre : get system status ; backup
+Post: get system status ; policy/route counts ; tunnels
+```
+
+#### مثال سخت — Rollback
+
+``` text
+execute restore image tftp old.out 10.50.0.30
+execute restore config tftp cfg-before.conf 10.50.0.30
+```
+
+معیار Rollback از قبل: «اگر ۳۰ دقیقه سرویس حیاتی برنگشت».
+
+#### Lifecycle
+
+EoS/EoL نسخه‌ها را از سایت رسمی پیگیری کنید؛ ارتقای برنامه‌ریزی‌شده.
+
+#### Lab
+
+Backup و Restore را در Lab اجرا کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Restore شکست | نسخه | همان |
+| بوت نمی‌شود | Image | Console |
+| Config ناقص | مسیر ارتقا | Backup |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Hash؟** سلامت.
+**۲. چرا Lab اول؟** کشف مشکل.
+**۳. EoS؟** پایان پشتیبانی.
+
+#### English Corner
+
+- *Define rollback criteria before the upgrade window.*
+- Q: Why verify the backup file with a hash?
 
 ## درس 12-8 — Transit، Local-in و Local-out: سه نوع ترافیک و سه مسیر پردازش
 
@@ -24184,6 +25943,65 @@ execute ping-options source <ip>
 - Fortinet Docs: FortiOS 7.0 Administration Guide — Interface settings (Administrative access)، Local-in policy؛ CLI Reference `config firewall local-in-policy`، `config system interface`.
 - Fortinet: «Hardening your FortiOS» (مقاله‌ی رسمی؛ نسخه‌ی 7.0 را بررسی کنید).
 
+### تکمیل عمیق: Transit، Local-in و Local-out
+
+#### چرا؟
+
+سه نوع ترافیک سه مسیر دارند؛ بسیاری تصور می‌کنند Policy عادی ترافیک به فایروال را هم کنترل می‌کند، در حالی که نمی‌کند.
+
+#### سه نوع
+
+| نوع | مبدأ → مقصد | کنترل |
+|---|---|---|
+| Transit | از میان فایروال | Firewall Policy |
+| Local-in | به خود فایروال | Local-in Policy / allowaccess |
+| Local-out | از خود فایروال | تنظیمات سرویس/Route |
+
+#### مثال ساده
+
+ping از Users به IP خود فایروال: Local-in (allowaccess). ping از Users به سرور: Transit (Policy).
+
+#### مثال متوسط — Local-in Policy
+
+``` text
+config firewall local-in-policy
+ edit 1
+  set intf "port1"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "HTTPS" "SSH"
+  set action deny
+  set schedule "always"
+ next
+end
+```
+
+#### مثال سخت — Local-out
+
+فایروال برای DNS/NTP/FortiGuard خروجی دارد؛ Source Interface و Route آنها را تنظیم کنید (`set source-ip`)؛ مشکل Log/Update اغلب از Route Local-out است.
+
+#### Lab
+
+سه نوع ترافیک را با Debug Flow مقایسه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ping به FW نه | allowaccess | افزودن |
+| Update نمی‌رسد | Route Local-out | تنظیم |
+| Policy بی‌اثر روی FW | Local-in | local-in-policy |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Local-in چیست؟** ترافیک به خود FW.
+**۲. Policy عادی آن را کنترل می‌کند؟** خیر.
+**۳. Local-out؟** از خود FW.
+
+#### English Corner
+
+- *Local-in policies protect the firewall itself, not the networks behind it.*
+- Q: Which policy type controls traffic destined to the firewall?
 
 ## درس 12-9 — Hardware Acceleration (NPU/SPU) و Session Offload: اثر بر عملکرد و عیب‌یابی
 
@@ -24345,6 +26163,64 @@ diagnose npu fastpath status
 - Fortinet: FortiGate datasheet مدل مورد استفاده.
 
 <a id="l-12-7"></a>
+
+### تکمیل عمیق: NPU/SPU و Session Offload
+
+#### چرا؟
+
+Session Offload کارایی را چند برابر می‌کند ولی عیب‌یابی را سخت‌تر (Sniffer/Debug ناقص). باید بدانید چه زمانی فعال است و چطور موقتاً خاموش شود.
+
+#### مفهوم
+
+بسته‌ی اول Session توسط CPU بررسی می‌شود؛ اگر شرایط برقرار باشد Session به NPU «Offload» می‌شود و بقیه‌ی بسته‌ها سخت‌افزاری عبور می‌کنند.
+
+#### مثال ساده — دیدن
+
+``` text
+diagnose sys session list
+ ... npu info: flag=0x81/0x81 ...
+```
+
+وجود اطلاعات npu یعنی Offload شده.
+
+#### مثال متوسط — کنترل
+
+``` text
+config firewall policy
+ edit 30
+  set auto-asic-offload disable
+ next
+end
+```
+
+برای عیب‌یابی موقت؛ پس از آزمون برگردانید. `auto-asic-offload` به‌ازای Policy است.
+
+#### مثال سخت — UTM و Offload
+
+فعال‌بودن Proxy-based UTM معمولاً Offload را غیرفعال می‌کند؛ ظرفیت با CPU محدود می‌شود. پس مدل را بر اساس Throughput با UTM انتخاب کنید.
+
+#### Lab
+
+مفهوم را با خروجی Session نمونه توضیح دهید (VM بدون NPU: اجرا نشده).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Sniffer ناقص | Offload | موقتاً خاموش |
+| CPU بالا | UTM | مدل/Profile |
+| Debug flow بی‌خروجی | Offload | بسته‌ی اول |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Offload چیست؟** عبور سخت‌افزاری.
+**۲. چرا عیب‌یابی سخت؟** بسته‌ها CPU نمی‌بینند.
+**۳. کنترل؟** auto-asic-offload.
+
+#### English Corner
+
+- *Offloaded sessions bypass the CPU, so packet captures may be incomplete.*
+- Q: How can you temporarily disable offload for troubleshooting?
 
 ## درس 12-7 — آزمون پایان فصل ۱۲ و تحلیل خطا: مدیریت قفل‌شده، Route اشتباه و Interface
 
@@ -24519,6 +26395,64 @@ get system status              ! on console
 1. *چرا cfg-save revert؟* شبکه‌ی ایمنی برای تغییر مدیریتی.
 2. *چرا `set allowaccess` خطرناک است؟* فهرست قبلی را جایگزین می‌کند.
 3. *چه چیزی در RCA می‌نویسید؟* علت، اثر، زمان، پیشگیری.
+
+### تکمیل عمیق: آزمون پایان فصل ۱۲ — مدیریت قفل‌شده و روش Revert
+
+#### چرا؟
+
+بسیاری از قطعی‌ها وقتی رخ می‌دهد که ادمین با تغییر `allowaccess` یا Route خودش را از مدیریت قفل می‌کند. روش ایمن: تغییر با بازگشت خودکار.
+
+#### روش cfg-save revert
+
+``` text
+config system global
+ set cfg-save revert
+ set cfg-revert-timeout 600
+end
+```
+
+تغییرات تا زمان تأیید ذخیره نمی‌شوند؛ اگر ظرف ۶۰۰ ثانیه تأیید نشود، دستگاه به Config قبل برمی‌گردد (طبق مستند Fortinet).
+
+#### مثال ساده
+
+تغییر Interface مدیریتی؛ اگر قفل شدید، پس از Timeout Config قبلی برمی‌گردد.
+
+#### مثال متوسط — آزمون
+
+تغییر عمدی allowaccess و بازگشت پس از Timeout (Lab).
+
+#### مثال سخت — تحلیل خطا
+
+کارآموز Default Route را حذف کرد و GUI قطع شد؛ راه: کنسول، Route را بازگردانی، سپس درس: Revert و CHG.
+
+#### Rubric
+
+``` text
+Planning 20 | Execution 30 | Rollback 25 | Evidence 15 | Report 10
+```
+
+#### Lab
+
+آزمون را اجرا و بازگشت را ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| قفل مدیریت | allowaccess/Route | Console/Revert |
+| Revert نشد | Timeout زیاد | کم |
+| ذخیره‌ی ناخواسته | تأیید | دقت |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Console؟** مسیر آخر.
+**۲. Revert؟** بازگشت خودکار.
+**۳. ثبت؟** ضروری.
+
+#### English Corner
+
+- *Use configuration revert so that a lockout rolls back automatically.*
+- Q: What should you do if you lock yourself out of the GUI?
 
 ## پاسخ‌های فصل 12
 
@@ -25164,6 +27098,84 @@ diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 22 tcp port2
 2. *Policy بدون Route؟* بی‌اثر؛ Route Interface خروجی را تعیین می‌کند.
 3. *Policy Lookup چه می‌دهد؟* Policy مطابق جریان بدون ارسال ترافیک.
 
+### تکمیل عمیق: Firewall Policy از صفر — اجزا، ترتیب و ساخت یک مجموعه‌ی کامل
+
+#### چرا باید یاد بگیریم؟
+
+Policy قلب فایروال است. بیشتر حوادث امنیتی و قطعی‌ها از دو چیز می‌آیند: Policy بیش‌ازحد باز (امنیت) یا Policy اشتباه/به‌ترتیب نادرست (قطعی). یاد بگیرید Policy را مثل یک جمله‌ی دقیق بخوانید و بنویسید: «چه کسی، از کجا، به کجا، چه سرویسی، چه کاری، چه زمانی».
+
+#### اجزای یک Policy
+
+| جزء | نقش |
+|---|---|
+| Incoming Interface | ورودی |
+| Outgoing Interface | خروجی |
+| Source | چه کسی/آدرس |
+| Destination | به کجا |
+| Schedule | چه زمانی |
+| Service | پورت/پروتکل |
+| Action | Accept/Deny |
+| NAT | ترجمه |
+| Security Profiles | UTM |
+| Log | ثبت |
+
+#### قاعده‌ی First Match
+
+Policyها از بالا به پایین بررسی می‌شوند؛ **اولین مطابقت** اعمال می‌شود. اگر هیچ‌کدام مطابق نبود، **Implicit Deny** (Policy 0) رد می‌کند و به‌صورت پیش‌فرض Log نمی‌شود.
+
+#### مثال ساده — ترتیب خاص به عام
+
+``` text
+ID 10 USERS -> SERVERS  svc HTTPS,SMB  accept log all
+ID 20 GUEST -> INTERNET svc HTTP,HTTPS,DNS accept nat log utm
+ID 30 USERS -> INTERNET svc HTTP,HTTPS,DNS accept nat log utm
+ID 90 any   -> any      svc ALL deny log all
+```
+
+اگر 30 با dst=all قبل از 10 بود، ترافیک داخلی را هم می‌گرفت و 10 هرگز اجرا نمی‌شد (Shadow).
+
+#### مثال متوسط — Lookup
+
+``` text
+diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 445 tcp port2
+ -> policy 10
+diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 22 tcp port2
+ -> policy 90 (deny)
+```
+
+#### مثال سخت — Log برای Implicit Deny
+
+``` text
+config log setting
+ set fwpolicy-implicit-log enable
+end
+```
+
+بدون آن، Deny ضمنی نامرئی است و اسکن‌ها دیده نمی‌شوند. بهتر: یک Policy Deny صریح در پایین با Log All.
+
+#### Lab
+
+چهار Policy بالا را بسازید و چهار Lookup (دو مثبت، دو منفی) اجرا کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Policy اجرا نمی‌شود | Shadow | ترتیب |
+| Deny بی‌Log | implicit | Deny صریح |
+| ترافیک رد می‌شود | Interface | بررسی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. First Match یعنی؟** اولین مطابقت.
+**۲. Policy 0؟** Implicit Deny.
+**۳. Lookup چه؟** Policy مطابق بدون ترافیک.
+
+#### English Corner
+
+- *Policies are evaluated top-down and the first match wins.*
+- Q: Why add an explicit logged deny at the bottom?
+
 ## درس 13-2 — NAT در FortiGate: Policy NAT، IP Pool، Central NAT و انتخاب درست
 
 **فصل 13 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۴، ۱۳-۱ · ≈ 10 ساعت**
@@ -25424,6 +27436,87 @@ end
 2. *Central NAT چه می‌کند؟* ترجمه را از Policy جدا و در جدول central-snat-map مدیریت می‌کند.
 3. *چرا PBA؟* Log کم‌حجم و ردیابی در CGN.
 
+### تکمیل عمیق: NAT — Policy NAT، IP Pool و Central NAT با محاسبه
+
+#### چرا؟
+
+آدرس‌های خصوصی در اینترنت قابل‌مسیریابی نیستند؛ NAT آنها را به آدرس عمومی ترجمه می‌کند. انتخاب نوع NAT و اندازه‌ی Pool بر ظرفیت و ردیابی اثر مستقیم دارد.
+
+#### انواع
+
+| نوع | شرح |
+|---|---|
+| Interface NAT | استفاده از IP خروجی (ساده‌ترین) |
+| IP Pool Overload | چند IP، PAT |
+| IP Pool One-to-One | یک‌به‌یک، بدون PAT |
+| Fixed Port Range / PBA | ردیابی ساده‌تر |
+| Central NAT | ترجمه‌ی جدا از Policy |
+
+#### مثال ساده — ظرفیت
+
+``` text
+Users = 1200 ; sessions per user = 60
+Total sessions = 1200 x 60 = 72000
+Ports per public IP ~ 64500
+Min IPs (worst case, one destination) = 72000 / 64500 = 1.12 -> 2
+With headroom 50% -> 3 IPs
+```
+
+PAT برای هر مقصد (IP:Port) جدا شمرده می‌شود؛ مقاصد متنوع فشار را کم می‌کند.
+
+#### مثال متوسط — Pool
+
+``` text
+config firewall ippool
+ edit "POOL-INET"
+  set type overload
+  set startip 203.0.113.20
+  set endip 203.0.113.22
+ next
+end
+config firewall policy
+ edit 30
+  set nat enable
+  set ippool enable
+  set poolname "POOL-INET"
+ next
+end
+```
+
+#### مثال سخت — Central NAT
+
+با فعال‌شدن Central NAT، `nat enable` روی Policy کافی نیست و باید `central-snat-map` تعریف شود؛ یکی از اشتباهات رایج پس از تغییر حالت.
+
+#### آزمون
+
+``` text
+diagnose sys session filter src 10.10.0.5
+diagnose sys session list    # check snat IP
+```
+
+#### Lab
+
+Pool با دو IP بسازید و تغییر IP خروجی را ببینید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| پاسخ نمی‌آید | IP Pool Route نشده | ISP |
+| Pool پر | کم | افزایش |
+| NAT اعمال نمی‌شود | Central NAT | Map |
+
+#### پرسش‌ها با پاسخ
+
+**۱. PAT چه می‌کند؟** پورت را عوض می‌کند.
+**۲. One-to-One؟** بدون PAT.
+**۳. Central NAT؟** جدول جدا.
+
+#### English Corner
+
+- *Size the NAT pool by sessions per destination and add headroom.*
+- Q: What changes when Central NAT is enabled?
+
 ## درس 13-3 — VIP، Port-Forward و Hairpin NAT: انتشار امن سرویس داخلی
 
 **فصل 13 · بازنویسی عمیق · پیش‌نیاز: ۱۳-۱، ۱۳-۲ · ≈ 10 ساعت**
@@ -25650,6 +27743,72 @@ diagnose sys session list              -> DNAT 203.0.113.10:443 -> 10.30.0.10:44
 2. *Port-forward چه فایده؟* سطح حمله‌ی کمتر.
 3. *VIP و ARP؟* IP عمومی باید روی فایروال یا Route ISP باشد.
 
+### تکمیل عمیق: VIP، Port-forward و Hairpin
+
+#### چرا؟
+
+برای انتشار سرویس داخلی به اینترنت باید ترافیک ورودی به IP عمومی را به سرور داخلی ترجمه (DNAT) کنیم؛ و مشکل «کاربر داخلی با نام عمومی» (Hairpin) را حل کنیم.
+
+#### مثال ساده — VIP
+
+``` text
+config firewall vip
+ edit "VIP-WEB-443"
+  set extintf "port1"
+  set extip 203.0.113.10
+  set mappedip "10.30.0.10"
+  set portforward enable
+  set extport 443
+  set mappedport 443
+ next
+end
+```
+
+سپس Policy: `INET -> DMZ`، dst = VIP، service HTTPS.
+
+#### آزمون
+
+``` text
+curl -vk https://203.0.113.10
+nmap -p 22,80,3389 203.0.113.10        # expect filtered
+diagnose sys session list              # DNAT 203.0.113.10:443 -> 10.30.0.10:443
+```
+
+#### مثال متوسط — IP عمومی روی فایروال
+
+IP VIP باید برای ISP به فایروال Route یا ARP شود؛ در Interface Secondary IP یا Proxy ARP (طبق نسخه).
+
+#### مثال سخت — Hairpin
+
+کاربر LAN به https://203.0.113.10 می‌رود؛ ترافیک از Interface داخلی وارد و باید به DMZ برود. راه ترجیحی: Split DNS (نام داخلی را به IP داخلی حل کن). راه جایگزین: VIP با extintf any و Policy از Interface داخلی. توجه: `nat-source-vip` تنظیم Hairpin نیست.
+
+#### امنیت
+
+فقط پورت لازم؛ WAF/IPS (Needs-License)؛ DoS Policy.
+
+#### Lab
+
+VIP بسازید و آزمون مثبت/منفی بزنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| VIP کار نمی‌کند | Policy | افزودن |
+| پاسخ برنمی‌گردد | Default GW سرور | بررسی |
+| Hairpin | Split DNS | DNS |
+
+#### پرسش‌ها با پاسخ
+
+**۱. DNAT قبل از Policy؟** بله.
+**۲. Port-forward؟** سطح حمله کمتر.
+**۳. Split DNS؟** نام داخلی به IP داخلی.
+
+#### English Corner
+
+- *Prefer split DNS over hairpin NAT for internal users.*
+- Q: Why is port forwarding safer than a full one-to-one VIP?
+
 ## درس 13-4 — Session Table: ساختار، Timeout، فیلتر و پاک‌سازی
 
 **فصل 13 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۱، ۱۱-۷، ۱۳-۱ · ≈ 10 ساعت**
@@ -25866,6 +28025,72 @@ diagnose sys session filter clear
 1. *چرا پس از تغییر Policy Session قدیمی می‌ماند؟* Session موجود تا انقضا یا پاک‌سازی باقی است.
 2. *proto_state؟* وضعیت TCP؛ ۰۱ Established.
 3. *npu در Session؟* Session Offload شده؛ Debug flow آن را نمی‌بیند.
+
+### تکمیل عمیق: Session Table — خواندن و پاک‌سازی
+
+#### چرا؟
+
+Session نشان می‌دهد در این لحظه چه چیزی باز است؛ بسیاری از رفتارهای «عجیب» (تغییر Policy اثر نمی‌کند) با دیدن Session روشن می‌شود.
+
+#### مثال ساده — خواندن
+
+``` text
+session info: proto=6 proto_state=01 duration=35 expire=3565 timeout=3600
+statistic(bytes/packets/allow_err): org=5320/42/1 reply=48200/55/1
+hook=post dir=org act=snat 10.10.0.5:40000->203.0.113.10:443(198.51.100.2:40000)
+policy_id=10
+```
+
+تفسیر: TCP (proto 6)، Established (01)، ۳۵ ثانیه عمر، ۳۵۶۵ ثانیه تا انقضا، Policy 10، SNAT.
+
+#### مثال متوسط — Policy حذف شد ولی کار می‌کند
+
+Session موجود تا انقضا یا پاک‌سازی باقی می‌ماند.
+
+``` text
+diagnose sys session filter dport 21
+diagnose sys session clear
+diagnose sys session filter clear
+```
+
+#### مثال سخت — Timeout
+
+مقدار سراسری TCP ۳۶۰۰ ثانیه است؛ Timeout هر Service/Policy می‌تواند آن را بازنویسی کند؛ برای SSH طولانی `session-ttl` یا Service سفارشی.
+
+#### هشدار
+
+`clear` بدون فیلتر همه‌ی Sessionها را می‌بندد.
+
+#### نشت Session
+
+``` text
+diagnose sys session stat
+```
+
+روند تعداد را ببینید؛ علل: DoS، Timeout طولانی، UDP بی‌پایان.
+
+#### Lab
+
+یک اتصال بسازید، Session را بخوانید و فیلتر/Clear را تمرین کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| تغییر بی‌اثر | Session قدیم | Clear |
+| Session زیاد | DoS/Timeout | بررسی |
+| clear همه | بی‌فیلتر | فیلتر |
+
+#### پرسش‌ها با پاسخ
+
+**۱. proto_state؟** وضعیت TCP.
+**۲. چرا Session می‌ماند؟** انقضا.
+**۳. npu؟** Offload.
+
+#### English Corner
+
+- *Existing sessions survive policy changes until they expire or are cleared.*
+- Q: What does the expire field show?
 
 ## درس 13-5 — مدیریت Policy در طول زمان: Shadow، Overlap، Hit Count، Schedule و بازبینی فصلی
 
@@ -26099,6 +28324,68 @@ D: duplicates/shadowed            -> 4   (reorder/delete)
 2. *Schedule پایان‌یافته؟* Sessionهای موجود تا انقضا می‌مانند.
 3. *چرا ابتدا Disable؟* Rollback سریع.
 
+### تکمیل عمیق: مدیریت Policy در طول زمان
+
+#### چرا؟
+
+Policy مثل لباس‌های کمد جمع می‌شود؛ ۸۰ تا ۸۰۰ Policy که کسی نمی‌داند چرا وجود دارند. بازبینی دوره‌ای لازم است.
+
+#### طبقه‌بندی
+
+``` text
+A: Hit=0 and age>90d       -> candidates
+B: service ALL / dst all   -> narrow
+C: log disabled            -> enable
+D: duplicates/shadowed     -> reorder/delete
+```
+
+#### مثال ساده — پروژه‌ی ۸۰ Policy
+
+12 مورد Hit=0؛ 3 مورد ALL؛ 5 بدون Log. تأیید مالک: ۹ حذف، ۳ نگه‌داشتن (فصلی).
+
+#### مثال متوسط — اجرای ایمن
+
+``` text
+Backup -> Disable 9 policies -> observe 2 weeks (deny logs) -> delete
+```
+
+#### مثال سخت — تنگ‌کردن ALL
+
+Log ۳۰ روزه ⇒ مقاصد و سرویس‌های واقعی ⇒ Policy خاص بالای ALL ⇒ ALL غیرفعال ⇒ مشاهده ⇒ حذف.
+
+#### گزارش ممیز
+
+| ID | مالک | دلیل | Hit | ریسک | تصمیم |
+|---|---|---|---|---|---|
+| 47 | NOC | پروژه‌ی تمام‌شده | 0 | متوسط | حذف |
+
+#### نکته
+
+Hit Count با Reset/Reboot صفر می‌شود و استفاده‌ی فصلی را نمی‌بیند؛ Log ۱۲ ماهه را هم ببینید.
+
+#### Lab
+
+یک Export نمونه را طبقه‌بندی کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| حذف و قطع | استفاده‌ی فصلی | Disable اول |
+| Policy بی‌مالک | ثبت نشده | Comment |
+| Shadow | ترتیب | مرتب |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Shadow؟** هرگز اجرا نمی‌شود.
+**۲. چرا Disable اول؟** Rollback.
+**۳. Hit Count محدودیت؟** Reset.
+
+#### English Corner
+
+- *Disable before deleting so that rollback is trivial.*
+- Q: What does a shadowed policy mean?
+
 ## درس 13-6 — سناریوهای خرابی Policy/NAT/Route، روش ۱۰ گامی و آزمون G5
 
 **فصل 13 · بازنویسی عمیق · پیش‌نیاز: ۱۳-۱ تا ۱۳-۵، ۱۴-۱ · ≈ 10 ساعت**
@@ -26298,6 +28585,74 @@ Prevent : pre-change lookup test list
 2. *دو عیب هم‌زمان؟* یکی‌یکی.
 3. *RCA چه دارد؟* علت، اثر، رفع، پیشگیری.
 
+### تکمیل عمیق: سناریوهای خرابی Policy/NAT/Route و آزمون G5
+
+#### چرا؟
+
+بیشتر خرابی‌ها از سه خانواده می‌آیند: Policy، NAT، Route. روش ده‌گامی آنها را از هم جدا می‌کند.
+
+#### سه پرونده
+
+1. **Policy**: `iprope lookup` ⇒ policy 0؛ Policy 15 با srcintf اشتباه ⇒ اصلاح.
+2. **NAT**: Session SNAT به IP Pool که ISP Route نکرده ⇒ پاسخ نمی‌آید.
+3. **Route/RPF**: `reverse path check fail` ⇒ Route برگشت.
+
+#### مثال ساده — Lookup
+
+``` text
+diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.30 443 tcp port2
+```
+
+#### مثال متوسط — نشانه‌ها
+
+| نشانه | علت محتمل |
+|---|---|
+| Deny policy 0 | Policy/Interface |
+| SYN بی‌پاسخ | NAT/Upstream |
+| RPF fail | Route |
+
+#### مثال سخت — دو خرابی هم‌زمان
+
+یکی‌یکی رفع و آزمون؛ در پایان Backup و RCA.
+
+#### RCA
+
+``` text
+Title   : Users cannot reach portal
+Cause   : policy srcintf wrong after migration
+Fix     : srcintf corrected
+Prevent : pre-change lookup test list
+```
+
+#### Rubric G5
+
+``` text
+Discovery 30 | Fix 30 | Evidence 20 | Negative test 10 | Honesty 10
+```
+
+#### Lab
+
+سه خرابی را بسازید و رفع کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| چند خطا | هم‌زمان | یکی |
+| Evidence نیست | ثبت | الگو |
+| NAT/Route گیج | ترتیب | روش ده‌گامی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. no reply؟** NAT/Route/سرور.
+**۲. RPF؟** مسیر معکوس.
+**۳. RCA؟** علت و پیشگیری.
+
+#### English Corner
+
+- *Separate policy, NAT and route problems before changing anything.*
+- Q: What does a reverse path check failure indicate?
+
 ## درس 13-7 — Session، تغییر Policy/Route و NAT در برابر Routing: چرا «تنظیم را عوض کردم ولی اثر نکرد»؟
 
 **فصل ۱۳ · درس افزوده (تکمیل ۱۳-۶) · پیش‌نیاز: ۱۲-۰، ۱۱-۷، ۱۳-۱ تا ۱۳-۶ · ≈ ۶ ساعت**
@@ -26488,6 +28843,65 @@ get system session-info statistics
 
 - Fortinet Docs: FortiOS 7.0 Administration Guide — Session table، NAT؛ CLI Reference `diagnose sys session`.
 - Fortinet Community: «Troubleshooting Tip: Central NAT Packet processing» (غیررسمی؛ `Unverified`).
+
+### تکمیل عمیق: چرا «تنظیم را عوض کردم ولی اثر نکرد»؟
+
+#### چرا؟
+
+این جمله پرتکرارترین شکایت است. علت‌ها محدودند و قابل‌فهرست‌اند.
+
+#### فهرست علت‌ها
+
+1. Session قدیمی مسیر/Policy قبلی را نگه داشته.
+2. Policy پایین‌تر مطابق است ولی بالاتر Shadow می‌کند.
+3. Route با Distance/Priority بهتر هنوز فعال است.
+4. NAT Central فعال و تنظیم Policy اثری ندارد.
+5. Offload (NPU) و Sessionهای شتاب‌داده.
+6. Cache DNS/ARP.
+
+#### مثال ساده — Session
+
+Policy حذف شد ولی FTP کار می‌کند ⇒ `session list` ⇒ `clear` با فیلتر.
+
+#### مثال متوسط — Route
+
+Default Route جدید با Distance بیشتر ⇒ فعال نمی‌شود چون قدیمی هنوز بهتر است.
+
+``` text
+get router info routing-table all
+get router info routing-table database
+```
+
+#### مثال سخت — NAT در برابر Route
+
+Policy NAT به Pool B تنظیم شد ولی خروج هنوز از Interface A: Route تعیین‌کننده‌ی Interface است؛ NAT فقط IP را عوض می‌کند. باید Route/Policy Route هم تغییر کند.
+
+#### روش
+
+همیشه پس از تغییر: Lookup + Session جدید + Log؛ نه Session قدیمی.
+
+#### Lab
+
+سه سناریو را بسازید و ببینید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| بی‌اثر | Session | Clear |
+| بی‌اثر | Route بهتر | Priority |
+| بی‌اثر | Central NAT | Map |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Route یا NAT؟** Route Interface را تعیین می‌کند.
+**۲. Session؟** قدیمی می‌ماند.
+**۳. بعد از تغییر؟** آزمون با Session جدید.
+
+#### English Corner
+
+- *Test changes with a new session, not an old one.*
+- Q: Which setting decides the outgoing interface, route or NAT?
 
 ## پاسخ‌های فصل 13
 
@@ -26865,6 +29279,81 @@ Q10 Verify     curl -vk works; session established
 2. *چرا ترتیب مهم است؟* هر گام فرضیه‌ای را حذف می‌کند.
 3. *Evidence خوب چیست؟* خروجی دستور با زمان و فیلتر مشخص.
 
+### تکمیل عمیق: چارچوب ۱۰ پرسش — پرونده‌ی کامل از علامت تا اثبات
+
+#### چرا باید یاد بگیریم؟
+
+پزشک خوب قبل از نسخه‌نوشتن می‌پرسد: «کجا درد دارد؟ از کی؟ چه کرده‌اید؟». عیب‌یاب خوب هم همین‌طور. چارچوب ده پرسش جلوی «حدس‌زدن» را می‌گیرد و هر پاسخ یک ابزار مشخص دارد.
+
+#### ده پرسش و ابزارها
+
+| # | پرسش | ابزار |
+|---|---|---|
+| 1 | چه کسی/چه چیزی تحت تأثیر است؟ | گزارش/Log |
+| 2 | از چه زمانی؟ | Log/Change |
+| 3 | چه چیزی تغییر کرده؟ | CHG/Config diff |
+| 4 | DNS درست است؟ | nslookup |
+| 5 | Route درست است؟ | routing-table |
+| 6 | Policy مجاز است؟ | iprope lookup |
+| 7 | NAT/Session؟ | session list |
+| 8 | بسته روی سیم؟ | sniffer |
+| 9 | لایه‌ی کاربرد؟ | curl/Log برنامه |
+| 10 | رفع تأیید شد؟ | آزمون مثبت/منفی |
+
+#### مثال ساده — پرونده
+
+علامت: کاربر 10.10.0.5 به https://app.example.com نمی‌رسد.
+
+``` text
+Q1 scope  : only this user
+Q4 DNS    : nslookup -> 198.51.100.8 (ok)
+Q5 route  : get router info routing-table details 198.51.100.8 -> via port1
+Q6 policy : diagnose firewall iprope lookup 10.10.0.5 50000 198.51.100.8 443 tcp port2 -> policy 30
+Q7 session: state SYN_SENT only
+Q8 wire   : SYN out port1, no SYN-ACK
+Cause     : upstream blocks source NAT IP
+Fix       : alternate pool IP / ticket to ISP
+Q10 verify: curl OK
+```
+
+نتیجه: مشکل خارج از فایروال؛ اثبات با Sniffer.
+
+#### مثال متوسط — انتخاب ابزار بر اساس علامت
+
+| علامت | ابزار اول |
+|---|---|
+| Timeout | Route/Sniffer |
+| Refused | سرویس/Policy |
+| کند | MTU/CPU/Session |
+| فقط بعضی کاربران | Policy/NAT/Scope |
+
+#### مثال سخت — دو علت
+
+پس از رفع NAT، هنوز کند: دومین علت MTU. درس: بعد از هر رفع، آزمون کامل دوباره.
+
+#### Lab
+
+یک پرونده بسازید و ده پرسش را پر کنید.
+
+#### عیب‌یابی روش
+
+| علامت | علت | رفع |
+|---|---|---|
+| حدس | بی‌چارچوب | ده پرسش |
+| تغییر چندتایی | بی‌انضباط | یکی |
+| بی‌Evidence | ثبت نشد | الگو |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Scope اول؟** مسیر را کوتاه می‌کند.
+**۲. چرا ثبت؟** ردیابی.
+**۳. بعد از رفع؟** آزمون مثبت و منفی.
+
+#### English Corner
+
+- *Define scope first, then work down the stack with evidence.*
+- Q: Which tool do you use first for a timeout?
+
 ## درس 14-2 — Packet Sniffer در CLI و GUI و تحلیل pcap با Wireshark: از فیلتر تا نتیجه‌گیری
 
 **فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۱ · ≈ 10 ساعت**
@@ -27065,6 +29554,65 @@ diagnose sniffer packet any 'host 10.10.0.5 and host 198.51.100.8 and tcp port 4
 1. *Sniffer بسته Offload شده را می‌بیند؟* ممکن است ببیند ناقص؛ برای Debug Offload را موقتاً بررسی کنید.
 2. *چرا دو سمت؟* مقایسه in و out.
 3. *Verbosity 6؟* Payload هم.
+
+### تکمیل عمیق: Packet Sniffer — فیلتر تا Wireshark
+
+#### چرا؟
+
+Log می‌گوید «چه تصمیمی گرفته شد»؛ Sniffer می‌گوید «چه چیزی روی سیم رفت». برای «بسته رسید ولی پاسخ نیامد» تنها Sniffer جواب می‌دهد.
+
+#### دستور
+
+``` text
+diagnose sniffer packet any 'host 10.10.0.5 and host 198.51.100.8 and tcp port 443' 4 20 l
+```
+
+پارامترها: Interface، فیلتر BPF، Verbosity (4 = هدر+Interface، 6 = هدر+Payload)، تعداد بسته، زمان Local.
+
+#### مثال ساده — خواندن خروجی
+
+``` text
+12:01:01.100 port2 in  10.10.0.5.50000 -> 198.51.100.8.443: syn 123
+12:01:01.101 port1 out 203.0.113.2.50000 -> 198.51.100.8.443: syn 123
+12:01:02.101 port1 out 203.0.113.2.50000 -> 198.51.100.8.443: syn 123
+```
+
+تفسیر: ورودی دیده شد؛ خروجی با SNAT خارج شد؛ Retransmit بدون SYN-ACK ⇒ مشکل بعد از فایروال.
+
+#### مثال متوسط — ذخیره‌ی pcap
+
+خروجی Verbosity 6 را با اسکریپت `fgt2eth.pl` به pcap تبدیل و در Wireshark با `tcp.analysis.retransmission` ببینید.
+
+#### مثال سخت — Offload
+
+بسته‌های Offload‌شده (NPU) ممکن است در Sniffer کامل دیده نشوند. برای عیب‌یابی می‌توان Offload را موقتاً برای آن Policy غیرفعال کرد (`set auto-asic-offload disable`) و پس از آزمون برگرداند.
+
+#### قواعد ایمنی
+
+فیلتر دقیق، تعداد بسته محدود، Interface مشخص؛ Payload حساس را ذخیره نکنید.
+
+#### Lab
+
+یک curl را با Sniffer دو Interface ببینید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| چیزی نمی‌بینم | فیلتر | ساده‌سازی |
+| بسته‌های ناقص | Offload | غیرفعال موقت |
+| CPU بالا | any بی‌فیلتر | محدود |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Verbosity 4؟** هدر و Interface.
+**۲. چرا دو Interface؟** قبل/بعد NAT.
+**۳. Offload؟** Sniffer را ناقص می‌کند.
+
+#### English Corner
+
+- *Capture on both interfaces to see the packet before and after NAT.*
+- Q: What does a SYN retransmission with no SYN-ACK suggest?
 
 ## درس 14-3 — Debug Flow: خواندن تصمیم فایروال خط‌به‌خط با مثال‌های Allowed، Denied و RPF
 
@@ -27291,6 +29839,76 @@ msg="reverse path check fail, drop"
 2. *چرا Trace محدود (20)؟* حفاظت CPU.
 3. *تفاوت Sniffer و Debug Flow؟* بسته در سیم در برابر تصمیم فایروال.
 
+### تکمیل عمیق: Debug Flow — سه نتیجه‌ی متفاوت
+
+#### چرا؟
+
+Sniffer بسته را نشان می‌دهد؛ Debug Flow «تصمیم فایروال» را: کدام Policy، کدام Route، NAT.
+
+#### راه‌اندازی ایمن
+
+``` text
+diagnose debug reset
+diagnose debug flow filter addr 198.51.100.8
+diagnose debug flow filter dport 443
+diagnose debug flow show function-name enable
+diagnose debug flow trace start 20
+diagnose debug enable
+```
+
+پایان: `diagnose debug disable` و `diagnose debug reset`.
+
+#### نتیجه‌ی A — Allowed
+
+``` text
+msg="allocate a new session-0003f1"
+msg="find a route: gw-203.0.113.1 via port1"
+msg="Allowed by Policy-30: SNAT"
+```
+
+#### نتیجه‌ی B — Denied
+
+``` text
+msg="Denied by forward policy check (policy 0)"
+```
+
+Policy مطابق نیست؛ با `iprope lookup` علت را ببینید (Interface، Address، Service).
+
+#### نتیجه‌ی C — RPF
+
+``` text
+msg="reverse path check fail, drop"
+```
+
+Route برگشت از Interface دیگر؛ `get router info routing-table details <src>`.
+
+#### مثال سخت — هیچ خروجی
+
+Debug Flow چیزی نشان نمی‌دهد: ترافیک به فایروال نمی‌رسد (Sniffer ثابت می‌کند) یا Session Offload‌شده است (فقط بسته‌ی اول دیده می‌شود).
+
+#### Lab
+
+سه نتیجه را عمداً تولید کنید (Policy حذف، Route غلط).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| CPU بالا | Trace بی‌سقف | start 20 |
+| بی‌خروجی | ترافیک نیامده | Sniffer |
+| Policy 0 | Deny ضمنی | Lookup |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Policy 0؟** Implicit Deny.
+**۲. چرا سقف Trace؟** حفاظت CPU.
+**۳. Sniffer در برابر Debug Flow؟** بسته در برابر تصمیم.
+
+#### English Corner
+
+- *Always disable debug and reset filters when you finish.*
+- Q: What does policy 0 mean in a debug flow trace?
+
 ## درس 14-4 — Session، Routing و iprope: ابزارهای تکمیلی برای اثبات تصمیم‌ها
 
 **فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۱ تا ۱۴-۳ · ≈ 10 ساعت**
@@ -27480,6 +30098,62 @@ diagnose firewall iprope lookup 10.10.0.5 40000 8.8.8.8 53 udp port2
 1. *چرا Session قدیم مسیر قدیم را دارد؟* Session Route را در لحظه‌ی ساخت ثبت می‌کند.
 2. *iprope چه می‌گوید؟* Policy مطابق بدون ترافیک.
 3. *Policy Route کجا؟* قبل از جدول مسیر عادی.
+
+### تکمیل عمیق: Session، Routing و iprope
+
+#### چرا؟
+
+سه ابزار هر کدام یک سؤال را جواب می‌دهند: Route می‌گوید «کجا»، iprope می‌گوید «مجاز؟»، Session می‌گوید «چه چیزی الان باز است».
+
+#### مثال ساده
+
+``` text
+get router info routing-table details 198.51.100.8
+diagnose firewall iprope lookup 10.10.0.5 40000 198.51.100.8 443 tcp port2
+diagnose sys session filter dst 198.51.100.8
+diagnose sys session list
+```
+
+#### مثال متوسط — Session مسیر قدیم
+
+پس از تغییر Default Route، بعضی کاربران هنوز از ISP قدیم می‌روند: Session مسیر را در لحظه‌ی ساخت دارد. رفع: پاک‌سازی با فیلتر یا `snat-route-change`.
+
+``` text
+diagnose sys session filter src 10.10.0.5
+diagnose sys session clear
+diagnose sys session filter clear
+```
+
+#### مثال سخت — Policy Route
+
+Policy Route قبل از Routing عادی ارزیابی می‌شود؛ اگر مطابق باشد و Gateway ناتمام باشد، ترافیک مسیر دیگر می‌رود. مشاهده: `diagnose firewall proute list`.
+
+#### نکته
+
+`routing-table all` بهترین مسیرهای فعال؛ `database` همه‌ی مسیرها (Distance/Priority).
+
+#### Lab
+
+یک Route را تغییر دهید و رفتار Session را مشاهده کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| مسیر قدیم | Session | Clear |
+| Policy Route | proute | بررسی |
+| Clear همه‌چیز | بی‌فیلتر | فیلتر |
+
+#### پرسش‌ها با پاسخ
+
+**۱. iprope؟** Policy مطابق.
+**۲. چرا Session مسیر قدیم؟** لحظه‌ی ساخت.
+**۳. proute؟** Policy Route.
+
+#### English Corner
+
+- *Existing sessions keep their original route until they expire or are cleared.*
+- Q: What does the iprope lookup command tell you?
 
 ## درس 14-5 — MTU/MSS، DNS و مشکلات TCP/UDP: عیب‌یابی «نیمه‌کارکرده» با محاسبه و آزمون پایدار
 
@@ -27676,6 +30350,75 @@ end
 2. *MSS Clamp کجا؟* روی TCP SYN.
 3. *چرا ICMP را کامل نبندیم؟* PMTUD.
 
+### تکمیل عمیق: MTU/MSS، DNS و مشکلات نیمه‌کارکرده
+
+#### چرا؟
+
+بدترین مشکلات «گاهی کار می‌کند» هستند؛ MTU و DNS دو علت اصلی‌اند.
+
+#### MTU و MSS
+
+``` text
+Path MTU = 1400 (found with ping -f)
+MSS = MTU - IP(20) - TCP(20) = 1360
+```
+
+``` text
+ping -f -l 1372 198.51.100.8   -> reply
+ping -f -l 1373 198.51.100.8   -> fragmentation needed
+```
+
+رفع با MSS Clamp:
+
+``` text
+config firewall policy
+ edit 30
+  set tcp-mss-sender 1360
+  set tcp-mss-receiver 1360
+ next
+end
+```
+
+#### مثال سخت — PMTUD Blackhole
+
+ICMP Type 3 Code 4 فیلتر شده؛ فرستنده نمی‌فهمد؛ HTTPS قطع می‌شود در حالی که ping کار می‌کند. Clamp روی SYN مستقل از ICMP عمل می‌کند.
+
+#### DNS
+
+``` text
+diagnose test application dnsproxy 3
+nslookup app.example.com 10.20.0.5
+```
+
+پاسخ بزرگ (EDNS/DNSSEC) و TCP/53؛ Truncation.
+
+#### مثال متوسط — کندی
+
+AAAA بی‌پاسخ ۵ ثانیه؛ سپس A. علت: DNS Server؛ رفع روی سرور.
+
+#### Lab
+
+Path MTU را اندازه و MSS را محاسبه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| HTTPS قطع | MTU | Clamp |
+| DNS کند | AAAA | سرور |
+| TC | TCP/53 | باز |
+
+#### پرسش‌ها با پاسخ
+
+**۱. MSS چگونه؟** MTU منهای ۴۰.
+**۲. چرا Clamp؟** مستقل از ICMP.
+**۳. TC flag؟** پاسخ بریده.
+
+#### English Corner
+
+- *If small packets work and large ones fail, suspect an MTU problem.*
+- Q: How do you compute the TCP MSS from the MTU?
+
 ## درس 14-6 — تحلیل Log، Packet Walk و آزمون عملی فصل ۱۴: سه پرونده‌ی کامل
 
 **فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۱ تا ۱۴-۵ · ≈ 12 ساعت**
@@ -27867,6 +30610,69 @@ sentbyte=60 rcvdbyte=0 duration=60
 1. *action=close و timeout؟* close پایان عادی؛ timeout انقضا.
 2. *چرا sentbyte مهم است؟* ترافیک واقعی را نشان می‌دهد.
 3. *Log کجا ناقص؟* Offload و Sampling.
+
+### تکمیل عمیق: تحلیل Log و Packet Walk — سه پرونده
+
+#### چرا؟
+
+Log اولین جایی است که نگاه می‌کنیم؛ باید بتوانیم هر فیلد را بخوانیم و به Packet Walk وصل کنیم.
+
+#### مثال ساده — خواندن Log
+
+``` text
+date=2026-11-27 time=10:12:01 type=traffic subtype=forward srcip=10.10.0.5 dstip=198.51.100.8 dstport=443 action=timeout policyid=30 sentbyte=60 rcvdbyte=0 duration=60
+```
+
+تفسیر: Session باز شد (policy 30)؛ ۶۰ بایت فرستاد و صفر دریافت کرد؛ ۶۰ ثانیه ⇒ پاسخ نیامد؛ مشکل بعد از فایروال.
+
+#### Packet Walk
+
+``` text
+User -> port2 (RPF ok) -> Policy 30 -> SNAT -> Route port1 -> ISP -> (no reply)
+```
+
+#### جدول Evidence
+
+| گام | ابزار | نتیجه |
+|---|---|---|
+| Route | routing-table | OK |
+| Policy | iprope | 30 |
+| Wire | sniffer | SYN out فقط |
+
+#### مثال سخت — سه پرونده
+
+1. `action=deny policyid=0` ⇒ Policy نیست.
+2. `action=timeout rcvdbyte=0` ⇒ بعد از فایروال.
+3. `action=close` با `rcvdbyte` کم و زمان کوتاه ⇒ اتصال سریع بسته (RST/برنامه).
+
+#### Rubric
+
+``` text
+Steps 30 | Evidence 30 | Cause 20 | Fix 10 | Honesty 10
+```
+
+#### Lab
+
+سه Log نمونه را تحلیل و Packet Walk بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| فیلد نامفهوم | نداشتن مرجع | مستند |
+| Log ناقص | Offload/Sampling | Sniffer |
+| زمان اشتباه | NTP | همگام |
+
+#### پرسش‌ها با پاسخ
+
+**۱. timeout با rcvdbyte=0؟** پاسخ نیامد.
+**۲. close چه؟** پایان عادی/ناگهانی.
+**۳. چرا Packet Walk؟** ترتیب تصمیم‌ها.
+
+#### English Corner
+
+- *A session with zero received bytes means the reply never arrived.*
+- Q: How do you read the action field in a traffic log?
 
 ## درس 14-7 — روش نظام‌مند عیب‌یابی: از علامت تا علت و رفع (با پرونده‌های واقعی)
 
@@ -28080,6 +30886,57 @@ H3: Upstream drop     -> test: sniffer SYN without ACK -> accepted
 1. *چرا یک تغییر در هر زمان؟* ردیابی علت.
 2. *Evidence بد؟* «به نظرم».
 3. *Rollback؟* همیشه آماده.
+
+### تکمیل عمیق: روش نظام‌مند — فرضیه‌محور در برابر حدس‌محور
+
+#### چرا؟
+
+عیب‌یاب حدس‌محور فقط زمانی موفق است که شانس بیاورد. فرضیه‌محور هر بار یک احتمال را با شاهد رد یا تأیید می‌کند.
+
+#### الگو
+
+``` text
+H1 Route wrong       -> test: routing-table details  -> rejected
+H2 Policy missing    -> test: iprope lookup          -> rejected
+H3 Upstream drop     -> test: sniffer SYN no ACK     -> accepted
+```
+
+#### پرونده‌های واقعی
+
+1. سرور بیرونی فقط IP قبلی را اجازه می‌داد ⇒ پس از Pool جدید قطع.
+2. Policy درست ولی Schedule منقضی.
+3. DNS داخلی پاسخ قدیمی (TTL).
+
+#### مثال سخت — Rollback
+
+در هر رفع، Rollback را آماده نگه دارید؛ اگر تغییر بدتر کرد، برگردید.
+
+#### گزارش
+
+علامت، اثر، Timeline، فرضیه‌ها، Evidence، علت ریشه، رفع، پیشگیری.
+
+#### Lab
+
+یک پرونده را با سه فرضیه بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| رفع بدون Evidence | عجله | فرضیه |
+| چند تغییر | بی‌انضباط | یکی |
+| ثبت نشد | غفلت | قالب |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا یک تغییر؟** ردیابی.
+**۲. Evidence بد؟** «به نظرم».
+**۳. Rollback؟** آماده.
+
+#### English Corner
+
+- *Form a hypothesis, design a test, and accept or reject it with evidence.*
+- Q: Why change only one thing at a time?
 
 ## پاسخ‌های فصل 14
 
@@ -28520,6 +31377,75 @@ diagnose sys session filter dst 10.10.10.20
 2. *DMZ به داخل؟* فقط جریان‌های حداقلی و آغاز از داخل.
 3. *هزینه‌ی عملیاتی؟* دو مجموعه Policy و Backup.
 
+### تکمیل عمیق: چرا دو فایروال؟ تحلیل جریان و خرابی
+
+#### چرا باید یاد بگیریم؟
+
+یک قلعه‌ی با یک دیوار، با شکسته‌شدن آن دیوار، همه‌چیز در دسترس است. قلعه‌ی با دو دیوار و حیاط میانی (DMZ) مهاجم را مجبور می‌کند دو بار نفوذ کند و در هر مرحله دیده شود. طراحی دو فایروالی همین «دفاع در عمق» (Defense in Depth) است.
+
+#### توضیح ساده
+
+- **Edge FW**: رو به اینترنت؛ NAT، VIP، DMZ.
+- **Internal FW**: رو به شبکه‌ی داخلی؛ Users، Servers، Mgmt.
+- بین آنها یک لینک /30 (LINK).
+
+``` text
+Internet -- Edge FW -- DMZ
+               |
+            LINK /30
+               |
+           Internal FW -- Users / Servers / Mgmt
+```
+
+#### مثال ساده — مقایسه با عدد
+
+| معیار | یک فایروال | دو فایروال |
+|---|---|---|
+| دفعات نفوذ لازم برای رسیدن به داخل | 1 | 2 |
+| تفکیک مسئولیت | ندارد | دارد |
+| هزینه/پیچیدگی | کم | بیشتر |
+
+#### مثال متوسط — جریان‌ها
+
+``` text
+F1 Users -> Internet : Internal(accept) -> Edge(accept + SNAT) -> ISP
+F2 Internet -> DMZ    : Edge(VIP + policy) -> DMZ
+F3 DMZ -> Internal    : denied by default (only minimal exceptions)
+```
+
+#### مثال سخت — تحلیل خرابی
+
+| خرابی | اثر |
+|---|---|
+| Edge | اینترنت و DMZ قطع؛ داخلی سالم |
+| Internal | ارتباط داخلی/به اینترنت قطع؛ DMZ سالم |
+| لینک LINK | Users بی‌اینترنت |
+
+با HA برای هر کدام این اثرها کم می‌شود.
+
+#### Lab
+
+نمودار را با نام Interface بکشید و سه جریان را ردیابی کنید.
+
+#### عیب‌یابی طراحی
+
+| علامت | علت | رفع |
+|---|---|---|
+| DMZ به داخل باز | Policy | Deny |
+| دو NAT | طراحی | یکی |
+| مسیر ناقص | Route | کامل |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا DMZ جدا؟** سرورهای در معرض اینترنت.
+**۲. DMZ به داخل؟** ممنوع مگر استثنا.
+**۳. NAT کجا؟** Edge.
+
+#### English Corner
+
+- *Defense in depth forces an attacker to defeat multiple independent layers.*
+- Q: Why should DMZ hosts be unable to initiate sessions to the internal network?
+
 ## درس 15-1 — طراحی معماری دوفایروالی: نقش‌ها، Zoneها، آدرس‌دهی و جدول مسیر
 
 **فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۰، ۱۲-۲، ۱۳-۱ · ≈ 10 ساعت**
@@ -28728,6 +31654,76 @@ Edge: 10.10.0.0/24, 10.20.0.0/24, 10.50.0.0/24 via 10.99.0.2
 1. *چرا شبکه‌ی /30 بین فایروال‌ها؟* حداقل آدرس و سطح حمله.
 2. *Mgmt کجا؟* Internal، جدا از Users.
 3. *Route خلاصه؟* 10.0.0.0/8 فقط اگر فضای آدرس هم‌پوشان ندارید.
+
+### تکمیل عمیق: آدرس‌دهی و جدول مسیر دو فایروال
+
+#### چرا؟
+
+بیشتر خطاهای اولیه‌ی این طراحی در Route برگشت است: Edge نمی‌داند شبکه‌های داخلی کجایند.
+
+#### جدول Interface
+
+``` text
+Edge  port1 WAN   203.0.113.2/29  GW 203.0.113.1
+Edge  port2 DMZ   10.30.0.1/24
+Edge  port3 LINK  10.99.0.1/30
+Int   port1 LINK  10.99.0.2/30
+Int   port2 USERS 10.10.0.1/24
+Int   port3 SRV   10.20.0.1/24
+Int   port4 MGMT  10.50.0.1/24
+```
+
+#### مثال ساده — چرا /30؟
+
+``` text
+/30 = 2 usable hosts (4 addresses - network - broadcast)
+```
+
+دو آدرس قابل‌استفاده برای دو فایروال کافی است و سطح حمله‌ی کمینه.
+
+#### Routeها
+
+``` text
+Int : 0.0.0.0/0 via 10.99.0.1
+Edge: 10.10.0.0/24 via 10.99.0.2
+Edge: 10.20.0.0/24 via 10.99.0.2
+Edge: 10.50.0.0/24 via 10.99.0.2
+```
+
+#### مثال متوسط — Summary
+
+اگر 10.10.0.0/24 و 10.20.0.0/24 و 10.50.0.0/24 را بخواهیم خلاصه کنیم، بلوک پیوسته نیست؛ سه Route جدا بهتر از یک Summary خطرناک است.
+
+#### مثال سخت — Route برگشت فراموش‌شده
+
+Users به اینترنت می‌روند؛ پاسخ به Edge می‌رسد ولی Edge Route به 10.10.0.0/24 ندارد و از Default (WAN) خارج می‌کند ⇒ ترافیک گم می‌شود. شاهد: Sniffer روی port1 Edge، بسته‌ی پاسخ خروجی به WAN. رفع: Route برگشت.
+
+``` text
+get router info routing-table details 10.10.0.5
+```
+
+#### Lab
+
+جدول را بنویسید و برای هر جریان Hop-by-hop نگاه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| پاسخ گم | Route برگشت | افزودن |
+| Overlap | IP تکراری | بررسی |
+| Mgmt قابل‌دسترس از Users | Policy | Deny |
+
+#### پرسش‌ها با پاسخ
+
+**۱. /30 چند Host؟** ۲.
+**۲. چرا Route برگشت؟** پاسخ باید برگردد.
+**۳. Summary؟** فقط بلوک پیوسته.
+
+#### English Corner
+
+- *Always verify the return route on the outer firewall.*
+- Q: How many usable addresses are in a /30?
 
 ## درس 15-2 — ساخت Edge: WAN، DMZ، NAT، VIP و Policy ورودی
 
@@ -28960,6 +31956,92 @@ from DMZ     : ping 10.20.0.10                     -> fail (negative test)
 2. *DMZ→داخل؟* ممنوع مگر استثنای مستند.
 3. *VIP بدون Policy؟* ترافیک عبور نمی‌کند.
 
+### تکمیل عمیق: ساخت Edge — WAN، DMZ، NAT، VIP و Policy ورودی
+
+#### چرا؟
+
+Edge اولین خط دفاع است؛ هر خطا در آن مستقیم دیده می‌شود.
+
+#### گام ۱ — Interface
+
+``` text
+config system interface
+ edit port1
+  set mode static
+  set ip 203.0.113.2 255.255.255.248
+  set allowaccess ping
+  set role wan
+ next
+end
+```
+
+فقط `ping` برای WAN؛ مدیریت از WAN را باز نگذارید.
+
+#### گام ۲ — Route و NAT خروجی
+
+Default Route به ISP و Policy `LINK -> WAN` با `nat enable`.
+
+#### گام ۳ — VIP و Policy ورودی
+
+``` text
+config firewall vip
+ edit "VIP-WEB"
+  set extintf "port1"
+  set extip 203.0.113.3
+  set mappedip "10.30.0.10"
+  set portforward enable
+  set extport 443
+  set mappedport 443
+ next
+end
+config firewall policy
+ edit 30
+  set srcintf "port1"
+  set dstintf "port2"
+  set srcaddr "all"
+  set dstaddr "VIP-WEB"
+  set service "HTTPS"
+  set action accept
+  set logtraffic all
+ next
+end
+```
+
+#### آزمون‌ها
+
+``` text
+from Internet: curl -vk https://203.0.113.3      # expect 200
+from Internet: nmap -p 22,80,3389 203.0.113.3    # expect filtered
+from DMZ     : nc -zv 10.20.0.10 445             # expect timeout (negative)
+```
+
+#### مثال سخت — DMZ به داخل
+
+یک Policy قدیمی `DMZ -> any accept` پیدا شد. اقدام: Disable، بررسی Log ۳۰ روزه، Policy حداقلی.
+
+#### Lab
+
+Edge را در Lab بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| VIP کار نمی‌کند | Policy/ARP | بررسی |
+| nmap باز | Policy گسترده | تنگ |
+| WAN مدیریتی | allowaccess | حذف |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا ping فقط؟** حداقل.
+**۲. VIP بدون Policy؟** ترافیک رد.
+**۳. آزمون منفی DMZ؟** Timeout.
+
+#### English Corner
+
+- *Expose only the required service on the VIP and test with a port scan.*
+- Q: Why is management access on the WAN interface dangerous?
+
 ## درس 15-3 — ساخت Internal: Users، Servers، Mgmt و Routing به Edge با آزمون کامل
 
 **فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱، ۱۵-۲ · ≈ 10 ساعت**
@@ -29181,6 +32263,64 @@ Policy 90 any   -> any   deny log
 2. *Mgmt چرا جدا؟* کاهش سطح حمله به ابزار مدیریت.
 3. *دسترسی Mgmt از Users؟* فقط Jump/Bastion.
 
+### تکمیل عمیق: ساخت Internal — Users، Servers، Mgmt
+
+#### چرا؟
+
+Internal جداسازی داخل است؛ جایی که کاربران، سرورها و مدیریت از هم تفکیک می‌شوند.
+
+#### Policyها
+
+``` text
+ID 10 USERS -> SRV   HTTPS,SMB,DNS accept log
+ID 20 USERS -> LINK  HTTP,HTTPS,DNS accept log   (no NAT here; NAT at Edge)
+ID 30 MGMT  -> any   SSH,HTTPS,ICMP accept log
+ID 90 any   -> any   deny log
+```
+
+نکته: NAT را فقط در Edge انجام دهید.
+
+#### مثال ساده — Mgmt
+
+شبکه‌ی Mgmt فقط از ایستگاه مدیریتی (Jump/Bastion) قابل‌دسترس باشد: Policy از Users به Mgmt نباید وجود داشته باشد.
+
+#### مثال متوسط — آزمون
+
+``` text
+Users -> SRV 443 : ok
+Users -> MGMT 22 : timeout (negative)
+SRV   -> Internet: policy-based (usually deny)
+```
+
+هر مورد با Lookup و Log اثبات شود.
+
+#### مثال سخت — دور زدن Mgmt
+
+کاربر از SRV با SSH Tunnel به Mgmt می‌رسد. جلوگیری: SRV→MGMT ممنوع؛ Egress محدود؛ Log.
+
+#### Lab
+
+Policyها را بسازید و چهار آزمون را اجرا کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Users به Mgmt | Policy گسترده | حذف |
+| اینترنت نمی‌آید | Route/Edge | بررسی |
+| دو NAT | تنظیم | غیرفعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. NAT کجا؟** Edge.
+**۲. Mgmt چرا جدا؟** سطح حمله.
+**۳. Jump host؟** نقطه‌ی کنترل.
+
+#### English Corner
+
+- *Management networks should be reachable only from controlled jump hosts.*
+- Q: Why avoid NAT on the internal firewall?
+
 ## درس 15-4 — DMZ سه‌لایه: Web، App، DB؛ Policy، آزمون منفی و پایش
 
 **فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱ تا ۱۵-۳ · ≈ 10 ساعت**
@@ -29379,6 +32519,67 @@ Policy DENY any -> any  deny log
 2. *Egress Web؟* فقط به‌روزرسانی‌های لازم.
 3. *Hit Count اینجا؟* کشف جریان ناخواسته.
 
+### تکمیل عمیق: DMZ سه‌لایه — Web، App، DB
+
+#### چرا؟
+
+اگر وب‌سرور هک شود، مهاجم نباید مستقیم به پایگاه‌داده برسد. سه‌لایه‌بودن این زنجیره را می‌شکند.
+
+#### ماتریس
+
+| از | به | اجازه |
+|---|---|---|
+| Internet | Web | 443 |
+| Web | App | 8443 |
+| App | DB | 5432 |
+| Web | DB | ممنوع |
+| DB | Internet | ممنوع |
+
+#### مثال ساده — Policy
+
+``` text
+Policy W2A Web -> App tcp/8443 accept log
+Policy A2D App -> DB  tcp/5432 accept log
+Policy DENY any -> any deny log
+```
+
+#### مثال متوسط — آزمون منفی
+
+``` text
+from Web: nc -zv 10.30.3.10 5432   # expect timeout; log deny
+```
+
+#### مثال سخت — Egress
+
+وب‌سرور هک‌شده می‌خواهد به C2 در اینترنت وصل شود؛ Egress باید محدود باشد (فقط به‌روزرسانی‌های لازم). Log ترافیک خروجی غیرعادی Alert بدهد.
+
+#### پایش
+
+Hit Count و Deny Log؛ هشدار روی Deny غیرمعمول از Web.
+
+#### Lab
+
+ماتریس را اجرا و Evidence ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Web به DB | Policy | حذف |
+| DB به اینترنت | Egress | Deny |
+| Log نیست | log | فعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Web→DB ممنوع؟** زنجیره‌ی نفوذ.
+**۲. Egress؟** خروجی.
+**۳. پایش؟** Deny.
+
+#### English Corner
+
+- *Restrict outbound traffic from servers to limit data exfiltration.*
+- Q: Why must the web tier never talk directly to the database?
+
 ## درس 15-5 — Packet Walk در دو فایروال: NAT در دو نقطه، Session در هر سمت و اثبات
 
 **فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱ تا ۱۵-۴، ۱۴-۳ · ≈ 10 ساعت**
@@ -29545,6 +32746,65 @@ Edge port1 -> ISP
 2. *مسیر نامتقارن؟* Session ناقص و Drop.
 3. *هم‌گامی Log؟* NTP و Timezone یکسان.
 
+### تکمیل عمیق: Packet Walk در دو فایروال
+
+#### چرا؟
+
+با دو فایروال، هر بسته دو Session، دو Log و دو تصمیم دارد. برای عیب‌یابی باید مسیر را قدم‌به‌قدم دنبال کنید.
+
+#### رفت (Users → Internet)
+
+``` text
+User 10.10.0.5 -> Int port2 : RPF ok, Policy 20 accept (no NAT)
+Int port1 -> Edge port3    : RPF ok (route 10.10.0.0/24 via Int)
+Edge: Policy LINK->WAN accept, SNAT 10.10.0.5 -> 203.0.113.2
+Edge port1 -> ISP
+```
+
+#### برگشت
+
+ISP → Edge (Session معکوس، DNAT به 10.10.0.5) → Int (Session) → User.
+
+#### مثال متوسط — دو Session
+
+``` text
+Edge: diagnose sys session filter dst 198.51.100.8
+Int : diagnose sys session filter src 10.10.0.5
+```
+
+هر دو Session باید وجود داشته باشند و Byteها هم‌خوان.
+
+#### مثال سخت — مسیر نامتقارن
+
+Edge Route برگشت 10.10.0.0/24 ندارد: پاسخ از Default خارج می‌شود ⇒ Int Session ندارد (SYN-ACK بدون SYN) ⇒ Drop. با Sniffer دو سمت دیده می‌شود.
+
+#### هم‌گامی Log
+
+NTP یکسان و Timezone یکسان؛ در غیر این صورت مقایسه‌ی Log غیرممکن است.
+
+#### Lab
+
+یک curl را در هر دو فایروال ردیابی کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| فقط یک Session | نامتقارن | Route |
+| IP عجیب در Log | NAT | بررسی |
+| ساعت‌ها متفاوت | NTP | همگام |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا دو Session؟** دو Stateful.
+**۲. نامتقارن؟** پاسخ از مسیر دیگر.
+**۳. NTP؟** مقایسه‌ی Log.
+
+#### English Corner
+
+- *Each stateful firewall keeps its own session for the same flow.*
+- Q: What does a missing return route do to a flow?
+
 ## درس 15-6 — خرابی‌ها و آزمون G6: Edge، Internal، DMZ و گزارش RCA
 
 **فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱ تا ۱۵-۵ · ≈ 10 ساعت**
@@ -29699,6 +32959,68 @@ Prevent   : change review + pre/post lookup tests
 1. *اولین گام در قطع DMZ؟* Lookup روی Edge.
 2. *Backup چرا؟* بازگشت سریع.
 3. *چرا Review؟* تغییر بدون بازبینی علت اصلی خرابی.
+
+### تکمیل عمیق: خرابی‌ها و آزمون G6 — سه پرونده با RCA
+
+#### چرا؟
+
+G6 تمام ساخت‌های فصل را با سه خرابی واقعی محک می‌زند.
+
+#### خرابی ۱ — DMZ از اینترنت نمی‌رسد
+
+``` text
+diagnose firewall iprope lookup 198.51.100.50 40000 203.0.113.3 443 tcp port1   # on Edge
+ -> policy 0 (deny)
+```
+
+علت: VIP حذف شده. رفع: بازسازی VIP و Policy؛ آزمون curl.
+
+#### خرابی ۲ — Users بی‌اینترنت
+
+Sniffer روی Edge port3: بسته‌ای نمی‌رسد ⇒ مشکل Route Int→Edge (Default Route Int حذف شده). رفع: افزودن.
+
+#### خرابی ۳ — DMZ به DB داخلی Session باز می‌کند
+
+Policy بیش‌ازحد؛ نقض سیاست. رفع: حذف Policy، بررسی Log برای سوءاستفاده، PIR.
+
+#### قالب RCA
+
+``` text
+Title   : DMZ unreachable
+Impact  : public site down 14 min
+Cause   : VIP removed during cleanup
+Fix     : VIP restored from backup
+Prevent : change review + pre/post lookup tests
+```
+
+#### Rubric
+
+``` text
+Diagnosis 30 | Fix 25 | Negative test 15 | RCA 20 | Honesty 10
+```
+
+#### Lab
+
+سه خرابی را ایجاد و رفع کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| چند خرابی | هم‌زمان | یکی‌یکی |
+| بدون Backup | غفلت | Backup |
+| RCA ناقص | عجله | قالب |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Lookup اول؟** سریع و بی‌اثر.
+**۲. چرا Backup؟** بازگشت.
+**۳. RCA چه دارد؟** علت و پیشگیری.
+
+#### English Corner
+
+- *A good root cause analysis ends with a preventive action.*
+- Q: What is your first command when a published service becomes unreachable?
 
 ## پاسخ‌های فصل 15
 
@@ -30231,6 +33553,64 @@ get firewall ssl-ssh-profile
 2. *Certificate Pinning؟* برنامه گواهی را قفل می‌کند؛ Exemption لازم.
 3. *هزینه CPU؟* رمزگشایی/رمزگذاری دوباره.
 
+### تکمیل عمیق: Flow در برابر Proxy و TLS Inspection — انتخاب درست
+
+#### چرا باید یاد بگیریم؟
+
+فایروال نسل جدید فقط «پورت» را نمی‌بیند؛ محتوا را هم بازرسی می‌کند. ولی بازرسی هزینه دارد و دو روش دارد که هر کدام جای خود را دارند. انتخاب غلط یا سرعت را می‌کشد یا قابلیت لازم را از دست می‌دهد.
+
+#### توضیح ساده
+
+- **Flow-based**: بسته‌ها در حین عبور بازرسی می‌شوند، بدون ذخیره‌ی کامل فایل. سریع‌تر؛ قابلیت NPU Offload بیشتر.
+- **Proxy-based**: فایروال فایل/ارتباط را کامل دریافت و سپس تصمیم می‌گیرد. کندتر ولی بازرسی عمیق‌تر برای بعضی قابلیت‌ها.
+
+جدول قابلیت‌های هر حالت در مستند Fortinet نسخه آمده؛ قاعده‌ی عملی: پیش‌فرض Flow، و Proxy فقط وقتی قابلیت مورد نیاز آن را بخواهد.
+
+#### مثال ساده — انتخاب
+
+شعبه 1 Gbps با Web Filter Category + Antivirus: Flow-based معمولاً کافی و سریع است.
+
+#### مثال متوسط — SSL/TLS Inspection
+
+بیش از ۹۰٪ ترافیک رمز است؛ بدون Inspection، AV/IPS/Web Filter عمیق نمی‌بینند. فایروال نقش «مرد میانی مجاز» دارد: اتصال کلاینت را با گواهی ساختگی (امضاشده با CA سازمان) خاتمه می‌دهد و اتصال دوم را به سرور می‌سازد.
+
+``` text
+Client <-TLS(cert signed by Corp CA)-> FortiGate <-TLS(real server cert)-> Server
+```
+
+کلاینت باید CA سازمان را بپذیرد.
+
+#### مثال سخت — Certificate Pinning
+
+برنامه‌هایی که گواهی را «قفل» می‌کنند (بانک، برخی Appها) با Inspection شکست می‌خورند. راه: Exemption برای آن دسته/Domain؛ و مستندسازی دلیل. همچنین دسته‌های حساس حریم (سلامت، مالی) را از Inspection مستثنی کنید.
+
+#### هزینه
+
+رمزگشایی/رمزنگاری دوباره CPU می‌خورد؛ ظرفیت را با Baseline اندازه بگیرید (درس 16-6).
+
+#### Lab
+
+یک Policy با Inspection را تنها در Lab بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| هشدار گواهی | CA نصب نیست | توزیع |
+| برنامه شکست | Pinning | Exemption |
+| CPU بالا | Inspection | مقیاس/Exemption |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Flow یا Proxy؟** پیش‌فرض Flow.
+**۲. چرا CA؟** اعتماد.
+**۳. Pinning؟** گواهی قفل‌شده.
+
+#### English Corner
+
+- *Deep inspection requires clients to trust the inspection CA.*
+- Q: Why are some categories exempted from SSL inspection?
+
 ## درس 16-1 — نقشه‌ی UTM: Security Profileها، لایسنس FortiGuard و ماتریس قابلیت
 
 **فصل 16 · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰، ۱۲-۰، ۱۳-۱ · ≈ 6 ساعت**
@@ -30399,6 +33779,65 @@ show webfilter profile
 1. *تفاوت Static و Category؟* دستی در برابر پایگاه داده‌ی ابری.
 2. *لایسنس منقضی چه می‌شود؟* به‌روزرسانی متوقف؛ تنظیم فعلی ممکن است کار کند ولی Category جدید نه.
 3. *چرا Evidence لایسنس؟* ادعای ظرفیت بدون آن خطاست.
+
+### تکمیل عمیق: نقشه‌ی UTM و ماتریس لایسنس
+
+#### چرا؟
+
+قبل از وعده‌دادن به مدیر که «فایروال ویروس‌ها را می‌گیرد»، باید بدانید چه Profileی چه لایسنسی می‌خواهد.
+
+#### ماتریس
+
+| قابلیت | لایسنس | بدون لایسنس |
+|---|---|---|
+| Web Filter Category | FortiGuard Web Filtering | فقط Static URL |
+| Antivirus | FortiGuard AV | امضای قدیمی/غیرفعال |
+| IPS | FortiGuard IPS | امضای محدود |
+| Application Control | FortiGuard AppCtrl | امضای محدود |
+| DNS Filter | FortiGuard | محدود |
+
+(وضعیت دقیق را از مستند همان نسخه تأیید کنید.)
+
+#### مثال ساده — بررسی
+
+``` text
+get system status
+diagnose debug rating
+execute update-now
+```
+
+در GUI صفحه‌ی FortiGuard وضعیت لایسنس و آخرین به‌روزرسانی را می‌دهد.
+
+#### مثال متوسط — VM بدون لایسنس
+
+در Lab ما FortiGate VM لایسنس ندارد ⇒ Category/AV/IPS «Needs-License» و اجرا نشده؛ فقط Static URL و تنظیم Profile (Syntax) مستند می‌شود.
+
+#### مثال سخت — لایسنس منقضی
+
+لایسنس تمام شد؛ Profile هنوز روی Policy است ولی Category نمی‌تواند Rating بگیرد. رفتار پیش‌فرض (Allow/Block) را از مستند بخوانید (`rating-error` در Web Filter) و تنظیم کنید.
+
+#### Lab
+
+فهرست Profileهای شعبه‌ی خودتان با ستون لایسنس بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Category کار نمی‌کند | لایسنس/Rating | بررسی |
+| IPS قدیمی | به‌روزرسانی | update-now |
+| Log بی‌Category | rating error | تنظیم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Static URL لایسنس می‌خواهد؟** خیر.
+**۲. rating-error؟** رفتار هنگام خطای Rating.
+**۳. چرا ماتریس؟** وعده‌ی غلط.
+
+#### English Corner
+
+- *UTM features that rely on FortiGuard require an active subscription.*
+- Q: What happens to category filtering when the license expires?
 
 ## درس 16-2 — Web Filter و DNS Filter: Static URL، Category، FQDN و عیب‌یابی HTTPS
 
@@ -30599,6 +34038,68 @@ end
 2. *DoH مشکل؟* DNS Filter دور می‌خورد؛ بلاک DoH Resolverها.
 3. *Block Page روی HTTPS؟* نیازمند Inspection یا ارسال Reset.
 
+### تکمیل عمیق: Web Filter و DNS Filter — HTTPS بدون Inspection
+
+#### چرا؟
+
+بسیاری از سازمان‌ها نمی‌خواهند ترافیک را رمزگشایی کنند؛ آیا باز هم می‌توان وب را فیلتر کرد؟ بله، با SNI و DNS.
+
+#### آنچه بدون Inspection دیده می‌شود
+
+در HTTPS مسیر کامل URL رمز است؛ ولی **SNI** (نام سرور در ClientHello) دیده می‌شود. پس Domain را می‌توان مسدود کرد، ولی نه مسیر خاص (`/video/123`).
+
+#### مثال ساده — Static URL
+
+``` text
+config webfilter urlfilter
+ edit 1
+  set name "BLOCK-LIST"
+  config entries
+   edit 1
+    set url "*.example-bad.com"
+    set type wildcard
+    set action block
+   next
+  end
+ next
+end
+```
+
+#### مثال متوسط — DNS Filter
+
+پاسخ DNS را بر اساس Category تغییر/مسدود می‌کند؛ مستقل از TLS. دور زدن: DoH (DNS over HTTPS) به Resolverهای بیرونی؛ راه: مسدودکردن DoH Resolverهای شناخته‌شده یا App Control.
+
+#### مثال سخت — Block Page
+
+برای HTTPS بدون Inspection، فایروال نمی‌تواند Block Page سالم نشان دهد (گواهی نامعتبر)؛ معمولاً اتصال Reset می‌شود. با Inspection صفحه‌ی بلوک نمایش داده می‌شود.
+
+#### آزمون
+
+به https://www.example-bad.com برو ⇒ بلوک؛ Log: `utmaction=blocked`.
+
+#### Lab
+
+Static URL را بدون لایسنس تست کنید (اجرا نشده).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| مسدود نمی‌شود | wildcard | الگو |
+| DoH دور می‌زند | Resolver بیرونی | مسدود |
+| Block Page نه | بدون Inspection | Reset طبیعی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. SNI چیست؟** نام سرور.
+**۲. DNS Filter مزیت؟** مستقل از TLS.
+**۳. DoH؟** دور زدن DNS.
+
+#### English Corner
+
+- *Without inspection, the firewall can filter by SNI and DNS but not by URL path.*
+- Q: How can users bypass DNS filtering?
+
 ## درس 16-3 — Antivirus و File Filter: سازوکار، حالت‌ها و تست امن
 
 **فصل ۱۶ · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰، ۱۶-۲ · ≈ ۶ ساعت**
@@ -30764,6 +34265,74 @@ curl -O https://secure.eicar.org/eicar.com.txt
 1. *چرا EICAR؟* تست بی‌خطر.
 2. *فایل zip رمزدار؟* قابل اسکن نیست؛ Policy جدا.
 3. *AV در HTTPS؟* فقط با SSL Inspection.
+
+### تکمیل عمیق: Antivirus و File Filter
+
+#### چرا؟
+
+فایل آلوده معمولاً از وب یا ایمیل می‌آید؛ AV امضا را بررسی و File Filter نوع فایل را کنترل می‌کند.
+
+#### آزمون امن با EICAR
+
+EICAR یک فایل متنی بی‌خطر است که همه‌ی AVها آن را «ویروس تست» می‌شناسند.
+
+``` text
+curl -O https://secure.eicar.org/eicar.com.txt
+```
+
+انتظار: Block و Log `virus=EICAR_TEST_FILE`.
+
+#### مثال ساده — File Filter
+
+مسدودکردن `exe` و `scr` از اینترنت:
+
+``` text
+config file-filter profile
+ edit "FF1"
+  config rules
+   edit 1
+    set name "block-exe"
+    set protocol http https
+    set action block
+    set file-type "exe"
+   next
+  end
+ next
+end
+```
+
+(Syntax را از مستند نسخه تأیید کنید.)
+
+#### مثال متوسط — محدودیت‌ها
+
+فایل رمزدار (zip با رمز) و فایل بزرگ‌تر از Oversize Limit اسکن نمی‌شود؛ Policy برای رفتار Oversize (block/pass) را صریح بگذارید.
+
+#### مثال سخت — HTTPS
+
+بدون SSL Inspection، فایل داخل HTTPS دیده نمی‌شود؛ AV در وب رمز بی‌اثر است. با Inspection فعال می‌شود.
+
+#### Lab
+
+EICAR را در Lab با AV (در صورت لایسنس) تست کنید؛ در غیر این صورت «اجرا نشده».
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| EICAR عبور می‌کند | بدون Inspection/لایسنس | بررسی |
+| فایل بزرگ | Oversize | سیاست |
+| zip رمزدار | قابل اسکن نیست | سیاست |
+
+#### پرسش‌ها با پاسخ
+
+**۱. EICAR چیست؟** ویروس تست بی‌خطر.
+**۲. Oversize؟** فایل بزرگ‌تر از حد.
+**۳. AV در HTTPS؟** نیاز به Inspection.
+
+#### English Corner
+
+- *The EICAR test file safely validates antivirus inspection.*
+- Q: Why is an encrypted archive hard for antivirus to scan?
 
 ## درس 16-4 — IPS، DoS Policy و Application Control: سازوکار، تنظیم و FP
 
@@ -30949,6 +34518,83 @@ end
 2. *DoS بر چه چیزی؟* نرخ بسته/اتصال.
 3. *IPS روی ترافیک رمزی؟* فقط با Inspection.
 
+### تکمیل عمیق: IPS، DoS و Application Control — تنظیم و FP
+
+#### چرا؟
+
+IPS بد تنظیم‌شده یا همه‌چیز را قطع می‌کند (False Positive) یا چیزی را نمی‌گیرد. تنظیم مرحله‌ای کلید است.
+
+#### روش مرحله‌ای
+
+1. Monitor (Pass + Log) برای ۲ هفته.
+2. بررسی Logها: کدام امضاها FP هستند؟
+3. Block برای شدت بالا/بحرانی و امضاهای مطمئن.
+4. Exemption مستند برای FP با مالک و تاریخ.
+
+#### مثال ساده
+
+``` text
+config ips sensor
+ edit "IPS-SRV"
+  config entries
+   edit 1
+    set severity high critical
+    set action block
+   next
+  end
+ next
+end
+```
+
+#### مثال متوسط — DoS Policy
+
+``` text
+config firewall DoS-policy
+ edit 1
+  set interface "port1"
+  set srcaddr "all"
+  set dstaddr "VIP-WEB"
+  set service "ALL"
+  config anomaly
+   edit "tcp_syn_flood"
+    set status enable
+    set threshold 2000
+    set action block
+   next
+  end
+ next
+end
+```
+
+آستانه را از Baseline بگیرید: اگر Peak عادی SYN 500/s است، آستانه ≈ Peak × 3 = 1500–2000.
+
+#### مثال سخت — Application Control
+
+مسدودکردن P2P/Proxy-anonymizers؛ ولی بدون Inspection برنامه‌های رمز را نمی‌بیند. و `Shaper` برای محدود کردن پهنای باند برنامه‌های غیرضروری.
+
+#### Lab
+
+IPS را در Monitor بگذارید و Log را بخوانید (در صورت لایسنس).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| FP زیاد | Block زود | Monitor |
+| DoS قطع قانونی | آستانه کم | افزایش |
+| App رمز دیده نمی‌شود | Inspection | فعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Monitor اول؟** جلوگیری از قطع.
+**۲. آستانه DoS؟** Baseline × ضریب.
+**۳. Exemption؟** مستند.
+
+#### English Corner
+
+- *Start in monitor mode and tune before enforcing blocks.*
+- Q: How do you choose a DoS threshold?
+
 ## درس 16-5 — SSL Inspection عملی: ساخت CA، نصب، Exemption و آزمون
 
 **فصل ۱۶ · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰ (مفاهیم TLS/CA)، ۱۶-۲ · ≈ ۶ ساعت**
@@ -31105,6 +34751,85 @@ certutil -store Root | findstr Corp
 1. *چرا Sub-CA؟* ابطال و کنترل.
 2. *Pinning؟* Exemption.
 3. *مسائل حقوقی؟* اطلاع‌رسانی و سیاست حریم خصوصی.
+
+### تکمیل عمیق: SSL Inspection عملی — CA، توزیع و Exemption
+
+#### چرا؟
+
+بدون نصب CA روی کلاینت‌ها، Inspection صفحه‌های خطا تولید می‌کند. توزیع درست مرحله‌ی کلیدی است.
+
+#### گام‌ها
+
+1. CA مناسب: ترجیحاً Sub-CA از CA سازمان (قابل ابطال).
+2. Import به FortiGate و انتخاب در Profile.
+3. توزیع با GPO (Trusted Root).
+4. Exemption.
+5. آزمون.
+
+#### مثال ساده — GPO
+
+``` text
+certutil -dspublish -f corp-ca.cer RootCA
+gpupdate /force
+certutil -store Root | findstr Corp
+```
+
+#### مثال متوسط — Profile
+
+``` text
+config firewall ssl-ssh-profile
+ edit "deep-inspect"
+  config https
+   set ports 443
+   set status deep-inspection
+  end
+  set caname "Corp-SubCA"
+  config ssl-exempt
+   edit 1
+    set type fortiguard-category
+    set fortiguard-category <ID>
+   next
+  end
+ next
+end
+```
+
+(کد Category را از مستند بخوانید.)
+
+#### مثال سخت — Android/Linux/Java
+
+CA باید در Keystore هر پلتفرم نصب شود (Java `keytool`، Firefox Store جدا). برنامه‌های Pinning مستثنا.
+
+#### آزمون
+
+مرورگر به https://example.org ⇒ Issuer باید CA سازمان باشد.
+
+``` text
+openssl s_client -connect example.org:443 -servername example.org </dev/null | openssl x509 -noout -issuer
+```
+
+#### Lab
+
+CA آزمایشی بسازید و در یک VM نصب کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| خطای گواهی | CA نصب نشده | GPO |
+| Java شکست | Keystore | keytool |
+| بانک شکست | Pinning | Exemption |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Sub-CA؟** ابطال.
+**۲. Issuer چه می‌گوید؟** Inspection فعال.
+**۳. Keystore؟** فروشگاه گواهی.
+
+#### English Corner
+
+- *Use a revocable sub-CA for inspection rather than a self-signed root.*
+- Q: How can you verify that inspection is active from the client?
 
 ## درس 16-6 — Performance UTM، اندازه‌گیری، عیب‌یابی و آزمون عملی فصل ۱۶
 
@@ -31270,6 +34995,70 @@ iperf3 -c 10.20.0.10 -P 8 -t 30
 1. *چرا یکی‌یکی؟* تأثیر هر Profile جدا.
 2. *Offload NPU با UTM؟* کاهش می‌یابد.
 3. *بهینه‌سازی؟* Profile فقط روی Policyهای لازم.
+
+### تکمیل عمیق: اندازه‌گیری هزینه‌ی UTM
+
+#### چرا؟
+
+«UTM کند می‌کند» جمله‌ای است که بدون عدد معنایی ندارد. باید بدانید هر Profile چقدر هزینه دارد.
+
+#### روش
+
+1. Baseline بدون UTM.
+2. فعال‌کردن یک Profile و اندازه‌گیری.
+3. افزودن بعدی.
+4. ثبت CPU و Throughput.
+
+``` text
+diagnose sys top 2 20
+get system performance status
+iperf3 -c 10.20.0.10 -P 8 -t 30
+```
+
+#### جدول ثبت
+
+| حالت | Throughput | CPU |
+|---|---|---|
+| Baseline | ثبت | ثبت |
+| +AV | ثبت | ثبت |
+| +IPS | ثبت | ثبت |
+| +SSL Inspection | ثبت | ثبت |
+
+اعداد را از Lab خودتان بنویسید.
+
+#### محاسبه‌ی افت
+
+``` text
+Drop % = (baseline - measured) / baseline x 100
+(900 - 600) / 900 x 100 = 33.3 %
+```
+
+#### مثال سخت — ظرفیت
+
+اگر ۹۰٪ ترافیک رمز است و Inspection ظرفیت را به ۴۰٪ می‌رساند، برای ۱ Gbps ترافیک به مدلی با Inspection ≥ 1 Gbps نیاز دارید، نه فقط Firewall Throughput.
+
+#### Lab
+
+جدول را در Lab پر کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| افت شدید | Inspection | Exemption/مدل |
+| CPU 100٪ | بی‌Offload | Policy |
+| عدد ناپایدار | آزمون ضعیف | تکرار |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا یکی‌یکی؟** تأثیر جدا.
+**۲. افت چگونه؟** درصد.
+**۳. دیتاشیت؟** Inspection Throughput.
+
+#### English Corner
+
+- *Measure each security profile's cost separately against a baseline.*
+- Q: Why does SSL inspection throughput matter more than firewall throughput?
 
 ## درس 16-7 — کارت قابلیت هر Security Profile: چه می‌بیند، چه نمی‌بیند، هزینه و راستی‌آزمایی
 
@@ -31503,6 +35292,67 @@ diagnose debug flow filter addr 192.168.10.5
 1. *چرا ستون «چه نمی‌بیند»؟* جلوگیری از اعتماد کاذب.
 2. *Bypass چرا؟* طراحی دفاع چندلایه.
 3. *وضعیت اجرا؟* صادقانه ثبت.
+
+### تکمیل عمیق: کارت ده‌پرسشی — نمونه‌ی پر برای IPS و DNS Filter
+
+#### چرا؟
+
+هر قابلیت امنیتی باید یک «کارت» داشته باشد تا بدانید دقیقاً چه کاری می‌کند و چه کاری نمی‌کند.
+
+#### کارت IPS
+
+| # | پرسش | پاسخ |
+|---|---|---|
+| 1 | چه می‌بیند؟ | الگوهای حمله در بسته/جریان |
+| 2 | چه نمی‌بیند؟ | ترافیک رمز بدون Inspection |
+| 3 | لایسنس؟ | امضای به‌روز: بله |
+| 4 | Inspection لازم؟ | برای ترافیک رمز بله |
+| 5 | هزینه؟ | متوسط تا زیاد |
+| 6 | Bypass؟ | Tunnel رمز/Fragmentation |
+| 7 | Log؟ | attack, severity |
+| 8 | آزمون مثبت؟ | الگوی تست |
+| 9 | آزمون منفی؟ | ترافیک عادی عبور |
+| 10 | وضعیت | تأیید مستندی؛ اجرا نشده |
+
+#### کارت DNS Filter
+
+| # | پرسش | پاسخ |
+|---|---|---|
+| 1 | چه می‌بیند؟ | پرس‌وجوی DNS |
+| 2 | چه نمی‌بیند؟ | DoH/IP مستقیم |
+| 3 | لایسنس؟ | Category: بله |
+| 4 | Inspection؟ | خیر |
+| 5 | هزینه؟ | کم |
+| 6 | Bypass؟ | DoH |
+| 7 | Log؟ | domain, action |
+| 8-10 | مثبت/منفی/وضعیت | مانند بالا |
+
+#### مثال سخت — استفاده در تصمیم
+
+مدیر می‌پرسد «چرا بدون DoH Block فقط DNS Filter کافی نیست؟». کارت ستون Bypass پاسخ می‌دهد.
+
+#### Lab
+
+کارت‌های Web Filter، AV، App Control را بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| کارت ناقص | خلأ دانش | مستند |
+| Bypass نادیده | ساده‌انگاری | ستون 6 |
+| وضعیت نادرست | ادعا | صداقت |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا ستون Bypass؟** اعتماد کاذب.
+**۲. وضعیت؟** اجرا شده/مستندی.
+**۳. کارت برای هر قابلیت؟** بله.
+
+#### English Corner
+
+- *Document what each security feature cannot see as well as what it can.*
+- Q: Which bypass techniques affect DNS filtering?
 
 ## پاسخ‌های فصل 16
 
@@ -31912,6 +35762,66 @@ Group   : CN=VPN-Users,OU=Groups,DC=corp,DC=local
 2. *RADIUS یا LDAP؟* RADIUS برای VPN/Wi-Fi/MFA؛ LDAP برای جستجوی دایرکتوری.
 3. *نقطه‌ی شکست؟* DNS، ساعت (Kerberos ±5 دقیقه)، پورت 389/636.
 
+### تکمیل عمیق: AAA و هویت از درون — LDAP، Kerberos، RADIUS، FSSO
+
+#### چرا باید یاد بگیریم؟
+
+Policy بر اساس IP یعنی «این دستگاه» را کنترل می‌کنیم، نه «این انسان» را. کاربر لپ‌تاپش را عوض می‌کند، IP عوض می‌شود و Policy بی‌اثر می‌شود. هویت (Identity) Policy را به «کاربر/گروه» وصل می‌کند: «گروه مالی به ERP دسترسی دارد»، فارغ از IP.
+
+#### AAA
+
+AAA = Authentication (چه کسی هستی؟)، Authorization (چه اجازه‌ای داری؟)، Accounting (چه کردی؟).
+
+#### مثال ساده — چهار مسیر هویت
+
+| روش | کاربرد | منبع حقیقت |
+|---|---|---|
+| LDAP | جستجوی کاربر/گروه | Active Directory |
+| RADIUS | VPN، Wi-Fi، MFA | NPS/FortiAuthenticator |
+| Kerberos | SSO در Windows | KDC روی DC |
+| FSSO | شناسایی بدون Login جدا | رویدادهای DC |
+
+#### مثال متوسط — جریان LDAP
+
+``` text
+1 user submits username/password to FortiGate (portal/VPN)
+2 FortiGate binds with service account
+3 search (sAMAccountName=ali) under Base DN
+4 verify password (bind as user) or compare
+5 read memberOf -> match user group -> policy
+```
+
+#### مثال سخت — FSSO و Kerberos
+
+کاربر وارد ویندوز می‌شود؛ DC رویداد 4768 (TGT) یا 4624 را ثبت می‌کند؛ Collector آن را می‌خواند و جدول IP↔User را برای FortiGate می‌فرستد. ساعت‌ها باید حداکثر ۵ دقیقه اختلاف داشته باشند (Kerberos).
+
+#### نکته‌ی امنیتی
+
+حساب سرویس LDAP حداقل دسترسی (فقط خواندن)؛ هرگز Domain Admin. ارتباط LDAPS (636) با گواهی معتبر.
+
+#### Lab
+
+نقشه‌ی جریان یک ورود را روی کاغذ بکشید و محل شکست‌های ممکن را علامت بزنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Bind شکست | DN/رمز | بررسی |
+| Group match نه | Base DN | تصحیح |
+| FSSO خالی | رویداد نمی‌رسد | Collector |
+
+#### پرسش‌ها با پاسخ
+
+**۱. AAA یعنی؟** هویت، مجوز، حسابداری.
+**۲. چرا حساب سرویس کم‌دسترسی؟** حمله به Bind.
+**۳. FSSO چه فایده؟** Policy کاربری بدون Login اضافه.
+
+#### English Corner
+
+- *Identity-based policies follow the user, not the IP address.*
+- Q: Why must the LDAP service account have minimal privileges?
+
 ## درس 17-1 — آماده‌سازی Lab هویت: Active Directory، DNS، OU، گروه و حساب سرویس روی Windows Server
 
 **فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، Golden_W2025_Runbook · ≈ 6 ساعت**
@@ -32070,6 +35980,66 @@ w32tm /query /status
 1. *چرا کمترین مجوز؟* حمله به حساب Bind.
 2. *LDAPS؟* 636 با گواهی.
 3. *مشکل ساعت؟* Kerberos شکست.
+
+### تکمیل عمیق: آماده‌سازی Lab هویت با AD — چک‌لیست سلامت
+
+#### چرا؟
+
+اگر AD ناسالم باشد (DNS خراب، ساعت اشتباه)، هر آزمون هویت شکست می‌خورد و علت را در FortiGate می‌گردید. اول سلامت پایه را بسنجید.
+
+#### آزمون‌های سلامت
+
+``` text
+dcdiag /v
+repadmin /replsummary
+nslookup -type=SRV _ldap._tcp.corp.local
+w32tm /query /status
+```
+
+انتظار: dcdiag همه Passed، رکورد SRV برگردد، ساعت درست.
+
+#### ساخت ساختار
+
+``` text
+OU=Groups ; OU=Service ; OU=Users
+Group VPN-Users ; Group FIN-ERP
+User svc-fgt-ldap (read-only, password never expires, no interactive logon)
+```
+
+#### مثال متوسط — اعطای حداقل دسترسی
+
+حساب `svc-fgt-ldap` را فقط عضو Domain Users نگه دارید؛ خواندن Directory به‌صورت پیش‌فرض برای کاربران معتبر مجاز است.
+
+#### مثال سخت — LDAPS
+
+``` text
+openssl s_client -connect dc1.corp.local:636 -showcerts </dev/null
+```
+
+گواهی باید با CA مورد اعتماد FortiGate امضا شده باشد؛ وگرنه Bind شکست می‌خورد.
+
+#### Lab
+
+یک AD Lab با دو کاربر و دو گروه بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| SRV نیست | DNS | رفع |
+| Kerberos خطا | ساعت | NTP |
+| LDAPS شکست | گواهی | CA |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا SRV؟** کشف DC.
+**۲. چرا NTP؟** Kerberos.
+**۳. چرا LDAPS؟** رمزنگاری.
+
+#### English Corner
+
+- *Verify DNS and time before troubleshooting authentication.*
+- Q: Why create a dedicated read-only service account?
 
 ## درس 17-2 — LDAP در FortiGate و Policy بر اساس گروه: Bind، Search، User Group و آزمون
 
@@ -32250,6 +36220,82 @@ diagnose test authserver ldap AD ali Pass123
 2. *گروه تو در تو؟* حالت Recursive.
 3. *رمز در Log؟* هرگز.
 
+### تکمیل عمیق: LDAP در FortiGate و Policy گروهی
+
+#### چرا؟
+
+یک تنظیم کوچک اشتباه (Base DN، cnid) باعث می‌شود Auth موفق شود ولی Policy مچ نکند.
+
+#### مثال ساده — تعریف سرور
+
+``` text
+config user ldap
+ edit "AD"
+  set server "10.20.0.5"
+  set cnid "sAMAccountName"
+  set dn "DC=corp,DC=local"
+  set type regular
+  set username "CN=svc-fgt-ldap,OU=Service,DC=corp,DC=local"
+  set password ***
+  set secure ldaps
+  set port 636
+ next
+end
+```
+
+#### مثال متوسط — گروه و Policy
+
+``` text
+config user group
+ edit "G-VPN"
+  set member "AD"
+  config match
+   edit 1
+    set server-name "AD"
+    set group-name "CN=VPN-Users,OU=Groups,DC=corp,DC=local"
+   next
+  end
+ next
+end
+```
+
+سپس در Policy: `set groups "G-VPN"`.
+
+#### آزمون
+
+``` text
+diagnose test authserver ldap AD ali Pass123
+```
+
+نتیجه: `authenticate ... succeeded` و گروه‌های کاربر.
+
+#### مثال سخت — گروه تو در تو
+
+کاربر عضو گروه B است و B عضو A. Policy روی A مچ نمی‌کند چون `memberOf` مستقیم است. راه: Recursive Match (`set search-type recursive` یا استفاده از OID `1.2.840.113556.1.4.1941`) در Filter.
+
+#### Lab
+
+یک کاربر را در گروه تو در تو بگذارید و رفتار را مشاهده کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Bind ok، Group نه | DN گروه | تصحیح |
+| Auth شکست | رمز | بررسی |
+| تو در تو | Recursive | فعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. cnid؟** ویژگی نام کاربری.
+**۲. چرا Recursive؟** گروه تو در تو.
+**۳. test authserver؟** تست مستقل از Policy.
+
+#### English Corner
+
+- *Nested groups need a recursive match to be honored by the policy.*
+- Q: What does the cnid attribute define?
+
 ## درس 17-3 — RADIUS و NPS، احراز هویت چندعاملی (MFA) و Attributeها
 
 **فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، ۱۷-۲ · ≈ 6 ساعت**
@@ -32411,6 +36457,73 @@ MFA: NPS Extension یا FortiAuthenticator/FortiToken (Needs-License). **خطا�
 2. *چرا Timeout بیشتر با MFA؟* زمان واکنش کاربر.
 3. *Accounting؟* پورت 1813.
 
+### تکمیل عمیق: RADIUS، NPS و MFA
+
+#### چرا؟
+
+VPN و Wi-Fi معمولاً RADIUS می‌خواهند؛ با NPS (Network Policy Server در ویندوز) و MFA امن‌تر می‌شود.
+
+#### جریان
+
+``` text
+FortiGate (NAS) -> Access-Request (UDP 1812) -> NPS -> AD check
+NPS -> Access-Accept (+attributes) or Access-Reject
+```
+
+نقش‌ها: NAS = Network Access Server (فایروال)، Shared Secret بین NAS و NPS.
+
+#### مثال ساده
+
+``` text
+config user radius
+ edit "NPS"
+  set server "10.20.0.6"
+  set secret ***
+  set timeout 10
+  set nas-ip 10.50.0.1
+ next
+end
+```
+
+#### مثال متوسط — آزمون
+
+``` text
+diagnose test authserver radius NPS pap ali pass
+```
+
+در NPS لاگ ویندوز Event 6272 (موفق) / 6273 (رد) با Reason Code بخوانید.
+
+#### مثال سخت — MFA
+
+با NPS Extension یا FortiAuthenticator/FortiToken: پس از رمز، RADIUS **Access-Challenge** با درخواست OTP می‌فرستد. Timeout را بیشتر کنید (کاربر وقت می‌خواهد).
+
+#### Attribute
+
+با Attribute می‌توان گروه را برگرداند (مثلاً `Fortinet-Group-Name`) و در Policy استفاده کرد.
+
+#### Lab
+
+NPS را با یک Client و یک Policy بسازید؛ اجرا نشده تا اطلاع بعدی.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Reject (reason 16) | Secret/Credential | یکسان |
+| Timeout | پورت/Firewall | 1812 |
+| OTP شکست | زمان | NTP |
+
+#### پرسش‌ها با پاسخ
+
+**۱. NAS چیست؟** سرور دسترسی شبکه.
+**۲. Access-Challenge؟** درخواست مرحله‌ی بعد.
+**۳. Event 6273؟** رد شدن.
+
+#### English Corner
+
+- *RADIUS Access-Challenge carries the second authentication factor.*
+- Q: Where do you find the reason a user was rejected on NPS?
+
 ## درس 17-4 — FSSO عملی: انتخاب حالت، پیکربندی، Group Filter و عیب‌یابی
 
 **فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، ۱۷-۲ · ≈ 6 ساعت**
@@ -32571,6 +36684,69 @@ diagnose debug authd fsso server-status
 2. *محدودیت؟* IP-مبنا؛ Multi-user در یک IP.
 3. *Workstation Check؟* اعتبارسنجی ورود.
 
+### تکمیل عمیق: FSSO — انتخاب حالت و عیب‌یابی
+
+#### چرا؟
+
+کاربر وارد ویندوز می‌شود و انتظار دارد بدون Login دوم از فایروال رد شود. FSSO (Fortinet Single Sign-On) این را ممکن می‌کند.
+
+#### حالت‌ها
+
+| حالت | کار | مناسب |
+|---|---|---|
+| Collector Agent + DC Agent | نصب روی ویندوز | سازمان‌های بزرگ |
+| Agentless (Polling) | FortiGate DC را می‌خواند | Lab/کوچک |
+
+#### مثال ساده — Agentless
+
+``` text
+config user fsso-polling
+ edit 1
+  set server "10.20.0.5"
+  set user "corp\\svc-fsso"
+  set ldap-server "AD"
+ next
+end
+```
+
+#### مثال متوسط — Group Filter
+
+فقط گروه‌هایی که در Policy لازم‌اند را بخوانید؛ بدون Filter، Collector سنگین و جدول بزرگ می‌شود.
+
+#### بررسی
+
+``` text
+diagnose debug authd fsso list
+diagnose debug authd fsso server-status
+```
+
+#### مثال سخت — Terminal Server
+
+چند کاربر پشت یک IP (RDS/Citrix): FSSO فقط یک کاربر را می‌بیند. راه: TS Agent با تفکیک بر اساس پورت.
+
+#### Lab
+
+FSSO را با یک DC Lab تست کنید و جدول را بخوانید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| کاربر نمی‌آید | Event نمی‌رسد | دسترسی Log |
+| گروه ناقص | Filter | تصحیح |
+| TS | یک IP | TS Agent |
+
+#### پرسش‌ها با پاسخ
+
+**۱. FSSO چه حل می‌کند؟** Policy کاربری بی‌Login دوم.
+**۲. Group Filter؟** سبک‌سازی.
+**۳. TS Agent؟** چندکاربره.
+
+#### English Corner
+
+- *FSSO maps IP addresses to users from domain controller events.*
+- Q: Why does a terminal server need a dedicated agent?
+
 ## درس 17-5 — Captive Portal، مهمان و Firewall Authentication: طراحی ایمن Guest
 
 **فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، ۱۱-۰ · ≈ 6 ساعت**
@@ -32721,6 +36897,70 @@ Policy GUEST->INTERNAL  deny log
 2. *Client Isolation؟* مهمان‌ها همدیگر را نبینند.
 3. *انقضا؟* حساب موقت خودکار.
 
+### تکمیل عمیق: Captive Portal و Guest امن
+
+#### چرا؟
+
+مهمان باید اینترنت داشته باشد ولی به شبکه‌ی داخلی دسترسی نه. Captive Portal هویت را (حتی ساده) ثبت می‌کند.
+
+#### طراحی
+
+``` text
+GUEST VLAN -> Policy GUEST->INTERNET (HTTP/HTTPS/DNS, nat, utm, captive-portal)
+GUEST -> INTERNAL : deny log
+Client isolation, bandwidth limit, account expiry
+```
+
+#### مثال ساده — Policy
+
+``` text
+config firewall policy
+ edit 300
+  set name "GUEST-NET"
+  set srcintf "port-guest"
+  set dstintf "port1"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "HTTP" "HTTPS" "DNS"
+  set action accept
+  set nat enable
+  set groups "G-GUEST"
+  set logtraffic all
+ next
+end
+```
+
+#### مثال متوسط — آزمون
+
+مهمان به 10.20.0.10 ⇒ Timeout؛ به اینترنت ⇒ پس از Portal باز.
+
+#### مثال سخت — حریم و قانون
+
+ثبت هویت و Log مطابق قانون محلی؛ مدت نگهداری، دسترسی و رضایت کاربر را با بخش حقوقی مشخص کنید.
+
+#### Lab
+
+Portal را در Lab با یک حساب مهمان موقت بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Portal نمی‌آید | HTTPS Redirect | Policy |
+| دسترسی داخلی | Policy | Deny |
+| حساب منقضی نمی‌شود | تنظیم | expiry |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Client isolation؟** مهمان‌ها همدیگر را نبینند.
+**۲. چرا Log؟** ردیابی.
+**۳. چرا انقضا؟** حساب‌های موقت.
+
+#### English Corner
+
+- *Guest networks must be isolated from internal resources.*
+- Q: What controls would you apply to a guest portal?
+
 ## درس 17-6 — آزمون عملی هویت و عیب‌یابی Authentication: سه پرونده‌ی واقعی با شواهد، کلید و Rubric
 
 **فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰ تا ۱۷-۵، ۱۷-۷، ۱۴-۷ · ≈ 8 ساعت**
@@ -32863,6 +37103,62 @@ diagnose firewall auth list              -> user ali, group (empty)
 1. *چرا Auth موفق ولی Policy نه؟* Group Mapping.
 2. *firewall auth list؟* کاربران فعال.
 3. *Timeout Auth؟* `auth-timeout`.
+
+### تکمیل عمیق: آزمون عملی هویت — سه پرونده با Rubric
+
+#### چرا؟
+
+این آزمون سه مشکل واقعی هویت را می‌سنجد.
+
+#### پرونده ۱ — Auth موفق، Policy نه
+
+``` text
+diagnose test authserver ldap AD ali pass -> succeeded
+diagnose firewall auth list -> user ali, group (none)
+```
+
+علت: Group Match اشتباه ⇒ تصحیح `group-name` و آزمون.
+
+#### پرونده ۲ — RADIUS Reject
+
+NPS Event 6273 Reason 16 ⇒ Secret یا Credential؛ Secret یکسان.
+
+#### پرونده ۳ — FSSO خالی
+
+Collector Event نمی‌گیرد ⇒ مجوز خواندن Event Log DC؛ تصحیح.
+
+#### Rubric
+
+``` text
+Diagnosis 30 | Evidence 30 | Fix 20 | Negative test 10 | Honesty 10
+```
+
+#### مثال سخت — دو علت
+
+پس از رفع Secret، کاربر وصل شد ولی Policy نه: دو علت جدا، یکی‌یکی.
+
+#### Lab
+
+سه پرونده را ایجاد و رفع کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| چندعلتی | هم‌زمان | یکی‌یکی |
+| Evidence ناقص | ثبت | الگو |
+| Lockout | آزمون زیاد | حساب تست |
+
+#### پرسش‌ها با پاسخ
+
+**۱. firewall auth list؟** کاربران فعال.
+**۲. Reason 16؟** Credential/Secret.
+**۳. چرا حساب تست؟** جلوگیری از Lockout.
+
+#### English Corner
+
+- *Use a dedicated test account to avoid locking real users.*
+- Q: How do you confirm a user is mapped to the right group?
 
 ## درس 17-7 — عیب‌یابی Authentication بر اساس شواهد: از Bind تا Policy (LDAP، RADIUS، FSSO)
 
@@ -33043,6 +37339,59 @@ User cannot login
 1. *اول چه؟* دسترسی شبکه به سرور.
 2. *چرا Log سرور مقابل؟* دلیل رد (NPS 6273، AD 4625).
 3. *Lockout؟* آزمون با حساب تست.
+
+### تکمیل عمیق: درخت تصمیم عیب‌یابی Authentication
+
+#### چرا؟
+
+عیب‌یابی هویت لایه‌لایه است؛ یک درخت تصمیم زمان را کم می‌کند.
+
+#### درخت
+
+``` text
+User cannot login
+ 1 network to auth server? (ping, port 389/636/1812)    no -> network/firewall
+ 2 bind/secret ok? (diagnose test authserver)           no -> DN/secret/cert
+ 3 user found?                                          no -> Base DN / filter
+ 4 group matched? (diagnose firewall auth list)         no -> group mapping
+ 5 policy hit? (iprope lookup / log)                    no -> policy order
+ 6 MFA ok?                                              no -> time / token
+```
+
+#### مثال ساده
+
+گام ۱: `nc -zv 10.20.0.5 636` ⇒ باز ⇒ گام ۲.
+
+#### مثال متوسط — خواندن Log دو سمت
+
+FortiGate: `diagnose debug application fnbamd -1`؛ سرور: AD Event 4625 (ورود ناموفق).
+
+#### مثال سخت — Lockout
+
+حساب سرویس به‌دلیل رمز اشتباه قفل شد؛ همه‌ی ورودی‌ها شکست. شاهد: Event 4740. رفع: Unlock، رمز صحیح، رمز در Vault.
+
+#### Lab
+
+درخت را روی ۳ خرابی تمرین کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| همه شکست | حساب سرویس | Unlock |
+| بعضی شکست | گروه | تصحیح |
+| MFA | ساعت | NTP |
+
+#### پرسش‌ها با پاسخ
+
+**۱. اولین گام؟** شبکه به سرور.
+**۲. 4740؟** قفل شدن حساب.
+**۳. fnbamd؟** Debug Authentication.
+
+#### English Corner
+
+- *Work through authentication problems from the network layer upward.*
+- Q: What does Windows event 4740 indicate?
 
 ## پاسخ‌های فصل 17
 
@@ -33527,6 +37876,84 @@ get vpn ipsec tunnel summary
 2. *NAT-T چه موقع؟* دستگاه پشت NAT؛ UDP/4500.
 3. *PFS؟* کلید جدید برای Phase2.
 
+### تکمیل عمیق: IPsec از درون — IKE، SA، Selector و Rekey با مثال
+
+#### چرا باید یاد بگیریم؟
+
+IPsec را بسیاری با «کپی کردن پیکربندی» برپا می‌کنند و وقتی بالا نیامد، نمی‌دانند از کجا شروع کنند. درک مراحل داخلی، عیب‌یابی را از «حدس» به «خواندن پیام» تبدیل می‌کند.
+
+#### توضیح ساده
+
+IPsec دو مرحله دارد:
+
+1. **IKE SA (Phase 1)**: دو سر یکدیگر را احراز هویت می‌کنند و یک کانال امن برای مذاکره می‌سازند.
+2. **Child SA / IPsec SA (Phase 2)**: روی همان کانال، پارامترهای رمزنگاری داده و Selector (چه ترافیکی محافظت شود) توافق می‌شود.
+
+IKE = Internet Key Exchange، یعنی «تبادل کلید اینترنتی». SA = Security Association، یعنی «تفاهم امنیتی» بین دو سر.
+
+#### مثال ساده — لایه‌های عیب‌یابی
+
+``` text
+L1 reachability : UDP/500 (and 4500 for NAT-T) reachable?
+L2 IKE SA       : diagnose vpn ike gateway list
+L3 Child SA     : diagnose vpn tunnel list
+L4 route/policy : route to remote subnet + policy both ways
+L5 data         : counters enc/dec increase
+```
+
+#### مثال متوسط — نشانه‌ها
+
+- Gateway ندارید ⇒ Reachability/PSK/نسخه‌ی IKE.
+- Gateway هست ولی Tunnel Down ⇒ Proposal/Selector Phase2.
+- Tunnel Up ولی ping نه ⇒ Route/Policy.
+- Tunnel Up ولی فقط `enc` افزایش می‌یابد، `dec` نه ⇒ طرف مقابل رمزگشایی نمی‌کند (Policy/Route آن سمت).
+
+#### Rekey
+
+کلیدها محدود زمانی دارند؛ قبل از انقضا کلید جدید ساخته می‌شود تا قطع نشود.
+
+``` text
+keylife 43200 s = 12 hours
+Rekey margin ~ a few minutes before expiry
+```
+
+اگر دو سر Lifetime متفاوت دارند، هرکدام زودتر منقضی شود Rekey را آغاز می‌کند؛ بهتر است یکسان باشند.
+
+#### PFS
+
+Perfect Forward Secrecy یعنی برای هر Child SA، DH جدید انجام شود تا لو رفتن یک کلید، کلیدهای دیگر را لو ندهد.
+
+#### NAT-T
+
+اگر یکی از دو سر پشت NAT باشد، ESP روی UDP/4500 کپسوله می‌شود.
+
+#### مثال سخت — شکست متناوب
+
+Tunnel هر ۸ ساعت یک بار برای چند ثانیه قطع می‌شود: Lifetime Phase1 متفاوت و Rekey Collision. رفع: یکسان‌سازی و فعال‌بودن `auto-negotiate`.
+
+#### Lab
+
+دو FortiGate (یا FGT و CSR) را با Proposal یکسان بسازید و سپس عمداً یک پارامتر را عوض کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| no proposal chosen | رمز | یکسان |
+| AUTH_FAILED | PSK/ID | یکسان |
+| TS_UNACCEPTABLE | Selector | یکسان |
+
+#### پرسش‌ها با پاسخ
+
+**۱. تفاوت Phase1 و 2؟** هویت/کانال در برابر داده.
+**۲. PFS چیست؟** DH جدید برای هر SA.
+**۳. NAT-T؟** کپسوله روی UDP/4500.
+
+#### English Corner
+
+- *Phase 1 authenticates the peers; phase 2 negotiates the data protection.*
+- Q: What does perfect forward secrecy protect against?
+
 ## درس 18-1 — IPsec در عمل: از نیاز تا طراحی — Proposal، شبکه‌ها و برگه‌ی پارامتر
 
 **فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۵-۰ · ≈ 5 ساعت**
@@ -33676,6 +38103,63 @@ diagnose vpn ike gateway list
 1. *چرا برگه؟* جلوگیری از Mismatch.
 2. *DH 14 چرا؟* حداقل ایمن قابل قبول (۲۰۴۸ بیت).
 3. *IKEv1 یا v2؟* v2 ترجیح.
+
+### تکمیل عمیق: طراحی IPsec — برگه‌ی پارامتر دو سر
+
+#### چرا؟
+
+بیشتر «Tunnel بالا نمی‌آید»ها به ناهمخوانی یک پارامتر برمی‌گردد. برگه‌ی طراحی، قبل از دست‌بردن به CLI، ناهمخوانی را آشکار می‌کند.
+
+#### برگه‌ی نمونه
+
+| پارامتر | سایت A | سایت B | هم‌خوان؟ |
+|---|---|---|---|
+| IKE نسخه | 2 | 2 | بله |
+| رمزنگاری | AES256 | AES256 | بله |
+| Integrity | SHA256 | SHA256 | بله |
+| DH | 14 | 14 | بله |
+| Keylife P1 | 28800 | 28800 | بله |
+| Local subnet | 10.1.0.0/24 | 10.2.0.0/24 | — |
+| PSK | Vault | Vault | بله |
+
+#### مثال ساده — انتخاب پارامتر
+
+AES256 + SHA256 + DH14 (۲۰۴۸ بیت) حداقل مناسب؛ DH 19/20/21 (ECP) سریع‌تر و امن. پارامترهای ضعیف (DES، MD5، DH 1/2/5) را کنار بگذارید.
+
+#### مثال متوسط — PSK
+
+PSK باید تصادفی و بلند باشد (≥ 32 نویسه) و در Vault نگه‌داری شود؛ هرگز در ریپو یا ایمیل.
+
+``` text
+openssl rand -base64 32
+```
+
+#### مثال سخت — شبکه‌های هم‌پوشان
+
+دو سایت هر دو 192.168.1.0/24 دارند؛ IPsec مسیر مبهم می‌شود. راه: NAT ایستا ۱:۱ روی Tunnel (مثلاً سایت B به 10.222.1.0/24 ترجمه شود) یا Renumber.
+
+#### Lab
+
+برگه را برای دو سایت خودتان پر کنید و با همکار مقابله کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| تونل بالا نمی‌آید | ناهمخوانی | برگه |
+| Overlap | IP | NAT/Renumber |
+| PSK لو رفت | نگهداری | Rotate |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا برگه؟** قبل از CLI ناهمخوانی دیده شود.
+**۲. PSK چگونه؟** تصادفی، بلند، Vault.
+**۳. Overlap؟** NAT یا Renumber.
+
+#### English Corner
+
+- *Agree on all IKE and IPsec parameters on paper before configuring.*
+- Q: How do you build a tunnel between two sites with overlapping subnets?
 
 ## درس 18-2 — ساخت Tunnel Site-to-Site بین دو FortiGate: طراحی، GUI، CLI و Verification
 
@@ -33887,6 +38371,87 @@ end
 2. *Route ناقص؟* ترافیک از Tunnel نمی‌رود.
 3. *کانتر صفر؟* ترافیک اصلاً وارد نمی‌شود.
 
+### تکمیل عمیق: ساخت Tunnel Site-to-Site — GUI، CLI و اثبات
+
+#### چرا؟
+
+یک Tunnel وقتی «ساخته شده» است که هم Phase1/2 بالا باشد، هم Route و Policy درست و هم ترافیک عبور کند و شمارنده‌ها افزایش یابند.
+
+#### مراحل
+
+1. Phase1 (Interface-based).
+2. Phase2 و Selector.
+3. Static Route یا Routing پویا به Interface Tunnel.
+4. Policy دوطرفه.
+5. آزمون.
+
+#### مثال ساده — CLI
+
+``` text
+config vpn ipsec phase1-interface
+ edit "TO-B"
+  set interface "port1"
+  set ike-version 2
+  set remote-gw 198.51.100.2
+  set proposal aes256-sha256
+  set dhgrp 14
+  set psk ENC ***
+ next
+end
+config vpn ipsec phase2-interface
+ edit "TO-B-P2"
+  set phase1name "TO-B"
+  set proposal aes256-sha256
+  set src-subnet 10.1.0.0 255.255.255.0
+  set dst-subnet 10.2.0.0 255.255.255.0
+ next
+end
+config router static
+ edit 100
+  set dst 10.2.0.0 255.255.255.0
+  set device "TO-B"
+ next
+end
+```
+
+#### مثال متوسط — Policy
+
+دو Policy: `LAN -> TO-B` و `TO-B -> LAN`، سرویس و Log مشخص؛ NAT خاموش (ترافیک بین شبکه‌های خصوصی بدون NAT).
+
+#### مثال سخت — اثبات
+
+``` text
+diagnose vpn ike gateway list
+diagnose vpn tunnel list
+execute ping-options source 10.1.0.1
+execute ping 10.2.0.1
+```
+
+شمارنده‌ی `enc pkts` و `dec pkts` باید افزایش یابد؛ اگر فقط یکی، Policy/Route سمت مقابل را بررسی کنید.
+
+#### Lab
+
+دو FortiGate VM (یا یک FGT و یک CSR) را وصل و اثبات را ثبت کنید (اجرا نشده تا اطلاع بعدی).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| تونل Up بدون ترافیک | Route | افزودن |
+| فقط enc | Policy مقابل | افزودن |
+| ping از LAN نه | NAT فعال | غیرفعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Policy دوطرفه؟** هر جهت مجوز می‌خواهد.
+**۲. NAT چرا خاموش؟** شبکه‌های خصوصی.
+**۳. enc بدون dec؟** مشکل سمت مقابل.
+
+#### English Corner
+
+- *If only the encrypted counter increases, check the remote side.*
+- Q: Why disable NAT on the tunnel policy?
+
 ## درس 18-3 — عیب‌یابی IPsec با Debug IKE: خواندن پیام‌ها و تصمیم‌گیری لایه‌ای
 
 **فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۱، ۱۸-۲ · ≈ 11 ساعت**
@@ -34055,6 +38620,72 @@ diagnose debug enable
 1. *Debug چه خطری؟* بار CPU و Log زیاد.
 2. *فیلتر چرا؟* فقط Peer هدف.
 3. *AUTH_FAILED؟* PSK/Identity.
+
+### تکمیل عمیق: Debug IKE — خواندن پیام‌ها
+
+#### چرا؟
+
+پیام‌های Debug IKE دقیقاً می‌گویند چرا مذاکره شکست خورد؛ فقط باید زبانش را بدانید.
+
+#### راه‌اندازی ایمن
+
+``` text
+diagnose vpn ike log filter clear
+diagnose vpn ike log filter rem-addr4 198.51.100.2
+diagnose debug application ike -1
+diagnose debug enable
+```
+
+فیلتر روی Peer هدف؛ پایان: `diagnose debug disable` و `diagnose debug reset`.
+
+#### جدول پیام‌ها
+
+| پیام | معنی | رفع |
+|---|---|---|
+| no proposal chosen | Proposal ناهمخوان | یکسان |
+| AUTHENTICATION_FAILED | PSK/ID | یکسان |
+| TS_UNACCEPTABLE | Selector ناهمخوان | یکسان |
+| peer ... not responding | Reachability/Firewall | UDP 500 |
+| INVALID_KE_PAYLOAD | DH ناهمخوان | یکسان |
+
+#### مثال ساده
+
+خروجی: `negotiation failure ... no proposal chosen`. فوراً Proposal دو سر را مقایسه کنید.
+
+#### مثال متوسط — نبود پاسخ
+
+فقط پیام‌های ارسال بدون دریافت: ISP یا فایروال بین راه UDP/500 را مسدود کرده؛ با Sniffer ببینید.
+
+``` text
+diagnose sniffer packet port1 'host 198.51.100.2 and udp port 500' 4 10 l
+```
+
+#### مثال سخت — NAT-T
+
+پس از IKE_SA موفق، ESP قطع است: UDP/4500 مسدود. با Sniffer روی 4500 بررسی کنید.
+
+#### Lab
+
+PSK را عمداً متفاوت و پیام AUTH_FAILED را مشاهده کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Debug سنگین | بی‌فیلتر | فیلتر |
+| پیام نمی‌آید | Reachability | Sniffer |
+| ESP قطع | 4500 | باز کردن |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا فیلتر؟** CPU.
+**۲. TS_UNACCEPTABLE؟** Selector.
+**۳. NAT-T پورت؟** 4500.
+
+#### English Corner
+
+- *Filter IKE debug to one peer to keep the output readable.*
+- Q: What does a no-proposal-chosen error tell you?
 
 ## درس 18-4 — MTU/MSS و Fragmentation در Tunnel IPsec: محاسبه‌ی سربار، آزمون DF، PMTUD و تنظیم
 
@@ -34251,6 +38882,72 @@ TCP MSS            = 1427 - 40 = 1387  (use 1360 for margin)
 2. *DF bit؟* ممنوعیت Fragment.
 3. *PMTUD Blackhole؟* ICMP مسدود.
 
+### تکمیل عمیق: MTU/MSS در Tunnel — محاسبه و آزمون DF
+
+#### چرا؟
+
+IPsec سربار اضافه می‌کند؛ بسته‌ی ۱۵۰۰ بایتی بعد از کپسوله‌شدن بزرگ‌تر از MTU لینک می‌شود. نتیجه: «سایت باز می‌شود ولی تصاویر نه» یا «ping کار می‌کند ولی HTTPS نه».
+
+#### محاسبه‌ی سربار
+
+``` text
+ESP tunnel mode overhead ~ 50-73 bytes (IP 20 + ESP 8 + IV 16 + pad + ICV 12-32)
+Link MTU 1500 -> inner MTU ~ 1427 (conservative)
+TCP MSS = inner MTU - 40 = ~1387 ; use 1360 for margin
+```
+
+عدد دقیق به الگوریتم بستگی دارد؛ همیشه با آزمون اندازه بگیرید.
+
+#### آزمون DF
+
+``` text
+ping -f -l 1472 10.2.0.1   (Windows: -f = Don't Fragment)
+ping -f -l 1400 10.2.0.1
+ping -M do -s 1400 10.2.0.1   (Linux)
+```
+
+بزرگ‌ترین اندازه‌ای که جواب می‌دهد + 28 = MTU مسیر.
+
+#### مثال متوسط — رفع با MSS Clamp
+
+``` text
+config firewall policy
+ edit 100
+  set tcp-mss-sender 1360
+  set tcp-mss-receiver 1360
+ next
+end
+```
+
+یا کاهش MTU Interface Tunnel: `set mtu 1400` با `mtu-ignore` طبق نیاز.
+
+#### مثال سخت — ICMP مسدود
+
+PMTUD به ICMP «Fragmentation Needed» وابسته است؛ اگر ICMP در مسیر مسدود باشد، فرستنده نمی‌فهمد و Blackhole رخ می‌دهد. رفع: MSS Clamp (چون روی SYN) و باز کردن ICMP Type 3 Code 4.
+
+#### Lab
+
+Path MTU را با ping اندازه بگیرید و MSS را محاسبه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| HTTPS قطع‌قطع | MTU | Clamp |
+| ping بزرگ رد | Fragmentation | MTU Tunnel |
+| ICMP مسدود | PMTUD | باز کردن |
+
+#### پرسش‌ها با پاسخ
+
+**۱. MSS از کجا؟** MTU منهای هدرها.
+**۲. چرا ping کار می‌کند ولی HTTPS نه؟** اندازه‌ی بسته.
+**۳. Clamp روی؟** SYN.
+
+#### English Corner
+
+- *MSS clamping works on the TCP SYN and avoids dependence on PMTUD.*
+- Q: How do you find the path MTU with ping?
+
 ## درس 18-5 — Interop FGT–CSR: IPsec IKEv2 route-based، نگاشت، Debug دوطرفه و آزمون Rekey
 
 **فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۲۵-۰، ۲۵-۳ · ≈ 8 ساعت**
@@ -34439,6 +39136,82 @@ crypto ikev2 keyring KR
 1. *چرا Route-based؟* Routing پویا.
 2. *Selector 0.0.0.0/0؟* با VTI رایج.
 3. *Debug دوطرفه؟* دو سر هم‌زمان.
+
+### تکمیل عمیق: Interop FortiGate–Cisco CSR با IKEv2 Route-based
+
+#### چرا؟
+
+در دنیای واقعی IPsec اغلب بین دو سازنده است. اگر مفهوم را بدانید فقط Syntax عوض می‌شود.
+
+#### پیکربندی Cisco (VTI)
+
+``` text
+crypto ikev2 proposal P1
+ encryption aes-cbc-256
+ integrity sha256
+ group 14
+crypto ikev2 policy POL1
+ proposal P1
+crypto ikev2 keyring KR
+ peer FGT
+  address 203.0.113.2
+  pre-shared-key local ***
+  pre-shared-key remote ***
+crypto ikev2 profile PROF
+ match identity remote address 203.0.113.2 255.255.255.255
+ authentication remote pre-share
+ authentication local pre-share
+ keyring local KR
+crypto ipsec transform-set TS esp-aes 256 esp-sha256-hmac
+ mode tunnel
+crypto ipsec profile IPS
+ set transform-set TS
+ set ikev2-profile PROF
+interface Tunnel0
+ ip address 10.99.0.2 255.255.255.252
+ tunnel source GigabitEthernet1
+ tunnel destination 203.0.113.2
+ tunnel mode ipsec ipv4
+ tunnel protection ipsec profile IPS
+```
+
+سمت FortiGate: Phase1/Phase2 Route-based با Selector 0.0.0.0/0 (VTI معمولاً با Selector کامل کار می‌کند).
+
+#### مثال متوسط — اثبات
+
+``` text
+Cisco: show crypto ikev2 sa ; show crypto ipsec sa | include pkts
+FGT  : diagnose vpn ike gateway list ; diagnose vpn tunnel list
+```
+
+شمارنده‌ها در هر دو سر باید هم‌خوان و افزایشی باشند.
+
+#### مثال سخت — اختلاف Selector
+
+Cisco VTI با Selector any/any و FGT با Selector محدود ⇒ TS_UNACCEPTABLE. رفع: FGT را 0.0.0.0/0 یا Cisco را محدود.
+
+#### Lab
+
+یک CSR و یک FGT VM در PNETLab؛ تغییر ندادن تجهیز واقعی؛ اجرا نشده.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| SA بالا ولی ping نه | Route روی Tunnel0 | افزودن |
+| TS_UNACCEPTABLE | Selector | همسان |
+| Identity | match identity | تصحیح |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Route-based؟** Routing پویا.
+**۲. VTI Selector؟** any/any.
+**۳. چرا Debug دوسر؟** مقایسه.
+
+#### English Corner
+
+- *Route-based VPN uses a virtual tunnel interface and supports dynamic routing.*
+- Q: What does match identity remote address do on the Cisco profile?
 
 ## درس 18-6 — Gate G7: آزمون عملی IPsec — صورت مسئله، کلید پاسخ کامل و Rubric
 
@@ -34698,6 +39471,59 @@ diagnose debug reset
 1. *تفاوت Route-based و Policy-based؟* Interface مجازی در برابر Policy.
 2. *Dead Peer Detection؟* تشخیص قطع.
 3. *شاهد برقراری؟* شمارنده‌ها و ping.
+
+### تکمیل عمیق: G7 — صورت مسئله، کلید پاسخ و Rubric
+
+#### چرا؟
+
+G7 ثابت می‌کند IPsec را از طراحی تا عیب‌یابی اجرا می‌کنید.
+
+#### صورت مسئله
+
+دو سایت 10.1.0.0/24 و 10.2.0.0/24؛ Tunnel IKEv2؛ سه خرابی تزریقی: PSK، Selector، Route.
+
+#### کلید
+
+1. برگه‌ی پارامتر.
+2. ساخت Tunnel.
+3. اثبات (counter + ping).
+4. خرابی ۱: AUTH_FAILED ⇒ PSK.
+5. خرابی ۲: TS_UNACCEPTABLE ⇒ Selector.
+6. خرابی ۳: Tunnel Up بدون ping ⇒ Route.
+7. MTU.
+
+#### Rubric
+
+``` text
+Up 20 | Routing 15 | Policy 15 | MTU 15 | Fault diagnosis 25 | Report 10
+```
+
+#### مثال سخت — دو خرابی هم‌زمان
+
+PSK درست شد ولی Selector هنوز؛ پس از هر رفع آزمون جدید. قاعده: یک تغییر در هر زمان.
+
+#### Lab
+
+سه خرابی را ایجاد و رفع کنید و شواهد را ثبت.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| چند خطا | هم‌زمان | یکی‌یکی |
+| Evidence ناقص | ثبت | الگو |
+| MTU فراموش | آزمون ناقص | DF |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا یکی‌یکی؟** ردیابی.
+**۲. Evidence؟** debug + counters.
+**۳. MTU؟** آزمون DF.
+
+#### English Corner
+
+- *Fix one fault at a time and retest.*
+- Q: How do you distinguish a selector problem from a routing problem?
 
 ## پاسخ‌های فصل 18
 
@@ -35212,6 +40038,65 @@ ADVPN: Spoke به Spoke فقط در صورت نیاز Shortcut می‌سازد؛
 2. *Routing پویا چرا؟* Failover و مقیاس.
 3. *ADVPN نیازها؟* IKEv2، Routing، تنظیم Hub.
 
+### تکمیل عمیق: طراحی Overlay چندشعبه — از ۳ شعبه تا ۳۰۰ شعبه
+
+#### چرا باید یاد بگیریم؟
+
+اتصال دو شعبه با یک Tunnel ساده است. اتصال ۳۰ شعبه به‌صورت دستی یعنی صدها Tunnel، صدها Route و کابوس نگهداری. طراحی Overlay یعنی تصمیم‌گیری درباره‌ی «ساختار» (Hub-and-Spoke یا Mesh)، «مسیریابی» (Static یا پویا) و «مقیاس» پیش از ساخت.
+
+#### توضیح ساده
+
+Overlay شبکه‌ای مجازی است که روی اینترنت (Underlay) ساخته می‌شود؛ شعبه‌ها با Tunnel به هم وصل‌اند و فکر می‌کنند در یک شبکه‌ی خصوصی هستند.
+
+#### مثال ساده — شمارش Tunnel
+
+``` text
+Full mesh tunnels  = N x (N - 1) / 2
+Hub-and-Spoke      = N (one per spoke, to hub)
+N = 10 -> mesh = 45 ; hub-spoke = 10
+N = 50 -> mesh = 1225 ; hub-spoke = 50
+```
+
+نتیجه: Mesh با رشد N منفجر می‌شود.
+
+#### مثال متوسط — ADVPN
+
+ADVPN = Auto-Discovery VPN. ساختار پایه Hub-and-Spoke است؛ وقتی Spoke A با Spoke B زیاد ارتباط دارد، Hub به آنها «Shortcut» پیشنهاد می‌کند و Tunnel مستقیم ساخته می‌شود. مزیت: هزینه‌ی Hub-Spoke + کارایی Mesh.
+
+#### مثال سخت — Hub Failure
+
+Hub تنها نقطه‌ی شکست است. طراحی: دو Hub (Primary/Secondary) با Routing پویا؛ Spoke به هر دو Tunnel دارد؛ ترجیح با Metric.
+
+``` text
+Failover time ~ detect (BFD/Dead timer) + route convergence
+OSPF dead 40 s (default broadcast) ; with BFD ~ <1 s
+```
+
+مقادیر پیش‌فرض را از مستند نسخه بخوانید.
+
+#### Lab
+
+نمودار سه‌لایه برای ۱۰ شعبه بکشید و تعداد Tunnel را محاسبه کنید.
+
+#### عیب‌یابی طراحی
+
+| علامت | علت | رفع |
+|---|---|---|
+| پیچیدگی انفجاری | Mesh کامل | Hub-Spoke/ADVPN |
+| Hub bottleneck | ترافیک Spoke-Spoke | ADVPN |
+| Failover کند | Timer | BFD |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چند Tunnel برای ۲۰ شعبه Mesh؟** ۱۹۰.
+**۲. ADVPN چه مشکلی را حل می‌کند؟** ترافیک Spoke-Spoke.
+**۳. چرا دو Hub؟** SPOF.
+
+#### English Corner
+
+- *A full mesh grows quadratically; hub-and-spoke grows linearly.*
+- Q: How does ADVPN combine the benefits of both designs?
+
 ## درس 19-1 — طراحی آدرس‌دهی چندشعبه: IP Plan، Summarization با محاسبه‌ی باینری، Tunnel IP و ظرفیت Hub
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۲-۲ (VLSM)، ۹-۰ · ≈ 8 ساعت**
@@ -35413,6 +40298,74 @@ Summary at hub: 10.0.0.0/10 would cover 10.0-63 (only if reserved)
 1. *Overlap؟* مشکل IPsec/NAT.
 2. *Summary خطر؟* مسیر ناموجود.
 3. *Loopback ID؟* ثبات Router-ID.
+
+### تکمیل عمیق: IP Plan و Summarization چندشعبه
+
+#### چرا؟
+
+طرح آدرس‌دهی بد، بعداً همه‌چیز را گران می‌کند: Overlap بین شعب، Routeهای زیاد و ناتوانی از Summarize. اینجا IP Plan را از ابتدا تمیز می‌سازیم.
+
+#### مثال ساده — تخصیص
+
+``` text
+HQ        10.0.0.0/16
+Branch 1  10.1.0.0/24
+Branch 2  10.2.0.0/24
+...
+Branch 50 10.50.0.0/24
+Tunnel    10.255.0.0/16 (overlay)
+```
+
+هر شعبه یک /24 (۲۵۴ Host) با فضای رشد.
+
+#### مثال متوسط — Summarization
+
+برای ۱۶ شعبه با آدرس‌های پیاپی در بایت سوم (10.1.0.0/24 تا 10.1.15.0/24) می‌توان یک Summary داد.
+
+``` text
+16 networks = 2^4 -> borrow 4 bits from the /24 -> /24 - 4 = /20
+Summary: 10.1.0.0/20  (covers 10.1.0.0 - 10.1.15.255)
+Check: 10.1.15.0/24 is inside, 10.1.16.0/24 is outside
+```
+
+مراحل: ۱) تعداد شبکه‌ها باید توان ۲ باشد (۱۶) ۲) شروع بلوک باید مضرب ۱۶ در بایت سوم باشد (۰ مضرب ۱۶ است) ۳) Prefix برابر ۲۴ منهای ۴ می‌شود.
+
+مثال مخالف: اگر شعبه‌ها از 10.1.4.0/24 شروع شوند، بلوک ۱۶تایی هم‌تراز نیست و Summary /20 شبکه‌های دیگر را هم می‌پوشاند.
+
+#### قاعده
+
+Summary فقط زمانی مجاز است که بلوک پیوسته، هم‌تراز (Aligned) و رزرو شده باشد؛ وگرنه ترافیک به مقصدهای ناموجود (Blackhole) می‌رود.
+
+#### مثال سخت — شرکت ادغام‌شده
+
+دو شرکت ادغام می‌شوند و هر دو 10.1.0.0/24 دارند (Overlap). راه: NAT بین آنها (۱:۱)، یا Renumbering تدریجی؛ NAT موقت و Renumber دائمی.
+
+#### Lab
+
+یک IP Plan برای ۳۰ شعبه بنویسید و با `ipaddress` پایتون Overlap را بررسی کنید.
+
+``` text
+python3 -c "import ipaddress as i; print(i.ip_network('10.16.0.0/20').overlaps(i.ip_network('10.16.8.0/24')))"
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Blackhole | Summary بیش‌ازحد | Null route دقیق |
+| Overlap | طرح ناقص | NAT/Renumber |
+| Route زیاد | بدون Summary | رزرو بلوک |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Aligned؟** Prefix دقیق.
+**۲. Overlap چه می‌کند؟** مسیر مبهم.
+**۳. Summary خطر؟** Blackhole.
+
+#### English Corner
+
+- *Summarize only contiguous, aligned address blocks.*
+- Q: What is a route blackhole caused by over-summarization?
 
 ## درس 19-2 — Tunnelهای Hub–Spoke و OSPF روی Tunnel: طراحی، Network Type، Cost، Convergence و عیب‌یابی
 
@@ -35635,6 +40588,86 @@ Point-to-multipoint برای Hub بدون انتخاب DR؛ Cost را برای �
 2. *Hello/Dead؟* 10/40 پیش‌فرض.
 3. *چرا P2MP؟* بدون DR.
 
+### تکمیل عمیق: OSPF روی Tunnel — Network Type، Cost و Convergence
+
+#### چرا؟
+
+Static Route در ۳۰ شعبه یعنی ویرایش دستی ۳۰ دستگاه؛ OSPF خودکار یاد می‌گیرد. ولی روی Tunnel رفتار خاصی دارد (Multi-access مجازی).
+
+#### Network Type
+
+| نوع | DR/BDR | کاربرد |
+|---|---|---|
+| broadcast | دارد | LAN |
+| point-to-point | ندارد | Tunnel دونقطه‌ای |
+| point-to-multipoint | ندارد | Hub با چند Spoke |
+
+در Hub-and-Spoke، Network Type `point-to-multipoint` روی Hub مناسب است؛ DR/BDR لازم نیست.
+
+#### مثال ساده — پیکربندی
+
+``` text
+config router ospf
+ set router-id 1.1.1.1
+ config area
+  edit 0.0.0.0
+  next
+ end
+ config network
+  edit 1
+   set prefix 10.255.0.0 255.255.0.0
+  next
+ end
+ config ospf-interface
+  edit "TO-SPOKES"
+   set interface "TO-SPOKES"
+   set network-type point-to-multipoint
+   set cost 10
+  next
+ end
+end
+```
+
+#### مثال متوسط — Cost برای ترجیح Hub
+
+Hub1 cost 10، Hub2 cost 20؛ Spoke ترافیک را به Hub1 می‌فرستد و با خرابی Hub1 به Hub2.
+
+#### Convergence
+
+``` text
+Dead interval default broadcast = 40 s ; P2P/P2MP often 40 s (verify)
+With BFD: detection ~ 300 ms x 3 = ~1 s
+```
+
+برای Failover زیر ۵ ثانیه از BFD یا Timerهای کوتاه (با آزمون) استفاده کنید.
+
+#### مثال سخت — MTU
+
+Tunnel با MTU کمتر ⇒ OSPF در ExStart گیر می‌کند. رفع: MTU برابر یا `mtu-ignore`.
+
+#### Lab
+
+Hub و دو Spoke بسازید؛ `get router info ospf neighbor` را بخوانید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ExStart | MTU | یکسان |
+| DR روی Tunnel | broadcast | P2MP |
+| Failover کند | Dead timer | BFD |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا P2MP؟** بدون DR.
+**۲. Cost برای؟** ترجیح مسیر.
+**۳. BFD؟** تشخیص سریع.
+
+#### English Corner
+
+- *Use point-to-multipoint for hub interfaces that terminate many spokes.*
+- Q: How can you speed up OSPF failure detection?
+
 ## درس 19-3 — BGP روی FortiGate برای Overlay: iBGP، Route Reflector، Next-hop، Local-pref، Failover و Filtering
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۹-۰، ۹-۷ · ≈ 8 ساعت**
@@ -35854,6 +40887,83 @@ Metric: Local-pref بالاتر ⇒ ترجیح خروج. **اثبات:** `get ro
 2. *next-hop-self؟* برای Peerهای پشت Tunnel.
 3. *Local-pref در برابر MED؟* داخل AS در برابر بین AS.
 
+### تکمیل عمیق: BGP Overlay — iBGP، Route Reflector و Local-pref
+
+#### چرا؟
+
+برای مقیاس بالا و کنترل دقیق سیاست مسیریابی (مثلاً ترجیح یک Hub یا ISP)، BGP قوی‌تر از OSPF است. ولی باید قواعدش را بدانید.
+
+#### iBGP و مشکل Full-mesh
+
+در iBGP هر Router باید با همه‌ی Routerهای دیگر Peer باشد (چون مسیر یادگرفته‌شده از iBGP را به iBGP دیگر نمی‌دهد). با N Router: N(N-1)/2 Peer. **Route Reflector (RR)** این مشکل را حل می‌کند: Hub همه‌ی Spokeها را Client خود می‌کند و مسیرها را بازتاب می‌دهد.
+
+#### مثال ساده — پیکربندی RR
+
+``` text
+config router bgp
+ set as 65000
+ set router-id 1.1.1.1
+ config neighbor
+  edit "10.255.0.2"
+   set remote-as 65000
+   set route-reflector-client enable
+   set next-hop-self enable
+  next
+ end
+ config network
+  edit 1
+   set prefix 10.0.0.0 255.255.0.0
+  next
+ end
+end
+```
+
+#### مثال متوسط — Best Path (ترتیب مستند)
+
+Weight (Cisco) / Local-pref بالاتر، طول AS-path کوتاه‌تر، Origin، MED کمتر، eBGP بر iBGP، IGP metric کمتر، Router-ID. برای ترجیح Hub: Local-pref بالاتر روی مسیرهای Hub1.
+
+``` text
+route-map PREF-HUB1 permit 10
+ set local-preference 200
+```
+
+#### مثال سخت — Next-hop
+
+مسیر یاد گرفته شد ولی Inactive: Next-hop دسترسی‌پذیر نیست. راه: `next-hop-self` یا Route به Next-hop.
+
+#### تأیید
+
+``` text
+get router info bgp summary
+get router info bgp network
+get router info routing-table bgp
+```
+
+State باید Established و PfxRcd عدد باشد.
+
+#### Lab
+
+یک Hub به‌عنوان RR و دو Spoke Client بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Idle | TCP179/Policy | Local-in |
+| Route Inactive | Next-hop | next-hop-self |
+| انتخاب اشتباه | Local-pref | route-map |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا RR؟** حذف Full-mesh.
+**۲. Local-pref؟** سیاست داخل AS.
+**۳. Next-hop-self؟** دسترسی‌پذیری.
+
+#### English Corner
+
+- *A route reflector removes the need for a full iBGP mesh.*
+- Q: Why can a BGP route be learned but not installed?
+
 ## درس 19-4 — Local Breakout و Policy اینترنت شعبه: Backhaul در برابر Breakout، Split مسیر، SaaS، UTM و Failover
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۱۲-۰، ۱۶-۰، ۲۱-۷ · ≈ 8 ساعت**
@@ -36070,6 +41180,60 @@ get router info routing-table details 10.0.5.20
 2. *Policy شعبه؟* حداقل UTM.
 3. *DNS؟* منطبق با مسیر.
 
+### تکمیل عمیق: Local Breakout در برابر Backhaul
+
+#### چرا؟
+
+ترافیک اینترنت شعبه را از Tunnel به HQ بفرستیم (Backhaul) یا مستقیم از شعبه خارج کنیم (Local Breakout)؟ جواب به تأخیر، هزینه و امنیت بستگی دارد.
+
+#### مقایسه
+
+| معیار | Backhaul | Local Breakout |
+|---|---|---|
+| کنترل امنیتی | متمرکز (HQ) | در هر شعبه |
+| تأخیر SaaS | بیشتر | کمتر |
+| پهنای باند HQ | زیاد مصرف | کم |
+| پیچیدگی | کم | متوسط |
+
+#### مثال ساده — تأخیر
+
+``` text
+Backhaul : branch -> HQ (30 ms) -> internet (20 ms) = 50 ms to SaaS
+Breakout : branch -> internet (20 ms) = 20 ms
+Saving   = 30 ms per request
+```
+
+#### مثال متوسط — راه میانی
+
+SaaS معتبر (Office365) با Breakout؛ بقیه Backhaul. با SD-WAN Rule و Application Control پیاده می‌شود.
+
+#### مثال سخت — امنیت شعبه
+
+با Breakout، شعبه باید UTM و Policy مستقل داشته باشد؛ در غیر این صورت سطح حمله بزرگ می‌شود. حداقل: Web Filter، IPS، Log به مرکز.
+
+#### Lab
+
+یک Policy Breakout با NAT و یک Policy Backhaul بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| DNS اشتباه | مسیر DNS | هماهنگ |
+| شعبه بی‌حفاظ | UTM نیست | پروفایل |
+| تأخیر زیاد | Backhaul | Breakout انتخابی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Split Tunnel خطر؟** دور زدن امنیت.
+**۲. چرا راه میانی؟** تعادل.
+**۳. DNS؟** باید با مسیر هماهنگ باشد.
+
+#### English Corner
+
+- *Local breakout lowers latency but moves security enforcement to the branch.*
+- Q: Which traffic would you break out locally?
+
 ## درس 19-5 — ADVPN در عمل: ساخت، فرایند Shortcut، BGP/OSPF، Policy، محدودیت‌ها و عیب‌یابی
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۱۹-۳، ۱۸-۰ · ≈ 8 ساعت**
@@ -36262,6 +41426,73 @@ get router info routing-table all
 2. *Shortcut زمان؟* چند ثانیه.
 3. *Policy؟* Spoke↔Spoke باید مجاز باشد.
 
+### تکمیل عمیق: ADVPN در عمل
+
+#### چرا؟
+
+ADVPN اجازه می‌دهد Spoke‌ها بدون عبور از Hub مستقیم صحبت کنند؛ ولی با شرایط: IKEv2، Routing پویا و تنظیم Hub.
+
+#### فرایند Shortcut
+
+1. Spoke A می‌خواهد به Spoke B برود؛ ترافیک از Hub می‌رود.
+2. Hub تشخیص می‌دهد و به A و B «Shortcut Offer» می‌دهد.
+3. A و B Tunnel مستقیم می‌سازند.
+4. Routing به Shortcut تغییر می‌کند.
+
+#### مثال ساده — تنظیم Hub
+
+``` text
+config vpn ipsec phase1-interface
+ edit "HUB"
+  set type dynamic
+  set add-route disable
+  set auto-discovery-sender enable
+ next
+end
+```
+
+و در Spoke: `set auto-discovery-receiver enable`.
+
+#### مثال متوسط — مشاهده‌ی Shortcut
+
+``` text
+diagnose vpn ike gateway list
+get router info routing-table all
+```
+
+باید Tunnel جدید `HUB_0` (Shortcut) دیده شود.
+
+#### مثال سخت — NAT دوگانه
+
+دو Spoke پشت NAT هستند؛ ساخت مستقیم شکست می‌خورد. راه: NAT-T و UDP/4500، یا IP عمومی ثابت؛ و اگر ممکن نبود، ترافیک از Hub می‌ماند (Fallback).
+
+#### Policy
+
+Spoke↔Spoke باید در Policy مجاز باشد؛ فراموشی آن «Shortcut ساخته می‌شود ولی ترافیک رد می‌شود».
+
+#### Lab
+
+Hub و دو Spoke؛ ترافیک بین Spokeها را مشاهده و Shortcut را ثابت کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Shortcut نمی‌سازد | IKEv2/تنظیم | بررسی |
+| Shortcut ولی Drop | Policy | افزودن |
+| NAT | NAT-T | پورت |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Shortcut چیست؟** Tunnel مستقیم.
+**۲. چرا Policy؟** ترافیک Spoke-Spoke.
+**۳. NAT دوگانه؟** سخت.
+
+#### English Corner
+
+- *ADVPN shortcuts still need a firewall policy between spokes.*
+- Q: What triggers the creation of an ADVPN shortcut?
+
 ## درس 19-6 — آزمون معماری ۴: چندشعبه با Failover — صورت مسئله، کلید پاسخ و Rubric
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰ تا ۱۹-۵ · ≈ 8 ساعت**
@@ -36393,6 +41624,62 @@ diagnose debug flow trace start 10
 1. *Failover زمان؟* BFD/Dead timer.
 2. *چگونه اثبات؟* قطع کنترل‌شده و ping مداوم.
 3. *ثبت؟* Timeline.
+
+### تکمیل عمیق: آزمون معماری ۴ — چندشعبه با Failover
+
+#### چرا؟
+
+این آزمون ترکیب IP Plan، Routing، Failover و Evidence را می‌سنجد.
+
+#### صورت مسئله
+
+۱۰ شعبه، دو Hub، OSPF/BGP، Failover زیر ۱۰ ثانیه، IP Plan بدون Overlap.
+
+#### کلید
+
+1. IP Plan و Summary.
+2. Tunnelها (2 به ازای Spoke).
+3. Routing با Cost/Local-pref.
+4. آزمون: قطع Hub1 ⇒ ترافیک از Hub2.
+5. Evidence.
+
+``` text
+Tunnels = spokes x hubs = 10 x 2 = 20
+Failover = detect + converge ; measure with ping
+```
+
+#### Rubric
+
+``` text
+IP plan 20 | Routing 25 | Failover 25 | Evidence 20 | Report 10
+```
+
+#### مثال سخت — خرابی تزریقی
+
+قطع Hub1 + MTU اشتباه روی Tunnel Hub2 ⇒ Failover موفق ولی HTTPS کند. شاهد: `ping -f`. رفع: MSS Clamp.
+
+#### Lab
+
+آزمون را کامل و شواهد را ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Failover دیر | Timer | BFD |
+| کند پس از Failover | MTU | MSS |
+| Route نامعلوم | Summary | بررسی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا ۲۰ Tunnel؟** هر Spoke دو Hub.
+**۲. Evidence Failover؟** ping + routing.
+**۳. MSS؟** جلوگیری از Fragmentation.
+
+#### English Corner
+
+- *Measure failover time with continuous ping during the test.*
+- Q: Why can HTTPS be slow after a failover?
 
 ## پاسخ‌های فصل 19
 
@@ -36715,6 +42002,70 @@ Throughput = concurrent users x avg Mbps  (e.g. 240 x 2 = 480 Mbps)
 2. *چرا Gateway هدف حمله است؟* در معرض اینترنت.
 3. *Split در برابر Full؟* ریسک در برابر پهنای باند.
 
+### تکمیل عمیق: معماری دسترسی راه‌دور — مدل تهدید و مقایسه‌ی VPN/ZTNA
+
+#### چرا باید یاد بگیریم؟
+
+دورکاری دسترسی به شبکه را از یک ساختمان محدود به «هر جای اینترنت» گسترش داده است. هر نقطه‌ی ورود از اینترنت، هدف حمله است. پس قبل از انتخاب فناوری (SSL VPN، IPsec، ZTNA) باید بپرسیم: **چه چیزی را از چه کسی محافظت می‌کنیم؟**
+
+#### مدل تهدید
+
+| تهدید | مثال | کنترل |
+|---|---|---|
+| سرقت رمز | Credential Stuffing | MFA |
+| دستگاه آلوده | لپ‌تاپ بدون آنتی‌ویروس | Posture Check |
+| آسیب‌پذیری Gateway | Exploit روی VPN | Patch و کاهش سطح |
+| حرکت جانبی | کاربر VPN به همه‌ی شبکه | Policy حداقلی |
+
+#### مقایسه
+
+| معیار | IPsec RA | SSL VPN | ZTNA |
+|---|---|---|---|
+| سطح دسترسی | شبکه | شبکه/برنامه | برنامه |
+| بررسی دستگاه | ممکن | ممکن | پایه‌ای |
+| لایسنس | پایه | پایه | EMS (Needs-License) |
+
+ZTNA = Zero Trust Network Access، یعنی «دسترسی شبکه‌ای مبتنی بر اعتماد صفر»؛ هر درخواست بر پایه‌ی هویت و وضعیت دستگاه ارزیابی می‌شود.
+
+#### مثال ساده — Least Privilege
+
+کاربر مالی فقط به سرور ERP (10.20.0.10:443) نیاز دارد؛ Policy VPN او نباید `all` باشد.
+
+#### مثال متوسط — Split در برابر Full Tunnel
+
+Split: فقط ترافیک سازمانی از VPN؛ پهنای باند کمتر ولی ترافیک اینترنت بازرسی نمی‌شود. Full: همه از VPN؛ کنترل بیشتر ولی بار روی فایروال.
+
+#### مثال سخت — طراحی برای ۳۰۰ کاربر
+
+نیاز: ۳۰۰ کاربر هم‌زمان با ۲ Mbps هر کدام: ۶۰۰ Mbps. باید ظرفیت VPN فایروال (نه فقط Throughput کلی) را در دیتاشیت بررسی کنید.
+
+``` text
+Required VPN throughput = users x per-user rate = 300 x 2 = 600 Mbps
+```
+
+#### Lab
+
+یک جدول تهدید/کنترل برای سازمان فرضی بنویسید.
+
+#### عیب‌یابی طراحی
+
+| علامت | علت | رفع |
+|---|---|---|
+| دسترسی گسترده | Policy all | حداقل |
+| کندی | Full tunnel | Split |
+| ظرفیت کم | دیتاشیت | بررسی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. ZTNA چیست؟** دسترسی برنامه‌محور و بر اساس اعتماد صفر.
+**۲. Split Tunnel خطر؟** بازرسی نشدن ترافیک اینترنت.
+**۳. ظرفیت VPN را از کجا؟** دیتاشیت.
+
+#### English Corner
+
+- *Remote access gateways are internet-facing and must be hardened.*
+- Q: What is the difference between split and full tunnel?
+
 ## درس 20-2 — SSL VPN در 7.0.3 (فقط Lab ایزوله): سازوکار، Portal، Realm، Tunnel، Split و Hardening
 
 **فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۲۰-۱، ۲۰-۷، ۱۷-۲ · ≈ 9 ساعت**
@@ -36895,6 +42246,82 @@ Portal `tunnel-access` + Policy `SSLVPN -> LAN` با گروه. **هشدار:** S
 1. *Realm؟* آدرس/ظاهر Portal جدا.
 2. *Split Tunnel؟* مسیرهای مشخص.
 3. *Host Check؟* وضعیت دستگاه.
+
+### تکمیل عمیق: SSL VPN در 7.0.3 — فقط Lab، با درک ریسک
+
+#### چرا؟
+
+SSL VPN محبوب است چون روی 443 کار می‌کند و از اکثر محدودیت‌ها عبور می‌کند، ولی تاریخچه‌ی آسیب‌پذیری‌های مهم دارد؛ باید با چشم باز استفاده شود.
+
+#### اجزا
+
+- **Portal**: صفحه‌ی ورود و دسترسی (Web mode/Tunnel mode).
+- **Realm**: آدرس/ظاهر جدا.
+- **Tunnel IP Pool**: آدرس داخلی کلاینت.
+- **Policy**: `ssl.root -> LAN`.
+
+#### مثال ساده — تنظیم
+
+``` text
+config vpn ssl settings
+ set servercert "Fortinet_Factory"
+ set tunnel-ip-pools "SSLVPN_TUNNEL_ADDR1"
+ set port 10443
+ set source-interface "port1"
+ set default-portal "tunnel-access"
+end
+```
+
+Source Interface و Port را به حداقل لازم محدود کنید. گواهی Factory برای Lab است؛ در تولید گواهی معتبر.
+
+#### مثال متوسط — Policy
+
+``` text
+config firewall policy
+ edit 200
+  set srcintf "ssl.root"
+  set dstintf "port3"
+  set srcaddr "all"
+  set dstaddr "SRV-ERP"
+  set groups "G-VPN"
+  set service "HTTPS"
+  set action accept
+  set logtraffic all
+ next
+end
+```
+
+#### مثال سخت — ریسک و کاهش
+
+PSIRT Fortinet برای SSL-VPN در نسخه‌های ۷.x هشدارهای جدی داشته است. کاهش: نسخه‌ی وصله‌شده، MFA، محدودیت جغرافیا (Local-in)، غیرفعال‌سازی Web mode در صورت نیاز، پایش Log، و برنامه‌ی مهاجرت به IPsec (وضعیت نسخه را از مستند رسمی بخوانید).
+
+#### Lab
+
+SSL VPN را فقط در Lab ایزوله و بدون دسترسی از اینترنت راه‌اندازی کنید.
+
+``` text
+get vpn ssl monitor
+diagnose debug application sslvpn -1
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| اتصال نمی‌شود | Policy/Portal | بررسی |
+| Split نمی‌کند | Routing | Split-include |
+| گواهی خطا | Factory | گواهی معتبر |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Realm؟** آدرس/ظاهر Portal جدا.
+**۲. چرا Local-in؟** محدودکردن مبدأ.
+**۳. ریسک اصلی؟** آسیب‌پذیری Gateway.
+
+#### English Corner
+
+- *Patch promptly and add MFA; limit who can reach the SSL VPN portal.*
+- Q: Why is the factory certificate unsuitable for production?
 
 ## درس 20-3 — IPsec Dial-up (Remote Access): IKEv2، هویت، Mode Config، Split/Full، DNS و Policy
 
@@ -37086,6 +42513,85 @@ end
 2. *PSK گروهی؟* ضعیف؛ گواهی بهتر.
 3. *DNS Leak؟* DNS داخلی ارسال شود.
 
+### تکمیل عمیق: IPsec Dial-up (Remote Access) با IKEv2
+
+#### چرا؟
+
+IPsec RA سطح حمله‌ی تاریخی کمتری نسبت به SSL VPN دارد و Performance بهتری (NPU) می‌دهد. نصب FortiClient و تنظیم درست لازم است.
+
+#### ساختار
+
+Phase1 از نوع `dynamic` (چون IP کلاینت ناشناخته است)، Mode Config برای دادن IP/DNS به کلاینت.
+
+``` text
+config vpn ipsec phase1-interface
+ edit "DIALUP"
+  set type dynamic
+  set interface "port1"
+  set ike-version 2
+  set peertype any
+  set mode-cfg enable
+  set ipv4-start-ip 10.200.0.10
+  set ipv4-end-ip 10.200.0.200
+  set ipv4-netmask 255.255.255.0
+  set ipv4-dns-server1 10.20.0.5
+  set proposal aes256-sha256
+  set dhgrp 14
+  set authmethod signature
+  set certificate "vpn-cert"
+ next
+end
+```
+
+#### مثال متوسط — Phase2 و Policy
+
+Phase2 با `dst-subnet 0.0.0.0/0` معمولاً برای Dial-up و Policy `DIALUP -> LAN` با گروه کاربران.
+
+#### مثال سخت — Split Tunnel و DNS
+
+``` text
+set ipv4-split-include "INTERNAL-NETS"
+set ipv4-dns-server1 10.20.0.5
+```
+
+اگر DNS داخلی داده نشود، کاربر نام سرورها را حل نمی‌کند؛ اگر Split-DNS لازم است، دامنه را مشخص کنید.
+
+#### هویت
+
+PSK گروهی ضعیف است (همه یک رمز)؛ گواهی (Certificate) یا EAP با RADIUS+MFA بهتر است.
+
+#### آزمون
+
+``` text
+diagnose vpn ike gateway list
+diagnose vpn tunnel list
+```
+
+اتصال کاربر مجاز، رد کاربر غیرگروه، دسترسی به منبع مجاز و رد منبع غیرمجاز.
+
+#### Lab
+
+یک Dial-up را با کلاینت Lab تست کنید (اجرا نشده تا اطلاع بعدی).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| وصل می‌شود ولی ping نه | Policy/Route | بررسی |
+| DNS حل نمی‌شود | dns-server | تنظیم |
+| AUTH_FAILED | هویت | گواهی/PSK |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Mode Config؟** اعطای IP/DNS.
+**۲. PSK گروهی؟** ضعیف.
+**۳. Split-include؟** مسیرهای تونل.
+
+#### English Corner
+
+- *Prefer certificates or EAP with MFA over a shared group PSK.*
+- Q: What does mode-config provide to the client?
+
 ## درس 20-4 — MFA، پایش و Hardening دسترسی راه‌دور: Detection، Alert، پاسخ و بازبینی
 
 **فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۲۰-۲، ۲۰-۳، ۲۷-۰، ۲۹-۰ · ≈ 8 ساعت**
@@ -37258,6 +42764,78 @@ end
 1. *Local-in Policy؟* ترافیک به خود فایروال.
 2. *Brute-force؟* MFA + Lockout.
 3. *Detection؟* Log Event.
+
+### تکمیل عمیق: MFA، پایش و Hardening دسترسی راه‌دور
+
+#### چرا؟
+
+یک رمز لورفته نباید کافی باشد. MFA (Multi-Factor Authentication، یعنی «احراز هویت چندعاملی») مهم‌ترین کنترل است؛ پایش و Hardening لایه‌های بعدی‌اند.
+
+#### مثال ساده — کنترل‌ها
+
+1. MFA (OTP/Push) از طریق FortiToken یا RADIUS+NPS Extension.
+2. Local-in Policy برای محدودیت مبدأ.
+3. قفل پس از شکست.
+4. Log متمرکز و هشدار.
+
+#### مثال متوسط — Local-in
+
+``` text
+config firewall local-in-policy
+ edit 1
+  set intf "port1"
+  set srcaddr "GEO-ALLOWED"
+  set dstaddr "all"
+  set service "SSLVPN-PORT"
+  set action accept
+  set schedule "always"
+ next
+ edit 2
+  set intf "port1"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "SSLVPN-PORT"
+  set action deny
+  set schedule "always"
+ next
+end
+```
+
+یعنی فقط کشورها/IPهای مجاز اجازه دارند.
+
+#### قاعده‌ی هشدار
+
+``` text
+IF failed_vpn_logins >= 10 within 5 min from one source THEN alert (medium)
+IF success after >=10 failures THEN alert (high)
+```
+
+#### مثال سخت — Impossible Travel
+
+ورود موفق یک کاربر از ایران و ۱۰ دقیقه بعد از اروپا؛ فاصله/زمان ناممکن ⇒ هشدار بالا. نیاز به GeoIP و Correlation در SIEM.
+
+#### Lab
+
+قاعده‌ی هشدار را روی Log نمونه با `awk` تست کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| هشدار کاذب | VPN شرکت‌ها | Allowlist |
+| MFA شکست | زمان | NTP |
+| Lockout زیاد | آستانه | تنظیم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا MFA؟** رمز تنها کافی نیست.
+**۲. Impossible Travel؟** دو ورود غیرممکن.
+**۳. NTP چرا برای MFA؟** TOTP زمان‌محور.
+
+#### English Corner
+
+- *MFA is the single most effective control against stolen credentials.*
+- Q: What is impossible travel detection?
 
 ## درس 20-5 — آزمون عملی دسترسی راه‌دور: SSL-VPN/IPsec Dial-up، MFA و Split Tunnel — صورت مسئله، کلید کامل و Rubric
 
@@ -37455,6 +43033,65 @@ diagnose firewall iprope lookup 10.212.134.5 40000 10.20.0.10 443 tcp ssl.root
 2. *آزمون منفی؟* کاربر خارج از گروه.
 3. *Reconnect؟* Session Timeout.
 
+### تکمیل عمیق: آزمون عملی دسترسی راه‌دور
+
+#### چرا؟
+
+این آزمون چهار ادعا را اثبات می‌کند: ورود مجاز، رد غیرمجاز، تونل صحیح و MFA.
+
+#### آزمون‌ها و شواهد
+
+| # | آزمون | انتظار | شاهد |
+|---|---|---|---|
+| 1 | کاربر مجاز | وصل | `get vpn ssl monitor` |
+| 2 | کاربر خارج گروه | رد | Log |
+| 3 | Split | اینترنت مستقیم | `route print` |
+| 4 | MFA | درخواست OTP | اسکرین‌شات |
+| 5 | Reconnect | وصل مجدد | Log |
+
+#### Rubric
+
+``` text
+Each test 20 points: correct result 10 + evidence 10
+```
+
+#### مثال متوسط — اثبات Split
+
+``` text
+route print   (client)
+10.20.0.0/24 -> VPN adapter
+0.0.0.0/0    -> local gateway
+```
+
+یعنی فقط مسیرهای سازمانی از VPN می‌رود.
+
+#### مثال سخت — منبع مجاز/غیرمجاز
+
+کاربر مالی به ERP می‌رسد و به Mgmt نه؛ آزمون منفی: `nc -zv 10.50.0.1 22` باید Timeout بدهد و Log Deny.
+
+#### Lab
+
+آزمون را اجرا و Evidence Index بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Split کار نمی‌کند | Policy | Split-include |
+| MFA نمی‌آید | Auth Server | بررسی |
+| Reconnect ناموفق | Timeout | تنظیم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Evidence Split؟** جدول Route کلاینت.
+**۲. آزمون منفی؟** Mgmt رد شود.
+**۳. نمره؟** نتیجه + شاهد.
+
+#### English Corner
+
+- *Show the client routing table as evidence of split tunneling.*
+- Q: What negative test proves least privilege?
+
 ## درس 20-7 — SSL VPN در برابر IPsec Remote Access: وضعیت نسخه‌ها، ریسک و مهاجرت
 
 **فصل ۲۰ · درس افزوده (پس از ۲۰-۵) · پیش‌نیاز: ۱۸-۰، ۲۰-۱ تا ۲۰-۵ · ≈ ۵ ساعت**
@@ -37578,6 +43215,56 @@ IPsec (۱۸-۰)، Authentication (فصل ۱۷)، مدل تهدید (۱۱-۰).
 1. *چرا مهاجرت؟* ریسک آسیب‌پذیری.
 2. *UDP مسدود؟* NAT-T/TCP.
 3. *Patch؟* پایش PSIRT.
+
+### تکمیل عمیق: SSL VPN در برابر IPsec RA — جدول تصمیم
+
+#### چرا؟
+
+انتخاب بین دو فناوری باید بر اساس ریسک، محدودیت شبکه‌ی کاربر و عملیات باشد نه عادت.
+
+#### جدول تصمیم
+
+| معیار | SSL VPN | IPsec RA |
+|---|---|---|
+| عبور از شبکه‌های محدود (443) | آسان | سخت‌تر (UDP 500/4500) |
+| سابقه‌ی آسیب‌پذیری | بالا | کمتر |
+| Performance | متوسط | بهتر (NPU) |
+| مدیریت کلاینت | FortiClient/وب | FortiClient |
+
+#### مثال ساده
+
+کاربران هتل/فرودگاه که UDP مسدود دارند ⇒ SSL VPN یا IPsec over TCP (در صورت پشتیبانی نسخه).
+
+#### مثال متوسط — تصمیم برای پروژه‌ی جدید
+
+IPsec IKEv2 + MFA + گواهی؛ SSL VPN فقط برای سناریوی مشخص و با نسخه‌ی وصله‌شده.
+
+#### مثال سخت — مهاجرت
+
+مراحل: ۱) Inventory کاربران ۲) پایلوت IPsec ۳) آموزش ۴) عبور تدریجی ۵) خاموش‌کردن SSL VPN ۶) بازبینی Log.
+
+#### Lab
+
+جدول تصمیم را برای سازمان فرضی خودتان پر کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| UDP مسدود | شبکه‌ی کاربر | NAT-T/TCP |
+| کلاینت قدیمی | نسخه | ارتقا |
+| مهاجرت کند | آموزش | پایلوت |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا مهاجرت؟** ریسک.
+**۲. UDP مسدود چه کنیم؟** NAT-T/TCP.
+**۳. پایلوت چرا؟** کاهش ریسک.
+
+#### English Corner
+
+- *Choose the technology by risk and network constraints, not habit.*
+- Q: What do you do when UDP 500 and 4500 are blocked?
 
 ## پاسخ‌های فصل 20
 
@@ -37923,6 +43610,80 @@ end
 2. *Session قدیم؟* روی ISP قبل می‌ماند.
 3. *چرا Monitor؟* قطع بالادستی بدون Down شدن لینک.
 
+### تکمیل عمیق: Dual-ISP کلاسیک — چرا فقط «دو Route» کافی نیست؟
+
+#### چرا باید یاد بگیریم؟
+
+بسیاری از سازمان‌ها دو ISP می‌گیرند و فکر می‌کنند «اگر یکی قطع شد، دیگری خودکار کار می‌کند». ولی قطع واقعی اغلب این‌گونه نیست: کابل سالم است و لینک Up است، اما ISP در بالادست مشکل دارد. فایروال هنوز Route اول را فعال می‌بیند و ترافیک را به چاه می‌فرستد. برای تشخیص چنین قطعی به **Link Monitor** (پایش سلامت مسیر) نیاز داریم.
+
+#### توضیح ساده
+
+دو Static Route پیش‌فرض داریم؛ یکی با Distance کمتر (ترجیح بیشتر) و دیگری با Distance بیشتر (پشتیبان). فقط Route با Distance کمتر در جدول فعال است. Link Monitor مرتب یک هدف خارجی (مثلاً 8.8.8.8) را از آن لینک پینگ می‌کند؛ اگر چند بار پاسخ نیامد، Route آن لینک را غیرفعال می‌کند تا Route دوم فعال شود.
+
+``` text
+Route 1: 0.0.0.0/0 via 203.0.113.1 dev port1 distance 10
+Route 2: 0.0.0.0/0 via 198.51.100.1 dev port2 distance 20
+```
+
+#### مثال ساده — تنظیم و محاسبه‌ی زمان تشخیص
+
+``` text
+config system link-monitor
+ edit "ISP1"
+  set srcintf "port1"
+  set server "8.8.8.8"
+  set gateway-ip 203.0.113.1
+  set interval 1000
+  set failtime 5
+  set recoverytime 5
+ next
+end
+```
+
+``` text
+Detection time = interval x failtime = 1 s x 5 = 5 s
+```
+
+یعنی ≈ ۵ ثانیه پس از قطع، Failover آغاز می‌شود. مقادیر پیش‌فرض را از مستند نسخه تأیید کنید.
+
+#### مثال متوسط — NAT برای هر خروجی
+
+باید برای هر ISP یک Policy جدا (یا Policy با NAT خودکار روی Interface خروجی) وجود داشته باشد تا ترافیک با IP همان ISP خارج شود.
+
+#### مثال سخت — Session قدیمی
+
+پس از Failover، Sessionهای موجود روی لینک قدیم می‌مانند تا Timeout شوند؛ کاربران «اینترنت قطع است» می‌گویند، در حالی که اتصال جدید کار می‌کند. راه: `set snat-route-change enable` (برای SNAT)، یا پاک‌سازی Sessionهای مربوط با فیلتر.
+
+``` text
+diagnose sys session filter dst 8.8.8.8
+diagnose sys session clear
+```
+
+هشدار: Clear بدون فیلتر همه‌ی Sessionها را می‌بندد.
+
+#### Lab
+
+دو Interface WAN با دو Route و Link Monitor بسازید؛ Gateway اول را قطع کنید و زمان Failover را بشمارید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Failover نمی‌شود | Monitor ندارد | افزودن |
+| پس از Failover هنوز قطع | Session قدیمی | Clear/snat-route-change |
+| Failback ناپایدار | recoverytime کم | افزایش |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Distance در برابر Priority؟** Distance انتخاب Route؛ Priority تساوی را می‌شکند.
+**۲. چرا Monitor؟** قطع بالادست.
+**۳. زمان تشخیص؟** interval × failtime.
+
+#### English Corner
+
+- *Link state alone does not prove that the upstream path works.*
+- Q: How do you calculate the failure detection time?
+
 ## درس 21-2 — ساخت SD-WAN عملی: Zone، Member، Health-check، Route و Policy
 
 **فصل ۲۱ · بازنویسی عمیق · پیش‌نیاز: ۲۱-۷ (مفاهیم)، ۲۱-۱، ۱۲-۰ · ≈ ۶ ساعت**
@@ -38103,6 +43864,76 @@ end
 2. *Health-check؟* پایش کیفیت.
 3. *Route؟* Default روی Zone.
 
+### تکمیل عمیق: ساخت SD-WAN گام‌به‌گام
+
+#### چرا؟
+
+Dual-ISP کلاسیک فقط «بالا/پایین» را می‌فهمد. SD-WAN کیفیت (تأخیر، Jitter، Loss) را اندازه می‌گیرد و بر اساس برنامه مسیر انتخاب می‌کند: Voice روی لینک کم‌تأخیر، دانلود روی لینک ارزان.
+
+#### اجزا
+
+1. **Zone**: گروه Memberها (مثلاً `virtual-wan-link`).
+2. **Member**: Interface + Gateway.
+3. **Health-check**: پایش کیفیت.
+4. **Rule (Service)**: انتخاب مسیر.
+5. **Route**: Default Route به Zone.
+6. **Policy**: به Zone (نه Interface تکی).
+
+#### مثال ساده — ساخت
+
+``` text
+config system sdwan
+ set status enable
+ config members
+  edit 1
+   set interface "port1"
+   set gateway 203.0.113.1
+  next
+  edit 2
+   set interface "port2"
+   set gateway 198.51.100.1
+  next
+ end
+ config health-check
+  edit "HC1"
+   set server "8.8.8.8"
+   set members 1 2
+  next
+ end
+end
+```
+
+#### مثال متوسط — Route و Policy
+
+Static Route 0.0.0.0/0 با `sdwan-zone virtual-wan-link`؛ Policy `LAN -> virtual-wan-link`. Policyهای قبلی که به port1/port2 اشاره می‌کنند باید به Zone منتقل شوند؛ Interface عضو SD-WAN را نمی‌توان مستقیم در Policy استفاده کرد.
+
+#### مثال سخت — مهاجرت بدون قطع
+
+مراحل: ۱) Backup ۲) ساخت SD-WAN ۳) انتقال Policyها با آزمون Lookup ۴) حذف Routeهای قدیمی ۵) آزمون Failover ۶) Rollback آماده. در Maintenance Window با Rollback کمتر از ۱۰ دقیقه.
+
+#### Lab
+
+SD-WAN را با دو Member بسازید و `diagnose sys sdwan health-check` را بخوانید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Policy ساخته نمی‌شود | Interface عضو | Zone |
+| Member همیشه dead | Server/Gateway | بررسی |
+| ترافیک از یک لینک | Rule | بررسی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Member چیست؟** Interface عضو.
+**۲. Zone چرا؟** Policy یکپارچه.
+**۳. Health-check؟** پایش کیفیت.
+
+#### English Corner
+
+- *Policies reference the SD-WAN zone, not individual member interfaces.*
+- Q: What does a health check measure?
+
 ## درس 21-3 — SD-WAN Rule و Performance SLA: انتخاب مسیر بر اساس برنامه و کیفیت
 
 **فصل ۲۱ · بازنویسی عمیق · پیش‌نیاز: ۲۱-۲، ۲۱-۷ · ≈ ۶ ساعت**
@@ -38278,6 +44109,96 @@ end
 2. *Failback؟* طبق recoverytime.
 3. *Rule بدون Match؟* Implicit Rule.
 
+### تکمیل عمیق: Rule و SLA — انتخاب مسیر بر اساس کیفیت
+
+#### چرا؟
+
+همه‌ی ترافیک ارزش یکسان ندارد؛ تماس VoIP به تأخیر حساس است و Backup شبانه نه. SD-WAN Rule همین تفاوت را اعمال می‌کند.
+
+#### SLA
+
+SLA (Service Level Agreement) در اینجا آستانه‌های کیفیت لینک است:
+
+``` text
+config health-check
+ edit "HC1"
+  config sla
+   edit 1
+    set latency-threshold 100
+    set jitter-threshold 30
+    set packetloss-threshold 2
+   next
+  end
+ next
+end
+```
+
+یعنی لینک «خوب» است اگر تأخیر ≤ 100ms، Jitter ≤ 30ms، Loss ≤ 2٪.
+
+#### استراتژی‌ها
+
+| Mode | معنی |
+|---|---|
+| manual | ترتیب دستی |
+| best-quality | بهترین کیفیت |
+| lowest-cost (sla) | ارزان‌ترین لینک که SLA را رعایت کند |
+| load-balance | توزیع |
+
+#### مثال ساده — Rule برای Voice
+
+``` text
+config service
+ edit 1
+  set name "VOICE"
+  set mode sla
+  set dst "SIP-PEERS"
+  config sla
+   edit "HC1"
+    set id 1
+   next
+  end
+  set priority-members 1 2
+ next
+end
+```
+
+Voice روی عضو 1 تا زمانی که SLA شکسته نشود؛ بعد عضو 2.
+
+#### مثال متوسط — Brownout
+
+لینک بالا ولی کیفیت بد (Loss 8٪). Health-check ساده «alive» می‌گوید؛ SLA می‌گوید «violated» و Rule مسیر را عوض می‌کند. همین مزیت SD-WAN است.
+
+#### مثال سخت — Rule Match
+
+اگر هیچ Rule مطابق نیست، ترافیک با **Implicit Rule** (بر اساس Route/Cost) می‌رود. با `diagnose sys sdwan service` ببینید کدام Rule و کدام Member انتخاب شد.
+
+#### Lab
+
+با `tc netem` (روی Lab) تأخیر/Loss به یک لینک تزریق و تغییر مسیر را مشاهده کنید.
+
+``` text
+tc qdisc add dev eth1 root netem delay 150ms loss 5%
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Rule اعمال نمی‌شود | dst/service | بررسی |
+| Flapping | آستانه نزدیک | Hysteresis |
+| همه از یک لینک | Rule پایین | ترتیب |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Brownout چیست؟** لینک بالا با کیفیت بد.
+**۲. Implicit Rule؟** پیش‌فرض.
+**۳. چرا SLA؟** اندازه‌گیری کیفیت.
+
+#### English Corner
+
+- *SLA thresholds let SD-WAN react to brownouts, not just outages.*
+- Q: What happens when no SD-WAN rule matches?
+
 ## درس 21-4 — Failover عملی، Session و NAT در Dual-ISP/SD-WAN: آزمون، Clear، IP ثابت و معماری ۳
 
 **فصل 21 · بازنویسی عمیق · پیش‌نیاز: ۲۱-۱، ۲۱-۲، ۲۱-۳، ۱۳-۷ · ≈ 8 ساعت**
@@ -38428,6 +44349,66 @@ diagnose sys session filter clear
 1. *چرا VoIP قطع؟* IP منبع عوض.
 2. *Failback خودکار؟* ممکن است ناپایدار؛ hold-down.
 3. *Clear Session؟* با فیلتر.
+
+### تکمیل عمیق: Failover عملی، Session و NAT
+
+#### چرا؟
+
+Failover فقط تغییر Route نیست؛ باید ببینیم Sessionها، NAT و IP عمومی چه می‌شوند.
+
+#### مثال ساده — اندازه‌گیری
+
+``` text
+ping -i 0.2 8.8.8.8
+# cut ISP1
+lost = 25 packets x 0.2 s = 5.0 s
+```
+
+#### Session و NAT
+
+پس از Failover IP عمومی تغییر می‌کند؛ اتصال‌هایی که به IP مبدأ وابسته‌اند (SSH، VoIP، بانک) قطع می‌شوند و باید دوباره برقرار شوند. تنها راه‌حل واقعی «IP ثابت» BGP با ISPها یا Cloud Anchor است.
+
+#### مثال متوسط — پاک‌سازی انتخابی
+
+``` text
+diagnose sys session filter src 10.10.0.0/24
+diagnose sys session filter dst 0.0.0.0/0
+diagnose sys session clear
+diagnose sys session filter clear
+```
+
+یا `set snat-route-change enable` در Policy برای تغییر مسیر Session با SNAT.
+
+#### مثال سخت — Failback
+
+بازگشت ISP1 و Failback فوری ممکن است Session را دوباره قطع کند. راه: `recoverytime` بیشتر یا Failback دستی در Window.
+
+#### مثال: Persist VoIP
+
+در Rule VoIP یک مسیر ثابت با Failover سریع و Failback غیرفعال تا از Flap جلوگیری شود.
+
+#### Lab
+
+Failover را اجرا و جدول «قبل/بعد» (Route، Session، IP عمومی) را پر کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| قطع بعد از Failover | IP عوض شد | BGP/NAT |
+| Session قدیم | Timeout | Clear |
+| Flap | Failback سریع | recoverytime |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا IP عوض می‌شود؟** NAT با IP ISP.
+**۲. راه‌حل IP ثابت؟** BGP.
+**۳. چرا Failback تأخیری؟** Flap.
+
+#### English Corner
+
+- *A failover that changes the public IP will break sessions that depend on it.*
+- Q: Why delay failback?
 
 ## درس 21-5 — Gate G8: آزمون عملی Dual-ISP و SD-WAN — صورت مسئله، کلید پاسخ کامل و Rubric
 
@@ -38646,6 +44627,59 @@ diagnose sys session list
 1. *Evidence Failover؟* `diagnose sys sdwan health-check` و Log.
 2. *Brownout؟* لینک بالا ولی کیفیت بد.
 3. *SLA Target؟* از نیاز اپلیکیشن.
+
+### تکمیل عمیق: آزمون G8 — صورت مسئله و کلید
+
+#### چرا؟
+
+G8 ثابت می‌کند Dual-ISP و SD-WAN را از طراحی تا اثبات انجام می‌دهید.
+
+#### صورت مسئله
+
+شعبه با ISP1 (اصلی) و ISP2 (پشتیبان)؛ Voice باید زیر 100ms و Loss زیر 2٪ باشد؛ Failover زیر 5 ثانیه.
+
+#### کلید
+
+1. SD-WAN با دو Member و Health-check.
+2. SLA (100ms/30ms/2٪).
+3. Rule Voice با mode sla.
+4. آزمون: قطع ISP1 ⇒ Failover < 5 s.
+5. آزمون Brownout با `tc netem`.
+6. Failback کنترل‌شده.
+
+#### محاسبه‌ی نمره
+
+``` text
+Build 20 | SLA 20 | Failover 25 | Failback 10 | Evidence 15 | Report 10
+Example: 20 + 18 + 22 + 8 + 12 + 8 = 88
+```
+
+#### مثال سخت — مرز SLA
+
+تأخیر 98ms (حاشیه‌ی بسیار کم): Flap ممکن است رخ دهد. راه: آستانه‌ی حاشیه‌دار یا Hysteresis؛ مستند.
+
+#### Lab
+
+آزمون را اجرا و Evidence Index بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Failover دیر | failtime بالا | کاهش |
+| Flap | آستانه نزدیک | حاشیه |
+| Evidence ناقص | ثبت نشد | الگو |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Evidence Failover؟** ping + Log + health-check.
+**۲. Hysteresis؟** جلوگیری از Flap.
+**۳. آزمون Brownout؟** تزریق تأخیر.
+
+#### English Corner
+
+- *Test brownouts, not only hard failures.*
+- Q: How do you avoid flapping near a threshold?
 
 ## درس 21-7 — SD-WAN از درون: Health-check، SLA، استراتژی‌ها، Failover/Failback و تفاوت با Routing
 
@@ -38898,6 +44932,72 @@ diagnose sys sdwan service
 1. *مقدار پیش‌فرض failtime؟* ۵.
 2. *Probe پروتکل؟* ping/http/tcp-echo/dns.
 3. *Weight/Cost؟* برای lowest-cost.
+
+### تکمیل عمیق: SD-WAN از درون — Health-check، SLA و Failback
+
+#### چرا؟
+
+بدون فهمیدن اینکه Health-check چطور کار می‌کند، نمی‌توانید رفتار عجیب (مثلاً تغییر مسیر بی‌دلیل) را توضیح دهید.
+
+#### خواندن خروجی
+
+``` text
+diagnose sys sdwan health-check
+Health Check(HC1):
+Seq(1 port1): state(alive), packet-loss(0.000%) latency(12.31) jitter(0.82) sla_map=0x1
+Seq(2 port2): state(dead)
+```
+
+تفسیر: Member 1 زنده با کیفیت خوب و `sla_map=0x1` (SLA 1 را رعایت می‌کند)؛ Member 2 مرده.
+
+#### پارامترها
+
+| پارامتر | معنی |
+|---|---|
+| interval | فاصله‌ی پروب (ms) |
+| failtime | تعداد شکست متوالی برای dead |
+| recoverytime | تعداد موفقیت متوالی برای alive |
+| probe-timeout | مهلت پاسخ |
+
+مقادیر پیش‌فرض را از مستند نسخه بخوانید.
+
+#### مثال ساده — زمان‌ها
+
+``` text
+Down detection = interval x failtime ; Up detection = interval x recoverytime
+500 ms x 5 = 2.5 s ; 500 ms x 5 = 2.5 s
+```
+
+#### مثال متوسط — Probe پروتکل
+
+ping، http، tcp-echo، dns؛ برای وب از http مفیدتر است چون ping ممکن است مسدود/Rate-limit شود.
+
+#### مثال سخت — اشتباه رایج
+
+یک سرور واحد برای Health-check (مثلاً 8.8.8.8) اگر مقصد مشکل پیدا کند، هر دو لینک را «dead» می‌کند. راه: دو سرور متفاوت و `update-static-route`/`members` هوشمند.
+
+#### Lab
+
+Health-check را با دو پروب مختلف مقایسه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| هر دو dead | یک سرور | دو سرور |
+| ping مسدود | Rate limit | http |
+| flap | آستانه | تنظیم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. sla_map؟** وضعیت SLAها.
+**۲. چرا دو سرور؟** SPOF Health-check.
+**۳. failtime؟** شمارش شکست.
+
+#### English Corner
+
+- *Use more than one probe target so a remote outage does not mark all links dead.*
+- Q: What do interval and failtime determine together?
 
 ## پاسخ‌های فصل 21
 
@@ -39387,6 +45487,71 @@ Heartbeat روی دو لینک (Redundant) و VLAN/Interface جدا. **پرسش�
 2. *Monitor Port؟* قطع ⇒ Failover.
 3. *Session Pickup؟* حفظ TCP در Failover (Needs-License ندارد، قابلیت پایه).
 
+### تکمیل عمیق: FGCP — چطور دو فایروال یکی می‌شوند؟
+
+#### چرا باید یاد بگیریم؟
+
+یک فایروال تکی یعنی یک نقطه‌ی شکست؛ اگر بسوزد، کل سازمان از اینترنت جدا می‌شود. HA (High Availability، یعنی «دسترس‌پذیری بالا») دو دستگاه را طوری به هم وصل می‌کند که اگر یکی بیفتد، دیگری بی‌وقفه کار را ادامه دهد. پروتکل FortiGate برای این کار FGCP (FortiGate Clustering Protocol) است.
+
+#### توضیح ساده
+
+دو دستگاه یک Cluster می‌سازند. یکی **Primary** (ترافیک را پردازش می‌کند) و دیگری **Secondary** (آماده‌باش). بین آنها یک یا چند لینک **Heartbeat** هست که مدام «من زنده‌ام» می‌گویند و Config و Session را همگام می‌کنند.
+
+#### انتخاب Primary (Election)
+
+طبق مستند Fortinet وقتی `override` غیرفعال است ترتیب مقایسه چنین است:
+
+1. تعداد Monitored Interface سالم (بیشتر بهتر)
+2. Age (مدت زمان بالا بودن؛ با Margin 300 ثانیه)
+3. Priority (بالاتر بهتر؛ پیش‌فرض 128)
+4. Serial Number (بزرگ‌تر)
+
+وقتی `override` فعال باشد، Priority پیش از Age بررسی می‌شود.
+
+#### مثال ساده
+
+A با Priority 200 و B با 100. اگر هر دو هم‌زمان بوت شوند و Override خاموش باشد، به دلیل برابری Age (در Margin) Priority تعیین‌کننده است ⇒ A Primary. اگر A بعد از قطع برگردد و B حالا Primary است و override خاموش، B Primary می‌ماند (Age بیشتر).
+
+#### مثال متوسط — Failover با Monitor
+
+Port1 (WAN) در Monitor است. با قطع کابل WAN در Primary، تعداد Monitored سالم کمتر می‌شود ⇒ Secondary (با WAN سالم) Primary می‌شود.
+
+``` text
+get system ha status
+diagnose sys ha history read
+```
+
+#### مثال سخت — Split-brain
+
+اگر همه‌ی لینک‌های Heartbeat قطع شوند، هر دو دستگاه خود را Primary می‌پندارند (Split-brain) و IP/MAC تکراری ایجاد می‌شود. جلوگیری: دو Heartbeat Interface مستقل (کابل مستقیم/دو سوئیچ)، و Monitor.
+
+#### همگام‌سازی
+
+Config از Primary به Secondary کپی می‌شود؛ `Configuration Status: in-sync`. Session Pickup: Sessionهای TCP نیز همگام می‌شوند تا هنگام Failover قطع نشوند (قابلیت پایه؛ مستند نسخه را بخوانید).
+
+#### Lab
+
+دو FortiGate VM (لایسنس معتبر) را در HA قرار دهید؛ این Lab برای ما «اجرا نشده» است و Needs-License.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| out-of-sync | تغییر محلی | `execute ha synchronize start` |
+| Failover بی‌دلیل | Heartbeat ناپایدار | لینک‌ها |
+| Split-brain | همه‌ی HB قطع | چندلینک |
+
+#### پرسش‌ها با پاسخ
+
+**۱. ترتیب Election (override خاموش)؟** Monitor، Age، Priority، Serial.
+**۲. Heartbeat چرا دو لینک؟** افزونگی.
+**۳. Split-brain؟** دو Primary.
+
+#### English Corner
+
+- *The primary is elected by monitored interfaces, age, priority and serial number.*
+- Q: What causes a split-brain and how can you prevent it?
+
 ## درس 22-1 — مفاهیم HA برای طراحی: SPOF، سطوح افزونگی، انتخاب مدل و تحلیل خرابی‌ها
 
 **فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۰، ۱۱-۷، ۵-۷ · ≈ 8 ساعت**
@@ -39529,6 +45694,72 @@ HA فقط یک ردیف را می‌پوشاند؛ نقشه‌ی بقیه را �
 1. *RTO/RPO؟* زمان/داده‌ی قابل تحمل.
 2. *Active-Active؟* مقیاس ولی پیچیده.
 3. *SPOF پنهان؟* DNS، NTP.
+
+### تکمیل عمیق: مفاهیم HA برای طراحی — SPOF، RTO/RPO و سطوح افزونگی
+
+#### چرا؟
+
+HA فقط یک ردیف از فهرست خرابی‌هاست. طراح خوب ابتدا همه‌ی نقاط شکست (SPOF = Single Point of Failure) را فهرست می‌کند و بعد برای هر کدام راه‌حل می‌گذارد.
+
+#### نقشه‌ی SPOF
+
+| جزء | شکست | افزونگی |
+|---|---|---|
+| دستگاه | سوختن | HA Cluster |
+| لینک | قطع کابل | LAG / لینک دوم |
+| برق | قطع | دو PSU + UPS |
+| ISP | قطع | Dual-ISP/SD-WAN |
+| سوئیچ | خرابی | دو سوئیچ |
+| DNS/NTP | قطع | سرور دوم |
+
+#### RTO و RPO
+
+RTO = Recovery Time Objective (حداکثر زمان قابل‌قبول برای بازگشت سرویس)، RPO = Recovery Point Objective (حداکثر داده‌ی قابل‌ازدست‌دادن). برای فایروال: RTO معمولاً ثانیه تا دقیقه؛ RPO به Session و Config مربوط است.
+
+#### مثال ساده — محاسبه‌ی دسترس‌پذیری
+
+``` text
+Availability = uptime / (uptime + downtime)
+99.9%  -> ~8.76 hours downtime/year
+99.99% -> ~52.6 minutes downtime/year
+```
+
+#### مثال متوسط — Active-Passive در برابر Active-Active
+
+| معیار | A-P | A-A |
+|---|---|---|
+| سادگی | بالا | کمتر |
+| ظرفیت | یک دستگاه | تقسیم‌شده (محدود) |
+| UTM | ساده | سخت‌تر |
+
+A-A تنها برای بعضی ترافیک (مثلاً UTM) توزیع می‌کند و بسیاری از سازمان‌ها A-P را ترجیح می‌دهند.
+
+#### مثال سخت — SPOF پنهان
+
+HA کامل، ولی هر دو فایروال به یک سوئیچ وصل‌اند که برق مشترک دارد؛ خرابی سوئیچ همه را می‌برد. راه: دو سوئیچ، اتصال متقاطع.
+
+#### Lab
+
+نقشه‌ی SPOF شبکه‌ی خودتان را با ۱۰ ردیف بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| قطع با وجود HA | SPOF دیگر | نقشه |
+| Failover کند | Timer | تنظیم |
+| ظرفیت ناکافی | A-P | A-A یا ارتقا |
+
+#### پرسش‌ها با پاسخ
+
+**۱. 99.99٪ چند دقیقه؟** حدود ۵۲٫۶ دقیقه در سال.
+**۲. RTO چیست؟** زمان بازگشت.
+**۳. SPOF پنهان؟** برق/سوئیچ مشترک.
+
+#### English Corner
+
+- *Redundancy at one layer is useless if another layer is a single point of failure.*
+- Q: What does 99.99 percent availability allow per year?
 
 ## درس 22-2 — پیکربندی HA Active-Passive: برگه‌ی طراحی، GUI، CLI، Heartbeat، Monitor و Verification
 
@@ -39742,6 +45973,79 @@ end
 2. *Password؟* امنیت HA.
 3. *Config فقط روی Primary؟* همگام‌سازی.
 
+### تکمیل عمیق: پیکربندی HA Active-Passive — برگه، دستور و تأیید
+
+#### چرا؟
+
+HA با یک تنظیم اشتباه (Group-name، رمز، Heartbeat) برقرار نمی‌شود یا بدتر، ناپایدار می‌شود. برگه‌ی طراحی قبل از اجرا مانع خطاست.
+
+#### برگه‌ی طراحی
+
+``` text
+Group name : FGT-HA
+Mode       : a-p
+Password   : (vault)
+HB devices : port7 (prio 50), port8 (prio 50)
+Priority   : A=200, B=100
+Override   : disable
+Monitor    : port1, port2
+Session pickup : enable
+```
+
+پیش‌نیاز: همان مدل، همان نسخه‌ی FortiOS، همان لایسنس‌ها.
+
+#### مثال ساده — دستور
+
+``` text
+config system ha
+ set group-name "FGT-HA"
+ set mode a-p
+ set password ***
+ set hbdev "port7" 50 "port8" 50
+ set priority 200
+ set override disable
+ set session-pickup enable
+ set monitor "port1" "port2"
+end
+```
+
+روی دستگاه دوم همان تنظیم با Priority کمتر.
+
+#### مثال متوسط — تأیید
+
+``` text
+get system ha status
+```
+
+منتظر: `HA Health Status: OK`، دو عضو، `Configuration Status: in-sync`، Primary مورد انتظار.
+
+#### مثال سخت — نکته‌ی Interface
+
+در HA، Interface Heartbeat به‌صورت اختصاصی استفاده می‌شود؛ روی همان Interface ترافیک عادی نگذارید. MAC مجازی (`00:09:0f:09:xx:xx`) پس از Failover ثابت می‌ماند و سوئیچ‌ها ARP را دوباره یاد نمی‌گیرند؛ Gratuitous ARP ارسال می‌شود.
+
+#### Lab
+
+برگه را بنویسید و پیکربندی را (در صورت داشتن دو VM لایسنس‌دار) اجرا کنید؛ در غیر این صورت «اجرا نشده».
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| عضو دوم نمی‌پیوندد | Group-name/Password | یکسان |
+| in-sync نیست | نسخه/Config | همگام |
+| Failover بی‌دلیل | Monitor | بازبینی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا نسخه‌ی یکسان؟** سازگاری Sync.
+**۲. MAC مجازی چرا؟** پایداری ARP.
+**۳. چرا دو hbdev؟** افزونگی.
+
+#### English Corner
+
+- *Both cluster members must run the same firmware version.*
+- Q: What does the virtual MAC address achieve after a failover?
+
 ## درس 22-3 — آزمون Failover/Failback و Session Pickup: طراحی تست، اندازه‌گیری و تحلیل
 
 **فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۲ · ≈ 11 ساعت**
@@ -39898,6 +46202,73 @@ lost 3 packets x 1 s = ~3 s outage
 2. *Session UDP/Multicast؟* Pickup محدودیت.
 3. *Failback؟* دستی بهتر.
 
+### تکمیل عمیق: آزمون Failover/Failback با عدد
+
+#### چرا؟
+
+«HA داریم» تا وقتی که Failover را اندازه نگرفته‌اید فقط یک باور است. آزمون باید زمان قطع و حفظ Session را اندازه بگیرد.
+
+#### آزمون ساده
+
+از یک کاربر `ping -i 0.2 8.8.8.8` بزنید؛ کابل Primary را بکشید؛ شمارش بسته‌های گم‌شده.
+
+``` text
+lost = 15 packets ; interval = 0.2 s
+Outage = 15 x 0.2 = 3.0 s
+```
+
+معیار پذیرش نمونه: < 5 s.
+
+#### آزمون Session Pickup
+
+یک دانلود طولانی یا SSH باز نگه دارید؛ Failover را انجام دهید. با Pickup فعال، اتصال TCP باید ادامه یابد.
+
+``` text
+ssh user@10.20.0.10      # keep typing during failover
+```
+
+برای UDP/Multicast یا Sessionهای Offload‌شده محدودیت‌هایی طبق مستند وجود دارد.
+
+#### Failback
+
+با `override disable` برگشت خودکار رخ نمی‌دهد؛ Failback را در پنجره‌ی تغییر انجام دهید تا یک قطع دوم در ساعت کاری ایجاد نشود.
+
+#### مثال متوسط — سناریوهای آزمون
+
+| آزمون | انتظار |
+|---|---|
+| کشیدن کابل WAN Primary | Failover با Monitor |
+| خاموش‌کردن Primary | Failover < 5 s |
+| قطع یک Heartbeat | بدون Failover |
+| قطع هر دو HB | Split-brain (فقط در Lab) |
+
+#### مثال سخت — Failover ناموفق
+
+پس از Failover، کاربران اینترنت ندارند: ARP سوئیچ قدیمی، یا Secondary Route/NAT ناهمگام. شاهد: `get system ha status`، `diagnose sys ha checksum cluster`، Sniffer.
+
+#### Lab
+
+جدول بالا را اجرا و شواهد را ثبت کنید (اگر لایسنس دارید).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Session قطع | Pickup خاموش | فعال |
+| قطع طولانی | ARP | Gratuitous ARP |
+| Failback ناگهانی | override | غیرفعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Failover زمان؟** با ping اندازه‌گیری.
+**۲. چرا Failback کنترل‌شده؟** قطع دوم.
+**۳. Pickup؟** حفظ Session.
+
+#### English Corner
+
+- *Measure failover time instead of assuming it.*
+- Q: Why perform failback in a maintenance window?
+
 ## درس 22-4 — عیب‌یابی HA و ارتقای Cluster: Out-of-sync، Flap، Split-brain، Upgrade Path و Rollback
 
 **فصل 22 · بازنویسی عمیق · پیش‌نیاز: ۲۲-۲، ۲۲-۳، ۱۲-۶ · ≈ 11 ساعت**
@@ -40049,6 +46420,67 @@ Out-of-sync: Checksum متفاوت. Flap: Heartbeat ناپایدار/Monitor. ا
 1. *Split-brain رفع؟* قطع یکی و بازگردانی.
 2. *Checksum؟* مقایسه Config.
 3. *ارتقا؟* ابتدا Secondary.
+
+### تکمیل عمیق: عیب‌یابی HA و ارتقا — Checksum، Flap و Split-brain
+
+#### چرا؟
+
+HA وقتی خراب می‌شود معمولاً در بدترین لحظه است. باید ابزار تشخیص را از قبل بشناسید.
+
+#### ابزارها
+
+``` text
+get system ha status
+diagnose sys ha checksum cluster
+diagnose sys ha checksum show
+diagnose sys ha history read
+execute ha synchronize start
+```
+
+#### مثال ساده — Out-of-sync
+
+`checksum cluster` در دو عضو را مقایسه کنید؛ اگر بخشی (مثلاً `firewall.policy`) متفاوت بود، همان بخش مشکل دارد. رفع: `execute ha synchronize start`.
+
+#### مثال متوسط — Flap
+
+Failover رفت و برگشتی هر چند دقیقه: علل: Heartbeat ناپایدار، Monitor Interface فلپ، CPU بالا. بررسی History و Log رویداد؛ لینک‌ها و Timerها (`hb-interval`, `hb-lost-threshold`).
+
+#### مثال سخت — Split-brain
+
+علامت: دو دستگاه هر دو Primary، IP تکراری. رفع در Lab/عملیات: ۱) یک دستگاه را از شبکه‌ی داده جدا کنید ۲) لینک HB را برقرار ۳) بازگرداندن عضو به‌عنوان Secondary ۴) تأیید Sync.
+
+#### ارتقا
+
+روش مستند: Uninterruptible Upgrade؛ ابتدا Secondary، سپس Failover، سپس عضو قدیمی. Release Notes و Upgrade Path را بخوانید.
+
+``` text
+Pre : get system ha status ; backup config
+Do  : upgrade secondary -> failover -> upgrade former primary
+Post: get system ha status (in-sync, same firmware)
+```
+
+#### Lab
+
+Out-of-sync را عمداً ایجاد (تغییر محلی) و با checksum تشخیص دهید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Checksum متفاوت | تغییر محلی | Sync |
+| Flap | HB | لینک |
+| ارتقا ناموفق | مسیر | Upgrade Path |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Checksum چه می‌گوید؟** تفاوت Config.
+**۲. چرا ابتدا Secondary؟** حداقل قطع.
+**۳. Flap؟** Failover مکرر.
+
+#### English Corner
+
+- *Compare cluster checksums to locate configuration drift.*
+- Q: In what order do you upgrade an HA pair?
 
 ## درس 22-5 — آزمون عملی HA: طراحی، Failover، Split-brain کنترل‌شده، Upgrade و RCA — کلید پاسخ و Rubric
 
@@ -40227,6 +46659,60 @@ execute ha manage 1 admin
 1. *Split-brain آزمون؟* قطع Heartbeat در Lab.
 2. *Evidence؟* `get system ha status` قبل/بعد.
 3. *Needs-License؟* HA روی VM نیازمند لایسنس معتبر برای هر عضو است؛ در Lab بدون لایسنس اجرا نشده.
+
+### تکمیل عمیق: آزمون عملی HA — Rubric و شواهد
+
+#### چرا؟
+
+این آزمون ثابت می‌کند که HA را ساخته، آزمایش و درباره‌ی آن مستند کرده‌اید.
+
+#### صورت مسئله
+
+دو FortiGate VM: HA A-P، Failover، Failback، Split-brain کنترل‌شده (Lab)، گزارش.
+
+#### شواهد لازم
+
+| بخش | شاهد |
+|---|---|
+| ساخت | `get system ha status` (in-sync) |
+| Failover | ping با عدد گم‌شده |
+| Failback | زمان و روش |
+| Split-brain | History + رفع |
+| گزارش | محدودیت‌ها |
+
+#### Rubric
+
+``` text
+Build 20 | Failover 25 | Failback 15 | Split-brain 20 | Report 20
+Example: 20 + 22 + 15 + 10 + 18 = 85
+```
+
+#### مثال سخت — شرط صداقت
+
+اگر دو VM لایسنس‌دار ندارید، بخش اجرا نشده است و نمره‌ی «اجرا» گرفته نمی‌شود؛ ولی طراحی و طرح آزمون می‌تواند با برچسب «تأیید مستندی» ارزیابی شود. هرگز خروجی ساختگی ننویسید.
+
+#### Lab
+
+یک گزارش یک‌صفحه‌ای با جدول بالا بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| نمره کم | شاهد ندارد | ثبت |
+| ادعای بی‌اجرا | بی‌صداقتی | برچسب |
+| Split-brain واقعی | تست در Production | فقط Lab |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Split-brain فقط Lab؟** اثر مخرب.
+**۲. ادعای بدون اجرا؟** نادرست.
+**۳. شاهد Failover؟** ping + Log.
+
+#### English Corner
+
+- *Never fabricate evidence; label untested items honestly.*
+- Q: Why run split-brain tests only in a lab?
 
 ## پاسخ‌های فصل 22
 
@@ -40552,6 +47038,66 @@ FW2 sees SYN-ACK without SYN -> drop (no session)
 2. *Stateless؟* ACL مشکل ندارد.
 3. *RPF؟* می‌تواند رد کند.
 
+### تکمیل عمیق: چرا مسیر نامتقارن فایروال Stateful را زمین می‌زند؟
+
+#### چرا باید یاد بگیریم؟
+
+فایروال Stateful مثل نگهبانی است که دفتر ثبت دارد: وقتی کسی وارد می‌شود ثبت می‌کند و موقع خروج، اسمش را تطبیق می‌دهد. اگر فرد از در دیگری خارج شود که نگهبان دیگری دارد و دفترش خالی است، می‌گوید «من این آدم را ندیدم» و جلویش را می‌گیرد. مسیر نامتقارن (Asymmetric Routing) یعنی رفت از یک مسیر و برگشت از مسیر دیگر؛ در شبکه‌های دو ISP یا دو فایروال بسیار رایج است و علت بسیاری از «گاهی کار می‌کند، گاهی نه» است.
+
+#### توضیح ساده
+
+فایروال Stateful برای هر اتصال یک Session می‌سازد (با بسته‌ی SYN). بسته‌ی بعدی را فقط اگر با Session مطابقت داشته باشد می‌پذیرد.
+
+``` text
+Client -> FW1 -> Server       (SYN, session created on FW1)
+Server -> FW2 -> Client       (SYN-ACK arrives at FW2, no session)
+FW2: drop (no session / reverse path)
+```
+
+#### مثال ساده — نشانه در Debug Flow
+
+``` text
+msg="no session matched"
+msg="Denied by forward policy check (policy 0)"
+```
+
+برای بسته‌ی SYN-ACK بدون SYN؛ و در Sniffer هر دو فایروال می‌بینید که هر کدام فقط یک جهت را دیده است.
+
+#### مثال متوسط — دو ISP
+
+کاربر از طریق ISP-A خارج می‌شود (SNAT به IP-A)؛ ولی اگر SNAT نباشد و سرور مقصد پاسخ را به IP داخلی از طریق ISP-B بفرستد ⇒ مسیر برگشت متفاوت. SNAT پاسخ را به IP همان ISP برمی‌گرداند و مسئله را حل می‌کند.
+
+#### مثال سخت — ECMP
+
+دو لینک با ECMP (Equal-Cost Multi-Path، یعنی «چندمسیره با هزینه‌ی برابر»): بسته‌های رفت و برگشت با Hash متفاوت ممکن است از لینک‌های مختلف بروند. اگر دو فایروال جدا پشت دو لینک باشند، Session یک‌جانبه می‌شود. راه: Hash بر اساس 5-tuple متقارن، یا Session Sync.
+
+#### RPF
+
+Reverse Path Forwarding: فایروال بررسی می‌کند بسته‌ی ورودی از همان Interface‌ای که برای رسیدن به آن منبع استفاده می‌کند آمده باشد؛ اگر نه، رد می‌کند (Anti-spoofing). با مسیر نامتقارن RPF شکست می‌خورد.
+
+#### Lab
+
+دو مسیر بین دو دستگاه بسازید و Sniffer هر دو را مقایسه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| SYN-ACK Drop | مسیر نامتقارن | متقارن‌سازی |
+| RPF fail | Route | تصحیح |
+| گاهی کار می‌کند | ECMP | Hash متقارن |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Stateful مشکل دارد؟** Session یک‌جانبه.
+**۲. RPF چیست؟** بررسی مسیر معکوس.
+**۳. ECMP چرا؟** توزیع بار.
+
+#### English Corner
+
+- *A stateful firewall must see both directions of a flow.*
+- Q: How does SNAT help with asymmetric return paths?
+
 ## درس 23-1 — Asymmetric Routing برای Stateful: تعریف دقیق، علت‌ها، تحلیل بسته‌به‌بسته و تفکیک RPF از No-session
 
 **فصل 23 · بازنویسی عمیق · پیش‌نیاز: ۲۳-۰، ۱۰-۶، ۱۱-۷، ۱۲-۰ · ≈ 8 ساعت**
@@ -40716,6 +47262,80 @@ get router info routing-table details 10.1.4.10
 1. *ECMP و Session؟* Hash 5-tuple.
 2. *Asymmetric در VPN؟* Selector/Route.
 3. *تشخیص؟* Sniffer دوطرفه.
+
+### تکمیل عمیق: علت‌های مسیر نامتقارن — شناسایی با شاهد
+
+#### چرا؟
+
+قبل از رفع باید علت را بدانید. پنج علت رایج دارد و هر کدام آزمون مشخص دارد.
+
+#### فهرست علت‌ها و آزمون
+
+| علت | آزمون |
+|---|---|
+| دو ISP بدون SNAT | `get router info routing-table details <src>` |
+| Policy Route یک‌طرفه | `diagnose firewall proute list` |
+| ECMP | `get router info routing-table all` (چندمسیره) |
+| دو فایروال موازی | Sniffer دوطرفه |
+| سرور چند‌کارت (Multi-homed) | `route -n` روی سرور |
+
+#### مثال ساده — سرور Multi-homed
+
+سرور دو کارت شبکه دارد (LAN و DMZ). پاسخ را از کارتی می‌فرستد که Default Gateway دارد، نه کارتی که درخواست از آن آمد. رفع: Policy-based routing روی سرور (ip rule) یا یک Default Gateway.
+
+``` text
+ip rule add from 10.30.0.10 table 100
+ip route add default via 10.30.0.1 dev eth1 table 100
+```
+
+#### مثال متوسط — Policy Route
+
+``` text
+config router policy
+ edit 1
+  set input-device "port2"
+  set src "10.10.0.0/24"
+  set output-device "port3"
+  set gateway 198.51.100.1
+ next
+end
+```
+
+اگر برگشت از Policy Route نداشته باشد، از مسیر پیش‌فرض می‌آید ⇒ نامتقارن.
+
+#### مثال سخت — Sniffer هم‌زمان
+
+روی FW1 و FW2 هم‌زمان:
+
+``` text
+FW1: SYN seen, ACK seen (after), SYN-ACK NOT seen
+FW2: SYN-ACK seen, SYN NOT seen
+```
+
+تفسیر: رفت از FW1 و برگشت از FW2. راه: Route/Policy Route یا Session Sync.
+
+#### Lab
+
+سرور دو کارته بسازید و Asymmetric را تولید و رفع کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| فقط بعضی کاربران | Policy Route | همه‌ی منابع |
+| فقط یک سرور | Multi-homed | ip rule |
+| متناوب | ECMP | Hash |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Multi-homed چه مشکلی؟** برگشت از کارت دیگر.
+**۲. proute list؟** مشاهده‌ی Policy Route.
+**۳. Sniffer دوطرفه چرا؟** مرز را نشان می‌دهد.
+
+#### English Corner
+
+- *Capture on both paths at once to see the asymmetry.*
+- Q: Why can a multi-homed server cause asymmetric routing?
 
 ## درس 23-2 — رفع Asymmetric: طراحی متقارن، Policy Route، SNAT، Session Sync و ریسک هر راه‌حل
 
@@ -40907,6 +47527,75 @@ end
 2. *Policy Route؟* بر اساس منبع.
 3. *ریسک؟* Bypass بررسی.
 
+### تکمیل عمیق: رفع Asymmetric — طراحی متقارن، SNAT و گزینه‌ی آخر
+
+#### چرا؟
+
+رفع مسیر نامتقارن یک ترتیب اولویت دارد: ابتدا طراحی متقارن، سپس NAT، و در آخر سست‌کردن بازرسی.
+
+#### ترتیب راه‌حل‌ها
+
+1. **طراحی متقارن**: برگشت از همان فایروال رفت.
+2. **Policy Route / SD-WAN Rule**: خروج بر اساس منبع و برگشت هماهنگ.
+3. **SNAT**: برگشت به IP همان فایروال.
+4. **Session Sync / HA**: دو فایروال Session مشترک.
+5. **`asymroute`**: آخرین راه.
+
+#### مثال ساده — SNAT
+
+اگر کاربر از ISP-A خارج می‌شود، SNAT به IP-A باعث می‌شود سرور مقصد پاسخ را به IP-A بفرستد؛ پس از همان لینک برمی‌گردد.
+
+``` text
+config firewall policy
+ edit 20
+  set nat enable
+  set ippool enable
+  set poolname "POOL-ISP-A"
+ next
+end
+```
+
+#### مثال متوسط — SD-WAN
+
+قاعده‌ی SD-WAN با `mode manual` و عضو A برای 10.10.0.0/24؛ برگشت از همان Interface چون SNAT به IP عضو A.
+
+#### مثال سخت — دو فایروال موازی
+
+با Session Sync (HA Active-Active) هر دو فایروال Sessionها را می‌دانند و مسیر نامتقارن مجاز می‌شود. هشدار: Sync ظرفیت و تأخیر می‌خواهد؛ برای ترافیک سنگین ممکن است گران باشد.
+
+#### `asymroute` — هشدار
+
+``` text
+config system settings
+ set asymroute enable
+end
+```
+
+بازرسی Stateful را برای بسته‌های بدون Session سست می‌کند و Evidence امنیتی کم می‌شود؛ فقط موقت و با ثبت ریسک.
+
+#### Lab
+
+یک Asymmetric ساخته‌شده را با SNAT رفع و Sniffer قبل/بعد را مقایسه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| پس از SNAT هنوز Drop | Pool اشتباه | بررسی |
+| Sync کند | لینک ضعیف | لینک اختصاصی |
+| asymroute خطر | سست شدن | حذف پس از اصلاح |
+
+#### پرسش‌ها با پاسخ
+
+**۱. اولویت راه‌حل؟** متقارن‌سازی.
+**۲. چرا asymroute آخر؟** کاهش امنیت.
+**۳. SNAT چه می‌کند؟** برگشت را هدایت.
+
+#### English Corner
+
+- *Prefer symmetric design; use asymroute only as a last resort.*
+- Q: How does SNAT force a symmetric return path?
+
 ## درس 23-3 — چند فایروال سری و موازی: الگوها، NAT، Session، Failure Domain و مانیتورینگ
 
 **فصل 23 · بازنویسی عمیق · پیش‌نیاز: ۲۳-۰، ۱۵-۰، ۲۲-۰ · ≈ 8 ساعت**
@@ -41043,6 +47732,68 @@ Policy drift check: diff(config firewall policy FW1, FW2) after each change wind
 1. *الگوی ساده‌تر؟* سری.
 2. *Load-balance؟* Hash منبع.
 3. *Sync؟* HA یا دستی.
+
+### تکمیل عمیق: چند فایروال سری و موازی — الگوها و NAT
+
+#### چرا؟
+
+در سازمان‌ها گاهی لازم است بیش از یک فایروال از مسیر ترافیک عبور کند؛ برای تفکیک نقش (Edge/Internal) یا ظرفیت. هر الگو مزایا و دام دارد.
+
+#### الگوی سری (Serial)
+
+``` text
+Users -> Internal FW -> Edge FW -> Internet
+```
+
+هر بسته از هر دو می‌گذرد؛ مسیر متقارن طبیعی است. NAT فقط در Edge. مزیت: ساده؛ عیب: دو نقطه‌ی شکست.
+
+#### الگوی موازی (Parallel)
+
+``` text
+Users -> {FW-A | FW-B} -> Internet
+```
+
+بار تقسیم می‌شود؛ خطر نامتقارن. راه: Hash منبع، یا HA Active-Active با Session Sync.
+
+#### مثال ساده — محاسبه‌ی ظرفیت
+
+``` text
+Peak traffic = 6 Gbps ; FW capacity (with UTM) = 4 Gbps each
+Need >= 6 / 4 = 1.5 -> 2 firewalls (parallel) + headroom for failure (N+1) -> 3
+```
+
+N+1: اگر یکی بیفتد دو دستگاه باقیمانده 8 Gbps دارند.
+
+#### مثال متوسط — NAT در سری
+
+اگر NAT هم در Internal و هم Edge باشد، Log دو IP دارد و ردیابی سخت است. قاعده: یک نقطه‌ی NAT.
+
+#### مثال سخت — خرابی یک‌جانبه
+
+در الگوی موازی با Hash منبع، یک FW می‌افتد؛ Hash دوباره توزیع می‌شود و Sessionهای موجود قطع می‌شوند (چون Session Sync نیست). با Sync فقط Failover سریع.
+
+#### Lab
+
+یک الگوی سری دو FW را بسازید و Session هر دو را مقایسه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| دو IP در Log | دو NAT | یکی |
+| قطع در خرابی | Sync ندارد | Session Sync |
+| ظرفیت کم | UTM | N+1 |
+
+#### پرسش‌ها با پاسخ
+
+**۱. N+1 چیست؟** یک دستگاه اضافه.
+**۲. چرا یک NAT؟** ردیابی.
+**۳. موازی چه خطری؟** نامتقارن.
+
+#### English Corner
+
+- *Size for N+1 so a single failure does not cause overload.*
+- Q: Why should NAT happen at only one point?
 
 ## درس 23-4 — آزمون معماری ۵: چندفایروالی و مسیر نامتقارن — صورت مسئله، کلید پاسخ و Rubric
 
@@ -41190,6 +47941,76 @@ diagnose firewall proute list
 1. *Evidence؟* Sniffer + Debug.
 2. *ریسک راه‌حل؟* پیچیدگی.
 3. *آزمون منفی؟* قطع یک مسیر.
+
+### تکمیل عمیق: ارزیابی معماری ۵ — حل یک سناریوی نامتقارن کامل
+
+#### چرا؟
+
+این آزمون یک سناریوی واقعی را از تشخیص تا رفع و اثبات دنبال می‌کند.
+
+#### صورت مسئله
+
+شعبه با دو ISP و دو فایروال موازی؛ کاربران گاهی به برنامه‌ی مرکزی نمی‌رسند.
+
+#### گام ۱ — شواهد
+
+``` text
+FW1 sniffer: SYN, ACK seen ; no SYN-ACK
+FW2 sniffer: SYN-ACK seen ; no SYN
+```
+
+#### گام ۲ — علت
+
+رفت از ISP-A/FW1 و برگشت از ISP-B/FW2.
+
+#### گام ۳ — راه‌حل‌ها
+
+1. SNAT به IP-A روی FW1 (برگشت از ISP-A).
+2. در صورت نیاز Policy Route برای منابع.
+3. اگر Active-Active لازم است ⇒ Session Sync.
+
+#### گام ۴ — اثبات
+
+Sniffer نشان دهد هر دو جهت از یک FW؛ `curl` ۱۰۰ بار بدون خطا.
+
+``` text
+for i in $(seq 1 100); do curl -s -o /dev/null -w "%{http_code}\n" https://app.example.com; done | sort | uniq -c
+```
+
+انتظار: 100 × 200.
+
+#### Rubric
+
+``` text
+Diagnosis 30 | Symmetric solution 30 | Evidence 20 | Negative/regression test 10 | Risks 10
+```
+
+#### مثال سخت — ریسک راه‌حل
+
+SNAT پنهان می‌کند IP واقعی کاربر در Log سرور مقصد (همه‌ی کاربران یک IP). ریسک ردیابی؛ جبران: Log فایروال با Session و ثبت NAT.
+
+#### Lab
+
+سناریو را شبیه‌سازی کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| درصدی خطا | مسیر دوم | بررسی Route |
+| IP کاربر دیده نمی‌شود | SNAT | Log فایروال |
+| Sync کند | لینک | ارتقا |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا ۱۰۰ بار؟** خطای متناوب.
+**۲. ریسک SNAT؟** ردیابی.
+**۳. شاهد اصلی؟** Sniffer دوطرفه.
+
+#### English Corner
+
+- *Run repeated tests when the failure is intermittent.*
+- Q: What is the trade-off of using SNAT to fix asymmetry?
 
 ## پاسخ‌های فصل 23
 
@@ -41502,6 +48323,92 @@ end
 2. *ایزوله کامل؟* جداول Route/Policy جدا.
 3. *محدودیت منابع؟* resource-limit.
 
+### تکمیل عمیق: VDOM — یک فایروال، چند فایروال مجازی
+
+#### چرا باید یاد بگیریم؟
+
+یک ساختمان اداری را تصور کنید که چند شرکت مستأجر دارد. همه از یک ورودی و آسانسور مشترک استفاده می‌کنند، ولی هر شرکت قفل، کلید و فضای خودش را دارد. VDOM (Virtual Domain، یعنی «دامنه‌ی مجازی») همین کار را با یک FortiGate می‌کند: هر VDOM جدول مسیر، Policy، Interface و ادمین جدا دارد. مشتریان MSSP، دیتاسنترهای چندمستأجره و جداسازی بخش‌های حساس همین نیاز را دارند.
+
+#### توضیح ساده
+
+دو سطح وجود دارد:
+
+- **Global**: منابع مشترک (سخت‌افزار، نسخه، HA، Log سراسری).
+- **VDOM**: هر مستأجر (Interface، Route، Policy، VPN).
+
+یک VDOM ویژه به نام `root` معمولاً برای مدیریت استفاده می‌شود. ترافیک بین دو VDOM باید از **Inter-VDOM Link** عبور کند و Policy بخواهد؛ چیزی به‌صورت خودکار بین آنها جاری نمی‌شود.
+
+#### مثال ساده — ساخت دو VDOM
+
+``` text
+config system settings
+ set vdom-mode multi-vdom
+end
+config vdom
+ edit TENANT-A
+ next
+ edit TENANT-B
+ next
+end
+```
+
+هشدار: تغییر به Multi-VDOM ساختار Config را تغییر می‌دهد؛ در Lab و پس از Backup انجام دهید. لایسنس: مدل‌ها تعداد VDOM پیش‌فرض دارند (معمولاً ۱۰)؛ بیش از آن Needs-License.
+
+#### مثال متوسط — Inter-VDOM Link
+
+``` text
+config global
+ config system vdom-link
+  edit "A-B"
+  next
+ end
+end
+```
+
+در هر VDOM یک Interface به نام `A-B0` و `A-B1` ساخته می‌شود؛ هرکدام را IP بدهید و Policy بنویسید.
+
+#### مثال سخت — مدیریت منابع
+
+``` text
+config global
+ config system vdom-property
+  edit TENANT-A
+   set session 50000
+   set policy 500
+  next
+ end
+end
+```
+
+محدودکردن Session باعث می‌شود یک مستأجر پرترافیک، منابع بقیه را نخورد. محاسبه: اگر ظرفیت ۲۰۰,۰۰۰ Session و ۴ مستأجر، سقف ۵۰,۰۰۰ برای هرکدام.
+
+``` text
+Per-tenant cap = capacity / tenants = 200000 / 4 = 50000
+```
+
+#### Lab
+
+دو VDOM با Interface جدا بسازید، یک Inter-VDOM Link و یک Policy، و آزمون کنید که بدون Policy ارتباط برقرار نمی‌شود.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ارتباط بین VDOM نیست | Policy/Route | Policy دو سر |
+| ادمین Tenant همه را می‌بیند | Profile | `vdom` محدود |
+| Session پر می‌شود | سقف نیست | vdom-property |
+
+#### پرسش‌ها با پاسخ
+
+**۱. VDOM چه چیزی را جدا می‌کند؟** Route، Policy، Interface، ادمین.
+**۲. چرا Inter-VDOM Policy؟** ایزوله‌سازی پیش‌فرض.
+**۳. محدودیت منابع چرا؟** جلوگیری از اثر همسایه‌ی پرمصرف.
+
+#### English Corner
+
+- *Each VDOM has its own routing table and policy set.*
+- Q: What prevents one tenant from exhausting the device's sessions?
+
 ## درس 24-1 — East-West و Segmentation: Zone، Trust Level، Flow Discovery و Policy Matrix
 
 **فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۲، ۱۵-۴ · ≈ 11 ساعت**
@@ -41657,6 +48564,75 @@ Flow Discovery: Log ۲ هفته برای شناخت جریان‌ها؛ سپس P
 1. *چرا East-West؟* حرکت جانبی.
 2. *Zone؟* گروه Interface.
 3. *Intra-zone؟* پیش‌فرض رد/مجاز طبق تنظیم.
+
+### تکمیل عمیق: East-West، Segmentation و کشف جریان‌ها
+
+#### چرا؟
+
+بیشتر حملات واقعی پس از نفوذ اولیه با **حرکت جانبی** (Lateral Movement) ادامه می‌یابند: مهاجم از یک سرور وب به بقیه‌ی سرورها می‌رود. فایروال لبه فقط ترافیک شمال–جنوب را می‌بیند. East-West یعنی ترافیک بین سرورها/ Zoneهای داخلی؛ باید آن را هم کنترل کرد.
+
+#### توضیح ساده
+
+Segmentation یعنی شبکه را به بخش‌هایی با «سطح اعتماد» متفاوت تقسیم کنیم و ترافیک بین آنها فقط با Policy حداقلی عبور کند.
+
+| Zone | سطح اعتماد |
+|---|---|
+| Mgmt | بالاترین |
+| DB | بالا |
+| App | متوسط |
+| Web | پایین |
+| Guest | کمترین |
+
+قاعده: ارتباط از اعتماد پایین به بالا فقط در صورت نیاز و از مسیر مشخص.
+
+#### مثال ساده — ماتریس نیاز
+
+| از | به | سرویس |
+|---|---|---|
+| Web | App | tcp/8443 |
+| App | DB | tcp/5432 |
+| Mgmt | همه | SSH/HTTPS |
+
+هرچه در ماتریس نیست ⇒ Deny.
+
+#### مثال متوسط — کشف جریان (Flow Discovery)
+
+پیش از نوشتن Policy، ۲ هفته Log را در حالت «Allow همه + Log» (در Lab/مرحله‌ی یادگیری) جمع کنید و جریان‌های واقعی را فهرست کنید.
+
+``` text
+execute log filter category 0
+execute log filter field srcintf "port-app"
+execute log display | summarize by dstip,dstport
+```
+
+بعد از مشاهده، Policyهای دقیق را بنویسید و در پایان Deny.
+
+#### مثال سخت — جریان‌های فراموش‌شده
+
+پس از Segmentation، گزارش ماهانه‌ی پایان ماه قطع می‌شود؛ علت: Job فصلی که در ۲ هفته‌ی مشاهده دیده نشد. راه: مشاهده‌ی چرخه‌ی کامل (۱ ماه)، تماس با مالکان سرویس‌ها، و دوره‌ی «Monitor» با Log قبل از Deny.
+
+#### Lab
+
+سه Zone بسازید، Policy حداقلی بنویسید و آزمون منفی Web→DB را انجام دهید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| قطع برنامه | جریان فراموش‌شده | Log + افزودن |
+| Policy زیاد | رشد کنترل‌نشده | مالک و بازبینی |
+| Intra-zone باز | تنظیم Zone | `intrazone deny` |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Lateral Movement چیست؟** حرکت جانبی مهاجم.
+**۲. چرا کشف جریان؟** Policy بر اساس واقعیت.
+**۳. Intrazone؟** ترافیک داخل یک Zone.
+
+#### English Corner
+
+- *East-west traffic needs the same scrutiny as north-south.*
+- Q: How do you discover legitimate flows before enforcing deny?
 
 ## درس 24-2 — Policy حداقلی Web/App/DB: ماتریس، پیاده‌سازی و آزمون Isolation
 
@@ -41866,6 +48842,89 @@ diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
 1. *Policy تعداد؟* به‌اندازه‌ی نیاز.
 2. *Log؟* All.
 3. *Hit Count؟* بازبینی.
+
+### تکمیل عمیق: Policy حداقلی Web/App/DB — پیاده‌سازی و آزمون منفی
+
+#### چرا؟
+
+«حداقل دسترسی» (Least Privilege) تنها در عمل ثابت می‌شود: Policyهایی که فقط همان جریان‌های لازم را باز می‌کنند و آزمونی که نشان می‌دهد بقیه بسته است.
+
+#### پیاده‌سازی
+
+``` text
+config firewall policy
+ edit 100
+  set name "WEB-to-APP"
+  set srcintf "ZN-WEB"
+  set dstintf "ZN-APP"
+  set srcaddr "GRP-WEB"
+  set dstaddr "GRP-APP"
+  set service "APP-8443"
+  set action accept
+  set logtraffic all
+ next
+ edit 110
+  set name "APP-to-DB"
+  set srcintf "ZN-APP"
+  set dstintf "ZN-DB"
+  set srcaddr "GRP-APP"
+  set dstaddr "GRP-DB"
+  set service "PGSQL"
+  set action accept
+  set logtraffic all
+ next
+ edit 190
+  set name "DENY-ALL"
+  set srcintf "any"
+  set dstintf "any"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "ALL"
+  set action deny
+  set logtraffic all
+ next
+end
+```
+
+#### آزمون مثبت و منفی
+
+``` text
+from WEB: nc -zv 10.30.2.10 8443      # expect open
+from WEB: nc -zv 10.30.3.10 5432      # expect timeout (negative test)
+from APP: nc -zv 10.30.3.10 5432      # expect open
+diagnose firewall iprope lookup 10.30.1.5 40000 10.30.3.10 5432 tcp ZN-WEB   # expect deny policy 190
+```
+
+#### مثال متوسط — Address Group
+
+به‌جای IP تکی از Group استفاده کنید تا افزودن سرور جدید فقط عضوشدن در Group باشد (Standard Change).
+
+#### مثال سخت — دور زدن از مسیر دوم
+
+مهاجم از Web به DB مستقیم نمی‌رسد ولی از طریق App (که Policy دارد) می‌تواند Query بزند. جلوگیری کامل غیرممکن است؛ کاهش: Application-level (WAF/IPS)، حساب DB با کمترین مجوز، Log برای Query غیرعادی. توجه: Policy شبکه فقط یکی از لایه‌هاست.
+
+#### Lab
+
+سه Zone و ۳ Policy بالا را بسازید و چهار آزمون بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Web به DB وصل می‌شود | Policy گسترده | تنگ‌سازی |
+| App به DB نمی‌رسد | Service/Route | Lookup |
+| Log زیاد | all روی همه | تنظیم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا آزمون منفی؟** اثبات بسته‌بودن.
+**۲. Group چرا؟** مدیریت ساده.
+**۳. محدودیت Policy شبکه؟** لایه‌ی کاربرد را نمی‌بیند.
+
+#### English Corner
+
+- *Prove that what should be blocked is actually blocked.*
+- Q: Why use address groups in segmentation policies?
 
 ## درس 24-3 — Lab عملی VDOM: ساخت، Inter-VDOM Link، Policy و محدودیت منابع
 
@@ -42080,6 +49139,101 @@ end
 2. *Admin Profile؟* محدوده.
 3. *Backup؟* Global.
 
+### تکمیل عمیق: Lab عملی VDOM — مرحله‌به‌مرحله
+
+#### چرا؟
+
+VDOM را تا وقتی خودتان نسازید، درک نمی‌کنید که ایزولاسیون یعنی چه. این Lab با Checkpoint نوشته شده تا در هر گام بدانید درست است.
+
+#### توپولوژی
+
+``` text
+TENANT-A: port2 10.60.1.1/24  <->  A-B0 10.99.60.1/30
+TENANT-B: port3 10.60.2.1/24  <->  A-B1 10.99.60.2/30
+```
+
+#### گام ۱ — ساخت VDOM و اختصاص Interface
+
+``` text
+config vdom
+ edit TENANT-A
+ next
+ edit TENANT-B
+ next
+end
+config global
+ config system interface
+  edit port2
+   set vdom TENANT-A
+  next
+  edit port3
+   set vdom TENANT-B
+  next
+ end
+end
+```
+
+Checkpoint: `get system interface` در هر VDOM فقط Interface خودش را نشان دهد.
+
+#### گام ۲ — Inter-VDOM Link
+
+``` text
+config global
+ config system vdom-link
+  edit "A-B"
+  next
+ end
+ config system interface
+  edit "A-B0"
+   set vdom TENANT-A
+   set ip 10.99.60.1 255.255.255.252
+  next
+  edit "A-B1"
+   set vdom TENANT-B
+   set ip 10.99.60.2 255.255.255.252
+  next
+ end
+end
+```
+
+#### گام ۳ — Route و Policy
+
+در TENANT-A: Route به 10.60.2.0/24 از طریق 10.99.60.2؛ در TENANT-B: مسیر برگشت. Policy فقط برای یک سرویس (مثلاً tcp/443).
+
+#### گام ۴ — آزمون
+
+``` text
+from A: curl -m 3 https://10.60.2.10   # expect OK
+from A: ping 10.60.2.10                # expect fail (not allowed)
+```
+
+#### مثال سخت — محدودیت‌ها
+
+VDOM‌ها یک سخت‌افزار و یک نسخه‌ی مشترک دارند؛ ارتقا همه را هم‌زمان درگیر می‌کند. Config هر VDOM جدا Backup می‌شود (Backup VDOM-مبنا). نقش ادمین: `Prof-admin` با `vdom` مشخص.
+
+#### Lab
+
+Lab را کامل کنید و سه شاهد (Interface، Route، Log) ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Link Down | VDOM اشتباه | بررسی |
+| ping جواب می‌دهد | Policy بیش‌ازحد | تنگ‌سازی |
+| Route نیست | VDOM اشتباه | اضافه‌کردن |
+
+#### پرسش‌ها با پاسخ
+
+**۱. هر VDOM Route جدا؟** بله.
+**۲. ارتقا؟** هم‌زمان.
+**۳. ادمین محدود؟** با Profile.
+
+#### English Corner
+
+- *Inter-VDOM traffic requires explicit policy on both sides.*
+- Q: What is shared between VDOMs?
+
 ## درس 24-4 — Logging Data Center و Gate G9: اثبات Isolation، آزمون منفی، Alert و مستندسازی
 
 **فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۲۴-۱ تا ۲۴-۳ · ≈ 12 ساعت**
@@ -42235,6 +49389,67 @@ Isolation اثبات: آزمون منفی TENANT-A→TENANT-B ⇒ Timeout؛ Log 
 1. *Log هر VDOM؟* ارسال جدا.
 2. *Evidence ایزولاسیون؟* Lookup + Log.
 3. *منابع؟* محدودیت تنظیم‌شده.
+
+### تکمیل عمیق: Logging دیتاسنتر و Gate G9 — اثبات Isolation
+
+#### چرا؟
+
+ایزولاسیون بدون اثبات فقط ادعاست. G9 از شما می‌خواهد با آزمون منفی و Log ثابت کنید دو مستأجر/Zone از هم جدا هستند.
+
+#### مثال ساده — آزمون Isolation
+
+``` text
+from TENANT-A host: nc -zv 10.60.2.10 22   # to TENANT-B, expect timeout
+diagnose firewall iprope lookup 10.60.1.5 40000 10.60.2.10 22 tcp port2   # expect deny
+```
+
+شاهد: Log Deny با `policyid=0` یا Deny صریح.
+
+#### مثال متوسط — Log هر VDOM
+
+در هر VDOM تنظیم Log جدا:
+
+``` text
+config log syslogd setting
+ set status enable
+ set server 10.50.0.20
+end
+```
+
+در Syslog سرور فیلد `vd=` را برای جداسازی نگه دارید.
+
+#### مثال سخت — نقض Isolation
+
+Log نشان می‌دهد ترافیک TENANT-A→TENANT-B با Policy 5 (قدیمی `all`) عبور کرده. اقدام: گزارش، Disable Policy، بازبینی همه‌ی Policyهای Inter-VDOM، Evidence، PIR.
+
+#### Rubric G9
+
+``` text
+Isolation proof 30 | Least-privilege policy 25 | Logging 20 | Resource limits 15 | Report 10
+```
+
+#### Lab
+
+آزمون منفی و Log را برای دو VDOM ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Log مخلوط | بدون vd | فیلتر |
+| نقض | Policy قدیمی | حذف |
+| منابع | سقف نیست | تعیین |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Evidence ایزولاسیون؟** آزمون منفی + Log.
+**۲. چرا vd؟** تفکیک.
+**۳. بازبینی چرا؟** Policy قدیمی.
+
+#### English Corner
+
+- *Isolation is proven by negative tests and logs.*
+- Q: How do you separate logs per tenant?
 
 ## پاسخ‌های فصل 24
 
@@ -42709,6 +49924,92 @@ end
 
 **تأیید:** `diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 443 tcp port2` باید Policy 10 را بدهد؛ آزمون منفی: پورت 22 ⇒ Policy 90.
 
+### تکمیل عمیق: Interoperability — چرا زبان مشترک مهم‌تر از برند است؟
+
+#### چرا باید یاد بگیریم؟
+
+سازمان‌ها معمولاً چند سازنده دارند: Cisco در هسته، Fortinet در لبه، شاید Juniper یا MikroTik در شعب. اگر «مفهوم» را بدانید، تغییر سازنده فقط تغییر Syntax است. اگر فقط دستور حفظ کرده باشید، با هر سازنده‌ی جدید از صفر شروع می‌کنید.
+
+#### توضیح ساده
+
+مثل مترجم: «آب» در فارسی و «Water» در انگلیسی یک مفهوم‌اند. در شبکه: «Interface مجازی L3 روی VLAN» در Cisco به آن SVI می‌گویند و در FortiGate «VLAN Interface».
+
+#### جدول نگاشت مفاهیم
+
+| مفهوم | Cisco | FortiGate |
+|---|---|---|
+| Interface مجازی L3 | SVI | VLAN Interface |
+| ACL | access-list | Firewall Policy |
+| NAT | ip nat | Policy NAT/VIP |
+| Route Policy | route-map | route-map / Policy Route |
+| جداسازی Routing | VRF | VDOM (تقریبی) |
+
+VRF = Virtual Routing and Forwarding، یعنی «جدول مسیر مجازی». VDOM علاوه بر Routing، Policy و Admin را هم جدا می‌کند؛ پس «تقریبی» است.
+
+#### مثال ساده — تبدیل ACL به Policy
+
+Cisco:
+
+``` text
+ip access-list extended USERS-OUT
+ permit tcp 10.10.0.0 0.0.0.255 host 10.20.0.10 eq 443
+ deny ip any any log
+```
+
+مراحل: ۱) Wildcard 0.0.0.255 یعنی /24 ۲) permit به Policy Accept ۳) deny پایانی به Policy Deny با Log ۴) Stateful بودن: برگشت خودکار.
+
+FortiGate:
+
+``` text
+config firewall policy
+ edit 10
+  set srcintf "port2"
+  set dstintf "port3"
+  set srcaddr "NET-USERS"
+  set dstaddr "SRV-ERP"
+  set service "HTTPS"
+  set action accept
+  set logtraffic all
+ next
+end
+```
+
+#### مثال متوسط — پیش‌فرض‌های متفاوت
+
+OSPF Reference Bandwidth: پیش‌فرض Cisco و FortiGate هر دو 100 Mbps است؛ لینک 1 Gbps و 10 Gbps هر دو Cost=1 می‌شوند. باید دستی یکسان تنظیم شود.
+
+``` text
+Cost = Reference BW / Interface BW
+100 / 1000 = 0.1 -> 1 (rounded up to minimum)
+```
+
+#### مثال سخت — تفاوت رفتاری
+
+در Cisco ACL قبل از NAT یا بعد از NAT ارزیابی می‌شود (بسته به جهت)؛ در FortiGate Policy بر اساس **بعد از DNAT و قبل از SNAT**. یک مهندس که نگاشت را تحت‌اللفظی انجام می‌دهد، Policy با IP اشتباه می‌نویسد. راه: با Debug Flow ترتیب را ببینید.
+
+#### Lab
+
+یک جدول نگاشت ۱۰ ردیفی از دستورهای روزمره‌ی خودتان بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ترافیک برگشت رد | فرض Stateless | Stateful |
+| NAT متفاوت | ترتیب ارزیابی | Debug |
+| Cost مغایر | Reference | یکسان‌سازی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. VRF=VDOM؟** نه دقیقاً.
+**۲. چرا Wildcard؟** معکوس Mask.
+**۳. چرا نگاشت مفهومی؟** جدا از Syntax.
+
+#### English Corner
+
+- *Learn the concept first, then map it to each vendor's syntax.*
+- Q: How does a VRF differ from a VDOM?
+
 ## درس 25-1 — نگاشت مفاهیم Cisco و Fortinet: برگه‌ی تطبیق دستورها و مدل‌های پردازش
 
 **فصل 25 · بازنویسی عمیق · پیش‌نیاز: فصل ۲ تا ۱۵ · ≈ 11 ساعت**
@@ -42889,6 +50190,65 @@ Cost = Reference BW / Interface BW
 ```
 
 **نکته:** پیش‌فرض‌های هر نسخه را در مستند رسمی همان نسخه بررسی کنید؛ این جدول «مفهومی» است.
+
+### تکمیل عمیق: برگه‌ی تطبیق دستورها — ساخت و استفاده
+
+#### چرا؟
+
+از کار روزمره: یک نفر Cisco بلد است و باید با FortiGate تست کند. برگه‌ی تطبیق (Cheat Sheet) سرعت را چند برابر می‌کند.
+
+#### برگه‌ی نمونه
+
+| هدف | Cisco | FortiGate |
+|---|---|---|
+| نمایش Route | `show ip route` | `get router info routing-table all` |
+| همسایه OSPF | `show ip ospf neighbor` | `get router info ospf neighbor` |
+| همسایه BGP | `show ip bgp summary` | `get router info bgp summary` |
+| جدول ARP | `show ip arp` | `get system arp` |
+| وضعیت Interface | `show ip interface brief` | `get system interface` |
+| Session | `show conn` (ASA) | `diagnose sys session list` |
+| Debug بسته | `debug ip packet` | `diagnose debug flow` |
+| Ping با منبع | `ping x source y` | `execute ping-options source y` + `execute ping x` |
+
+دقت دستورها را از مستند همان نسخه تأیید کنید.
+
+#### مثال ساده — Ping با منبع
+
+``` text
+execute ping-options source 10.10.0.1
+execute ping 10.20.0.10
+```
+
+#### مثال متوسط — مقایسه‌ی Debug
+
+Cisco `debug ip packet` ممکن است دستگاه را از پا بیندازد؛ در FortiGate `debug flow` با فیلتر محدود و `trace start 20` ایمن‌تر است. قانون: همیشه فیلتر و سقف تعداد.
+
+#### مثال سخت — ترجمه‌ی یک مسئله‌ی کامل
+
+مسئله: «مسیر 10.30.0.0/24 را از BGP یاد بگیر». ترجمه: Cisco `network` و `neighbor`؛ FortiGate `config router bgp ... config neighbor ... config network`. نکته: FortiGate پیش‌فرض Route-map ندارد و اگر Policy لازم است باید `route-map-in/out` بنویسید.
+
+#### Lab
+
+برگه‌ی ۲۰ ردیفی از دستورهای مورد استفاده‌ی خودتان با ستون «خروجی مورد انتظار».
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| دستور کار نمی‌کند | نسخه | مستند |
+| خروجی متفاوت | قالب | مقایسه |
+| Debug سنگین | بی‌فیلتر | فیلتر |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا فیلتر در Debug؟** CPU.
+**۲. برگه چه کمکی می‌کند؟** سرعت و دقت.
+**۳. چرا ستون خروجی؟** تشخیص موفقیت.
+
+#### English Corner
+
+- *A cheat sheet maps tasks, not just commands.*
+- Q: Why limit the scope of debug commands?
 
 ## درس 25-2 — OSPF و BGP بین FortiGate و CSR: برگه‌ی پارامتر، پیکربندی دوطرفه، Redistribution و عیب‌یابی مقایسه‌ای
 
@@ -43125,6 +50485,78 @@ FGT    port1 MTU 1496   (VLAN tag overhead)
 
 **مثال BGP:** Idle ⇒ `telnet 10.99.0.2 179` از فایروال؛ اگر باز نشد Policy/ACL پورت 179 را بررسی کنید و از Local-in Policy فایروال غافل نشوید.
 
+### تکمیل عمیق: OSPF و BGP بین FortiGate و CSR — پارامترهای همسایگی
+
+#### چرا؟
+
+بیشتر شکست‌های Interop در همسایگی رخ می‌دهد؛ دو دستگاه باید روی پارامترها توافق کنند. ما باید بدانیم کدام پارامتر چرا مهم است.
+
+#### OSPF — پارامترهای باید یکسان
+
+| پارامتر | چرا |
+|---|---|
+| Area ID | همسایگی در یک Area |
+| Hello/Dead | 10/40 پیش‌فرض Broadcast |
+| Network Type | رفتار DR/BDR |
+| MTU | DBD Exchange |
+| Authentication | امنیت |
+| Subnet Mask | همسایگی |
+
+#### مثال ساده — وضعیت‌ها
+
+``` text
+Down -> Init -> 2-Way -> ExStart -> Exchange -> Loading -> Full
+```
+
+- گیر در Init: Hello یک‌طرفه (ACL/Policy).
+- گیر در 2-Way: طبیعی بین DROther‌ها.
+- گیر در ExStart: MTU یا Duplicate Router-ID.
+
+#### مثال متوسط — حل ExStart
+
+``` text
+Cisco : show interface Gi0/0 | include MTU
+FGT   : get system interface physical
+```
+
+MTU دو سر را برابر کنید یا (موقت) `ip ospf mtu-ignore`. تأیید: Full.
+
+#### BGP — نقاط رایج
+
+``` text
+show ip bgp summary     (Cisco)
+get router info bgp summary   (FGT)
+```
+
+State: Idle (TCP/179؟)، Active (تلاش)، OpenSent/Confirm (پارامتر)، Established (PfxRcd عدد). مثال: Idle ⇒ ping/ TCP 179 / Policy Local-in.
+
+#### مثال سخت — Next-hop
+
+پیشوند یاد گرفته شد ولی ترافیک نمی‌رود: Next-hop دست‌نیافتنی. راه: `next-hop-self` یا Route به Next-hop.
+
+#### Lab
+
+دو روتر (یک CSR و یک FortiGate VM) بسازید؛ OSPF را با MTU متفاوت گیر دهید و رفع کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ExStart | MTU | یکسان‌سازی |
+| Init | یک‌طرفه | Policy/ACL |
+| BGP Idle | TCP179 | Local-in |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا MTU در OSPF؟** DBD اندازه.
+**۲. 2-Way طبیعی کجا؟** DROther.
+**۳. BGP Idle؟** TCP برقرار نیست.
+
+#### English Corner
+
+- *OSPF neighbors must agree on area, timers and MTU.*
+- Q: What does the BGP Idle state indicate?
+
 ## درس 25-3 — IPsec چندسازنده: روش مقایسه‌ی Debug، جدول مغایرت و Interop آزمایشی FGT–CSR
 
 **فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۳، ۲۵-۱، ۲۵-۲ · ≈ 11 ساعت**
@@ -43299,6 +50731,70 @@ CSR: debug crypto ikev2 ; debug crypto ikev2 error
 علت: AES256 در برابر AES128. با یکسان‌سازی، `show crypto ikev2 sa` وضعیت READY.
 
 پس از تأیید دیباگ را خاموش کنید: `undebug all` و `diagnose debug disable`.
+
+### تکمیل عمیق: IPsec چندسازنده — روش مقایسه‌ی Debug
+
+#### چرا؟
+
+در IPsec بین دو سازنده، «کار نمی‌کند» معمولاً یعنی یک تفاوت کوچک در پارامترها؛ ولی کدام؟ روش مقایسه‌ی سیستماتیک جواب می‌دهد.
+
+#### جدول مقایسه‌ی پارامتر
+
+| پارامتر | FortiGate | Cisco CSR |
+|---|---|---|
+| IKE نسخه | `ike-version 2` | `crypto ikev2` |
+| رمز | `proposal aes256-sha256` | `encryption aes-cbc-256` + `integrity sha256` |
+| DH | `dhgrp 14` | `group 14` |
+| Lifetime | `keylife` | `lifetime` |
+| Identity | `localid` | `identity local` |
+| Selector | Phase2 selector | Tunnel/ACL |
+
+#### مثال ساده — Debug دو سر هم‌زمان
+
+``` text
+FGT: diagnose debug application ike -1 ; diagnose debug enable
+CSR: debug crypto ikev2 ; debug crypto ikev2 error
+```
+
+#### مثال متوسط — تفسیر
+
+- FGT: `no proposal chosen`، CSR: `Failed to find a matching policy` ⇒ Proposal ناهمخوان.
+- AUTH_FAILED ⇒ PSK/Identity.
+- TS_UNACCEPTABLE ⇒ Selector.
+
+#### مثال سخت — شکست پس از چند ساعت
+
+Tunnel بالا می‌آید و بعد از 8 ساعت قطع می‌شود: Lifetime متفاوت و Rekey ناهماهنگ (FGT 28800، CSR 86400). رفع: یکسان‌سازی؛ در IKEv2 هر طرف مستقل Rekey می‌کند ولی Collision ممکن است.
+
+``` text
+sh crypto ikev2 sa ; sh crypto ipsec sa
+diagnose vpn tunnel list
+```
+
+کانترها: `encaps/decaps` در Cisco و `enc/dec pkts` در FGT باید با هم افزایش یابند.
+
+#### Lab
+
+یک Tunnel را عمداً با Proposal متفاوت بسازید و Debug هر دو سر را تفسیر کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| no proposal chosen | رمز | یکسان |
+| AUTH_FAILED | PSK | یکسان |
+| TS_UNACCEPTABLE | Selector | یکسان |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Debug دو سر؟** دیدن هر دو دید.
+**۲. Collision Rekey؟** هم‌زمانی.
+**۳. کانتر چه می‌گوید؟** عبور ترافیک.
+
+#### English Corner
+
+- *Debug both peers at the same time and compare.*
+- Q: What does TS_UNACCEPTABLE point to?
 
 ## درس 25-4 — آزمون معماری ۶ (FGT+CSR): IPsec چندسازنده، مقایسه‌ی Debug و جدول مغایرت — کلید پاسخ و Rubric
 
@@ -43494,6 +50990,63 @@ show crypto ipsec sa
 | گزارش | 10 | RCA/محدودیت‌ها |
 
 **نمره‌گذاری:** اگر IPsec برقرار ولی آزمون منفی ندارد: 25+25+25+0+10 = 85 از 100؛ ایراد باید در بازخورد ذکر شود.
+
+### تکمیل عمیق: ارزیابی معماری ۶ — حل کامل و Rubric
+
+#### چرا؟
+
+این آزمون نشان می‌دهد می‌توانید دو سازنده را با هم کار بیندازید و ثابت کنید.
+
+#### صورت مسئله
+
+بین FortiGate (HQ) و CSR (Branch): IPsec IKEv2، OSPF روی Tunnel، یک Policy اینترنت و NAT. مدارک: تنظیمات، شواهد، آزمون منفی، گزارش.
+
+#### کلید پاسخ
+
+1. **نگاشت**: جدول مفاهیم.
+2. **IPsec**: `diagnose vpn tunnel list`، `show crypto ikev2 sa`.
+3. **OSPF**: Full در دو سر.
+4. **NAT**: یک نقطه.
+5. **آزمون منفی**: Branch→Mgmt رد.
+6. **گزارش**: محدودیت‌ها.
+
+#### محاسبه‌ی نمره
+
+``` text
+Mapping 25 | IPsec 25 | Routing 25 | Evidence 15 | Report 10
+Example: 22 + 25 + 20 + 12 + 8 = 87
+```
+
+#### مثال متوسط — خطای رایج
+
+دانشجو OSPF را روی Tunnel با Network Type متفاوت (P2P در Cisco و Broadcast در FGT) تنظیم کرد؛ همسایگی بالا رفت ولی DR انتخاب‌شد و پایدار نبود. شاهد: `get router info ospf interface`. رفع: Point-to-Point هر دو.
+
+#### مثال سخت — اختلاف MSS
+
+پس از Tunnel، HTTPS کند است. MSS Clamp 1360 روی Policy؛ مقایسه‌ی قبل و بعد با iperf.
+
+#### Lab
+
+آزمون را کامل اجرا و Evidence Index بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| OSPF ناپایدار | Network Type | یکسان |
+| HTTPS کند | MTU | MSS |
+| Tunnel Up بدون ترافیک | Policy/Route | بررسی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا P2P روی Tunnel؟** بدون DR.
+**۲. MSS Clamp؟** جلوگیری از Fragmentation.
+**۳. Evidence چیست؟** خروجی دو سر.
+
+#### English Corner
+
+- *Use point-to-point network type on tunnel interfaces.*
+- Q: Why is MSS clamping useful over IPsec?
 
 ## پاسخ‌های فصل 25
 
@@ -43796,6 +51349,66 @@ end
 
 **تصمیم نمونه:** Log با rsyslog+Graylog، Backup با Git، و ارزیابی FMG وقتی تعداد دستگاه از ۲۰ گذشت یا ممیزی Policy Package لازم شد. هر عدد آستانه در جلسه‌ی خودتان تعیین شود؛ این فقط نمونه است.
 
+### تکمیل عمیق: مدیریت مرکزی — از ۳ دستگاه تا ۳۰ دستگاه
+
+#### چرا باید یاد بگیریم؟
+
+با ۳ فایروال می‌توانید هر کدام را جداگانه مدیریت کنید. با ۳۰ فایروال، یک تغییر ساده (مثلاً افزودن یک Address) یعنی ۳۰ بار ورود، ۳۰ بار خطای احتمالی و ۳۰ مغایرت پنهان. مدیریت مرکزی سه مسئله را حل می‌کند: **یکنواختی** (همه یک Policy)، **دیده‌شدن** (Log یک‌جا) و **کنترل تغییر** (چه کسی چه کرد).
+
+#### توضیح ساده
+
+دو نقش جدا:
+
+- **FortiManager (FMG)**: مدیریت پیکربندی؛ Policy Package، Device Manager، Script.
+- **FortiAnalyzer (FAZ)**: مدیریت Log و گزارش؛ جمع‌آوری، جستجو، Event Handler.
+
+هر دو Needs-License و به‌صورت VM یا سخت‌افزار عرضه می‌شوند؛ در این دوره بدون لایسنس نمی‌توان اجرا شان کرد، پس با جایگزین‌های متن‌باز مفهوم را تمرین می‌کنیم.
+
+#### مثال ساده — تصمیم با عدد
+
+| تعداد دستگاه | نیاز | تصمیم پیشنهادی |
+|---|---|---|
+| ≤ 5 | کم | Git + rsyslog |
+| 6–20 | متوسط | ارزیابی FMG/FAZ |
+| > 20 | زیاد | FMG/FAZ توجیه‌پذیر |
+
+اعداد آستانه نمونه‌اند؛ هر سازمان بر اساس هزینه‌ی خطای انسانی تصمیم می‌گیرد.
+
+#### مثال متوسط — Policy Package
+
+یک Package «Branch-Standard» شامل Policyهای Users→Internet و Guest. با Install روی ۱۰ شعبه، همه‌ی آنها دقیقاً یکی می‌شوند. Objectهای خاص هر شعبه (مثل IP محلی) با **Metadata Variable/Normalized Interface** جدا می‌شوند.
+
+#### مثال سخت — ADOM و جداسازی
+
+ADOM = Administrative Domain، یعنی «دامنه‌ی مدیریتی». شرکت A و B هر کدام یک ADOM با Policy و Log جدا؛ ادمین A به Log B دسترسی ندارد. از ADOM برای مشتریان MSSP یا بخش‌های بزرگ سازمان استفاده می‌شود.
+
+#### ریسک مدیریت مرکزی
+
+نقطه‌ی مرکزی هدف جذاب مهاجم است؛ Hardening، شبکه‌ی Mgmt جدا، MFA و Backup خود FMG الزامی است.
+
+#### Lab (بدون لایسنس)
+
+یک ساختار Git با Config چند دستگاه بسازید و تغییر یک Address را به همه با اسکریپت اعمال کنید (روی Lab)؛ مزایا/معایب نسبت به FMG را بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Install ناموفق | Object ناهمخوان | Policy Check |
+| Device Out-of-sync | تغییر محلی | Retrieve/Re-install |
+| FGFM قطع | پورت 541 | بررسی مسیر |
+
+#### پرسش‌ها با پاسخ
+
+**۱. تفاوت FMG و FAZ؟** پیکربندی در برابر Log.
+**۲. ADOM چیست؟** دامنه‌ی مدیریتی جدا.
+**۳. چرا HA برای FMG؟** نقطه‌ی مرکزی.
+
+#### English Corner
+
+- *Centralized management reduces drift between devices.*
+- Q: What is the difference between FortiManager and FortiAnalyzer?
+
 ## درس 26-1 — FMG و FAZ: نقش‌ها، معماری، ADOM، لایسنس و تصمیم «ابزار یا جایگزین» با تحلیل هزینه و ریسک
 
 **فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۰، ۲۲-۰، ۲۷-۰ · ≈ 8 ساعت**
@@ -43986,6 +51599,71 @@ With 30% headroom ~ 2.8 TB
 مراحل: ۱) حجم روزانه را از `diagnose log device` یا مانیتور واقعی بگیرید؛ ۲) ضرب در دستگاه و روز؛ ۳) حاشیه‌ی ظرفیت؛ ۴) لایسنس بر اساس GB/Day مطابق مستند.
 
 ADOM: برای جداسازی مشتریان/محیط‌ها، هر ADOM Policy و Log جدا.
+
+### تکمیل عمیق: FMG/FAZ — معماری، ظرفیت و لایسنس
+
+#### چرا؟
+
+قبل از خرید یا طراحی باید بدانید چه ظرفیتی لازم است. خطای ظرفیت یعنی Log از دست‌رفته یا هزینه‌ی اضافی.
+
+#### ارتباط‌ها
+
+``` text
+FortiGate  <--FGFM TCP/541-->  FortiManager (config)
+FortiGate  --OFTP TCP/514-->   FortiAnalyzer (logs)
+```
+
+نام پورت‌ها را از مستند همان نسخه تأیید کنید.
+
+#### مثال ساده — ظرفیت
+
+``` text
+Log per device = 2 GB/day
+Devices        = 12
+Retention      = 90 days
+Total          = 2 x 12 x 90 = 2160 GB ~ 2.1 TB
+With 30% headroom ~ 2.8 TB
+```
+
+#### مثال متوسط — GB/Day لایسنس
+
+لایسنس FAZ معمولاً بر پایه‌ی حجم Log روزانه است. اگر روزانه 24 GB تولید می‌شود ولی لایسنس 10 GB/Day است، Log اضافه کنار گذاشته یا رد می‌شود. پس باید Log غیرضروری را (مثلاً Traffic Allow برای Policyهای کم‌اهمیت) کاهش دهید.
+
+#### مثال سخت — طراحی Log
+
+``` text
+Policy Internet : log utm only
+Policy DMZ-in   : log all
+Deny final      : log all
+Result          : daily volume drops ~40%, key evidence kept
+```
+
+#### Revision و Script
+
+FMG هر تغییر را Revision می‌کند؛ می‌توانید برگردید. Script انبوه برای تغییر یکباره‌ی چندین دستگاه (با آزمون روی یک دستگاه ابتدا).
+
+#### Lab
+
+ظرفیت را برای سناریوی خودتان با جدول محاسبه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Log رد می‌شود | سقف GB/Day | کاهش Log |
+| دیسک پر | Retention | تنظیم |
+| FGFM نمی‌رسد | Route/پورت | بررسی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Headroom؟** رشد.
+**۲. Revision چه فایده‌ای؟** بازگشت.
+**۳. چرا Script ابتدا روی یکی؟** ریسک.
+
+#### English Corner
+
+- *Size log storage as volume times retention plus headroom.*
+- Q: What happens when the daily log quota is exceeded?
 
 ## درس 26-2 — Syslog مرکزی (جایگزین FAZ): FortiGate → rsyslog با TCP/TLS، قالب، Parse، Retention و آزمون
 
@@ -44201,6 +51879,78 @@ Srv: tail -f /var/log/fgt/*.log
 
 **تست دستی از FGT:** با رویداد تغییر Config یا ورود ادمین یک Log ایجاد و رسیدن آن را بررسی کنید.
 
+### تکمیل عمیق: Syslog مرکزی با rsyslog — از FortiGate تا فایل
+
+#### چرا؟
+
+اگر بودجه‌ی FAZ ندارید، یک سرور لینوکس با rsyslog همان کار جمع‌آوری Log را می‌کند و پایه‌ی SIEM هم می‌شود.
+
+#### گام‌ها
+
+1. سرور Syslog: TCP/514 باز.
+2. فایروال سرور: فقط IP فایروال‌ها.
+3. FortiGate: ارسال با `mode reliable`.
+4. تأیید دریافت.
+5. چرخش (Rotation) و نگهداری.
+
+#### مثال ساده — سمت سرور
+
+``` text
+# /etc/rsyslog.d/10-fgt.conf
+module(load="imtcp")
+input(type="imtcp" port="514")
+template(name="fgt" type="string" string="/var/log/fgt/%fromhost-ip%/%$YEAR%-%$MONTH%-%$DAY%.log")
+*.* ?fgt
+```
+
+#### مثال متوسط — سمت FortiGate
+
+``` text
+config log syslogd setting
+ set status enable
+ set server 10.50.0.20
+ set mode reliable
+ set port 514
+ set source-ip 10.50.0.1
+end
+```
+
+تأیید: `tcpdump -ni eth0 tcp port 514 -c 5` روی سرور؛ سپس `tail -f /var/log/fgt/10.50.0.1/*.log`.
+
+#### مثال سخت — Log نمی‌رسد
+
+روش ده‌گامی کوتاه: ۱) Route فایروال به سرور ۲) Policy/Local-out ۳) پورت در `ss -ltn` ۴) فایروال سرور ۵) `source-ip` ۶) TLS (اگر فعال).
+
+#### Rotation
+
+``` text
+# /etc/logrotate.d/fgt
+/var/log/fgt/*/*.log { daily rotate 90 compress missingok notifempty }
+```
+
+#### Lab
+
+یک VM لینوکس با rsyslog بسازید، Log بفرستید و Rotation را تست کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| فایل ساخته نمی‌شود | مجوز | دسترسی پوشه |
+| فقط UDP | حالت پیش‌فرض | `reliable` |
+| دیسک پر | Rotation | logrotate |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا TCP؟** تحویل مطمئن.
+**۲. چرا Rotation؟** دیسک.
+**۳. TLS Syslog؟** حفاظت محتوا.
+
+#### English Corner
+
+- *Use reliable (TCP) syslog for security logs.*
+- Q: How do you confirm logs are arriving?
+
 ## درس 26-3 — Backup خودکار و مدیریت Config با Git: Sanitize، Diff، Audit، Restore و Drift
 
 **فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۰، ۲۷-۷ · ≈ 8 ساعت**
@@ -44384,6 +52134,72 @@ git diff HEAD~1 -- cfg.clean | head -30
 
 **هشدار:** `ENC` هم Secret است؛ فایل Sanitize نشده را در ریپو قرار ندهید.
 
+### تکمیل عمیق: Backup خودکار، Diff و Git بدون نشت Secret
+
+#### چرا؟
+
+تغییر Config بدون ردپا یعنی نمی‌دانید دیشب چه شد. Git + Backup خودکار تاریخچه‌ی تغییرات را رایگان می‌دهد؛ ولی اگر Secret به ریپو برود، فاجعه است.
+
+#### جریان
+
+``` text
+Backup -> Sanitize secrets -> Commit -> Diff -> Alert on unexpected change
+```
+
+#### مثال ساده — Sanitize
+
+``` text
+sed -E 's/(set (psk|password|secret|passwd) ).*/\1REDACTED/; s/ENC [^ ]+/ENC REDACTED/' cfg.conf > cfg.clean
+```
+
+هشدار: `ENC` هم یک Secret رمزنگاری‌شده است؛ در ریپوی عمومی/مشترک نگذارید.
+
+#### مثال متوسط — Commit و Diff
+
+``` text
+git add cfg.clean && git commit -m "daily backup"
+git diff HEAD~1 -- cfg.clean | head -40
+```
+
+خطوط `+` افزوده‌شده، `-` حذف‌شده. تغییر بدون CHG ⇒ بررسی.
+
+#### مثال سخت — اتوماسیون
+
+Cron روزانه: Backup با SCP، Sanitize، Commit، و اگر Diff غیرخالی بود ایمیل به Owner.
+
+``` text
+0 2 * * * /opt/fgt/backup.sh >> /var/log/fgt-backup.log 2>&1
+```
+
+اسکریپت باید خطا را گزارش کند (Exit Code) و Hash را ثبت.
+
+#### Restore آزمایشی
+
+ماهانه یک Config را در Lab Restore کنید و Policy/Route را مقایسه کنید.
+
+#### Lab
+
+یک ریپوی خصوصی محلی بسازید، سه نسخه‌ی Config با تغییر را Commit و Diff را تحلیل کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Secret در Git | Sanitize ناقص | حذف از تاریخچه + تغییر رمز |
+| Diff خیلی بزرگ | ترتیب تصادفی | ثابت‌کردن خروجی |
+| Backup خالی | دسترسی | بررسی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. اگر Secret به Git رفت؟** آن را چرخش (Rotate) کنید، نه فقط حذف.
+**۲. چرا Diff؟** تغییر ناخواسته.
+**۳. Restore چرا آزمایشی؟** اعتبار Backup.
+
+#### English Corner
+
+- *Never commit secrets; rotate any that leak.*
+- Q: What does an unexpected diff indicate?
+
 ## درس 26-4 — طراحی معماری ۹ (مدیریت مرکزی و عملیات): RBAC، Change، Audit و آزمون با Rubric
 
 **فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۱ تا ۲۶-۳، ۳۲-۱ · ≈ 11 ساعت**
@@ -44559,6 +52375,71 @@ end
 ```
 
 آزمون: کاربر NOC تلاش به تغییر Policy ⇒ رد؛ Log رویداد ثبت شود.
+
+### تکمیل عمیق: معماری عملیات — RBAC، Out-of-band، Audit
+
+#### چرا؟
+
+عملیات مقیاس‌پذیر یعنی «هر کس فقط همان کاری را بتواند انجام دهد که باید». این‌جا RBAC (Role-Based Access Control، یعنی «کنترل دسترسی نقش‌محور»)، شبکه‌ی مدیریتی جدا و ممیزی را کنار هم می‌گذاریم.
+
+#### مثال ساده — نقش‌ها
+
+| نقش | دسترسی | مثال |
+|---|---|---|
+| NOC | فقط‌خواندنی | بررسی Health |
+| Network Eng | Policy/Route | تغییر با CHG |
+| Security | Log/UTM | تحلیل |
+| Super Admin | کامل | 2 نفر |
+
+#### مثال متوسط — Profile
+
+``` text
+config system accprofile
+ edit "noc-ro"
+  set netgrp read
+  set fwgrp read
+  set loggrp read
+  set sysgrp read
+ next
+end
+```
+
+آزمون: کاربر NOC تلاش به تغییر Policy ⇒ رد و Log رویداد.
+
+#### مثال سخت — Out-of-band
+
+اگر مدیریت از همان شبکه‌ی Production برود و فایروال یا لینک خراب شود، دسترسی هم قطع می‌شود. راه: شبکه‌ی Mgmt جدا (OOB) با Console Server/LTE.
+
+#### Audit
+
+Log تغییرات: چه کسی، کی، چه چیزی (`config log eventfilter`). هفتگی با CHGها تطبیق دهید؛ تغییر بدون CHG یعنی خارج از فرایند.
+
+``` text
+Unmatched changes = total config changes - changes with CHG
+```
+
+#### Lab
+
+سه پروفایل بسازید و رفتار هر کدام را تست کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| همه Super Admin | سهل‌انگاری | RBAC |
+| تغییر بدون ردپا | Log غیرفعال | eventfilter |
+| قطع مدیریت | Inband | OOB |
+
+#### پرسش‌ها با پاسخ
+
+**۱. RBAC چیست؟** دسترسی بر اساس نقش.
+**۲. OOB چرا؟** مدیریت هنگام خرابی.
+**۳. چرا Audit؟** ردگیری.
+
+#### English Corner
+
+- *Apply least privilege through role-based profiles.*
+- Q: Why keep a separate out-of-band management path?
 
 ## پاسخ‌های فصل 26
 
@@ -44843,6 +52724,63 @@ CPU warn = P95 x 1.5 = 61%
 
 مراحل: ۱) Baseline از دورهٔ نرمال ۲) آستانه بر اساس ظرفیت و P95 ۳) بازبینی ماهانه. هشدار با Duration (مثلاً ۱۰ دقیقه) برای کاهش Alert Fatigue.
 
+### تکمیل عمیق: Baseline — بدون «نرمال»، «غیرعادی» معنا ندارد
+
+#### چرا باید یاد بگیریم؟
+
+پزشک وقتی می‌گوید «فشار خون ۱۶۰ بالاست» که بداند فشار نرمال شما ۱۲۰ است. اگر فشار همیشگی کسی ۱۶۰ باشد، همین عدد نرمال اوست. در شبکه هم «CPU ۶۰٪» برای یک دستگاه عادی و برای دستگاه دیگر فاجعه است. **Baseline** یعنی ثبت رفتار عادی تا انحراف را تشخیص دهید.
+
+#### توضیح ساده
+
+سه سؤال: چه چیزی را اندازه بگیریم (CPU، Session، پهنای باند، خطا)؟ هر چند وقت یک‌بار؟ چه عددی «هشدار» است؟
+
+#### مثال ساده — ساخت Baseline
+
+داده‌ی ۷ روز: CPU میانگین ۱۸٪، P95 برابر ۴۱٪؛ Session میانگین ۲۵,۰۰۰ و Peak ۳۸,۰۰۰؛ ظرفیت مدل ۲۰۰,۰۰۰ Session.
+
+P95 یعنی ۹۵٪ زمان مقدار کمتر یا مساوی این عدد بود (۵٪ بالاترین‌ها حذف می‌شود تا اوج‌های لحظه‌ای گمراه نکنند).
+
+#### مثال متوسط — تعیین آستانه
+
+``` text
+Session warn = 50% of capacity = 0.5 x 200000 = 100000
+Session crit = 80% of capacity = 0.8 x 200000 = 160000
+CPU warn     = P95 x 1.5      = 41 x 1.5 ~ 61 %
+```
+
+مراحل: ۱) ظرفیت از مستند مدل ۲) درصد ۳) P95 ۴) ضریب ۵) مدت پایداری (مثلاً ۱۰ دقیقه) تا هشدار کاذب کم شود.
+
+#### مثال سخت — فصل‌بندی
+
+پایان ماه مالی ترافیک ۳ برابر می‌شود. Baseline یک ماه عادی هشدار کاذب می‌دهد. راه: Baseline جدا برای «روز عادی» و «پایان ماه» یا آستانه‌ی وابسته به تقویم.
+
+#### Alert Fatigue
+
+اگر روزی ۲۰۰ هشدار بیاید، هیچ‌کس نمی‌خواند. قاعده: هشدار باید **اقدام‌پذیر** باشد؛ اگر کسی کاری نمی‌کند، حذفش کنید یا به گزارش تبدیلش کنید.
+
+#### Lab
+
+یک هفته داده‌ی Zabbix یا SNMP جمع کنید و جدول Baseline را بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| هشدار زیاد | آستانه‌ی نزدیک به نرمال | P95 × ضریب |
+| هشدار دیر | آستانه بالا | کاهش |
+| نویز شبانه | کار Backup | Maintenance window |
+
+#### پرسش‌ها با پاسخ
+
+**۱. P95 چیست؟** ۹۵٪ مقادیر زیر آن.
+**۲. چرا مدت پایداری؟** حذف اوج لحظه‌ای.
+**۳. Alert Fatigue؟** هشدار زیاد و بی‌اقدام.
+
+#### English Corner
+
+- *A baseline tells you what normal looks like.*
+- Q: Why use the 95th percentile instead of the maximum?
+
 ## درس 27-1 — Logging در FortiGate: انواع Log، سطح ثبت، Policy Logging، ذخیره‌ی محلی و طراحی حجم/Retention
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰، ۲۶-۲، ۱۴-۷ · ≈ 8 ساعت**
@@ -45052,6 +52990,81 @@ date=2026-11-27 srcip=10.10.0.5 dstip=198.51.100.8 policyid=30 action=accept
 
 اگر Disk Log پر است، به Syslog/FAZ منتقل کنید.
 
+### تکمیل عمیق: Logging در FortiGate — چه چیزی، کجا و با چه هزینه‌ای؟
+
+#### چرا؟
+
+Log‌ها حافظه‌ی شبکه‌اند. Log ناقص یعنی در حادثه کور هستید؛ Log بیش‌ازحد یعنی دیسک پر و CPU درگیر. تعادل لازم است.
+
+#### انواع Log
+
+| نوع | محتوا | مثال |
+|---|---|---|
+| Traffic | Sessionها | accept/deny |
+| Event | سیستم/ادمین/VPN | ورود ادمین |
+| UTM | AV/IPS/Web | virus blocked |
+| Local | ترافیک به خود فایروال | Local-in |
+
+#### مثال ساده — Log در Policy
+
+``` text
+config firewall policy
+ edit 30
+  set logtraffic all     # or utm
+ next
+end
+```
+
+`all` هر Session؛ `utm` فقط رویدادهای UTM. برای Policy Deny پایانی همیشه `all`.
+
+#### مثال متوسط — Implicit Deny
+
+``` text
+config log setting
+ set fwpolicy-implicit-log enable
+end
+```
+
+بدون آن ترافیک رد‌شده‌ی Implicit Deny ثبت نمی‌شود و نشانه‌ای از اسکن نمی‌بینید.
+
+#### مثال سخت — دیسک پر
+
+Log روی دیسک محلی در ۴۸ ساعت پر می‌شود و Rolling فعال است؛ حادثه‌ی هفته‌ی قبل از بین رفته. راه: ارسال به Syslog/FAZ با نگهداری ۹۰ روز و محاسبه‌ی ظرفیت.
+
+``` text
+Storage = log_per_day x days x devices
+2 GB x 90 x 12 = 2160 GB
+```
+
+#### Lab
+
+یک Policy با Log all بسازید، ترافیک تولید و در GUI/CLI Log را فیلتر کنید.
+
+``` text
+execute log filter category 0
+execute log filter field srcip 10.10.0.5
+execute log display
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Log نیست | logtraffic disable | فعال‌سازی |
+| Log ناقص | دیسک/Rate | Syslog |
+| زمان اشتباه | NTP/Timezone | تنظیم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. تفاوت all و utm؟** تمام Session در برابر فقط UTM.
+**۲. چرا Syslog؟** ماندگاری و تحلیل.
+**۳. چرا NTP؟** ترتیب رویدادها.
+
+#### English Corner
+
+- *Enable logging on the final deny policy.*
+- Q: Why send logs off the device?
+
 ## درس 27-2 — مانیتورینگ با SNMP و Zabbix: معیارها، Template، Trigger، Baseline و کاهش Alert نویزی
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰، ۲۷-۱ · ≈ 8 ساعت**
@@ -45246,6 +53259,89 @@ snmpwalk -v2c -c ro-comm 10.50.0.1 1.3.6.1.4.1.12356.101.4.1.3
 OID بالا از MIB فورتی‌نت (fgSysCpuUsage؛ مسیر را از MIB رسمی نسخه تأیید کنید). تفسیر عدد: درصد CPU.
 
 در Zabbix: Item ← Trigger `avg(/FGT/cpu,10m)>70` ← Action ایمیل. آزمون: بار مصنوعی با iperf و دیدن Trigger.
+
+### تکمیل عمیق: SNMP و Zabbix — از نیاز تا هشدار واقعی
+
+#### چرا؟
+
+نمی‌شود صبح‌ها وارد ۱۰ فایروال شد و CPU را دید. مانیتورینگ این کار را خودکار می‌کند: عدد را می‌گیرد، ذخیره می‌کند، با آستانه مقایسه می‌کند و خبر می‌دهد.
+
+#### SNMP
+
+SNMP = Simple Network Management Protocol، یعنی «پروتکل ساده‌ی مدیریت شبکه». نسخه‌ها: v1/v2c (رمز Community به‌صورت متن ساده) و v3 (احراز هویت و رمزنگاری). در محیط واقعی v3 را ترجیح دهید.
+
+#### مثال ساده — فعال‌سازی
+
+``` text
+config system snmp sysinfo
+ set status enable
+end
+config system snmp community
+ edit 1
+  set name "ro-comm"
+  config hosts
+   edit 1
+    set ip 10.50.0.20 255.255.255.255
+   next
+  end
+ next
+end
+```
+
+فقط IP سرور مانیتورینگ مجاز است؛ و Interface مدیریتی باید SNMP را مجاز کند (`allowaccess snmp`).
+
+#### مثال متوسط — خواندن
+
+``` text
+snmpwalk -v2c -c ro-comm 10.50.0.1 1.3.6.1.2.1.1.1
+```
+
+اگر خروجی بیاید، SNMP کار می‌کند. OIDهای اختصاصی Fortinet (CPU، Memory، Session) را از MIB رسمی همان نسخه بگیرید.
+
+#### مثال سخت — Trigger در Zabbix
+
+``` text
+avg(/FGT-1/system.cpu.util,10m) > 70
+```
+
+یعنی میانگین CPU در ۱۰ دقیقه بیش از ۷۰٪. آزمون: بار مصنوعی با iperf و دیدن Trigger. همچنین Trigger «No data for 5m» برای تشخیص قطع SNMP.
+
+#### SNMPv3 (نمونه)
+
+``` text
+config system snmp user
+ edit "mon"
+  set security-level auth-priv
+  set auth-proto sha256
+  set priv-proto aes256
+ next
+end
+```
+
+رمزها را در Vault نگه دارید.
+
+#### Lab
+
+SNMP را در Lab فعال، با snmpwalk تست و یک Trigger بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Timeout | allowaccess/ACL | بررسی |
+| Community اشتباه | نام | تطبیق |
+| داده‌ی نامعتبر | OID اشتباه | MIB رسمی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا v3؟** رمزنگاری.
+**۲. چرا Host محدود؟** سطح حمله.
+**۳. No data Trigger؟** تشخیص قطع پایش.
+
+#### English Corner
+
+- *Prefer SNMPv3 with authentication and privacy.*
+- Q: Why restrict SNMP to the monitoring host?
 
 ## درس 27-3 — REST API و Automation امن: احراز هویت، Trusted Host، GET/PUT، Idempotency، Rollback و آزمون
 
@@ -45442,6 +53538,78 @@ curl -sk -H "Authorization: Bearer $TOKEN" https://10.50.0.1/api/v2/monitor/syst
 
 آزمون منفی: Profile فقط‌خواندنی با روش PUT ⇒ رد.
 
+### تکمیل عمیق: REST API و Automation امن
+
+#### چرا؟
+
+کارهای تکراری (Backup، گزارش، افزودن Address) را با دست انجام ندهید؛ ولی API بدون امنیت یک در پشتی است. این درس خودکارسازی را با کمترین ریسک نشان می‌دهد.
+
+#### اصول
+
+1. **حداقل دسترسی**: Profile فقط‌خواندنی برای مانیتورینگ.
+2. **Trusted Host**: فقط IP مجاز.
+3. **توکن در Vault** نه در Script.
+4. **Log و ممیزی** درخواست‌ها.
+
+#### مثال ساده — ساخت کاربر API
+
+``` text
+config system api-user
+ edit "zabbix"
+  set accprofile "ro-profile"
+  config trusthost
+   edit 1
+    set type ipv4-trusthost
+    set ipv4-trusthost 10.50.0.20 255.255.255.255
+   next
+  end
+ next
+end
+```
+
+#### مثال متوسط — GET
+
+``` text
+curl -sk -H "Authorization: Bearer $TOKEN" https://10.50.0.1/api/v2/monitor/system/status
+```
+
+نتیجه JSON با نسخه. اگر از IP غیرمجاز زده شود ⇒ رد.
+
+#### مثال سخت — تغییر خودکار با Rollback
+
+افزودن Address با POST، سپس آزمون، سپس در صورت شکست حذف؛ و همیشه قبل از تغییر Backup بگیرید.
+
+``` text
+curl -sk -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"name":"SRV-RPT","subnet":"10.30.2.50 255.255.255.255"}' \
+  https://10.50.0.1/api/v2/cmdb/firewall/address
+```
+
+پاسخ باید `status: success` باشد. خطاها را بخوانید و Script را متوقف کنید.
+
+#### Lab
+
+یک Script کوتاه Backup روزانه با API بنویسید؛ توکن را از متغیر محیطی بخوانید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| 403 | Trusted Host/Profile | اصلاح |
+| 401 | توکن | تجدید |
+| 424/خطای وابستگی | ترتیب ساخت | رفع ترتیب |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Trusted Host؟** محدودکردن منبع.
+**۲. چرا Profile فقط‌خواندنی؟** حداقل دسترسی.
+**۳. توکن کجا؟** Vault.
+
+#### English Corner
+
+- *Use least-privilege API users bound to trusted hosts.*
+- Q: Why not hard-code tokens in scripts?
+
 ## درس 27-4 — Hardening مدیریتی عملی و Backup/Restore: اجرای چک‌لیست، آزمون منفی و اثبات بازیابی
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۷، ۱۲-۸، ۲۶-۳ · ≈ 8 ساعت**
@@ -45618,6 +53786,82 @@ nmap -p 22,23,80,443,8443 10.50.0.1   (from Users VLAN)
 انتظار: همه filtered/closed. از Mgmt: فقط 443 و 22 (در صورت نیاز). هر مورد باز ⇒ Local-in Policy/allowaccess را اصلاح کنید.
 
 Backup: `execute backup config tftp ...` و آزمون Restore در Lab با Diff.
+
+### تکمیل عمیق: Hardening مدیریتی و Backup/Restore — با آزمون واقعی
+
+#### چرا؟
+
+قوی‌ترین Policy فایروال بی‌فایده است اگر پنل مدیریت از اینترنت با رمز admin/admin باز باشد. Hardening یعنی بستن «در پشتی»‌های مدیریتی.
+
+#### چک‌لیست
+
+1. Admin فقط از Trusted Host و Mgmt VLAN.
+2. غیرفعال HTTP/Telnet؛ فقط HTTPS/SSH.
+3. MFA برای ادمین.
+4. Timeout.
+5. تغییر/غیرفعال Admin پیش‌فرض.
+6. TLS قوی.
+7. Banner قانونی.
+8. Backup رمزگذاری‌شده.
+
+#### مثال ساده — تنظیمات
+
+``` text
+config system global
+ set admintimeout 10
+ set admin-https-ssl-versions tlsv1-2 tlsv1-3
+ set admin-lockout-threshold 5
+ set admin-lockout-duration 300
+end
+```
+
+#### مثال متوسط — اسکن پورت
+
+``` text
+nmap -p 22,23,80,443,8443 10.50.0.1   # from Users VLAN
+```
+
+انتظار: همه filtered/closed. از Mgmt فقط 443/22 (در صورت نیاز). مورد باز اضافی ⇒ `allowaccess`/Local-in را اصلاح کنید.
+
+#### مثال سخت — Restore واقعی
+
+Backup بدون آزمون Restore ارزشی ندارد.
+
+``` text
+execute backup config tftp prod.conf 10.50.0.30
+# in Lab:
+execute restore config tftp prod.conf 10.50.0.30
+diff before.txt after.txt    # compare 'show' outputs
+```
+
+مراحل: ۱) Backup ۲) Restore در Lab ۳) مقایسه‌ی Policy/Route ۴) ثبت زمان Restore (RTO) ۵) مستندسازی.
+
+``` text
+RTO = restore time ; RPO = time since last backup
+```
+
+#### Lab
+
+Restore را در Lab اجرا و زمان بگیرید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Lockout ادمین | آستانه | حساب اضطراری Console |
+| Restore شکست | نسخه‌ی ناسازگار | همان نسخه |
+| پورت باز | allowaccess | بستن |
+
+#### پرسش‌ها با پاسخ
+
+**۱. RTO و RPO؟** زمان بازیابی/حداکثر داده‌ی از دست‌رفته.
+**۲. چرا Console اضطراری؟** در Lockout.
+**۳. Backup رمزگذاری؟** Secretها.
+
+#### English Corner
+
+- *A backup that has never been restored is only a hope.*
+- Q: What do RTO and RPO measure?
 
 ## درس 27-5 — Gate G10: آزمون عملی Logging، Monitoring، Hardening و Backup — کلید پاسخ کامل و Rubric
 
@@ -45796,6 +54040,66 @@ Log ۲۰، Monitoring ۲۰، API ۱۵، Hardening ۲۵، Backup/Restore ۲۰.
 
 مثال: همه موفق جز Restore آزمون‌نشده ⇒ 80 از 100.
 
+### تکمیل عمیق: آزمون G10 — سناریوی کامل با نمره‌گذاری
+
+#### چرا؟
+
+G10 ثابت می‌کند می‌توانید «عملیات» را سر پا نگه دارید: Log می‌بینید، مانیتور دارید، API امن است و Backup قابل‌اتکا.
+
+#### صورت مسئله
+
+برای Lab: ۱) Log به Syslog برسد ۲) Zabbix CPU و Session بخواند و Trigger بسازد ۳) کاربر API فقط‌خواندنی ۴) Hardening چک‌لیست ۵) Backup و Restore آزمایشی.
+
+#### کلید پاسخ
+
+| بخش | شاهد |
+|---|---|
+| Logging | فایل Log روی سرور + زمان |
+| Monitoring | اسکرین‌شات Trigger یا خروجی snmpwalk |
+| API | GET موفق + رد منفی از IP دیگر |
+| Hardening | خروجی nmap و `show system global` |
+| Backup/Restore | Diff پس از Restore |
+
+#### محاسبه‌ی نمره
+
+``` text
+Logging 20 | Monitoring 20 | API 15 | Hardening 25 | Backup/Restore 20
+Example: 20 + 18 + 15 + 22 + 10 = 85
+```
+
+Restore آزمون‌نشده ۱۰ نمره از دست می‌دهد.
+
+#### مثال متوسط — خطای رایج
+
+دانشجو Syslog را فعال کرد ولی Source Interface درست نبود؛ Log نرسید. شاهد: tcpdump روی سرور بدون بسته. رفع: `set source-ip` یا Route.
+
+#### مثال سخت — آزمون منفی API
+
+درخواست با Profile فقط‌خواندنی و متد PUT باید رد شود؛ اگر موفق شد، Profile اشتباه است.
+
+#### Lab
+
+آزمون را کامل انجام دهید و Evidence را در Index ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Log نمی‌رسد | Route/Source IP | بررسی |
+| SNMP Timeout | ACL | اصلاح |
+| Restore ناموفق | نسخه | هم‌نسخه |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا آزمون منفی API؟** اثبات محدودیت.
+**۲. Evidence Restore؟** Diff.
+**۳. Syslog چه چیزی لازم دارد؟** Route و Source.
+
+#### English Corner
+
+- *Run a negative test to prove the restriction works.*
+- Q: How do you verify a restore?
+
 ## درس 27-7 — Hardening، Backup/Restore و API: امن‌سازی مدیریتی و بازیابی قابل‌اثبات
 
 **فصل ۲۷ · درس افزوده (پس از ۲۷-۵) · پیش‌نیاز: ۱۲-۸، ۲۶-۰، ۲۷-۰ · ≈ ۶ ساعت**
@@ -45928,6 +54232,67 @@ config log eventfilter ; set system enable ; end
 ```
 
 Backup قبل از تغییر، سپس حذف ادمین بلااستفاده و ثبت Evidence از `show system admin` قبل/بعد.
+
+### تکمیل عمیق: امن‌سازی مدیریتی — پرونده‌ی «ادمین ناشناس» و اسکن پورت
+
+#### چرا؟
+
+مدیریت آسیب‌پذیرترین سطح است؛ مهاجم با ادمین شدن، همه‌چیز دارد.
+
+#### مثال ساده — ممیزی ادمین‌ها
+
+``` text
+show system admin
+config log eventfilter
+ set system enable
+end
+```
+
+فهرست ادمین‌ها را با فهرست مجاز مقایسه کنید؛ هر مورد اضافی را بررسی.
+
+#### مثال متوسط — Local-in Policy
+
+``` text
+config firewall local-in-policy
+ edit 1
+  set intf "port1"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "HTTPS" "SSH"
+  set action deny
+  set schedule "always"
+ next
+end
+```
+
+یعنی از WAN ورود مدیریتی رد شود؛ استثنای IP مجاز را بالاتر بگذارید.
+
+#### مثال سخت — ادمین ناشناس
+
+بررسی Log Event: ورود ادمین «backup2» از IP خارجی در ساعت ۰۳:۱۰. اقدام: ۱) غیرفعال‌سازی ۲) تغییر رمز همه ۳) بررسی تغییرات Config (`diff` با Backup) ۴) بررسی Persistence (Script، SSH Key) ۵) PIR.
+
+#### Lab
+
+یک ادمین آزمایشی بسازید، ورود را Log کنید و مسیر هشدار را تست کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ورود مدیریتی از اینترنت | allowaccess | بستن |
+| ادمین ناشناس | کنترل ضعیف | ممیزی |
+| Log ادمین ندارد | eventfilter | فعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Local-in چیست؟** ترافیک به خود فایروال.
+**۲. چرا diff Config؟** کشف تغییر ناخواسته.
+**۳. چرا PIR؟** جلوگیری از تکرار.
+
+#### English Corner
+
+- *Management access should never be exposed to the internet.*
+- Q: What do you check after finding an unknown admin?
 
 ## پاسخ‌های فصل 27
 
@@ -46347,6 +54712,84 @@ Throughput bound = Window / RTT = 65535 B / 0.082 s ~ 0.8 MB/s ~ 6.4 Mbps
 
 نتیجه: با Window کوچک حتی لینک 100 Mbps حدود 6.4 Mbps می‌دهد؛ علت: گیرنده کند یا Window Scaling خاموش. ابزار: فیلتر `tcp.window_size_value` و `tcp.options.wscale`.
 
+### تکمیل عمیق: چرا تحلیل بسته، «چشم‌های» مهندس شبکه است؟
+
+#### چرا باید یاد بگیریم؟
+
+Log می‌گوید «چه چیزی رخ داد»؛ Capture نشان می‌دهد «واقعاً چه چیزی روی سیم رفت». وقتی کاربر می‌گوید «کند است»، Log معمولاً چیزی ندارد، ولی بسته‌ها دارند: Retransmission، Window صفر، RST، DNS کند. تحلیل بسته مثل آزمایش خون است؛ علامت را به علت وصل می‌کند.
+
+#### توضیح ساده
+
+یک ارتباط TCP سه مرحله دارد: **Handshake**، **انتقال داده**، **بستن**. هر مرحله الگوی طبیعی و الگوی خراب دارد.
+
+``` text
+Normal  : SYN -> SYN,ACK -> ACK -> data/ACK ... -> FIN/ACK
+Broken 1: SYN -> SYN -> SYN (no reply)         => unreachable / dropped
+Broken 2: SYN -> RST                            => port closed / policy reset
+Broken 3: data -> data (retransmission)        => loss on path
+Broken 4: Window = 0                            => receiver overloaded
+```
+
+#### مثال ساده — محاسبه‌ی RTT
+
+SYN در زمان 0.000 و SYN-ACK در 0.082 دیده شد.
+
+``` text
+RTT = 0.082 - 0.000 = 82 ms
+```
+
+RTT = Round Trip Time، یعنی زمان رفت‌وبرگشت.
+
+#### مثال متوسط — سقف سرعت از روی Window
+
+TCP نمی‌تواند سریع‌تر از Window/RTT برود.
+
+``` text
+Throughput max = Window / RTT
+65535 bytes / 0.082 s = ~799,000 bytes/s = ~6.4 Mbps
+```
+
+یعنی حتی روی لینک 100 Mbps، با این Window و RTT بیش از ~6.4 Mbps نمی‌گیرید، مگر Window Scaling فعال باشد. این پاسخ کلاسیک «چرا لینک ۱۰۰ مگ است ولی سرعت ۶ مگ؟» است.
+
+#### مثال سخت — دو علت هم‌زمان
+
+کاربر از شعبه به سرور مرکزی کند است. Capture: RTT=80ms، Retransmission ۳٪، Window Scaling خاموش. دو علت: (۱) Window Scaling توسط یک Middlebox حذف شده؛ (۲) Loss ۳٪ روی لینک. رفع: بررسی Option در SYN، و بررسی کیفیت لینک؛ اندازه‌گیری مجدد پس از هر رفع (تغییر یکی‌یکی).
+
+#### ابزارها
+
+``` text
+wireshark display filters:
+ tcp.analysis.retransmission
+ tcp.analysis.zero_window
+ tcp.flags.reset == 1
+ dns
+ tls.handshake
+```
+
+#### Lab
+
+یک pcap نمونه‌ی عمومی (مثلاً از نمونه‌های Wireshark Wiki) را باز و RTT و Retransmission را ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | شاهد | علت محتمل |
+|---|---|---|
+| SYN بی‌پاسخ | تکرار SYN | Drop/Route |
+| RST بلافاصله | RST پس از SYN | پورت بسته/Policy |
+| کندی با Loss | Retrans | کیفیت لینک |
+| سرعت پایین با Loss صفر | Window کوچک | Window Scaling |
+
+#### پرسش‌ها با پاسخ
+
+**۱. RTT را از کجا بخوانیم؟** فاصله‌ی SYN تا SYN-ACK.
+**۲. چرا Window Scaling مهم است؟** سقف سرعت.
+**۳. RST یعنی؟** قطع ناگهانی توسط یکی از طرفین یا Middlebox.
+
+#### English Corner
+
+- *Round-trip time is measured between SYN and SYN-ACK.*
+- Q: Why can a 100 Mbps link give only 6 Mbps for one TCP flow?
+
 ## درس 28-1 — Capture درست: انتخاب نقطه، Filter، Sniffer FortiGate، PCAP، Offload و ملاحظات امنیت/قانون
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۰، ۱۴-۷، ۱۲-۹ · ≈ 8 ساعت**
@@ -46533,6 +54976,68 @@ tcpdump -ni eth0 -w c.pcap host 198.51.100.8 and port 443
 diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 10 l
 diagnose sniffer packet port1 'host 198.51.100.8 and tcp port 443' 4 10 l
 ```
+
+### تکمیل عمیق: Capture درست — کجا، چگونه و با چه فیلتری؟
+
+#### چرا؟
+
+Capture بد بدتر از نبودن است: حجم زیاد، فیلتر غلط، یا نقطه‌ای که چیزی نمی‌بیند. قاعده: **سه نقطه، فیلتر دقیق، مدت کوتاه**.
+
+#### سه نقطه‌ی Capture
+
+1. **کلاینت**: بسته‌ای که کاربر می‌فرستد/می‌گیرد.
+2. **فایروال ورودی**: آیا رسید؟
+3. **فایروال خروجی**: آیا خارج شد (بعد از NAT)؟
+
+مقایسه‌ی سه نقطه مرز مشکل را نشان می‌دهد.
+
+#### مثال ساده — دستور tcpdump
+
+``` text
+tcpdump -ni eth0 -w c.pcap host 198.51.100.8 and tcp port 443 -c 200
+```
+
+پارامترها: `-n` بدون تبدیل نام، `-i` Interface، `-w` ذخیره، `-c` تعداد.
+
+#### مثال متوسط — Sniffer فورتی‌گیت
+
+``` text
+diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 20 l
+diagnose sniffer packet port1 'host 198.51.100.8 and tcp port 443' 4 20 l
+```
+
+سطح 4: هدر و نام Interface. دو دستور را هم‌زمان در دو پنجره اجرا کنید و زمان‌ها را بخوانید.
+
+#### مثال سخت — ترجمه‌ی NAT در مقایسه
+
+در Port2 مبدأ 10.10.0.5 و در Port1 مبدأ 203.0.113.2 دیده می‌شود. Source Port معمولاً حفظ می‌شود یا تغییر می‌کند؛ برای تطبیق جریان‌ها از Sequence Number و زمان استفاده کنید نه IP.
+
+#### قواعد حریم و حجم
+
+Payload ممکن است داده‌ی حساس داشته باشد؛ فقط هدر (Snaplen کوچک) یا فیلتر دقیق؛ فایل را رمزنگاری کنید و پس از تحلیل حذف کنید.
+
+#### Lab
+
+یک ارتباط curl را در دو Interface Capture و جدول تطبیق زمان بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| بسته‌ای نیست | فیلتر غلط | ساده‌کردن |
+| بسته ناقص | Offload | بررسی Offload |
+| حجم زیاد | فیلتر کلی | محدودکردن |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا سه نقطه؟** مرز مشکل.
+**۲. Snaplen چیست؟** طول ذخیره‌ی هر بسته.
+**۳. چرا حریم؟** Payload.
+
+#### English Corner
+
+- *Capture at multiple points to localize the problem.*
+- Q: Why filter captures tightly?
 
 ## درس 28-2 — تحلیل TCP و DNS در Capture: Handshake، Window، Retransmission، RTT، RST و الگوهای خرابی
 
@@ -46722,6 +55227,74 @@ Retransmission با فاصله‌ی نمایی (1,2,4 s). DNS: Query/Response ب
 
 فواصل 0.2 و 0.4 ⇒ Backoff نمایی؛ ACK نرسیده؛ مسیر برگشت یا Drop. اگر Dup ACK دیده شود Fast Retransmit است نه Timeout. DNS: Query بدون Response بعد از 2 s و تکرار ⇒ سرور DNS/Policy UDP/53.
 
+### تکمیل عمیق: TCP و DNS در Capture — خواندن هر خط
+
+#### چرا؟
+
+بیشتر مشکلات «نیمه‌کارکرده» یا TCP‌اند یا DNS. خواندن Handshake و DNS باید برایتان مثل خواندن یک جمله‌ی ساده باشد.
+
+#### TCP: خواندن یک Handshake
+
+``` text
+1  0.000  10.10.0.5.50000 > 198.51.100.8.443 [SYN] seq=0 win=64240 mss=1460 ws=7
+2  0.082  198.51.100.8.443 > 10.10.0.5.50000 [SYN,ACK] seq=0 ack=1 win=65535 mss=1380 ws=9
+3  0.083  10.10.0.5.50000 > 198.51.100.8.443 [ACK] seq=1 ack=1
+```
+
+تفسیر: RTT=82ms؛ MSS سرور 1380 (کوچک‌تر از 1460) یعنی در مسیر چیزی MSS را کاهش داده (احتمالاً IPsec/Clamping)؛ هر دو سمت WS دارند.
+
+#### Retransmission و Backoff
+
+``` text
+t=1.000 seq=1000 ; t=1.200 retrans ; t=1.600 retrans ; t=2.400 retrans
+```
+
+فواصل 0.2، 0.4، 0.8: دو برابر شدن (Exponential Backoff). علت: ACK نمی‌رسد.
+
+#### Dup ACK و Fast Retransmit
+
+سه Dup ACK متوالی یعنی گیرنده بسته‌ی بعدی را دیده ولی قبلی گم شده؛ فرستنده بدون انتظار Timeout دوباره می‌فرستد. این Loss خفیف است، نه قطع.
+
+#### DNS: خواندن Query و Response
+
+``` text
+0.000 10.10.0.5 > 10.20.0.5 DNS A? app.example.com (id 0x1a2b)
+0.012 10.20.0.5 > 10.10.0.5 DNS A 198.51.100.8 (id 0x1a2b) TTL 300
+```
+
+زمان پاسخ 12ms نرمال. اگر پاسخ پس از 2s بیاید یا Query تکرار شود، مشکل DNS/UDP53/Policy است.
+
+#### مثال متوسط — DNS بزرگ و TCP/53
+
+پاسخ بزرگ (DNSSEC) با فلگ TC (Truncated) ⇒ کلاینت با TCP تکرار می‌کند. اگر TCP/53 بسته باشد، نیمی از پرس‌وجوها شکست می‌خورند.
+
+#### مثال سخت — سایت باز می‌شود ولی کند
+
+Capture نشان می‌دهد: Query AAAA بی‌پاسخ ۵ ثانیه، سپس A موفق. علت: DNS Server به AAAA پاسخ نمی‌دهد. رفع: رفع سرور یا غیرفعال‌سازی IPv6 در کلاینت (در صورت سیاست).
+
+#### Lab
+
+با `dig` و Capture یک پرس‌وجوی AAAA و A را مقایسه کنید.
+
+#### عیب‌یابی
+
+| علامت | شاهد | رفع |
+|---|---|---|
+| MSS کوچک | MSS در SYN-ACK | بررسی Tunnel/Clamp |
+| DNS کند | فاصله Query/Response | سرور/Policy |
+| TC flag | پاسخ truncated | باز کردن TCP/53 |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Backoff چیست؟** دو برابر شدن فاصله‌ی تلاش.
+**۲. Dup ACK؟** نشانه‌ی گم‌شدن یک بسته.
+**۳. TC flag؟** پاسخ بریده؛ TCP لازم.
+
+#### English Corner
+
+- *Three duplicate ACKs trigger a fast retransmit.*
+- Q: What does the TC flag in a DNS response mean?
+
 ## درس 28-3 — TLS در Capture: Handshake، SNI، Certificate، Alert، TLS 1.3 و اثر Inspection
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۰، ۱۶-۰، ۱۶-۵ · ≈ 8 ساعت**
@@ -46895,6 +55468,73 @@ wireshark filter: tls.handshake.type == 1
 
 تفسیر: کلاینت گواهی ارائه‌شده را به CA معتبر وصل نکرد؛ علت رایج: SSL Inspection بدون نصب CA سازمانی. رفع: توزیع CA یا Exemption. فیلتر: `tls.alert_message`.
 
+### تکمیل عمیق: TLS در Capture — Handshake، SNI، گواهی و Alert
+
+#### چرا؟
+
+امروز بیشتر ترافیک رمز است. بدون دانستن اینکه کدام بخش TLS هنوز دیده می‌شود، تحلیل ممکن نیست.
+
+#### آنچه دیده می‌شود
+
+| مرحله | TLS 1.2 | TLS 1.3 |
+|---|---|---|
+| ClientHello (SNI) | دیده می‌شود | دیده می‌شود (مگر ECH) |
+| ServerHello | دیده می‌شود | دیده می‌شود |
+| Certificate | دیده می‌شود | رمز |
+| Application Data | رمز | رمز |
+
+SNI = Server Name Indication، یعنی «نام سرور مقصد»؛ فایروال بدون Inspection هم می‌تواند آن را ببیند و Web Filter بر اساس آن عمل می‌کند.
+
+#### مثال ساده — ClientHello
+
+``` text
+wireshark filter: tls.handshake.type == 1
+fields: SNI=app.example.com ; supported_versions=TLS1.3,1.2 ; ALPN=h2,http/1.1
+```
+
+#### مثال متوسط — Alert
+
+``` text
+TLS Alert (Level: Fatal, Description: Unknown CA)  [from client]
+```
+
+یعنی کلاینت گواهی را به CA معتبر وصل نکرد. علت رایج: SSL Inspection بدون نصب CA سازمانی.
+
+#### مثال سخت — Handshake Failure
+
+ClientHello فقط TLS1.0/1.1 پیشنهاد می‌دهد؛ سرور حداقل TLS1.2 می‌خواهد ⇒ `handshake_failure`. رفع: ارتقای کلاینت/Policy.
+
+#### بررسی گواهی
+
+``` text
+openssl s_client -connect app.example.com:443 -servername app.example.com </dev/null | openssl x509 -noout -subject -issuer -dates
+```
+
+Issuer باید CA مورد انتظار باشد؛ اگر نام CA فایروال است، Inspection فعال است.
+
+#### Lab
+
+یک اتصال را با و بدون Inspection مقایسه کنید و Issuer را ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | Alert/شاهد | رفع |
+|---|---|---|
+| unknown_ca | Alert 48 | توزیع CA |
+| handshake_failure | Alert 40 | هماهنگی نسخه/Cipher |
+| certificate_expired | Alert 45 | تمدید |
+
+#### پرسش‌ها با پاسخ
+
+**۱. SNI چرا دیده می‌شود؟** قبل از رمز.
+**۲. TLS1.3 چه چیزی را پنهان می‌کند؟** گواهی.
+**۳. Issuer فایروال یعنی؟** Inspection.
+
+#### English Corner
+
+- *SNI reveals the destination hostname in the clear.*
+- Q: What does an unknown_ca alert mean?
+
 ## درس 28-4 — ده‌پرسش عیب‌یابی و بلوک‌های TS: چارچوب، سه پرونده‌ی کامل و کتابخانه‌ی TS
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۷، ۲۸-۱ تا ۲۸-۳ · ≈ 9 ساعت**
@@ -47058,6 +55698,69 @@ Fix       : MSS clamp 1360
 Verify    : curl OK, no retrans
 ```
 
+### تکمیل عمیق: ده پرسش عیب‌یابی و بلوک TS در عمل
+
+#### چرا؟
+
+عیب‌یاب خوب حدس نمی‌زند؛ سؤال می‌پرسد. ده پرسش، مسیر را کوتاه و قابل‌تکرار می‌کند.
+
+#### ده پرسش
+
+1. چه کسی تحت تأثیر است؟
+2. از چه زمانی؟
+3. چه چیزی تغییر کرده؟
+4. DNS درست است؟
+5. Route درست است؟
+6. Policy مجاز است؟
+7. NAT/Session درست است؟
+8. بسته روی سیم دیده می‌شود؟
+9. لایه‌ی کاربرد (TLS/برنامه) چه می‌گوید؟
+10. رفع را چگونه تأیید می‌کنیم؟
+
+#### مثال ساده — بلوک TS
+
+``` text
+Symptom   : HTTPS to app times out for one user
+Q1 scope  : only user A
+Q3 change : none
+Q4 DNS    : ok
+Q8 wire   : SYN seen, no SYN-ACK
+Cause     : upstream blocks user A source NAT IP
+Fix       : change pool IP
+Verify    : curl 200
+```
+
+#### مثال متوسط — اولویت پرسش‌ها
+
+اگر پاسخ Q1 «همه‌ی کاربران» باشد، مستقیماً سراغ Route/لینک بروید؛ اگر «یک نفر»، سراغ کلاینت/Policy/NAT منبع.
+
+#### مثال سخت — پرونده‌ی چندلایه
+
+سایت گاهی باز می‌شود. Capture: برخی اتصال‌ها با MSS 1380 و برخی با MSS 1460؛ مسیر ECMP با دو لینک که یکی Tunnel دارد. نتیجه: MTU متفاوت؛ رفع: MSS Clamp روی Policy.
+
+#### Lab
+
+سه پرونده‌ی نوشته‌شده را با بلوک TS تمرین کنید.
+
+#### عیب‌یابی روش
+
+| علامت | علت | رفع |
+|---|---|---|
+| دور باطل | حدس | ده پرسش |
+| تغییر هم‌زمان | بی‌انضباطی | یک تغییر در هر زمان |
+| شاهد ناقص | ثبت نشد | ثبت خروجی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا پرسش «چه چیزی تغییر کرد؟»** اغلب علت همان است.
+**۲. چرا Scope اول؟** مسیر تحقیق را کوتاه می‌کند.
+**۳. بلوک TS چیست؟** قالب ثبت.
+
+#### English Corner
+
+- *Ask what changed first.*
+- Q: How does scope narrow the search?
+
 ## درس 28-5 — آزمون عملی فصل ۲۸: تحلیل سه PCAP و RCA — صورت مسئله، کلید پاسخ و Rubric
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۱ تا ۲۸-۴، ۱۴-۲ · ≈ 12 ساعت**
@@ -47207,6 +55910,76 @@ tls.alert_message
 ### مثال حل‌شده: نمره‌ی یک PCAP
 
 PCAP دارای RST بعد از ClientHello: الگو ۲۵ (RST ناگهانی) + Evidence ۲۵ (شماره‌ی بسته) + علت ۲۵ (IPS/Policy بسته) + رفع ۲۵؛ نمره‌ی کامل فقط با ذکر منبع RST (کلاینت/سرور/Middlebox) بر پایه‌ی TTL/زمان‌بندی.
+
+### تکمیل عمیق: آزمون عملی — تحلیل سه PCAP و RCA
+
+#### چرا؟
+
+این آزمون نشان می‌دهد تحلیل‌گر هستید یا فقط می‌توانید Wireshark را باز کنید.
+
+#### PCAP-A: «سایت بالا نمی‌آید»
+
+مشاهده: SYN تکراری با فواصل 1، 2، 4 ثانیه، بدون پاسخ.
+
+``` text
+Pattern : SYN retransmission with exponential backoff
+Meaning : packet dropped before reaching server or reply lost
+Next    : sniff at firewall in/out, check route and policy
+```
+
+#### PCAP-B: «اتصال قطع می‌شود»
+
+مشاهده: RST از IP سرور (TTL مشاهده‌شده 63 در حالی که سرور TTL 64 می‌فرستد؟). تحلیل TTL: اگر RST با TTL متفاوت از بسته‌های قبلی سرور بیاید، احتمال تزریق توسط Middlebox (IPS/فایروال) است.
+
+#### PCAP-C: «کند است»
+
+مشاهده: Window=0 تکراری. علت: گیرنده کند (برنامه). رفع در سمت سرور/کلاینت، نه شبکه.
+
+#### قالب RCA
+
+``` text
+PCAP    : B
+Pattern : RST from middlebox (TTL mismatch)
+Evidence: packet #214 TTL 62 vs data TTL 54
+Cause   : IPS signature reset the session
+Fix     : tune signature / exemption with owner
+Verify  : new capture without RST
+```
+
+#### Rubric
+
+``` text
+Pattern 25 | Evidence 25 | Cause 25 | Fix & verify 25
+```
+
+نمره‌ی کامل فقط با ذکر شماره‌ی بسته و منطق است.
+
+#### مثال متوسط — اشتباه رایج
+
+تحلیل‌گر RST را به «سرور خراب» نسبت داد بدون بررسی TTL؛ پس از آزمون، IPS علت بود. درس: شاهد دوم لازم است.
+
+#### Lab
+
+سه pcap عمومی انتخاب و برای هر یک بلوک RCA بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| نتیجه‌گیری عجولانه | شاهد واحد | شاهد دوم |
+| بسته‌ی ناقص | Offload | Capture در نقطه‌ی دیگر |
+| حجم زیاد | بی‌فیلتر | فیلتر |
+
+#### پرسش‌ها با پاسخ
+
+**۱. TTL چه می‌گوید؟** تعداد Hop و تشخیص تزریق.
+**۲. Window=0 مشکل کجاست؟** گیرنده.
+**۳. SYN بی‌پاسخ؟** Drop در مسیر.
+
+#### English Corner
+
+- *A RST with a different TTL may be injected by a middlebox.*
+- Q: How do you prove where a packet was dropped?
 
 ## پاسخ‌های فصل 28
 
@@ -47514,6 +56287,67 @@ end
 
 ثبت Timeline از همان لحظه.
 
+### تکمیل عمیق: Blue Team از صفر — چرخه‌ی پاسخ و منطق تصمیم
+
+#### چرا باید یاد بگیریم؟
+
+فایروال بهترین قفل است، ولی هیچ قفلی صددرصد نیست. پرسش درست این نیست که «آیا نفوذ می‌شود؟» بلکه «چقدر زود می‌فهمیم و چقدر سریع جلویش را می‌گیریم؟». Blue Team یعنی تیم دفاعی که **تشخیص** و **پاسخ** را مدیریت می‌کند.
+
+#### مدل شش‌مرحله‌ای NIST
+
+NIST = National Institute of Standards and Technology، یعنی «مؤسسه‌ی ملی استانداردها و فناوری» (آمریکا). سند SP 800-61 چرخه‌ی پاسخ به حادثه را تعریف می‌کند:
+
+1. Preparation (آمادگی)
+2. Detection & Analysis (تشخیص و تحلیل)
+3. Containment (مهار)
+4. Eradication (ریشه‌کنی)
+5. Recovery (بازیابی)
+6. Post-Incident Activity (درس‌آموخته)
+
+#### مثال ساده — Triage
+
+Triage یعنی دسته‌بندی هشدار بر اساس اولویت. هشدار: «۴۳ ورود ناموفق VPN». پرسش‌های ۳۰ ثانیه‌ای:
+
+1. منبع داخلی است یا اینترنتی؟ اینترنتی.
+2. حساب‌ها واقعی‌اند؟ بله.
+3. ورود موفقی هم بوده؟ بررسی می‌کنیم.
+
+#### مثال متوسط — IOC و TTP
+
+IOC = Indicator of Compromise (نشانه‌ی آلودگی): مثلاً IP 203.0.113.50 یا Hash فایل. TTP = Tactics, Techniques, Procedures (تاکتیک‌ها و تکنیک‌ها): مثلاً «Credential Stuffing». IOC زود کهنه می‌شود (IP عوض می‌شود)؛ TTP ماندگارتر است و با MITRE ATT&CK نام‌گذاری می‌شود.
+
+#### مثال سخت — اولویت‌بندی هم‌زمان
+
+دو هشدار: (الف) اسکن پورت از اینترنت به VIP، (ب) یک PC داخلی به یک IP مشکوک ترافیک ثابت هر ۶۰ ثانیه می‌فرستد (Beaconing). اولویت (ب) است چون نشانه‌ی آلودگی داخلی است، در حالی که (الف) نویز اینترنتی است.
+
+``` text
+Beacon interval ~ 60 s +- jitter ; low volume ; same dst
+=> suspected C2 communication
+```
+
+#### Lab
+
+یک Log ساختگی با ۵ هشدار بسازید و Triage کنید: اولویت، دلیل، اقدام.
+
+#### عیب‌یابی فرایند
+
+| علامت | علت | رفع |
+|---|---|---|
+| هشدار زیاد، تصمیم کم | آستانه ضعیف | Tuning |
+| دیر فهمیدن | Log ناقص | افزایش Log |
+| پاسخ بی‌نظم | Playbook نیست | نوشتن |
+
+#### پرسش‌ها با پاسخ
+
+**۱. IOC و TTP؟** نشانه در برابر رفتار.
+**۲. Triage چیست؟** اولویت‌بندی.
+**۳. چرا Beaconing خطرناک است؟** ارتباط پنهان با فرماندهی مهاجم.
+
+#### English Corner
+
+- *Triage first, then contain, then investigate.*
+- Q: What is the difference between IOC and TTP?
+
 ## درس 29-1 — Detection عملی: از Log فایروال به IOC/TTP، Baseline، آستانه، Correlation و Alert
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰، ۲۷-۰، ۲۷-۱، ۲۸-۲ · ≈ 8 ساعت**
@@ -47688,6 +56522,72 @@ events/5min = 43 ; baseline = 5/day -> ratio ~ 200x
 
 FP: کاربر با رمز فراموش‌شده (یک حساب، منبع داخلی).
 
+### تکمیل عمیق: ساخت Detection از Log فایروال
+
+#### چرا؟
+
+Log بدون قاعده‌ی تشخیص مثل دوربین بدون نگهبان است. این درس تبدیل Log خام به «هشدار قابل‌اتکا» را نشان می‌دهد.
+
+#### سه الگوی پایه
+
+| الگو | قاعده | معنی |
+|---|---|---|
+| Port Scan | ≥ 20 پورت مختلف از یک IP در 1 دقیقه | شناسایی |
+| Brute-force | ≥ 10 شکست ورود در 5 دقیقه | حدس رمز |
+| Beaconing | اتصال دوره‌ای به یک مقصد | C2 |
+
+#### مثال ساده — Port Scan
+
+``` text
+srcip=203.0.113.50 dstip=203.0.113.3 dstport in {21,22,23,25,80,110,443,3389,...} action=deny
+count distinct dstport per 1 min = 37  -> alert
+```
+
+#### مثال متوسط — Baseline و نسبت
+
+``` text
+Baseline failed logins = 5 / day
+Observed = 43 / 5 min
+Ratio ~ 43 / (5/288) ~ 2476x   (288 five-minute windows per day)
+```
+
+نتیجه: بسیار غیرعادی ⇒ هشدار.
+
+#### مثال سخت — کاهش False Positive
+
+اسکنر آسیب‌پذیری داخلی (Nessus) هر شب اسکن می‌کند و هشدار Port Scan می‌دهد. راه‌حل: IP اسکنر در Allowlist مستند با مالک و تاریخ؛ نه خاموش‌کردن قاعده.
+
+#### غنی‌سازی (Enrichment)
+
+GeoIP، Reputation، مالک IP. هر هشدار با این‌ها تصمیم را سریع‌تر می‌کند.
+
+#### Lab
+
+با یک فایل Log نمونه و `awk/grep` تعداد پورت‌های متمایز را بشمارید.
+
+``` text
+awk '/action=deny/ {print $1}' fw.log | sort | uniq -c | sort -nr | head
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| هشدار زیاد | قاعده عمومی | Allowlist مستند |
+| هشدار نیامد | Log ناقص | فعال‌سازی Log |
+| ساعت ناهماهنگ | NTP | همگام‌سازی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Enrichment چیست؟** افزودن زمینه.
+**۲. چرا Allowlist مستند؟** ممیزی.
+**۳. چرا NTP؟** ترتیب رویدادها.
+
+#### English Corner
+
+- *Tune detections; do not just silence them.*
+- Q: How would you detect a port scan from firewall logs?
+
 ## درس 29-2 — Response و Playbook: مهار، Evidence، ریشه‌کنی، بازیابی و ارتباطات با مثال‌های اجرایی
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰، ۲۹-۱، ۱۳-۷ · ≈ 8 ساعت**
@@ -47854,6 +56754,82 @@ diagnose sys session filter clear
 
 قبل از Reimage Evidence جمع شود.
 
+### تکمیل عمیق: Response — Playbook مهار، Evidence و بازیابی
+
+#### چرا؟
+
+وقتی حادثه رخ می‌دهد، وقت فکر کردن نیست. Playbook همان «دستورالعمل آتش‌نشانی» است: از پیش نوشته و تمرین‌شده.
+
+#### ترتیب مهم در پاسخ
+
+1. **تأیید** (آیا واقعاً حادثه است؟)
+2. **مهار** (جلوگیری از گسترش)
+3. **Evidence** (حفظ شواهد)
+4. **ریشه‌کنی**
+5. **بازیابی**
+6. **گزارش**
+
+نکته‌ی مهم: Evidence قبل از ریشه‌کنی. اگر ماشین را Reimage کنید، شواهد از بین می‌رود.
+
+#### مثال ساده — مهار شبکه‌ای
+
+``` text
+config firewall policy
+ edit 999
+  set name "QUARANTINE-PC"
+  set srcintf "port2"
+  set dstintf "any"
+  set srcaddr "PC-INFECTED"
+  set dstaddr "all"
+  set action deny
+  set logtraffic all
+ next
+end
+```
+
+Policy را بالاتر از بقیه قرار دهید (move).
+
+#### مثال متوسط — جمع‌آوری Evidence
+
+``` text
+sha256sum suspicious.exe
+execute log filter dev fortios ; execute log display
+diagnose sys session filter src 10.10.0.77 ; diagnose sys session list
+```
+
+Hash، Log و Session را قبل از Reimage ذخیره کنید.
+
+#### مثال سخت — حرکت جانبی
+
+PC آلوده چند سرور را اسکن کرده. تحلیل: Log SMB (445) از آن PC. مهار: بستن PC + تغییر رمز حساب‌های در معرض + بررسی سرورهای لمس‌شده برای Persistence.
+
+#### Chain of Custody
+
+ثبت اینکه شواهد کی، توسط چه کسی، چگونه جمع و کجا نگهداری شد.
+
+#### Lab
+
+یک Playbook یک‌صفحه‌ای برای «PC آلوده» بنویسید و در Lab اجرا کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| شواهد از دست رفت | Reimage زود | رعایت ترتیب |
+| مهار ناقص | Policy پایین | move بالا |
+| تکرار | علت ریشه‌ای | RCA |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Evidence قبل از ریشه‌کنی؟** پاک‌شدن.
+**۲. Quarantine چیست؟** ایزوله‌سازی.
+**۳. Chain of Custody؟** مسیر نگهداری شواهد.
+
+#### English Corner
+
+- *Contain first, but preserve evidence.*
+- Q: What is chain of custody?
+
 ## درس 29-3 — Lifecycle، Patch و Vulnerability Management: Inventory، EoL، PSIRT/CVE، اولویت‌بندی و Rollback
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۴، ۲۹-۰ · ≈ 8 ساعت**
@@ -48006,6 +56982,74 @@ Inventory نسخه‌ها، پایش PSIRT، پنجره‌ی Patch، آزمون 
 ### مثال حل‌شده: تصمیم Patch
 
 PSIRT جدید برای SSL-VPN با Exploit فعال: ۱) Inventory نسخه ۲) اگر آسیب‌پذیر و در اینترنت ⇒ اضطراری ۳) Workaround موقت (غیرفعال‌سازی/Local-in) ۴) Patch در Lab ۵) پنجره‌ی تغییر ۶) تأیید `get system status`.
+
+### تکمیل عمیق: مدیریت چرخه‌ی عمر و آسیب‌پذیری
+
+#### چرا؟
+
+بسیاری از نفوذها با آسیب‌پذیری‌های «ماه‌ها قدیمی» انجام می‌شوند که وصله‌اش موجود بود. مدیریت Patch و EoL (End of Life، یعنی «پایان پشتیبانی») بخش جدانشدنی امنیت است.
+
+#### Inventory
+
+``` text
+Device  Model  Version  EoS date  Owner  Exposure
+FGT-1   VM64   7.0.3    ?         NOC    internet
+```
+
+بدون Inventory دقیق نمی‌دانید چه چیزی در معرض خطر است.
+
+#### فرایند آسیب‌پذیری
+
+1. دریافت اعلان (PSIRT Fortinet، Cisco Security Advisories).
+2. تطبیق با Inventory.
+3. ارزیابی: در اینترنت؟ Exploit فعال؟ CVSS؟
+4. تصمیم: Patch / Workaround / پذیرش ریسک.
+5. آزمون در Lab.
+6. اجرا در Window.
+7. Verify.
+
+#### مثال ساده — اولویت‌بندی
+
+| آسیب‌پذیری | در اینترنت | Exploit فعال | اولویت |
+|---|---|---|---|
+| A | بله | بله | فوری |
+| B | بله | خیر | بالا |
+| C | خیر | خیر | عادی |
+
+#### مثال متوسط — Workaround
+
+اگر Patch هنوز آماده نیست، Local-in Policy برای محدودکردن دسترسی مدیریتی/SSL VPN به IPهای مجاز یا غیرفعال‌کردن موقت قابلیت (طبق Advisory رسمی).
+
+#### مثال سخت — EoL
+
+دستگاهی که پشتیبانی ندارد ولی جایگزین بودجه ندارد. راه: ثبت ریسک، محدودسازی دسترسی، پایش شدید و برنامه‌ی جایگزینی با تاریخ.
+
+``` text
+Residual risk = Likelihood x Impact (after controls)
+```
+
+#### Lab
+
+یک Advisory واقعی (از سایت رسمی) را با Inventory فرضی تطبیق دهید و تصمیم را بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Patch عقب‌افتاده | بدون Window | زمان‌بندی ماهانه |
+| ارتقا شکست | بدون Lab | آزمون |
+| CVSS گمراه‌کننده | بافت نادیده | بافت سازمانی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا CVSS کافی نیست؟** Exposure و Exploit فعال هم مهم‌اند.
+**۲. EoL چیست؟** پایان پشتیبانی.
+**۳. Workaround چه موقع؟** وقتی Patch آماده نیست.
+
+#### English Corner
+
+- *Prioritize vulnerabilities that are exposed and actively exploited.*
+- Q: What is a compensating control?
 
 ## درس 29-4 — گزارش حادثه (PIR) و آزمون عملی Blue Team: سناریوی چندمرحله‌ای با کلید و Rubric
 
@@ -48161,6 +57205,80 @@ Fix    : IP block + MFA enforced
 Action : geo-restrict (owner NOC, due 7 days)
 MTTD 5 min ; MTTR 22 min
 ```
+
+### تکمیل عمیق: PIR و آزمون عملی — سناریوی کامل با Rubric
+
+#### چرا؟
+
+PIR (Post-Incident Review) همان لحظه‌ای است که حادثه‌ی بد را به یادگیری تبدیل می‌کنید. بدون PIR، حادثه‌ی بعدی همان خواهد بود.
+
+#### سناریو
+
+ساعت ۰۲:۱۴ هشدار: Beaconing از PC-HR-07 به 198.51.100.77. شما On-call هستید.
+
+#### گام‌های پاسخ
+
+``` text
+02:14 alert received
+02:18 triage : periodic 60s connections, low volume -> suspected C2
+02:25 verify : DNS/Proxy logs for domain ; check file hashes (EDR)
+02:35 contain: quarantine policy for PC-HR-07
+02:45 evidence: hash, logs, session, memory snapshot request
+03:30 scope  : search other hosts for same dst
+04:00 eradicate: reimage after evidence
+06:00 recover: monitor 72h
+D+1   PIR
+```
+
+#### مثال: شاخص‌ها
+
+``` text
+MTTD = detection time - start time
+MTTR = recovery time - detection time
+If compromise started 01:50, detected 02:14 -> MTTD = 24 min
+```
+
+#### Rubric
+
+``` text
+Triage 20 | Containment 20 | Evidence 20 | Scope/RCA 20 | Report 20
+```
+
+#### مثال متوسط — بخش‌های PIR
+
+1. خلاصه‌ی اجرایی
+2. Timeline
+3. علت ریشه‌ای
+4. اثر
+5. اقدامات اصلاحی با مالک و تاریخ
+6. درس‌ها
+
+#### مثال سخت — اختلاف نظر
+
+مدیر می‌خواهد سریع ماشین Reimage شود. شما Evidence می‌خواهید. راه: حداقل Hash، Log و تصویر دیسک (در صورت امکان) ظرف ۳۰ دقیقه، سپس Reimage؛ بیان ریسک حقوقی/تحلیلی.
+
+#### Lab
+
+با Log ساختگی، سناریو را بازی کنید و PIR بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| PIR مبهم | Timeline ناقص | Scribe |
+| اقدام بی‌مالک | سهل‌انگاری | مالک و تاریخ |
+| تکرار | علت ریشه‌ای رفع نشد | بازبینی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Blameless؟** تشویق گزارش‌دهی.
+**۲. MTTD؟** زمان تشخیص.
+**۳. چرا مالک برای اقدام؟** پیگیری.
+
+#### English Corner
+
+- *A good post-incident review leads to owned action items.*
+- Q: How would you handle pressure to reimage immediately?
 
 ## پاسخ‌های فصل 29
 
@@ -48423,6 +57541,71 @@ Objects merge -> ~400 policies
 
 پیش از انتقال، Hygiene را با مالکان تأیید کنید.
 
+### تکمیل عمیق: چرا Migration فقط «کپی Config» نیست؟
+
+#### چرا باید یاد بگیریم؟
+
+نقل‌مکان به خانه‌ی جدید را تصور کنید. اگر همه‌چیز را بدون مرتب‌کردن بردارید، خانه‌ی جدید هم پر از آشغال می‌شود. Migration فایروال هم همین است: ۱۲۰۰ قاعده‌ی قدیمی که ۴۸۰ تای آنها ۱۲ ماه است استفاده نشده‌اند. اگر همه را منتقل کنید، «بدهی فنی» را به سیستم جدید می‌برید. Migration فرصتی برای **پاک‌سازی** و **ثبت مستندات** است.
+
+#### توضیح ساده
+
+یک Migration خوب شش مرحله دارد:
+
+1. **Inventory**: چه چیزی داریم؟ (Policy، NAT، VPN، Route، کاربران)
+2. **Hygiene**: چه چیزی را نباید ببریم؟
+3. **Mapping**: هر مفهوم قدیمی در دستگاه جدید چیست؟
+4. **Build & Test in Lab**: ساخت و آزمون.
+5. **Cutover**: لحظه‌ی سوییچ.
+6. **Rollback / Stabilize**: بازگشت یا تثبیت.
+
+#### مثال ساده — برآورد حجم
+
+``` text
+Total rules              = 1200
+Never hit (12 months)    = 480
+Duplicates / shadowed    = 120
+Candidates to migrate    = 1200 - 480 - 120 = 600
+```
+
+مراحل: ۱) شمارش ۲) تفکیک ۳) تأیید مالک ۴) انتقال.
+
+#### مثال متوسط — روش‌های Cutover
+
+| روش | شرح | ریسک | زمان قطع |
+|---|---|---|---|
+| Big Bang | همه یکباره | بالا | کوتاه |
+| Phased | شعبه‌به‌شعبه | کم | طولانی |
+| Parallel Run | دو دستگاه هم‌زمان با مقایسه | کم | صفر |
+
+انتخاب: اگر سرویس حیاتی دارید و تحمل قطع نیست ⇒ Parallel/Phased.
+
+#### مثال سخت — وابستگی پنهان
+
+پس از Cutover یک برنامه‌ی قدیمی کار نمی‌کند. علت: ACL قدیمی یک مسیر UDP/10050 را (با `permit udp any any`) باز می‌گذاشت و کسی ننوشته بود. راه کشف: Log دستگاه قدیمی ۳۰ روزه با Hit Count و مقایسه با Matrix قبل/بعد. درس: Log قبل از خاموش‌کردن دستگاه قدیمی را نگه دارید.
+
+#### Lab
+
+یک Config نمونه‌ی ACL با ۵۰ خط بسازید؛ Hit Count فرضی بگذارید؛ فهرست «حذف/نگه‌داشتن/بازبینی» بنویسید.
+
+#### عیب‌یابی Migration
+
+| علامت | علت | رفع |
+|---|---|---|
+| سرویس بعد Cutover نمی‌آید | Rule حذف‌شده‌ی ضروری | Log قدیمی + Matrix |
+| Performance افت | UTM جدید فعال | Baseline |
+| Session قطع | NAT متفاوت | آزمون NAT |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Hygiene قبل از انتقال؟** تا زباله منتقل نشود.
+**۲. Parallel Run چه مزیتی دارد؟** مقایسه بی‌قطعی.
+**۳. Log قدیمی چرا؟** کشف وابستگی پنهان.
+
+#### English Corner
+
+- *Clean up rules before migrating them.*
+- Q: Why keep the old device's logs after cutover?
+
 ## درس 30-1 — Migration: Inventory، Rule Hygiene و نگاشت دقیق Object/NAT/Policy/VPN به FortiGate
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰، ۲۵-۱، ۱۳-۱ · ≈ 8 ساعت**
@@ -48588,6 +57771,83 @@ Object/NAT/Policy: هر مورد Cisco به معادل Fortinet با تفاوت 
 
 Cisco: `ip nat inside source static 10.30.0.10 203.0.113.10` ⇒ FortiGate: VIP (`extip 203.0.113.10`, `mappedip 10.30.0.10`) + Policy به VIP. تفاوت: در FortiGate بدون Policy ترافیک رد می‌شود.
 
+### تکمیل عمیق: نگاشت دقیق Object، NAT و Policy از Cisco به FortiGate
+
+#### چرا؟
+
+ترجمه‌ی تحت‌اللفظی غلط است. مثل ترجمه‌ی ضرب‌المثل‌ها: ظاهر کلمات یکی است ولی معنا فرق می‌کند. مثلاً ACL سیسکو Stateless است و ترتیب Wildcard دارد؛ Policy فورتی‌گیت Stateful است و بر اساس Interface/Zone.
+
+#### جدول نگاشت
+
+| مفهوم | Cisco | FortiGate |
+|---|---|---|
+| Host/Network Object | `object network` | `firewall address` |
+| Service Object | `object service` | `firewall service custom` |
+| ACL | `access-list` | `firewall policy` |
+| Static NAT | `ip nat inside source static` | VIP + Policy |
+| PAT | `ip nat inside source list ... overload` | Policy NAT (Interface/IP Pool) |
+
+#### مثال ساده — Wildcard به Mask
+
+``` text
+wildcard 0.0.0.255  -> mask 255.255.255.0 (/24)
+wildcard 0.0.3.255  -> mask 255.255.252.0 (/22)
+```
+
+قاعده: Mask = 255.255.255.255 منهای Wildcard (در هر بایت).
+
+#### مثال متوسط — Static NAT
+
+سیسکو:
+
+``` text
+ip nat inside source static tcp 10.30.0.10 443 203.0.113.10 443
+```
+
+FortiGate:
+
+``` text
+config firewall vip
+ edit "VIP-WEB"
+  set extintf "port1"
+  set extip 203.0.113.10
+  set mappedip "10.30.0.10"
+  set portforward enable
+  set extport 443
+  set mappedport 443
+ next
+end
+```
+
+بعد یک Policy با dstaddr = VIP. فراموشی Policy یعنی ترافیک رد می‌شود.
+
+#### مثال سخت — ترتیب ACL و Overlap
+
+در ACL سیسکو یک `deny` خاص قبل از `permit` عمومی است. وقتی هر خط به Policy تبدیل می‌شود، ترتیب را عیناً نگه دارید و Shadow را با iprope lookup بررسی کنید.
+
+#### Lab
+
+سه ACL نمونه را دستی به Policy تبدیل کنید و با Lookup بررسی کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ترافیک برگشت رد | فرض Stateless | Stateful بودن |
+| NAT کار نمی‌کند | Policy بدون nat | `set nat enable` |
+| VIP جواب نمی‌دهد | Policy ناقص | افزودن Policy |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Wildcard 0.0.0.63 یعنی؟** Mask 255.255.255.192 (/26).
+**۲. چرا VIP Policy می‌خواهد؟** DNAT جدا از مجوز.
+**۳. تفاوت Stateless/Stateful؟** برگشت خودکار.
+
+#### English Corner
+
+- *A wildcard mask is the inverse of a subnet mask.*
+- Q: Why does a VIP still need a policy?
+
 ## درس 30-2 — Plan، Cutover و Rollback: برنامه‌ی تغییر، معیار Go/No-Go، Trigger و ارتباطات
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰، ۳۰-۱، ۳۲-۰ · ≈ 8 ساعت**
@@ -48750,6 +58010,70 @@ If any critical app fails and no fix in 30m -> ROLLBACK
 ```
 
 Rollback: بازگرداندن کابل/Route به دستگاه قدیم و Config قبلی.
+
+### تکمیل عمیق: برنامه‌ی Cutover، معیار Go/No-Go و Rollback
+
+#### چرا؟
+
+شب Cutover، تصمیم‌ها زیر فشار گرفته می‌شود. اگر معیار را از قبل ننوشته باشید، همه‌چیز احساسی می‌شود. «Go/No-Go» یعنی شرط‌های از پیش‌نوشته برای ادامه یا بازگشت.
+
+#### خط زمانی نمونه
+
+``` text
+T-7d   freeze changes on old device
+T-3d   rehearsal in Lab ; communicate to users
+T-1h   backup old + new, verify access, console ready
+T0     switch (routes/cables/DNS)
+T+15m  verify (checklist)
+T+30m  Go/No-Go decision
+T+24h  monitor, then close
+```
+
+#### Checklist پس از سوییچ
+
+1. DNS درست؟ (`nslookup`)
+2. ۵ کاربر نمونه اینترنت دارند؟
+3. برنامه‌ی حیاتی (ERP) باز می‌شود؟
+4. VPN شعب Up؟
+5. Log جدید دریافت می‌شود؟
+
+#### مثال ساده
+
+همه‌ی ۵ مورد OK ⇒ GO.
+
+#### مثال متوسط — معیار No-Go
+
+``` text
+If critical app down AND no fix within 30 min -> ROLLBACK
+If >10% of tunnels down -> ROLLBACK
+```
+
+#### مثال سخت — Rollback ناقص
+
+در Rollback IP دستگاه قدیم به ARP Cache سوییچ‌ها گیر کرده و ۵ دقیقه طول کشید. درس: در تمرین Rollback زمان بگیرید و Gratuitous ARP یا پاک‌سازی ARP را در Runbook بنویسید.
+
+#### Lab
+
+Cutover را در Lab اجرا و Rollback را زمان بگیرید؛ هدف < ۱۰ دقیقه.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| بعضی کاربران قطع | ARP قدیمی | پاک‌سازی ARP |
+| DNS قدیمی | TTL بالا | کاهش TTL قبل از Cutover |
+| VPN بالا نمی‌آید | IP عمومی تغییر | هماهنگی با Peer |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا TTL قبل از Cutover کم می‌شود؟** تغییر DNS سریع اعمال شود.
+**۲. چرا Rehearsal؟** کشف مشکلات.
+**۳. Go/No-Go چیست؟** معیار از پیش‌تعریف‌شده.
+
+#### English Corner
+
+- *Define rollback criteria before the window starts.*
+- Q: What do you verify after the switch?
 
 ## درس 30-3 — تست پیش/پس Migration و Evidence: Test Matrix، مقایسه‌ی Session/Log، RCA اختلاف‌ها
 
@@ -48928,6 +58252,77 @@ Matrix: مبدأ، مقصد، سرویس، نتیجه‌ی قبل/بعد. تفا
 
 ردیف ۳ تفاوت است و باید قبل از Cutover حل شود.
 
+### تکمیل عمیق: تست پیش/پس Migration با Matrix و Evidence
+
+#### چرا؟
+
+بعد از Cutover «به نظر خوب است» کافی نیست. باید بدانید دقیقاً چه چیزی قبل از Cutover کار می‌کرد و بعد هم کار می‌کند. Matrix قبل/بعد این کار را ساده می‌کند.
+
+#### ساخت Matrix
+
+ستون‌ها: شماره، از، به، سرویس، نتیجه‌ی قبل، نتیجه‌ی بعد، وضعیت.
+
+| # | از | به | سرویس | قبل | بعد | وضعیت |
+|---|---|---|---|---|---|---|
+| 1 | Users | ERP | 443 | OK | OK | هم‌خوان |
+| 2 | Guest | Servers | any | Block | Block | هم‌خوان |
+| 3 | Users | DB | 1433 | Block | OPEN | **بررسی** |
+
+ردیف ۳ نقض است: چیزی که قبلاً بسته بود، حالا باز است؛ این خطر امنیتی است.
+
+#### مثال ساده — اسکریپت آزمون
+
+``` text
+for t in "10.20.0.10 443" "10.30.3.10 1433"; do
+  set -- $t
+  nc -z -w2 $1 $2 && echo "$1:$2 OPEN" || echo "$1:$2 CLOSED"
+done
+```
+
+یک بار قبل و یک بار بعد اجرا و خروجی‌ها را با `diff` مقایسه کنید.
+
+#### مثال متوسط — مقایسه با diff
+
+``` text
+diff before.txt after.txt
+< 10.30.3.10:1433 CLOSED
+> 10.30.3.10:1433 OPEN
+```
+
+تفسیر: یک پورت جدید باز شده؛ علت را در Policy پیدا کنید (احتمالاً Policy عمومی).
+
+#### مثال سخت — تفاوت قابل‌قبول
+
+پس از Migration، تأخیر ۱۲ms به ۱۸ms رسید. آیا خطاست؟ معیار پذیرش: «تأخیر حداکثر +۲۰٪». ۱۸/۱۲ = ۱.۵ ⇒ ۵۰٪ افزایش ⇒ غیرقابل‌قبول؛ بررسی UTM/Offload.
+
+``` text
+Increase % = (new - old) / old x 100
+(18 - 12) / 12 x 100 = 50 %
+```
+
+#### Lab
+
+Matrix با ۲۰ ردیف بسازید، دو بار اجرا کنید و تفاوت‌ها را تحلیل کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| تفاوت ناگهانی | Policy گسترده | تنگ‌سازی |
+| آزمون ناپایدار | زمان‌بندی | تکرار ۳ بار |
+| افت کارایی | UTM | بهینه‌سازی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا آزمون منفی؟** چیزی که باید بسته باشد، باز نشده باشد.
+**۲. diff چرا؟** تفاوت خودکار.
+**۳. معیار تأخیر؟** از قبل تعیین.
+
+#### English Corner
+
+- *Compare before and after with the same test set.*
+- Q: What does a new OPEN result in the matrix mean?
+
 ## درس 30-4 — Gate G11: آزمون عملی Migration — صورت مسئله، کلید پاسخ کامل و Rubric
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۱ تا ۳۰-۳ · ≈ 12 ساعت**
@@ -49084,6 +58479,71 @@ Inventory ۲۰، نگاشت ۲۵، Cutover ۲۵، تست ۲۰، گزارش ۱۰.
 ### مثال حل‌شده: نمره‌ی G11
 
 اگر Inventory و نگاشت کامل ولی Cutover بدون Rollback آزمون‌شده: 20+25+10+20+10 = 85 از 100؛ نمره‌ی Cutover کامل فقط با آزمون Rollback.
+
+### تکمیل عمیق: ارزیابی G11 — حل کامل یک پروژه‌ی Migration نمونه
+
+#### چرا؟
+
+Gate یعنی ایست بازرسی. فقط وقتی از G11 عبور می‌کنید که ثابت کنید یک Migration را از ابتدا تا انتها درست می‌توانید انجام دهید.
+
+#### صورت مسئله‌ی نمونه
+
+یک ASA با ۳۰۰ ACL و ۲۰ NAT باید به FortiGate منتقل شود. ۸ شعبه VPN دارند. پنجره‌ی تغییر: ۴ ساعت.
+
+#### کلید پاسخ مرحله‌ای
+
+1. **Inventory**: شمارش، Hit Count، تماس مالکان.
+2. **Hygiene**: ۳۰٪ بی‌استفاده؛ تأیید حذف.
+3. **نگاشت**: Objectها، NAT (VIP/IP Pool)، VPN.
+4. **Lab**: ساخت و Matrix.
+5. **Plan**: Cutover T0، Go/No-Go، Rollback.
+6. **اجرا و Verify**.
+7. **Closure**: گزارش و درس‌ها.
+
+#### مثال متوسط — زمان‌بندی ۴ ساعته
+
+``` text
+00:00-00:30 backup + verify
+00:30-01:30 switch + routing
+01:30-02:30 VPN peers (8 x ~7 min)
+02:30-03:15 test matrix
+03:15-03:45 decision + comms
+03:45-04:00 buffer
+```
+
+#### مثال سخت — دو Peer VPN هماهنگ نشدند
+
+شعبه ۳ و ۶ Tunnel ندارند. بررسی: IP عمومی جدید در Peer هنوز تغییر نکرده. تصمیم: پیش از ساعت ۰۲:۳۰ هماهنگی تلفنی؛ در غیر این صورت این دو شعبه را «Deferred» کنید و گزارش دهید.
+
+#### Rubric
+
+``` text
+Inventory 20 | Mapping 25 | Cutover plan 25 | Testing 20 | Report 10
+Example: 18 + 22 + 20 + 18 + 9 = 87
+```
+
+#### Lab
+
+یک صورت مسئله‌ی خودتان بنویسید و با Rubric نمره‌گذاری کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ناتمام ماندن زمان | برنامه‌ریزی ضعیف | Buffer |
+| Peer ناهماهنگ | ارتباط | تماس زودتر |
+| Rollback ناکافی | آزمون‌نشده | تمرین |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Deferred چیست؟** کار موکول‌شده با ثبت.
+**۲. Buffer چرا؟** غافلگیری.
+**۳. G11 چه می‌سنجد؟** کل چرخه.
+
+#### English Corner
+
+- *Not everything must succeed on cutover night, but everything must be recorded.*
+- Q: How do you schedule a four-hour window?
 
 ## پاسخ‌های فصل 30
 
@@ -49515,6 +58975,86 @@ R-02 -> HLD §4.1 (DMZ zone) -> LLD Policy 61 -> Test T-09..T-18 -> Evidence E-0
 | R2 DMZ فقط 443 | VIP+Policy | T2 nmap | خروجی nmap |
 | R3 Failover < 5 s | HA/SD-WAN | T3 قطع لینک | ping Loss |
 
+### تکمیل عمیق: چرا Capstone بدون «معیار پذیرش» فقط یک نمایش است؟
+
+#### چرا باید یاد بگیریم؟
+
+فرض کنید پیمانکار ساختمان به شما بگوید «ساختمان تمام شد». می‌پرسید: «چه چیزی را چک کنم؟». اگر قبلاً روی کاغذ نوشته باشید «آب هر طبقه فشار ≥ ۲ بار، برق سه‌فاز، آسانسور تا طبقه ۵»، پذیرش ساده است. اگر ننوشته باشید، بحث می‌شود. پروژه‌ی شبکه هم همین است. **معیار پذیرش** (Acceptance Criteria) یعنی هر نیازمندی با یک آزمون قابل‌اندازه‌گیری گره می‌خورد تا «تمام شد» معنای مشخص داشته باشد.
+
+#### توضیح ساده
+
+یک Capstone خوب سه ستون دارد: **نیازمندی** (چه می‌خواهیم)، **طراحی** (چطور) و **اثبات** (چطور نشان می‌دهیم). رشته‌ای که این سه را به هم وصل می‌کند ماتریس ردیابی (Traceability Matrix) است.
+
+``` text
+Requirement  ->  Design element  ->  Test  ->  Evidence
+R1           ->  Policy 20       ->  T1    ->  curl output + log
+R2           ->  VIP + Policy 30 ->  T2    ->  nmap output
+R3           ->  SD-WAN/Link mon ->  T3    ->  ping loss count
+```
+
+#### مثال ساده — نیازمندی بد و خوب
+
+| نیازمندی بد | نیازمندی خوب |
+|---|---|
+| «اینترنت سریع باشد» | «۹۵٪ دانلود‌ها زیر ۲ ثانیه برای فایل ۵ مگابایتی» |
+| «امن باشد» | «از Users به Mgmt هیچ پورتی باز نباشد (آزمون nmap)» |
+| «Failover داشته باشد» | «قطع لینک اول؛ از دست‌رفتن کمتر از ۵ بسته با ping هر ۱ ثانیه» |
+
+قاعده‌ی SMART: Specific، Measurable، Achievable، Relevant، Time-bound.
+
+#### مثال متوسط — آزمون نیازمندی Failover
+
+``` text
+ping -i 1 8.8.8.8           # run on a user PC
+# at t=30s disconnect ISP1
+# count lost replies until reply returns
+lost = 3 packets x 1 s = 3 s  -> PASS if target < 5 s
+```
+
+مراحل: ۱) Baseline بگیرید ۲) قطع ۳) شمارش ۴) مقایسه با هدف ۵) ثبت.
+
+#### مثال سخت — نیازمندی‌های متعارض
+
+مدیر می‌خواهد «همه‌ی ترافیک رمزگشایی و بازرسی شود» (SSL Inspection) و هم «تأخیر کمتر از ۲۰ میلی‌ثانیه». تحلیل: Inspection CPU می‌خورد؛ آزمون واقعی لازم است.
+
+راه‌حل: Baseline بگیرید، Inspection را فقط روی دسته‌هایی که ریسک بالا دارند فعال کنید و برای بانک/سلامت Exemption بگذارید. نتیجه را با عدد گزارش دهید و تعارض را به مدیر نشان دهید، نه این‌که پنهان کنید.
+
+#### ساختار پروژه‌ی Capstone
+
+1. نیازمندی و فرضیات
+2. HLD (High-Level Design، یعنی طراحی سطح بالا)
+3. LLD (Low-Level Design، یعنی طراحی تفصیلی)
+4. ساخت مرحله‌ای با Checkpoint
+5. آزمون و Evidence
+6. Runbook و Handover
+7. ارائه و دفاع
+
+#### Lab
+
+برای پروژه‌ی خودتان ۸ نیازمندی SMART بنویسید و برای هر کدام یک آزمون و یک خروجی قابل‌ثبت تعریف کنید.
+
+#### عیب‌یابی طراحی پروژه
+
+| علامت | علت | رفع |
+|---|---|---|
+| آزمون نمی‌توان نوشت | نیازمندی مبهم | بازنویسی SMART |
+| نیازمندی بی‌طرح | ماتریس ناقص | افزودن ستون Design |
+| طرح بی‌نیازمندی | کار اضافه | حذف یا توجیه |
+
+#### پرسش‌های مرور با پاسخ
+
+**۱. Traceability چه فایده‌ای دارد؟** پوشش کامل و پیدا کردن کار اضافه یا جاافتاده.
+
+**۲. SMART یعنی چه؟** مشخص، قابل‌اندازه‌گیری، دست‌یافتنی، مرتبط، زمان‌دار.
+
+**۳. تعارض نیازمندی‌ها را چه کنیم؟** با عدد نشان دهید و تصمیم را مالک بگیرد.
+
+#### English Corner
+
+- *Every requirement must map to at least one test.* هر نیازمندی باید دست‌کم یک آزمون داشته باشد.
+- *Acceptance criteria are agreed before the build starts.*
+- Q: What makes a requirement measurable?
+
 ## درس 31-1 — Capstone I: نیازمندی‌ها و سند طراحی سطح بالا (HLD) — با نمونه‌ی کامل
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰، همه‌ی Gateها · ≈ 8 ساعت**
@@ -49665,6 +59205,73 @@ Consequences: need UTM at branch; central logging required; review quarterly
 |---|---|---|---|
 | قطع ISP | متوسط | زیاد | Dual-ISP |
 | خطای Policy | زیاد | متوسط | Review+Lookup |
+
+### تکمیل عمیق: نوشتن HLD از نیازمندی تا نمودار و ریسک
+
+#### چرا؟
+
+HLD نقشه‌ی شهر است، نه نقشه‌ی سیم‌کشی خانه. مدیر و همکار باید در ۱۰ دقیقه بفهمند «چه می‌سازیم و چرا». اگر جزئیات (IP، Policy) را زود وارد کنید، تصویر کلی گم می‌شود.
+
+#### اجزای HLD
+
+| بخش | پرسش که پاسخ می‌دهد |
+|---|---|
+| زمینه و هدف | چرا این پروژه؟ |
+| نیازمندی‌ها و فرضیات | چه می‌خواهیم و چه فرض کرده‌ایم؟ |
+| معماری منطقی | اجزا و ارتباطشان |
+| جریان‌های اصلی | Users→Internet، Internet→DMZ و ... |
+| ریسک‌ها | چه چیزی خراب می‌شود؟ |
+| خارج از محدوده | چه چیزی را نمی‌سازیم؟ |
+
+#### مثال ساده — جریان‌ها
+
+``` text
+F1 Users   -> Internet   : via Internal FW then Edge FW (SNAT at Edge)
+F2 Internet-> DMZ web     : via Edge FW VIP 443
+F3 Mgmt    -> all devices : only from MGMT VLAN, SSH/HTTPS
+```
+
+#### مثال متوسط — ماتریس ریسک
+
+``` text
+Risk score = Likelihood x Impact
+ISP outage : 3 x 5 = 15  -> mitigate: Dual-ISP
+Policy error: 4 x 3 = 12 -> mitigate: review + pre/post lookup
+Cert expiry : 3 x 3 = 9  -> mitigate: calendar alert 30d
+```
+
+مراحل: ۱) فهرست ریسک ۲) امتیاز ۳) مرتب‌سازی ۴) اقدام برای بالاترین‌ها.
+
+#### مثال سخت — فرضیه‌ی غلط
+
+فرض: «ISP یک IP عمومی ثابت می‌دهد». در عمل DHCP بود و VIP/VPN شکست خورد. درس: هر فرضیه را در سند بنویسید و پیش از ساخت تأیید کنید؛ فرضیه‌ی تأییدنشده یک ریسک است.
+
+#### نمودار پیشنهادی
+
+نمودار منطقی ساده با پنج جعبه: Internet، Edge FW، DMZ، Internal FW، Users/Servers/Mgmt. حتماً جهت جریان و نقطه‌ی NAT را مشخص کنید.
+
+#### Lab
+
+HLD یک صفحه‌ای بنویسید و از یک همکار بخواهید فقط با آن، جریان F2 را توضیح دهد؛ اگر نتوانست، HLD مبهم است.
+
+#### عیب‌یابی سند
+
+| علامت | علت | رفع |
+|---|---|---|
+| سؤال زیاد از همکار | جریان‌ها ناقص | افزودن جریان |
+| HLD شلوغ | جزئیات LLD | انتقال به LLD |
+| ریسک ثبت نشده | بی‌توجهی | جلسه‌ی ریسک |
+
+#### پرسش‌ها با پاسخ
+
+**۱. HLD و LLD چه فرقی دارند؟** سطح جزئیات: چه/چرا در برابر چطور/دقیقاً چه مقداری.
+**۲. چرا فرضیات؟** هر فرضیه ریسک بالقوه است.
+**۳. «خارج از محدوده» چه فایده‌ای دارد؟** جلوگیری از انتظار اضافی.
+
+#### English Corner
+
+- *The HLD describes what and why; the LLD describes how.*
+- Q: Which assumptions could break your design?
 
 ## درس 31-2 — Capstone I: طراحی تفصیلی (LLD) — جدول Interface/Route/Policy/VPN و ماتریس ردیابی
 
@@ -49851,6 +59458,95 @@ Int  port2 10.10.0.1/24 USERS
 
 بازبینی: هیچ دو Interface هم‌پوشان نباشند؛ Gateway داخل همان Subnet.
 
+### تکمیل عمیق: LLD دقیق — هر IP یک‌بار، هر Policy یک دلیل
+
+#### چرا؟
+
+LLD دستورالعمل ساختن است. اگر دو نفر با آن بسازند باید دقیقاً یک شبکه به دست آید. اگر در LLD «تقریباً» بنویسید، در Lab «حدس» خواهید زد.
+
+#### جدول Interface
+
+``` text
+Device  Port   Zone   IP              Notes
+Edge    port1  WAN    203.0.113.2/29  GW 203.0.113.1
+Edge    port2  DMZ    10.30.0.1/24
+Edge    port3  LINK   10.99.0.1/30
+Int     port1  LINK   10.99.0.2/30
+Int     port2  USERS  10.10.0.1/24
+Int     port3  SRV    10.20.0.1/24
+Int     port4  MGMT   10.50.0.1/24
+```
+
+#### بررسی هم‌پوشانی
+
+هر Subnet را با بقیه مقایسه کنید. روش: ابتدا آدرس شبکه و آدرس پخش (Broadcast) هر بلوک را بنویسید.
+
+``` text
+10.10.0.0/24 -> 10.10.0.0 - 10.10.0.255
+10.20.0.0/24 -> 10.20.0.0 - 10.20.0.255
+No overlap
+```
+
+#### جدول Route
+
+``` text
+Int : 0.0.0.0/0 via 10.99.0.1 (port1)
+Edge: 10.10.0.0/24 via 10.99.0.2 ; 10.20.0.0/24 via 10.99.0.2 ; 10.50.0.0/24 via 10.99.0.2
+```
+
+#### جدول Policy با دلیل
+
+| ID | مسیر | سرویس | دلیل (نیازمندی) |
+|---|---|---|---|
+| 10 | USERS→SRV | HTTPS,SMB | R4 |
+| 20 | USERS→LINK | HTTP,HTTPS,DNS | R1 |
+| 30 | WAN→DMZ (VIP) | HTTPS | R2 |
+| 90 | any→any | ALL deny log | پیش‌فرض امن |
+
+#### مثال ساده — پیدا کردن خطا در LLD
+
+دو بار 10.20.0.1 به دو Interface داده شده؛ شناسایی با جستجوی IP در جدول. رفع: یکی از آن‌ها را تغییر دهید.
+
+#### مثال متوسط — Route خلاصه
+
+``` text
+10.10.0.0/24, 10.20.0.0/24 can be summarized to 10.10.0.0/15? NO (covers 10.10-10.11)
+Keep separate routes unless a contiguous reserved block exists
+```
+
+خلاصه‌سازی فقط وقتی مجاز است که بلوک پیوسته و رزرو شده باشد.
+
+#### مثال سخت — تناقض NAT
+
+در LLD ننوشته‌اید NAT در کدام فایروال است. در ساخت هر دو NAT زدند؛ ردیابی Log سخت شد. قاعده: هر جریان باید یک «نقطه‌ی NAT» مشخص داشته باشد.
+
+#### Lab
+
+جدول‌های بالا را در یک فایل بنویسید و با اسکریپت ساده هم‌پوشانی را بررسی کنید (مثلاً با پایتون `ipaddress`).
+
+``` text
+python3 -c "import ipaddress as i; print(i.ip_network('10.10.0.0/24').overlaps(i.ip_network('10.20.0.0/24')))"
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| IP تکراری | LLD بی‌کنترل | اسکریپت بررسی |
+| Route برگشت گم | جدول ناقص | افزودن Route |
+| Policy بی‌دلیل | نبود Traceability | ستون Requirement |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا ستون «دلیل» برای Policy؟** حذف یا بازبینی بعدی.
+**۲. هم‌پوشانی IP چه می‌کند؟** مسیر و NAT خراب.
+**۳. نقطه‌ی NAT؟** یکی برای هر جریان.
+
+#### English Corner
+
+- *Each IP address is assigned exactly once.*
+- Q: How do you detect overlapping subnets?
+
 ## درس 31-3 — Capstone II: ساخت مرحله‌ای (S1–S6) با Checkpoint، دستورهای واقعی، آزمون هر مرحله و Rollback
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۲ · ≈ 8 ساعت**
@@ -50020,6 +59716,81 @@ S1–S6 با Checkpoint؛ هر مرحله Verify قبل از بعدی.
 
 پس از ساخت Edge: ping به GW، Lookup Policy، `get router info routing-table all`؛ فقط در صورت موفقیت به S3.
 
+### تکمیل عمیق: ساخت مرحله‌ای S1–S6 با Checkpoint و Rollback
+
+#### چرا؟
+
+ساختن همه‌چیز یک‌جا مثل چیدن یک ساختمان بدون بازرسی طبقه‌ای است؛ اگر پایه خراب باشد، بعد از طبقه‌ی ششم می‌فهمید. روش درست: هر مرحله ساخته، آزمون و ثبت می‌شود، سپس مرحله‌ی بعد.
+
+#### مراحل
+
+| مرحله | کار | Checkpoint |
+|---|---|---|
+| S1 | Interface و آدرس‌دهی | ping هم‌سایه‌ها |
+| S2 | Routing | `get router info routing-table all` |
+| S3 | Policy پایه و NAT | Lookup + curl |
+| S4 | DMZ و VIP | nmap از اینترنت |
+| S5 | VPN/SD-WAN | Tunnel Up + ping |
+| S6 | Log/Monitoring/Backup | Log رسیده + Backup |
+
+#### مثال ساده — S1
+
+``` text
+config system interface
+ edit port2
+  set ip 10.10.0.1 255.255.255.0
+  set allowaccess ping
+ next
+end
+execute ping 10.10.0.5
+```
+
+Checkpoint: پاسخ ping. Rollback: `unset ip` یا بازگرداندن Config.
+
+#### مثال متوسط — S3 با بررسی منفی
+
+``` text
+diagnose firewall iprope lookup 10.10.0.5 40000 8.8.8.8 53 udp port2   # expect policy 20
+diagnose firewall iprope lookup 10.10.0.5 40000 10.50.0.20 22 tcp port2 # expect deny
+```
+
+هر دو باید جواب مورد انتظار را بدهند؛ آزمون منفی نشان می‌دهد مرز امنیتی کار می‌کند.
+
+#### مثال سخت — شکست Checkpoint S5
+
+Tunnel Up ولی ping نمی‌رود. روش: ۱) شمارنده‌ی enc/dec ۲) Route ۳) Policy دوطرفه ۴) MTU. فرض: Policy یک‌طرفه. رفع: Policy جهت مقابل؛ تکرار Checkpoint.
+
+#### Rollback مرحله‌ای
+
+``` text
+execute backup config tftp S3-ok.conf 10.50.0.30   # before S4
+# if S4 fails:
+execute restore config tftp S3-ok.conf 10.50.0.30
+```
+
+#### Lab
+
+هر مرحله را با Snapshot ماشین مجازی قبل از شروع ثبت کنید؛ شکست عمدی در S4 و بازگشت.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| S2 درست ولی S3 ping ندارد | Policy/RPF | Lookup/Debug Flow |
+| S4 از اینترنت نمی‌رسد | VIP/Route ISP | بررسی VIP و Policy |
+| S5 Tunnel Down | Proposal/PSK | Debug IKE |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا مرحله‌ای؟** کوتاه‌کردن حلقه‌ی خطا.
+**۲. چرا Backup قبل از مرحله؟** Rollback سریع.
+**۳. آزمون منفی چرا؟** اثبات امنیت.
+
+#### English Corner
+
+- *Build in small steps and verify each one.*
+- Q: What is the purpose of a checkpoint?
+
 ## درس 31-4 — Capstone II: آزمون کامل، Evidence Index نمونه‌ی پر، تحلیل سه خرابی و Sign-off
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰ تا ۳۱-۳ · ≈ 11 ساعت**
@@ -50170,6 +59941,64 @@ Index شواهد: شماره‌ی آزمون، دستور، خروجی، زما�
 ``` text
 ID T2 ; cmd nmap -p 22,80,443 203.0.113.3 ; 2026-11-27 10:15 ; 443 open, others filtered ; PASS
 ```
+
+### تکمیل عمیق: آزمون کامل و Evidence Index
+
+#### چرا؟
+
+آزمون بدون ثبت شبیه امتحانی است که برگه‌اش گم شود. Evidence Index فهرست مرتب شواهد است؛ هر ردیف قابل بازتولید.
+
+#### قالب Evidence Index
+
+``` text
+ID  Req  Test            Command                                   Time        Result
+T1  R1   Users internet  curl -sI https://example.org              10:05       200 PASS
+T2  R2   DMZ 443 only    nmap -p 22,80,443 203.0.113.3             10:12       only 443 PASS
+T3  R3   Failover        ping -i 1 8.8.8.8 (cut ISP1)              10:20       3 lost PASS
+```
+
+#### مثال ساده
+
+یک ردیف کامل: شناسه‌ی آزمون، نیازمندی، دستور، زمان، نتیجه، مسیر فایل خروجی.
+
+#### مثال متوسط — سه خرابی تزریقی
+
+| خرابی | شاهد | رفع |
+|---|---|---|
+| VIP حذف | Lookup=0 | بازسازی |
+| Route برگشت ناقص | Sniffer: SYN بدون ACK | افزودن Route |
+| PSK متفاوت | Debug IKE: AUTH_FAILED | یکسان‌سازی |
+
+#### مثال سخت — نتیجه‌ی مرزی
+
+Failover 5.2 ثانیه در حالی که هدف کمتر از ۵ بود. تصمیم صادقانه: FAIL یا «شرطی قبول» با برنامه‌ی بهبود (کاهش interval و failtime). هرگز عدد را گرد نکنید تا قبول شود.
+
+#### Sign-off
+
+مالک نیازمندی نتیجه را امضا می‌کند؛ مواردی که اجرا نشد در بخش «Deferred» ثبت می‌شوند.
+
+#### Lab
+
+Evidence Index کامل برای پروژه‌ی خودتان بسازید با ≥ ۱۰ ردیف.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| شاهد بی‌زمان | بی‌دقتی | Timestamp |
+| آزمون تکرارناپذیر | دستور ناقص | ثبت دستور کامل |
+| قبول بدون شاهد | عجله | رد |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا زمان؟** ارتباط با Log.
+**۲. «شرطی قبول» چه وقت؟** با برنامه‌ی رفع و تاریخ.
+**۳. Deferred چیست؟** آنچه اجرا نشده و صادقانه ثبت شده.
+
+#### English Corner
+
+- *Evidence must be repeatable and time-stamped.*
+- Q: How do you handle a borderline test result?
 
 ## درس 31-5 — Capstone II: Runbook کامل نمونه، Handover و آزمون Runbook توسط همکار
 
@@ -50326,6 +60155,75 @@ Step 4 Restore config
  Rollback: previous backup
 ```
 
+### تکمیل عمیق: Runbook عملی و آزمون آن با همکار
+
+#### چرا؟
+
+Runbook برای ساعت ۳ بامدادی نوشته می‌شود، وقتی شما خوابید و همکارتان باید کار را انجام دهد. اگر Runbook مبهم باشد، همان شب مشکل بزرگ می‌شود.
+
+#### قالب هر Runbook
+
+``` text
+Title    : Restore firewall config from backup
+Goal     : return device to last known good config
+Prereq   : backup file + hash verified, console access
+Steps    : 1) copy file 2) execute restore config ... 3) wait reboot
+Verify   : get system status ; ping GW ; test user flow
+Rollback : previous backup
+Contact  : on-call NOC
+```
+
+#### قواعد نگارش
+
+1. هر مرحله یک فعل و یک دستور.
+2. خروجی مورد انتظار کنار هر مرحله.
+3. بدون فرض دانش پنهان.
+4. نسخه و تاریخ.
+
+#### مثال ساده
+
+Runbook «بررسی روزانه»: چهار دستور، چهار خروجی مورد انتظار.
+
+#### مثال متوسط — Runbook قطع ISP
+
+``` text
+Step 1 get router info routing-table details 0.0.0.0/0   expect: via ISP2
+Step 2 diagnose sys sdwan health-check                   expect: ISP1 dead
+Step 3 notify ISP1 NOC ; open ticket
+Step 4 monitor until recovery ; failback verify
+```
+
+#### مثال سخت — آزمون Runbook
+
+یک همکار که پروژه را نمی‌شناسد با فقط Runbook یک Restore را انجام می‌دهد؛ شما فقط مشاهده می‌کنید. هر جا پرسید «کجا؟» یعنی Runbook ناقص است؛ آن را اصلاح و آزمون را تکرار کنید.
+
+#### Handover
+
+لیست: سند طراحی، Runbook، Evidence Index، دسترسی‌ها (در Vault)، محدودیت‌ها، تماس‌ها.
+
+#### Lab
+
+یک Runbook بنویسید و با یک نفر آزمون کنید؛ تعداد سؤال‌های او را ثبت کنید (هدف: صفر).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| همکار گیر کرد | مرحله مبهم | اصلاح |
+| خروجی نامنتظره | نسخه متفاوت | ثبت نسخه |
+| رمز در Runbook | بی‌دقتی | Vault |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا آزمون Runbook؟** ابهام را آشکار می‌کند.
+**۲. چرا خروجی مورد انتظار؟** تشخیص موفقیت.
+**۳. رمز کجا؟** در Vault نه سند.
+
+#### English Corner
+
+- *A runbook must be usable by someone who did not write it.*
+- Q: What belongs in a handover package?
+
 ## درس 31-6 — ارزیابی Capstone I و II: ارائه، Q&A، سؤال‌های دفاع و Rubric تفصیلی
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰ تا ۳۱-۵ · ≈ 11 ساعت**
@@ -50474,6 +60372,67 @@ Improvement: run T-12/T-15 in lab; verify commands
 ### مثال حل‌شده: پاسخ به «Evidence کجاست؟»
 
 اشاره به Index شواهد، شماره‌ی T، فایل Log و زمان؛ و در صورت اجرا نشدن، صراحتاً «اجرا نشده/تأیید مستندی».
+
+### تکمیل عمیق: دفاع از پروژه — سؤال‌های سخت و پاسخ‌های نمونه
+
+#### چرا؟
+
+پروژه‌ای که نتوانید از آن دفاع کنید، مال شما نیست. دفاع یعنی توضیح تصمیم‌ها، پذیرش محدودیت‌ها و نشان دادن شواهد.
+
+#### ساختار ارائه‌ی ۱۰ دقیقه‌ای
+
+| دقیقه | محتوا |
+|---|---|
+| 0-2 | مسئله و نیازها |
+| 2-5 | معماری و تصمیم‌ها |
+| 5-8 | اثبات (Evidence) |
+| 8-10 | محدودیت‌ها و گام بعد |
+
+#### سؤال سخت ۱: «اگر Edge بیفتد چه می‌شود؟»
+
+پاسخ نمونه: «اینترنت و DMZ قطع می‌شوند؛ شبکه‌ی داخلی همچنان کار می‌کند. برای کاهش، HA یا Edge دوم پیشنهاد می‌شود؛ در Lab اجرا نشده و به‌عنوان Deferred ثبت است.»
+
+#### سؤال سخت ۲: «چرا NAT فقط در Edge؟»
+
+پاسخ: «یک نقطه‌ی ترجمه ردیابی Log را ساده می‌کند؛ NAT دوگانه Session و عیب‌یابی را پیچیده می‌کند.»
+
+#### سؤال سخت ۳: «شاهد Failover؟»
+
+پاسخ: «ping مداوم، قطع در ساعت X، ۳ بسته گم‌شده، Log رویداد؛ مراجعه به T3 در Evidence Index.»
+
+#### Rubric تفصیلی
+
+``` text
+Design quality 20 | Build correctness 20 | Evidence 20 | Troubleshooting 15 | Docs 10 | Honesty 15
+Example: 18 + 17 + 19 + 12 + 9 + 15 = 90
+```
+
+#### مثال: پاسخ به «چه چیزی اجرا نشده؟»
+
+صادقانه فهرست کنید: HA، UTM با لایسنس، آزمون بار. اضافه کنید چه زمانی و چگونه آزمون می‌شوند.
+
+#### Lab
+
+یک ارائه‌ی ۱۰ دقیقه‌ای را ضبط کنید و با Rubric خودتان را نمره دهید.
+
+#### عیب‌یابی ارائه
+
+| مشکل | رفع |
+|---|---|
+| جزئیات زیاد | تمرکز بر تصمیم |
+| بی‌شاهد | Evidence Index |
+| دفاع نکردن از اشتباه | پذیرش و درس |
+
+#### پرسش‌ها با پاسخ
+
+**۱. صداقت درباره‌ی محدودیت چه اثری دارد؟** اعتماد را بالا می‌برد.
+**۲. چرا Rubric؟** نمره‌دهی شفاف.
+**۳. چگونه دفاع می‌کنید؟** تصمیم، دلیل، شاهد.
+
+#### English Corner
+
+- *I did not test this; here is how I would.*
+- Q: What was your hardest design trade-off?
 
 ## پاسخ‌های فصل 31
 
@@ -50870,6 +60829,96 @@ Owner (مالک سرویس)، Implementer (مجری)، Reviewer (بازبین ف
 - Policy جدید برای پروژه: Normal (CAB).
 - بستن IP مهاجم در حادثه: Emergency با بازبینی پس از ۲۴ ساعت.
 
+### تکمیل عمیق: از «مهندس پیکربندی» تا «مهندس عملیات»
+
+#### چرا این بخش را باید یاد بگیریم؟
+
+تصور کنید یک پزشک ماهر دارید که جراحی را عالی بلد است ولی بعد از عمل، بیمار را ویزیت نمی‌کند، پرونده نمی‌نویسد و دارو را ثبت نمی‌کند. بیمار ممکن است بمیرد، نه به‌خاطر ضعف جراحی، بلکه به‌خاطر نبود **فرایند**. شبکه هم همین است. بیشتر قطعی‌های جدی سازمان‌ها نه از ضعف دانش فنی، بلکه از «تغییر بدون ثبت»، «Backup بدون آزمون» و «حادثه بدون نقش مشخص» می‌آید. این فصل شما را از کسی که فقط دستور می‌زند، به کسی تبدیل می‌کند که سازمان به او اعتماد می‌کند.
+
+#### توضیح با زبان ساده
+
+عملیات (Operations) یعنی همه‌ی کارهای تکراری و پیش‌بینی‌پذیر که شبکه را سالم نگه می‌دارد. سه ستون دارد:
+
+1. **Run**: نگهداری روزانه؛ Health Check، Backup، بررسی هشدارها.
+2. **Change**: هر تغییر با درخواست، تأیید، اجرا و بستن.
+3. **Respond**: وقتی حادثه رخ داد، چه کسی چه می‌کند.
+
+ITIL (Information Technology Infrastructure Library، یعنی «کتابخانه‌ی زیرساخت فناوری اطلاعات») مجموعه‌ی بهترین‌روش‌های صنعتی برای همین سه ستون است. نیازی نیست همه‌ی ITIL را پیاده کنید؛ سه فرایند آن کافی است: Incident Management (مدیریت حادثه)، Change Management (مدیریت تغییر) و Problem Management (مدیریت مسئله‌ی ریشه‌ای).
+
+#### تفاوت Incident و Problem با مثال
+
+صبح کاربران نمی‌توانند به سرور فایل برسند. شما Policy را اصلاح می‌کنید و همه چیز درست می‌شود؛ این **Incident** بود (هدف: برگرداندن سرویس). بعد می‌پرسید «چرا Policy اشتباه شده بود؟ چرا Change Review نکرده بودیم؟»؛ این **Problem** است (هدف: جلوگیری از تکرار).
+
+#### مثال ساده — هزینه‌ی یک تغییر بدون ثبت
+
+یک مهندس شب ساعت ۲۳ برای «رفع سریع» یک Policy را حذف می‌کند. فردا صبح ERP کار نمی‌کند. هیچ‌کس نمی‌داند چه چیزی تغییر کرده. تیم ۴۰ دقیقه Log می‌خواند تا بفهمد. اگر CHG ثبت شده بود، ۲ دقیقه کافی بود: «دیشب Policy 47 حذف شد».
+
+#### مثال متوسط — سه نوع Change
+
+| نوع | تعریف | مثال | تأیید |
+|---|---|---|---|
+| Standard | تکراری، کم‌ریسک، از پیش تأییدشده | افزودن IP به Address Group | بدون CAB |
+| Normal | نیاز به بررسی | Policy جدید برای پروژه | CAB |
+| Emergency | حادثه‌ی جاری | بستن IP مهاجم | تأیید سریع + بازبینی بعدی |
+
+CAB = Change Advisory Board، یعنی «هیئت مشورتی تغییر»؛ گروهی که ریسک تغییرات بزرگ را بررسی می‌کند.
+
+#### مثال سخت — تغییر اضطراری که اشتباه شد
+
+حمله‌ی Brute-force به VPN. مهندس Emergency Change می‌زند و کل `203.0.113.0/24` را Block می‌کند. ۱۵ دقیقه بعد مشتری مهم (با IP در همین بلوک) نمی‌تواند وصل شود.
+
+درس: Emergency هم باید حداقل‌های ثبت داشته باشد: چه، چرا، کی، Rollback. مراحل درست:
+
+1. فقط IP مهاجم را Block کنید (نه کل بلوک).
+2. زمان و دلیل را در Ticket بنویسید.
+3. ظرف ۲۴ ساعت بازبینی کنید و Block اضافی را آزاد کنید.
+
+#### فرمول عملی: اندازه‌گیری سلامت عملیات
+
+``` text
+Change success rate = successful changes / total changes x 100
+MTTR = total repair time / number of incidents
+MTTD = total detection time / number of incidents
+```
+
+MTTD = Mean Time To Detect (میانگین زمان تشخیص)، MTTR = Mean Time To Repair (میانگین زمان رفع). مثال: ۴ حادثه با زمان رفع ۲۰، ۴۰، ۱۰ و ۳۰ دقیقه.
+
+``` text
+MTTR = (20 + 40 + 10 + 30) / 4 = 25 minutes
+```
+
+#### Lab پیشنهادی (روی Lab ایزوله، بدون دست‌زدن به تجهیز واقعی)
+
+1. یک قالب CHG بسازید.
+2. یک تغییر فرضی (افزودن Policy) را کامل ثبت کنید: Pre-check، مراحل، Post-check، Rollback.
+3. تغییر را در Lab اجرا کنید و زمان واقعی را ثبت کنید.
+4. یک‌بار عمداً Rollback را تمرین کنید.
+
+#### عیب‌یابی فرایند
+
+| علامت | علت محتمل | رفع |
+|---|---|---|
+| CHG‌ها ناقص‌اند | قالب اجباری نیست | فیلدهای الزامی |
+| Rollback کار نکرد | آزمون نشده بود | آزمون Rollback در Lab |
+| تأیید دیر می‌شود | CAB سنگین | Standard Change برای کارهای تکراری |
+
+#### پرسش‌های مرور با پاسخ
+
+**۱. چرا Emergency Change هم ثبت می‌شود؟** چون بعداً باید بدانید چه چیزی تغییر کرد و آیا اثر جانبی داشت.
+
+**۲. Incident و Problem چه فرقی دارند؟** Incident بازگرداندن سرویس است؛ Problem حذف علت ریشه‌ای.
+
+**۳. چرا Standard Change بدون CAB است؟** ریسک آن قبلاً سنجیده و روش آن ثبت شده است.
+
+**۴. MTTR چه چیزی را نشان می‌دهد؟** سرعت رفع، نه کیفیت پیشگیری.
+
+#### English Corner
+
+- *Change Advisory Board reviews high-risk changes before implementation.* هیئت مشورتی تغییرات پرریسک را قبل از اجرا بررسی می‌کند.
+- *Every change must have a rollback plan.* هر تغییر باید برنامه‌ی بازگشت داشته باشد.
+- Q: What is the difference between an incident and a problem?
+- Q: Why do we measure MTTR?
+
 ## درس 32-1 — Capstone III: عملیات روزانه و Change Management (ITIL) — فرایند، قالب CHG و مثال کامل
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۰ · ≈ 11 ساعت**
@@ -51043,6 +61092,99 @@ diagnose firewall iprope lookup 10.30.2.50 40000 10.30.3.10 1433 tcp ZN-APP
 Open tickets: 3 ; Alerts: CPU warn FW2 ; Pending change: CHG-114 tonight 23:00 ; Backups: OK
 ```
 
+### تکمیل عمیق: یک روز کاری واقعی و یک CHG کامل با سه پایان متفاوت
+
+#### چرا؟
+
+عملیات روزانه شبیه مسواک‌زدن است؛ کسل‌کننده، اما نبودنش هزینه‌ی سنگین دارد. در این درس یک «روز» را از ۰۸:۰۰ تا ۱۷:۰۰ قدم‌به‌قدم می‌گذرانیم تا ببینید چه چیزی کی بررسی می‌شود و چرا.
+
+#### یک روز کاری گام‌به‌گام
+
+``` text
+08:00  get system performance status       -> CPU, memory, uptime
+08:05  get system ha status               -> in-sync ?
+08:10  review overnight alerts            -> SIEM/Zabbix
+08:20  verify backup (file size + sha256) -> not zero bytes
+08:40  review Top Deny by srcip           -> scan / misconfig
+09:00  handle tickets / CHGs
+16:30  prepare handover note
+```
+
+**تفسیر عددی نمونه:**
+
+اگر CPU امروز 62٪ است و میانگین هفته‌ی گذشته 20٪، حتی اگر زیر آستانه‌ی ۷۰٪ باشد، «غیرعادی» است و باید دلیلش را بپرسید. Baseline یعنی همین مقایسه با حالت نرمال.
+
+#### بررسی Backup: چرا «وجود فایل» کافی نیست؟
+
+``` text
+ls -l cfg-2026-11-27.conf        -> 184320 bytes (normal ~180 KB)
+sha256sum cfg-2026-11-27.conf    -> store beside file
+grep -c "config firewall policy" cfg-2026-11-27.conf
+```
+
+فایل ۰ بایتی یا بدون بخش Policy یعنی Backup خراب. هر ماه یک Restore آزمایشی در Lab انجام دهید؛ Backup آزمون‌نشده، Backup نیست.
+
+#### CHG نمونه‌ی ساده
+
+درخواست: افزودن سرور گزارش‌گیری (10.30.2.50) به DB روی پورت 1433.
+
+- ریسک: کم؛ اثر: فقط Zone DB.
+- Window: ساعت ۲۲:۰۰ تا ۲۲:۳۰.
+- Rollback: غیرفعال کردن Policy 62 (کمتر از ۲ دقیقه).
+
+#### CHG نمونه‌ی متوسط — تغییر NAT
+
+تغییر IP Pool برای ۲۰۰ کاربر. ریسک متوسط چون قطع اتصال‌های جاری. Pre-check: ظرفیت Pool (محاسبه‌ی بالا)، تأیید ISP که IP Route شده. Post-check: `diagnose sys session list` با SNAT جدید؛ تست از یک کاربر.
+
+#### CHG نمونه‌ی سخت — تغییر شکست‌خورده با Rollback
+
+ساعت ۲۲:۰۵ Policy 62 اعمال شد. ۲۲:۱۰ گزارش «DB قطع شد». Post-check:
+
+``` text
+diagnose firewall iprope lookup 10.30.2.50 40000 10.30.3.10 1433 tcp ZN-APP
+ -> policy 61 (deny)
+```
+
+یعنی Policy 61 (Deny) بالاتر از 62 است. گام‌ها:
+
+1. ۲۲:۱۱ Rollback: `set status disable` روی 62.
+2. ۲۲:۱۲ تأیید بازگشت سرویس.
+3. ۲۲:۳۰ بستن CHG با «ناموفق».
+4. روز بعد CHG جدید با جابه‌جایی ترتیب.
+
+چون Rollback آماده بود، اثر فقط ۲ دقیقه شد.
+
+#### محاسبه‌ی ریسک ساده
+
+``` text
+Risk score = Likelihood (1-5) x Impact (1-5)
+Example: 2 x 4 = 8  -> medium -> require reviewer
+```
+
+#### Lab
+
+۱) چک‌لیست روزانه را روی Lab اجرا و خروجی‌ها را ذخیره کنید. ۲) CHG بالا را اجرا و Post-check بگیرید. ۳) عمداً ترتیب را غلط بگذارید و Rollback کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Post-check ناموفق | Policy پایین‌تر از Deny | تغییر ترتیب |
+| Backup خالی | دسترسی مقصد | بررسی مجوز |
+| CHG بدون Rollback | قالب ناقص | اجباری کردن فیلد |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Hash Backup؟** تشخیص خرابی/دستکاری.
+**۲. چرا Rollback قبل از شروع نوشته می‌شود؟** در بحران وقت فکر نیست.
+**۳. Baseline چه کمکی می‌کند؟** تشخیص غیرعادی حتی زیر آستانه.
+
+#### English Corner
+
+- *Run the post-check immediately after the change.* پس از تغییر بلافاصله Post-check را اجرا کنید.
+- *A backup is only as good as its last successful restore test.*
+- Q: What belongs in a pre-check?
+
 ## درس 32-2 — Capstone III: شبیه‌سازی حادثه کامل — سناریو، نقش‌ها، Timeline نمونه، MTTD/MTTR و PIR
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۰، ۲۹-۴ · ≈ 11 ساعت**
@@ -51204,6 +61346,91 @@ Timeline نمونه: T0 هشدار، T+5 تأیید، T+15 مهار، T+60 با�
 10:00 alert ; 10:05 triage ; 10:15 contain ; 10:50 recover ; next day PIR
 ```
 نقش‌ها: Incident Commander، Ops، Comms، Scribe.
+
+### تکمیل عمیق: یک حادثه‌ی کامل از هشدار تا گزارش پس از حادثه
+
+#### چرا؟
+
+آتش‌نشانان تمرین آتش می‌کنند، نه چون آتش دوست دارند، چون در شلوغی واقعی فرصت فکر نیست. شبیه‌سازی حادثه همین کار را برای تیم شبکه می‌کند: نقش‌ها و ترتیب کارها از قبل در ذهن باشد.
+
+#### نقش‌ها
+
+| نقش | کار |
+|---|---|
+| Incident Commander | تصمیم‌گیری و هماهنگی |
+| Operator | اجرای دستورها |
+| Scribe | ثبت Timeline |
+| Communicator | اطلاع به ذی‌نفعان |
+
+در تیم کوچک یک نفر چند نقش دارد، ولی **ثبت‌کننده** را جدا نگه دارید؛ کسی که دستور می‌زند فرصت نوشتن ندارد.
+
+#### سناریو: VPN شرکت از ساعت ۱۰:۰۰ کند و بعد قطع می‌شود
+
+``` text
+10:00 alert  : VPN failed logins 43 in 5 min from 203.0.113.50
+10:03 triage : many users, real accounts -> suspected brute force
+10:05 check  : any success after failures ?  (Event log)
+10:07 result : one success for user ali from same IP  -> serious
+10:08 contain: block IP, disable ali session, force password reset
+10:20 verify : no new logins from IP; ali re-enabled after reset + MFA
+10:50 recover: VPN normal; monitor 72h
+D+1   PIR    : written
+```
+
+#### تحلیل تصمیم‌ها
+
+- چرا ابتدا «موفقیت پس از شکست» بررسی شد؟ چون Brute-force بدون موفقیت یک «تلاش» است و با موفقیت یک «نفوذ».
+- چرا Block فقط IP؟ جلوگیری از آسیب به کاربران مشروع.
+- چرا Reset رمز و MFA؟ رمز ممکن است لو رفته باشد.
+
+#### بخش Evidence
+
+``` text
+execute log filter category 1
+execute log display
+sha256sum vpn-events-2026-11-27.log
+```
+
+Log خام را قبل از هر تغییر کپی و Hash کنید؛ بعداً ثابت می‌کند چه شد.
+
+#### سناریوی سخت‌تر: دو مشکل هم‌زمان
+
+در حین حادثه، ISP هم قطع می‌شود. اولویت: بازگرداندن اینترنت کاربران یا مهار VPN؟ قاعده: خطر نفوذ فعال بر ناراحتی عملیاتی غلبه دارد؛ ولی چون دو نفر دارید، Operator-A VPN، Operator-B ISP.
+
+#### PIR (Post-Incident Review)
+
+``` text
+Impact   : VPN degraded 50 min, 1 account compromised
+Root cause: weak password + no MFA
+Actions  : MFA for all (owner IT, due 14d); geo-restrict (owner NOC, 7d)
+MTTD 3 min ; MTTR 50 min
+```
+
+Blameless یعنی «چه سیستمی اجازه داد این رخ دهد؟» نه «چه کسی خطا کرد؟».
+
+#### Lab
+
+سناریو را روی Lab با Log ساختگی تمرین کنید؛ هر نقش را یک‌بار بازی کنید؛ Timeline را بنویسید.
+
+#### عیب‌یابی فرایند
+
+| علامت | علت | رفع |
+|---|---|---|
+| Timeline ناقص | Scribe نبود | تعیین نقش |
+| مهار دیر | نبود Playbook | تدوین Playbook |
+| تکرار حادثه | PIR بی‌پیگیری | Action Owner و تاریخ |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Evidence قبل از رفع؟** رفع ممکن است شواهد را پاک کند.
+**۲. Blameless چیست؟** بررسی سیستم نه فرد.
+**۳. چرا MFA بعد از حادثه؟** علت ریشه‌ای رمز ضعیف بود.
+
+#### English Corner
+
+- *Preserve evidence before remediation.* پیش از اصلاح، شواهد را حفظ کنید.
+- *The post-incident review is blameless.*
+- Q: Which roles should exist during an incident?
 
 ## درس 32-3 — Capstone IV: مهاجرت/ارتقای کامل در Lab — Plan زمان‌بندی‌شده، Post-check، Rollback و گزارش
 
@@ -51380,6 +61607,82 @@ Plan زمان‌بندی، Rollback، آزمون پیش/پس؛ مسیر ارتق
 
 نسخه‌ی فعلی ← با Upgrade Path Tool رسمی Fortinet مسیر را بگیرید (ممکن است مرحله‌ای باشد)؛ Backup، آزمون در Lab، پنجره‌ی تغییر، Verify، Rollback.
 
+### تکمیل عمیق: ارتقای نسخه‌ی FortiOS در Lab به‌صورت مرحله‌ای
+
+#### چرا؟
+
+ارتقا مثل تعویض موتور هواپیما در حین پرواز است؛ اگر آماده نباشید، همه‌چیز می‌افتد. هدف: ارتقای امن با Backup، مسیر درست، آزمون پیش/پس و Rollback.
+
+#### مفهوم Upgrade Path
+
+FortiOS همیشه از هر نسخه‌ای به هر نسخه‌ای نمی‌رود. Fortinet ابزار رسمی Upgrade Path Tool دارد که مسیر مرحله‌ای (مثلاً A→B→C) را مشخص می‌کند. مسیر را همیشه از ابزار/مستند رسمی همان مدل بگیرید؛ در Lab هم این عادت را بسازید.
+
+#### برنامه‌ی ارتقا (Plan)
+
+``` text
+T-14d  read Release Notes (known issues, config changes)
+T-7d   upgrade in Lab with copied config
+T-1d   full backup + hash + rollback image ready
+T0     maintenance window: upgrade primary path
+T+30m  verify: tunnels, HA, policy hit, UTM, logs
+T+24h  monitor; close change
+```
+
+#### Pre-check/Post-check جدول
+
+| مورد | قبل | بعد |
+|---|---|---|
+| نسخه | `get system status` | همان با نسخه‌ی جدید |
+| تعداد Policy | `show firewall policy` (شمارش edit) | یکسان |
+| Tunnel | `diagnose vpn tunnel list` | همه‌ی Tunnelها Up |
+| HA | `get system ha status` | in-sync |
+| Route | `get router info routing-table all` | بدون تفاوت غیرمنتظره |
+
+#### مثال ساده
+
+ارتقای یک VM تکی در Lab: Backup، بارگذاری Image، Reboot، Verify. زمان ≈ ۱۵ دقیقه.
+
+#### مثال متوسط — Cluster HA
+
+روش مستند Fortinet «Uninterruptible Upgrade»: ابتدا Secondary ارتقا می‌یابد و بوت می‌شود، Failover کنترل‌شده، سپس نفر دوم ارتقا می‌یابد. نکته: در طول ارتقا Cluster موقتاً نسخه‌ی ناهمسان دارد؛ این حالت موقت و طبق مستند مجاز است.
+
+#### مثال سخت — ارتقا که قابلیتی را می‌شکند
+
+پس از ارتقا SSL VPN Portal باز نمی‌شود. بررسی Release Notes: Syntax یا Default تغییر کرده. رفع: تطبیق Config با Syntax جدید یا Rollback به Image قبلی (Backup Image روی Flash). تصمیم Rollback با معیار قبلی: «اگر سرویس حیاتی تا ۳۰ دقیقه برنگشت».
+
+#### Rollback
+
+``` text
+execute restore image tftp old.out 10.50.0.30
+execute restore config tftp cfg-before.conf 10.50.0.30
+```
+
+برای دقیق بودن دستورها نسخه‌ی خودتان را از مستند رسمی بخوانید.
+
+#### Lab
+
+Upgrade Path را در ابزار رسمی ببینید؛ در Lab ارتقا و Rollback را یک‌بار انجام دهید و Pre/Post جدول را پر کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| بوت نمی‌شود | Image ناسازگار | Rollback از Console |
+| Config حذف شد | مسیر ارتقا اشتباه | Restore Backup |
+| Cluster out-of-sync | نسخه‌ی ناهمسان | تکمیل ارتقای عضو دوم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Release Notes؟** تغییر Syntax/Default/Bug.
+**۲. چرا Lab اول؟** کشف مشکلات بدون اثر.
+**۳. معیار Rollback؟** از قبل تعریف‌شده.
+
+#### English Corner
+
+- *Follow the supported upgrade path.*
+- *Always read the release notes before upgrading.*
+- Q: When do you roll back?
+
 ## درس 32-4 — ارزیابی نهایی و Portfolio: ماتریس مهارت، تحلیل شکاف، نگاشت نقش و نمونه‌ی Portfolio
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: کل دوره · ≈ 11 ساعت**
@@ -51534,6 +61837,81 @@ Plan زمان‌بندی، Rollback، آزمون پیش/پس؛ مسیر ارتق
 | IPsec | متوسط | مستندی |
 | HA | آشنا | اجرا نشده |
 
+### تکمیل عمیق: ارزیابی نهایی و ساخت Portfolio صادقانه
+
+#### چرا؟
+
+کارفرما به «گواهی» اعتماد نمی‌کند؛ به **شواهد** اعتماد می‌کند. Portfolio یعنی پوشه‌ای که ثابت می‌کند «چه کرده‌اید». اما یک Portfolio پر از ادعای بدون اجرا از یک Portfolio کوچک و صادق بی‌اعتبارتر است.
+
+#### سه سطح ادعا
+
+| سطح | معنی | مثال |
+|---|---|---|
+| اجراشده با شاهد | در Lab اجرا و Log/اسکرین‌شات دارید | Policy+NAT+آزمون منفی |
+| تأیید مستندی | از مستند رسمی خوانده و تطبیق داده‌اید | دستور HA |
+| اجرا نشده | فقط مفهوم | VDOM بدون لایسنس |
+
+همین سه برچسب را کنار هر مهارت بگذارید.
+
+#### ماتریس مهارت (نمونه‌ی پر)
+
+| حوزه | سطح | Evidence |
+|---|---|---|
+| Policy/NAT/VIP | اجراشده | CHG-07 + Log |
+| IPsec Site-to-Site | اجراشده | `diagnose vpn tunnel list` |
+| SD-WAN | تأیید مستندی | مرجع رسمی + برگه |
+| HA | اجرا نشده | Needs-License |
+
+#### محتوای Portfolio
+
+1. معماری (HLD + LLD).
+2. دو CHG کامل.
+3. یک RCA از حادثه‌ی Lab.
+4. Runbook.
+5. Index شواهد.
+
+#### مثال ساده
+
+یک صفحه‌ی خلاصه: «شبکه‌ی دو فایروالی؛ ۴ Policy؛ ۲ Tunnel؛ ۳ آزمون منفی».
+
+#### مثال متوسط — بخش «محدودیت‌ها»
+
+``` text
+Limitations:
+ - HA not executed (no second licensed VM)
+ - UTM profiles configured but signatures not updated (no FortiGuard license)
+ - Performance numbers from Lab only
+```
+
+نوشتن محدودیت اعتبار را بالا می‌برد.
+
+#### مثال سخت — مصاحبه
+
+پرسش: «Failover را چطور ثابت می‌کنی؟» پاسخ ضعیف: «کار می‌کرد». پاسخ قوی: «ping مداوم، قطع لینک در ساعت X، ۳ بسته گم شد، Log حاوی رویداد Link-monitor، و اینجا اسکرین‌شات».
+
+#### Lab
+
+ماتریس مهارت را با برچسب سه‌سطحی بسازید و برای هر ردیف اجراشده یک فایل شاهد پیوست کنید.
+
+#### عیب‌یابی Portfolio
+
+| مشکل | رفع |
+|---|---|
+| ادعا بدون شاهد | برچسب «تأیید مستندی» |
+| بیش‌ازحد شلوغ | ۵ کار شاخص |
+| اسرار در فایل | Sanitize |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا محدودیت‌ها را می‌نویسیم؟** صداقت و اعتماد.
+**۲. Evidence خوب چیست؟** قابل‌تکرار و زمان‌دار.
+**۳. چه چیزی در Portfolio نباید باشد؟** رمز، IP واقعی مشتری.
+
+#### English Corner
+
+- *Show evidence, not claims.*
+- Q: How would you prove failover in an interview?
+
 ## درس 32-5 — Roadmap یادگیری بعدی: مسیر گواهی، Labهای اجرا نشده، Automation و برنامه‌ی ۶ ماهه
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۴ · ≈ 11 ساعت**
@@ -51680,6 +62058,71 @@ Plan زمان‌بندی، Rollback، آزمون پیش/پس؛ مسیر ارتق
 ### مثال حل‌شده: برنامه‌ی ۹۰ روزه
 
 ماه ۱: مرور مبانی و Lab؛ ماه ۲: VPN/SD-WAN؛ ماه ۳: عیب‌یابی و آزمون؛ هر هفته یک Lab مستند.
+
+### تکمیل عمیق: ساخت برنامه‌ی یادگیری ۹۰ روزه با هدف مشخص
+
+#### چرا؟
+
+یادگیری بدون برنامه مثل رانندگی بدون مقصد است. این درس به شما یاد می‌دهد از «چه بخوانم؟» به «تا ۹۰ روز دیگر چه چیزی را ثابت خواهم کرد؟» برسید.
+
+#### مسیرهای شغلی
+
+| مسیر | مهارت اصلی | گواهی (طبق سایت رسمی) |
+|---|---|---|
+| Network Engineer | Routing/Switching/SD-WAN | CCNA → CCNP |
+| Security Engineer | فایروال/VPN/UTM | NSE 4 → NSE 7 |
+| SOC Analyst | Log/Detection | رشته‌ی Blue Team |
+
+نام‌ها و سطوح گواهی را همیشه از سایت رسمی Cisco و Fortinet بررسی کنید؛ تغییر می‌کنند.
+
+#### برنامه‌ی ۹۰ روز (نمونه)
+
+``` text
+Days 1-30   foundations: IP, routing, firewall policy/NAT (daily lab 1h)
+Days 31-60  VPN, SD-WAN, HA concepts, monitoring
+Days 61-90  troubleshooting + capstone + mock interview
+Weekly      1 documented lab + 1 review of mistakes
+```
+
+#### مثال ساده
+
+هدف هفته: «Policy+NAT+VIP». خروجی: یک CHG و یک آزمون منفی.
+
+#### مثال متوسط — اندازه‌گیری پیشرفت
+
+``` text
+Progress = labs completed / labs planned x 100
+10 / 12 x 100 = 83%
+```
+
+اگر کمتر از ۷۰٪ بود برنامه را کوچک کنید نه ترک.
+
+#### مثال سخت — گیر کردن روی یک موضوع
+
+BGP سخت است. روش: ۱) یک Lab دو‌روتری ۲) فقط Peer ۳) بعد Prefix ۴) بعد Policy ۵) بعد عیب‌یابی؛ هر مرحله یک شاهد.
+
+#### Lab
+
+برنامه‌ی ۹۰ روزه‌ی خودتان را با تاریخ و خروجی بنویسید.
+
+#### عیب‌یابی انگیزه
+
+| مشکل | رفع |
+|---|---|
+| خواندن بدون Lab | قانون ۵۰٪ Lab |
+| فراموشی | مرور اشتباهات هفتگی |
+| ترس از Lab | Snapshot قبل از هر تغییر |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا خروجی هفتگی؟** مسئولیت‌پذیری.
+**۲. چرا Snapshot؟** آزمون بدون ترس.
+**۳. گواهی کافی است؟** خیر؛ شواهد.
+
+#### English Corner
+
+- *Set a measurable goal for each week.*
+- Q: What will you prove in 90 days?
 
 ## درس 32-6 — آزمون نهایی دوره: سناریوی جامع، صورت مسئله، کلید پاسخ و Rubric
 
@@ -51829,6 +62272,76 @@ execute ping-options df-bit yes
 ### مثال حل‌شده: مدیریت زمان آزمون
 
 طراحی 30 دقیقه، پیاده 60، عیب‌یابی 60، مستندات 30؛ شواهد را همان لحظه ثبت کنید.
+
+### تکمیل عمیق: آزمون نهایی — راهبرد، زمان‌بندی و نمونه‌ی پاسخ برتر
+
+#### چرا؟
+
+آزمون نهایی فقط دانش را نمی‌سنجد؛ **مدیریت شرایط** را هم می‌سنجد: زمان، اولویت، ثبت شواهد و صداقت درباره‌ی آنچه نمی‌دانید.
+
+#### ساختار پیشنهادی ۱۸۰ دقیقه
+
+| بخش | زمان | وزن |
+|---|---|---|
+| طراحی (HLD/LLD) | 30 دقیقه | 20 |
+| پیاده‌سازی | 60 دقیقه | 20 |
+| عیب‌یابی سه خرابی | 60 دقیقه | 25 |
+| مستندسازی/CHG/RCA | 30 دقیقه | 15 |
+| صداقت و Evidence | در تمام مدت | 20 |
+
+#### راهبرد حل
+
+1. ابتدا صورت مسئله را دو بار بخوانید و نیازها را فهرست کنید.
+2. طراحی را قبل از دست‌زدن به CLI بنویسید.
+3. هر مرحله را بلافاصله تأیید و Evidence ذخیره کنید.
+4. اگر گیر کردید، ۱۰ دقیقه سقف بگذارید و بروید به بخش بعد.
+
+#### مثال: عیب‌یابی خرابی نمونه
+
+«کاربران به DMZ نمی‌رسند». روش ده‌گامی کوتاه:
+
+``` text
+1 scope        : all users? one user?
+2 route        : get router info routing-table details <dst>
+3 policy       : diagnose firewall iprope lookup ...
+4 session/nat  : diagnose sys session filter ...
+5 wire         : diagnose sniffer packet ...
+6 verify fix   : curl + negative test
+```
+
+#### نمونه‌ی پاسخ برتر برای «ادعا بدون اجرا»
+
+پاسخ ضعیف: «HA را تنظیم کردم». پاسخ برتر: «HA به‌دلیل نبود دو VM لایسنس‌دار اجرا نشد؛ پیکربندی را از مستند رسمی نوشتم و آزمون Failover را با شاخص «کمتر از ۵ ثانیه» طراحی کردم؛ اجرا نشده.»
+
+#### نمره‌دهی
+
+``` text
+Score = design + build + troubleshooting + docs + honesty
+20 + 18 + 22 + 12 + 20 = 92
+```
+
+#### Lab
+
+یک آزمون ۱۸۰ دقیقه‌ای شبیه‌سازی‌شده بدهید و زمان هر بخش را ثبت کنید.
+
+#### عیب‌یابی عملکرد در آزمون
+
+| مشکل | رفع |
+|---|---|
+| وقت‌کشی روی یک مسئله | سقف ۱۰ دقیقه |
+| بی‌شاهد | ذخیره‌ی خروجی بلافاصله |
+| پرش از طراحی | HLD کوتاه اول |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا طراحی اول؟** CLI بدون طرح خطا می‌سازد.
+**۲. چرا صداقت وزن دارد؟** اعتماد حرفه‌ای.
+**۳. اگر وقت کم آمد؟** اولویت با موارد حیاتی و توضیح محدودیت.
+
+#### English Corner
+
+- *State clearly what you did not test.*
+- Q: How do you prioritize under time pressure?
 
 ## پاسخ‌های فصل 32
 
