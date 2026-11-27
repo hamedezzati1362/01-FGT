@@ -4374,6 +4374,136 @@ Isolation proof 30 | Least-privilege policy 25 | Logging 20 | Resource limits 15
 - *Isolation is proven by negative tests and logs.*
 - Q: How do you separate logs per tenant?
 
+<a id="l-24-5"></a>
+
+## درس 24-5 — انواع VDOM، منابع Global و VDOM، مدیریت VDOM و طراحی چندمستاجره
+
+**فصل 24 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Describe and configure VDOMs to split a FortiGate into multiple virtual devices» · پیش‌نیاز: ۲۴-۰ تا ۲۴-۳**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ VDOM اضافه بر تعداد پیش‌فرض Needs-License؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** چه چیزی در سطح Global و چه چیزی در سطح VDOM تنظیم می‌شود، Management VDOM چیست، حالت NAT/Transparent هر VDOM، و چگونه ادمین‌ها و منابع را مدیریت کنیم.
+
+**چرا لازم است؟** VDOM یک ساختمان چندواحدی است؛ برق و آسانسور مشترک (Global) و هر واحد کلید و دیوار خودش (VDOM). اگر ندانید فلان تنظیم Global است یا VDOM، یا آن را جای اشتباه می‌جویید یا یک تغییر Global همه‌ی مستأجران را قطع می‌کند.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) Global در برابر VDOM
+
+| در Global | در VDOM |
+|---|---|
+| نسخه‌ی Firmware، Reboot | Firewall Policy، NAT |
+| HA | Routing (Static/OSPF/BGP) |
+| Interface فیزیکی (تخصیص به VDOM) | Interface مجازی/VLAN، Zone |
+| Admin Profile و ادمین‌های Super | VPN، UTM Profile |
+| Log سراسری، FortiGuard | کاربران/گروه‌ها (محدوده‌ی VDOM) |
+| محدودیت منابع | Address/Service Objectها |
+
+#### ۲-۲) انواع VDOM
+
+- **Traffic VDOM (پیش‌فرض):** ترافیک عبوری مستأجر.
+- **Admin VDOM:** مخصوص مدیریت/ارتباطات خود فایروال (FortiGuard، Log، DNS)؛ ترافیک کاربری از آن عبور نمی‌کند. (در FortiOS 7.0 مفهوم Management VDOM قابل‌تعیین است.)
+
+``` text
+config global
+ config system global
+  set management-vdom "root"
+ end
+end
+```
+
+#### ۲-۳) حالت هر VDOM
+
+NAT/Route یا Transparent (درس ۱۲-۱۰) به‌ازای هر VDOM جدا. مثلاً VDOM مشتری A در NAT و VDOM بازرسی در Transparent.
+
+#### ۲-۴) ادمین‌ها
+
+- **Super Admin:** همه‌ی VDOMها و Global.
+- **ادمین VDOM:** فقط VDOM یا VDOMهای تخصیص‌یافته.
+
+``` text
+config global
+ config system admin
+  edit "tenantA-admin"
+   set accprofile "prof-tenant"
+   set vdom "TENANT-A"
+  next
+ end
+end
+```
+
+#### ۲-۵) منابع
+
+``` text
+config global
+ config system vdom-property
+  edit "TENANT-A"
+   set session 50000
+   set policy 500
+   set firewall-address 1000
+  next
+ end
+end
+```
+
+هر مستأجر سقف دارد؛ یک مستأجر پرمصرف نباید دیگران را خفه کند.
+
+#### ۲-۶) ارتباط بین VDOMها
+
+Inter-VDOM Link (Interface مجازی دو سر) با Policy هر دو سر؛ مستقیم هیچ ترافیکی بین VDOMها نمی‌رود.
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — کجا؟** «ارتقای Firmware» Global؛ «افزودن Policy برای مستأجر A» داخل VDOM A.
+
+**متوسط — محاسبه‌ی سهم منابع.** ظرفیت Session دستگاه = 200000 و ۴ مستأجر:
+
+``` text
+Equal share = 200000 / 4 = 50000
+With 20 % reserve for management = 160000 / 4 = 40000 per tenant
+```
+
+**متوسط — طراحی.** سه VDOM: `MGMT` (Admin/Management)، `TENANT-A`، `TENANT-B` و یک VDOM `DMZ-SHARED` با Inter-VDOM Link. هر مستأجر فقط به DMZ مشترک (با Policy حداقلی).
+
+**سخت — «ادمین مستأجر همه چیز را می‌بیند».** بررسی: `accprofile` (دسترسی سراسری؟) و `vdom` اختصاصی؛ حذف Super Admin از حساب مستأجر؛ پروفایل با `scope vdom`.
+
+**سخت — تغییر Mode.** تبدیل VDOM از NAT به Transparent پاک‌سازی Interface/Route/Policy را می‌طلبد؛ Backup (Global و VDOM) و پنجره‌ی تغییر.
+
+**سخت — Log.** هر VDOM Log جدا ارسال می‌کند؛ در Syslog فیلد `vd` را نگه دارید؛ در FortiAnalyzer ADOM به‌ازای VDOM/مستأجر.
+
+### ۴) Lab (اجرا نشده)
+
+دو VDOM با ادمین جدا؛ آزمون اینکه ادمین A VDOM B را نمی‌بیند.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| VDOM | Virtual Domain | دامنه‌ی مجازی |
+| MGMT VDOM | Management VDOM | VDOM مدیریت |
+| MSSP | Managed Security Service Provider | ارائه‌دهنده‌ی خدمات امنیت مدیریت‌شده |
+| ADOM | Administrative Domain | دامنه‌ی مدیریتی FortiManager/Analyzer |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) سه تنظیم Global و سه تنظیم VDOM. *(پاسخ: 24-5-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Management VDOM چیست؟ *(پاسخ: 24-5-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) ظرفیت 120000 Session و ۳ مستأجر با ذخیره 10٪؛ سهم هر مستأجر؟ *(پاسخ: 24-5-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) ادمین مستأجر به VDOM دیگر دسترسی دارد؛ علت و رفع. *(پاسخ: 24-5-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *Firmware upgrades and HA are configured globally, while policies and routing are per-VDOM.*
+- *Each VDOM administrator should be restricted to their own VDOM.*
+- **Q1.** What connects two VDOMs? *(پاسخ: 24-5-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 24
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -4526,6 +4656,20 @@ Zone در یک Routing/Policy مشترک است؛ VDOM جدا و با Link ار�
 **24-0-ت6** — Super Admin فقط Global؛ Admin مشتری محدود به VDOM خودش؛ Auditor فقط خواندنی.
 
 **24-0-Q1** — Because one tenant could consume all sessions and resources and disrupt every other VDOM.
+
+### پاسخ‌های درس افزوده‌ی 24-5 (فصل 24)
+
+**24-5-ت1** — Global: Firmware، HA، Interface فیزیکی/تخصیص، ادمین‌ها و Profile؛ VDOM: Policy، Routing، VPN، UTM Profile.
+
+**24-5-ت2** — VDOM مخصوص ارتباطات مدیریتی خود فایروال (FortiGuard، Log، DNS) که ترافیک کاربران از آن عبور نمی‌کند.
+
+**24-5-ت3** — 120000 × 0.9 = 108000؛ 108000 / 3 = 36000 Session برای هر مستأجر.
+
+**24-5-ت4** — `accprofile`/Scope سراسری یا ادمین بدون `vdom` اختصاصی؛ رفع: ادمین VDOM-محدود با Profile مناسب و حذف دسترسی Super.
+
+**24-5-Q1** — An inter-VDOM link (with policies on both sides).
+
+---
 
 # پایان بخش ۸ (فصل‌های ۲۲ تا ۲۴)
 

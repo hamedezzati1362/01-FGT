@@ -2379,6 +2379,182 @@ Static URL بدون لایسنس قابل‌تست است؛ Category فقط با
 
 ---
 
+<a id="l-16-10"></a>
+
+## درس 16-10 — IPS و DoS در عمق: Sensor، Rate-based، Custom Signature، Fail-open و Anomaly
+
+**فصل 16 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Configure IPS, DoS, and WAF to protect the network from hacking and DDoS attacks» · پیش‌نیاز: ۱۶-۴، ۱۶-۸**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ امضاهای به‌روز IPS نیاز به لایسنس FortiGuard دارند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** IPS Sensor چطور امضاها را بر اساس شدت/هدف انتخاب می‌کند، امضای Rate-based چیست، Custom Signature چطور نوشته می‌شود، Fail-open چه می‌کند و DoS Policy چه آستانه‌هایی دارد.
+
+**چرا لازم است؟** IPS مثل نگهبانی است که الگوهای حمله را می‌شناسد؛ DoS Policy مثل کنترل‌کننده‌ی ازدحام درب ورودی است که وقتی تعداد درخواست‌ها غیرعادی شد جلوی سیل را می‌گیرد. IPS غلط‌تنظیم یا همه‌چیز را قطع می‌کند (FP) یا حمله را رد می‌کند (FN). و اگر موتور IPS خراب شود، تصمیم «ترافیک عبور کند یا نه» (Fail-open/closed) باید از قبل گرفته شده باشد.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) IPS Sensor
+
+Sensor مجموعه‌ی «فیلتر»ها است؛ هر فیلتر امضاها را بر اساس **Severity، Target (Client/Server)، OS، Protocol و Application** انتخاب و Action تعیین می‌کند.
+
+| Action | معنی |
+|---|---|
+| pass | عبور + (Log در صورت فعال) |
+| monitor | عبور + Log |
+| block | مسدود |
+| reset | مسدود + Reset اتصال |
+| default | مقدار پیش‌فرض خود امضا |
+
+``` text
+config ips sensor
+ edit "IPS-DMZ"
+  config entries
+   edit 1
+    set severity high critical
+    set location server
+    set protocol HTTP HTTPS
+    set action block
+    set log enable
+   next
+  end
+ next
+end
+config firewall policy
+ edit 30
+  set ips-sensor "IPS-DMZ"
+ next
+end
+```
+
+بهترین‌روش: برای سرور وب `location server`؛ برای کاربران `location client`. دسته‌ی بسیار گسترده (همه‌ی امضاها + Block) باعث FP و مصرف CPU می‌شود.
+
+#### ۲-۲) امضای Rate-based
+
+Rate-based امضایی است که **تعداد دفعات** در بازه‌ی زمانی را می‌سنجد؛ مثل «بیش از N تلاش ورود ناموفق در T ثانیه». برای Brute-force کاربرد دارد و در Sensor می‌توان `rate-count`، `rate-duration`، `rate-track` (src-ip/dest-ip) را تنظیم کرد.
+
+#### ۲-۳) Custom Signature
+
+وقتی امضای آماده نیست (مثلاً الگوی خاص برنامه‌ی داخلی):
+
+``` text
+config ips custom
+ edit "Block.Evil.Header"
+  set signature "F-SBID( --name \"Block.Evil.Header\"; --protocol tcp; --service HTTP; --flow from_client; --pattern \"X-Evil: 1\"; --no_case; )"
+ next
+end
+```
+
+(سینتکس دقیق را از مستند FortiOS بخوانید.) سپس Custom را در Sensor Entry اضافه کنید. همیشه ابتدا Monitor.
+
+#### ۲-۴) Fail-open
+
+اگر موتور IPS به‌دلیل کمبود حافظه یا خطا نتواند بسته را بررسی کند:
+
+- **Fail-open:** ترافیک عبور می‌کند (دسترسی حفظ، امنیت کاهش).
+- **Fail-closed:** ترافیک مسدود می‌شود (امنیت حفظ، قطع سرویس).
+
+``` text
+config ips global
+ set fail-open enable
+end
+```
+
+انتخاب بر اساس ریسک: شعبه‌ی عادی معمولاً Fail-open؛ بخش بسیار حساس Fail-closed با HA.
+
+#### ۲-۵) DoS Policy
+
+DoS Policy **پیش از Firewall Policy** (در ورود بسته) اعمال می‌شود تا سیل را زود قطع کند. آنومالی‌ها:
+
+| Anomaly | معنی |
+|---|---|
+| tcp_syn_flood | سیل SYN |
+| tcp_port_scan | اسکن پورت |
+| tcp_src_session / tcp_dst_session | تعداد Session هم‌زمان |
+| udp_flood | سیل UDP |
+| icmp_flood | سیل ICMP |
+| ip_src_session | Session از یک مبدأ |
+
+``` text
+config firewall DoS-policy
+ edit 1
+  set interface "port1"
+  set srcaddr "all"
+  set dstaddr "VIP-WEB"
+  set service "ALL"
+  config anomaly
+   edit "tcp_syn_flood"
+    set status enable
+    set log enable
+    set action block
+    set threshold 2000
+   next
+   edit "tcp_src_session"
+    set status enable
+    set threshold 5000
+   next
+  end
+ next
+end
+```
+
+آستانه‌های پیش‌فرض را از مستند نسخه بخوانید (مثلاً SYN Flood پیش‌فرض ۲۰۰۰)؛ آستانه را بر اساس Baseline تعیین کنید: Peak عادی × ضریب.
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — تنظیم آستانه.** Peak عادی SYN به وب‌سرور 400/s.
+
+``` text
+Threshold = Peak x 3 = 400 x 3 = 1200 SYN/s
+```
+
+**متوسط — Brute-force SSH.** Rate-based: بیش از 5 تلاش در 30 ثانیه از یک مبدأ ⇒ Block مبدأ برای دقایقی (Quarantine/Block-duration).
+
+**متوسط — مراحل ایمن.** ۱) Monitor 2 هفته ۲) بررسی Log ۳) Block برای Critical/High ۴) Exemption مستند.
+
+**سخت — «سایت داخلی بعد از IPS کند شد».**
+
+1. `diagnose sys top 2 20`: پروسه‌ی ipsengine بالا؟
+2. `diagnose ips ...` برای وضعیت (طبق نسخه).
+3. بازبینی Sensor: همه‌ی امضاها با Block ⇒ محدود به `server` و `high/critical`.
+4. Offload: IPS معمولاً Offload را کاهش می‌دهد؛ مدل/ظرفیت.
+5. در Fail-open بودن: Log `IPS engine busy`؟
+
+**سخت — DoS Block قانونی.** آستانه `tcp_src_session = 100` برای یک NAT بزرگ (همه‌ی کاربران یک IP)؛ مسدود می‌شود. راه: آستانه‌ی بالاتر برای آن مبدأ یا Policy جدا؛ DoS را روی IP مشخص اعمال کنید.
+
+### ۴) Lab (اجرا نشده)
+
+IPS با لایسنس: Monitor ⇒ Log ⇒ Block؛ DoS: آزمون با ابزار تولید ترافیک در Lab ایزوله فقط.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| IPS | Intrusion Prevention System | سیستم جلوگیری از نفوذ |
+| DoS | Denial of Service | حمله‌ی انکار سرویس |
+| DDoS | Distributed DoS | انکار سرویس توزیع‌شده |
+| FP / FN | False Positive / False Negative | هشدار غلط / ندیدن حمله |
+| SYN Flood | — | سیل درخواست اتصال |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) Action‌های IPS؟ *(پاسخ: 16-10-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Fail-open و Fail-closed؟ *(پاسخ: 16-10-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) Peak SYN برابر 700/s؛ آستانه با ضریب 3؟ *(پاسخ: 16-10-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) IPS سرور را کند کرده؛ چهار اقدام. *(پاسخ: 16-10-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *Start new IPS signatures in monitor mode before switching to block.*
+- *DoS policies are evaluated before firewall policies.*
+- **Q1.** What does fail-open mean for an IPS? *(پاسخ: 16-10-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 16
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -2574,6 +2750,18 @@ IPS به بازرسی محتوا در CPU/CP نیاز دارد و Offload کام
 **16-9-ت4** — لایسنس منقضی، DNS/Route به FortiGuard، قطع ارتباط؛ رفتار: `error-allow` یا `error-block` طبق سیاست امنیتی و پایش.
 
 **16-9-Q1** — A category assigned locally on the firewall to a site, overriding or complementing the FortiGuard rating.
+
+### پاسخ‌های درس افزوده‌ی 16-10 (فصل 16)
+
+**16-10-ت1** — pass، monitor، block، reset، default.
+
+**16-10-ت2** — Fail-open: هنگام خرابی موتور IPS ترافیک عبور می‌کند؛ Fail-closed: ترافیک مسدود می‌شود.
+
+**16-10-ت3** — 700 × 3 = 2100 SYN/s.
+
+**16-10-ت4** — ۱) بررسی CPU و ipsengine ۲) محدود کردن Sensor به `server` و `high/critical` ۳) اعمال فقط روی Policyهای لازم ۴) بررسی ظرفیت/مدل و Offload.
+
+**16-10-Q1** — If the IPS engine fails, traffic is still passed without inspection.
 
 ---
 
@@ -6868,6 +7056,150 @@ Inner MTU = 1500 - overhead  ~ 1427 (conservative)
 
 ---
 
+<a id="l-18-8"></a>
+
+## درس 18-8 — IPsec Meshed و Partially Redundant: Full-Mesh، Hub-Spoke، Tunnel پشتیبان و DPD
+
+**فصل 18 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Implement a meshed or partially redundant IPsec VPN» · پیش‌نیاز: ۱۸-۲، ۱۹-۰، ۱۹-۵**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** چند Tunnel برای اتصال چند سایت لازم است، تفاوت Full-Mesh، Partial-Mesh و Hub-and-Spoke، و چطور با دو Tunnel پشتیبان (Redundant) و DPD قطع یک مسیر ISP را بدون دخالت دستی پوشش بدهیم.
+
+**چرا لازم است؟** اگر شعبه فقط یک Tunnel داشته باشد و ISP آن قطع شود، شعبه از مرکز جدا می‌شود. «Partially Redundant» یعنی فقط مسیرهای حیاتی دو Tunnel دارند (هزینه‌ی متعادل). و «Meshed» یعنی چند سایت مستقیم با هم صحبت کنند. آزمون NSE4 این طراحی را از روی نمودار می‌پرسد.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) تعداد Tunnel
+
+``` text
+Full mesh      = N x (N - 1) / 2
+Hub-and-Spoke  = N - 1   (hub + N-1 spokes)
+Partial mesh   = somewhere between (only the pairs that need direct traffic)
+Redundant      = each logical link x 2 (primary + secondary)
+```
+
+مثال: N=6: Full-mesh = 6×5/2 = 15؛ Hub-and-Spoke = 5؛ اگر هر کدام دو Tunnel پشتیبان داشته باشد: 10 در Hub-Spoke Redundant.
+
+| الگو | مزیت | عیب |
+|---|---|---|
+| Full-mesh | کمترین تأخیر بین هر دو سایت | تعداد Tunnel زیاد |
+| Hub-and-Spoke | ساده | تمام ترافیک Spoke-Spoke از Hub |
+| Partial | تعادل | طراحی دقیق |
+| ADVPN | Spoke-Spoke پویا | نیاز به Routing/نسخه |
+
+#### ۲-۲) Tunnel پشتیبان
+
+دو Phase1 به همان Peer: یکی از WAN1 (اصلی) و دیگری از WAN2 (پشتیبان). Route هر دو به شبکه‌ی مقصد با **Priority/Distance** متفاوت:
+
+``` text
+config vpn ipsec phase1-interface
+ edit "TO-HQ-1"
+  set interface "port1"
+  set remote-gw 198.51.100.2
+  set dpd on-idle
+  set dpd-retryinterval 5
+  set dpd-retrycount 3
+  set net-device disable
+ next
+ edit "TO-HQ-2"
+  set interface "port2"
+  set remote-gw 198.51.100.3
+  set dpd on-idle
+ next
+end
+config router static
+ edit 100
+  set dst 10.1.0.0 255.255.0.0
+  set device "TO-HQ-1"
+  set distance 10
+ next
+ edit 101
+  set dst 10.1.0.0 255.255.0.0
+  set device "TO-HQ-2"
+  set distance 20
+ next
+end
+```
+
+وقتی Tunnel اول Down شود، Route با Distance 10 غیرفعال و مسیر دوم فعال می‌شود. **DPD (Dead Peer Detection)** تشخیص می‌دهد Peer مرده است تا Tunnel را Down اعلام کند؛ بدون آن، Tunnel «Up» می‌ماند در حالی که ترافیک می‌ریزد.
+
+``` text
+Detection time ~ dpd-retryinterval x dpd-retrycount = 5 s x 3 = 15 s
+```
+
+حالت‌ها: `on-idle` (فقط وقتی ترافیک نیست)، `on-demand`، `disable`. در `on-idle` بررسی زمانی انجام می‌شود که Tunnel ترافیک ندارد؛ مقدار را با آزمون بسنجید.
+
+برای مسیریابی پویا (BGP/OSPF روی Tunnel) Failover خودکارتر و بدون Static است (درس ۱۹-۲، ۱۹-۳).
+
+#### ۲-۳) ADVPN برای Meshed پویا
+
+Hub با `auto-discovery-sender` و Spoke با `auto-discovery-receiver`؛ Shortcut بین Spokeها به‌صورت خودکار (درس ۱۹-۵). برای Partial-Mesh ثابت می‌توان فقط جفت‌های مشخص Tunnel مستقیم ساخت.
+
+#### ۲-۴) XAuth و IKEv1
+
+در IKEv1 Dial-up، XAuth احراز هویت کاربر را بعد از Phase1 اضافه می‌کند (`xauthtype`). در IKEv2 از EAP استفاده می‌شود. برای سایت-به-سایت، XAuth لازم نیست.
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — شمارش.** ۸ سایت Full-mesh: 8×7/2 = 28 Tunnel؛ Hub-and-Spoke: 7.
+
+**متوسط — طراحی Partial-Mesh.** ۵ سایت: Hub + دو منطقه (A1، A2) و (B1، B2). ترافیک A1↔A2 زیاد است؛ Tunnel مستقیم A1–A2 و B1–B2 + همه به Hub: 4 (Spoke-Hub) + 2 (مستقیم) = 6 Tunnel؛ Full-mesh 10.
+
+**متوسط — زمان Failover.**
+
+``` text
+Failover ~ DPD detection (15 s) + route convergence (~1-2 s) = ~16-17 s
+```
+
+اگر هدف 5 ثانیه است: DPD سریع‌تر (`retryinterval 2`، `retrycount 2` ⇒ 4 s) یا Routing پویا با BFD.
+
+**سخت — «Tunnel پشتیبان هیچ‌وقت فعال نمی‌شود».**
+
+1. `get router info routing-table all`: Route دوم (Distance 20) هست؟
+2. `diagnose vpn tunnel list`: Tunnel دوم Up (از قبل برقرار) است؟ اگر Down باشد، باید `auto-negotiate`/Keepalive برقرار کند.
+3. Policy برای Interface دوم؟ (بدون Policy ترافیک رد می‌شود.)
+4. Selector دو سر یکسان؟
+5. `dpd` فعال؟ بدون DPD اگر Peer ناپدید شود ولی Tunnel Up بماند، Route اصلی در جدول می‌ماند.
+
+**سخت — دو ISP پشت NAT.** Tunnel پشتیبان از پشت NAT: NAT-T روی UDP/4500؛ `nattraversal enable`؛ Peer باید پورت باز داشته باشد.
+
+### ۴) Lab (اجرا نشده)
+
+دو FortiGate با دو ISP؛ Tunnel اصلی/پشتیبان؛ قطع WAN1 و اندازه‌گیری زمان Failover با ping.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| DPD | Dead Peer Detection | تشخیص Peer مرده |
+| ADVPN | Auto-Discovery VPN | Shortcut پویا بین Spokeها |
+| XAuth | Extended Authentication | احراز هویت کاربر در IKEv1 |
+| NAT-T | NAT Traversal | عبور از NAT |
+| BFD | Bidirectional Forwarding Detection | تشخیص سریع قطع لینک |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) تعداد Tunnel برای 10 سایت Full-mesh؟ *(پاسخ: 18-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) DPD چه می‌کند؟ *(پاسخ: 18-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) DPD با interval 4 و count 3؛ زمان تشخیص؟ *(پاسخ: 18-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (متوسط) Hub-Spoke با 6 Spoke و دو Hub؛ تعداد Tunnel؟ *(پاسخ: 18-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت5.** (سخت) Tunnel پشتیبان فعال نمی‌شود؛ پنج بررسی. *(پاسخ: 18-8-ت5 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *Dead peer detection lets the firewall bring a failed tunnel down so the backup route can take over.*
+- *A partial mesh adds direct tunnels only between sites that exchange a lot of traffic.*
+- **Q1.** How many tunnels does a full mesh of N sites need? *(پاسخ: 18-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 18
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -7055,6 +7387,20 @@ DPD پیام دوره‌ای برای تشخیص مرگ Peer و پاک‌کرد�
 **18-7-ت4** — AH هدر IP را در Hash دارد؛ NAT آن را عوض می‌کند و Integrity شکست می‌خورد. راه‌حل: ESP با NAT-T (UDP/4500).
 
 **18-7-Q1** — UDP 4500.
+
+### پاسخ‌های درس افزوده‌ی 18-8 (فصل 18)
+
+**18-8-ت1** — 10×9/2 = 45.
+
+**18-8-ت2** — با Keepalive/بررسی ترافیک می‌فهمد Peer پاسخ نمی‌دهد و Tunnel را Down می‌کند تا Route پشتیبان فعال شود.
+
+**18-8-ت3** — 4 × 3 = 12 ثانیه.
+
+**18-8-ت4** — 6 Spoke × 2 Hub = 12 Tunnel (به‌علاوه‌ی Tunnel بین دو Hub در صورت نیاز).
+
+**18-8-ت5** — ۱) Route دوم در جدول ۲) Tunnel دوم Up/قابل‌برقراری ۳) Policy برای Interface دوم ۴) Selector یکسان ۵) فعال بودن DPD.
+
+**18-8-Q1** — N × (N − 1) / 2.
 
 ---
 

@@ -39803,6 +39803,182 @@ Static URL بدون لایسنس قابل‌تست است؛ Category فقط با
 
 ---
 
+<a id="l-16-10"></a>
+
+## درس 16-10 — IPS و DoS در عمق: Sensor، Rate-based، Custom Signature، Fail-open و Anomaly
+
+**فصل 16 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Configure IPS, DoS, and WAF to protect the network from hacking and DDoS attacks» · پیش‌نیاز: ۱۶-۴، ۱۶-۸**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ امضاهای به‌روز IPS نیاز به لایسنس FortiGuard دارند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** IPS Sensor چطور امضاها را بر اساس شدت/هدف انتخاب می‌کند، امضای Rate-based چیست، Custom Signature چطور نوشته می‌شود، Fail-open چه می‌کند و DoS Policy چه آستانه‌هایی دارد.
+
+**چرا لازم است؟** IPS مثل نگهبانی است که الگوهای حمله را می‌شناسد؛ DoS Policy مثل کنترل‌کننده‌ی ازدحام درب ورودی است که وقتی تعداد درخواست‌ها غیرعادی شد جلوی سیل را می‌گیرد. IPS غلط‌تنظیم یا همه‌چیز را قطع می‌کند (FP) یا حمله را رد می‌کند (FN). و اگر موتور IPS خراب شود، تصمیم «ترافیک عبور کند یا نه» (Fail-open/closed) باید از قبل گرفته شده باشد.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) IPS Sensor
+
+Sensor مجموعه‌ی «فیلتر»ها است؛ هر فیلتر امضاها را بر اساس **Severity، Target (Client/Server)، OS، Protocol و Application** انتخاب و Action تعیین می‌کند.
+
+| Action | معنی |
+|---|---|
+| pass | عبور + (Log در صورت فعال) |
+| monitor | عبور + Log |
+| block | مسدود |
+| reset | مسدود + Reset اتصال |
+| default | مقدار پیش‌فرض خود امضا |
+
+``` text
+config ips sensor
+ edit "IPS-DMZ"
+  config entries
+   edit 1
+    set severity high critical
+    set location server
+    set protocol HTTP HTTPS
+    set action block
+    set log enable
+   next
+  end
+ next
+end
+config firewall policy
+ edit 30
+  set ips-sensor "IPS-DMZ"
+ next
+end
+```
+
+بهترین‌روش: برای سرور وب `location server`؛ برای کاربران `location client`. دسته‌ی بسیار گسترده (همه‌ی امضاها + Block) باعث FP و مصرف CPU می‌شود.
+
+#### ۲-۲) امضای Rate-based
+
+Rate-based امضایی است که **تعداد دفعات** در بازه‌ی زمانی را می‌سنجد؛ مثل «بیش از N تلاش ورود ناموفق در T ثانیه». برای Brute-force کاربرد دارد و در Sensor می‌توان `rate-count`، `rate-duration`، `rate-track` (src-ip/dest-ip) را تنظیم کرد.
+
+#### ۲-۳) Custom Signature
+
+وقتی امضای آماده نیست (مثلاً الگوی خاص برنامه‌ی داخلی):
+
+``` text
+config ips custom
+ edit "Block.Evil.Header"
+  set signature "F-SBID( --name \"Block.Evil.Header\"; --protocol tcp; --service HTTP; --flow from_client; --pattern \"X-Evil: 1\"; --no_case; )"
+ next
+end
+```
+
+(سینتکس دقیق را از مستند FortiOS بخوانید.) سپس Custom را در Sensor Entry اضافه کنید. همیشه ابتدا Monitor.
+
+#### ۲-۴) Fail-open
+
+اگر موتور IPS به‌دلیل کمبود حافظه یا خطا نتواند بسته را بررسی کند:
+
+- **Fail-open:** ترافیک عبور می‌کند (دسترسی حفظ، امنیت کاهش).
+- **Fail-closed:** ترافیک مسدود می‌شود (امنیت حفظ، قطع سرویس).
+
+``` text
+config ips global
+ set fail-open enable
+end
+```
+
+انتخاب بر اساس ریسک: شعبه‌ی عادی معمولاً Fail-open؛ بخش بسیار حساس Fail-closed با HA.
+
+#### ۲-۵) DoS Policy
+
+DoS Policy **پیش از Firewall Policy** (در ورود بسته) اعمال می‌شود تا سیل را زود قطع کند. آنومالی‌ها:
+
+| Anomaly | معنی |
+|---|---|
+| tcp_syn_flood | سیل SYN |
+| tcp_port_scan | اسکن پورت |
+| tcp_src_session / tcp_dst_session | تعداد Session هم‌زمان |
+| udp_flood | سیل UDP |
+| icmp_flood | سیل ICMP |
+| ip_src_session | Session از یک مبدأ |
+
+``` text
+config firewall DoS-policy
+ edit 1
+  set interface "port1"
+  set srcaddr "all"
+  set dstaddr "VIP-WEB"
+  set service "ALL"
+  config anomaly
+   edit "tcp_syn_flood"
+    set status enable
+    set log enable
+    set action block
+    set threshold 2000
+   next
+   edit "tcp_src_session"
+    set status enable
+    set threshold 5000
+   next
+  end
+ next
+end
+```
+
+آستانه‌های پیش‌فرض را از مستند نسخه بخوانید (مثلاً SYN Flood پیش‌فرض ۲۰۰۰)؛ آستانه را بر اساس Baseline تعیین کنید: Peak عادی × ضریب.
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — تنظیم آستانه.** Peak عادی SYN به وب‌سرور 400/s.
+
+``` text
+Threshold = Peak x 3 = 400 x 3 = 1200 SYN/s
+```
+
+**متوسط — Brute-force SSH.** Rate-based: بیش از 5 تلاش در 30 ثانیه از یک مبدأ ⇒ Block مبدأ برای دقایقی (Quarantine/Block-duration).
+
+**متوسط — مراحل ایمن.** ۱) Monitor 2 هفته ۲) بررسی Log ۳) Block برای Critical/High ۴) Exemption مستند.
+
+**سخت — «سایت داخلی بعد از IPS کند شد».**
+
+1. `diagnose sys top 2 20`: پروسه‌ی ipsengine بالا؟
+2. `diagnose ips ...` برای وضعیت (طبق نسخه).
+3. بازبینی Sensor: همه‌ی امضاها با Block ⇒ محدود به `server` و `high/critical`.
+4. Offload: IPS معمولاً Offload را کاهش می‌دهد؛ مدل/ظرفیت.
+5. در Fail-open بودن: Log `IPS engine busy`؟
+
+**سخت — DoS Block قانونی.** آستانه `tcp_src_session = 100` برای یک NAT بزرگ (همه‌ی کاربران یک IP)؛ مسدود می‌شود. راه: آستانه‌ی بالاتر برای آن مبدأ یا Policy جدا؛ DoS را روی IP مشخص اعمال کنید.
+
+### ۴) Lab (اجرا نشده)
+
+IPS با لایسنس: Monitor ⇒ Log ⇒ Block؛ DoS: آزمون با ابزار تولید ترافیک در Lab ایزوله فقط.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| IPS | Intrusion Prevention System | سیستم جلوگیری از نفوذ |
+| DoS | Denial of Service | حمله‌ی انکار سرویس |
+| DDoS | Distributed DoS | انکار سرویس توزیع‌شده |
+| FP / FN | False Positive / False Negative | هشدار غلط / ندیدن حمله |
+| SYN Flood | — | سیل درخواست اتصال |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) Action‌های IPS؟ *(پاسخ: 16-10-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Fail-open و Fail-closed؟ *(پاسخ: 16-10-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) Peak SYN برابر 700/s؛ آستانه با ضریب 3؟ *(پاسخ: 16-10-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) IPS سرور را کند کرده؛ چهار اقدام. *(پاسخ: 16-10-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *Start new IPS signatures in monitor mode before switching to block.*
+- *DoS policies are evaluated before firewall policies.*
+- **Q1.** What does fail-open mean for an IPS? *(پاسخ: 16-10-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 16
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -39998,6 +40174,18 @@ IPS به بازرسی محتوا در CPU/CP نیاز دارد و Offload کام
 **16-9-ت4** — لایسنس منقضی، DNS/Route به FortiGuard، قطع ارتباط؛ رفتار: `error-allow` یا `error-block` طبق سیاست امنیتی و پایش.
 
 **16-9-Q1** — A category assigned locally on the firewall to a site, overriding or complementing the FortiGuard rating.
+
+### پاسخ‌های درس افزوده‌ی 16-10 (فصل 16)
+
+**16-10-ت1** — pass، monitor، block، reset، default.
+
+**16-10-ت2** — Fail-open: هنگام خرابی موتور IPS ترافیک عبور می‌کند؛ Fail-closed: ترافیک مسدود می‌شود.
+
+**16-10-ت3** — 700 × 3 = 2100 SYN/s.
+
+**16-10-ت4** — ۱) بررسی CPU و ipsengine ۲) محدود کردن Sensor به `server` و `high/critical` ۳) اعمال فقط روی Policyهای لازم ۴) بررسی ظرفیت/مدل و Offload.
+
+**16-10-Q1** — If the IPS engine fails, traffic is still passed without inspection.
 
 ---
 
@@ -44292,6 +44480,150 @@ Inner MTU = 1500 - overhead  ~ 1427 (conservative)
 
 ---
 
+<a id="l-18-8"></a>
+
+## درس 18-8 — IPsec Meshed و Partially Redundant: Full-Mesh، Hub-Spoke، Tunnel پشتیبان و DPD
+
+**فصل 18 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Implement a meshed or partially redundant IPsec VPN» · پیش‌نیاز: ۱۸-۲، ۱۹-۰، ۱۹-۵**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** چند Tunnel برای اتصال چند سایت لازم است، تفاوت Full-Mesh، Partial-Mesh و Hub-and-Spoke، و چطور با دو Tunnel پشتیبان (Redundant) و DPD قطع یک مسیر ISP را بدون دخالت دستی پوشش بدهیم.
+
+**چرا لازم است؟** اگر شعبه فقط یک Tunnel داشته باشد و ISP آن قطع شود، شعبه از مرکز جدا می‌شود. «Partially Redundant» یعنی فقط مسیرهای حیاتی دو Tunnel دارند (هزینه‌ی متعادل). و «Meshed» یعنی چند سایت مستقیم با هم صحبت کنند. آزمون NSE4 این طراحی را از روی نمودار می‌پرسد.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) تعداد Tunnel
+
+``` text
+Full mesh      = N x (N - 1) / 2
+Hub-and-Spoke  = N - 1   (hub + N-1 spokes)
+Partial mesh   = somewhere between (only the pairs that need direct traffic)
+Redundant      = each logical link x 2 (primary + secondary)
+```
+
+مثال: N=6: Full-mesh = 6×5/2 = 15؛ Hub-and-Spoke = 5؛ اگر هر کدام دو Tunnel پشتیبان داشته باشد: 10 در Hub-Spoke Redundant.
+
+| الگو | مزیت | عیب |
+|---|---|---|
+| Full-mesh | کمترین تأخیر بین هر دو سایت | تعداد Tunnel زیاد |
+| Hub-and-Spoke | ساده | تمام ترافیک Spoke-Spoke از Hub |
+| Partial | تعادل | طراحی دقیق |
+| ADVPN | Spoke-Spoke پویا | نیاز به Routing/نسخه |
+
+#### ۲-۲) Tunnel پشتیبان
+
+دو Phase1 به همان Peer: یکی از WAN1 (اصلی) و دیگری از WAN2 (پشتیبان). Route هر دو به شبکه‌ی مقصد با **Priority/Distance** متفاوت:
+
+``` text
+config vpn ipsec phase1-interface
+ edit "TO-HQ-1"
+  set interface "port1"
+  set remote-gw 198.51.100.2
+  set dpd on-idle
+  set dpd-retryinterval 5
+  set dpd-retrycount 3
+  set net-device disable
+ next
+ edit "TO-HQ-2"
+  set interface "port2"
+  set remote-gw 198.51.100.3
+  set dpd on-idle
+ next
+end
+config router static
+ edit 100
+  set dst 10.1.0.0 255.255.0.0
+  set device "TO-HQ-1"
+  set distance 10
+ next
+ edit 101
+  set dst 10.1.0.0 255.255.0.0
+  set device "TO-HQ-2"
+  set distance 20
+ next
+end
+```
+
+وقتی Tunnel اول Down شود، Route با Distance 10 غیرفعال و مسیر دوم فعال می‌شود. **DPD (Dead Peer Detection)** تشخیص می‌دهد Peer مرده است تا Tunnel را Down اعلام کند؛ بدون آن، Tunnel «Up» می‌ماند در حالی که ترافیک می‌ریزد.
+
+``` text
+Detection time ~ dpd-retryinterval x dpd-retrycount = 5 s x 3 = 15 s
+```
+
+حالت‌ها: `on-idle` (فقط وقتی ترافیک نیست)، `on-demand`، `disable`. در `on-idle` بررسی زمانی انجام می‌شود که Tunnel ترافیک ندارد؛ مقدار را با آزمون بسنجید.
+
+برای مسیریابی پویا (BGP/OSPF روی Tunnel) Failover خودکارتر و بدون Static است (درس ۱۹-۲، ۱۹-۳).
+
+#### ۲-۳) ADVPN برای Meshed پویا
+
+Hub با `auto-discovery-sender` و Spoke با `auto-discovery-receiver`؛ Shortcut بین Spokeها به‌صورت خودکار (درس ۱۹-۵). برای Partial-Mesh ثابت می‌توان فقط جفت‌های مشخص Tunnel مستقیم ساخت.
+
+#### ۲-۴) XAuth و IKEv1
+
+در IKEv1 Dial-up، XAuth احراز هویت کاربر را بعد از Phase1 اضافه می‌کند (`xauthtype`). در IKEv2 از EAP استفاده می‌شود. برای سایت-به-سایت، XAuth لازم نیست.
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — شمارش.** ۸ سایت Full-mesh: 8×7/2 = 28 Tunnel؛ Hub-and-Spoke: 7.
+
+**متوسط — طراحی Partial-Mesh.** ۵ سایت: Hub + دو منطقه (A1، A2) و (B1، B2). ترافیک A1↔A2 زیاد است؛ Tunnel مستقیم A1–A2 و B1–B2 + همه به Hub: 4 (Spoke-Hub) + 2 (مستقیم) = 6 Tunnel؛ Full-mesh 10.
+
+**متوسط — زمان Failover.**
+
+``` text
+Failover ~ DPD detection (15 s) + route convergence (~1-2 s) = ~16-17 s
+```
+
+اگر هدف 5 ثانیه است: DPD سریع‌تر (`retryinterval 2`، `retrycount 2` ⇒ 4 s) یا Routing پویا با BFD.
+
+**سخت — «Tunnel پشتیبان هیچ‌وقت فعال نمی‌شود».**
+
+1. `get router info routing-table all`: Route دوم (Distance 20) هست؟
+2. `diagnose vpn tunnel list`: Tunnel دوم Up (از قبل برقرار) است؟ اگر Down باشد، باید `auto-negotiate`/Keepalive برقرار کند.
+3. Policy برای Interface دوم؟ (بدون Policy ترافیک رد می‌شود.)
+4. Selector دو سر یکسان؟
+5. `dpd` فعال؟ بدون DPD اگر Peer ناپدید شود ولی Tunnel Up بماند، Route اصلی در جدول می‌ماند.
+
+**سخت — دو ISP پشت NAT.** Tunnel پشتیبان از پشت NAT: NAT-T روی UDP/4500؛ `nattraversal enable`؛ Peer باید پورت باز داشته باشد.
+
+### ۴) Lab (اجرا نشده)
+
+دو FortiGate با دو ISP؛ Tunnel اصلی/پشتیبان؛ قطع WAN1 و اندازه‌گیری زمان Failover با ping.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| DPD | Dead Peer Detection | تشخیص Peer مرده |
+| ADVPN | Auto-Discovery VPN | Shortcut پویا بین Spokeها |
+| XAuth | Extended Authentication | احراز هویت کاربر در IKEv1 |
+| NAT-T | NAT Traversal | عبور از NAT |
+| BFD | Bidirectional Forwarding Detection | تشخیص سریع قطع لینک |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) تعداد Tunnel برای 10 سایت Full-mesh؟ *(پاسخ: 18-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) DPD چه می‌کند؟ *(پاسخ: 18-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) DPD با interval 4 و count 3؛ زمان تشخیص؟ *(پاسخ: 18-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (متوسط) Hub-Spoke با 6 Spoke و دو Hub؛ تعداد Tunnel؟ *(پاسخ: 18-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت5.** (سخت) Tunnel پشتیبان فعال نمی‌شود؛ پنج بررسی. *(پاسخ: 18-8-ت5 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *Dead peer detection lets the firewall bring a failed tunnel down so the backup route can take over.*
+- *A partial mesh adds direct tunnels only between sites that exchange a lot of traffic.*
+- **Q1.** How many tunnels does a full mesh of N sites need? *(پاسخ: 18-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 18
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -44479,6 +44811,20 @@ DPD پیام دوره‌ای برای تشخیص مرگ Peer و پاک‌کرد�
 **18-7-ت4** — AH هدر IP را در Hash دارد؛ NAT آن را عوض می‌کند و Integrity شکست می‌خورد. راه‌حل: ESP با NAT-T (UDP/4500).
 
 **18-7-Q1** — UDP 4500.
+
+### پاسخ‌های درس افزوده‌ی 18-8 (فصل 18)
+
+**18-8-ت1** — 10×9/2 = 45.
+
+**18-8-ت2** — با Keepalive/بررسی ترافیک می‌فهمد Peer پاسخ نمی‌دهد و Tunnel را Down می‌کند تا Route پشتیبان فعال شود.
+
+**18-8-ت3** — 4 × 3 = 12 ثانیه.
+
+**18-8-ت4** — 6 Spoke × 2 Hub = 12 Tunnel (به‌علاوه‌ی Tunnel بین دو Hub در صورت نیاز).
+
+**18-8-ت5** — ۱) Route دوم در جدول ۲) Tunnel دوم Up/قابل‌برقراری ۳) Policy برای Interface دوم ۴) Selector یکسان ۵) فعال بودن DPD.
+
+**18-8-Q1** — N × (N − 1) / 2.
 
 ---
 
@@ -48047,6 +48393,186 @@ IPsec IKEv2 + MFA + گواهی؛ SSL VPN فقط برای سناریوی مشخص
 - *Choose the technology by risk and network constraints, not habit.*
 - Q: What do you do when UDP 500 and 4500 are blocked?
 
+<a id="l-20-8"></a>
+
+## درس 20-8 — SSL-VPN در FortiGate: Web Mode، Tunnel Mode، Portal، Realm و Split Tunnel
+
+**فصل 20 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Configure and implement different SSL-VPN modes to provide secure access to the private network» · پیش‌نیاز: ۲۰-۱، ۲۰-۲**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ SSL-VPN فقط در Lab ایزوله و با نسخه‌ی وصله‌شده (به PSIRT نگاه کنید)؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** دو حالت SSL-VPN (Web Mode و Tunnel Mode)، سه نوع Portal، چطور کاربران به Portal نگاشت می‌شوند، Split Tunnel چه می‌کند و چطور Policy را می‌نویسیم.
+
+**چرا لازم است؟** کاربر دورکار گاهی فقط می‌خواهد یک سامانه‌ی داخلی را در مرورگر ببیند (Web Mode) و گاهی دسترسی کامل شبکه‌ای می‌خواهد (Tunnel Mode). اگر هر دو را یکسان باز کنید، سطح دسترسی بیش‌ازحد می‌شود؛ اگر اشتباه انتخاب کنید، یا کاربر به منبع نمی‌رسد یا مهاجم بیش از لازم می‌بیند. این دقیقاً سؤال آزمون NSE4 است.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) دو حالت
+
+| حالت | شرح | کلاینت | مثال |
+|---|---|---|---|
+| Web Mode | فایروال به‌عنوان «پروکسی» عمل می‌کند؛ کاربر در مرورگر صفحه‌ی Portal با **Bookmark** (HTTP/HTTPS، RDP، SSH، VNC، FTP، SMB ...) می‌بیند | فقط مرورگر | سامانه‌ی داخلی وب |
+| Tunnel Mode | روی کلاینت یک کارت مجازی و IP از Pool ساخته می‌شود؛ ترافیک شبکه‌ای از تونل می‌گذرد | FortiClient | دسترسی کامل شبکه |
+
+#### ۲-۲) انواع Portal
+
+- **web-access:** فقط Web Mode.
+- **tunnel-access:** فقط Tunnel Mode.
+- **full-access:** هر دو.
+
+#### ۲-۳) نگاشت کاربر به Portal
+
+در تنظیمات SSL-VPN، **Authentication Rule** کاربر/گروه را به Portal (و Realm) وصل می‌کند.
+
+``` text
+config vpn ssl settings
+ set servercert "corp-cert"
+ set tunnel-ip-pools "SSLVPN_TUNNEL_ADDR1"
+ set source-interface "port1"
+ set default-portal "web-access"
+ config authentication-rule
+  edit 1
+   set groups "G-VPN-FULL"
+   set portal "full-access"
+  next
+  edit 2
+   set groups "G-VPN-WEB"
+   set portal "web-access"
+  next
+ end
+end
+```
+
+#### ۲-۴) Portal و Bookmark
+
+``` text
+config vpn ssl web portal
+ edit "web-access"
+  set web-mode enable
+  config bookmark-group
+   edit "Internal"
+    config bookmarks
+     edit "Portal"
+      set apptype web
+      set url "https://intranet.example.com"
+     next
+     edit "Server RDP"
+      set apptype rdp
+      set host "10.20.0.30"
+     next
+    end
+   next
+  end
+ next
+end
+config vpn ssl web portal
+ edit "tunnel-access"
+  set tunnel-mode enable
+  set ip-pools "SSLVPN_TUNNEL_ADDR1"
+  set split-tunneling enable
+  set split-tunneling-routing-address "INTERNAL-NETS"
+  set dns-server1 10.20.0.5
+ next
+end
+```
+
+(نام و ساختار دقیق را در نسخه‌ی خود بررسی کنید.)
+
+#### ۲-۵) Split Tunnel
+
+- **Full Tunnel:** همه‌ی ترافیک کلاینت (از جمله اینترنت) از فایروال می‌گذرد؛ کنترل بیشتر، بار بیشتر.
+- **Split Tunnel:** فقط مسیرهای مشخص (شبکه‌ی داخلی) از تونل می‌روند؛ اینترنت مستقیم.
+
+**Split DNS:** نام‌های داخلی را فقط با DNS داخلی حل کند تا نشت (Leak) نشود.
+
+#### ۲-۶) Policy
+
+ترافیک Tunnel Mode از Interface مجازی `ssl.root` وارد می‌شود:
+
+``` text
+config firewall policy
+ edit 200
+  set name "SSLVPN-to-ERP"
+  set srcintf "ssl.root"
+  set dstintf "port3"
+  set srcaddr "all"
+  set dstaddr "SRV-ERP"
+  set groups "G-VPN-FULL"
+  set service "HTTPS"
+  set action accept
+  set logtraffic all
+ next
+end
+```
+
+Web Mode به Policy مجزا نیاز ندارد؛ دسترسی توسط Bookmarkهای Portal محدود می‌شود، ولی بازرسی و Log هنوز لازم است.
+
+#### ۲-۷) Host Check و امنیت
+
+کنترل وجود آنتی‌ویروس/فایروال در کلاینت (Host Check)، محدودیت مبدأ (`source-address`، Geo)، MFA، Timeout ورود و `login-attempt-limit`.
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — انتخاب حالت.** کارمندی فقط به intranet وب نیاز دارد ⇒ Web Mode با Bookmark. مهندس شبکه که با SSH و ابزارهای مدیریتی کار می‌کند ⇒ Tunnel Mode.
+
+**متوسط — محاسبه‌ی Pool.** ۱۵۰ کاربر هم‌زمان ⇒ Pool حداقل ۱۵۰ آدرس + حاشیه ۲۰٪:
+
+``` text
+Pool size = 150 x 1.2 = 180  -> use a /24 (254 addresses) e.g. 10.200.0.0/24
+```
+
+**متوسط — Split Tunnel.** `INTERNAL-NETS` شامل 10.20.0.0/24 و 10.30.0.0/24. روی کلاینت `route print` نشان می‌دهد این دو شبکه از آداپتور VPN می‌روند و Default Route همچنان محلی است.
+
+**سخت — «Login می‌شود ولی Portal خالی است».**
+
+1. `diagnose firewall auth list` و `get vpn ssl monitor`: کاربر و گروه؟
+2. Authentication Rule: گروه به Portal درست نگاشت شده؟ ترتیب Ruleها (اولین مطابقت)؟
+3. Portal فعال `web-mode`/`tunnel-mode` درست؟
+4. برای Bookmark: Policy/دسترسی از فایروال به مقصد (Web Mode از خود فایروال به سرور وصل می‌شود).
+
+**سخت — Tunnel بالا ولی ping نه.**
+
+1. Policy از `ssl.root` به شبکه‌ی داخلی؟
+2. Route برگشت: سرورهای داخلی باید Pool را به فایروال Route کنند.
+3. Split Tunnel Address درست؟
+4. `diagnose debug application sslvpn -1` (کوتاه).
+
+**سخت — امنیت.** با توجه به سابقه‌ی آسیب‌پذیری‌های SSL-VPN: نسخه‌ی وصله‌شده، MFA، Local-in Policy برای محدودکردن مبدأ، غیرفعال‌سازی Web Mode اگر لازم نیست و پایش Log؛ در محیط جدید IPsec را مقایسه کنید (درس ۲۰-۷).
+
+### ۴) Lab (اجرا نشده)
+
+Portal web-access و tunnel-access؛ دو کاربر؛ مقایسه‌ی تجربه و `get vpn ssl monitor`.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| SSL-VPN | Secure Sockets Layer VPN | VPN روی TLS |
+| Portal | — | صفحه‌ی ورود/دسترسی |
+| Bookmark | — | میانبر منبع در Portal |
+| RDP | Remote Desktop Protocol | دسکتاپ راه‌دور |
+| PSIRT | Product Security Incident Response Team | تیم امنیتی محصول |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) تفاوت Web Mode و Tunnel Mode؟ *(پاسخ: 20-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) سه نوع Portal؟ *(پاسخ: 20-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) برای ۲۰۰ کاربر هم‌زمان با حاشیه‌ی ۲۰٪ اندازه‌ی Pool؟ *(پاسخ: 20-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) کاربر Login می‌کند ولی دسترسی ندارد؛ چهار بررسی. *(پاسخ: 20-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *In web mode the FortiGate acts as a reverse proxy for the bookmarked resources.*
+- *Split tunneling sends only the listed networks through the VPN.*
+- **Q1.** Which interface name carries SSL-VPN tunnel traffic in policies? *(پاسخ: 20-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 20
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -48182,6 +48708,20 @@ SSL VPN Tunnel mode حذف شد و با IPsec جایگزین شد (7.6.3).
 کارمندان: IPsec+MFA؛ پیمانکار: Agentless/ZTNA به یک اپ؛ مهمان: بدون VPN.
 
 **20-7-Q1** — Because the support status of a feature determines how long the design stays supported and secure.
+
+### پاسخ‌های درس افزوده‌ی 20-8 (فصل 20)
+
+**20-8-ت1** — Web Mode: دسترسی بدون کلاینت از مرورگر با Bookmark (فایروال پروکسی است)؛ Tunnel Mode: FortiClient کارت مجازی و IP می‌سازد و ترافیک شبکه‌ای از تونل می‌رود.
+
+**20-8-ت2** — web-access، tunnel-access، full-access.
+
+**20-8-ت3** — 200 × 1.2 = 240 آدرس؛ یک /24 (254 آدرس) کافی است.
+
+**20-8-ت4** — ۱) گروه/کاربر در `auth list` ۲) Authentication Rule و ترتیب ۳) فعال بودن حالت Portal ۴) Policy/Route برگشت و دسترسی فایروال به مقصد Bookmark.
+
+**20-8-Q1** — `ssl.root`.
+
+---
 
 # فصل 21 — Dual-ISP و SD-WAN (G8)
 
@@ -54373,6 +54913,136 @@ Isolation proof 30 | Least-privilege policy 25 | Logging 20 | Resource limits 15
 - *Isolation is proven by negative tests and logs.*
 - Q: How do you separate logs per tenant?
 
+<a id="l-24-5"></a>
+
+## درس 24-5 — انواع VDOM، منابع Global و VDOM، مدیریت VDOM و طراحی چندمستاجره
+
+**فصل 24 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Describe and configure VDOMs to split a FortiGate into multiple virtual devices» · پیش‌نیاز: ۲۴-۰ تا ۲۴-۳**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ VDOM اضافه بر تعداد پیش‌فرض Needs-License؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** چه چیزی در سطح Global و چه چیزی در سطح VDOM تنظیم می‌شود، Management VDOM چیست، حالت NAT/Transparent هر VDOM، و چگونه ادمین‌ها و منابع را مدیریت کنیم.
+
+**چرا لازم است؟** VDOM یک ساختمان چندواحدی است؛ برق و آسانسور مشترک (Global) و هر واحد کلید و دیوار خودش (VDOM). اگر ندانید فلان تنظیم Global است یا VDOM، یا آن را جای اشتباه می‌جویید یا یک تغییر Global همه‌ی مستأجران را قطع می‌کند.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) Global در برابر VDOM
+
+| در Global | در VDOM |
+|---|---|
+| نسخه‌ی Firmware، Reboot | Firewall Policy، NAT |
+| HA | Routing (Static/OSPF/BGP) |
+| Interface فیزیکی (تخصیص به VDOM) | Interface مجازی/VLAN، Zone |
+| Admin Profile و ادمین‌های Super | VPN، UTM Profile |
+| Log سراسری، FortiGuard | کاربران/گروه‌ها (محدوده‌ی VDOM) |
+| محدودیت منابع | Address/Service Objectها |
+
+#### ۲-۲) انواع VDOM
+
+- **Traffic VDOM (پیش‌فرض):** ترافیک عبوری مستأجر.
+- **Admin VDOM:** مخصوص مدیریت/ارتباطات خود فایروال (FortiGuard، Log، DNS)؛ ترافیک کاربری از آن عبور نمی‌کند. (در FortiOS 7.0 مفهوم Management VDOM قابل‌تعیین است.)
+
+``` text
+config global
+ config system global
+  set management-vdom "root"
+ end
+end
+```
+
+#### ۲-۳) حالت هر VDOM
+
+NAT/Route یا Transparent (درس ۱۲-۱۰) به‌ازای هر VDOM جدا. مثلاً VDOM مشتری A در NAT و VDOM بازرسی در Transparent.
+
+#### ۲-۴) ادمین‌ها
+
+- **Super Admin:** همه‌ی VDOMها و Global.
+- **ادمین VDOM:** فقط VDOM یا VDOMهای تخصیص‌یافته.
+
+``` text
+config global
+ config system admin
+  edit "tenantA-admin"
+   set accprofile "prof-tenant"
+   set vdom "TENANT-A"
+  next
+ end
+end
+```
+
+#### ۲-۵) منابع
+
+``` text
+config global
+ config system vdom-property
+  edit "TENANT-A"
+   set session 50000
+   set policy 500
+   set firewall-address 1000
+  next
+ end
+end
+```
+
+هر مستأجر سقف دارد؛ یک مستأجر پرمصرف نباید دیگران را خفه کند.
+
+#### ۲-۶) ارتباط بین VDOMها
+
+Inter-VDOM Link (Interface مجازی دو سر) با Policy هر دو سر؛ مستقیم هیچ ترافیکی بین VDOMها نمی‌رود.
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — کجا؟** «ارتقای Firmware» Global؛ «افزودن Policy برای مستأجر A» داخل VDOM A.
+
+**متوسط — محاسبه‌ی سهم منابع.** ظرفیت Session دستگاه = 200000 و ۴ مستأجر:
+
+``` text
+Equal share = 200000 / 4 = 50000
+With 20 % reserve for management = 160000 / 4 = 40000 per tenant
+```
+
+**متوسط — طراحی.** سه VDOM: `MGMT` (Admin/Management)، `TENANT-A`، `TENANT-B` و یک VDOM `DMZ-SHARED` با Inter-VDOM Link. هر مستأجر فقط به DMZ مشترک (با Policy حداقلی).
+
+**سخت — «ادمین مستأجر همه چیز را می‌بیند».** بررسی: `accprofile` (دسترسی سراسری؟) و `vdom` اختصاصی؛ حذف Super Admin از حساب مستأجر؛ پروفایل با `scope vdom`.
+
+**سخت — تغییر Mode.** تبدیل VDOM از NAT به Transparent پاک‌سازی Interface/Route/Policy را می‌طلبد؛ Backup (Global و VDOM) و پنجره‌ی تغییر.
+
+**سخت — Log.** هر VDOM Log جدا ارسال می‌کند؛ در Syslog فیلد `vd` را نگه دارید؛ در FortiAnalyzer ADOM به‌ازای VDOM/مستأجر.
+
+### ۴) Lab (اجرا نشده)
+
+دو VDOM با ادمین جدا؛ آزمون اینکه ادمین A VDOM B را نمی‌بیند.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| VDOM | Virtual Domain | دامنه‌ی مجازی |
+| MGMT VDOM | Management VDOM | VDOM مدیریت |
+| MSSP | Managed Security Service Provider | ارائه‌دهنده‌ی خدمات امنیت مدیریت‌شده |
+| ADOM | Administrative Domain | دامنه‌ی مدیریتی FortiManager/Analyzer |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) سه تنظیم Global و سه تنظیم VDOM. *(پاسخ: 24-5-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Management VDOM چیست؟ *(پاسخ: 24-5-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) ظرفیت 120000 Session و ۳ مستأجر با ذخیره 10٪؛ سهم هر مستأجر؟ *(پاسخ: 24-5-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) ادمین مستأجر به VDOM دیگر دسترسی دارد؛ علت و رفع. *(پاسخ: 24-5-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *Firmware upgrades and HA are configured globally, while policies and routing are per-VDOM.*
+- *Each VDOM administrator should be restricted to their own VDOM.*
+- **Q1.** What connects two VDOMs? *(پاسخ: 24-5-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 24
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -54525,6 +55195,20 @@ Zone در یک Routing/Policy مشترک است؛ VDOM جدا و با Link ار�
 **24-0-ت6** — Super Admin فقط Global؛ Admin مشتری محدود به VDOM خودش؛ Auditor فقط خواندنی.
 
 **24-0-Q1** — Because one tenant could consume all sessions and resources and disrupt every other VDOM.
+
+### پاسخ‌های درس افزوده‌ی 24-5 (فصل 24)
+
+**24-5-ت1** — Global: Firmware، HA، Interface فیزیکی/تخصیص، ادمین‌ها و Profile؛ VDOM: Policy، Routing، VPN، UTM Profile.
+
+**24-5-ت2** — VDOM مخصوص ارتباطات مدیریتی خود فایروال (FortiGuard، Log، DNS) که ترافیک کاربران از آن عبور نمی‌کند.
+
+**24-5-ت3** — 120000 × 0.9 = 108000؛ 108000 / 3 = 36000 Session برای هر مستأجر.
+
+**24-5-ت4** — `accprofile`/Scope سراسری یا ادمین بدون `vdom` اختصاصی؛ رفع: ادمین VDOM-محدود با Profile مناسب و حذف دسترسی Super.
+
+**24-5-Q1** — An inter-VDOM link (with policies on both sides).
+
+---
 
 # پایان بخش ۸ (فصل‌های ۲۲ تا ۲۴)
 

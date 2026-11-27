@@ -90,3 +90,17 @@
 | NSE4 Log settings و عیب‌یابی با Log | 27-8 |
 
 **هنوز بررسی‌نشده:** CCNA 2.5 (جزئیات Rapid PVST+)، 3.3 (OSPF تک‌ناحیه)، 4.6 (ACL)، 4.7 (DHCP Snooping/DAI/Port Security) و NSE4 SSL-VPN modes، IPsec mesh، SD-WAN، Antivirus/IPS/DoS و VDOM به‌صورت خواندن زیرمورد‌به‌زیرمورد انجام نشده؛ فقط وجود کلیدواژه سنجیده شده است.
+
+## به‌روزرسانی دور سوم
+| سرفصل | درس جدید |
+|---|---|
+| CCNA 2.5 Rapid PVST+ (Root، هزینه، Tie-break، نقش/حالت، Guardها) | 4-10 |
+| CCNA 4.7 Port Security/DHCP Snooping/DAI/IPSG در جزئیات | 4-11 |
+| CCNA 3.3 OSPFv2/v3 تک‌ناحیه | 5-10 |
+| CCNA 4.6 ACL کامل | 7-11 |
+| NSE4 SSL-VPN modes (Web/Tunnel، Portal، Split) | 20-8 |
+| NSE4 IPsec meshed/partially redundant | 18-8 |
+| NSE4 IPS/DoS در عمق | 16-10 |
+| NSE4 VDOM (Global/VDOM، مدیریت، منابع) | 24-5 |
+
+با این مرحله هر سرفصل رسمی CCNA v2.0 و موضوعات NSE4 (7.0) دست‌کم یک درس اختصاصی دارند. هنوز انجام نشده: خواندن و نمره‌دهی کیفیت **همه‌ی درس‌های قدیمی** در برابر کتاب رسمی، و اجرای Labها.

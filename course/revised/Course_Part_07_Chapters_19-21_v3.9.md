@@ -3489,6 +3489,186 @@ IPsec IKEv2 + MFA + گواهی؛ SSL VPN فقط برای سناریوی مشخص
 - *Choose the technology by risk and network constraints, not habit.*
 - Q: What do you do when UDP 500 and 4500 are blocked?
 
+<a id="l-20-8"></a>
+
+## درس 20-8 — SSL-VPN در FortiGate: Web Mode، Tunnel Mode، Portal، Realm و Split Tunnel
+
+**فصل 20 · درس افزوده برای سرفصل رسمی NSE 4 (FortiOS 7.0): «Configure and implement different SSL-VPN modes to provide secure access to the private network» · پیش‌نیاز: ۲۰-۱، ۲۰-۲**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ SSL-VPN فقط در Lab ایزوله و با نسخه‌ی وصله‌شده (به PSIRT نگاه کنید)؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** دو حالت SSL-VPN (Web Mode و Tunnel Mode)، سه نوع Portal، چطور کاربران به Portal نگاشت می‌شوند، Split Tunnel چه می‌کند و چطور Policy را می‌نویسیم.
+
+**چرا لازم است؟** کاربر دورکار گاهی فقط می‌خواهد یک سامانه‌ی داخلی را در مرورگر ببیند (Web Mode) و گاهی دسترسی کامل شبکه‌ای می‌خواهد (Tunnel Mode). اگر هر دو را یکسان باز کنید، سطح دسترسی بیش‌ازحد می‌شود؛ اگر اشتباه انتخاب کنید، یا کاربر به منبع نمی‌رسد یا مهاجم بیش از لازم می‌بیند. این دقیقاً سؤال آزمون NSE4 است.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) دو حالت
+
+| حالت | شرح | کلاینت | مثال |
+|---|---|---|---|
+| Web Mode | فایروال به‌عنوان «پروکسی» عمل می‌کند؛ کاربر در مرورگر صفحه‌ی Portal با **Bookmark** (HTTP/HTTPS، RDP، SSH، VNC، FTP، SMB ...) می‌بیند | فقط مرورگر | سامانه‌ی داخلی وب |
+| Tunnel Mode | روی کلاینت یک کارت مجازی و IP از Pool ساخته می‌شود؛ ترافیک شبکه‌ای از تونل می‌گذرد | FortiClient | دسترسی کامل شبکه |
+
+#### ۲-۲) انواع Portal
+
+- **web-access:** فقط Web Mode.
+- **tunnel-access:** فقط Tunnel Mode.
+- **full-access:** هر دو.
+
+#### ۲-۳) نگاشت کاربر به Portal
+
+در تنظیمات SSL-VPN، **Authentication Rule** کاربر/گروه را به Portal (و Realm) وصل می‌کند.
+
+``` text
+config vpn ssl settings
+ set servercert "corp-cert"
+ set tunnel-ip-pools "SSLVPN_TUNNEL_ADDR1"
+ set source-interface "port1"
+ set default-portal "web-access"
+ config authentication-rule
+  edit 1
+   set groups "G-VPN-FULL"
+   set portal "full-access"
+  next
+  edit 2
+   set groups "G-VPN-WEB"
+   set portal "web-access"
+  next
+ end
+end
+```
+
+#### ۲-۴) Portal و Bookmark
+
+``` text
+config vpn ssl web portal
+ edit "web-access"
+  set web-mode enable
+  config bookmark-group
+   edit "Internal"
+    config bookmarks
+     edit "Portal"
+      set apptype web
+      set url "https://intranet.example.com"
+     next
+     edit "Server RDP"
+      set apptype rdp
+      set host "10.20.0.30"
+     next
+    end
+   next
+  end
+ next
+end
+config vpn ssl web portal
+ edit "tunnel-access"
+  set tunnel-mode enable
+  set ip-pools "SSLVPN_TUNNEL_ADDR1"
+  set split-tunneling enable
+  set split-tunneling-routing-address "INTERNAL-NETS"
+  set dns-server1 10.20.0.5
+ next
+end
+```
+
+(نام و ساختار دقیق را در نسخه‌ی خود بررسی کنید.)
+
+#### ۲-۵) Split Tunnel
+
+- **Full Tunnel:** همه‌ی ترافیک کلاینت (از جمله اینترنت) از فایروال می‌گذرد؛ کنترل بیشتر، بار بیشتر.
+- **Split Tunnel:** فقط مسیرهای مشخص (شبکه‌ی داخلی) از تونل می‌روند؛ اینترنت مستقیم.
+
+**Split DNS:** نام‌های داخلی را فقط با DNS داخلی حل کند تا نشت (Leak) نشود.
+
+#### ۲-۶) Policy
+
+ترافیک Tunnel Mode از Interface مجازی `ssl.root` وارد می‌شود:
+
+``` text
+config firewall policy
+ edit 200
+  set name "SSLVPN-to-ERP"
+  set srcintf "ssl.root"
+  set dstintf "port3"
+  set srcaddr "all"
+  set dstaddr "SRV-ERP"
+  set groups "G-VPN-FULL"
+  set service "HTTPS"
+  set action accept
+  set logtraffic all
+ next
+end
+```
+
+Web Mode به Policy مجزا نیاز ندارد؛ دسترسی توسط Bookmarkهای Portal محدود می‌شود، ولی بازرسی و Log هنوز لازم است.
+
+#### ۲-۷) Host Check و امنیت
+
+کنترل وجود آنتی‌ویروس/فایروال در کلاینت (Host Check)، محدودیت مبدأ (`source-address`، Geo)، MFA، Timeout ورود و `login-attempt-limit`.
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — انتخاب حالت.** کارمندی فقط به intranet وب نیاز دارد ⇒ Web Mode با Bookmark. مهندس شبکه که با SSH و ابزارهای مدیریتی کار می‌کند ⇒ Tunnel Mode.
+
+**متوسط — محاسبه‌ی Pool.** ۱۵۰ کاربر هم‌زمان ⇒ Pool حداقل ۱۵۰ آدرس + حاشیه ۲۰٪:
+
+``` text
+Pool size = 150 x 1.2 = 180  -> use a /24 (254 addresses) e.g. 10.200.0.0/24
+```
+
+**متوسط — Split Tunnel.** `INTERNAL-NETS` شامل 10.20.0.0/24 و 10.30.0.0/24. روی کلاینت `route print` نشان می‌دهد این دو شبکه از آداپتور VPN می‌روند و Default Route همچنان محلی است.
+
+**سخت — «Login می‌شود ولی Portal خالی است».**
+
+1. `diagnose firewall auth list` و `get vpn ssl monitor`: کاربر و گروه؟
+2. Authentication Rule: گروه به Portal درست نگاشت شده؟ ترتیب Ruleها (اولین مطابقت)؟
+3. Portal فعال `web-mode`/`tunnel-mode` درست؟
+4. برای Bookmark: Policy/دسترسی از فایروال به مقصد (Web Mode از خود فایروال به سرور وصل می‌شود).
+
+**سخت — Tunnel بالا ولی ping نه.**
+
+1. Policy از `ssl.root` به شبکه‌ی داخلی؟
+2. Route برگشت: سرورهای داخلی باید Pool را به فایروال Route کنند.
+3. Split Tunnel Address درست؟
+4. `diagnose debug application sslvpn -1` (کوتاه).
+
+**سخت — امنیت.** با توجه به سابقه‌ی آسیب‌پذیری‌های SSL-VPN: نسخه‌ی وصله‌شده، MFA، Local-in Policy برای محدودکردن مبدأ، غیرفعال‌سازی Web Mode اگر لازم نیست و پایش Log؛ در محیط جدید IPsec را مقایسه کنید (درس ۲۰-۷).
+
+### ۴) Lab (اجرا نشده)
+
+Portal web-access و tunnel-access؛ دو کاربر؛ مقایسه‌ی تجربه و `get vpn ssl monitor`.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| SSL-VPN | Secure Sockets Layer VPN | VPN روی TLS |
+| Portal | — | صفحه‌ی ورود/دسترسی |
+| Bookmark | — | میانبر منبع در Portal |
+| RDP | Remote Desktop Protocol | دسکتاپ راه‌دور |
+| PSIRT | Product Security Incident Response Team | تیم امنیتی محصول |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) تفاوت Web Mode و Tunnel Mode؟ *(پاسخ: 20-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) سه نوع Portal؟ *(پاسخ: 20-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) برای ۲۰۰ کاربر هم‌زمان با حاشیه‌ی ۲۰٪ اندازه‌ی Pool؟ *(پاسخ: 20-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) کاربر Login می‌کند ولی دسترسی ندارد؛ چهار بررسی. *(پاسخ: 20-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *In web mode the FortiGate acts as a reverse proxy for the bookmarked resources.*
+- *Split tunneling sends only the listed networks through the VPN.*
+- **Q1.** Which interface name carries SSL-VPN tunnel traffic in policies? *(پاسخ: 20-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 20
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -3624,6 +3804,20 @@ SSL VPN Tunnel mode حذف شد و با IPsec جایگزین شد (7.6.3).
 کارمندان: IPsec+MFA؛ پیمانکار: Agentless/ZTNA به یک اپ؛ مهمان: بدون VPN.
 
 **20-7-Q1** — Because the support status of a feature determines how long the design stays supported and secure.
+
+### پاسخ‌های درس افزوده‌ی 20-8 (فصل 20)
+
+**20-8-ت1** — Web Mode: دسترسی بدون کلاینت از مرورگر با Bookmark (فایروال پروکسی است)؛ Tunnel Mode: FortiClient کارت مجازی و IP می‌سازد و ترافیک شبکه‌ای از تونل می‌رود.
+
+**20-8-ت2** — web-access، tunnel-access، full-access.
+
+**20-8-ت3** — 200 × 1.2 = 240 آدرس؛ یک /24 (254 آدرس) کافی است.
+
+**20-8-ت4** — ۱) گروه/کاربر در `auth list` ۲) Authentication Rule و ترتیب ۳) فعال بودن حالت Portal ۴) Policy/Route برگشت و دسترسی فایروال به مقصد Bookmark.
+
+**20-8-Q1** — `ssl.root`.
+
+---
 
 # فصل 21 — Dual-ISP و SD-WAN (G8)
 
