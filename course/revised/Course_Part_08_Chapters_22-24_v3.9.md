@@ -1819,168 +1819,130 @@ Reverse Path Forwarding: فایروال بررسی می‌کند بسته‌ی �
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Asymmetric Routing را در توپولوژی‌های واقعی (Dual-ISP، ECMP، دو فایروال، VPN+Internet) تشخیص دهد.
-2. رفتار فایروال Stateful را بسته‌به‌بسته توضیح دهد (SYN، SYN/ACK، ACK، داده).
-3. دو مکانیزم Drop (RPF fail و No-session/Denied) را تفکیک کند.
-4. با Sniffer دو‌نقطه‌ای و Debug Flow و Session ثابت کند.
-5. اثر Asymmetric روی NAT، UTM و Log را بگوید.
-6. درباره‌ی «نامتقارن مجاز» (Stateless/IPS bypass) قضاوت کند.
+1. Asymmetric Routing (مسیر نامتقارن) را دقیق تعریف کنید.
+2. علت‌های رایج (دو ISP، دو فایروال، ECMP، Policy Route) را بشناسید.
+3. اثر آن را بر فایروال Stateful تحلیل بسته‌به‌بسته کنید.
+4. تفاوت `reverse path check fail` (RPF) و `no session matched` را بگویید.
+5. نشانه‌ها را در Sniffer و Debug Flow ببینید.
+6. تشخیص را با Evidence ثبت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا باید علت را قبل از رفع بدانیم؟** رفع مسیر نامتقارن بدون دانستن علت مثل مسکّن‌دادن بدون تشخیص است. پنج علت رایج هرکدام آزمون مشخص دارند:
+فرض کنید نامه‌ای را با پست پیشتاز می‌فرستید، ولی پاسخ از شرکت پخش دیگری برمی‌گردد. شما به گیرنده‌ی اول (فایروال اول) رسید ثبت کرده‌اید، ولی پاسخ به گیرنده‌ی دوم می‌رسد که از ارسال شما خبر ندارد؛ آن را رد می‌کند. فایروال Stateful هم همین است: به بسته‌ی «پاسخ» فقط وقتی اجازه می‌دهد که بسته‌ی «درخواست» را دیده و Session ساخته باشد. در معماری‌های چند لینکی/چند فایروالی، مسیر رفت و برگشت ممکن است متفاوت باشد؛ نتیجه: اتصال‌هایی که «گاهی کار می‌کنند و گاهی نه». تشخیص درست این مشکل از ماهرترین عیب‌یابی‌هاست.
 
-1. **دو ISP بدون SNAT:** خروج از ISP-A ولی پاسخ سرور به IP داخلی از مسیر دیگر.
-2. **Policy Route یک‌طرفه:** برگشت از مسیر پیش‌فرض.
-3. **ECMP:** Hash متفاوت.
-4. **دو فایروال موازی:** هر کدام یک جهت.
-5. **سرور چندکارته (Multi-homed):** پاسخ را از کارتی می‌فرستد که Default Gateway دارد.
+### تعریف
 
-**اصل عیب‌یابی:** Sniffer هم‌زمان روی همه‌ی نقاط، مقایسه‌ی Route رفت و برگشت (`get router info routing-table details <src>` و `<dst>`)، و `diagnose firewall proute list`.
+``` text
+Forward : Client -> FW-A -> Server      (SYN passes FW-A, session created on A)
+Return  : Server -> FW-B -> Client      (SYN-ACK passes FW-B, no session there)
+```
 
-**جمع‌بندی اصلی درس:**
+مسیر **متقارن** یعنی رفت و برگشت از همان دستگاه (و همان Interface‌ها).
 
-در شبکه‌ی ساده یک بسته از A به B می‌رود و پاسخ همان مسیر را برمی‌گردد. در شبکه‌ی واقعی با دو ISP، ECMP، دو فایروال یا ترکیب VPN و اینترنت، رفت و برگشت می‌توانند از دو مسیر مختلف بروند. روتر معمولی اهمیتی نمی‌دهد؛ **فایروال Stateful** می‌دهد، چون تصمیمش بر پایه‌ی Session است و Session فقط روی دستگاهی که اولین بسته را دیده ساخته شده است.
+### علت‌ها
 
-### ۳) توضیح عمیق فنی
-
-#### ۱) علت‌های پیدایش
-
-| الگو | چرا Asymmetric می‌شود |
+| علت | مثال |
 |---|---|
-| Dual-ISP | رفت ISP1 (SNAT IP1)، سرور پاسخ به IP1؛ ولی در SD-WAN/ECMP ممکن است برگشت از مسیر دیگر |
-| ECMP دو فایروال | Hash رفت و برگشت متفاوت |
-| VPN + Internet | رفت از Tunnel، برگشت از اینترنت (Route برگشت اشتباه) |
-| PBR/SD-WAN یک‌طرفه | Policy فقط یک جهت |
-| Failover وسط Session | Session روی لینک قدیمی |
+| دو ISP | خروج از ISP1، پاسخ از ISP2 |
+| دو فایروال موازی | بار روی هر دو بدون Session Sync |
+| ECMP | هر Flow به یک لینک |
+| Policy Route | مسیر رفت با Policy و برگشت با Route معمولی |
+| Routing پویا | OSPF/BGP هزینه‌ی متفاوت |
+| NAT ناقص | پاسخ با IP دیگری |
 
-#### ۲) تحلیل بسته‌به‌بسته
+### اثر روی Stateful
 
-``` text
-Client -> FW-A : SYN              A: new session (SYN_SENT) -> forwards
-Server -> FW-B : SYN/ACK          B: no session for this tuple
-   case 1: B routing says best path to client is via another interface -> RPF check fails -> drop
-   case 2: B accepts by routing but policy lookup for a "new" SYN/ACK -> no policy -> drop (policy 0)
-   case 3: B has permissive policy: creates a new session from SYN/ACK -> TCP state machine rejects ACK without SYN
-Client retransmits SYN, timeout.
-```
+فایروال برای هر Session یک ورودی دارد؛ بسته‌ی پاسخ را با آن تطبیق می‌دهد. اگر پاسخ به دستگاهی برسد که Session ندارد:
 
-#### ۳) دو مکانیزم Drop
+1. TCP: بسته‌ی SYN-ACK (بدون SYN قبلی) ⇒ Drop (`no session matched`) یا RST.
+2. اگر Interface ورودی پاسخ با Route برگشت به مبدأ نخواند ⇒ RPF Drop.
 
-| مکانیزم | نشانه‌ی Debug | علت | رفع |
-|---|---|---|---|
-| RPF (Reverse Path Check) | `reverse path check fail, drop` | بهترین مسیر به مبدأ از Interface ورودی نمی‌گذرد | Route برگشت/Policy Route |
-| No-session / Policy | `Denied by forward policy check (policy 0)` یا بدون Session | فایروال دوم Session ندارد | متقارن‌سازی/Sync |
+### دو پیام متفاوت
 
-#### ۴) اثر ثانویه
-
-- **NAT:** SNAT روی فایروال اول؛ پاسخ به فایروال دوم می‌رسد که ترجمه را نمی‌شناسد.
-- **UTM/IPS:** بازرسی فقط یک جهت را می‌بیند؛ Signatureها ناقص؛ AV/Proxy شکست.
-- **Log:** نیمی از Sessionها در هر فایروال؛ تحلیل حادثه ناقص.
-
-#### ۵) نامتقارن عمدی
-
-بعضی طراحی‌ها (ECMP/Anycast) عمداً نامتقارن‌اند؛ آن‌جا فایروال‌ها باید Session Sync داشته باشند یا بررسی Stateful را سبک کنند (ریسک امنیتی). تصمیم آگاهانه، نه پیش‌فرض.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Asymmetric مجاز؟ | فقط با Sync/تصمیم آگاهانه |
-| متقارن‌سازی | Route/Metric، Hash، Policy Route |
-| Log | هر دو فایروال مرکزی |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — سرور Multi-homed
-
-سرور دو کارت شبکه (LAN و DMZ) دارد و Default Gateway فقط روی یکی است. درخواست از DMZ می‌آید ولی پاسخ از LAN می‌رود ⇒ نامتقارن. رفع: Policy-based routing روی سرور:
+| پیام Debug | معنی | علت اصلی |
+|---|---|---|
+| `reverse path check fail, drop` | Interface ورودی بسته با Route به مبدأ نمی‌خواند | Routing |
+| `no session matched` / `Denied: no session` | Session برای این بسته نیست | State |
 
 ``` text
-ip rule add from 10.30.0.10 table 100
-ip route add default via 10.30.0.1 dev eth1 table 100
-```
-
-#### مثال متوسط — Policy Route
-
-``` text
-config router policy
- edit 1
-  set input-device "port2"
-  set src "10.10.0.0/24"
-  set output-device "port3"
-  set gateway 198.51.100.1
- next
-end
-```
-
-رفت از Policy Route؛ برگشت از جدول عادی ⇒ اگر مسیر برگشت متفاوت است، نامتقارن می‌شود.
-
-#### مثال سخت — شواهد
-
-FW1 و FW2 هم‌زمان Sniffer:
-
-``` text
-diagnose sniffer packet any 'host 10.10.0.5 and tcp port 443' 4 20 l
-```
-
-مقایسه‌ی زمان‌ها و Sequence: رفت در FW1 و برگشت در FW2 اثبات می‌شود. بدون این شاهد، «نامتقارن است» فقط حدس است.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** دو ISP: SYN از wan1 خارج و SYN/ACK از wan2 برمی‌گردد. Sniffer: wan1 SYN؛ wan2 SYN/ACK؛ `session list` فقط یک Session با wan1. نتیجه: Asymmetric؛ Drop به‌علت RPF.
-
-**متوسط (تحلیل):** دو فایروال موازی با ECMP: بعضی Flowها سالم، بعضی نه. علت: Hash رفت و برگشت متفاوت؛ برای Flowهایی که Hash یکسان است سالم. آزمون: ۲۰ اتصال و شمارش Success/Fail ≈ ۵۰٪. رفع: Hash متقارن/Active-Passive.
-
-**سخت (تحلیل چندعلتی):** VPN IPsec به‌علاوه‌ی Internet: سرور از دفتر مقابل به IP شما از طریق اینترنت پاسخ می‌دهد چون Route مقصد (IP Tunnel) در سرور نیست. فایروال شما پاسخ را روی Interface wan می‌گیرد؛ RPF: بهترین مسیر به مبدأ (آدرس شبکه‌ی مقابل) Tunnel است ⇒ Drop. دو علت هم‌زمان: Route سرور و Selector. تفکیک: Capture Hop‌به‌Hop؛ Debug Flow: `reverse path check fail`. رفع: Route سرور به Tunnel + بررسی Selector.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-diagnose sniffer packet any "host 10.1.4.10 and port 443" 4 20 l
-diagnose sys session filter src 10.1.4.10
-diagnose sys session list
-diagnose debug flow filter addr 10.1.4.10
+diagnose debug flow filter addr 10.10.0.5
 diagnose debug flow trace start 20
 diagnose debug enable
-diagnose debug disable
-diagnose debug reset
-get router info routing-table details 10.1.4.10
 ```
 
-### ۸) Verification (اثبات صحت)
+### تحلیل بسته‌به‌بسته
 
-- Sniffer در دو Interface/دو فایروال: محل SYN و SYN/ACK.
-- `session list` فقط یک فایروال.
-- Debug Flow: پیام RPF/Policy 0.
+``` text
+t0 Client 10.10.0.5 -> Srv 198.51.100.8 SYN            arrives FW-A port2
+t1 FW-A: route -> port1 (ISP1), policy OK, session created, SNAT 203.0.113.2
+t2 SYN leaves FW-A port1
+t3 SYN-ACK returns via ISP2 -> FW-B port1 (dst 203.0.113.2? or 198.51.100.2)
+t4 FW-B: no session -> drop (SYN-ACK without SYN)
+```
 
-### ۹) Troubleshooting
+نتیجه: کلاینت Timeout. FW-A Session را `SYN_SENT` نشان می‌دهد؛ FW-B در Debug: `no session matched`.
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+### نشانه‌ها
+
+| ابزار | نشانه |
+|---|---|
+| Sniffer FW-A | SYN خروجی، SYN-ACK نه |
+| Sniffer FW-B | SYN-ACK ورودی (غریب) |
+| Session FW-A | `SYN_SENT` |
+| Debug Flow FW-B | `no session matched` / RPF |
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — دو ISP
+
+NAT با IP ISP1 ولی پاسخ از ISP2 می‌آید (مقصد، IP ISP1 را از مسیر دیگری می‌فرستد). چون IP ISP1 متعلق به ISP1 است معمولاً پاسخ به همان ISP برمی‌گردد؛ اگر Policy/SNAT IP اشتباه شود (IP ISP2 روی لینک ISP1) پاسخ جای دیگر می‌رود. رفع: SNAT با IP همان Interface.
+
+#### مثال متوسط — RPF
+
+Debug: `reverse path check fail`. `get router info routing-table details 10.10.0.5` ⇒ از port3. بسته از port4 آمده. رفع: Route صحیح یا Policy Route.
+
+#### مثال متوسط — دو فایروال موازی
+
+Edge1 و Edge2 با ECMP. SYN به Edge1 و SYN-ACK به Edge2. Edge2 Session ندارد ⇒ Drop. این نمونه‌ی کلاسیک.
+
+#### مثال سخت — تفکیک دو پیام
+
+دو خرابی با علامت یکسان (Timeout): ۱) RPF (Routing اشتباه) ۲) نبود Session (State). تفکیک با Debug Flow: پیام متفاوت؛ رفع: Route در اولی، طراحی متقارن/Session Sync در دومی.
+
+#### مثال سخت — UDP
+
+UDP Session برای پاسخ می‌خواهد؛ DNS با Asymmetric گاهی کار می‌کند (Session دیرتر ساخته می‌شود). نتیجه‌ی «گاهی کار می‌کند» سخت‌ترین عیب‌یابی است. Evidence: Sniffer دو فایروال هم‌زمان.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. توپولوژی دو ISP بسازید.
+2. علامت‌ها را در Sniffer/Debug ببینید.
+3. RPF و no session را تفکیک کنید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| SYN بدون ACK | Sniffer | Asymmetric |
-| RPF fail | Debug Flow | Route برگشت |
-| فقط بعضی Flowها | شمارش | Hash/ECMP |
-| VPN+Internet | Routing table | Route برگشت/Selector |
+| SYN_SENT دائم | پاسخ از مسیر دیگر | تقارن |
+| RPF fail | Route | تصحیح |
+| no session | دستگاه دیگر | Session Sync/تقارن |
+| گاهی کار می‌کند | ECMP | طراحی |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- غیرفعال‌کردن RPF/State باعث عبور بسته‌ی جعلی می‌شود.
-- Asymmetric مجاز باید ثبت و بازبینی شود.
+غیرفعال کردن RPF/Asymmetric Check (`asymroute`) فایروال را در برابر Spoofing/Session Hijack حساس می‌کند؛ فقط به‌عنوان راه‌حل موقت و آگاهانه.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- Asymmetric = رفت/برگشت از دو مسیر.
-- Stateful بدون Session Drop می‌کند.
-- دو مکانیزم: RPF و No-session.
-- NAT/UTM/Log هم آسیب می‌بینند.
-- اثبات با Capture دو‌نقطه‌ای.
+Asymmetric: رفت و برگشت از دو مسیر؛ Stateful پاسخ بدون Session را رد می‌کند؛ RPF و no-session دو پیام متفاوت‌اند؛ تشخیص با Sniffer دو سمت و Debug Flow.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا روتر معمولی Asymmetric را تحمل می‌کند ولی فایروال Stateful نه؟ *(پاسخ: 23-1-ت1)*
 
@@ -1996,7 +1958,7 @@ get router info routing-table details 10.1.4.10
 
 **Q1.** Quick quiz (English): What two firewall behaviors commonly cause drops under asymmetric routing? *(پاسخ: 23-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2006,103 +1968,16 @@ get router info routing-table details 10.1.4.10
 
 - *Capture at both firewalls to prove asymmetry.* ← برای اثبات Asymmetric در هر دو فایروال Capture بگیرید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** تشخیص Asymmetric. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/asym.md`.
 
-### ۱۵) منابع
+### منابع
 
 - [Debugging the packet flow](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/54688/debugging-the-packet-flow)
 - RFC 3704 (Ingress filtering/RPF)
 
 <a id="l-23-2"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: علل رایج
-
-دو ISP، Policy Route ناهمخوان، ECMP، دو فایروال موازی، Multi-homed سرور. برای هر علت یک آزمون: `get router info routing-table details <src>` در مقایسه با مسیر رفت.
-
-**پرسش‌های مصاحبه**
-1. *ECMP و Session؟* Hash 5-tuple.
-2. *Asymmetric در VPN؟* Selector/Route.
-3. *تشخیص؟* Sniffer دوطرفه.
-
-### تکمیل عمیق: علت‌های مسیر نامتقارن — شناسایی با شاهد
-
-#### چرا؟
-
-قبل از رفع باید علت را بدانید. پنج علت رایج دارد و هر کدام آزمون مشخص دارد.
-
-#### فهرست علت‌ها و آزمون
-
-| علت | آزمون |
-|---|---|
-| دو ISP بدون SNAT | `get router info routing-table details <src>` |
-| Policy Route یک‌طرفه | `diagnose firewall proute list` |
-| ECMP | `get router info routing-table all` (چندمسیره) |
-| دو فایروال موازی | Sniffer دوطرفه |
-| سرور چند‌کارت (Multi-homed) | `route -n` روی سرور |
-
-#### مثال ساده — سرور Multi-homed
-
-سرور دو کارت شبکه دارد (LAN و DMZ). پاسخ را از کارتی می‌فرستد که Default Gateway دارد، نه کارتی که درخواست از آن آمد. رفع: Policy-based routing روی سرور (ip rule) یا یک Default Gateway.
-
-``` text
-ip rule add from 10.30.0.10 table 100
-ip route add default via 10.30.0.1 dev eth1 table 100
-```
-
-#### مثال متوسط — Policy Route
-
-``` text
-config router policy
- edit 1
-  set input-device "port2"
-  set src "10.10.0.0/24"
-  set output-device "port3"
-  set gateway 198.51.100.1
- next
-end
-```
-
-اگر برگشت از Policy Route نداشته باشد، از مسیر پیش‌فرض می‌آید ⇒ نامتقارن.
-
-#### مثال سخت — Sniffer هم‌زمان
-
-روی FW1 و FW2 هم‌زمان:
-
-``` text
-FW1: SYN seen, ACK seen (after), SYN-ACK NOT seen
-FW2: SYN-ACK seen, SYN NOT seen
-```
-
-تفسیر: رفت از FW1 و برگشت از FW2. راه: Route/Policy Route یا Session Sync.
-
-#### Lab
-
-سرور دو کارته بسازید و Asymmetric را تولید و رفع کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| فقط بعضی کاربران | Policy Route | همه‌ی منابع |
-| فقط یک سرور | Multi-homed | ip rule |
-| متناوب | ECMP | Hash |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Multi-homed چه مشکلی؟** برگشت از کارت دیگر.
-**۲. proute list؟** مشاهده‌ی Policy Route.
-**۳. Sniffer دوطرفه چرا؟** مرز را نشان می‌دهد.
-
-#### English Corner
-
-- *Capture on both paths at once to see the asymmetry.*
-- Q: Why can a multi-homed server cause asymmetric routing?
 
 ## درس 23-2 — رفع Asymmetric: طراحی متقارن، Policy Route، SNAT، Session Sync و ریسک هر راه‌حل
 
@@ -2110,177 +1985,169 @@ FW2: SYN-ACK seen, SYN NOT seen
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. راه‌حل‌ها را با ریسک/هزینه مقایسه و برای سناریو انتخاب کند.
-2. Policy Route و SNAT را پیاده و آزمون کند.
-3. Hash متقارن/Active-Passive/Session Sync را توضیح دهد.
-4. اثر هر راه‌حل را روی Log/Inspection/Troubleshooting بسنجد.
-5. پیکربندی را با آزمون‌های مثبت/منفی اثبات کند.
+1. چهار راه‌حل رفع Asymmetric را بشناسید: طراحی متقارن، Policy Route، SNAT، Session Sync.
+2. ریسک هر راه‌حل را بسنجید.
+3. `asymroute` و `tcp-session-without-syn` را درست (و با آگاهی از ریسک) بشناسید.
+4. SNAT برای اجبار برگشت را پیاده کنید.
+5. HA/Session Sync را برای موازی‌سازی مقایسه کنید.
+6. توصیه‌ی طراحی بنویسید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا ترتیب راه‌حل مهم است؟** پنج راه‌حل داریم و هرکدام هزینه و ریسک دارد. اولویت پیشنهادی: ۱) **طراحی متقارن** (رفت و برگشت از یک فایروال) ۲) **Policy Route/SD-WAN Rule** هماهنگ ۳) **SNAT** (برگشت را به IP همان فایروال می‌برد) ۴) **Session Sync** (HA/ Cluster) ۵) **`asymroute`** (آخرین؛ بازرسی Stateful را سست می‌کند و Evidence امنیتی کم می‌شود).
+وقتی مسیر نامتقارن را تشخیص دادید، سه راه دارید: ۱) مسیر را متقارن کنید (بهترین)، ۲) فایروال را مجبور به پذیرش کنید (خطرناک)، ۳) Session را بین دو فایروال همگام کنید (پیچیده). مهندس خوب «راحت‌ترین» را انتخاب نمی‌کند؛ «ایمن‌ترین» را برمی‌گزیند. غیرفعال کردن کنترل‌ها چون «کار می‌کند» رایج‌ترین دام است.
 
-**SNAT چگونه کمک می‌کند؟** وقتی Source IP را به IP همان ISP/فایروال ترجمه می‌کنید، سرور مقصد پاسخ را به همان آدرس می‌فرستد و برگشت از همان مسیر می‌آید. هزینه: ردیابی IP واقعی کاربر در سرور مقصد سخت می‌شود (باید از Log فایروال استفاده کرد).
-
-**جمع‌بندی اصلی درس:**
-
-بعد از تشخیص Asymmetric باید راه‌حل را انتخاب کرد. اشتباه رایج: سریع‌ترین راه‌حل (`asymroute`/غیرفعال‌کردن چک‌ها) که امنیت را می‌خرد. ترتیب درست: ۱) طراحی متقارن، ۲) Sync یا Active-Passive، ۳) Policy Route/SNAT، ۴) استثنا با ریسک مستند.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) مقایسه
-
-| راه‌حل | چگونه | مزیت | ریسک/هزینه |
-|---|---|---|---|
-| متقارن‌سازی Route | Metric/Distance/BGP برای برگشت | ریشه‌ای | نیاز طراحی؛ کنترل روی Upstream |
-| Policy Route | مسیر مبتنی بر مبدأ/Interface | سریع | پیچیدگی؛ عیب‌یابی |
-| SNAT به IP یکتا | برگشت به همان فایروال | ساده | Log مبهم؛ Double NAT |
-| Session Sync/HA | Session کپی | حفظ Session | لایسنس/پیچیدگی؛ بار |
-| Hash متقارن | رفت/برگشت یک مسیر | مقیاس | وابسته به تجهیزات |
-| `asymroute` | عبور بدون State | رفع Drop | امنیت کم |
-
-#### ۲) Policy Route
+### راه‌حل ۱ — طراحی متقارن
 
 ``` text
-config router policy
-    edit 10
-        set input-device "port2"
-        set src "10.1.4.0/24"
-        set dst "0.0.0.0/0"
-        set output-device "wan1"
-        set gateway 198.51.100.1
-    next
-end
+Rule: forward and return must traverse the same firewall interface pair.
 ```
 
-اصل: Policy Route قبل از Routing Table ارزیابی می‌شود (۱۲-۰)؛ برای ترافیک برگشتی باید Interface ورودی و Source را طوری تعریف کنید که برگشت از همان مسیر برود.
-
-#### ۳) SNAT برای متقارن‌سازی
-
-SNAT خروجی با IP همان لینک باعث می‌شود Upstream پاسخ را به همان لینک بفرستد. در Dual-ISP: IP Pool هر WAN؛ در SD-WAN برای Sessionهای Failover Clear.
-
-#### ۴) Session Sync
-
-در HA A-P، Session به Secondary کپی می‌شود؛ در Active-Active/Cluster ممکن است Session را به همتا بدهند تا Asymmetric تحمل شود (محدودیت و لایسنس `Unverified`).
-
-#### ۵) فهرست بررسی انتخاب
-
-1. آیا می‌شود Route را متقارن کرد؟ (بله ⇒ همین.)
-2. اگر نه، آیا Session Sync دارید؟
-3. اگر نه، Policy Route/SNAT با مستندسازی.
-4. `asymroute` فقط موقت.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| ترتیب انتخاب | متقارن→Sync→PBR/SNAT→asymroute |
-| Log | مبهم نشود؛ NAT مستند |
-| Sync | لایسنس/پهنا |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — SNAT
-
-``` text
-config firewall policy
- edit 20
-  set nat enable
-  set ippool enable
-  set poolname "POOL-ISP-A"
- next
-end
-```
-
-برگشت به IP Pool ISP-A همان مسیر رفت.
-
-#### مثال متوسط — SD-WAN
-
-Rule با `mode manual` برای شبکه‌ی کاربران روی Member A؛ با SNAT برگشت هم از A.
-
-#### مثال سخت — Session Sync
-
-دو فایروال Active-Active با Session Sync: هر دو Session را می‌دانند و مسیر نامتقارن مجاز می‌شود. هزینه: ظرفیت و تأخیر لینک Sync؛ در ترافیک سنگین ممکن است گران باشد.
-
-#### مثال سخت — asymroute
+ابزارها: Policy Route/SD-WAN Rule برای ثابت‌کردن خروج، تنظیم Metric/Local-Pref در BGP/OSPF، یا ECMP با Hash سازگار (`source-dest-ip-based` برای دو جهت).
 
 ``` text
 config system settings
- set asymroute enable
+    set v4-ecmp-mode source-dest-ip-based
 end
 ```
 
-فقط موقت و با ثبت ریسک؛ پس از اصلاح طراحی حذف شود. آزمون: Sniffer نشان دهد دیگر بسته‌ی بی‌Session نمی‌رسد.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Policy Route برای 10.1.4.0/24 از wan1؛ پس از آن SYN/ACK به همان فایروال/Interface برمی‌گردد؛ آزمون: Sniffer و session list.
-
-**متوسط (تحلیل):** SNAT به IP Pool هر WAN: Dual-ISP؛ تحلیل: Session خروجی wan2 با IP ISP2 SNAT می‌شود و پاسخ به ISP2؛ مشکل: IP ثابت بانک؛ تصمیم: Pool/BGP یا پذیرش Re-login.
-
-**سخت (طراحی):** دو فایروال Active-Active پشت ECMP با ۴۰۰۰ Flow/s؛ نیاز: بدون Drop و با Inspection کامل. تحلیل: Session Sync پهنای HB بالا؛ Hash متقارن بهتر؛ تصمیم: Switch/Router با Hash متقارن (Symmetric hash) روی سمت Upstream/Downstream یا Active-Passive. معیار: Throughput، Complexity، SPOF. اگر Hash متقارن ممکن نیست: Active-Passive.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Network → Policy Routes → Create New.
-2. Policy & Objects → IP Pools / NAT در Policy.
-3. System → HA (Session pickup).
-4. Log & Report → Forward Traffic.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### راه‌حل ۲ — Policy Route
 
 ``` text
 config router policy
-    edit 10
+    edit 1
         set input-device "port2"
-        set src "10.1.4.0/24"
-        set output-device "wan1"
-        set gateway 198.51.100.1
+        set src "10.10.0.0/255.255.255.0"
+        set dst "198.51.100.0/255.255.255.0"
+        set output-device "port1"
+        set gateway 203.0.113.1
     next
 end
-config firewall ippool
-    edit "POOL-WAN1"
-        set type overload
-        set startip 198.51.100.10
-        set endip 198.51.100.10
-    next
-end
-diagnose sys session filter src 10.1.4.10
-diagnose sys session list
 ```
 
-### ۸) Verification (اثبات صحت)
+برگشت باید همان Interface؛ Policy Route فقط جهت رفت را کنترل می‌کند؛ برای برگشت: SNAT با IP همان لینک تا مقصد پاسخ را به همان لینک بفرستد.
 
-- آزمون ۲۰ اتصال: همه موفق.
-- Sniffer: رفت/برگشت روی یک مسیر.
-- Log: Session کامل در یک فایروال.
-- آزمون منفی: Flow نامعتبر Drop.
+### راه‌حل ۳ — SNAT
 
-### ۹) Troubleshooting
+اگر مبدأ را به IP لینک مشخص NAT کنید، پاسخ طبق Routing اینترنت به همان لینک می‌رسد:
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+``` text
+config firewall ippool
+    edit "POOL-ISP1"
+        set startip 203.0.113.2
+        set endip 203.0.113.2
+    next
+end
+config firewall policy
+    edit 140
+        set name "LAN-ISP1"
+        set srcintf "ZN-LAN"
+        set dstintf "port1"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set nat enable
+        set ippool enable
+        set poolname "POOL-ISP1"
+    next
+end
+```
+
+### راه‌حل ۴ — Session Sync / HA
+
+دو فایروال موازی با FGCP Active-Active یا FGSP (FortiGate Session Life Support Protocol):
+
+``` text
+config system standalone-cluster
+    set standalone-group-id 1
+    set group-member-id 1
+    config cluster-peer
+        edit 1
+            set peerip 10.99.99.2
+            set syncvd "root"
+        next
+    end
+end
+```
+
+(FGSP: Sessionها بین دو فایروال مستقل همگام می‌شوند؛ جزئیات سینتکس در مستند 7.0 بررسی شود؛ Unverified.)
+
+### گزینه‌ی «پذیرش»
+
+``` text
+config system settings
+    set asymroute enable
+end
+config system global
+    set tcp-session-without-syn enable
+end
+```
+
+`asymroute enable`: کنترل Asymmetric (RPF-like) سخت‌گیری کمتر؛ `tcp-session-without-syn enable`: بسته‌ی غیر-SYN بدون Session پذیرفته می‌شود. **ریسک:** فایروال دیگر State را به‌طور کامل اعمال نمی‌کند؛ UTM/NAT ممکن است درست کار نکند؛ حملات Spoofing/Session Injection. فقط راه‌حل موقت.
+
+### مقایسه
+
+| راه‌حل | امنیت | پیچیدگی | توصیه |
+|---|---|---|---|
+| طراحی متقارن | بالا | متوسط | اولین انتخاب |
+| Policy Route | بالا | کم | وقتی ساده است |
+| SNAT | بالا | کم | Dual-ISP |
+| Session Sync (FGSP/HA) | بالا | بالا | موازی Active-Active |
+| asymroute/tcp-session-without-syn | پایین | کم | فقط موقت |
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — SNAT برای Dual-ISP
+
+Policy ISP1 با Pool مخصوص IP ISP1؛ پاسخ به همان لینک. آزمون: `diagnose sys session list` ⇒ `act=snat ... (203.0.113.2)`.
+
+#### مثال متوسط — ECMP
+
+دو ISP Active-Active با ECMP: ترافیک Flow به Flow؛ SNAT با IP لینک خروجی تضمین می‌کند پاسخ برمی‌گردد. تنظیم `v4-ecmp-mode source-ip-based` برای ثبات.
+
+#### مثال متوسط — Policy Route
+
+شعبه‌ها: ترافیک ERP همیشه از Tunnel؛ بقیه از ISP محلی. Policy Route (یا SD-WAN Rule) خروج را ثابت می‌کند.
+
+#### مثال سخت — FGSP
+
+دو Edge موازی با Load Balancer بالادست. Asymmetric رایج. FGSP Sessionها را همگام می‌کند؛ پاسخ به هر Edge برسد، Session دارد. محدودیت: Sync UTM ناقص؛ لایسنس/مدل. آزمون: شکست یکی، Session ادامه.
+
+#### مثال سخت — دام asymroute
+
+مدیر `asymroute enable` کرد و مشکل «حل شد». سه ماه بعد حادثه: Spoofing از شبکه‌ی مهمان کنترل نشد (RPF خاموش). RCA: راه‌حل موقت دائمی شد. درس: ثبت تاریخ بازبینی و طرح جایگزین.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. SNAT با Pool.
+2. Policy Route.
+3. asymroute و مقایسه امنیتی.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| هنوز Drop | Sniffer | Policy Route/Match |
-| Log مبهم | Log | SNAT مستند |
-| بعضی Flowها | شمارش | Hash |
+| پاسخ از ISP دیگر | NAT/Policy | Pool |
+| ECMP گاهی کار | Hash | تنظیم |
+| asymroute | امنیت | طراحی |
+| Sync ناقص | FGSP | بررسی |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- ثبت هر استثنا.
-- Policy Route را مستند و بازبینی کنید.
+از `asymroute`/`tcp-session-without-syn` فقط موقت و مستند؛ RPF را حفظ کنید؛ Session Sync لینک ایزوله.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- ترتیب انتخاب: متقارن اول.
-- Policy Route/SNAT سریع ولی بدهی.
-- Sync هزینه دارد.
-- `asymroute` موقت.
+ترتیب راه‌حل: متقارن‌سازی، Policy Route، SNAT، Session Sync؛ غیرفعال‌سازی کنترل‌ها آخرین و موقت؛ ریسک هر راه‌حل را مستند کنید.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Policy Route چه کاری می‌کند؟ *(پاسخ: 23-2-ت1)*
 
@@ -2296,7 +2163,7 @@ diagnose sys session list
 
 **Q1.** Quick quiz (English): Why should symmetric routing be preferred over disabling stateful checks? *(پاسخ: 23-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2306,106 +2173,16 @@ diagnose sys session list
 
 - *Prefer symmetric design over workarounds.* ← طراحی متقارن را به راه‌حل‌های موقت ترجیح دهید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** رفع. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/asym-fix.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet Docs: Policy routes، IP pools (7.0)
 - RFC 2992 (ECMP analysis)
 
 <a id="l-23-3"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: راه‌حل‌ها
-
-۱) طراحی متقارن (بهترین) ۲) Policy Route منبع-مبنا ۳) SNAT به IP هر ISP ۴) در موارد ناگزیر `asymroute` (ریسک امنیتی). برای HA/موازی: Session Sync.
-
-``` text
-config system settings
- set asymroute enable
-end
-```
-
-هشدار: Asymroute بازرسی Stateful را سست می‌کند؛ آخرین راه.
-
-**پرسش‌های مصاحبه**
-1. *SNAT چگونه؟* برگشت به همان خروجی.
-2. *Policy Route؟* بر اساس منبع.
-3. *ریسک؟* Bypass بررسی.
-
-### تکمیل عمیق: رفع Asymmetric — طراحی متقارن، SNAT و گزینه‌ی آخر
-
-#### چرا؟
-
-رفع مسیر نامتقارن یک ترتیب اولویت دارد: ابتدا طراحی متقارن، سپس NAT، و در آخر سست‌کردن بازرسی.
-
-#### ترتیب راه‌حل‌ها
-
-1. **طراحی متقارن**: برگشت از همان فایروال رفت.
-2. **Policy Route / SD-WAN Rule**: خروج بر اساس منبع و برگشت هماهنگ.
-3. **SNAT**: برگشت به IP همان فایروال.
-4. **Session Sync / HA**: دو فایروال Session مشترک.
-5. **`asymroute`**: آخرین راه.
-
-#### مثال ساده — SNAT
-
-اگر کاربر از ISP-A خارج می‌شود، SNAT به IP-A باعث می‌شود سرور مقصد پاسخ را به IP-A بفرستد؛ پس از همان لینک برمی‌گردد.
-
-``` text
-config firewall policy
- edit 20
-  set nat enable
-  set ippool enable
-  set poolname "POOL-ISP-A"
- next
-end
-```
-
-#### مثال متوسط — SD-WAN
-
-قاعده‌ی SD-WAN با `mode manual` و عضو A برای 10.10.0.0/24؛ برگشت از همان Interface چون SNAT به IP عضو A.
-
-#### مثال سخت — دو فایروال موازی
-
-با Session Sync (HA Active-Active) هر دو فایروال Sessionها را می‌دانند و مسیر نامتقارن مجاز می‌شود. هشدار: Sync ظرفیت و تأخیر می‌خواهد؛ برای ترافیک سنگین ممکن است گران باشد.
-
-#### `asymroute` — هشدار
-
-``` text
-config system settings
- set asymroute enable
-end
-```
-
-بازرسی Stateful را برای بسته‌های بدون Session سست می‌کند و Evidence امنیتی کم می‌شود؛ فقط موقت و با ثبت ریسک.
-
-#### Lab
-
-یک Asymmetric ساخته‌شده را با SNAT رفع و Sniffer قبل/بعد را مقایسه کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| پس از SNAT هنوز Drop | Pool اشتباه | بررسی |
-| Sync کند | لینک ضعیف | لینک اختصاصی |
-| asymroute خطر | سست شدن | حذف پس از اصلاح |
-
-#### پرسش‌ها با پاسخ
-
-**۱. اولویت راه‌حل؟** متقارن‌سازی.
-**۲. چرا asymroute آخر؟** کاهش امنیت.
-**۳. SNAT چه می‌کند؟** برگشت را هدایت.
-
-#### English Corner
-
-- *Prefer symmetric design; use asymroute only as a last resort.*
-- Q: How does SNAT force a symmetric return path?
 
 ## درس 23-3 — چند فایروال سری و موازی: الگوها، NAT، Session، Failure Domain و مانیتورینگ
 
@@ -2413,119 +2190,127 @@ end
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. الگوهای سری، موازی Active-Passive، Active-Active و N+1 را مقایسه کند.
-2. NAT، Session و Policy را در هر الگو تحلیل کند.
-3. Failure Domain و Blast Radius را بسنجد.
-4. مانیتورینگ و عیب‌یابی چندفایروالی (Log مرکزی، Correlation) را طراحی کند.
-5. Change Management بین چند فایروال (یکنواختی Policy) را بنویسد.
+1. الگوهای چند فایروال (سری، موازی) را مقایسه کنید.
+2. NAT و Session را در هر الگو تحلیل کنید.
+3. Failure Domain (دامنه‌ی خرابی) را تعریف و حداقل کنید.
+4. فایروال سری را با دو سازنده (تنوع) توجیه کنید.
+5. فایروال موازی (Load-balanced) را با Session Sync طراحی کنید.
+6. مانیتورینگ و Rule Drift را مدیریت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا چند فایروال؟** برای تفکیک نقش (Edge/Internal) یا ظرفیت. دو الگو:
+دو فایروال می‌توانند مثل دو نگهبان پشت‌سر هم (سری) یا دو نگهبان کنار هم (موازی) باشند. سری امنیت لایه‌ای می‌دهد ولی دو نقطه‌ی خرابی و پیچیدگی NAT؛ موازی ظرفیت و دسترس‌پذیری می‌دهد ولی Asymmetric و Session Sync. انتخاب اشتباه یا بی‌دلیل، پیچیدگی را زیاد و امنیت را کم می‌کند.
 
-- **سری:** ترافیک از هر دو می‌گذرد (Users → Internal FW → Edge FW → Internet). مسیر طبیعی متقارن، ساده؛ NAT فقط یک‌جا.
-- **موازی:** بار تقسیم می‌شود؛ ظرفیت بیشتر ولی خطر نامتقارن؛ نیاز به Hash متقارن یا Session Sync.
-
-**قاعده‌ی N+1:** ظرفیت را طوری بگیرید که با افتادن یک دستگاه، بقیه بار کامل را بردارند.
-
-**جمع‌بندی اصلی درس:**
-
-با رشد شبکه، «یک فایروال» به چند فایروال تبدیل می‌شود: لبه + داخلی، موازی برای ظرفیت، یا چند سایت. هر الگو مزیت و مشکلی دارد؛ اگر نفهمید، Asymmetric، Double NAT و Policy ناهمگون می‌سازید.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) الگوها
-
-| الگو | هدف | الزام | ریسک |
-|---|---|---|---|
-| سری (Edge+Internal) | Defense in Depth | NAT فقط لبه؛ Policy هماهنگ | عیب‌یابی دو لایه |
-| موازی A-P | افزونگی | HA/Sync | ظرفیت ۱× |
-| موازی A-A | ظرفیت+افزونگی | Hash متقارن/Sync | پیچیدگی |
-| N+1 / Pool | مقیاس | Load balancer/ECMP متقارن | Session |
-| چندسایت | DR | Routing/Failover سایتی | Split-brain سایتی |
-
-#### ۲) Failure Domain
-
-اگر یک Policy اشتباه روی فایروال لبه بخورد: اثرش؟ (Blast radius). سری: دو لایه، لایه‌ی دوم هنوز محافظ است؛ موازی: اشتباه Sync شده روی هر دو (HA هم همین را کپی می‌کند). برای کاهش: Change مرحله‌ای (Canary)، آزمون Policy در Lab، Rollback.
-
-#### ۳) NAT و Session
-
-- NAT فقط در یک نقطه.
-- Session Table هر فایروال را مستقل پایش کنید.
-- در Active-Active مطمئن شوید هر Flow هر دو جهت یک فایروال می‌بیند.
-
-#### ۴) مانیتورینگ
-
-Log مرکزی (Syslog reliable) با NTP؛ Correlation بر پایه‌ی Session ID/5-tuple/Policy ID؛ داشبورد: CPU/Session/Interface هر فایروال؛ Alert بر Drift (Policy متفاوت بین جفت).
+### الگوی ۱ — سری (Edge + Internal)
 
 ``` text
-Policy drift check: diff(config firewall policy FW1, FW2) after each change window
+Internet -- [FW1 Edge] -- [FW2 Internal] -- LAN
 ```
 
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| ویژگی | توضیح |
 |---|---|
-| الگو | نیاز ظرفیت/افزونگی/دفاع |
-| Canary | تغییر روی یک فایروال ابتدا |
-| Drift | Diff دوره‌ای |
+| هدف | Defense in Depth، تفکیک DMZ/داخلی |
+| NAT | فقط Edge (جلوگیری از Double NAT) |
+| Session | هر دستگاه Session جدا؛ مسیر یکتا ⇒ Asymmetric ندارد |
+| خطر | دو Policy مستقل ⇒ Drift؛ هر دستگاه SPOF |
+| تنوع سازنده | امنیت بیشتر (آسیب‌پذیری مشترک کمتر) ولی مدیریت گران‌تر |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — محاسبه‌ی ظرفیت
+### الگوی ۲ — موازی (Load-sharing)
 
 ``` text
-Peak 6 Gbps, each FW (with UTM) = 4 Gbps
-Needed = 6 / 4 = 1.5 -> 2 firewalls
-N+1 -> 3 firewalls
+Internet -- [LB/Router] -- [FW-A]
+                         -- [FW-B] -- [LB/Switch] -- LAN
 ```
 
-#### مثال متوسط — NAT
+| ویژگی | توضیح |
+|---|---|
+| هدف | ظرفیت و دسترس‌پذیری |
+| Session | باید Hash سازگار (دو جهت) یا Session Sync |
+| خطر | Asymmetric (۲۳-۱) |
+| راه‌حل | ECMP با Hash متقارن، FGSP، یا HA Cluster |
 
-اگر NAT هم در Internal و هم در Edge باشد، Log دو IP دارد و ردیابی سخت می‌شود. قاعده: یک نقطه‌ی NAT.
+### الگوی ۳ — Cluster (HA)
 
-#### مثال سخت — خرابی یک فایروال موازی
+دو دستگاه به‌عنوان یک فایروال منطقی (FGCP): ساده‌ترین برای دسترس‌پذیری؛ Active-Active محدود.
 
-با Hash منبع و بدون Session Sync، خرابی یک فایروال Hash را دوباره توزیع می‌کند و Sessionهای موجود قطع می‌شوند. با Sync فقط Failover سریع.
+### Failure Domain
 
-#### مثال‌های اصلی درس (مرور)
+``` text
+Failure domain = set of services lost when one component fails
+```
 
-**ساده (حل‌شده):** سری: Edge Policy WAN→DMZ و Internal Policy DMZ→SRV؛ آزمون: درخواست از اینترنت تا DB؛ Log در هر دو.
+مثال: یک Edge FW تنها ⇒ دامنه = کل اینترنت؛ دو Edge موازی ⇒ نصف ظرفیت. طراحی هدف: دامنه‌ی خرابی کوچک و شناخته‌شده.
 
-**متوسط (تحلیل):** Double NAT: Log سرور همه‌ی مبدأ‌ها 10.20.0.1. رفع: NAT فقط Edge؛ Internal Routing؛ تأیید Log.
+### NAT و Session در سری
 
-**سخت (Failure domain):** تغییر Policy اشتباه روی هر دو فایروال موازی Sync شد و Block کامل. تحلیل: HA/Sync علت کپی خطا؛ پیشگیری: Change Canary (ابتدا یک فایروال در Window)، Backup و Rollback آماده، آزمون مثبت/منفی پس از Push.
+فقط Edge NAT. Internal بدون NAT ⇒ Log Internal IP واقعی کاربر را دارد؛ Edge IP ترجمه‌شده. اگر NAT دو جا باشد: ردیابی کاربر دشوار و Hairpin/DNS پیچیده.
 
-### ۸) Verification (اثبات صحت)
+### مانیتورینگ
 
-- Log هر دو فایروال برای یک Flow.
-- Diff Policy بدون Drift.
-- Failover آزمایشی.
+| سنجه | دلیل |
+|---|---|
+| CPU/Memory/Session | ظرفیت |
+| وضعیت HA/Heartbeat | افزونگی |
+| Policy Hit/Drift | سازگاری |
+| Latency بین‌دو FW | سری |
+| Sync Status | FGSP |
 
-### ۹) Troubleshooting
+### Rule Drift
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+در سری، Policy دو دستگاه باید منطقی هماهنگ باشد (مثلاً DMZ→Internal در Edge Deny و در Internal Allow؟ تناقض). ابزار: ماتریس Policy مشترک، Change هم‌زمان، بازبینی فصلی.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — انتخاب الگو
+
+ساختمان اداری ۲۰۰ نفر، دو اتصال اینترنت: HA Cluster Active-Passive (ساده‌ترین، بدون Asymmetric).
+
+#### مثال متوسط — سری برای DMZ
+
+Edge: اینترنت↔DMZ؛ Internal: DMZ↔LAN. NAT فقط Edge. Policy ماتریس. اگر Edge خراب: DMZ و اینترنت قطع؛ LAN داخلی ادامه (Failure Domain محدود).
+
+#### مثال متوسط — موازی با ECMP
+
+دو FW پشت دو Router با ECMP. ریسک Asymmetric. راه‌حل: Hash متقارن (`source-dest-ip`) یا FGSP. آزمون: Flow Hash در دو جهت.
+
+#### مثال سخت — دو سازنده سری
+
+Edge FortiGate و Internal دستگاه دیگر. مزیت: آسیب‌پذیری مشترک کمتر. هزینه: دو مهارت، دو لایسنس، Policy متفاوت. توجیه: داده‌ی بسیار حساس.
+
+#### مثال سخت — Drift
+
+Edge اجازه‌ی 443 به DMZ را دارد و Internal 8443؛ برنامه‌ی Web پورت را به 8443 تغییر داد؛ فقط Internal عوض شد ⇒ قطع. درس: Change هر دو و تست End-to-End.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. سه الگو را رسم و مقایسه کنید.
+2. Failure Domain هر الگو.
+3. Drift با ماتریس.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Drop تصادفی | Session | Asymmetric |
-| Log مبهم | Log | Double NAT |
-| Drift | Diff | Sync/Change |
+| Double NAT | NAT دو جا | فقط Edge |
+| Asymmetric | موازی | Hash/Sync |
+| Drift | دو Policy | ماتریس |
+| ظرفیت | موازی بدون LB | طراحی |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Policy مشابه روی همه‌ی فایروال‌ها؛ Change هماهنگ.
+Policy هر دو دستگاه حداقل؛ Sync لینک ایزوله؛ Log مرکزی با همبستگی دو دستگاه.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- الگو بر پایه‌ی نیاز.
-- NAT یک‌بار.
-- Failure domain و Canary.
-- Log مرکزی + Drift.
+سری برای عمق دفاعی، موازی برای ظرفیت (با Hash/Sync)، Cluster ساده‌ترین دسترس‌پذیری؛ NAT فقط یک‌جا؛ Failure Domain و Drift را مدیریت کنید.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا NAT فقط روی یک فایروال؟ *(پاسخ: 23-3-ت1)*
 
@@ -2541,7 +2326,7 @@ N+1 -> 3 firewalls
 
 **Q1.** Quick quiz (English): What is the main benefit of a canary change on multi-firewall designs? *(پاسخ: 23-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2551,91 +2336,16 @@ N+1 -> 3 firewalls
 
 - *Test changes on one firewall before rolling out.* ← تغییرات را ابتدا روی یک فایروال آزمایش کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** سری/موازی. **Evidence:** `02-design/multi-fw.md`.
 
-### ۱۵) منابع
+### منابع
 
 - NIST SP 800-41
 - Google SRE Book (Canarying)
 
 <a id="l-23-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: الگوهای سری و موازی
-
-سری: هر بسته از هر دو؛ NAT یک‌جا. موازی (Active-Active/ECMP): Session Sync یا Hash ثابت. **NAT:** فقط در یک نقطه.
-
-**پرسش‌های مصاحبه**
-1. *الگوی ساده‌تر؟* سری.
-2. *Load-balance؟* Hash منبع.
-3. *Sync؟* HA یا دستی.
-
-### تکمیل عمیق: چند فایروال سری و موازی — الگوها و NAT
-
-#### چرا؟
-
-در سازمان‌ها گاهی لازم است بیش از یک فایروال از مسیر ترافیک عبور کند؛ برای تفکیک نقش (Edge/Internal) یا ظرفیت. هر الگو مزایا و دام دارد.
-
-#### الگوی سری (Serial)
-
-``` text
-Users -> Internal FW -> Edge FW -> Internet
-```
-
-هر بسته از هر دو می‌گذرد؛ مسیر متقارن طبیعی است. NAT فقط در Edge. مزیت: ساده؛ عیب: دو نقطه‌ی شکست.
-
-#### الگوی موازی (Parallel)
-
-``` text
-Users -> {FW-A | FW-B} -> Internet
-```
-
-بار تقسیم می‌شود؛ خطر نامتقارن. راه: Hash منبع، یا HA Active-Active با Session Sync.
-
-#### مثال ساده — محاسبه‌ی ظرفیت
-
-``` text
-Peak traffic = 6 Gbps ; FW capacity (with UTM) = 4 Gbps each
-Need >= 6 / 4 = 1.5 -> 2 firewalls (parallel) + headroom for failure (N+1) -> 3
-```
-
-N+1: اگر یکی بیفتد دو دستگاه باقیمانده 8 Gbps دارند.
-
-#### مثال متوسط — NAT در سری
-
-اگر NAT هم در Internal و هم Edge باشد، Log دو IP دارد و ردیابی سخت است. قاعده: یک نقطه‌ی NAT.
-
-#### مثال سخت — خرابی یک‌جانبه
-
-در الگوی موازی با Hash منبع، یک FW می‌افتد؛ Hash دوباره توزیع می‌شود و Sessionهای موجود قطع می‌شوند (چون Session Sync نیست). با Sync فقط Failover سریع.
-
-#### Lab
-
-یک الگوی سری دو FW را بسازید و Session هر دو را مقایسه کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| دو IP در Log | دو NAT | یکی |
-| قطع در خرابی | Sync ندارد | Session Sync |
-| ظرفیت کم | UTM | N+1 |
-
-#### پرسش‌ها با پاسخ
-
-**۱. N+1 چیست؟** یک دستگاه اضافه.
-**۲. چرا یک NAT؟** ردیابی.
-**۳. موازی چه خطری؟** نامتقارن.
-
-#### English Corner
-
-- *Size for N+1 so a single failure does not cause overload.*
-- Q: Why should NAT happen at only one point?
 
 ## درس 23-4 — آزمون معماری ۵: چندفایروالی و مسیر نامتقارن — صورت مسئله، کلید پاسخ و Rubric
 
@@ -2643,129 +2353,130 @@ N+1: اگر یکی بیفتد دو دستگاه باقیمانده 8 Gbps دار
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. معماری سه‌فایروالی (Edge، Internal، DR) را با جدول مسیر طراحی کند.
-2. Asymmetric را تشخیص و با Capture دو سمتی اثبات کند.
-3. راه‌حل‌ها (Symmetric design، Session sync، PBR) را مقایسه و انتخاب کند.
-4. Failover بین فایروال‌ها را آزمون کند.
-5. گزارش و Rubric تحویل دهد.
+1. معماری چندفایروالی و مسیر نامتقارن را طراحی و تشخیص دهید.
+2. سه عیب تزریق‌شده را با Evidence رفع کنید.
+3. گزینه‌ی صحیح (متقارن‌سازی/SNAT/Session Sync) را توجیه کنید.
+4. RCA و ریسک گزینه‌ها را بنویسید.
+5. Rubric را اجرا کنید.
+6. صداقت را ثبت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا آزمون معماری ۵؟** یک سناریوی نامتقارن واقعی را از تشخیص تا رفع و اثبات دنبال می‌کند. روش پاسخ: ۱) شواهد (Sniffer دو سمت) ۲) علت ۳) راه‌حل متقارن ۴) آزمون مثبت و منفی ۵) ریسک راه‌حل.
+مشتریان معمولاً نمی‌گویند «Asymmetric»؛ می‌گویند «بعضی اتصال‌ها گاهی قطع می‌شود». شما باید نشانه‌ها را به معماری تبدیل کنید. این Gate سنجش همین مهارت است: دیدن علت در چند فایروال و چند مسیر و پیشنهاد راه‌حل ایمن.
 
-**جمع‌بندی اصلی درس:**
+### صورت مسئله
 
-با رشد سازمان یک مسیر دوم و فایروال دوم اضافه می‌شود. اگر مسیرها طراحی نشوند، بسته‌ی رفت از فایروال ۱ می‌رود و پاسخ از ۲ برمی‌گردد و Stateful آن را Drop می‌کند. معماری ۵ همین مسئله را در مقیاس چندفایروالی می‌سنجد.
+سازمان: دو Edge Firewall (E1، E2) موازی با دو ISP؛ پشت آن‌ها Core Switch. ترافیک با ECMP توزیع می‌شود. شکایت: «حدود ۳۰٪ اتصال‌های HTTPS به سایت‌های خارجی Timeout می‌شوند؛ DNS و ping مشکلی ندارند».
 
-### ۳) توضیح عمیق فنی
+عیب‌های تزریق‌شده:
 
-#### ۱) صورت مسئله
+1. ECMP با Hash مبتنی بر مبدأ فقط؛ Return از Edge دیگر.
+2. `asymroute` فعال شده توسط تیم قبلی بدون مستند.
+3. SNAT با IP ISP1 روی لینک ISP2.
 
-سایت اصلی دو فایروال (FW1، FW2) پشت دو ISP؛ سایت DR یک فایروال. شبکه‌ی داخلی 10.0.0.0/8 با OSPF. نیاز: خروج اینترنت از FW1 (ISP-A) و FW2 (ISP-B)؛ هر Session باید Symmetric باشد؛ خرابی یک فایروال بدون قطع طولانی.
+### کلید پاسخ — تشخیص
 
-#### ۲) طراحی مرجع
+1. Sniffer E1 و E2 هم‌زمان: SYN در E1، SYN-ACK در E2.
+2. Debug Flow E2: `no session matched`.
+3. Session E1: `SYN_SENT`.
+4. `show system settings | grep asymroute` ⇒ enable.
+5. Session NAT: `act=snat ... (203.0.113.2)` روی `port2` (ISP2).
 
-| مسئله | تصمیم |
+### کلید پاسخ — رفع
+
+**عیب ۱ (Hash):**
+
+1. علت: Hash فقط مبدأ؛ برگشت Hash دیگر.
+2. رفع: `set v4-ecmp-mode source-dest-ip-based` و Policy Route برای ثبات؛ یا Session Sync (FGSP).
+3. تأیید: Sniffer: SYN و SYN-ACK روی همان Edge.
+
+**عیب ۲ (`asymroute`):**
+
+1. علت: راه‌حل موقت قدیمی که مشکل را پنهان کرده و RPF را ضعیف.
+2. رفع: غیرفعال‌سازی پس از اصلاح تقارن؛ ثبت.
+3. تأیید: آزمون Spoofing/RPF در Lab.
+
+**عیب ۳ (SNAT):**
+
+1. علت: IP ISP1 روی لینک ISP2.
+2. رفع: Pool هر لینک با IP همان ISP.
+3. تأیید: Session `snat` با IP درست؛ پاسخ از لینک درست.
+
+### مقایسه‌ی راه‌حل‌ها
+
+| گزینه | امنیت | عملی بودن | تصمیم |
+|---|---|---|---|
+| Hash متقارن + SNAT | بالا | ساده | انتخاب نهایی |
+| FGSP | بالا | پیچیده | آینده |
+| asymroute | پایین | ساده | حذف |
+
+### Rubric (۱۰۰)
+
+| معیار | امتیاز |
 |---|---|
-| تقسیم ترافیک | بر اساس Source: Users→FW1، Servers→FW2 (PBR/Policy Route) |
-| Return Path | NAT مبدأ در هر فایروال با IP خودش؛ برگشت خودکار از همان |
-| Failover | OSPF Default از هر دو با Cost متفاوت؛ BFD |
-| Asymmetric | آزمون Capture؛ Session sync فقط برای HA جفت |
+| تشخیص با Evidence | 25 |
+| رفع سه عیب | 30 |
+| توجیه راه‌حل و ریسک | 20 |
+| آزمون و تأیید | 15 |
+| RCA/صداقت | 10 |
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Sniffer
 
 ``` text
-FW1 default originate cost 10 ; FW2 default originate cost 20
-Users 10.10.0.0/16 -> FW1 (PBR) ; Servers 10.20.0.0/16 -> FW2 (PBR)
+E1: port1 out SYN to 198.51.100.8
+E2: port1 in  SYN-ACK from 198.51.100.8
 ```
 
-#### ۳) خرابی‌ها و کلید
+نشانه‌ی کلاسیک.
 
-**A:** برخی Sessionها قطع. شاهد: Capture FW1 فقط SYN؛ FW2 فقط SYN-ACK. علت: Hash ECMP بین دو Default. رفع: PBR و Cost.
-
-**B:** پس از Failover FW1 همه‌ی Sessionها ریست. علت: Session sync نیست (فایروال‌ها Cluster نیستند). پذیرش: ریست قابل‌قبول؛ برای حساس‌ها FGCP A-P.
-
-**C:** ترافیک DR از مسیر اصلی می‌رود. علت: Cost OSPF. رفع: Policy Route و Cost.
-
-#### ۴) آزمون
+#### مثال متوسط — RCA
 
 ``` text
-diagnose sniffer packet any 'host 10.10.0.5 and tcp port 443' 4 20 l   (on FW1 and FW2)
-diagnose sys session list
-get router info routing-table all
+Impact  : ~30% HTTPS timeouts for 3 weeks
+Cause   : ECMP source-only hash + SNAT IP mismatch + asymroute masking
+Fix     : symmetric hash, per-link SNAT pool, asymroute disable
+Prevent : change checklist for dual-ISP; Sniffer on both Edges in acceptance test
 ```
 
-#### ۵) Rubric
+#### مثال متوسط — آزمون پذیرش
 
-طراحی ۲۰، جدول مسیر ۲۰، تشخیص ۳۰، Failover ۱۵، گزارش و صداقت ۱۵. قبولی ۷۵.
+۵۰ اتصال متوالی با `curl`؛ همه باید موفق (۱۰۰٪). قبل از رفع ۷۰٪؛ پس از رفع ۱۰۰٪.
 
-### ۴) طراحی و تصمیم‌گیری
+#### مثال سخت — سه عیب هم‌زمان
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| تقسیم | Source-based |
-| Failover | BFD+OSPF |
-| Session sync | فقط جفت HA |
+ترتیب: ابتدا SNAT (سطح پایین)، سپس Hash، سپس `asymroute` را در پایان خاموش کنید (تا پوشش مشکل برداشته نشود پیش از رفع). ثبت هر مرحله.
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+#### مثال سخت — صداقت
 
-#### مثال ساده — تشخیص
+Lab اجرا نشده؛ درصدها نمونه‌ی آموزشی؛ گزارش «Unverified».
 
-شعبه با دو ISP و دو فایروال؛ کاربران گاهی به برنامه‌ی مرکزی نمی‌رسند. Sniffer: FW1 SYN/ACK؛ FW2 SYN-ACK.
+### Lab هدایت‌شده (اجرا نشده)
 
-#### مثال متوسط — رفع
+1. سناریو را بسازید.
+2. سه عیب را رفع کنید.
+3. آزمون پذیرش.
 
-SNAT به IP-A روی FW1؛ در صورت نیاز Policy Route؛ در A-A: Session Sync.
+### عیب‌یابی سریع
 
-#### مثال سخت — اثبات و ریسک
-
-``` text
-for i in $(seq 1 100); do curl -s -o /dev/null -w "%{http_code}\n" https://app.example.com; done | sort | uniq -c
-```
-
-انتظار: ۱۰۰ × 200. ریسک SNAT: IP کاربر در سرور مقصد دیده نمی‌شود؛ جبران با Log فایروال. Rubric: تشخیص ۳۰، راه‌حل ۳۰، Evidence ۲۰، آزمون ۱۰، ریسک ۱۰.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Users از FW1: Session در FW1 با SNAT IP-A؛ برگشت همان؛ FW2 Session ندارد.
-
-**متوسط (Asymmetric):** Capture: FW1 SYN، FW2 SYN-ACK. رفع: PBR Users→FW1 و OSPF Cost؛ Capture بعدی روی FW1 هر دو جهت.
-
-**سخت (Failover):** FW1 خاموش: Users باید به FW2 بروند. مراحل: BFD تشخیص ۳ ثانیه؛ OSPF Default از FW2؛ Sessionهای فعال ریست؛ Sessionهای جدید از FW2؛ معیار: بازگشت سرویس < 10 ثانیه. ریسک: SNAT IP-B؛ لیست‌های مجاز مقصد باید IP-B را هم بپذیرند.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-get router info routing-table all
-diagnose sys session list
-diagnose firewall proute list
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Capture Symmetric.
-- Failover < 10 s.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| Session قطع | Capture | PBR |
-| DR از مسیر اصلی | Cost | Policy Route |
+| ۳۰٪ Timeout | Hash/SNAT | متقارن |
+| asymroute روشن | راه‌حل موقت | خاموش |
+| IP نادرست | Pool | اصلاح |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- SNAT دو IP را در لیست مجاز ثبت کنید.
+Gate معماری ۵: تشخیص Asymmetric با Sniffer دو Edge و Debug، رفع سه‌گانه (Hash، asymroute، SNAT)، مقایسه‌ی راه‌حل‌ها، RCA و صداقت.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- Symmetric با طراحی.
-- Failover BFD.
-- Capture اثبات.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا Source-based؟ *(پاسخ: 23-4-ت1)*
 
@@ -2781,7 +2492,7 @@ diagnose firewall proute list
 
 **Q1.** Quick quiz (English): How can you prove asymmetric routing with captures? *(پاسخ: 23-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2789,96 +2500,13 @@ diagnose firewall proute list
 
 - *Keep each session on one firewall.* ← هر Session را روی یک فایروال نگه دارید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** معماری ۵ (اجرا نشده). **Evidence:** `03-ops/arch5.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Routing; Session
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Rubric معماری ۵
-
-تشخیص ۳۰، راه‌حل متقارن ۳۰، Evidence ۲۰، آزمون ۱۰، ریسک ۱۰.
-
-**پرسش‌های مصاحبه**
-1. *Evidence؟* Sniffer + Debug.
-2. *ریسک راه‌حل؟* پیچیدگی.
-3. *آزمون منفی؟* قطع یک مسیر.
-
-### تکمیل عمیق: ارزیابی معماری ۵ — حل یک سناریوی نامتقارن کامل
-
-#### چرا؟
-
-این آزمون یک سناریوی واقعی را از تشخیص تا رفع و اثبات دنبال می‌کند.
-
-#### صورت مسئله
-
-شعبه با دو ISP و دو فایروال موازی؛ کاربران گاهی به برنامه‌ی مرکزی نمی‌رسند.
-
-#### گام ۱ — شواهد
-
-``` text
-FW1 sniffer: SYN, ACK seen ; no SYN-ACK
-FW2 sniffer: SYN-ACK seen ; no SYN
-```
-
-#### گام ۲ — علت
-
-رفت از ISP-A/FW1 و برگشت از ISP-B/FW2.
-
-#### گام ۳ — راه‌حل‌ها
-
-1. SNAT به IP-A روی FW1 (برگشت از ISP-A).
-2. در صورت نیاز Policy Route برای منابع.
-3. اگر Active-Active لازم است ⇒ Session Sync.
-
-#### گام ۴ — اثبات
-
-Sniffer نشان دهد هر دو جهت از یک FW؛ `curl` ۱۰۰ بار بدون خطا.
-
-``` text
-for i in $(seq 1 100); do curl -s -o /dev/null -w "%{http_code}\n" https://app.example.com; done | sort | uniq -c
-```
-
-انتظار: 100 × 200.
-
-#### Rubric
-
-``` text
-Diagnosis 30 | Symmetric solution 30 | Evidence 20 | Negative/regression test 10 | Risks 10
-```
-
-#### مثال سخت — ریسک راه‌حل
-
-SNAT پنهان می‌کند IP واقعی کاربر در Log سرور مقصد (همه‌ی کاربران یک IP). ریسک ردیابی؛ جبران: Log فایروال با Session و ثبت NAT.
-
-#### Lab
-
-سناریو را شبیه‌سازی کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| درصدی خطا | مسیر دوم | بررسی Route |
-| IP کاربر دیده نمی‌شود | SNAT | Log فایروال |
-| Sync کند | لینک | ارتقا |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا ۱۰۰ بار؟** خطای متناوب.
-**۲. ریسک SNAT؟** ردیابی.
-**۳. شاهد اصلی؟** Sniffer دوطرفه.
-
-#### English Corner
-
-- *Run repeated tests when the failure is intermittent.*
-- Q: What is the trade-off of using SNAT to fix asymmetry?
 
 ## پاسخ‌های فصل 23
 
