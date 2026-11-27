@@ -959,182 +959,152 @@ BGP برای سیاست و مقیاس؛ iBGP با RR روی Hub؛ Peering با L
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک مرجع؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Backhaul و Breakout را با معیار Latency/امنیت/هزینه/عملیات مقایسه و تصمیم‌گیری کند.
-2. Routing را طوری بنویسد که ترافیک سازمانی از Tunnel و اینترنت از ISP محلی برود (Longest Prefix Match).
-3. Policy اینترنت شعبه با NAT، Web/DNS/File Filter و IPS مناسب بنویسد.
-4. ترافیک SaaS را با FQDN/Internet Service Database جداسازی کند.
-5. Failover اینترنت شعبه را با Dual-ISP/SD-WAN طراحی کند.
-6. آزمون مثبت/منفی و Log را برای اثبات تفکیک مسیر انجام دهد.
+1. Backhaul (همه‌ی ترافیک به HQ) را با Local Breakout (خروج محلی اینترنت) مقایسه کنید.
+2. معیارهای تصمیم (تأخیر، پهنای باند، امنیت، هزینه) را وزن‌دهی کنید.
+3. Policy اینترنت شعبه را با UTM حداقلی و SaaS محلی بنویسید.
+4. ترافیک داخلی (ERP) را از Tunnel و SaaS را از ISP محلی هدایت کنید.
+5. NAT و DNS در Breakout را درست تنظیم کنید.
+6. Failover Breakout به Backhaul را طراحی کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Local Breakout؟** ترافیک اینترنت شعبه را از Tunnel به HQ ببریم (Backhaul) یا مستقیم از شعبه خارج کنیم؟ Backhaul کنترل متمرکز می‌دهد ولی تأخیر و بار HQ؛ Breakout تأخیر کم ولی امنیت باید در هر شعبه اعمال شود. راه میانی: SaaS معتبر Breakout، بقیه Backhaul.
+شعبه‌ی تبریز می‌خواهد Microsoft 365 را باز کند. اگر Backhaul باشد: بسته از تبریز با تونل به تهران می‌رود، از فایروال مرکزی بیرون می‌آید، به ابر می‌رسد و برمی‌گردد؛ تأخیر چند برابر و لینک HQ تحت فشار. Local Breakout یعنی تبریز مستقیم از ISP محلی بیرون برود. ولی هر شعبه‌ی «بیرون‌رو» یک لبه‌ی اینترنتی جدید است که باید امن شود. تصمیم برپایه‌ی ترازوی هزینه–ریسک–کارایی است.
 
-**جمع‌بندی اصلی درس:**
+### مقایسه
 
-در سازمان چندشعبه، ترافیک اینترنت دو مسیر دارد: **Backhaul** (از Tunnel به Hub و از آن‌جا به اینترنت) و **Local Breakout** (مستقیم از ISP شعبه). Backhaul کنترل متمرکز می‌دهد ولی تأخیر و بار روی Hub و لینک مرکز ایجاد می‌کند (و امروزه بیشتر ترافیک SaaS/Cloud است). Breakout سریع است ولی هر شعبه باید امنیتش را خودش تأمین کند. تصمیم باید **بر اساس نوع ترافیک** باشد، نه یک انتخاب سراسری.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) مقایسه‌ی کمی
-
-``` text
-Latency(branch->SaaS) backhaul = RTT(branch->hub) + RTT(hub->SaaS)
-Latency breakout       = RTT(branch->SaaS)
-Example: branch->hub 40 ms, hub->O365 15 ms  -> backhaul 55 ms vs breakout ~20-25 ms
-Hub bandwidth need (backhaul) = sum of branches' internet peak
-```
-
-مثال: ۲۰ شعبه × 30 Mbps اینترنت = 600 Mbps فقط برای اینترنت روی Hub (+ ترافیک سازمانی).
-
-#### ۲) ماتریس تصمیم
-
-| ترافیک | مسیر | دلیل |
+| معیار | Backhaul | Local Breakout |
 |---|---|---|
-| ERP/AD/File | Tunnel→Hub | داخلی؛ نیاز Policy مرکزی |
-| M365/SaaS مورد اعتماد | Breakout | Latency؛ بار Hub |
-| وب عمومی کاربران | Breakout + UTM محلی یا Backhaul برای گروه پرریسک | ریسک |
-| Guest | Breakout ایزوله | عدم دسترسی داخلی |
-| ترافیک سنگین بکاپ | Tunnel در ساعات غیرپیک یا Breakout به Cloud | هزینه |
+| تأخیر SaaS | بالا | پایین |
+| امنیت | متمرکز (یک نقطه) | توزیع‌شده (هر شعبه) |
+| پهنای HQ | فشار زیاد | آزاد |
+| پیچیدگی | کم | بیشتر |
+| دید/Log | یکجا | باید جمع شود |
+| هزینه | لینک HQ بزرگ | UTM در شعبه |
 
-#### ۳) Routing: چرا کار می‌کند؟
+الگوی رایج: **ترکیبی** — ترافیک داخلی از Tunnel؛ SaaS شناخته‌شده Local Breakout؛ بقیه‌ی اینترنت یا Breakout با UTM یا Backhaul بسته به سیاست.
+
+### معماری Policy
 
 ``` text
-0.0.0.0/0      via wan1 (branch ISP)         distance 10   (default)
-10.0.0.0/8     via Tunnel (dynamic/static)   (more specific wins by Longest Prefix Match)
-10.1.4.0/24    connected LAN
+Branch LAN -> ERP (10.0.0.0/16)    -> via IPsec tunnel (Route)
+Branch LAN -> M365/Zoom/Teams      -> local ISP (Internet Service DB/SD-WAN rule)
+Branch LAN -> other internet       -> local ISP + UTM (or backhaul)
+Guest      -> local ISP only (no tunnel, isolated)
 ```
 
-LPM اطمینان می‌دهد ترافیک 10.x از Tunnel و بقیه از Default می‌رود. مراقب Default Route از طریق Tunnel (Backhaul) در BGP: دو Default رقابت می‌کنند؛ Distance/Local-pref تعیین‌کننده است.
+### پیکربندی
 
-#### ۴) جداسازی SaaS
-
-- **FQDN Address Object** (نیاز DNS صحیح؛ مشکل: IPهای متغیر).
-- **Internet Service Database (ISDB)** برای سرویس‌های شناخته‌شده (Needs-License/به‌روزرسانی FortiGuard).
-- **SD-WAN Rule** برای هدایت SaaS به بهترین لینک (۲۱-۷).
-
-#### ۵) Policy و UTM شعبه
-
-حداقل: Web Filter + DNS Filter + File Filter؛ IPS سبک (Target=Client، Severity High+)؛ SSL Inspection انتخابی؛ Log `utm`. برای شعب کوچک مدل FortiGate محدودیت CPU دارد (Profile انتخابی).
-
-#### ۶) Failover
-
-Dual-ISP شعبه با SD-WAN (Health-check/SLA)؛ در قطع هر دو ISP: Failover اینترنت به Tunnel (Backhaul موقت) با Policy Route/Distance بالاتر (Default از Hub پشتیبان).
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Breakout یا Backhaul | بر اساس نوع ترافیک (جدول) |
-| شناسایی SaaS | ISDB (لایسنس) یا FQDN + DNS |
-| UTM شعبه | حداقل Web/DNS/File؛ IPS سبک؛ طبق CPU |
-| Default Route | محلی ترجیحی؛ Backhaul پشتیبان |
-| Log | مرکزی reliable |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-Backhaul 50 ms در برابر Breakout 20 ms ⇒ صرفه‌جویی 30 ms.
-
-#### مثال متوسط — SD-WAN Rule
-
-Office365 با Breakout محلی؛ بقیه به HQ.
-
-#### مثال سخت — امنیت شعبه
-
-با Breakout، UTM (Web Filter، IPS) و Log به مرکز لازم است.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Default Route محلی؛ Route 10.0.0.0/8 از Tunnel؛ Policy LAN→WAN با NAT و Web Filter. `traceroute` به example.com از ISP محلی؛ `traceroute` به ERP از Tunnel.
-
-**متوسط (حل‌شده):** M365 کند است: traceroute نشان می‌دهد از Hub می‌رود (Default از BGP Hub با Distance پایین‌تر). راه‌حل: Default محلی با Distance 10 و Default BGP با Distance 20؛ یا Policy Route/SD-WAN Rule برای M365 FQDN/ISDB. تحلیل: Latency از ۵۵ به ≈ ۲۵ ms.
-
-**سخت (تحلیل):** پس از Breakout، آلودگی بدافزار در شعبه گزارش می‌شود؛ شعبه UTM کامل نداشت. تحلیل ریسک: (۱) Profile حداقلی کافی نبود؛ (۲) Log مرکزی نداشتید؛ (۳) Hub UTM را دیده بود ولی اکنون دور زده شد. تصمیم: Breakout فقط برای SaaS مورد اعتماد (ISDB) و بقیه Backhaul یا UTM کامل محلی؛ Log مرکزی (Syslog)؛ EDR. معیار: ریسک × Latency × هزینه.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Network → Static Routes (Default محلی) و (Tunnel Route).
-2. Policy & Objects → Addresses → FQDN/Internet Service.
-3. Policy & Objects → Firewall Policy: LAN→WAN (NAT ✓) با Security Profiles.
-4. Network → SD-WAN → SD-WAN Rules (در صورت استفاده).
-5. Log & Report → Forward Traffic.
-
-### ۷) پیاده‌سازی از مسیر CLI
+Route:
 
 ``` text
 config router static
     edit 1
-        set gateway 198.51.100.1
-        set device "wan1"
-        set distance 10
+        set gateway 203.0.113.1
+        set device "port1"
     next
 end
-config firewall address
-    edit "FQDN-M365"
-        set type fqdn
-        set fqdn "outlook.office365.com"
-    next
-end
+```
+
+Policy اینترنت با NAT و UTM:
+
+``` text
 config firewall policy
-    edit 20
-        set name "BRANCH-Internet"
-        set srcintf "lan"
-        set dstintf "wan1"
-        set srcaddr "all"
+    edit 90
+        set name "LAN-to-INTERNET"
+        set srcintf "ZN-LAN"
+        set dstintf "port1"
+        set srcaddr "NET-BRANCH"
         set dstaddr "all"
         set action accept
         set schedule "always"
         set service "HTTP" "HTTPS" "DNS"
-        set nat enable
         set utm-status enable
-        set webfilter-profile "WF-STD"
         set ssl-ssh-profile "certificate-inspection"
-        set logtraffic utm
+        set webfilter-profile "WF-STD"
+        set dnsfilter-profile "DNS-STD"
+        set nat enable
+        set logtraffic all
     next
 end
-get router info routing-table details 8.8.8.8
-get router info routing-table details 10.0.5.20
 ```
 
-### ۸) Verification (اثبات صحت)
+Policy تونل (داخلی): بدون NAT.
 
-- `get router info routing-table details`: اینترنت از wan1، 10.x از Tunnel.
-- traceroute به SaaS و ERP.
-- Log Forward: Policy ID Breakout.
-- آزمون منفی: Guest→داخل Block.
-- اندازه‌گیری Latency قبل/بعد.
+برای SaaS: در FortiOS 7.0 از Internet Service Database (ISDB) در Policy/SD-WAN Rule استفاده می‌شود (Needs-License برای به‌روزرسانی DB).
 
-### ۹) Troubleshooting
+### DNS
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+شعبه باید DNS درست داشته باشد: نام‌های داخلی (corp.example) از DNS مرکزی (از طریق Tunnel)، سایر نام‌ها از DNS محلی/عمومی. `config system dns-database/forwarder` یا Conditional Forwarding روی DNS Server داخلی.
+
+### Failover
+
+اگر ISP محلی قطع شد: ترافیک اینترنت به Backhaul (Default از Tunnel با Distance بالا). 
+
+``` text
+config router static
+    edit 2
+        set dst 0.0.0.0 0.0.0.0
+        set device "TO-HUB1"
+        set distance 50
+        set priority 10
+    next
+end
+```
+
+Route محلی Distance 10 (اولویت)، Route Backhaul Distance 50 (پشتیبان).
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — تصمیم
+
+Teams از تهران با Backhaul 80ms و از تبریز Breakout 15ms. تصمیم: Breakout برای Teams.
+
+#### مثال متوسط — Split
+
+ERP 10.0.0.0/16 ⇒ Tunnel (Route خاص). Default ⇒ ISP محلی. `get router info routing-table details 10.0.5.10` ⇒ TO-HUB1؛ `... 52.96.0.1` ⇒ port1.
+
+#### مثال متوسط — NAT
+
+ترافیک Tunnel: `nat disable`؛ اینترنت: `nat enable`. اگر اشتباه شود ERP مبدأ NAT شده می‌بیند و ACL آن شکست می‌خورد.
+
+#### مثال سخت — امنیت شعبه
+
+بدون UTM در Breakout، یک لپ‌تاپ آلوده مستقیم به اینترنت می‌رود. UTM حداقلی: DNS Filter + Web Filter (Category) + IPS برای سرویس‌های ورودی (اگر VIP). Needs-License. جایگزین: Backhaul برای دسته‌های پرخطر (SD-WAN Rule بر پایه‌ی Application/Category).
+
+#### مثال سخت — Failover و Session
+
+ISP محلی قطع شد؛ Sessionهای اینترنت قطع می‌شوند (NAT منبع عوض شد). توضیح به کاربر: یک بار اتصال دوباره؛ Session Pickup فقط در HA. اندازه‌گیری: Failover زیر ۱۰ ثانیه با Link Monitor.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Split: ERP تونل، اینترنت محلی.
+2. NAT صحیح در هر Policy.
+3. Failover به Backhaul.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| ERP از اینترنت می‌رود | `routing-table details` | Route Tunnel نیست یا LPM؛ افزودن 10.0.0.0/8 |
-| SaaS هنوز از Hub | traceroute | Default BGP با Distance پایین؛ Policy Route/SD-WAN |
-| اینترنت کند پس از Breakout | Sniffer/Interface Errors | لینک ISP/UTM CPU |
-| Guest به داخل دسترسی دارد | nmap | Policy گسترده |
-| FQDN کار نمی‌کند | DNS | Resolve/Cache |
+| ERP خراب | NAT روی تونل | nat disable |
+| SaaS کند | Backhaul | Breakout |
+| اینترنت قطع بعد از قطع ISP | بدون Backup | Route پشتیبان |
+| DNS داخلی نه | Forwarder | شرطی |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Breakout بدون UTM = حفره؛ حداقل Profile.
-- Log مرکزی از هر شعبه.
-- Guest ایزوله.
+Breakout بدون UTM ممنوع؛ Guest ایزوله؛ Log مرکزی؛ بازبینی دسته‌های Breakout.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- تصمیم بر اساس نوع ترافیک.
-- LPM Tunnel/Default را تفکیک می‌کند.
-- SaaS با ISDB/FQDN/SD-WAN.
-- UTM محلی حداقلی.
-- Failover اینترنت→Tunnel.
+Backhaul در برابر Breakout با معیار؛ الگوی ترکیبی؛ NAT صحیح؛ DNS شرطی؛ Failover با Distance/Link Monitor؛ UTM در شعبه.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) مزیت اصلی Breakout چیست؟ *(پاسخ: 19-4-ت1)*
 
@@ -1150,7 +1120,7 @@ get router info routing-table details 10.0.5.20
 
 **Q1.** Quick quiz (English): Why does a more specific route to the headquarters win over a local default route? *(پاسخ: 19-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1161,89 +1131,16 @@ get router info routing-table details 10.0.5.20
 
 - *Break out trusted SaaS locally and keep sensitive traffic on the tunnel.* ← SaaS مورد اعتماد را محلی خارج کنید و ترافیک حساس را روی Tunnel نگه دارید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Breakout. **هدف:** تفکیک مسیر ERP/اینترنت. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/breakout.md`. **Rollback:** حذف Default محلی.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet Docs: SD-WAN، Static routes، Internet Service Database (7.0)
 - NIST SP 800-41
 
 <a id="l-19-5"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Backhaul در برابر Breakout
-
-| معیار | Backhaul به HQ | Local Breakout |
-|---|---|---|
-| تأخیر SaaS | بیشتر | کمتر |
-| کنترل امنیتی | متمرکز | هر شعبه UTM |
-| هزینه‌ی WAN HQ | بالا | پایین |
-
-راه میانی: SaaS Breakout محلی، بقیه Backhaul (SD-WAN Rule).
-
-**پرسش‌های مصاحبه**
-1. *Split Tunnel خطر؟* دور زدن امنیت.
-2. *Policy شعبه؟* حداقل UTM.
-3. *DNS؟* منطبق با مسیر.
-
-### تکمیل عمیق: Local Breakout در برابر Backhaul
-
-#### چرا؟
-
-ترافیک اینترنت شعبه را از Tunnel به HQ بفرستیم (Backhaul) یا مستقیم از شعبه خارج کنیم (Local Breakout)؟ جواب به تأخیر، هزینه و امنیت بستگی دارد.
-
-#### مقایسه
-
-| معیار | Backhaul | Local Breakout |
-|---|---|---|
-| کنترل امنیتی | متمرکز (HQ) | در هر شعبه |
-| تأخیر SaaS | بیشتر | کمتر |
-| پهنای باند HQ | زیاد مصرف | کم |
-| پیچیدگی | کم | متوسط |
-
-#### مثال ساده — تأخیر
-
-``` text
-Backhaul : branch -> HQ (30 ms) -> internet (20 ms) = 50 ms to SaaS
-Breakout : branch -> internet (20 ms) = 20 ms
-Saving   = 30 ms per request
-```
-
-#### مثال متوسط — راه میانی
-
-SaaS معتبر (Office365) با Breakout؛ بقیه Backhaul. با SD-WAN Rule و Application Control پیاده می‌شود.
-
-#### مثال سخت — امنیت شعبه
-
-با Breakout، شعبه باید UTM و Policy مستقل داشته باشد؛ در غیر این صورت سطح حمله بزرگ می‌شود. حداقل: Web Filter، IPS، Log به مرکز.
-
-#### Lab
-
-یک Policy Breakout با NAT و یک Policy Backhaul بنویسید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| DNS اشتباه | مسیر DNS | هماهنگ |
-| شعبه بی‌حفاظ | UTM نیست | پروفایل |
-| تأخیر زیاد | Backhaul | Breakout انتخابی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Split Tunnel خطر؟** دور زدن امنیت.
-**۲. چرا راه میانی؟** تعادل.
-**۳. DNS؟** باید با مسیر هماهنگ باشد.
-
-#### English Corner
-
-- *Local breakout lowers latency but moves security enforcement to the branch.*
-- Q: Which traffic would you break out locally?
 
 ## درس 19-5 — ADVPN در عمل: ساخت، فرایند Shortcut، BGP/OSPF، Policy، محدودیت‌ها و عیب‌یابی
 
@@ -1251,165 +1148,134 @@ SaaS معتبر (Office365) با Breakout؛ بقیه Backhaul. با SD-WAN Rule 
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک مرجع؛ Lab «اجرا نشده». طبق مستند: Hub `auto-discovery-sender`، Spoke `auto-discovery-receiver`، GUI برخی گزینه‌ها را ندارد؛ shortcut override از 7.0.4.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. ADVPN را با BGP (و مفهوماً OSPF) روی Hub و Spoke پیکربندی کند.
-2. فرایند ساخت Shortcut را گام‌به‌گام و با شواهد توضیح دهد.
-3. پیش‌نیازها (net-device، Selector، Policy Spoke-to-Spoke، Route) را بررسی کند.
-4. محدودیت‌ها (نسخه، NAT، Failover، Offload) را بشناسد.
-5. Shortcut ساخته‌نشده/Shortcut بدون اثر را عیب‌یابی کند.
-6. تصمیم ADVPN یا Hub-only را با معیار کمی بگیرد.
+1. ADVPN (Auto-Discovery VPN) را توضیح دهید: چرا و چگونه Spoke-to-Spoke مستقیم ساخته می‌شود.
+2. نقش Hub (sender) و Spoke (receiver) را تنظیم کنید.
+3. فرایند Shortcut (Shortcut Offer، Query، Tunnel مستقیم) را بخوانید.
+4. BGP/OSPF را برای ADVPN درست تنظیم کنید.
+5. ترافیک را قبل و بعد از Shortcut اثبات کنید.
+6. محدودیت‌ها و خطاها را عیب‌یابی کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا ADVPN؟** Spokeها بدون عبور از Hub مستقیم صحبت می‌کنند. شرط: IKEv2، Routing پویا و تنظیم Hub/Spoke. NAT دوگانه می‌تواند مانع شود.
+در Hub-and-Spoke ساده، ترافیک شعبه‌ی تهران به شعبه‌ی تبریز از Hub (مرکز) می‌گذرد: تأخیر زیاد و فشار روی Hub. تونل Full-Mesh برای ۵۰ شعبه ۱۲۲۵ تونل می‌خواهد؛ غیرعملی. ADVPN راه میانی است: ابتدا از Hub، و اگر ترافیک مستقیم بین دو شعبه دیده شد، **خودکار** یک Tunnel مستقیم (Shortcut) می‌سازد. مثل کوچه‌ی میان‌بر: ابتدا از میدان اصلی می‌روید، بعد که الگو معلوم شد، راه مستقیم باز می‌شود.
 
-**جمع‌بندی اصلی درس:**
-
-در Hub-and-Spoke خالص، ترافیک شعبه‌به‌شعبه دو بار از Hub عبور می‌کند (Latency و بار). ADVPN به Spokeها اجازه می‌دهد برای ترافیک مورد نیاز **Tunnel مستقیم** بسازند. مزیت: Latency کمتر، بار کمتر روی Hub؛ هزینه: پیچیدگی، وابستگی به نسخه، مشکل‌های NAT و Failover.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) مراحل فرایند
+### مراحل Shortcut
 
 ``` text
-1  Spoke A sends traffic to Spoke B's subnet -> follows route via Hub (iBGP learned)
-2  Hub forwards the traffic and (auto-discovery-sender) sends a shortcut message to A and B
-3  A and B negotiate an IPsec tunnel directly (shortcut); IKE between spokes
-4  Routing: shortcut tunnel gets a route/next-hop override; subsequent packets A->B go direct
-5  Idle shortcut times out; traffic returns via Hub
+1 Spoke1 -> Spoke2 traffic goes via Hub (hub-and-spoke path)
+2 Hub notices Spoke1/2 pair, sends "shortcut offer" to Spoke1
+3 Spoke1 sends query via Hub to Spoke2
+4 Spoke1 <-> Spoke2 negotiate a direct IPsec tunnel (shortcut)
+5 Later packets use direct tunnel; Hub only for routing/control
 ```
 
-#### ۲) پیکربندی‌های کلیدی (ساختار مستند 7.0.9)
-
-- **Hub Phase1:** `type dynamic`، `auto-discovery-sender enable`، `net-device disable` (با BGP طبق مستند)، `add-route disable`.
-- **Spoke Phase1:** `auto-discovery-receiver enable`، `net-device enable` یا طبق مستند نسخه.
-- **BGP:** Hub به‌عنوان RR با neighbor-group؛ Spokeها iBGP به Hub؛ در 7.0.4+ گزینه‌ی «shortcut override» و `tag-match`/`tag-and-best-match` برای Failover Shortcut.
-- **Policy:** Tunnel→Tunnel روی Hub (برای ترافیک اولیه)، Policy Spoke→Spoke (برای Shortcut).
-- **Selector:** باز.
-
-#### ۳) محدودیت‌ها و ریسک‌ها
-
-- GUI برخی گزینه‌ها را ندارد؛ CLI.
-- وابسته به نسخه/Build؛ رفتار Shortcut Override از 7.0.4 تغییر کرده است.
-- NAT بین Spokeها (Spoke پشت NAT): Shortcut سخت‌تر (NAT-T/Hole punching).
-- Failover: وقتی Shortcut قطع می‌شود ترافیک باید به Hub برگردد؛ Convergence و Route.
-- Offload/Performance: Tunnel مستقیم ممکن است Offload شود؛ ولی Interface پویا و Shortcut ممکن است Counters عجیب بدهد.
-
-#### ۴) تصمیم کمی
-
-``` text
-Spoke-to-spoke traffic share = S2S bytes / total bytes
-If S2S share > ~30% and hub bandwidth is constrained -> ADVPN or full mesh for selected pairs
-If branches <= ~10 -> hub-only is simpler
-```
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| ADVPN یا Hub-only | بر اساس سهم ترافیک S2S و تعداد شعب |
-| Routing | iBGP+RR (طبق مستند) |
-| نسخه | Patch 7.0.4+ برای Shortcut Override |
-| NAT | Spoke با IP عمومی/Port forward برای Shortcut |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — Hub
+### پیکربندی Hub
 
 ``` text
 config vpn ipsec phase1-interface
- edit "HUB"
-  set type dynamic
-  set auto-discovery-sender enable
- next
-end
-```
-
-Spoke: `auto-discovery-receiver enable`.
-
-#### مثال متوسط — Shortcut
-
-ترافیک A→B از Hub، Hub Shortcut Offer می‌دهد، Tunnel مستقیم ساخته و Route تغییر می‌کند.
-
-#### مثال سخت — Shortcut ولی Drop
-
-Policy Spoke↔Spoke نیست؛ افزودن Policy.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Spoke1→Spoke2: traceroute اول ۲ Hop (Hub سپس Spoke2)؛ پس از Shortcut ۱ Hop (مستقیم)؛ `diagnose vpn tunnel list` ⇒ Tunnel Shortcut با نام _0 و Peer Spoke2.
-
-**متوسط (تحلیل):** Shortcut ساخته نمی‌شود: فرضیه‌ها: (۱) `auto-discovery-receiver` روی Spoke فعال نیست؛ (۲) Policy Hub بین Tunnelها ترافیک را Drop می‌کند؛ (۳) Spokeها Route Spoke دیگر را ندارند (BGP)؛ (۴) NAT-T/UDP 4500 مسدود. شواهد: Debug IKE روی Spoke، Log Hub، `get router info bgp network`.
-
-**سخت (طراحی+تحلیل):** Shortcut ساخته می‌شود ولی ترافیک همچنان از Hub می‌رود: علت: Route BGP Next-hop Hub است و Shortcut Override (7.0.4+) فعال نیست؛ در 7.0.3 ممکن است نیاز به `set add-route`/Route Static یا ارتقا باشد. محدودیت 7.0.3 را در سند ثبت کنید. تصمیم: ارتقا به Patch جدیدتر (با Change) یا پذیرش Hub-only. ریسک ارتقا: CVE/Regression؛ آزمون در Lab.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. VPN → IPsec Tunnels: Tunnel Hub/Spoke (گزینه‌های ADVPN فقط CLI).
-2. Network → BGP: Neighbor/Neighbor Group.
-3. Policy & Objects: Policy Spoke→Spoke.
-4. Monitor → IPsec Monitor: Shortcutها.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-# HUB (sketch from the documented structure)
-config vpn ipsec phase1-interface
-    edit "HUB"
+    edit "HUB-VPN"
         set type dynamic
-        set auto-discovery-sender enable
+        set interface "port1"
+        set ike-version 2
         set net-device disable
+        set proposal aes256-sha256
+        set dhgrp 14
+        set psksecret <SECRET>
+        set auto-discovery-sender enable
         set add-route disable
     next
 end
-# SPOKE
-config vpn ipsec phase1-interface
-    edit "TO-HUB"
-        set remote-gw 203.0.113.1
-        set auto-discovery-receiver enable
-    next
-end
-diagnose vpn tunnel list
-diagnose vpn ike gateway list
-get router info bgp network
 ```
 
-### ۸) Verification (اثبات صحت)
+`auto-discovery-sender enable`: Hub به Spokeها Shortcut Offer می‌دهد. `net-device disable` همراه ADVPN توصیه می‌شود تا Interface منفرد مشترک بین Spokeها باشد (در 7.0 برای ADVPN با IKEv2 مستند را بررسی کنید).
 
-- traceroute Spoke→Spoke قبل/بعد (کاهش Hop).
-- `diagnose vpn tunnel list` شامل Shortcut.
-- Log Hub: shortcut message.
-- آزمون منفی: Policy Spoke→Spoke بسته ⇒ Shortcut بدون ترافیک.
-- پایان Shortcut پس از Idle و بازگشت به Hub.
+### پیکربندی Spoke
 
-### ۹) Troubleshooting
+``` text
+config vpn ipsec phase1-interface
+    edit "TO-HUB1"
+        set interface "port1"
+        set ike-version 2
+        set net-device enable
+        set proposal aes256-sha256
+        set dhgrp 14
+        set remote-gw 198.51.100.10
+        set psksecret <SECRET>
+        set auto-discovery-receiver enable
+        set add-route disable
+    next
+end
+```
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+`auto-discovery-receiver enable`: Spoke پیشنهاد Shortcut را می‌پذیرد.
+
+### Routing برای ADVPN
+
+BGP/OSPF باید **Next-hop** درست را برای Spoke2 بدهد تا Spoke1 بتواند Shortcut را به آن بسازد. با iBGP و RR: `next-hop-self` را روی RR **غیرفعال** نگه دارید تا Next-hop اصلی (Spoke2) حفظ شود؛ در غیر این‌صورت Hub Next-hop می‌شود و Shortcut ساخته نمی‌شود. (جزئیات مستند ADVPN 7.0 را بررسی کنید.)
+
+### تأیید
+
+``` text
+diagnose vpn tunnel list
+diagnose vpn ike gateway list
+get router info routing-table details 10.1.2.5
+diagnose sniffer packet any 'host 10.1.2.5' 4 10 a
+```
+
+قبل: مسیر از `TO-HUB1`. بعد: Tunnelی جدید (`TO-HUB1_0`) به Spoke2 مستقیم و Route به همان.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — دیدن Shortcut
+
+پنج بسته‌ی ping ابتدا از Hub می‌گذرد (TTL و Sniffer روی Hub)؛ بعد از Shortcut ping مستقیم: Sniffer Hub بسته‌ها را نمی‌بیند؛ Sniffer Spoke2 از IP عمومی Spoke1.
+
+#### مثال متوسط — Next-hop
+
+Shortcut ساخته نمی‌شود. بررسی: `get router info bgp network` ⇒ Next-hop برای 10.1.2.0/24 = Hub (RR با next-hop-self). رفع: `next-hop-self disable` روی RR یا `next-hop-self-rr`. آزمون: Next-hop = Spoke2.
+
+#### مثال متوسط — NAT
+
+Spoke پشت NAT: Shortcut نیازمند NAT-T و تبادل پورت؛ اگر دو سمت پشت NAT سخت (Symmetric) باشند، Shortcut شکست می‌خورد و ترافیک از Hub ادامه می‌یابد (بدون قطع). این رفتار Fail-safe است.
+
+#### مثال سخت — ترافیک نامتقارن
+
+Spoke1→Spoke2 مستقیم، Spoke2→Spoke1 هنوز از Hub (Shortcut یک‌طرفه) ⇒ Stateful drop. علت: Route نامتقارن/ `add-route`. رفع: هماهنگ Next-hop و `auto-discovery-receiver` در هر دو سمت. آزمون Sniffer هر دو جهت.
+
+#### مثال سخت — مقیاس
+
+۵۰ Spoke با Shortcutهای پویا؛ هر Spoke تا ۴۹ Tunnel پویا ممکن است. محدودیت Tunnel در مدل FortiGate (Datasheet). راه: Idle-timeout Shortcut، یا فقط ترافیک مشخص. پایش تعداد Tunnel.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Hub و دو Spoke با ADVPN.
+2. Shortcut را با Sniffer اثبات کنید.
+3. Next-hop اشتباه و رفع.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Shortcut ساخته نمی‌شود | Debug IKE/Phase1 flags | Sender/Receiver، Policy، NAT-T |
-| Shortcut هست ولی ترافیک Hub | Routing table | Shortcut override/Next-hop؛ نسخه |
-| Shortcut ناپایدار | Log | Idle Timeout/DPD/NAT |
-| Hub CPU بالا | `sys top` | تعداد Tunnel/ Rekey |
-| BGP Flap پس از Shortcut | Log BGP | Next-hop/Route سه‌گانه |
+| Shortcut نیست | Next-hop | RR |
+| یک‌طرفه | receiver/Route | هر دو |
+| پشت NAT | Symmetric NAT | از Hub |
+| Tunnel زیاد | مقیاس | timeout |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Policy Spoke→Spoke حداقلی؛ UTM در Shortcut نیز لازم است (Inspection غیرمتمرکز).
-- Shortcut ترافیک را از Hub دور می‌کند؛ Inspection مرکزی دور می‌شود.
-- Log Shortcutها را جمع کنید.
+Policy Spoke-to-Spoke صریح؛ Prefix-list؛ PSK/Certificate؛ Log Shortcut؛ محدودیت Shortcut.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- ADVPN = Shortcut پویا Spoke-to-Spoke با Sender/Receiver.
-- وابسته به نسخه و CLI.
-- ریسک: دور زدن Inspection مرکزی.
-- تصمیم بر پایه‌ی سهم ترافیک S2S.
-- Failover باید طراحی و آزمون شود.
+ADVPN: Hub-and-Spoke اول، Shortcut مستقیم پویا؛ sender/receiver؛ Next-hop درست در BGP/OSPF؛ اثبات با Sniffer؛ NAT سخت و مقیاس محدودیت‌اند.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چه چیزی روی Hub و چه چیزی روی Spoke فعال می‌شود؟ *(پاسخ: 19-5-ت1)*
 
@@ -1425,7 +1291,7 @@ get router info bgp network
 
 **Q1.** Quick quiz (English): What security trade-off does an ADVPN shortcut introduce? *(پاسخ: 19-5-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1436,11 +1302,11 @@ get router info bgp network
 - *ADVPN builds shortcut tunnels on demand between spokes.* ← ADVPN در صورت نیاز Tunnel میان‌بر بین Spokeها می‌سازد.
 - *Check the exact FortiOS patch level before relying on shortcut override.* ← پیش از اتکا به shortcut override سطح Patch را بررسی کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** ADVPN. **وضعیت:** اجرا نشده/Unverified؛ نیاز به سه VM FortiGate. **Evidence:** `03-ops/advpn.md`. **Rollback:** غیرفعال‌کردن sender/receiver.
 
-### ۱۵) منابع
+### منابع
 
 - [ADVPN and shortcut paths](https://docs.fortinet.com/document/fortigate/7.0.9/administration-guide/985659/advpn-and-shortcut-paths)
 - [ADVPN with BGP](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/820072/advpn-with-bgp-as-the-routing-protocol)
@@ -1448,202 +1314,156 @@ get router info bgp network
 
 <a id="l-19-6"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: فرایند Shortcut
-
-۱) Spoke A→B ترافیک از Hub ⇒ ۲) Hub به A و B Shortcut Offer ⇒ ۳) A و B Tunnel مستقیم ⇒ ۴) Routing به Shortcut.
-
-``` text
-diagnose vpn ike gateway list
-get router info routing-table all
-```
-
-محدودیت: NAT دوگانه می‌تواند مانع شود؛ UDP/4500 و پشتیبانی NAT-T.
-
-**پرسش‌های مصاحبه**
-1. *ADVPN مقیاس؟* کاهش بار Hub.
-2. *Shortcut زمان؟* چند ثانیه.
-3. *Policy؟* Spoke↔Spoke باید مجاز باشد.
-
-### تکمیل عمیق: ADVPN در عمل
-
-#### چرا؟
-
-ADVPN اجازه می‌دهد Spoke‌ها بدون عبور از Hub مستقیم صحبت کنند؛ ولی با شرایط: IKEv2، Routing پویا و تنظیم Hub.
-
-#### فرایند Shortcut
-
-1. Spoke A می‌خواهد به Spoke B برود؛ ترافیک از Hub می‌رود.
-2. Hub تشخیص می‌دهد و به A و B «Shortcut Offer» می‌دهد.
-3. A و B Tunnel مستقیم می‌سازند.
-4. Routing به Shortcut تغییر می‌کند.
-
-#### مثال ساده — تنظیم Hub
-
-``` text
-config vpn ipsec phase1-interface
- edit "HUB"
-  set type dynamic
-  set add-route disable
-  set auto-discovery-sender enable
- next
-end
-```
-
-و در Spoke: `set auto-discovery-receiver enable`.
-
-#### مثال متوسط — مشاهده‌ی Shortcut
-
-``` text
-diagnose vpn ike gateway list
-get router info routing-table all
-```
-
-باید Tunnel جدید `HUB_0` (Shortcut) دیده شود.
-
-#### مثال سخت — NAT دوگانه
-
-دو Spoke پشت NAT هستند؛ ساخت مستقیم شکست می‌خورد. راه: NAT-T و UDP/4500، یا IP عمومی ثابت؛ و اگر ممکن نبود، ترافیک از Hub می‌ماند (Fallback).
-
-#### Policy
-
-Spoke↔Spoke باید در Policy مجاز باشد؛ فراموشی آن «Shortcut ساخته می‌شود ولی ترافیک رد می‌شود».
-
-#### Lab
-
-Hub و دو Spoke؛ ترافیک بین Spokeها را مشاهده و Shortcut را ثابت کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Shortcut نمی‌سازد | IKEv2/تنظیم | بررسی |
-| Shortcut ولی Drop | Policy | افزودن |
-| NAT | NAT-T | پورت |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Shortcut چیست؟** Tunnel مستقیم.
-**۲. چرا Policy؟** ترافیک Spoke-Spoke.
-**۳. NAT دوگانه؟** سخت.
-
-#### English Corner
-
-- *ADVPN shortcuts still need a firewall policy between spokes.*
-- Q: What triggers the creation of an ADVPN shortcut?
-
 ## درس 19-6 — آزمون معماری ۴: چندشعبه با Failover — صورت مسئله، کلید پاسخ و Rubric
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰ تا ۱۹-۵ · ≈ 8 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک مرجع؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. معماری ۴ (HQ + ۳ شعبه + ۲ Hub) را از نیازمندی تا Evidence تحویل دهد.
-2. Convergence را اندازه‌گیری و با هدف مقایسه کند.
-3. سه عیب تزریق‌شده را با روش فرضیه‌محور رفع کند.
-4. گزارش RCA و Evidence Index بنویسد.
+1. معماری ۴ (HQ + سه شعبه + دو Hub) را از نیازمندی تا Evidence تحویل دهید.
+2. Convergence (زمان همگرایی) را اندازه‌گیری و با هدف مقایسه کنید.
+3. سه عیب تزریق‌شده را فرضیه‌محور رفع کنید.
+4. RCA و Evidence Index بنویسید.
+5. خود را با Rubric نمره بدهید و ضعف‌ها را ثبت کنید.
+6. صداقت در ثبت (اجرا نشده) را رعایت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا آزمون معماری ۴؟** ترکیب IP Plan، Routing، Failover و Evidence را می‌سنجد: ده شعبه، دو Hub، Failover کمتر از هدف.
+آزمون مثل «ماراتن کوچک» است: IP Plan، Overlay، Routing، Failover، Breakout و عیب‌یابی را در یک سناریو می‌سنجد. در دنیای واقعی مشتری نمی‌گوید «BGP خراب است»؛ می‌گوید «شعبه‌ی B به ERP نمی‌رسد». توانایی تبدیل علامت به علت در معماری کامل همین مهارت Gate است.
 
-**جمع‌بندی اصلی درس:**
-
-این درس آزمون عملی است: «صورت مسئله + کلید پاسخ + Rubric». کلید پاسخ پس از تلاش خودتان خوانده شود.
-
-### ۳) توضیح عمیق فنی
-
-#### صورت مسئله
+### صورت مسئله
 
 سازمان: HQ (Data Center) + سه شعبه (A، B، C). هر شعبه دو ISP. دو Hub (HQ1، HQ2). نیازمندی‌ها:
-- R1: IP Plan بدون Overlap، Summary منطقه‌ای.
-- R2: Overlay IPsec IKEv2 با iBGP+RR؛ Failover Hub < ۱۰ ثانیه.
-- R3: ERP از Tunnel؛ اینترنت Breakout با UTM حداقلی؛ SaaS محلی.
-- R4: Guest ایزوله.
-- R5: Backup/Restore و Evidence.
 
-عیب‌های تزریق‌شده (توسط مربی): ۱) Policy یک‌طرفه Tunnel↔LAN در شعبه B؛ ۲) Prefix-list خروجی اشتباه در شعبه C؛ ۳) MTU Tunnel شعبه A.
+1. R1: IP Plan بدون Overlap و Summary منطقه‌ای.
+2. R2: Overlay IPsec IKEv2 با iBGP + Route Reflector؛ Failover Hub کمتر از ۱۰ ثانیه.
+3. R3: ERP از Tunnel؛ اینترنت Local Breakout با UTM حداقلی؛ SaaS محلی.
+4. R4: Guest ایزوله.
+5. R5: Backup/Restore و Evidence.
 
-#### کلید پاسخ (خلاصه‌ی مورد انتظار)
+عیب‌های تزریق‌شده (توسط مربی):
 
-- IP Plan: Region /16، Tunnel /30، Loopback /32، Null route.
-- Failover: BFD 300×3 + Local-pref؛ اندازه‌گیری ≈ ۶ ثانیه.
-- عیب ۱: Bytes in صفر در B؛ Debug Flow «Denied policy 0»؛ رفع Policy.
-- عیب ۲: Route شعبه C به بقیه نمی‌رسد؛ `advertised-routes` Prefix اشتباه؛ رفع Prefix-list.
-- عیب ۳: ping بزرگ شکست؛ MSS Clamp 1360 / MTU 1400.
+1. Policy یک‌طرفه Tunnel↔LAN در شعبه B.
+2. Prefix-list خروجی اشتباه در شعبه C.
+3. MTU Tunnel در شعبه A.
 
-#### Rubric (۱۰۰)
-
-طراحی/IP Plan ۱۵؛ پیاده‌سازی Overlay/Routing ۲۰؛ Breakout/Policy ۱۵؛ Failover و اندازه‌گیری ۲۰؛ عیب‌یابی سه‌گانه با RCA ۲۰؛ Evidence/صداقت ۱۰.
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
+### کلید پاسخ — طراحی
 
 ``` text
-Tunnels = 10 x 2 = 20
+HQ        10.0.0.0/16
+Region A  10.1.0.0/16 (A=10.1.1.0/24, B=10.1.2.0/24, C=10.1.3.0/24)
+Tunnel    10.250.0.0/16 (/30 per tunnel)
+Loopback  10.254.0.0/24 (/32 each)
+AS        65000 (iBGP), Hub1/Hub2 = RR
+Null route 10.1.0.0/16 (distance 254) at hubs
 ```
 
-#### مثال متوسط
+Failover: BFD (300 ms × 3) + Local-Pref (Hub1=200، Hub2=100) ⇒ قطع Hub1 در ≈ ۱ ثانیه تشخیص + همگرایی BGP.
 
-قطع Hub1 ⇒ ترافیک Hub2؛ ping مداوم.
+### کلید پاسخ — سه عیب
 
-#### مثال سخت
+**عیب ۱ (Policy یک‌طرفه در B):**
 
-قطع Hub1 + MTU اشتباه روی Hub2 ⇒ Failover موفق ولی HTTPS کند؛ MSS Clamp. Rubric: IP plan ۲۰، Routing ۲۵، Failover ۲۵، Evidence ۲۰، گزارش ۱۰.
+1. علامت: LAN-B به ERP نمی‌رسد، HQ→B کار می‌کند.
+2. Evidence: `diagnose sys session filter dst 10.0.5.10` ⇒ Session نیست؛ Debug Flow: `Denied by forward policy check (policy 0)`.
+3. علت: Policy `TO-HUB → LAN` بدون Policy معکوس `LAN → TO-HUB`.
+4. رفع: افزودن Policy معکوس.
+5. تأیید: `iprope lookup` ⇒ policy؛ ping ERP OK.
 
-#### مثال‌های اصلی درس (مرور)
+**عیب ۲ (Prefix-list C):**
 
-**ساده:** Tunnelها Up و BGP Established؛ Evidence: خروجی `summary`.
+1. علامت: شعبه‌ی C به بقیه نمی‌رسد؛ بقیه C را نمی‌بینند.
+2. Evidence: `get router info bgp neighbors <hub> advertised-routes` ⇒ 10.1.30.0/24 به‌جای 10.1.3.0/24.
+3. علت: Prefix-list خروجی دارای Prefix اشتباه (تایپ).
+4. رفع: اصلاح و `execute router clear bgp ip <hub> soft out`.
+5. تأیید: Hub `get router info bgp network` ⇒ 10.1.3.0/24.
 
-**متوسط:** قطع Hub1؛ ping پیوسته؛ ۶ ثانیه؛ جدول اندازه.
+**عیب ۳ (MTU در A):**
 
-**سخت:** سه عیب با RCA کامل؛ هر RCA: علامت، Timeline، شواهد، علت، رفع، پیشگیری.
+1. علامت: ping کوچک OK، فایل بزرگ قطع.
+2. Evidence: `ping -f -l 1400` شکست؛ Sniffer: SYN `mss 1460`.
+3. علت: بدون MSS Clamp، PMTUD بلاک.
+4. رفع: Clamp 1360 و MTU تونل 1400.
+5. تأیید: SYN با `mss 1360`، دانلود کامل.
 
-### ۷) پیاده‌سازی از مسیر CLI
+### اندازه‌گیری Convergence
 
 ``` text
-get router info bgp summary
-get router info routing-table all
-diagnose vpn tunnel list
-diagnose debug flow filter addr 10.2.0.10
-diagnose debug flow trace start 10
+Run: ping -t 10.0.5.10 (from Branch A)
+Cut Hub1 link at t0
+Measure: first lost reply -> first restored reply
+Result example: 4.2 s   (target < 10 s)
 ```
 
-### ۸) Verification (اثبات صحت)
+گزارش: میانگین سه تکرار.
 
-- Evidence Index: فهرست دستور/خروجی/زمان برای هر نیاز.
-- اندازه‌گیری Convergence با جدول.
-- آزمون‌های منفی (Guest، Prefix غیرمجاز).
-- Backup قبل/بعد.
+### Rubric (۱۰۰)
 
-### ۹) Troubleshooting
+| معیار | امتیاز |
+|---|---|
+| طراحی/IP Plan | 15 |
+| Overlay/Routing | 20 |
+| Breakout/Policy | 15 |
+| Failover و اندازه‌گیری | 20 |
+| عیب‌یابی سه‌گانه با RCA | 20 |
+| Evidence/صداقت | 10 |
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+### مثال‌های حل‌شده
+
+#### مثال ساده — IP Plan
+
+بدون Overlap؛ Summary /16 با Null route. نمره‌ی کامل بخش طراحی.
+
+#### مثال متوسط — RCA عیب ۲
+
+``` text
+Impact   : Branch C isolated from overlay, 25 min
+Cause    : outbound prefix-list typo 10.1.30.0/24
+Fix      : correct prefix, soft-out clear
+Prevent  : config review + route-advertisement test in change checklist
+```
+
+#### مثال متوسط — Evidence Index
+
+| عیب | فایل Evidence | دستور |
 |---|---|---|
-| Convergence بیش از هدف | Timeline | BFD/MRAI/Local-pref |
-| Evidence ناقص | Index | تکمیل |
-| عیب ۲ کشف نشد | advertised-routes | Prefix-list |
+| ۱ | ev1_flow.txt | debug flow |
+| ۲ | ev2_bgp.txt | advertised-routes |
+| ۳ | ev3_ping_mss.txt | ping DF، sniffer |
 
-### ۱۰) نکات امنیتی
+#### مثال سخت — دو عیب هم‌زمان
 
-- Secret در Evidence پاک شود.
-- تزریق عیب فقط در Lab.
+B و C هم‌زمان خراب. ترتیب: اول عیب‌ای که مانع دسترسی HQ می‌شود؛ هر رفع را جدا آزمون و ثبت. اگر هم‌زمان تغییر دهید، علت قابل‌اثبات نیست.
 
-### ۱۱) جمع‌بندی مفهومی
+#### مثال سخت — صداقت
 
-- آزمون = طراحی + پیاده‌سازی + اندازه‌گیری + RCA.
-- Evidence جزء نمره است.
-- صداقت: آنچه اجرا نشده «اجرا نشده».
+Lab اجرا نشده است. گزارش باید بنویسد «خروجی‌ها نمونه‌ی آموزشی/Unverified» نه ادعای اجرا؛ نمره‌ی Evidence/صداقت به همین بستگی دارد.
 
-### ۱۲) تمرین و ارزیابی
+### Lab هدایت‌شده (اجرا نشده)
+
+1. سناریو را بسازید.
+2. سه عیب را رفع و Evidence جمع کنید.
+3. Convergence را اندازه‌گیری کنید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| Failover کند | Timer | BFD |
+| یک شعبه ایزوله | Prefix/Policy | advertised-routes |
+| فایل بزرگ | MTU | Clamp |
+
+### جمع‌بندی
+
+آزمون معماری: طراحی، Overlay، Failover، Breakout و سه عیب. Evidence، RCA و صداقت (اجرا نشده/Unverified).
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا Summary و Null route در IP Plan آزمون آمده است؟ *(پاسخ: 19-6-ت1)*
 
@@ -1659,7 +1479,7 @@ diagnose debug flow trace start 10
 
 **Q1.** Quick quiz (English): What is the purpose of the evidence index in an architecture exam? *(پاسخ: 19-6-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1669,83 +1489,14 @@ diagnose debug flow trace start 10
 
 - *Measure convergence and compare it with the target.* ← Convergence را اندازه بگیرید و با هدف مقایسه کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** آزمون A4. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/a4.md`.
 
-### ۱۵) منابع
+### منابع
 
 - درس‌های ۱۹-۱ تا ۱۹-۵
 - RFC 4271، RFC 2328
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Rubric آزمون چندشعبه
-
-خرابی‌های تزریقی: قطع Hub اصلی، Route ناقص، MTU. شاخص: Failover < مقدار هدف، Evidence با `get router info`، گزارش RCA.
-
-**پرسش‌های مصاحبه**
-1. *Failover زمان؟* BFD/Dead timer.
-2. *چگونه اثبات؟* قطع کنترل‌شده و ping مداوم.
-3. *ثبت؟* Timeline.
-
-### تکمیل عمیق: آزمون معماری ۴ — چندشعبه با Failover
-
-#### چرا؟
-
-این آزمون ترکیب IP Plan، Routing، Failover و Evidence را می‌سنجد.
-
-#### صورت مسئله
-
-۱۰ شعبه، دو Hub، OSPF/BGP، Failover زیر ۱۰ ثانیه، IP Plan بدون Overlap.
-
-#### کلید
-
-1. IP Plan و Summary.
-2. Tunnelها (2 به ازای Spoke).
-3. Routing با Cost/Local-pref.
-4. آزمون: قطع Hub1 ⇒ ترافیک از Hub2.
-5. Evidence.
-
-``` text
-Tunnels = spokes x hubs = 10 x 2 = 20
-Failover = detect + converge ; measure with ping
-```
-
-#### Rubric
-
-``` text
-IP plan 20 | Routing 25 | Failover 25 | Evidence 20 | Report 10
-```
-
-#### مثال سخت — خرابی تزریقی
-
-قطع Hub1 + MTU اشتباه روی Tunnel Hub2 ⇒ Failover موفق ولی HTTPS کند. شاهد: `ping -f`. رفع: MSS Clamp.
-
-#### Lab
-
-آزمون را کامل و شواهد را ثبت کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Failover دیر | Timer | BFD |
-| کند پس از Failover | MTU | MSS |
-| Route نامعلوم | Summary | بررسی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا ۲۰ Tunnel؟** هر Spoke دو Hub.
-**۲. Evidence Failover؟** ping + routing.
-**۳. MSS؟** جلوگیری از Fragmentation.
-
-#### English Corner
-
-- *Measure failover time with continuous ping during the test.*
-- Q: Why can HTTPS be slow after a failover?
 
 ## پاسخ‌های فصل 19
 
