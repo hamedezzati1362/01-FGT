@@ -215,6 +215,14 @@ R-02 -> HLD §4.1 (DMZ zone) -> LLD Policy 61 -> Test T-09..T-18 -> Evidence E-0
 2. *Acceptance؟* تعریف شده.
 3. *Out-of-scope؟* ثبت.
 
+### مثال حل‌شده: Traceability
+
+| Req | Design | Test | Evidence |
+|---|---|---|---|
+| R1 اینترنت Users | Policy 20 | T1 curl | Log+Session |
+| R2 DMZ فقط 443 | VIP+Policy | T2 nmap | خروجی nmap |
+| R3 Failover < 5 s | HA/SD-WAN | T3 قطع لینک | ping Loss |
+
 ## درس 31-1 — Capstone I: نیازمندی‌ها و سند طراحی سطح بالا (HLD) — با نمونه‌ی کامل
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰، همه‌ی Gateها · ≈ 8 ساعت**
@@ -358,6 +366,13 @@ Consequences: need UTM at branch; central logging required; review quarterly
 1. *HLD در برابر LLD؟* سطح جزئیات.
 2. *ریسک؟* فهرست و کاهش.
 3. *فرضیات؟* ثبت.
+
+### مثال حل‌شده: بخش ریسک HLD
+
+| ریسک | احتمال | اثر | کاهش |
+|---|---|---|---|
+| قطع ISP | متوسط | زیاد | Dual-ISP |
+| خطای Policy | زیاد | متوسط | Review+Lookup |
 
 ## درس 31-2 — Capstone I: طراحی تفصیلی (LLD) — جدول Interface/Route/Policy/VPN و ماتریس ردیابی
 
@@ -534,6 +549,16 @@ end
 2. *Naming؟* قرارداد.
 3. *Review؟* همتا.
 
+### مثال حل‌شده: جدول Interface
+
+``` text
+Edge port1 203.0.113.2/29 WAN
+Edge port2 10.30.0.1/24 DMZ
+Int  port2 10.10.0.1/24 USERS
+```
+
+بازبینی: هیچ دو Interface هم‌پوشان نباشند؛ Gateway داخل همان Subnet.
+
 ## درس 31-3 — Capstone II: ساخت مرحله‌ای (S1–S6) با Checkpoint، دستورهای واقعی، آزمون هر مرحله و Rollback
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۲ · ≈ 8 ساعت**
@@ -699,6 +724,10 @@ S1–S6 با Checkpoint؛ هر مرحله Verify قبل از بعدی.
 2. *Rollback؟* هر مرحله.
 3. *Evidence؟* ثبت.
 
+### مثال حل‌شده: Checkpoint S2
+
+پس از ساخت Edge: ping به GW، Lookup Policy، `get router info routing-table all`؛ فقط در صورت موفقیت به S3.
+
 ## درس 31-4 — Capstone II: آزمون کامل، Evidence Index نمونه‌ی پر، تحلیل سه خرابی و Sign-off
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰ تا ۳۱-۳ · ≈ 11 ساعت**
@@ -843,6 +872,12 @@ Index شواهد: شماره‌ی آزمون، دستور، خروجی، زما�
 1. *Negative؟* لازم.
 2. *Repeatability؟* تکرارپذیر.
 3. *Sign-off؟* مالک.
+
+### مثال حل‌شده: ردیف Evidence
+
+``` text
+ID T2 ; cmd nmap -p 22,80,443 203.0.113.3 ; 2026-11-27 10:15 ; 443 open, others filtered ; PASS
+```
 
 ## درس 31-5 — Capstone II: Runbook کامل نمونه، Handover و آزمون Runbook توسط همکار
 
@@ -989,6 +1024,16 @@ diagnose sys sdwan health-check
 2. *Handover؟* مستند.
 3. *نسخه؟* کنترل.
 
+### مثال حل‌شده: مرحله‌ی Runbook
+
+``` text
+Step 4 Restore config
+ Pre : backup file hash matches
+ Do  : execute restore config ...
+ Verify: get system status ; ping GW
+ Rollback: previous backup
+```
+
 ## درس 31-6 — ارزیابی Capstone I و II: ارائه، Q&A، سؤال‌های دفاع و Rubric تفصیلی
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰ تا ۳۱-۵ · ≈ 11 ساعت**
@@ -1133,6 +1178,10 @@ Improvement: run T-12/T-15 in lab; verify commands
 1. *صداقت محدودیت؟* بله.
 2. *Demo؟* Lab.
 3. *بهبود؟* پیشنهاد.
+
+### مثال حل‌شده: پاسخ به «Evidence کجاست؟»
+
+اشاره به Index شواهد، شماره‌ی T، فایل Log و زمان؛ و در صورت اجرا نشدن، صراحتاً «اجرا نشده/تأیید مستندی».
 
 ## پاسخ‌های فصل 31
 
@@ -1523,6 +1572,12 @@ Owner (مالک سرویس)، Implementer (مجری)، Reviewer (بازبین ف
 2. *Freeze؟* دوره‌ی حساس.
 3. *CMDB؟* منبع حقیقت.
 
+### مثال حل‌شده: دسته‌بندی Change
+
+- افزودن سرور به Address Group: Standard.
+- Policy جدید برای پروژه: Normal (CAB).
+- بستن IP مهاجم در حادثه: Emergency با بازبینی پس از ۲۴ ساعت.
+
 ## درس 32-1 — Capstone III: عملیات روزانه و Change Management (ITIL) — فرایند، قالب CHG و مثال کامل
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۰ · ≈ 11 ساعت**
@@ -1690,6 +1745,12 @@ diagnose firewall iprope lookup 10.30.2.50 40000 10.30.3.10 1433 tcp ZN-APP
 2. *SLA؟* پاسخ/حل.
 3. *بهبود؟* Post-review.
 
+### مثال حل‌شده: Handover شیفت
+
+``` text
+Open tickets: 3 ; Alerts: CPU warn FW2 ; Pending change: CHG-114 tonight 23:00 ; Backups: OK
+```
+
 ## درس 32-2 — Capstone III: شبیه‌سازی حادثه کامل — سناریو، نقش‌ها، Timeline نمونه، MTTD/MTTR و PIR
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۰، ۲۹-۴ · ≈ 11 ساعت**
@@ -1844,6 +1905,13 @@ Timeline نمونه: T0 هشدار، T+5 تأیید، T+15 مهار، T+60 با�
 1. *Roles؟* Incident Commander.
 2. *ارتباط؟* دوره‌ای.
 3. *Evidence؟* حفظ.
+
+### مثال حل‌شده: Timeline
+
+``` text
+10:00 alert ; 10:05 triage ; 10:15 contain ; 10:50 recover ; next day PIR
+```
+نقش‌ها: Incident Commander، Ops، Comms، Scribe.
 
 ## درس 32-3 — Capstone IV: مهاجرت/ارتقای کامل در Lab — Plan زمان‌بندی‌شده، Post-check، Rollback و گزارش
 
@@ -2016,6 +2084,10 @@ Plan زمان‌بندی، Rollback، آزمون پیش/پس؛ مسیر ارتق
 2. *Backup؟* قبل.
 3. *Release Notes؟* بررسی.
 
+### مثال حل‌شده: مسیر ارتقا
+
+نسخه‌ی فعلی ← با Upgrade Path Tool رسمی Fortinet مسیر را بگیرید (ممکن است مرحله‌ای باشد)؛ Backup، آزمون در Lab، پنجره‌ی تغییر، Verify، Rollback.
+
 ## درس 32-4 — ارزیابی نهایی و Portfolio: ماتریس مهارت، تحلیل شکاف، نگاشت نقش و نمونه‌ی Portfolio
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: کل دوره · ≈ 11 ساعت**
@@ -2162,6 +2234,14 @@ Plan زمان‌بندی، Rollback، آزمون پیش/پس؛ مسیر ارتق
 2. *Gap؟* برنامه.
 3. *Evidence؟* Link.
 
+### مثال حل‌شده: ماتریس مهارت
+
+| حوزه | سطح | Evidence |
+|---|---|---|
+| Policy/NAT | تسلط | Lab |
+| IPsec | متوسط | مستندی |
+| HA | آشنا | اجرا نشده |
+
 ## درس 32-5 — Roadmap یادگیری بعدی: مسیر گواهی، Labهای اجرا نشده، Automation و برنامه‌ی ۶ ماهه
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۴ · ≈ 11 ساعت**
@@ -2304,6 +2384,10 @@ Plan زمان‌بندی، Rollback، آزمون پیش/پس؛ مسیر ارتق
 1. *اولویت؟* هدف شغلی.
 2. *Lab؟* منظم.
 3. *جامعه؟* مستندات.
+
+### مثال حل‌شده: برنامه‌ی ۹۰ روزه
+
+ماه ۱: مرور مبانی و Lab؛ ماه ۲: VPN/SD-WAN؛ ماه ۳: عیب‌یابی و آزمون؛ هر هفته یک Lab مستند.
 
 ## درس 32-6 — آزمون نهایی دوره: سناریوی جامع، صورت مسئله، کلید پاسخ و Rubric
 
@@ -2449,6 +2533,10 @@ execute ping-options df-bit yes
 1. *چه چیز نمره‌ساز؟* Evidence.
 2. *ادعای بدون اجرا؟* منفی.
 3. *گزارش؟* RCA/Change.
+
+### مثال حل‌شده: مدیریت زمان آزمون
+
+طراحی 30 دقیقه، پیاده 60، عیب‌یابی 60، مستندات 30؛ شواهد را همان لحظه ثبت کنید.
 
 ## پاسخ‌های فصل 32
 

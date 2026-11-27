@@ -182,6 +182,17 @@ tls.alert_message
 2. *Zero Window؟* گیرنده پر.
 3. *RST از کجا؟* سرور/فایروال.
 
+### مثال حل‌شده: «دانلود کند است» از روی Capture
+
+**داده:** SYN در 0.000، SYN-ACK در 0.082، سپس دریافت با Retransmission پراکنده و Window=0 دوبار.
+
+``` text
+RTT = 0.082 - 0.000 = 82 ms
+Throughput bound = Window / RTT = 65535 B / 0.082 s ~ 0.8 MB/s ~ 6.4 Mbps
+```
+
+نتیجه: با Window کوچک حتی لینک 100 Mbps حدود 6.4 Mbps می‌دهد؛ علت: گیرنده کند یا Window Scaling خاموش. ابزار: فیلتر `tcp.window_size_value` و `tcp.options.wscale`.
+
 ## درس 28-1 — Capture درست: انتخاب نقطه، Filter، Sniffer FortiGate، PCAP، Offload و ملاحظات امنیت/قانون
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۰، ۱۴-۷، ۱۲-۹ · ≈ 8 ساعت**
@@ -359,6 +370,15 @@ tcpdump -ni eth0 -w c.pcap host 198.51.100.8 and port 443
 1. *چرا سه نقطه؟* مرز مسئله.
 2. *Snaplen؟* هدر کافی.
 3. *حریم؟* Payload حساس.
+
+### مثال حل‌شده: Capture سه‌نقطه‌ای
+
+جریان: Client → FW → Server. SYN در Client و FW-in دیده شد ولی در FW-out نه ⇒ فایروال حذف کرده (Policy/Route). اگر در FW-out دیده شد ولی در Server نه ⇒ بعد از فایروال. روش: ثبت زمان هر نقطه و مقایسه‌ی شماره‌ی Sequence.
+
+``` text
+diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 10 l
+diagnose sniffer packet port1 'host 198.51.100.8 and tcp port 443' 4 10 l
+```
 
 ## درس 28-2 — تحلیل TCP و DNS در Capture: Handshake، Window، Retransmission، RTT، RST و الگوهای خرابی
 
@@ -538,6 +558,16 @@ Retransmission با فاصله‌ی نمایی (1,2,4 s). DNS: Query/Response ب
 2. *Retrans Backoff؟* دو برابر.
 3. *DNS TCP؟* پاسخ بزرگ.
 
+### مثال حل‌شده: تفسیر Retransmission
+
+``` text
+#10 t=1.000 seq=1000 len=1460
+#11 t=1.200 seq=1000 len=1460  [Retransmission]
+#12 t=1.600 seq=1000 len=1460  [Retransmission]
+```
+
+فواصل 0.2 و 0.4 ⇒ Backoff نمایی؛ ACK نرسیده؛ مسیر برگشت یا Drop. اگر Dup ACK دیده شود Fast Retransmit است نه Timeout. DNS: Query بدون Response بعد از 2 s و تکرار ⇒ سرور DNS/Policy UDP/53.
+
 ## درس 28-3 — TLS در Capture: Handshake، SNI، Certificate، Alert، TLS 1.3 و اثر Inspection
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۰، ۱۶-۰، ۱۶-۵ · ≈ 8 ساعت**
@@ -705,6 +735,12 @@ wireshark filter: tls.handshake.type == 1
 2. *unknown_ca؟* CA نامعتبر.
 3. *TLS1.3 تفاوت؟* Certificate رمز.
 
+### مثال حل‌شده: Handshake TLS شکست‌خورده
+
+**Capture:** ClientHello (SNI=app.example.com) ← ServerHello ← Alert(fatal, `unknown_ca`) از کلاینت.
+
+تفسیر: کلاینت گواهی ارائه‌شده را به CA معتبر وصل نکرد؛ علت رایج: SSL Inspection بدون نصب CA سازمانی. رفع: توزیع CA یا Exemption. فیلتر: `tls.alert_message`.
+
 ## درس 28-4 — ده‌پرسش عیب‌یابی و بلوک‌های TS: چارچوب، سه پرونده‌ی کامل و کتابخانه‌ی TS
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۷، ۲۸-۱ تا ۲۸-۳ · ≈ 9 ساعت**
@@ -856,6 +892,18 @@ get system performance status
 2. *Evidence؟* pcap/Log.
 3. *نتیجه؟* علت ریشه.
 
+### مثال حل‌شده: بلوک TS کامل
+
+``` text
+Symptom   : HTTPS to app times out for 1 user
+Hypothesis: MTU black hole
+Test      : ping -f -l 1400 / sniffer on port2
+Evidence  : large packets retransmit, small pass
+Cause     : PMTUD ICMP blocked
+Fix       : MSS clamp 1360
+Verify    : curl OK, no retrans
+```
+
 ## درس 28-5 — آزمون عملی فصل ۲۸: تحلیل سه PCAP و RCA — صورت مسئله، کلید پاسخ و Rubric
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۱ تا ۲۸-۴، ۱۴-۲ · ≈ 12 ساعت**
@@ -1001,6 +1049,10 @@ tls.alert_message
 1. *RCA؟* علت ریشه.
 2. *PCAP حساس؟* حذف Payload.
 3. *ثبت؟* شماره‌ی بسته.
+
+### مثال حل‌شده: نمره‌ی یک PCAP
+
+PCAP دارای RST بعد از ClientHello: الگو ۲۵ (RST ناگهانی) + Evidence ۲۵ (شماره‌ی بسته) + علت ۲۵ (IPS/Policy بسته) + رفع ۲۵؛ نمره‌ی کامل فقط با ذکر منبع RST (کلاینت/سرور/Middlebox) بر پایه‌ی TTL/زمان‌بندی.
 
 ## پاسخ‌های فصل 28
 
@@ -1297,6 +1349,17 @@ end
 2. *IOC/TTP؟* نشانه/تکنیک.
 3. *مهار قبل از رفع؟* بله.
 
+### مثال حل‌شده: Triage یک هشدار
+
+**هشدار:** ۴۳ ورود ناموفق VPN از 203.0.113.50 در ۵ دقیقه.
+
+1. شدت: متوسط (Brute-force اینترنتی).
+2. تأیید: Log Event کاربران مختلف؟ حساب‌های واقعی؟ موفقیتی بعد از شکست‌ها؟
+3. مهار: Block IP در Local-in Policy.
+4. بررسی: آیا ورود موفق از همان IP بود؟ اگر بله ⇒ حادثه‌ی جدی (ریست رمز، قطع Session).
+
+ثبت Timeline از همان لحظه.
+
 ## درس 29-1 — Detection عملی: از Log فایروال به IOC/TTP، Baseline، آستانه، Correlation و Alert
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰، ۲۷-۰، ۲۷-۱، ۲۸-۲ · ≈ 8 ساعت**
@@ -1461,6 +1524,16 @@ srcip=203.0.113.50 action=deny dstport in {22,23,80,443,3389,...}
 2. *Baseline؟* نرمال.
 3. *Enrichment؟* GeoIP.
 
+### مثال حل‌شده: Baseline و قاعده
+
+Baseline: شکست VPN روزانه ≈ 5. قاعده: >20 در 5 دقیقه یا >5 کاربر مختلف از یک IP.
+
+``` text
+events/5min = 43 ; baseline = 5/day -> ratio ~ 200x
+```
+
+FP: کاربر با رمز فراموش‌شده (یک حساب، منبع داخلی).
+
 ## درس 29-2 — Response و Playbook: مهار، Evidence، ریشه‌کنی، بازیابی و ارتباطات با مثال‌های اجرایی
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰، ۲۹-۱، ۱۳-۷ · ≈ 8 ساعت**
@@ -1614,6 +1687,19 @@ diagnose sys session filter clear
 2. *Quarantine؟* ایزوله.
 3. *ارتباطات؟* ذی‌نفعان.
 
+### مثال حل‌شده: Playbook تروجان روی یک PC
+
+``` text
+1 Isolate : disable port / quarantine VLAN
+2 Evidence: Log, pcap, hash of file (sha256sum)
+3 Scope   : search same IOC in logs
+4 Eradicate: reimage
+5 Recover : monitor 72h
+6 Report  : PIR
+```
+
+قبل از Reimage Evidence جمع شود.
+
 ## درس 29-3 — Lifecycle، Patch و Vulnerability Management: Inventory، EoL، PSIRT/CVE، اولویت‌بندی و Rollback
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۴، ۲۹-۰ · ≈ 8 ساعت**
@@ -1763,6 +1849,10 @@ Inventory نسخه‌ها، پایش PSIRT، پنجره‌ی Patch، آزمون 
 2. *Rollback؟* آماده.
 3. *CVSS؟* تنها معیار نیست.
 
+### مثال حل‌شده: تصمیم Patch
+
+PSIRT جدید برای SSL-VPN با Exploit فعال: ۱) Inventory نسخه ۲) اگر آسیب‌پذیر و در اینترنت ⇒ اضطراری ۳) Workaround موقت (غیرفعال‌سازی/Local-in) ۴) Patch در Lab ۵) پنجره‌ی تغییر ۶) تأیید `get system status`.
+
 ## درس 29-4 — گزارش حادثه (PIR) و آزمون عملی Blue Team: سناریوی چندمرحله‌ای با کلید و Rubric
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۱ تا ۲۹-۳ · ≈ 12 ساعت**
@@ -1907,6 +1997,16 @@ execute log display
 1. *Blameless؟* تمرکز بر سیستم.
 2. *Metrics؟* MTTD/MTTR.
 3. *پیگیری؟* Action Owner.
+
+### مثال حل‌شده: PIR
+
+``` text
+Impact : VPN unavailable 22 min
+Cause  : brute force + lockout policy
+Fix    : IP block + MFA enforced
+Action : geo-restrict (owner NOC, due 7 days)
+MTTD 5 min ; MTTR 22 min
+```
 
 ## پاسخ‌های فصل 29
 
@@ -2159,6 +2259,16 @@ PIR با قالب: Summary، Impact، Timeline، Root cause، Actions.
 2. *Big Bang؟* ریسک بالا.
 3. *Parallel Run؟* مقایسه.
 
+### مثال حل‌شده: برآورد حجم Migration
+
+``` text
+ACL rules 1200 ; hit=0 for 12 months: 480 ; duplicates: 120
+Remaining = 1200 - 480 - 120 = 600
+Objects merge -> ~400 policies
+```
+
+پیش از انتقال، Hygiene را با مالکان تأیید کنید.
+
 ## درس 30-1 — Migration: Inventory، Rule Hygiene و نگاشت دقیق Object/NAT/Policy/VPN به FortiGate
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰، ۲۵-۱، ۱۳-۱ · ≈ 8 ساعت**
@@ -2320,6 +2430,10 @@ Object/NAT/Policy: هر مورد Cisco به معادل Fortinet با تفاوت 
 2. *Service Object؟* پورت.
 3. *Implicit Deny؟* مقایسه.
 
+### مثال حل‌شده: نگاشت NAT
+
+Cisco: `ip nat inside source static 10.30.0.10 203.0.113.10` ⇒ FortiGate: VIP (`extip 203.0.113.10`, `mappedip 10.30.0.10`) + Policy به VIP. تفاوت: در FortiGate بدون Policy ترافیک رد می‌شود.
+
 ## درس 30-2 — Plan، Cutover و Rollback: برنامه‌ی تغییر، معیار Go/No-Go، Trigger و ارتباطات
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰، ۳۰-۱، ۳۲-۰ · ≈ 8 ساعت**
@@ -2473,6 +2587,15 @@ T-7d freeze ; T-1h backup ; T0 switch ; T+15m verify ; T+30m decide
 1. *No-Go؟* معیار قبلی.
 2. *Rollback؟* ساده.
 3. *ارتباط؟* اطلاع‌رسانی.
+
+### مثال حل‌شده: Go/No-Go
+
+``` text
+T+15m: Tunnels up 12/12, DNS ok, ERP ok, Users sample 5/5 -> GO
+If any critical app fails and no fix in 30m -> ROLLBACK
+```
+
+Rollback: بازگرداندن کابل/Route به دستگاه قدیم و Config قبلی.
 
 ## درس 30-3 — تست پیش/پس Migration و Evidence: Test Matrix، مقایسه‌ی Session/Log، RCA اختلاف‌ها
 
@@ -2641,6 +2764,16 @@ Matrix: مبدأ، مقصد، سرویس، نتیجه‌ی قبل/بعد. تفا
 2. *Automation؟* اسکریپت.
 3. *Negative؟* حتماً.
 
+### مثال حل‌شده: Matrix
+
+| # | از | به | سرویس | قبل | بعد |
+|---|---|---|---|---|---|
+| 1 | Users | ERP | 443 | OK | OK |
+| 2 | Guest | Servers | any | Block | Block |
+| 3 | Users | DB | 1433 | Block | OPEN ⟵ بررسی |
+
+ردیف ۳ تفاوت است و باید قبل از Cutover حل شود.
+
 ## درس 30-4 — Gate G11: آزمون عملی Migration — صورت مسئله، کلید پاسخ کامل و Rubric
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۱ تا ۳۰-۳ · ≈ 12 ساعت**
@@ -2793,6 +2926,10 @@ Inventory ۲۰، نگاشت ۲۵، Cutover ۲۵، تست ۲۰، گزارش ۱۰.
 1. *Rollback آزمون؟* در Lab.
 2. *Hit Count؟* حذف.
 3. *ثبت؟* Evidence.
+
+### مثال حل‌شده: نمره‌ی G11
+
+اگر Inventory و نگاشت کامل ولی Cutover بدون Rollback آزمون‌شده: 20+25+10+20+10 = 85 از 100؛ نمره‌ی Cutover کامل فقط با آزمون Rollback.
 
 ## پاسخ‌های فصل 30
 

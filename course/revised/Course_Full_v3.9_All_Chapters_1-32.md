@@ -42657,6 +42657,58 @@ FortiGate: Network → OSPF/BGP؛ VPN → IPsec Tunnels. CSR: CLI. **Verificatio
 2. *ACL Stateful؟* نه.
 3. *انتقال Policy؟* بازنویسی نه ترجمه تحت‌اللفظی.
 
+### مثال حل‌شده: انتقال یک ACL سیسکو به Policy فورتی‌گیت
+
+**ورودی (Cisco):**
+
+``` text
+ip access-list extended USERS-OUT
+ permit tcp 10.10.0.0 0.0.0.255 host 10.20.0.10 eq 443
+ permit udp 10.10.0.0 0.0.0.255 host 10.20.0.5 eq 53
+ deny   ip any any log
+```
+
+**مراحل**
+1. Wildcard `0.0.0.255` یعنی ماسک `255.255.255.0`؛ پس منبع 10.10.0.0/24.
+2. هر `permit` به یک سطر Policy با Service جدا تبدیل می‌شود.
+3. `deny ip any any log` همان Policy Deny صریح با Log است (در FortiGate Implicit Deny بدون Log).
+4. تفاوت کلیدی: ACL سیسکو بدون وضعیت است و باید قاعده‌ی برگشت را هم بنویسید؛ Policy فورتی‌گیت Stateful است و برگشت خودکار مجاز می‌شود.
+
+**خروجی (FortiGate):**
+
+``` text
+config firewall policy
+ edit 10
+  set srcintf "port2"
+  set dstintf "port3"
+  set srcaddr "NET-USERS"
+  set dstaddr "SRV-WEB"
+  set service "HTTPS"
+  set action accept
+  set logtraffic all
+ next
+ edit 11
+  set srcintf "port2"
+  set dstintf "port3"
+  set srcaddr "NET-USERS"
+  set dstaddr "SRV-DNS"
+  set service "DNS"
+  set action accept
+ next
+ edit 90
+  set srcintf "any"
+  set dstintf "any"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "ALL"
+  set action deny
+  set logtraffic all
+ next
+end
+```
+
+**تأیید:** `diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 443 tcp port2` باید Policy 10 را بدهد؛ آزمون منفی: پورت 22 ⇒ Policy 90.
+
 ## درس 25-1 — نگاشت مفاهیم Cisco و Fortinet: برگه‌ی تطبیق دستورها و مدل‌های پردازش
 
 **فصل 25 · بازنویسی عمیق · پیش‌نیاز: فصل ۲ تا ۱۵ · ≈ 11 ساعت**
@@ -42819,6 +42871,24 @@ diagnose sys session list
 1. *Verify معادل؟* جدول بالا.
 2. *تفاوت Default؟* مثال Admin Distance.
 3. *Syntax؟* config tree.
+
+### مثال حل‌شده: ساخت برگه‌ی تطبیق برای OSPF
+
+| هدف | Cisco | FortiGate |
+|---|---|---|
+| همسایه‌ها | `show ip ospf neighbor` | `get router info ospf neighbor` |
+| جدول مسیر | `show ip route ospf` | `get router info routing-table ospf` |
+| Interface | `show ip ospf interface` | `get router info ospf interface` |
+| Cost | `ip ospf cost 10` | `set cost 10` در ospf-interface |
+
+**مثال:** پیش‌فرض Reference Bandwidth در Cisco برابر 100 Mbps و در FortiGate هم 100 Mbps است؛ لینک 1 Gbps و 100 Mbps هر دو Cost=1 می‌شوند. در دو سر باید یک مقدار یکسان تنظیم شود.
+
+``` text
+Cost = Reference BW / Interface BW
+100 Mbps / 1000 Mbps = 0.1 -> rounded to 1
+```
+
+**نکته:** پیش‌فرض‌های هر نسخه را در مستند رسمی همان نسخه بررسی کنید؛ این جدول «مفهومی» است.
 
 ## درس 25-2 — OSPF و BGP بین FortiGate و CSR: برگه‌ی پارامتر، پیکربندی دوطرفه، Redistribution و عیب‌یابی مقایسه‌ای
 
@@ -43035,6 +43105,26 @@ get router info bgp summary
 2. *BGP Idle؟* TCP/179.
 3. *Policy؟* Route-map دو سر.
 
+### مثال حل‌شده: همسایگی OSPF گیر کرده در ExStart
+
+**علامت:** `get router info ospf neighbor` وضعیت `ExStart` نشان می‌دهد.
+
+**مراحل عیب‌یابی**
+1. MTU دو Interface را مقایسه کنید.
+2. سمت Cisco: `show ip ospf interface` و `show interface | include MTU`.
+3. سمت FortiGate: `get system interface physical`.
+4. اگر MTU متفاوت است: برابر کنید یا (موقت) `ip ospf mtu-ignore` در Cisco.
+
+``` text
+Cisco  Gi0/0 MTU 1500
+FGT    port1 MTU 1496   (VLAN tag overhead)
+=> DBD packet size mismatch -> stuck ExStart
+```
+
+**رفع:** هر دو سر 1500 یا 1496. **تأیید:** وضعیت `Full/DR`.
+
+**مثال BGP:** Idle ⇒ `telnet 10.99.0.2 179` از فایروال؛ اگر باز نشد Policy/ACL پورت 179 را بررسی کنید و از Local-in Policy فایروال غافل نشوید.
+
 ## درس 25-3 — IPsec چندسازنده: روش مقایسه‌ی Debug، جدول مغایرت و Interop آزمایشی FGT–CSR
 
 **فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۳، ۲۵-۱، ۲۵-۲ · ≈ 11 ساعت**
@@ -43185,6 +43275,30 @@ show crypto ikev2 sa
 1. *Lifetime ناهمخوان؟* Rekey ناهماهنگ.
 2. *Identity؟* IP/FQDN.
 3. *Selector؟* VTI در برابر ACL.
+
+### مثال حل‌شده: Debug دوطرفه‌ی IKEv2
+
+**فرض:** Tunnel بین FortiGate (203.0.113.2) و CSR (198.51.100.2) بالا نمی‌آید.
+
+``` text
+FGT: diagnose debug application ike -1 ; diagnose debug enable
+CSR: debug crypto ikev2 ; debug crypto ikev2 error
+```
+
+**تفسیر نمونه**
+- FGT: `no proposal chosen` ⇒ Proposal ناهمخوان.
+- CSR: `Failed to find a matching policy` ⇒ هم‌علت.
+
+**مقایسه‌ی پارامترها**
+
+| پارامتر | FGT | CSR |
+|---|---|---|
+| Encryption | aes256 | aes-cbc-128 |
+| DH | 14 | 14 |
+
+علت: AES256 در برابر AES128. با یکسان‌سازی، `show crypto ikev2 sa` وضعیت READY.
+
+پس از تأیید دیباگ را خاموش کنید: `undebug all` و `diagnose debug disable`.
 
 ## درس 25-4 — آزمون معماری ۶ (FGT+CSR): IPsec چندسازنده، مقایسه‌ی Debug و جدول مغایرت — کلید پاسخ و Rubric
 
@@ -43366,6 +43480,20 @@ show crypto ipsec sa
 1. *Evidence؟* خروجی دو سر.
 2. *آزمون؟* Ping دوطرفه.
 3. *ثبت؟* تفاوت‌ها.
+
+### مثال حل‌شده: ارزیابی یک تحویل معماری ۶
+
+برای یک تیم که Tunnel، OSPF و NAT را بین FGT و CSR تحویل داده:
+
+| معیار | وزن | شاهد لازم |
+|---|---|---|
+| IPsec برقرار | 25 | `diagnose vpn tunnel list`، `show crypto ikev2 sa` |
+| OSPF Full | 25 | خروجی هر دو سر |
+| نگاشت درست مفاهیم | 25 | جدول تطبیق |
+| آزمون منفی | 15 | رد ترافیک غیرمجاز |
+| گزارش | 10 | RCA/محدودیت‌ها |
+
+**نمره‌گذاری:** اگر IPsec برقرار ولی آزمون منفی ندارد: 25+25+25+0+10 = 85 از 100؛ ایراد باید در بازخورد ذکر شود.
 
 ## پاسخ‌های فصل 25
 
@@ -43656,6 +43784,18 @@ end
 2. *FAZ جایگزین؟* rsyslog/SIEM.
 3. *Install Target؟* انتشار Policy.
 
+### مثال حل‌شده: تصمیم FortiManager/FortiAnalyzer یا جایگزین
+
+**شرایط:** ۱۲ فایروال، تیم ۴ نفره، بودجه محدود.
+
+| نیاز | راهکار بدون لایسنس | راهکار Fortinet |
+|---|---|---|
+| Policy یکسان در ۱۲ دستگاه | قالب Config + Git/Ansible | FortiManager (Needs-License) |
+| Log متمرکز | rsyslog/Graylog | FortiAnalyzer (Needs-License) |
+| گزارش آماده | SIEM | FAZ Reports |
+
+**تصمیم نمونه:** Log با rsyslog+Graylog، Backup با Git، و ارزیابی FMG وقتی تعداد دستگاه از ۲۰ گذشت یا ممیزی Policy Package لازم شد. هر عدد آستانه در جلسه‌ی خودتان تعیین شود؛ این فقط نمونه است.
+
 ## درس 26-1 — FMG و FAZ: نقش‌ها، معماری، ADOM، لایسنس و تصمیم «ابزار یا جایگزین» با تحلیل هزینه و ریسک
 
 **فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۰، ۲۲-۰، ۲۷-۰ · ≈ 8 ساعت**
@@ -43832,6 +43972,20 @@ FMG: Config، Policy Package، Device Manager. FAZ: Log، گزارش، Event Han
 1. *Revision؟* نسخه‌ی تغییرات.
 2. *Script؟* تغییر انبوه.
 3. *HA؟* دو FMG.
+
+### مثال حل‌شده: ظرفیت FortiAnalyzer
+
+``` text
+Log per device = 2 GB/day
+Devices        = 12
+Retention      = 90 days
+Total          = 2 x 12 x 90 = 2160 GB ~ 2.1 TB
+With 30% headroom ~ 2.8 TB
+```
+
+مراحل: ۱) حجم روزانه را از `diagnose log device` یا مانیتور واقعی بگیرید؛ ۲) ضرب در دستگاه و روز؛ ۳) حاشیه‌ی ظرفیت؛ ۴) لایسنس بر اساس GB/Day مطابق مستند.
+
+ADOM: برای جداسازی مشتریان/محیط‌ها، هر ADOM Policy و Log جدا.
 
 ## درس 26-2 — Syslog مرکزی (جایگزین FAZ): FortiGate → rsyslog با TCP/TLS، قالب، Parse، Retention و آزمون
 
@@ -44035,6 +44189,18 @@ end
 2. *TLS؟* حفاظت.
 3. *Retention؟* سیاست.
 
+### مثال حل‌شده: Syslog TCP تا رسیدن Log
+
+``` text
+FGT: config log syslogd setting ; set status enable ; set server 10.50.0.20 ; set mode reliable ; end
+Srv: sudo tcpdump -ni eth0 tcp port 514 -c 5
+Srv: tail -f /var/log/fgt/*.log
+```
+
+**اگر Log نرسید:** ۱) Route/Policy از Mgmt به سرور ۲) پورت 514 روی سرور (`ss -ltn`) ۳) Firewall سرور ۴) Source Interface (`set source-ip`).
+
+**تست دستی از FGT:** با رویداد تغییر Config یا ورود ادمین یک Log ایجاد و رسیدن آن را بررسی کنید.
+
 ## درس 26-3 — Backup خودکار و مدیریت Config با Git: Sanitize، Diff، Audit، Restore و Drift
 
 **فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۰، ۲۷-۷ · ≈ 8 ساعت**
@@ -44206,6 +44372,18 @@ git diff HEAD~1 -- cfg.conf
 2. *Diff؟* تغییر ناخواسته.
 3. *Restore آزمون؟* دوره‌ای.
 
+### مثال حل‌شده: Diff هفتگی Config
+
+``` text
+sed -E 's/(set (psk|password|secret) ).*/\1REDACTED/' cfg.conf > cfg.clean
+git add cfg.clean && git commit -m weekly
+git diff HEAD~1 -- cfg.clean | head -30
+```
+
+تفسیر: خطوط `+` افزوده‌شده، `-` حذف‌شده. اگر Policy جدیدی بدون Change Ticket دیدید ⇒ تغییر خارج از فرایند؛ بررسی Log Admin.
+
+**هشدار:** `ENC` هم Secret است؛ فایل Sanitize نشده را در ریپو قرار ندهید.
+
 ## درس 26-4 — طراحی معماری ۹ (مدیریت مرکزی و عملیات): RBAC، Change، Audit و آزمون با Rubric
 
 **فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۱ تا ۲۶-۳، ۳۲-۱ · ≈ 11 ساعت**
@@ -44361,6 +44539,26 @@ Runbook، Change، Monitoring، Backup، RBAC. شاخص: RPO/RTO مستند.
 1. *RBAC؟* Profile.
 2. *Out-of-band؟* Mgmt شبکه‌ی جدا.
 3. *Audit؟* Log تغییر.
+
+### مثال حل‌شده: RBAC مدیریتی
+
+| نقش | دسترسی |
+|---|---|
+| NOC | فقط خواندن (super_admin_readonly) |
+| Network Eng | Policy/Route |
+| Security | Log/UTM |
+
+``` text
+config system accprofile
+ edit "noc-ro"
+  set netgrp read
+  set fwgrp read
+  set loggrp read
+ next
+end
+```
+
+آزمون: کاربر NOC تلاش به تغییر Policy ⇒ رد؛ Log رویداد ثبت شود.
 
 ## پاسخ‌های فصل 26
 
@@ -44633,6 +44831,18 @@ Baseline: میانگین CPU 18٪، Session 25k، Throughput Peak 400 Mbps. هش
 2. *آستانه؟* درصدی از Peak.
 3. *Alert Fatigue؟* آستانه‌ی دقیق.
 
+### مثال حل‌شده: ساخت Baseline و آستانه
+
+**داده‌ی ۷ روزه:** CPU میانگین 18٪، P95 = 41٪؛ Session میانگین 25000، Peak 38000؛ ظرفیت Session مدل = 200000.
+
+``` text
+Session alert warn = 0.5 x 200000 = 100000
+Session alert crit = 0.8 x 200000 = 160000
+CPU warn = P95 x 1.5 = 61%
+```
+
+مراحل: ۱) Baseline از دورهٔ نرمال ۲) آستانه بر اساس ظرفیت و P95 ۳) بازبینی ماهانه. هشدار با Duration (مثلاً ۱۰ دقیقه) برای کاهش Alert Fatigue.
+
 ## درس 27-1 — Logging در FortiGate: انواع Log، سطح ثبت، Policy Logging، ذخیره‌ی محلی و طراحی حجم/Retention
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰، ۲۶-۲، ۱۴-۷ · ≈ 8 ساعت**
@@ -44829,6 +45039,19 @@ end
 2. *Log All در برابر UTM؟* حجم.
 3. *زمان؟* NTP.
 
+### مثال حل‌شده: چرا Log ترافیک ثبت نمی‌شود؟
+
+1. Policy را باز کنید: `logtraffic` اگر `disable` است ⇒ `utm` یا `all`.
+2. `config log setting` و `fwpolicy-implicit-log`.
+3. مقصد Log: `config log disk setting` یا syslog.
+4. `execute log filter category 0 ; execute log display`.
+
+``` text
+date=2026-11-27 srcip=10.10.0.5 dstip=198.51.100.8 policyid=30 action=accept
+```
+
+اگر Disk Log پر است، به Syslog/FAZ منتقل کنید.
+
 ## درس 27-2 — مانیتورینگ با SNMP و Zabbix: معیارها، Template، Trigger، Baseline و کاهش Alert نویزی
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰، ۲۷-۱ · ≈ 8 ساعت**
@@ -45013,6 +45236,16 @@ end
 1. *v2c ریسک؟* رمز متن‌ساده.
 2. *Trigger؟* آستانه.
 3. *Template؟* آماده‌ی Fortinet.
+
+### مثال حل‌شده: پایش CPU با SNMP
+
+``` text
+snmpwalk -v2c -c ro-comm 10.50.0.1 1.3.6.1.4.1.12356.101.4.1.3
+```
+
+OID بالا از MIB فورتی‌نت (fgSysCpuUsage؛ مسیر را از MIB رسمی نسخه تأیید کنید). تفسیر عدد: درصد CPU.
+
+در Zabbix: Item ← Trigger `avg(/FGT/cpu,10m)>70` ← Action ایمیل. آزمون: بار مصنوعی با iperf و دیدن Trigger.
 
 ## درس 27-3 — REST API و Automation امن: احراز هویت، Trusted Host، GET/PUT، Idempotency، Rollback و آزمون
 
@@ -45199,6 +45432,16 @@ Trusted Host اجباری؛ فقط GET؛ توکن در Vault.
 2. *Rate limit؟* حفاظت.
 3. *Log API؟* ممیزی.
 
+### مثال حل‌شده: GET امن به API
+
+``` text
+curl -sk -H "Authorization: Bearer $TOKEN" https://10.50.0.1/api/v2/monitor/system/status
+```
+
+نتیجه‌ی مورد انتظار: JSON با `version`. اگر از IP غیرمجاز زده شود ⇒ خطای دسترسی (Trusted Host). توکن را در متغیر محیطی/Vault نگه دارید نه در Script.
+
+آزمون منفی: Profile فقط‌خواندنی با روش PUT ⇒ رد.
+
 ## درس 27-4 — Hardening مدیریتی عملی و Backup/Restore: اجرای چک‌لیست، آزمون منفی و اثبات بازیابی
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۷، ۱۲-۸، ۲۶-۳ · ≈ 8 ساعت**
@@ -45366,6 +45609,16 @@ end
 2. *Restore آزمون؟* در Lab.
 3. *Default Admin؟* تغییر نام/غیرفعال.
 
+### مثال حل‌شده: چک‌لیست و اسکن
+
+``` text
+nmap -p 22,23,80,443,8443 10.50.0.1   (from Users VLAN)
+```
+
+انتظار: همه filtered/closed. از Mgmt: فقط 443 و 22 (در صورت نیاز). هر مورد باز ⇒ Local-in Policy/allowaccess را اصلاح کنید.
+
+Backup: `execute backup config tftp ...` و آزمون Restore در Lab با Diff.
+
 ## درس 27-5 — Gate G10: آزمون عملی Logging، Monitoring، Hardening و Backup — کلید پاسخ کامل و Rubric
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۱ تا ۲۷-۴ · ≈ 12 ساعت**
@@ -45531,6 +45784,18 @@ Log ۲۰، Monitoring ۲۰، API ۱۵، Hardening ۲۵، Backup/Restore ۲۰.
 2. *Alert نمونه؟* CPU.
 3. *API آزمون؟* GET موفق/رد.
 
+### مثال حل‌شده: نمره‌دهی G10
+
+| بخش | وزن | شاهد |
+|---|---|---|
+| Logging | 20 | Log رسیده به Syslog |
+| Monitoring | 20 | Trigger فعال شد |
+| API | 15 | GET موفق + رد منفی |
+| Hardening | 25 | اسکن پورت |
+| Backup/Restore | 20 | Diff پس از Restore |
+
+مثال: همه موفق جز Restore آزمون‌نشده ⇒ 80 از 100.
+
 ## درس 27-7 — Hardening، Backup/Restore و API: امن‌سازی مدیریتی و بازیابی قابل‌اثبات
 
 **فصل ۲۷ · درس افزوده (پس از ۲۷-۵) · پیش‌نیاز: ۱۲-۸، ۲۶-۰، ۲۷-۰ · ≈ ۶ ساعت**
@@ -45654,6 +45919,15 @@ Mgmt جدا، Local-in Policy، Syslog، API Trusted Host، رمز Backup. تأ�
 1. *Out-of-band؟* شبکه‌ی جدا.
 2. *نسخه؟* وصله‌ی PSIRT.
 3. *اسکن؟* nmap از Users.
+
+### مثال حل‌شده: مدیریت Admin ناخواسته
+
+``` text
+show system admin
+config log eventfilter ; set system enable ; end
+```
+
+Backup قبل از تغییر، سپس حذف ادمین بلااستفاده و ثبت Evidence از `show system admin` قبل/بعد.
 
 ## پاسخ‌های فصل 27
 
@@ -46062,6 +46336,17 @@ tls.alert_message
 2. *Zero Window؟* گیرنده پر.
 3. *RST از کجا؟* سرور/فایروال.
 
+### مثال حل‌شده: «دانلود کند است» از روی Capture
+
+**داده:** SYN در 0.000، SYN-ACK در 0.082، سپس دریافت با Retransmission پراکنده و Window=0 دوبار.
+
+``` text
+RTT = 0.082 - 0.000 = 82 ms
+Throughput bound = Window / RTT = 65535 B / 0.082 s ~ 0.8 MB/s ~ 6.4 Mbps
+```
+
+نتیجه: با Window کوچک حتی لینک 100 Mbps حدود 6.4 Mbps می‌دهد؛ علت: گیرنده کند یا Window Scaling خاموش. ابزار: فیلتر `tcp.window_size_value` و `tcp.options.wscale`.
+
 ## درس 28-1 — Capture درست: انتخاب نقطه، Filter، Sniffer FortiGate، PCAP، Offload و ملاحظات امنیت/قانون
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۰، ۱۴-۷، ۱۲-۹ · ≈ 8 ساعت**
@@ -46239,6 +46524,15 @@ tcpdump -ni eth0 -w c.pcap host 198.51.100.8 and port 443
 1. *چرا سه نقطه؟* مرز مسئله.
 2. *Snaplen؟* هدر کافی.
 3. *حریم؟* Payload حساس.
+
+### مثال حل‌شده: Capture سه‌نقطه‌ای
+
+جریان: Client → FW → Server. SYN در Client و FW-in دیده شد ولی در FW-out نه ⇒ فایروال حذف کرده (Policy/Route). اگر در FW-out دیده شد ولی در Server نه ⇒ بعد از فایروال. روش: ثبت زمان هر نقطه و مقایسه‌ی شماره‌ی Sequence.
+
+``` text
+diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 10 l
+diagnose sniffer packet port1 'host 198.51.100.8 and tcp port 443' 4 10 l
+```
 
 ## درس 28-2 — تحلیل TCP و DNS در Capture: Handshake، Window، Retransmission، RTT، RST و الگوهای خرابی
 
@@ -46418,6 +46712,16 @@ Retransmission با فاصله‌ی نمایی (1,2,4 s). DNS: Query/Response ب
 2. *Retrans Backoff؟* دو برابر.
 3. *DNS TCP؟* پاسخ بزرگ.
 
+### مثال حل‌شده: تفسیر Retransmission
+
+``` text
+#10 t=1.000 seq=1000 len=1460
+#11 t=1.200 seq=1000 len=1460  [Retransmission]
+#12 t=1.600 seq=1000 len=1460  [Retransmission]
+```
+
+فواصل 0.2 و 0.4 ⇒ Backoff نمایی؛ ACK نرسیده؛ مسیر برگشت یا Drop. اگر Dup ACK دیده شود Fast Retransmit است نه Timeout. DNS: Query بدون Response بعد از 2 s و تکرار ⇒ سرور DNS/Policy UDP/53.
+
 ## درس 28-3 — TLS در Capture: Handshake، SNI، Certificate، Alert، TLS 1.3 و اثر Inspection
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۰، ۱۶-۰، ۱۶-۵ · ≈ 8 ساعت**
@@ -46585,6 +46889,12 @@ wireshark filter: tls.handshake.type == 1
 2. *unknown_ca؟* CA نامعتبر.
 3. *TLS1.3 تفاوت؟* Certificate رمز.
 
+### مثال حل‌شده: Handshake TLS شکست‌خورده
+
+**Capture:** ClientHello (SNI=app.example.com) ← ServerHello ← Alert(fatal, `unknown_ca`) از کلاینت.
+
+تفسیر: کلاینت گواهی ارائه‌شده را به CA معتبر وصل نکرد؛ علت رایج: SSL Inspection بدون نصب CA سازمانی. رفع: توزیع CA یا Exemption. فیلتر: `tls.alert_message`.
+
 ## درس 28-4 — ده‌پرسش عیب‌یابی و بلوک‌های TS: چارچوب، سه پرونده‌ی کامل و کتابخانه‌ی TS
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۷، ۲۸-۱ تا ۲۸-۳ · ≈ 9 ساعت**
@@ -46736,6 +47046,18 @@ get system performance status
 2. *Evidence؟* pcap/Log.
 3. *نتیجه؟* علت ریشه.
 
+### مثال حل‌شده: بلوک TS کامل
+
+``` text
+Symptom   : HTTPS to app times out for 1 user
+Hypothesis: MTU black hole
+Test      : ping -f -l 1400 / sniffer on port2
+Evidence  : large packets retransmit, small pass
+Cause     : PMTUD ICMP blocked
+Fix       : MSS clamp 1360
+Verify    : curl OK, no retrans
+```
+
 ## درس 28-5 — آزمون عملی فصل ۲۸: تحلیل سه PCAP و RCA — صورت مسئله، کلید پاسخ و Rubric
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۱ تا ۲۸-۴، ۱۴-۲ · ≈ 12 ساعت**
@@ -46881,6 +47203,10 @@ tls.alert_message
 1. *RCA؟* علت ریشه.
 2. *PCAP حساس؟* حذف Payload.
 3. *ثبت؟* شماره‌ی بسته.
+
+### مثال حل‌شده: نمره‌ی یک PCAP
+
+PCAP دارای RST بعد از ClientHello: الگو ۲۵ (RST ناگهانی) + Evidence ۲۵ (شماره‌ی بسته) + علت ۲۵ (IPS/Policy بسته) + رفع ۲۵؛ نمره‌ی کامل فقط با ذکر منبع RST (کلاینت/سرور/Middlebox) بر پایه‌ی TTL/زمان‌بندی.
 
 ## پاسخ‌های فصل 28
 
@@ -47177,6 +47503,17 @@ end
 2. *IOC/TTP؟* نشانه/تکنیک.
 3. *مهار قبل از رفع؟* بله.
 
+### مثال حل‌شده: Triage یک هشدار
+
+**هشدار:** ۴۳ ورود ناموفق VPN از 203.0.113.50 در ۵ دقیقه.
+
+1. شدت: متوسط (Brute-force اینترنتی).
+2. تأیید: Log Event کاربران مختلف؟ حساب‌های واقعی؟ موفقیتی بعد از شکست‌ها؟
+3. مهار: Block IP در Local-in Policy.
+4. بررسی: آیا ورود موفق از همان IP بود؟ اگر بله ⇒ حادثه‌ی جدی (ریست رمز، قطع Session).
+
+ثبت Timeline از همان لحظه.
+
 ## درس 29-1 — Detection عملی: از Log فایروال به IOC/TTP، Baseline، آستانه، Correlation و Alert
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰، ۲۷-۰، ۲۷-۱، ۲۸-۲ · ≈ 8 ساعت**
@@ -47341,6 +47678,16 @@ srcip=203.0.113.50 action=deny dstport in {22,23,80,443,3389,...}
 2. *Baseline؟* نرمال.
 3. *Enrichment؟* GeoIP.
 
+### مثال حل‌شده: Baseline و قاعده
+
+Baseline: شکست VPN روزانه ≈ 5. قاعده: >20 در 5 دقیقه یا >5 کاربر مختلف از یک IP.
+
+``` text
+events/5min = 43 ; baseline = 5/day -> ratio ~ 200x
+```
+
+FP: کاربر با رمز فراموش‌شده (یک حساب، منبع داخلی).
+
 ## درس 29-2 — Response و Playbook: مهار، Evidence، ریشه‌کنی، بازیابی و ارتباطات با مثال‌های اجرایی
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰، ۲۹-۱، ۱۳-۷ · ≈ 8 ساعت**
@@ -47494,6 +47841,19 @@ diagnose sys session filter clear
 2. *Quarantine؟* ایزوله.
 3. *ارتباطات؟* ذی‌نفعان.
 
+### مثال حل‌شده: Playbook تروجان روی یک PC
+
+``` text
+1 Isolate : disable port / quarantine VLAN
+2 Evidence: Log, pcap, hash of file (sha256sum)
+3 Scope   : search same IOC in logs
+4 Eradicate: reimage
+5 Recover : monitor 72h
+6 Report  : PIR
+```
+
+قبل از Reimage Evidence جمع شود.
+
 ## درس 29-3 — Lifecycle، Patch و Vulnerability Management: Inventory، EoL، PSIRT/CVE، اولویت‌بندی و Rollback
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۴، ۲۹-۰ · ≈ 8 ساعت**
@@ -47643,6 +48003,10 @@ Inventory نسخه‌ها، پایش PSIRT، پنجره‌ی Patch، آزمون 
 2. *Rollback؟* آماده.
 3. *CVSS؟* تنها معیار نیست.
 
+### مثال حل‌شده: تصمیم Patch
+
+PSIRT جدید برای SSL-VPN با Exploit فعال: ۱) Inventory نسخه ۲) اگر آسیب‌پذیر و در اینترنت ⇒ اضطراری ۳) Workaround موقت (غیرفعال‌سازی/Local-in) ۴) Patch در Lab ۵) پنجره‌ی تغییر ۶) تأیید `get system status`.
+
 ## درس 29-4 — گزارش حادثه (PIR) و آزمون عملی Blue Team: سناریوی چندمرحله‌ای با کلید و Rubric
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۱ تا ۲۹-۳ · ≈ 12 ساعت**
@@ -47787,6 +48151,16 @@ execute log display
 1. *Blameless؟* تمرکز بر سیستم.
 2. *Metrics؟* MTTD/MTTR.
 3. *پیگیری؟* Action Owner.
+
+### مثال حل‌شده: PIR
+
+``` text
+Impact : VPN unavailable 22 min
+Cause  : brute force + lockout policy
+Fix    : IP block + MFA enforced
+Action : geo-restrict (owner NOC, due 7 days)
+MTTD 5 min ; MTTR 22 min
+```
 
 ## پاسخ‌های فصل 29
 
@@ -48039,6 +48413,16 @@ PIR با قالب: Summary، Impact، Timeline، Root cause، Actions.
 2. *Big Bang؟* ریسک بالا.
 3. *Parallel Run؟* مقایسه.
 
+### مثال حل‌شده: برآورد حجم Migration
+
+``` text
+ACL rules 1200 ; hit=0 for 12 months: 480 ; duplicates: 120
+Remaining = 1200 - 480 - 120 = 600
+Objects merge -> ~400 policies
+```
+
+پیش از انتقال، Hygiene را با مالکان تأیید کنید.
+
 ## درس 30-1 — Migration: Inventory، Rule Hygiene و نگاشت دقیق Object/NAT/Policy/VPN به FortiGate
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰، ۲۵-۱، ۱۳-۱ · ≈ 8 ساعت**
@@ -48200,6 +48584,10 @@ Object/NAT/Policy: هر مورد Cisco به معادل Fortinet با تفاوت 
 2. *Service Object؟* پورت.
 3. *Implicit Deny؟* مقایسه.
 
+### مثال حل‌شده: نگاشت NAT
+
+Cisco: `ip nat inside source static 10.30.0.10 203.0.113.10` ⇒ FortiGate: VIP (`extip 203.0.113.10`, `mappedip 10.30.0.10`) + Policy به VIP. تفاوت: در FortiGate بدون Policy ترافیک رد می‌شود.
+
 ## درس 30-2 — Plan، Cutover و Rollback: برنامه‌ی تغییر، معیار Go/No-Go، Trigger و ارتباطات
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰، ۳۰-۱، ۳۲-۰ · ≈ 8 ساعت**
@@ -48353,6 +48741,15 @@ T-7d freeze ; T-1h backup ; T0 switch ; T+15m verify ; T+30m decide
 1. *No-Go؟* معیار قبلی.
 2. *Rollback؟* ساده.
 3. *ارتباط؟* اطلاع‌رسانی.
+
+### مثال حل‌شده: Go/No-Go
+
+``` text
+T+15m: Tunnels up 12/12, DNS ok, ERP ok, Users sample 5/5 -> GO
+If any critical app fails and no fix in 30m -> ROLLBACK
+```
+
+Rollback: بازگرداندن کابل/Route به دستگاه قدیم و Config قبلی.
 
 ## درس 30-3 — تست پیش/پس Migration و Evidence: Test Matrix، مقایسه‌ی Session/Log، RCA اختلاف‌ها
 
@@ -48521,6 +48918,16 @@ Matrix: مبدأ، مقصد، سرویس، نتیجه‌ی قبل/بعد. تفا
 2. *Automation؟* اسکریپت.
 3. *Negative؟* حتماً.
 
+### مثال حل‌شده: Matrix
+
+| # | از | به | سرویس | قبل | بعد |
+|---|---|---|---|---|---|
+| 1 | Users | ERP | 443 | OK | OK |
+| 2 | Guest | Servers | any | Block | Block |
+| 3 | Users | DB | 1433 | Block | OPEN ⟵ بررسی |
+
+ردیف ۳ تفاوت است و باید قبل از Cutover حل شود.
+
 ## درس 30-4 — Gate G11: آزمون عملی Migration — صورت مسئله، کلید پاسخ کامل و Rubric
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۱ تا ۳۰-۳ · ≈ 12 ساعت**
@@ -48673,6 +49080,10 @@ Inventory ۲۰، نگاشت ۲۵، Cutover ۲۵، تست ۲۰، گزارش ۱۰.
 1. *Rollback آزمون؟* در Lab.
 2. *Hit Count؟* حذف.
 3. *ثبت؟* Evidence.
+
+### مثال حل‌شده: نمره‌ی G11
+
+اگر Inventory و نگاشت کامل ولی Cutover بدون Rollback آزمون‌شده: 20+25+10+20+10 = 85 از 100؛ نمره‌ی Cutover کامل فقط با آزمون Rollback.
 
 ## پاسخ‌های فصل 30
 
@@ -49096,6 +49507,14 @@ R-02 -> HLD §4.1 (DMZ zone) -> LLD Policy 61 -> Test T-09..T-18 -> Evidence E-0
 2. *Acceptance؟* تعریف شده.
 3. *Out-of-scope؟* ثبت.
 
+### مثال حل‌شده: Traceability
+
+| Req | Design | Test | Evidence |
+|---|---|---|---|
+| R1 اینترنت Users | Policy 20 | T1 curl | Log+Session |
+| R2 DMZ فقط 443 | VIP+Policy | T2 nmap | خروجی nmap |
+| R3 Failover < 5 s | HA/SD-WAN | T3 قطع لینک | ping Loss |
+
 ## درس 31-1 — Capstone I: نیازمندی‌ها و سند طراحی سطح بالا (HLD) — با نمونه‌ی کامل
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰، همه‌ی Gateها · ≈ 8 ساعت**
@@ -49239,6 +49658,13 @@ Consequences: need UTM at branch; central logging required; review quarterly
 1. *HLD در برابر LLD؟* سطح جزئیات.
 2. *ریسک؟* فهرست و کاهش.
 3. *فرضیات؟* ثبت.
+
+### مثال حل‌شده: بخش ریسک HLD
+
+| ریسک | احتمال | اثر | کاهش |
+|---|---|---|---|
+| قطع ISP | متوسط | زیاد | Dual-ISP |
+| خطای Policy | زیاد | متوسط | Review+Lookup |
 
 ## درس 31-2 — Capstone I: طراحی تفصیلی (LLD) — جدول Interface/Route/Policy/VPN و ماتریس ردیابی
 
@@ -49415,6 +49841,16 @@ end
 2. *Naming؟* قرارداد.
 3. *Review؟* همتا.
 
+### مثال حل‌شده: جدول Interface
+
+``` text
+Edge port1 203.0.113.2/29 WAN
+Edge port2 10.30.0.1/24 DMZ
+Int  port2 10.10.0.1/24 USERS
+```
+
+بازبینی: هیچ دو Interface هم‌پوشان نباشند؛ Gateway داخل همان Subnet.
+
 ## درس 31-3 — Capstone II: ساخت مرحله‌ای (S1–S6) با Checkpoint، دستورهای واقعی، آزمون هر مرحله و Rollback
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۲ · ≈ 8 ساعت**
@@ -49580,6 +50016,10 @@ S1–S6 با Checkpoint؛ هر مرحله Verify قبل از بعدی.
 2. *Rollback؟* هر مرحله.
 3. *Evidence؟* ثبت.
 
+### مثال حل‌شده: Checkpoint S2
+
+پس از ساخت Edge: ping به GW، Lookup Policy، `get router info routing-table all`؛ فقط در صورت موفقیت به S3.
+
 ## درس 31-4 — Capstone II: آزمون کامل، Evidence Index نمونه‌ی پر، تحلیل سه خرابی و Sign-off
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰ تا ۳۱-۳ · ≈ 11 ساعت**
@@ -49724,6 +50164,12 @@ Index شواهد: شماره‌ی آزمون، دستور، خروجی، زما�
 1. *Negative؟* لازم.
 2. *Repeatability؟* تکرارپذیر.
 3. *Sign-off؟* مالک.
+
+### مثال حل‌شده: ردیف Evidence
+
+``` text
+ID T2 ; cmd nmap -p 22,80,443 203.0.113.3 ; 2026-11-27 10:15 ; 443 open, others filtered ; PASS
+```
 
 ## درس 31-5 — Capstone II: Runbook کامل نمونه، Handover و آزمون Runbook توسط همکار
 
@@ -49870,6 +50316,16 @@ diagnose sys sdwan health-check
 2. *Handover؟* مستند.
 3. *نسخه؟* کنترل.
 
+### مثال حل‌شده: مرحله‌ی Runbook
+
+``` text
+Step 4 Restore config
+ Pre : backup file hash matches
+ Do  : execute restore config ...
+ Verify: get system status ; ping GW
+ Rollback: previous backup
+```
+
 ## درس 31-6 — ارزیابی Capstone I و II: ارائه، Q&A، سؤال‌های دفاع و Rubric تفصیلی
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰ تا ۳۱-۵ · ≈ 11 ساعت**
@@ -50014,6 +50470,10 @@ Improvement: run T-12/T-15 in lab; verify commands
 1. *صداقت محدودیت؟* بله.
 2. *Demo؟* Lab.
 3. *بهبود؟* پیشنهاد.
+
+### مثال حل‌شده: پاسخ به «Evidence کجاست؟»
+
+اشاره به Index شواهد، شماره‌ی T، فایل Log و زمان؛ و در صورت اجرا نشدن، صراحتاً «اجرا نشده/تأیید مستندی».
 
 ## پاسخ‌های فصل 31
 
@@ -50404,6 +50864,12 @@ Owner (مالک سرویس)، Implementer (مجری)، Reviewer (بازبین ف
 2. *Freeze؟* دوره‌ی حساس.
 3. *CMDB؟* منبع حقیقت.
 
+### مثال حل‌شده: دسته‌بندی Change
+
+- افزودن سرور به Address Group: Standard.
+- Policy جدید برای پروژه: Normal (CAB).
+- بستن IP مهاجم در حادثه: Emergency با بازبینی پس از ۲۴ ساعت.
+
 ## درس 32-1 — Capstone III: عملیات روزانه و Change Management (ITIL) — فرایند، قالب CHG و مثال کامل
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۰ · ≈ 11 ساعت**
@@ -50571,6 +51037,12 @@ diagnose firewall iprope lookup 10.30.2.50 40000 10.30.3.10 1433 tcp ZN-APP
 2. *SLA؟* پاسخ/حل.
 3. *بهبود؟* Post-review.
 
+### مثال حل‌شده: Handover شیفت
+
+``` text
+Open tickets: 3 ; Alerts: CPU warn FW2 ; Pending change: CHG-114 tonight 23:00 ; Backups: OK
+```
+
 ## درس 32-2 — Capstone III: شبیه‌سازی حادثه کامل — سناریو، نقش‌ها، Timeline نمونه، MTTD/MTTR و PIR
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۰، ۲۹-۴ · ≈ 11 ساعت**
@@ -50725,6 +51197,13 @@ Timeline نمونه: T0 هشدار، T+5 تأیید، T+15 مهار، T+60 با�
 1. *Roles؟* Incident Commander.
 2. *ارتباط؟* دوره‌ای.
 3. *Evidence؟* حفظ.
+
+### مثال حل‌شده: Timeline
+
+``` text
+10:00 alert ; 10:05 triage ; 10:15 contain ; 10:50 recover ; next day PIR
+```
+نقش‌ها: Incident Commander، Ops، Comms، Scribe.
 
 ## درس 32-3 — Capstone IV: مهاجرت/ارتقای کامل در Lab — Plan زمان‌بندی‌شده، Post-check، Rollback و گزارش
 
@@ -50897,6 +51376,10 @@ Plan زمان‌بندی، Rollback، آزمون پیش/پس؛ مسیر ارتق
 2. *Backup؟* قبل.
 3. *Release Notes؟* بررسی.
 
+### مثال حل‌شده: مسیر ارتقا
+
+نسخه‌ی فعلی ← با Upgrade Path Tool رسمی Fortinet مسیر را بگیرید (ممکن است مرحله‌ای باشد)؛ Backup، آزمون در Lab، پنجره‌ی تغییر، Verify، Rollback.
+
 ## درس 32-4 — ارزیابی نهایی و Portfolio: ماتریس مهارت، تحلیل شکاف، نگاشت نقش و نمونه‌ی Portfolio
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: کل دوره · ≈ 11 ساعت**
@@ -51043,6 +51526,14 @@ Plan زمان‌بندی، Rollback، آزمون پیش/پس؛ مسیر ارتق
 2. *Gap؟* برنامه.
 3. *Evidence؟* Link.
 
+### مثال حل‌شده: ماتریس مهارت
+
+| حوزه | سطح | Evidence |
+|---|---|---|
+| Policy/NAT | تسلط | Lab |
+| IPsec | متوسط | مستندی |
+| HA | آشنا | اجرا نشده |
+
 ## درس 32-5 — Roadmap یادگیری بعدی: مسیر گواهی، Labهای اجرا نشده، Automation و برنامه‌ی ۶ ماهه
 
 **فصل 32 · بازنویسی عمیق · پیش‌نیاز: ۳۲-۴ · ≈ 11 ساعت**
@@ -51185,6 +51676,10 @@ Plan زمان‌بندی، Rollback، آزمون پیش/پس؛ مسیر ارتق
 1. *اولویت؟* هدف شغلی.
 2. *Lab؟* منظم.
 3. *جامعه؟* مستندات.
+
+### مثال حل‌شده: برنامه‌ی ۹۰ روزه
+
+ماه ۱: مرور مبانی و Lab؛ ماه ۲: VPN/SD-WAN؛ ماه ۳: عیب‌یابی و آزمون؛ هر هفته یک Lab مستند.
 
 ## درس 32-6 — آزمون نهایی دوره: سناریوی جامع، صورت مسئله، کلید پاسخ و Rubric
 
@@ -51330,6 +51825,10 @@ execute ping-options df-bit yes
 1. *چه چیز نمره‌ساز؟* Evidence.
 2. *ادعای بدون اجرا؟* منفی.
 3. *گزارش؟* RCA/Change.
+
+### مثال حل‌شده: مدیریت زمان آزمون
+
+طراحی 30 دقیقه، پیاده 60، عیب‌یابی 60، مستندات 30؛ شواهد را همان لحظه ثبت کنید.
 
 ## پاسخ‌های فصل 32
 

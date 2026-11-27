@@ -192,6 +192,58 @@ FortiGate: Network → OSPF/BGP؛ VPN → IPsec Tunnels. CSR: CLI. **Verificatio
 2. *ACL Stateful؟* نه.
 3. *انتقال Policy؟* بازنویسی نه ترجمه تحت‌اللفظی.
 
+### مثال حل‌شده: انتقال یک ACL سیسکو به Policy فورتی‌گیت
+
+**ورودی (Cisco):**
+
+``` text
+ip access-list extended USERS-OUT
+ permit tcp 10.10.0.0 0.0.0.255 host 10.20.0.10 eq 443
+ permit udp 10.10.0.0 0.0.0.255 host 10.20.0.5 eq 53
+ deny   ip any any log
+```
+
+**مراحل**
+1. Wildcard `0.0.0.255` یعنی ماسک `255.255.255.0`؛ پس منبع 10.10.0.0/24.
+2. هر `permit` به یک سطر Policy با Service جدا تبدیل می‌شود.
+3. `deny ip any any log` همان Policy Deny صریح با Log است (در FortiGate Implicit Deny بدون Log).
+4. تفاوت کلیدی: ACL سیسکو بدون وضعیت است و باید قاعده‌ی برگشت را هم بنویسید؛ Policy فورتی‌گیت Stateful است و برگشت خودکار مجاز می‌شود.
+
+**خروجی (FortiGate):**
+
+``` text
+config firewall policy
+ edit 10
+  set srcintf "port2"
+  set dstintf "port3"
+  set srcaddr "NET-USERS"
+  set dstaddr "SRV-WEB"
+  set service "HTTPS"
+  set action accept
+  set logtraffic all
+ next
+ edit 11
+  set srcintf "port2"
+  set dstintf "port3"
+  set srcaddr "NET-USERS"
+  set dstaddr "SRV-DNS"
+  set service "DNS"
+  set action accept
+ next
+ edit 90
+  set srcintf "any"
+  set dstintf "any"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "ALL"
+  set action deny
+  set logtraffic all
+ next
+end
+```
+
+**تأیید:** `diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 443 tcp port2` باید Policy 10 را بدهد؛ آزمون منفی: پورت 22 ⇒ Policy 90.
+
 ## درس 25-1 — نگاشت مفاهیم Cisco و Fortinet: برگه‌ی تطبیق دستورها و مدل‌های پردازش
 
 **فصل 25 · بازنویسی عمیق · پیش‌نیاز: فصل ۲ تا ۱۵ · ≈ 11 ساعت**
@@ -354,6 +406,24 @@ diagnose sys session list
 1. *Verify معادل؟* جدول بالا.
 2. *تفاوت Default؟* مثال Admin Distance.
 3. *Syntax؟* config tree.
+
+### مثال حل‌شده: ساخت برگه‌ی تطبیق برای OSPF
+
+| هدف | Cisco | FortiGate |
+|---|---|---|
+| همسایه‌ها | `show ip ospf neighbor` | `get router info ospf neighbor` |
+| جدول مسیر | `show ip route ospf` | `get router info routing-table ospf` |
+| Interface | `show ip ospf interface` | `get router info ospf interface` |
+| Cost | `ip ospf cost 10` | `set cost 10` در ospf-interface |
+
+**مثال:** پیش‌فرض Reference Bandwidth در Cisco برابر 100 Mbps و در FortiGate هم 100 Mbps است؛ لینک 1 Gbps و 100 Mbps هر دو Cost=1 می‌شوند. در دو سر باید یک مقدار یکسان تنظیم شود.
+
+``` text
+Cost = Reference BW / Interface BW
+100 Mbps / 1000 Mbps = 0.1 -> rounded to 1
+```
+
+**نکته:** پیش‌فرض‌های هر نسخه را در مستند رسمی همان نسخه بررسی کنید؛ این جدول «مفهومی» است.
 
 ## درس 25-2 — OSPF و BGP بین FortiGate و CSR: برگه‌ی پارامتر، پیکربندی دوطرفه، Redistribution و عیب‌یابی مقایسه‌ای
 
@@ -570,6 +640,26 @@ get router info bgp summary
 2. *BGP Idle؟* TCP/179.
 3. *Policy؟* Route-map دو سر.
 
+### مثال حل‌شده: همسایگی OSPF گیر کرده در ExStart
+
+**علامت:** `get router info ospf neighbor` وضعیت `ExStart` نشان می‌دهد.
+
+**مراحل عیب‌یابی**
+1. MTU دو Interface را مقایسه کنید.
+2. سمت Cisco: `show ip ospf interface` و `show interface | include MTU`.
+3. سمت FortiGate: `get system interface physical`.
+4. اگر MTU متفاوت است: برابر کنید یا (موقت) `ip ospf mtu-ignore` در Cisco.
+
+``` text
+Cisco  Gi0/0 MTU 1500
+FGT    port1 MTU 1496   (VLAN tag overhead)
+=> DBD packet size mismatch -> stuck ExStart
+```
+
+**رفع:** هر دو سر 1500 یا 1496. **تأیید:** وضعیت `Full/DR`.
+
+**مثال BGP:** Idle ⇒ `telnet 10.99.0.2 179` از فایروال؛ اگر باز نشد Policy/ACL پورت 179 را بررسی کنید و از Local-in Policy فایروال غافل نشوید.
+
 ## درس 25-3 — IPsec چندسازنده: روش مقایسه‌ی Debug، جدول مغایرت و Interop آزمایشی FGT–CSR
 
 **فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۳، ۲۵-۱، ۲۵-۲ · ≈ 11 ساعت**
@@ -720,6 +810,30 @@ show crypto ikev2 sa
 1. *Lifetime ناهمخوان؟* Rekey ناهماهنگ.
 2. *Identity؟* IP/FQDN.
 3. *Selector؟* VTI در برابر ACL.
+
+### مثال حل‌شده: Debug دوطرفه‌ی IKEv2
+
+**فرض:** Tunnel بین FortiGate (203.0.113.2) و CSR (198.51.100.2) بالا نمی‌آید.
+
+``` text
+FGT: diagnose debug application ike -1 ; diagnose debug enable
+CSR: debug crypto ikev2 ; debug crypto ikev2 error
+```
+
+**تفسیر نمونه**
+- FGT: `no proposal chosen` ⇒ Proposal ناهمخوان.
+- CSR: `Failed to find a matching policy` ⇒ هم‌علت.
+
+**مقایسه‌ی پارامترها**
+
+| پارامتر | FGT | CSR |
+|---|---|---|
+| Encryption | aes256 | aes-cbc-128 |
+| DH | 14 | 14 |
+
+علت: AES256 در برابر AES128. با یکسان‌سازی، `show crypto ikev2 sa` وضعیت READY.
+
+پس از تأیید دیباگ را خاموش کنید: `undebug all` و `diagnose debug disable`.
 
 ## درس 25-4 — آزمون معماری ۶ (FGT+CSR): IPsec چندسازنده، مقایسه‌ی Debug و جدول مغایرت — کلید پاسخ و Rubric
 
@@ -901,6 +1015,20 @@ show crypto ipsec sa
 1. *Evidence؟* خروجی دو سر.
 2. *آزمون؟* Ping دوطرفه.
 3. *ثبت؟* تفاوت‌ها.
+
+### مثال حل‌شده: ارزیابی یک تحویل معماری ۶
+
+برای یک تیم که Tunnel، OSPF و NAT را بین FGT و CSR تحویل داده:
+
+| معیار | وزن | شاهد لازم |
+|---|---|---|
+| IPsec برقرار | 25 | `diagnose vpn tunnel list`، `show crypto ikev2 sa` |
+| OSPF Full | 25 | خروجی هر دو سر |
+| نگاشت درست مفاهیم | 25 | جدول تطبیق |
+| آزمون منفی | 15 | رد ترافیک غیرمجاز |
+| گزارش | 10 | RCA/محدودیت‌ها |
+
+**نمره‌گذاری:** اگر IPsec برقرار ولی آزمون منفی ندارد: 25+25+25+0+10 = 85 از 100؛ ایراد باید در بازخورد ذکر شود.
 
 ## پاسخ‌های فصل 25
 
@@ -1191,6 +1319,18 @@ end
 2. *FAZ جایگزین؟* rsyslog/SIEM.
 3. *Install Target؟* انتشار Policy.
 
+### مثال حل‌شده: تصمیم FortiManager/FortiAnalyzer یا جایگزین
+
+**شرایط:** ۱۲ فایروال، تیم ۴ نفره، بودجه محدود.
+
+| نیاز | راهکار بدون لایسنس | راهکار Fortinet |
+|---|---|---|
+| Policy یکسان در ۱۲ دستگاه | قالب Config + Git/Ansible | FortiManager (Needs-License) |
+| Log متمرکز | rsyslog/Graylog | FortiAnalyzer (Needs-License) |
+| گزارش آماده | SIEM | FAZ Reports |
+
+**تصمیم نمونه:** Log با rsyslog+Graylog، Backup با Git، و ارزیابی FMG وقتی تعداد دستگاه از ۲۰ گذشت یا ممیزی Policy Package لازم شد. هر عدد آستانه در جلسه‌ی خودتان تعیین شود؛ این فقط نمونه است.
+
 ## درس 26-1 — FMG و FAZ: نقش‌ها، معماری، ADOM، لایسنس و تصمیم «ابزار یا جایگزین» با تحلیل هزینه و ریسک
 
 **فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۰، ۲۲-۰، ۲۷-۰ · ≈ 8 ساعت**
@@ -1367,6 +1507,20 @@ FMG: Config، Policy Package، Device Manager. FAZ: Log، گزارش، Event Han
 1. *Revision؟* نسخه‌ی تغییرات.
 2. *Script؟* تغییر انبوه.
 3. *HA؟* دو FMG.
+
+### مثال حل‌شده: ظرفیت FortiAnalyzer
+
+``` text
+Log per device = 2 GB/day
+Devices        = 12
+Retention      = 90 days
+Total          = 2 x 12 x 90 = 2160 GB ~ 2.1 TB
+With 30% headroom ~ 2.8 TB
+```
+
+مراحل: ۱) حجم روزانه را از `diagnose log device` یا مانیتور واقعی بگیرید؛ ۲) ضرب در دستگاه و روز؛ ۳) حاشیه‌ی ظرفیت؛ ۴) لایسنس بر اساس GB/Day مطابق مستند.
+
+ADOM: برای جداسازی مشتریان/محیط‌ها، هر ADOM Policy و Log جدا.
 
 ## درس 26-2 — Syslog مرکزی (جایگزین FAZ): FortiGate → rsyslog با TCP/TLS، قالب، Parse، Retention و آزمون
 
@@ -1570,6 +1724,18 @@ end
 2. *TLS؟* حفاظت.
 3. *Retention؟* سیاست.
 
+### مثال حل‌شده: Syslog TCP تا رسیدن Log
+
+``` text
+FGT: config log syslogd setting ; set status enable ; set server 10.50.0.20 ; set mode reliable ; end
+Srv: sudo tcpdump -ni eth0 tcp port 514 -c 5
+Srv: tail -f /var/log/fgt/*.log
+```
+
+**اگر Log نرسید:** ۱) Route/Policy از Mgmt به سرور ۲) پورت 514 روی سرور (`ss -ltn`) ۳) Firewall سرور ۴) Source Interface (`set source-ip`).
+
+**تست دستی از FGT:** با رویداد تغییر Config یا ورود ادمین یک Log ایجاد و رسیدن آن را بررسی کنید.
+
 ## درس 26-3 — Backup خودکار و مدیریت Config با Git: Sanitize، Diff، Audit، Restore و Drift
 
 **فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۰، ۲۷-۷ · ≈ 8 ساعت**
@@ -1741,6 +1907,18 @@ git diff HEAD~1 -- cfg.conf
 2. *Diff؟* تغییر ناخواسته.
 3. *Restore آزمون؟* دوره‌ای.
 
+### مثال حل‌شده: Diff هفتگی Config
+
+``` text
+sed -E 's/(set (psk|password|secret) ).*/\1REDACTED/' cfg.conf > cfg.clean
+git add cfg.clean && git commit -m weekly
+git diff HEAD~1 -- cfg.clean | head -30
+```
+
+تفسیر: خطوط `+` افزوده‌شده، `-` حذف‌شده. اگر Policy جدیدی بدون Change Ticket دیدید ⇒ تغییر خارج از فرایند؛ بررسی Log Admin.
+
+**هشدار:** `ENC` هم Secret است؛ فایل Sanitize نشده را در ریپو قرار ندهید.
+
 ## درس 26-4 — طراحی معماری ۹ (مدیریت مرکزی و عملیات): RBAC، Change، Audit و آزمون با Rubric
 
 **فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۱ تا ۲۶-۳، ۳۲-۱ · ≈ 11 ساعت**
@@ -1896,6 +2074,26 @@ Runbook، Change، Monitoring، Backup، RBAC. شاخص: RPO/RTO مستند.
 1. *RBAC؟* Profile.
 2. *Out-of-band؟* Mgmt شبکه‌ی جدا.
 3. *Audit؟* Log تغییر.
+
+### مثال حل‌شده: RBAC مدیریتی
+
+| نقش | دسترسی |
+|---|---|
+| NOC | فقط خواندن (super_admin_readonly) |
+| Network Eng | Policy/Route |
+| Security | Log/UTM |
+
+``` text
+config system accprofile
+ edit "noc-ro"
+  set netgrp read
+  set fwgrp read
+  set loggrp read
+ next
+end
+```
+
+آزمون: کاربر NOC تلاش به تغییر Policy ⇒ رد؛ Log رویداد ثبت شود.
 
 ## پاسخ‌های فصل 26
 
@@ -2168,6 +2366,18 @@ Baseline: میانگین CPU 18٪، Session 25k، Throughput Peak 400 Mbps. هش
 2. *آستانه؟* درصدی از Peak.
 3. *Alert Fatigue؟* آستانه‌ی دقیق.
 
+### مثال حل‌شده: ساخت Baseline و آستانه
+
+**داده‌ی ۷ روزه:** CPU میانگین 18٪، P95 = 41٪؛ Session میانگین 25000، Peak 38000؛ ظرفیت Session مدل = 200000.
+
+``` text
+Session alert warn = 0.5 x 200000 = 100000
+Session alert crit = 0.8 x 200000 = 160000
+CPU warn = P95 x 1.5 = 61%
+```
+
+مراحل: ۱) Baseline از دورهٔ نرمال ۲) آستانه بر اساس ظرفیت و P95 ۳) بازبینی ماهانه. هشدار با Duration (مثلاً ۱۰ دقیقه) برای کاهش Alert Fatigue.
+
 ## درس 27-1 — Logging در FortiGate: انواع Log، سطح ثبت، Policy Logging، ذخیره‌ی محلی و طراحی حجم/Retention
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰، ۲۶-۲، ۱۴-۷ · ≈ 8 ساعت**
@@ -2364,6 +2574,19 @@ end
 2. *Log All در برابر UTM؟* حجم.
 3. *زمان؟* NTP.
 
+### مثال حل‌شده: چرا Log ترافیک ثبت نمی‌شود؟
+
+1. Policy را باز کنید: `logtraffic` اگر `disable` است ⇒ `utm` یا `all`.
+2. `config log setting` و `fwpolicy-implicit-log`.
+3. مقصد Log: `config log disk setting` یا syslog.
+4. `execute log filter category 0 ; execute log display`.
+
+``` text
+date=2026-11-27 srcip=10.10.0.5 dstip=198.51.100.8 policyid=30 action=accept
+```
+
+اگر Disk Log پر است، به Syslog/FAZ منتقل کنید.
+
 ## درس 27-2 — مانیتورینگ با SNMP و Zabbix: معیارها، Template، Trigger، Baseline و کاهش Alert نویزی
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰، ۲۷-۱ · ≈ 8 ساعت**
@@ -2548,6 +2771,16 @@ end
 1. *v2c ریسک؟* رمز متن‌ساده.
 2. *Trigger؟* آستانه.
 3. *Template؟* آماده‌ی Fortinet.
+
+### مثال حل‌شده: پایش CPU با SNMP
+
+``` text
+snmpwalk -v2c -c ro-comm 10.50.0.1 1.3.6.1.4.1.12356.101.4.1.3
+```
+
+OID بالا از MIB فورتی‌نت (fgSysCpuUsage؛ مسیر را از MIB رسمی نسخه تأیید کنید). تفسیر عدد: درصد CPU.
+
+در Zabbix: Item ← Trigger `avg(/FGT/cpu,10m)>70` ← Action ایمیل. آزمون: بار مصنوعی با iperf و دیدن Trigger.
 
 ## درس 27-3 — REST API و Automation امن: احراز هویت، Trusted Host، GET/PUT، Idempotency، Rollback و آزمون
 
@@ -2734,6 +2967,16 @@ Trusted Host اجباری؛ فقط GET؛ توکن در Vault.
 2. *Rate limit؟* حفاظت.
 3. *Log API؟* ممیزی.
 
+### مثال حل‌شده: GET امن به API
+
+``` text
+curl -sk -H "Authorization: Bearer $TOKEN" https://10.50.0.1/api/v2/monitor/system/status
+```
+
+نتیجه‌ی مورد انتظار: JSON با `version`. اگر از IP غیرمجاز زده شود ⇒ خطای دسترسی (Trusted Host). توکن را در متغیر محیطی/Vault نگه دارید نه در Script.
+
+آزمون منفی: Profile فقط‌خواندنی با روش PUT ⇒ رد.
+
 ## درس 27-4 — Hardening مدیریتی عملی و Backup/Restore: اجرای چک‌لیست، آزمون منفی و اثبات بازیابی
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۷، ۱۲-۸، ۲۶-۳ · ≈ 8 ساعت**
@@ -2901,6 +3144,16 @@ end
 2. *Restore آزمون؟* در Lab.
 3. *Default Admin؟* تغییر نام/غیرفعال.
 
+### مثال حل‌شده: چک‌لیست و اسکن
+
+``` text
+nmap -p 22,23,80,443,8443 10.50.0.1   (from Users VLAN)
+```
+
+انتظار: همه filtered/closed. از Mgmt: فقط 443 و 22 (در صورت نیاز). هر مورد باز ⇒ Local-in Policy/allowaccess را اصلاح کنید.
+
+Backup: `execute backup config tftp ...` و آزمون Restore در Lab با Diff.
+
 ## درس 27-5 — Gate G10: آزمون عملی Logging، Monitoring، Hardening و Backup — کلید پاسخ کامل و Rubric
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۱ تا ۲۷-۴ · ≈ 12 ساعت**
@@ -3066,6 +3319,18 @@ Log ۲۰، Monitoring ۲۰، API ۱۵، Hardening ۲۵، Backup/Restore ۲۰.
 2. *Alert نمونه؟* CPU.
 3. *API آزمون؟* GET موفق/رد.
 
+### مثال حل‌شده: نمره‌دهی G10
+
+| بخش | وزن | شاهد |
+|---|---|---|
+| Logging | 20 | Log رسیده به Syslog |
+| Monitoring | 20 | Trigger فعال شد |
+| API | 15 | GET موفق + رد منفی |
+| Hardening | 25 | اسکن پورت |
+| Backup/Restore | 20 | Diff پس از Restore |
+
+مثال: همه موفق جز Restore آزمون‌نشده ⇒ 80 از 100.
+
 ## درس 27-7 — Hardening، Backup/Restore و API: امن‌سازی مدیریتی و بازیابی قابل‌اثبات
 
 **فصل ۲۷ · درس افزوده (پس از ۲۷-۵) · پیش‌نیاز: ۱۲-۸، ۲۶-۰، ۲۷-۰ · ≈ ۶ ساعت**
@@ -3189,6 +3454,15 @@ Mgmt جدا، Local-in Policy، Syslog، API Trusted Host، رمز Backup. تأ�
 1. *Out-of-band؟* شبکه‌ی جدا.
 2. *نسخه؟* وصله‌ی PSIRT.
 3. *اسکن؟* nmap از Users.
+
+### مثال حل‌شده: مدیریت Admin ناخواسته
+
+``` text
+show system admin
+config log eventfilter ; set system enable ; end
+```
+
+Backup قبل از تغییر، سپس حذف ادمین بلااستفاده و ثبت Evidence از `show system admin` قبل/بعد.
 
 ## پاسخ‌های فصل 27
 
