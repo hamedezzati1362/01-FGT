@@ -223,6 +223,62 @@ show ip ospf database external
 
 <a id="l-10-2"></a>
 
+### تعمیق: پروژه‌ی Redistribution از صفر تا آزمون (OSPF ⇄ EIGRP)
+
+**سناریو.** سازمان پس از ادغام دو شرکت: دفتر مرکزی OSPF Area 0 (10.0.0.0/16) و شعب EIGRP 100 (172.16.0.0/16). یک ASBR (R5) هر دو را می‌بیند. هدف: شعب مرکز را ببینند و مرکز شعب را.
+
+**گام ۱ — Baseline.**
+
+``` text
+R5# show ip route ospf | count
+R5# show ip route eigrp | count
+R1(OSPF)# ping 172.16.5.1   ! expected FAIL before redistribution
+```
+
+**گام ۲ — تزریق EIGRP به OSPF (با Metric نوع ۱ برای چند ASBR احتمالی).**
+
+``` text
+router ospf 1
+ redistribute eigrp 100 subnets metric 100 metric-type 1
+```
+
+**گام ۳ — تزریق OSPF به EIGRP.** هر پروتکل Metric خودش را می‌خواهد: bandwidth (Kbps)، delay (واحد ۱۰ میکروثانیه)، reliability، load، MTU:
+
+``` text
+router eigrp 100
+ redistribute ospf 1 metric 100000 10 255 1 1500
+```
+
+معنی: 100 Mbps، delay = 10 × 10µs = 100µs، reliability 255، load 1، MTU 1500.
+
+**گام ۴ — Verification.**
+
+``` text
+R1# show ip route 172.16.5.0
+ O E1 172.16.5.0/24 [110/120] via R5
+BR3# show ip route 10.0.1.0
+ D EX 10.0.1.0/24 [170/...] via R5
+```
+
+محاسبه‌ی [110/120]: Metric E1 = ۱۰۰ (Seed) + هزینه‌ی داخلی OSPF تا R5 (۲۰) = ۱۲۰.
+
+``` text
+E1 metric = seed 100 + internal cost to ASBR 20 = 120
+E2 metric = seed 100 (no internal cost added)
+```
+
+**گام ۵ — آزمون منفی.** Prefixی که نباید منتقل شود (مثلاً مدیریت 10.99.0.0/24) را با Route-map فیلتر کنید و تأیید کنید در شعب دیده نمی‌شود.
+
+**اشتباهات رایج**
+- فراموشی `subnets`: فقط Prefix کلاس‌دار می‌رود.
+- فراموشی Metric در EIGRP: مسیر منتقل نمی‌شود (Metric بی‌نهایت).
+- Redistribution بدون فیلتر: Default و مسیرهای مدیریت نشت می‌کنند.
+
+**پرسش‌های مصاحبه**
+1. *E1 و E2 را کی استفاده می‌کنید؟* E1 وقتی چند ASBR دارید و می‌خواهید نزدیک‌ترین انتخاب شود؛ E2 وقتی هزینه‌ی خارجی ثابت کافی است.
+2. *AD مسیر EIGRP External؟* ۱۷۰.
+3. *چرا Redistribution دوطرفه خطرناک است؟* Route Feedback و حلقه (درس ۱۰-۲).
+
 ## درس 10-2 — Redistribution دوطرفه، Route Feedback و جلوگیری از حلقه با Tag
 
 **فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۱۰-۱ · ≈ 9 ساعت**
@@ -378,6 +434,61 @@ show ip route 10.1.1.0
 
 <a id="l-10-3"></a>
 
+### تعمیق: سناریوی حلقه‌ی واقعی با دو ASBR و رفع قدم‌به‌قدم
+
+**سناریو.** دو ASBR (R5 و R6) هر دو OSPF ⇄ EIGRP دوطرفه دارند. پس از افزودن R6، در شعبه Ping به مرکز گاهی TTL expired می‌دهد.
+
+**گام ۱ — اثبات حلقه.**
+
+``` text
+BR3# traceroute 10.0.1.5
+ 1 172.16.0.5 (R5)  2 172.16.0.6 (R6)  3 172.16.0.5 (R5)  4 172.16.0.6 (R6) ...
+```
+
+مسیر 10.0.1.0/24 بین R5 و R6 دور می‌زند.
+
+**گام ۲ — علت.** R5 مسیر OSPF را به EIGRP داد؛ R6 آن را از EIGRP یاد گرفت (AD 170 بدتر از OSPF 110 ولی برای R6 مسیر داخلی OSPF هم هست) و در جهت برگشت دوباره به OSPF تزریق کرد؛ در بعضی Prefixها Metric/AD ناسازگار مسیر را به EIGRP ترجیح می‌دهد.
+
+**گام ۳ — Tag روی هر دو ASBR.**
+
+``` text
+route-map OSPF-TO-EIGRP deny 10
+ match tag 100
+route-map OSPF-TO-EIGRP permit 20
+ set tag 200
+route-map EIGRP-TO-OSPF deny 10
+ match tag 200
+route-map EIGRP-TO-OSPF permit 20
+ set tag 100
+router eigrp 100
+ redistribute ospf 1 metric 100000 10 255 1 1500 route-map OSPF-TO-EIGRP
+router ospf 1
+ redistribute eigrp 100 subnets route-map EIGRP-TO-OSPF
+```
+
+منطق: مسیری که از OSPF به EIGRP رفته Tag=200 دارد؛ در جهت EIGRP→OSPF رد می‌شود؛ مسیری که از EIGRP به OSPF رفته Tag=100 دارد؛ در جهت OSPF→EIGRP رد می‌شود.
+
+**گام ۴ — Verification.**
+
+``` text
+R6# show ip route 10.0.1.0
+ O 10.0.1.0/24 [110/20] via ...     ! native OSPF route, not the EIGRP copy
+R6# show ip eigrp topology 10.0.1.0/24    ! tag 200 present
+BR3# traceroute 10.0.1.5               ! 2 hops, no loop
+```
+
+**گام ۵ — آزمون خرابی.** لینک R5-مرکز را قطع کنید؛ مسیر باید از R6 برود؛ باز هم بدون حلقه.
+
+**اشتباهات رایج**
+- Tag فقط روی یک ASBR.
+- Tag هر دو جهت یکسان (200 و 200): هر مسیر برگردانده می‌شود یا همه فیلتر می‌شوند.
+- Route-map بدون `permit` پایانی: Deny ضمنی همه‌ی مسیرهای دیگر را هم می‌اندازد (در Redistribution برخلاف PBR Deny ضمنی مسیر را حذف می‌کند).
+
+**پرسش‌های مصاحبه**
+1. *چرا Tag و نه Distance؟* Distance فقط ترجیح را عوض می‌کند، Tag ریشه‌ی بازگشت را می‌بندد.
+2. *OSPF Tag را چگونه حمل می‌کند؟* در LSA نوع ۵ فیلد External Route Tag.
+3. *جایگزین بدون دوطرفه؟* Default Route از مرکز به شعب و Summary از شعب به مرکز.
+
 ## درس 10-3 — ECMP و توزیع بار: Equal-cost، Hashing و Load Balancing
 
 **فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۶-۱، ۱۰-۱ · ≈ 8 ساعت**
@@ -516,6 +627,57 @@ show ip cef exact-route 10.0.0.1 10.1.1.1
 - Cisco CEF guide
 
 <a id="l-10-4"></a>
+
+### تعمیق: ECMP با اندازه‌گیری واقعی و پرونده‌ی «Sessionها قطع می‌شوند»
+
+**سناریو.** دو لینک 1 Gbps بین Core و Edge با Cost برابر؛ ECMP فعال. کاربران گزارش می‌دهند Sessionهای بزرگ (SMB) گاهی ریست می‌شوند.
+
+**گام ۱ — تأیید ECMP.**
+
+``` text
+Core# show ip route 10.99.0.0
+ O 10.99.0.0/24 [110/20] via 10.0.1.2, Gi0/1
+                        [110/20] via 10.0.2.2, Gi0/2
+Core# show ip cef 10.99.0.5 internal
+Core# show ip cef exact-route 10.10.0.5 10.99.0.5
+```
+
+برای هر جفت Src/Dst دستور exact-route مسیر Hash را نشان می‌دهد.
+
+**گام ۲ — اندازه‌گیری توزیع.** با iperf سه حالت:
+
+``` text
+1 flow    -> uses one link (about 940 Mbps total, other link idle)
+8 flows   -> ~ 55/45 across links (depends on hash)
+64 flows  -> ~ 50/50
+```
+
+نتیجه: یک جریان از یک لینک می‌رود؛ ECMP پهنای باند «یک جریان» را دو برابر نمی‌کند، «مجموع جریان‌ها» را.
+
+**گام ۳ — علت ریست Session.** بین Core و Edge یک فایروال Stateful در هر مسیر است؛ تغییر الگوریتم Hash یا خرابی یک لینک جریان را به لینک دیگر می‌برد و فایروال دوم Session نمی‌شناسد.
+
+**گام ۴ — رفع.** یکی از سه راه:
+1. Symmetric Hash/جفت‌سازی فایروال‌ها با Session sync.
+2. به‌جای ECMP، Primary/Backup (Cost متفاوت) برای ترافیک Stateful.
+3. EtherChannel به یک فایروال (HA Cluster).
+
+**گام ۵ — الگوریتم Hash.**
+
+``` text
+ip cef load-sharing algorithm include-ports source destination
+```
+
+پیش‌فرض universal فقط IP را در Hash می‌گذارد؛ include-ports توزیع را بهتر می‌کند ولی Symmetry را تضمین نمی‌کند؛ برای فایروال باید جداگانه بررسی شود.
+
+**اشتباهات رایج**
+- انتظار 2 Gbps برای یک انتقال فایل.
+- Per-packet برای TCP: بسته‌ها نامرتب می‌رسند.
+- ECMP روی دو فایروال Stateful بدون Sync.
+
+**پرسش‌های مصاحبه**
+1. *شرط ECMP؟* مسیرهای برابر Metric و AD و ≤ `maximum-paths` (پلتفرم‌محور).
+2. *چرا یک جریان فقط یک لینک؟* Hash روی Src/Dst/Port؛ ترتیب بسته‌ها حفظ می‌شود.
+3. *تفاوت Per-flow و Per-packet؟* Per-flow ترتیب را حفظ می‌کند و با Stateful سازگار است.
 
 ## درس 10-4 — Policy-Based Routing (PBR): مسیریابی بر اساس سیاست با Route-map، Track و Failover
 
@@ -698,6 +860,53 @@ show ip policy
 
 <a id="l-10-5"></a>
 
+### تعمیق: PBR تا Failover با اندازه‌گیری و پرسش‌های مصاحبه
+
+**سناریو.** Finance (10.10.20.0/24) باید از ISP-A (Metro) برود و بقیه از ISP-B. اگر A قطع شد Finance به B برود. شمارنده‌ی Match باید قابل اثبات باشد.
+
+**گام ۱ — کامل‌ترین پیکربندی.**
+
+``` text
+ip access-list extended FINANCE
+ permit ip 10.10.20.0 0.0.0.255 any
+ip sla 1
+ icmp-echo 192.0.2.1 source-interface GigabitEthernet0/2
+ frequency 5
+ip sla schedule 1 life forever start-time now
+track 1 ip sla 1 reachability
+route-map PBR-FIN permit 10
+ match ip address FINANCE
+ set ip next-hop verify-availability 192.0.2.1 10 track 1
+ set ip next-hop 192.0.2.5
+interface GigabitEthernet0/1
+ ip policy route-map PBR-FIN
+```
+
+`source-interface` باعث می‌شود Probe از لینک A برود؛ بدون آن Probe ممکن است از مسیر دیگر بگذرد و Failover کاذب بدهد (مستند Cisco).
+
+**گام ۲ — اثبات.**
+
+``` text
+R1# show route-map PBR-FIN
+  Policy routing matches: 4821 packets, 5122340 bytes
+R1# traceroute 8.8.8.8 source 10.10.20.5     ! via 192.0.2.1
+R1# traceroute 8.8.8.8 source 10.10.30.5     ! normal routing table
+```
+
+**گام ۳ — Failover.** ISP-A را قطع کنید: `show track 1` ⇒ Down؛ ترافیک Finance به 192.0.2.5 می‌رود؛ شمارنده‌ی Match همچنان بالا می‌رود ولی Next-hop دوم.
+
+**نکته‌ی مهم (مستند Cisco).** بسته‌ای که با Route-map PBR مطابقت نکند یا با `deny` مطابق شود Drop نمی‌شود؛ با جدول مسیریابی عادی ارسال می‌شود. خطر واقعی این است که Sequence بدون `match` با `set` همه‌ی بسته‌ها را مجبور به همان Next-hop می‌کند.
+
+**اشتباهات رایج**
+- Policy روی Interface خروجی (باید ورودی).
+- Next-hop بدون ARP/Reachability: ترافیک Drop.
+- Track روی Gateway به‌جای مقصد دورتر.
+
+**پرسش‌های مصاحبه**
+1. *PBR قبل یا بعد از RIB؟* قبل از جستجوی RIB برای بسته‌های مطابق.
+2. *تفاوت next-hop و default next-hop؟* default فقط وقتی مسیر مشخص نیست.
+3. *Local PBR برای چه؟* ترافیک تولیدشده توسط خود روتر.
+
 ## درس 10-5 — VRF-lite: چند جدول مسیریابی مستقل، Overlap آدرس و ارتباط با فایروال
 
 **فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۶-۱، ۱۰-۴ · ≈ 10 ساعت**
@@ -854,6 +1063,70 @@ ping vrf CUST-A 192.168.1.2
 
 <a id="l-10-6"></a>
 
+### تعمیق: طراحی VRF-lite برای سه مشتری با آدرس تکراری
+
+**سناریو.** دو مشتری (A و B) هر دو 192.168.1.0/24 دارند؛ مشتری C 10.5.0.0/16. همه از یک روتر و یک فایروال اینترنت می‌گیرند.
+
+**گام ۱ — VRFها و Interfaceها.**
+
+``` text
+ip vrf CUST-A
+ rd 65000:1
+ip vrf CUST-B
+ rd 65000:2
+ip vrf CUST-C
+ rd 65000:3
+interface Gi0/1
+ ip vrf forwarding CUST-A
+ ip address 192.168.1.1 255.255.255.0
+interface Gi0/2
+ ip vrf forwarding CUST-B
+ ip address 192.168.1.1 255.255.255.0
+interface Gi0/3
+ ip vrf forwarding CUST-C
+ ip address 10.5.0.1 255.255.0.0
+```
+
+یادآوری مستند: `ip vrf forwarding` IP قبلی Interface را پاک می‌کند؛ ترتیب forwarding سپس address. در IOS-XE جدید سینتکس `vrf definition` + `vrf forwarding` است.
+
+**گام ۲ — خروج هر VRF به فایروال (Zone جدا).**
+
+``` text
+interface Gi0/4.101
+ encapsulation dot1Q 101
+ ip vrf forwarding CUST-A
+ ip address 10.255.101.1 255.255.255.252
+interface Gi0/4.102
+ encapsulation dot1Q 102
+ ip vrf forwarding CUST-B
+ ip address 10.255.102.1 255.255.255.252
+ip route vrf CUST-A 0.0.0.0 0.0.0.0 10.255.101.2
+ip route vrf CUST-B 0.0.0.0 0.0.0.0 10.255.102.2
+```
+
+در فایروال دو Zone/VDOM و NAT مجزا (هر مشتری Pool خودش)؛ چون هر دو مشتری 192.168.1.0/24 دارند، NAT قبل از خروج لازم است.
+
+**گام ۳ — Verification.**
+
+``` text
+show ip vrf
+show ip route vrf CUST-A
+ping vrf CUST-A 192.168.1.2
+show ip arp vrf CUST-B
+```
+
+**گام ۴ — آزمون منفی.** از Host مشتری A به 192.168.1.2 (که فقط در B وجود دارد) پینگ کنید: باید به Host خودِ A برسد یا Timeout شود، نه به B. و `ping vrf CUST-A 10.5.0.5` (مشتری C) باید شکست بخورد.
+
+**اشتباهات رایج**
+- `ping` بدون `vrf`.
+- فراموشی Default Route در VRF.
+- Route Leak ناخواسته با Static یا Import/Export اشتباه.
+
+**پرسش‌های مصاحبه**
+1. *VRF-lite در برابر MPLS VRF؟* lite بدون MPLS و RD/RT مبتنی بر BGP؛ مقیاس کوچک‌تر.
+2. *RD چه کاری می‌کند؟* Prefixهای هم‌آدرس را در BGP/VPNv4 یکتا می‌کند.
+3. *آیا VRF امنیت است؟* جداسازی مسیریابی است؛ سیاست فایروال هم لازم است.
+
 ## درس 10-6 — Asymmetric Routing: تحلیل رفت و برگشت، اثر بر فایروال و راه‌حل‌ها
 
 **فصل 10 · بازنویسی عمیق · پیش‌نیاز: ۱۰-۳، ۱۱-۱، ۱۱-۳ · ≈ 10 ساعت**
@@ -993,6 +1266,43 @@ show ip route 10.20.0.5
 - Fortinet FortiOS 7.0: Asymmetric routing
 
 <a id="l-10-7"></a>
+
+### تعمیق: اثبات Asymmetric با Capture دو سمتی و سه راه‌حل
+
+**سناریو.** دو ISP با Local-pref متفاوت برای خروج و Prepend برای ورود؛ دو فایروال FW1 و FW2. کاربر می‌گوید «سایت X باز می‌شود ولی نصف مواقع قطع».
+
+**گام ۱ — ثبت Capture هم‌زمان.** روی هر دو فایروال با فیلتر Host:
+
+``` text
+FW1: diagnose sniffer packet any 'host 203.0.113.50 and tcp port 443' 4 20 l
+FW2: diagnose sniffer packet any 'host 203.0.113.50 and tcp port 443' 4 20 l
+```
+
+**نتیجه:** FW1 فقط `SYN` را می‌بیند؛ FW2 فقط `SYN, ACK` و `ACK` را. FW2 برای SYN-ACK Session ندارد ⇒ Drop. اگر FortiGate است در Debug flow: `no session matched` یا `reverse path check fail`.
+
+**گام ۲ — علت.** مسیر ورود از ISP-B است (Prepend کار نکرد) در حالی که خروج از A است.
+
+**گام ۳ — سه راه‌حل با ریسک**
+
+| راه | کار | ریسک |
+|---|---|---|
+| طراحی Symmetric | Local-pref + اصلاح اعلام BGP تا ورود هم از A | نتیجه‌ی ورود تضمینی نیست |
+| Session sync (Cluster) | FGCP/FGSP | پیچیدگی و Delay |
+| `asymroute enable` | پذیرش بسته‌ی بدون SYN | امنیت کم، فقط موقت |
+
+**گام ۴ — آزمون پس از رفع.** سه بار Capture؛ هر دو جهت در یک فایروال؛ Sessionها پایدار؛ آزمون قطع A و Failover.
+
+**نکته‌ی عملی:** Asymmetric همیشه خطا نیست؛ در Stateless یا با FGSP کار می‌کند؛ مشکل با Stateful بدون Sync است.
+
+**اشتباهات رایج**
+- Capture فقط روی یک فایروال.
+- حل با `asymroute` و فراموشی آن.
+- تصور اینکه Prepend ورود را تضمین می‌کند.
+
+**پرسش‌های مصاحبه**
+1. *سه علت Asymmetric؟* ECMP، دو ISP با Policy متفاوت، Redistribution ناهمگون.
+2. *چرا Stateless مشکل ندارد؟* هر بسته مستقل بررسی می‌شود.
+3. *FGSP چیست؟* Session sync بین فایروال‌های مستقل (غیر Cluster) برای Asymmetric.
 
 ## درس 10-7 — طراحی مسیر چندفایروالی و آزمون جامع فصل ۱۰: پروژه‌ی حل‌شده‌ی کامل
 
@@ -1153,6 +1463,59 @@ traceroute 8.8.8.8 source 10.10.20.5
 ### ۱۵) منابع
 
 - درس‌های ۱۰-۱ تا ۱۰-۶
+
+### تعمیق: پیکربندی نمونه‌ی کامل Edge و آزمون Failover با اندازه‌گیری
+
+**هدف.** پروژه‌ی جامع فصل ۱۰ را اجرایی کنیم: BGP دو ISP، OSPF داخلی، PBR Finance با Track و VRF مهمان.
+
+**گام ۱ — BGP Edge.**
+
+``` text
+router bgp 65010
+ bgp log-neighbor-changes
+ neighbor 192.0.2.1 remote-as 65100
+ neighbor 192.0.2.1 prefix-list BOGONS in
+ neighbor 192.0.2.1 route-map FROM-A in
+ neighbor 192.0.2.5 remote-as 65200
+ neighbor 192.0.2.5 prefix-list BOGONS in
+ neighbor 192.0.2.5 route-map FROM-B in
+ network 203.0.113.0 mask 255.255.255.0
+ip route 203.0.113.0 255.255.255.0 Null0
+route-map FROM-A permit 10
+ set local-preference 200
+route-map FROM-B permit 10
+ set local-preference 100
+```
+
+**گام ۲ — OSPF.** Default داخل OSPF فقط وقتی BGP Default دارد (Track): `default-information originate` بدون `always`.
+
+**گام ۳ — Finance با PBR** (درس ۱۰-۴) و **مهمان در VRF** (درس ۱۰-۵).
+
+**گام ۴ — جدول آزمون و Evidence**
+
+| # | آزمون | روش | معیار |
+|---|---|---|---|
+| 1 | Users→Internet | traceroute | از ISP-A (Local-pref 200) |
+| 2 | Finance→Internet | traceroute با Source | از ISP-A و شمارنده‌ی PBR بالا |
+| 3 | قطع ISP-A | shutdown Session | Failover < 15 s، Finance به B |
+| 4 | Guest→Servers | ping vrf | شکست |
+| 5 | Asymmetric | Capture دو سمتی | بدون SYN-ACK بی‌SYN |
+
+**گام ۵ — اندازه‌گیری Failover.** ping پیوسته ۲۰۰ms:
+
+``` text
+lost packets x 0.2 s = outage seconds
+example: 62 lost x 0.2 = 12.4 s
+```
+
+اگر > ۱۵ ثانیه: BFD و کاهش interval Track.
+
+**ریسک‌ها:** Next-hop مرده در PBR (Track)، Leak بین VRF (آزمون منفی)، Prepend بی‌اثر (اندازه‌گیری ورودی)، نبود Alert روی Neighbor Down.
+
+**پرسش‌های مصاحبه**
+1. *چرا Default داخل OSPF بدون `always`؟* تا وقتی Edge خروجی ندارد Default را اعلام نکند (Black-hole).
+2. *Failover را چطور سریع می‌کنید؟* BFD برای BGP/OSPF و Track با Interval کوچک.
+3. *گزارش پروژه چه دارد؟* طرح، Configها بدون رمز، Evidence Index، ریسک و Rollback.
 
 ## درس 10-8 — Route Leaking میان VRFها و جدول Global: طراحی کنترل‌شده
 
