@@ -5222,7 +5222,7 @@ config system link-monitor
 end
 ```
 
-zaman تشخیص ≈ failtime × interval = ۵ × ۱ ثانیه = ۵ ثانیه؛ با Convergence حدود ۶–۸ ثانیه.
+زمان تشخیص ≈ failtime × interval = ۵ × ۱ ثانیه = ۵ ثانیه؛ با Convergence حدود ۶–۸ ثانیه.
 
 **گام ۳ — آزمون.** `ping -t 8.8.8.8` از LAN با Interval ۲۰۰ میلی‌ثانیه؛ ISP-A را قطع؛ شمارش بسته‌های گمشده × ۰٫۲ ثانیه.
 

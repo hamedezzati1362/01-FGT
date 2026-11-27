@@ -265,6 +265,44 @@ diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
 
 <a id="l-13-2"></a>
 
+### تعمیق: ساخت مجموعه‌ی Policy یک شعبه از صفر تا آزمون منفی
+
+**سناریو.** شعبه‌ی ۸۰ نفره: Users (VLAN10)، Servers (VLAN20)، Guest و اینترنت. می‌خواهیم Policy اولیه را با ترتیب درست بنویسیم.
+
+**ترتیب Policyها (خاص → عام)**
+
+``` text
+ID 10  USERS  -> SERVERS  src NET-USERS   dst GRP-SERVERS  svc HTTPS,SMB  accept log all
+ID 20  GUEST  -> INTERNET src NET-GUEST   dst all          svc HTTP,HTTPS,DNS accept nat log utm
+ID 30  USERS  -> INTERNET src NET-USERS   dst all          svc HTTP,HTTPS,DNS accept nat log utm
+ID 90  any    -> any      src all         dst all          svc ALL  deny log all
+```
+
+**محاسبه‌ی پوشش.** هر Policy باید به یک نیازمندی وصل شود؛ Policy ۳۰ اگر قبل از ۱۰ باشد (با dst=all)، ترافیک داخلی را هم می‌گیرد و ۱۰ هرگز اجرا نمی‌شود (Shadow).
+
+**گام ۱ — Lookup.**
+
+``` text
+diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 445 tcp port2
+ -> policy 10
+diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 22 tcp port2
+ -> policy 90 (deny)
+```
+
+**گام ۲ — Log آزمون منفی.** ssh به یک سرور اینترنتی: `action=deny policyid=90`؛ این Log همان Evidence است.
+
+**گام ۳ — Hit Count و بازبینی.** بعد از ۲ هفته Hit Count هر Policy را ببینید؛ Policyهای صفر کاندید بازبینی (نه حذف فوری).
+
+**اشتباهات رایج**
+- Policy ALL/ALL «موقت».
+- Log خاموش روی Deny.
+- نداشتن Comment/Owner.
+
+**پرسش‌های مصاحبه**
+1. *Implicit Deny و Policy 0؟* Log پیش‌فرض ندارد؛ `fwpolicy-implicit-log` یا Deny صریح.
+2. *Policy بدون Route؟* بی‌اثر؛ Route Interface خروجی را تعیین می‌کند.
+3. *Policy Lookup چه می‌دهد؟* Policy مطابق جریان بدون ارسال ترافیک.
+
 ## درس 13-2 — NAT در FortiGate: Policy NAT، IP Pool، Central NAT و انتخاب درست
 
 **فصل 13 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۴، ۱۳-۱ · ≈ 10 ساعت**
@@ -478,6 +516,53 @@ diagnose sys session list
 
 <a id="l-13-3"></a>
 
+### تعمیق: برآورد ظرفیت NAT و انتخاب Pool با عدد
+
+**سناریو.** ۱۲۰۰ کاربر؛ هر کدام ۶۰ Session هم‌زمان؛ بیشتر ترافیک به چند CDN (Destination محدود).
+
+**محاسبه**
+
+``` text
+Total sessions = 1200 x 60 = 72000
+Ports per public IP (~64500) per destination ip:port
+Worst case (all to ONE destination ip:port): need >= 72000/64500 = 1.12 -> 2 IPs
+With 50% headroom: 3 IPs
+```
+
+در عمل مقصدها متفاوت‌اند و محدودیت پورت برای هر مقصد جدا حساب می‌شود، پس این بدترین حالت است؛ ولی برای CDN محدود نزدیک واقعیت است.
+
+**انتخاب نوع Pool (مستند Fortinet)**
+
+| نیاز | نوع | نکته |
+|---|---|---|
+| اینترنت عمومی | overload (پیش‌فرض) | IPها اشتراکی |
+| سرویس نیازمند IP اختصاصی | one-to-one | PAT خاموش؛ دو IP یعنی دو Host |
+| ردیابی قانونی/Log کم | fixed-port-range یا port-block-allocation | بازه‌ی پورت یا بلوک به Host |
+
+**پیکربندی Overload با دو IP**
+
+``` text
+config firewall ippool
+ edit "POOL-INET"
+  set type overload
+  set startip 203.0.113.20
+  set endip 203.0.113.22
+ next
+end
+```
+
+**آزمون بار.** ۱۰۰۰۰۰ اتصال با ab/hping؛ `diagnose sys session stat` و Log «nat pool exhausted»؛ در صورت پر شدن Pool را بزرگ کنید یا PBA.
+
+**اشتباهات رایج**
+- Central NAT فعال و Policy NAT بی‌اثر.
+- IP Pool که ISP به شما Route نکرده.
+- Pool یک IP برای صدها کاربر با مقصد یکسان.
+
+**پرسش‌های مصاحبه**
+1. *تفاوت PAT و Static NAT؟* PAT پورت را تغییر می‌دهد؛ Static یک‌به‌یک.
+2. *Central NAT چه می‌کند؟* ترجمه را از Policy جدا و در جدول central-snat-map مدیریت می‌کند.
+3. *چرا PBA؟* Log کم‌حجم و ردیابی در CGN.
+
 ## درس 13-3 — VIP، Port-Forward و Hairpin NAT: انتشار امن سرویس داخلی
 
 **فصل 13 · بازنویسی عمیق · پیش‌نیاز: ۱۳-۱، ۱۳-۲ · ≈ 10 ساعت**
@@ -660,6 +745,50 @@ end
 
 <a id="l-13-4"></a>
 
+### تعمیق: انتشار وب با VIP، آزمون کامل و حل Hairpin
+
+**سناریو.** وب‌سرور 10.30.0.10 در DMZ؛ IP عمومی 203.0.113.10.
+
+**گام ۱ — VIP.**
+
+``` text
+config firewall vip
+ edit "VIP-WEB-443"
+  set extintf "port1"
+  set extip 203.0.113.10
+  set mappedip "10.30.0.10"
+  set portforward enable
+  set extport 443
+  set mappedport 443
+ next
+end
+```
+
+**گام ۲ — Policy.** `INET -> DMZ`, dstaddr = `VIP-WEB-443`, service HTTPS, Log All، (UTM در صورت لایسنس).
+
+**گام ۳ — آزمون مثبت/منفی**
+
+``` text
+curl -vk https://203.0.113.10          -> 200 (Policy hit)
+nmap -p 22,80,3389 203.0.113.10        -> filtered/closed (only 443 open)
+diagnose sys session filter dst 203.0.113.10
+diagnose sys session list              -> DNAT 203.0.113.10:443 -> 10.30.0.10:443
+```
+
+**گام ۴ — Hairpin.** کاربر LAN با نام عمومی وصل می‌شود و Session ناقص می‌ماند؛ راه ترجیحی Split DNS؛ طبق مستند Fortinet راه جایگزین VIP با extintf any و Policy از Interface داخلی؛ `nat-source-vip` تنظیم Hairpin نیست و برای SNAT ترافیک خروجی سرور است.
+
+**گام ۵ — Security.** فقط 443؛ WAF/IPS (Needs-License)؛ Rate limit با DoS Policy؛ Log متمرکز.
+
+**اشتباهات رایج**
+- Policy با IP داخلی.
+- سرور Default Gateway ندارد/به فایروال نمی‌رود.
+- Static NAT همه‌ی پورت‌ها.
+
+**پرسش‌های مصاحبه**
+1. *DNAT قبل یا بعد Policy؟* قبل.
+2. *Port-forward چه فایده؟* سطح حمله‌ی کمتر.
+3. *VIP و ARP؟* IP عمومی باید روی فایروال یا Route ISP باشد.
+
 ## درس 13-4 — Session Table: ساختار، Timeout، فیلتر و پاک‌سازی
 
 **فصل 13 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۱، ۱۱-۷، ۱۳-۱ · ≈ 10 ساعت**
@@ -840,6 +969,42 @@ diagnose sys session full-stat
 - FortiOS 7.0 CLI: diagnose sys session
 
 <a id="l-13-5"></a>
+
+### تعمیق: خواندن Session خط‌به‌خط و پرونده‌ی «Policy را حذف کردم ولی کار می‌کند»
+
+**نمونه Session**
+
+``` text
+session info: proto=6 proto_state=01 duration=35 expire=3565 timeout=3600 ...
+statistic(bytes/packets/allow_err): org=5320/42/1 reply=48200/55/1 tuples=2
+hook=post dir=org act=snat 10.10.0.5:40000->203.0.113.10:443(198.51.100.2:40000)
+hook=pre  dir=reply act=dnat 203.0.113.10:443->198.51.100.2:40000(10.10.0.5:40000)
+policy_id=10 ...
+```
+
+**تفسیر.** proto=6 TCP؛ proto_state=01 Established؛ expire/timeout ۳۵۶۵/۳۶۰۰ ⇒ ۳۵ ثانیه از عمر گذشته؛ پاسخ ۵۵ بسته و ۴۸ KB؛ policy_id=10 مجوز را داده؛ SNAT به 198.51.100.2.
+
+**پرونده.** Policy 5 (FTP) حذف شد ولی FTP هنوز کار می‌کند.
+
+``` text
+diagnose sys session filter dport 21
+diagnose sys session list     -> policy_id=5, expire=3200
+diagnose sys session clear     ! only for this filter
+diagnose sys session filter clear
+```
+
+پس از پاک‌سازی، اتصال جدید به 21 باید رد شود و Log `policyid=90`.
+
+**Timeoutها.** مقدار سراسری TCP ۳۶۰۰؛ Timeout هر Service می‌تواند آن را بازنویسی کند؛ برای SSH طولانی `config system session-ttl` یا Service سفارشی.
+
+**هشدار.** `diagnose sys session clear` بدون فیلتر همه‌ی Sessionها را می‌بندد.
+
+**نشت Session:** `diagnose sys session full-stat` و روند تعداد؛ علل: DoS، Timeout طولانی، UDP بی‌پایان.
+
+**پرسش‌های مصاحبه**
+1. *چرا پس از تغییر Policy Session قدیمی می‌ماند؟* Session موجود تا انقضا یا پاک‌سازی باقی است.
+2. *proto_state؟* وضعیت TCP؛ ۰۱ Established.
+3. *npu در Session؟* Session Offload شده؛ Debug flow آن را نمی‌بیند.
 
 ## درس 13-5 — مدیریت Policy در طول زمان: Shadow، Overlap، Hit Count، Schedule و بازبینی فصلی
 
@@ -1038,6 +1203,41 @@ diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 443 tcp port2
 
 <a id="l-13-6"></a>
 
+### تعمیق: پروژه‌ی پاک‌سازی ۸۰ Policy با گزارش ممیزی
+
+**ورودی.** Export: ۸۰ Policy؛ ۱۲ با Hit صفر؛ ۳ ALL؛ ۵ بدون Log.
+
+**گام ۱ — طبقه‌بندی.**
+
+``` text
+A: Hit=0 and age>90d             -> 12  (candidates)
+B: service ALL or dst all         -> 3   (narrow)
+C: log disabled                   -> 5   (enable log, review)
+D: duplicates/shadowed            -> 4   (reorder/delete)
+```
+
+**گام ۲ — تأیید مالک.** برای هر ردیف A ایمیل/Ticket؛ پاسخ‌ها: ۹ حذف، ۳ نگه‌داشتن (فصلی).
+
+**گام ۳ — اجرای کنترل‌شده.** Backup؛ Disable ۹ Policy؛ ۲ هفته مشاهده Log Deny؛ حذف.
+
+**گام ۴ — تنگ‌سازی ALL.** Log ۳۰ روزه ⇒ مقاصد واقعی ⇒ Policy خاص بالای ALL ⇒ ALL غیرفعال ⇒ حذف.
+
+**گام ۵ — گزارش ممیز.**
+
+| ID | نام | مالک | دلیل | Hit | ریسک | تصمیم |
+|---|---|---|---|---|---|---|
+| 47 | LEGACY-FTP | NOC | پروژه‌ی تمام‌شده | 0 | متوسط | حذف |
+| 55 | USERS-ALL | IT | تنگ‌سازی | 1.2M | بالا | جایگزینی |
+
+**نکته.** Hit Count با Reset/Reboot صفر می‌شود و استفاده‌ی فصلی را نمی‌بیند؛ Log ۱۲ ماهه را هم ببینید.
+
+**اشتباهات رایج:** حذف بی‌پشتوانه، فراموشی Backup، ثبت‌نکردن مالک.
+
+**پرسش‌های مصاحبه**
+1. *Shadow؟* Policy که هرگز اجرا نمی‌شود چون بالاتر همه‌ی ترافیکش را می‌گیرد.
+2. *Schedule پایان‌یافته؟* Sessionهای موجود تا انقضا می‌مانند.
+3. *چرا ابتدا Disable؟* Rollback سریع.
+
 ## درس 13-6 — سناریوهای خرابی Policy/NAT/Route، روش ۱۰ گامی و آزمون G5
 
 **فصل 13 · بازنویسی عمیق · پیش‌نیاز: ۱۳-۱ تا ۱۳-۵، ۱۴-۱ · ≈ 10 ساعت**
@@ -1190,6 +1390,52 @@ diagnose sys session list
 ### ۱۵) منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Troubleshooting
+
+### تعمیق: سه پرونده‌ی کامل با Timeline و RCA
+
+**پرونده ۱ — «کاربران به پورتال داخلی نمی‌رسند» (Policy)**
+
+``` text
+09:05 report ; 09:08 lookup: 10.10.0.5 -> 10.20.0.30:443 => policy 0 (deny)
+09:12 policy 15 exists but srcintf=port5 (wrong); fix srcintf to ZN-USERS
+09:15 lookup => policy 15 ; curl -vk https://10.20.0.30 => 200
+```
+
+**پرونده ۲ — «نصف سایت‌ها باز نمی‌شود» (NAT/Pool)**
+
+``` text
+session list: SNAT 10.10.0.x -> 203.0.113.21 ; reply never arrives for dst 198.18.0.0/15
+```
+
+علت: IP Pool که ISP Route نکرده؛ پاسخ برنمی‌گردد. رفع: IP درست یا Interface Address.
+
+**پرونده ۳ — «پس از لینک دوم Sessionها قطع می‌شوند» (RPF)**
+
+``` text
+id=20085 ... reverse path check fail, drop
+get router info routing-table details 10.30.0.5 -> via port3 (not port4)
+```
+
+رفع: Route برگشت/Policy Route.
+
+**گزارش RCA نمونه**
+
+``` text
+Title   : Users cannot reach portal 2026-11-27
+Impact  : 60 users, 12 min
+Cause   : policy 15 source interface wrong after migration
+Fix     : srcintf corrected
+Prevent : pre-change lookup test list
+```
+
+**روش ده‌گامی:** علامت، Route، Policy، NAT، Session، DNS، MTU، Log، Sniffer+Debug، Verify.
+
+**آزمون G5.** سه عیب تزریق‌شده؛ Evidence هر کدام (Lookup/Flow/Session)، علت، رفع، آزمون منفی؛ Rubric: کشف ۳۰، رفع ۳۰، Evidence ۲۰، آزمون ۱۰، صداقت ۱۰.
+
+**پرسش‌های مصاحبه**
+1. *no reply یعنی؟* SNAT/Route/سرور.
+2. *دو عیب هم‌زمان؟* یکی‌یکی.
+3. *RCA چه دارد؟* علت، اثر، رفع، پیشگیری.
 
 ## درس 13-7 — Session، تغییر Policy/Route و NAT در برابر Routing: چرا «تنظیم را عوض کردم ولی اثر نکرد»؟
 
