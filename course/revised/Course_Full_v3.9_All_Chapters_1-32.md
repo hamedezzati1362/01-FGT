@@ -4456,7 +4456,7 @@ R1(config-subif)# end
 
 - Interface فیزیکی بدون IP و روشن (`no shutdown`) می‌ماند؛ فقط Sub-interfaceها آدرس دارند.
 - `encapsulation dot1Q 20`: این Sub-interface فقط فریم‌های Tag 20 را می‌گیرد/می‌فرستد. شماره‌ی Sub-interface (.20) فقط یک نام است؛ ولی عرف این است که با VLAN یکی باشد.
-- اگر Native VLAN داشتید، `encapsulation dot1Q 10 native`.
+- اگر Native VLAN داشتید، `encapsulation dot1Q 10 native` (طبق مستند Cisco، برای VLAN Native Trunk فقط با کلیدواژه‌ی `native` تنظیم شود و Native دو سر Trunk یکسان باشد).
 
 ``` text
 R1# show ip interface brief
@@ -15974,7 +15974,7 @@ Authentication, Authorization, Accounting.
 
 **8-2-ت2** — ۲ (ساده): TACACS+ چه پورتی؟
 
-TACACS+ روی TCP/49 کار می‌کند و کل بسته را رمز می‌کند؛ RADIUS روی UDP (1812/1813) و فقط رمز را. TCP به TACACS+ قابلیت اطمینان و Timeout واضح می‌دهد.
+TACACS+ روی TCP/49 کار می‌کند و کل Payload را محافظت (obfuscate) می‌کند؛ RADIUS روی UDP (1812/1813) و فقط فیلد رمز را. دقت: طبق RFC 8907 محافظت TACACS+ «Obfuscation» است نه رمزنگاری مدرن؛ برای الزامات سخت‌گیرانه آن را داخل شبکه‌ی مدیریت جدا یا تونل امن ببرید. TCP به TACACS+ قابلیت اطمینان و Timeout واضح می‌دهد.
 
 ``` text
 TCP 49

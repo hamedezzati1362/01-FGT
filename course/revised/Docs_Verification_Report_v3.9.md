@@ -100,3 +100,26 @@
 | ۱۷-۴ (FSSO) | محدودیت «فقط Kerberos» مخصوص FortiGate Polling Connector است؛ Collector Agent در Polling رویدادهای بیشتری (مثلاً 4776) می‌خواند | [Fortinet FSSO polling](https://docs.fortinet.com/document/fortigate/7.4.2/administration-guide/503764/fsso-polling-connector-agent-installation) |
 | ۱۴-۶ (Log) | `policyid=0` فقط Implicit Deny نیست؛ ترافیک Local بدون Policy هم policyid=0 دارد؛ `subtype` را بخوانید | [Fortinet: Local traffic logs and policy ID 0](https://community.fortinet.com/t5/FortiGate/Technical-Tip-Local-traffic-logs-and-policy-ID-0/ta-p/196654) |
 | ۶-۷ (NSSA) | NSSA برخلاف Stub Default خودکار نمی‌گیرد؛ باید `default-information-originate` روی ABR | [Cisco NSSA](https://www.cisco.com/c/en/us/support/docs/ip/open-shortest-path-first-ospf/6208-nssa.html) |
+
+
+## دور چهارم — Cisco فصل ۲ تا ۸ (۲۰۲۶-۱۱-۲۷)
+
+### تأییدشده بدون تغییر
+| موضوع | نتیجه | مرجع |
+|---|---|---|
+| `enable secret` (Type 5/8/9، یک‌طرفه) در برابر `enable password`/Type 7 (برگشت‌پذیر)؛ Type 5 منسوخ و مهاجرت به 8/9 توصیه می‌شود | تأیید | [Cisco password types](https://www.cisco.com/c/en/us/support/docs/ios-feature-sets/ios-security-feature-sets/220127-understand-cisco-ios-password-encryption.html) |
+| SSH: `ip domain-name`، `crypto key generate rsa` (حداقل 768 بیت برای SSHv2)، `ip ssh version 2` | تأیید (کلید ۲۰۴۸ معتبر؛ `ip ssh dh min size` نکته‌ی تکمیلی) | [Cisco SSHv2](https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_usr_ssh/configuration/xe-16/sec-usr-ssh-xe-16-book/sec-secure-shell-v2.html) |
+| VLAN: Normal 1–1005؛ 1002–1005 رزرو؛ Extended 1006–4094 | تأیید | [Cisco VLAN](https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst6500/ios/15-4SY/config_guide/sup6T/15_3_sy_swcg_6T/vlans.html) |
+| IPv6: fe80::/10، ULA fc00::/7 (عملاً fd00::/8)، ff02::1 همه‌ی گره‌ها، ff02::2 روترها، Solicited-node، EUI-64 | تأیید | [Cisco IPv6 white paper](https://www.cisco.com/c/dam/en/us/td/docs/solutions/CVD/Aug2013/CVD-IPv6AddressingWhitePaper-AUG13.pdf) |
+| Syslog سطح ۰ تا ۷؛ `logging trap` | تأیید | [Cisco logging](https://www.cisco.com/c/en/us/td/docs/routers/access/wireless/software/guide/SysMsgLogging.html) |
+| TACACS+ TCP/49؛ RADIUS UDP 1812/1813؛ Authorization جدا در TACACS+؛ Local Fallback | تأیید | [Cisco TACACS+ vs RADIUS](https://www.cisco.com/c/en/us/support/docs/security-vpn/remote-authentication-dial-user-service-radius/13838-10.pdf) |
+| PortFast فقط پورت کاربر؛ BPDU Guard → err-disable؛ Root Guard و Loop Guard هم‌زمان روی یک پورت ممنوع | تأیید | [Cisco Optional STP features](https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst9300/software/release/16-8/configuration_guide/lyr2_lyr3/b_168_lyr2_lyr3_9300_cg/b_168_lyr2_lyr3_9300_cg_chapter_010.pdf) |
+
+### دقیق‌سازی
+| درس | تغییر | مرجع |
+|---|---|---|
+| ۸-۲ (AAA) | محافظت TACACS+ طبق RFC 8907 «Obfuscation» است نه رمزنگاری مدرن | [Cisco Learning Network](https://learningnetwork.cisco.com/s/question/0D56e0000E3LPXnCQO/radius-vs-tacacs-for-device-administration-with-encryption-requirement) |
+| ۳-۴ (RoAS) | `encapsulation dot1Q X native` برای VLAN Native؛ Native دو سر یکسان | [Cisco subinterfaces](https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst9600/software/release/17-8/configuration_guide/vlan/b_178_vlan_9600_cg/configuring_layer_3_subinterfaces.pdf) |
+
+### هنوز بررسی نشده
+شرایط Up شدن SVI، پیام‌ها/Typeهای ICMP، جدول Subnetting (محاسبه‌ای)، نحو دقیق Wireshark، سازوکار Proposal/Agreement در RSTP (تعریف نظری).

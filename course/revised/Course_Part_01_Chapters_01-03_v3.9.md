@@ -4448,7 +4448,7 @@ R1(config-subif)# end
 
 - Interface فیزیکی بدون IP و روشن (`no shutdown`) می‌ماند؛ فقط Sub-interfaceها آدرس دارند.
 - `encapsulation dot1Q 20`: این Sub-interface فقط فریم‌های Tag 20 را می‌گیرد/می‌فرستد. شماره‌ی Sub-interface (.20) فقط یک نام است؛ ولی عرف این است که با VLAN یکی باشد.
-- اگر Native VLAN داشتید، `encapsulation dot1Q 10 native`.
+- اگر Native VLAN داشتید، `encapsulation dot1Q 10 native` (طبق مستند Cisco، برای VLAN Native Trunk فقط با کلیدواژه‌ی `native` تنظیم شود و Native دو سر Trunk یکسان باشد).
 
 ``` text
 R1# show ip interface brief

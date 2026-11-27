@@ -3694,7 +3694,7 @@ Authentication, Authorization, Accounting.
 
 **8-2-ت2** — ۲ (ساده): TACACS+ چه پورتی؟
 
-TACACS+ روی TCP/49 کار می‌کند و کل بسته را رمز می‌کند؛ RADIUS روی UDP (1812/1813) و فقط رمز را. TCP به TACACS+ قابلیت اطمینان و Timeout واضح می‌دهد.
+TACACS+ روی TCP/49 کار می‌کند و کل Payload را محافظت (obfuscate) می‌کند؛ RADIUS روی UDP (1812/1813) و فقط فیلد رمز را. دقت: طبق RFC 8907 محافظت TACACS+ «Obfuscation» است نه رمزنگاری مدرن؛ برای الزامات سخت‌گیرانه آن را داخل شبکه‌ی مدیریت جدا یا تونل امن ببرید. TCP به TACACS+ قابلیت اطمینان و Timeout واضح می‌دهد.
 
 ``` text
 TCP 49
