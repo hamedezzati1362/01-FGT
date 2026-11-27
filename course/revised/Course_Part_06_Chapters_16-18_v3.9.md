@@ -1991,6 +1991,66 @@ Group   : CN=VPN-Users,OU=Groups,DC=corp,DC=local
 2. *RADIUS یا LDAP؟* RADIUS برای VPN/Wi-Fi/MFA؛ LDAP برای جستجوی دایرکتوری.
 3. *نقطه‌ی شکست؟* DNS، ساعت (Kerberos ±5 دقیقه)، پورت 389/636.
 
+### تکمیل عمیق: AAA و هویت از درون — LDAP، Kerberos، RADIUS، FSSO
+
+#### چرا باید یاد بگیریم؟
+
+Policy بر اساس IP یعنی «این دستگاه» را کنترل می‌کنیم، نه «این انسان» را. کاربر لپ‌تاپش را عوض می‌کند، IP عوض می‌شود و Policy بی‌اثر می‌شود. هویت (Identity) Policy را به «کاربر/گروه» وصل می‌کند: «گروه مالی به ERP دسترسی دارد»، فارغ از IP.
+
+#### AAA
+
+AAA = Authentication (چه کسی هستی؟)، Authorization (چه اجازه‌ای داری؟)، Accounting (چه کردی؟).
+
+#### مثال ساده — چهار مسیر هویت
+
+| روش | کاربرد | منبع حقیقت |
+|---|---|---|
+| LDAP | جستجوی کاربر/گروه | Active Directory |
+| RADIUS | VPN، Wi-Fi، MFA | NPS/FortiAuthenticator |
+| Kerberos | SSO در Windows | KDC روی DC |
+| FSSO | شناسایی بدون Login جدا | رویدادهای DC |
+
+#### مثال متوسط — جریان LDAP
+
+``` text
+1 user submits username/password to FortiGate (portal/VPN)
+2 FortiGate binds with service account
+3 search (sAMAccountName=ali) under Base DN
+4 verify password (bind as user) or compare
+5 read memberOf -> match user group -> policy
+```
+
+#### مثال سخت — FSSO و Kerberos
+
+کاربر وارد ویندوز می‌شود؛ DC رویداد 4768 (TGT) یا 4624 را ثبت می‌کند؛ Collector آن را می‌خواند و جدول IP↔User را برای FortiGate می‌فرستد. ساعت‌ها باید حداکثر ۵ دقیقه اختلاف داشته باشند (Kerberos).
+
+#### نکته‌ی امنیتی
+
+حساب سرویس LDAP حداقل دسترسی (فقط خواندن)؛ هرگز Domain Admin. ارتباط LDAPS (636) با گواهی معتبر.
+
+#### Lab
+
+نقشه‌ی جریان یک ورود را روی کاغذ بکشید و محل شکست‌های ممکن را علامت بزنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Bind شکست | DN/رمز | بررسی |
+| Group match نه | Base DN | تصحیح |
+| FSSO خالی | رویداد نمی‌رسد | Collector |
+
+#### پرسش‌ها با پاسخ
+
+**۱. AAA یعنی؟** هویت، مجوز، حسابداری.
+**۲. چرا حساب سرویس کم‌دسترسی؟** حمله به Bind.
+**۳. FSSO چه فایده؟** Policy کاربری بدون Login اضافه.
+
+#### English Corner
+
+- *Identity-based policies follow the user, not the IP address.*
+- Q: Why must the LDAP service account have minimal privileges?
+
 ## درس 17-1 — آماده‌سازی Lab هویت: Active Directory، DNS، OU، گروه و حساب سرویس روی Windows Server
 
 **فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، Golden_W2025_Runbook · ≈ 6 ساعت**
@@ -2149,6 +2209,66 @@ w32tm /query /status
 1. *چرا کمترین مجوز؟* حمله به حساب Bind.
 2. *LDAPS؟* 636 با گواهی.
 3. *مشکل ساعت؟* Kerberos شکست.
+
+### تکمیل عمیق: آماده‌سازی Lab هویت با AD — چک‌لیست سلامت
+
+#### چرا؟
+
+اگر AD ناسالم باشد (DNS خراب، ساعت اشتباه)، هر آزمون هویت شکست می‌خورد و علت را در FortiGate می‌گردید. اول سلامت پایه را بسنجید.
+
+#### آزمون‌های سلامت
+
+``` text
+dcdiag /v
+repadmin /replsummary
+nslookup -type=SRV _ldap._tcp.corp.local
+w32tm /query /status
+```
+
+انتظار: dcdiag همه Passed، رکورد SRV برگردد، ساعت درست.
+
+#### ساخت ساختار
+
+``` text
+OU=Groups ; OU=Service ; OU=Users
+Group VPN-Users ; Group FIN-ERP
+User svc-fgt-ldap (read-only, password never expires, no interactive logon)
+```
+
+#### مثال متوسط — اعطای حداقل دسترسی
+
+حساب `svc-fgt-ldap` را فقط عضو Domain Users نگه دارید؛ خواندن Directory به‌صورت پیش‌فرض برای کاربران معتبر مجاز است.
+
+#### مثال سخت — LDAPS
+
+``` text
+openssl s_client -connect dc1.corp.local:636 -showcerts </dev/null
+```
+
+گواهی باید با CA مورد اعتماد FortiGate امضا شده باشد؛ وگرنه Bind شکست می‌خورد.
+
+#### Lab
+
+یک AD Lab با دو کاربر و دو گروه بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| SRV نیست | DNS | رفع |
+| Kerberos خطا | ساعت | NTP |
+| LDAPS شکست | گواهی | CA |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا SRV؟** کشف DC.
+**۲. چرا NTP؟** Kerberos.
+**۳. چرا LDAPS؟** رمزنگاری.
+
+#### English Corner
+
+- *Verify DNS and time before troubleshooting authentication.*
+- Q: Why create a dedicated read-only service account?
 
 ## درس 17-2 — LDAP در FortiGate و Policy بر اساس گروه: Bind، Search، User Group و آزمون
 
@@ -2329,6 +2449,82 @@ diagnose test authserver ldap AD ali Pass123
 2. *گروه تو در تو؟* حالت Recursive.
 3. *رمز در Log؟* هرگز.
 
+### تکمیل عمیق: LDAP در FortiGate و Policy گروهی
+
+#### چرا؟
+
+یک تنظیم کوچک اشتباه (Base DN، cnid) باعث می‌شود Auth موفق شود ولی Policy مچ نکند.
+
+#### مثال ساده — تعریف سرور
+
+``` text
+config user ldap
+ edit "AD"
+  set server "10.20.0.5"
+  set cnid "sAMAccountName"
+  set dn "DC=corp,DC=local"
+  set type regular
+  set username "CN=svc-fgt-ldap,OU=Service,DC=corp,DC=local"
+  set password ***
+  set secure ldaps
+  set port 636
+ next
+end
+```
+
+#### مثال متوسط — گروه و Policy
+
+``` text
+config user group
+ edit "G-VPN"
+  set member "AD"
+  config match
+   edit 1
+    set server-name "AD"
+    set group-name "CN=VPN-Users,OU=Groups,DC=corp,DC=local"
+   next
+  end
+ next
+end
+```
+
+سپس در Policy: `set groups "G-VPN"`.
+
+#### آزمون
+
+``` text
+diagnose test authserver ldap AD ali Pass123
+```
+
+نتیجه: `authenticate ... succeeded` و گروه‌های کاربر.
+
+#### مثال سخت — گروه تو در تو
+
+کاربر عضو گروه B است و B عضو A. Policy روی A مچ نمی‌کند چون `memberOf` مستقیم است. راه: Recursive Match (`set search-type recursive` یا استفاده از OID `1.2.840.113556.1.4.1941`) در Filter.
+
+#### Lab
+
+یک کاربر را در گروه تو در تو بگذارید و رفتار را مشاهده کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Bind ok، Group نه | DN گروه | تصحیح |
+| Auth شکست | رمز | بررسی |
+| تو در تو | Recursive | فعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. cnid؟** ویژگی نام کاربری.
+**۲. چرا Recursive؟** گروه تو در تو.
+**۳. test authserver؟** تست مستقل از Policy.
+
+#### English Corner
+
+- *Nested groups need a recursive match to be honored by the policy.*
+- Q: What does the cnid attribute define?
+
 ## درس 17-3 — RADIUS و NPS، احراز هویت چندعاملی (MFA) و Attributeها
 
 **فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، ۱۷-۲ · ≈ 6 ساعت**
@@ -2490,6 +2686,73 @@ MFA: NPS Extension یا FortiAuthenticator/FortiToken (Needs-License). **خطا�
 2. *چرا Timeout بیشتر با MFA؟* زمان واکنش کاربر.
 3. *Accounting؟* پورت 1813.
 
+### تکمیل عمیق: RADIUS، NPS و MFA
+
+#### چرا؟
+
+VPN و Wi-Fi معمولاً RADIUS می‌خواهند؛ با NPS (Network Policy Server در ویندوز) و MFA امن‌تر می‌شود.
+
+#### جریان
+
+``` text
+FortiGate (NAS) -> Access-Request (UDP 1812) -> NPS -> AD check
+NPS -> Access-Accept (+attributes) or Access-Reject
+```
+
+نقش‌ها: NAS = Network Access Server (فایروال)، Shared Secret بین NAS و NPS.
+
+#### مثال ساده
+
+``` text
+config user radius
+ edit "NPS"
+  set server "10.20.0.6"
+  set secret ***
+  set timeout 10
+  set nas-ip 10.50.0.1
+ next
+end
+```
+
+#### مثال متوسط — آزمون
+
+``` text
+diagnose test authserver radius NPS pap ali pass
+```
+
+در NPS لاگ ویندوز Event 6272 (موفق) / 6273 (رد) با Reason Code بخوانید.
+
+#### مثال سخت — MFA
+
+با NPS Extension یا FortiAuthenticator/FortiToken: پس از رمز، RADIUS **Access-Challenge** با درخواست OTP می‌فرستد. Timeout را بیشتر کنید (کاربر وقت می‌خواهد).
+
+#### Attribute
+
+با Attribute می‌توان گروه را برگرداند (مثلاً `Fortinet-Group-Name`) و در Policy استفاده کرد.
+
+#### Lab
+
+NPS را با یک Client و یک Policy بسازید؛ اجرا نشده تا اطلاع بعدی.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Reject (reason 16) | Secret/Credential | یکسان |
+| Timeout | پورت/Firewall | 1812 |
+| OTP شکست | زمان | NTP |
+
+#### پرسش‌ها با پاسخ
+
+**۱. NAS چیست؟** سرور دسترسی شبکه.
+**۲. Access-Challenge؟** درخواست مرحله‌ی بعد.
+**۳. Event 6273؟** رد شدن.
+
+#### English Corner
+
+- *RADIUS Access-Challenge carries the second authentication factor.*
+- Q: Where do you find the reason a user was rejected on NPS?
+
 ## درس 17-4 — FSSO عملی: انتخاب حالت، پیکربندی، Group Filter و عیب‌یابی
 
 **فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، ۱۷-۲ · ≈ 6 ساعت**
@@ -2650,6 +2913,69 @@ diagnose debug authd fsso server-status
 2. *محدودیت؟* IP-مبنا؛ Multi-user در یک IP.
 3. *Workstation Check؟* اعتبارسنجی ورود.
 
+### تکمیل عمیق: FSSO — انتخاب حالت و عیب‌یابی
+
+#### چرا؟
+
+کاربر وارد ویندوز می‌شود و انتظار دارد بدون Login دوم از فایروال رد شود. FSSO (Fortinet Single Sign-On) این را ممکن می‌کند.
+
+#### حالت‌ها
+
+| حالت | کار | مناسب |
+|---|---|---|
+| Collector Agent + DC Agent | نصب روی ویندوز | سازمان‌های بزرگ |
+| Agentless (Polling) | FortiGate DC را می‌خواند | Lab/کوچک |
+
+#### مثال ساده — Agentless
+
+``` text
+config user fsso-polling
+ edit 1
+  set server "10.20.0.5"
+  set user "corp\\svc-fsso"
+  set ldap-server "AD"
+ next
+end
+```
+
+#### مثال متوسط — Group Filter
+
+فقط گروه‌هایی که در Policy لازم‌اند را بخوانید؛ بدون Filter، Collector سنگین و جدول بزرگ می‌شود.
+
+#### بررسی
+
+``` text
+diagnose debug authd fsso list
+diagnose debug authd fsso server-status
+```
+
+#### مثال سخت — Terminal Server
+
+چند کاربر پشت یک IP (RDS/Citrix): FSSO فقط یک کاربر را می‌بیند. راه: TS Agent با تفکیک بر اساس پورت.
+
+#### Lab
+
+FSSO را با یک DC Lab تست کنید و جدول را بخوانید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| کاربر نمی‌آید | Event نمی‌رسد | دسترسی Log |
+| گروه ناقص | Filter | تصحیح |
+| TS | یک IP | TS Agent |
+
+#### پرسش‌ها با پاسخ
+
+**۱. FSSO چه حل می‌کند؟** Policy کاربری بی‌Login دوم.
+**۲. Group Filter؟** سبک‌سازی.
+**۳. TS Agent؟** چندکاربره.
+
+#### English Corner
+
+- *FSSO maps IP addresses to users from domain controller events.*
+- Q: Why does a terminal server need a dedicated agent?
+
 ## درس 17-5 — Captive Portal، مهمان و Firewall Authentication: طراحی ایمن Guest
 
 **فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، ۱۱-۰ · ≈ 6 ساعت**
@@ -2800,6 +3126,70 @@ Policy GUEST->INTERNAL  deny log
 2. *Client Isolation؟* مهمان‌ها همدیگر را نبینند.
 3. *انقضا؟* حساب موقت خودکار.
 
+### تکمیل عمیق: Captive Portal و Guest امن
+
+#### چرا؟
+
+مهمان باید اینترنت داشته باشد ولی به شبکه‌ی داخلی دسترسی نه. Captive Portal هویت را (حتی ساده) ثبت می‌کند.
+
+#### طراحی
+
+``` text
+GUEST VLAN -> Policy GUEST->INTERNET (HTTP/HTTPS/DNS, nat, utm, captive-portal)
+GUEST -> INTERNAL : deny log
+Client isolation, bandwidth limit, account expiry
+```
+
+#### مثال ساده — Policy
+
+``` text
+config firewall policy
+ edit 300
+  set name "GUEST-NET"
+  set srcintf "port-guest"
+  set dstintf "port1"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "HTTP" "HTTPS" "DNS"
+  set action accept
+  set nat enable
+  set groups "G-GUEST"
+  set logtraffic all
+ next
+end
+```
+
+#### مثال متوسط — آزمون
+
+مهمان به 10.20.0.10 ⇒ Timeout؛ به اینترنت ⇒ پس از Portal باز.
+
+#### مثال سخت — حریم و قانون
+
+ثبت هویت و Log مطابق قانون محلی؛ مدت نگهداری، دسترسی و رضایت کاربر را با بخش حقوقی مشخص کنید.
+
+#### Lab
+
+Portal را در Lab با یک حساب مهمان موقت بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Portal نمی‌آید | HTTPS Redirect | Policy |
+| دسترسی داخلی | Policy | Deny |
+| حساب منقضی نمی‌شود | تنظیم | expiry |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Client isolation؟** مهمان‌ها همدیگر را نبینند.
+**۲. چرا Log؟** ردیابی.
+**۳. چرا انقضا؟** حساب‌های موقت.
+
+#### English Corner
+
+- *Guest networks must be isolated from internal resources.*
+- Q: What controls would you apply to a guest portal?
+
 ## درس 17-6 — آزمون عملی هویت و عیب‌یابی Authentication: سه پرونده‌ی واقعی با شواهد، کلید و Rubric
 
 **فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰ تا ۱۷-۵، ۱۷-۷، ۱۴-۷ · ≈ 8 ساعت**
@@ -2942,6 +3332,62 @@ diagnose firewall auth list              -> user ali, group (empty)
 1. *چرا Auth موفق ولی Policy نه؟* Group Mapping.
 2. *firewall auth list؟* کاربران فعال.
 3. *Timeout Auth؟* `auth-timeout`.
+
+### تکمیل عمیق: آزمون عملی هویت — سه پرونده با Rubric
+
+#### چرا؟
+
+این آزمون سه مشکل واقعی هویت را می‌سنجد.
+
+#### پرونده ۱ — Auth موفق، Policy نه
+
+``` text
+diagnose test authserver ldap AD ali pass -> succeeded
+diagnose firewall auth list -> user ali, group (none)
+```
+
+علت: Group Match اشتباه ⇒ تصحیح `group-name` و آزمون.
+
+#### پرونده ۲ — RADIUS Reject
+
+NPS Event 6273 Reason 16 ⇒ Secret یا Credential؛ Secret یکسان.
+
+#### پرونده ۳ — FSSO خالی
+
+Collector Event نمی‌گیرد ⇒ مجوز خواندن Event Log DC؛ تصحیح.
+
+#### Rubric
+
+``` text
+Diagnosis 30 | Evidence 30 | Fix 20 | Negative test 10 | Honesty 10
+```
+
+#### مثال سخت — دو علت
+
+پس از رفع Secret، کاربر وصل شد ولی Policy نه: دو علت جدا، یکی‌یکی.
+
+#### Lab
+
+سه پرونده را ایجاد و رفع کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| چندعلتی | هم‌زمان | یکی‌یکی |
+| Evidence ناقص | ثبت | الگو |
+| Lockout | آزمون زیاد | حساب تست |
+
+#### پرسش‌ها با پاسخ
+
+**۱. firewall auth list؟** کاربران فعال.
+**۲. Reason 16؟** Credential/Secret.
+**۳. چرا حساب تست؟** جلوگیری از Lockout.
+
+#### English Corner
+
+- *Use a dedicated test account to avoid locking real users.*
+- Q: How do you confirm a user is mapped to the right group?
 
 ## درس 17-7 — عیب‌یابی Authentication بر اساس شواهد: از Bind تا Policy (LDAP، RADIUS، FSSO)
 
@@ -3122,6 +3568,59 @@ User cannot login
 1. *اول چه؟* دسترسی شبکه به سرور.
 2. *چرا Log سرور مقابل؟* دلیل رد (NPS 6273، AD 4625).
 3. *Lockout؟* آزمون با حساب تست.
+
+### تکمیل عمیق: درخت تصمیم عیب‌یابی Authentication
+
+#### چرا؟
+
+عیب‌یابی هویت لایه‌لایه است؛ یک درخت تصمیم زمان را کم می‌کند.
+
+#### درخت
+
+``` text
+User cannot login
+ 1 network to auth server? (ping, port 389/636/1812)    no -> network/firewall
+ 2 bind/secret ok? (diagnose test authserver)           no -> DN/secret/cert
+ 3 user found?                                          no -> Base DN / filter
+ 4 group matched? (diagnose firewall auth list)         no -> group mapping
+ 5 policy hit? (iprope lookup / log)                    no -> policy order
+ 6 MFA ok?                                              no -> time / token
+```
+
+#### مثال ساده
+
+گام ۱: `nc -zv 10.20.0.5 636` ⇒ باز ⇒ گام ۲.
+
+#### مثال متوسط — خواندن Log دو سمت
+
+FortiGate: `diagnose debug application fnbamd -1`؛ سرور: AD Event 4625 (ورود ناموفق).
+
+#### مثال سخت — Lockout
+
+حساب سرویس به‌دلیل رمز اشتباه قفل شد؛ همه‌ی ورودی‌ها شکست. شاهد: Event 4740. رفع: Unlock، رمز صحیح، رمز در Vault.
+
+#### Lab
+
+درخت را روی ۳ خرابی تمرین کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| همه شکست | حساب سرویس | Unlock |
+| بعضی شکست | گروه | تصحیح |
+| MFA | ساعت | NTP |
+
+#### پرسش‌ها با پاسخ
+
+**۱. اولین گام؟** شبکه به سرور.
+**۲. 4740؟** قفل شدن حساب.
+**۳. fnbamd؟** Debug Authentication.
+
+#### English Corner
+
+- *Work through authentication problems from the network layer upward.*
+- Q: What does Windows event 4740 indicate?
 
 ## پاسخ‌های فصل 17
 
