@@ -70,3 +70,23 @@
 2. درس‌های جدید نظری/مستندی‌اند؛ هیچ Labی اجرا نشده و دستورها `Unverified` هستند.
 3. مقایسه با سرفصل CCNA v1.1 (نسخه‌ی جاری) جداگانه انجام نشده؛ فقط v2.0 خوانده شد.
 4. FortiSwitch/FortiAP/Explicit Proxy در سرفصل 7.0 این آزمون نیستند و در دوره درس مستقل ندارند.
+
+## به‌روزرسانی: درس‌های افزوده‌ی دور دوم (گام‌به‌گام)
+| سرفصل | درس جدید |
+|---|---|
+| CCNA 1.1 کابل/فیبر/Interface/خطاها | 3-8 |
+| CCNA 1.7 DHCPv4 روی IOS | 7-9 |
+| CCNA 2.1.c / 2.2 EtherChannel و LACP | 4-9 |
+| CCNA 2.3 CDP/LLDP | 3-9 |
+| CCNA 2.4 show/ping توسعه‌یافته/traceroute/Capture | 3-10 |
+| CCNA 3.1/3.2 Static (default/network/host/floating، IPv6) | 5-9 |
+| CCNA 3.4 تفسیر HSRP/VRRP | 6-8 |
+| CCNA 4.1 AAA (Local/TACACS+/RADIUS) | 8-11 |
+| CCNA 4.3 NAT Dynamic/PAT | 7-10 |
+| CCNA 5.3/5.5 رویکردهای مدیریت، REST، Ansible، IaC | 8-12 |
+| NSE4 HA modes (a-a، vcluster، HA mgmt) | 22-6 |
+| NSE4 Firewall authentication (Active/Passive) | 17-8 |
+| NSE4 Web filtering (Category/Static URL/Rating) | 16-9 |
+| NSE4 Log settings و عیب‌یابی با Log | 27-8 |
+
+**هنوز بررسی‌نشده:** CCNA 2.5 (جزئیات Rapid PVST+)، 3.3 (OSPF تک‌ناحیه)، 4.6 (ACL)، 4.7 (DHCP Snooping/DAI/Port Security) و NSE4 SSL-VPN modes، IPsec mesh، SD-WAN، Antivirus/IPS/DoS و VDOM به‌صورت خواندن زیرمورد‌به‌زیرمورد انجام نشده؛ فقط وجود کلیدواژه سنجیده شده است.
