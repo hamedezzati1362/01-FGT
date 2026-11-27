@@ -4615,7 +4615,7 @@ R1 (Border) مسیر خارجی را با Next-hop = IP Peer خارجی (10.0.12
 
 **متوسط (تحلیل):** R3 مسیر خارجی را دارد ولی با `i` و Next-hop 10.0.12.2 (`inaccessible`): `next-hop-self` روی R1؛ پس از ریست نرم، `>` و RIB.
 
-**سخت (طراحی):** ۲۰ روتر Full-mesh = 190 Session؛ RR دوتایی با Cluster-ID یکتا ⇒ ≈ 40 Session؛ ریسک RR: SPOF → دو RR؛ Loop: Cluster-list؛ Policy RR روی Prefix. آزمون: قطع RR1 و Convergence.
+**سخت (طراحی):** ۲۰ روتر Full-mesh = 190 Session؛ RR دوتایی با **همان Cluster-ID روی هر دو RR** (طبق مستند Cisco برای RRهای یک Cluster) ⇒ ≈ 40 Session؛ ریسک RR: SPOF → دو RR؛ Loop: Cluster-list؛ Policy RR روی Prefix. آزمون: قطع RR1 و Convergence.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
@@ -5480,7 +5480,7 @@ Next-hop inaccessible: مسیر BGP در Table است ولی Next-hop (خارج�
 
 **9-3-ت6** — طرح.
 
-طرح Route Reflector دوتایی: RR1 و RR2 با Cluster-ID یکسان یا متفاوت (طبق طراحی)، Clientها با هر دو Session دارند؛ در خرابی RR1، RR2 جایگزین می‌شود. Session شمار حدود 2×n به‌جای n(n−1)/2. آزمون: قطع RR1 و دیدن Convergence و نبود حلقه.
+طرح Route Reflector دوتایی: RR1 و RR2 طبق مستند Cisco اگر در یک Cluster‌اند باید Cluster-ID یکسان و Client/Non-client یکسان داشته باشند (در غیر این صورت هر RR با Router ID خودش Cluster-ID می‌گیرد)، Clientها با هر دو Session دارند؛ در خرابی RR1، RR2 جایگزین می‌شود. Session شمار حدود 2×n به‌جای n(n−1)/2. آزمون: قطع RR1 و دیدن Convergence و نبود حلقه.
 
 **9-3-Q1** — To preserve the original exit point information; hence the next hop must be reachable via the IGP.
 

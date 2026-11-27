@@ -737,7 +737,7 @@ interface GigabitEthernet0/2
  ip address 192.168.1.1 255.255.255.0
 ```
 
-دستور `ip vrf forwarding` آدرس Interface را پاک می‌کند: اول forwarding بعد IP.
+دستور `ip vrf forwarding` آدرس Interface را پاک می‌کند (پیام «IPv4 disabled and address(es) removed due to disabling VRF»): اول forwarding بعد IP. نکته: در IOS-XE جدید سینتکس `vrf definition` و `vrf forwarding` ترجیح داده می‌شود و `ip vrf` قدیمی است (طبق مستند Cisco).
 
 #### ۲) مسیریابی
 

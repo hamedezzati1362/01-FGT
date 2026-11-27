@@ -3628,7 +3628,7 @@ SD-WAN Rule از بالا به پایین و اولین Rule مطابق اعما
 
 **21-3-ت2** — sla: اولین عضو دارای SLA؛ load-balance: توزیع بین همه‌ی اعضای دارای SLA.
 
-Mode sla اولین عضو دارای SLA؛ load-balance توزیع بین همه‌ی اعضای دارای SLA.
+Mode sla اولین عضو دارای SLA؛ load-balance توزیع بین همه‌ی اعضای دارای SLA. نام‌گذاری مستند Fortinet: Best Quality (حالت priority)، Lowest Cost (حالت sla) و Maximize Bandwidth (load-balance)؛ از 7.4.1 Load-balance داخل Lowest Cost (SLA) ادغام شده است.
 
 **21-3-ت3** — Rule عمومی بالاتر Match می‌شود؛ ترتیب را اصلاح کنید.
 
