@@ -741,6 +741,8 @@ interface GigabitEthernet1
 
 (`Unverified` در IOS-XE 17.03؛ نام دستورها را با help بررسی.)
 
+نکته (مستند Cisco): نمونه‌ی بالا روش **Crypto-map (Policy-based)** است که در راهنمای IKEv2/FlexVPN به‌عنوان حالت Legacy آمده. روش Route-based مدرن: `crypto ipsec profile` با `set ikev2-profile` و اعمال آن روی Interface Tunnel با `tunnel protection ipsec profile ...` (سازگار با FortiGate Route-based).
+
 #### ۴) خرابی‌ها و کلید
 
 **A:** DH گروه 14 در FGT و 5 در CSR (پیش‌فرض). شاهد CSR: `debug crypto ikev2` NO_PROPOSAL؛ FGT: `no proposal chosen`. رفع: `group 14`.

@@ -179,3 +179,24 @@
 - ≈ ۸۰ ادعای مفهومی/دستوری با منبع رسمی بررسی شد؛ ۲۰ اصلاح یا دقیق‌سازی در متن درس‌ها اعمال شد؛ بقیه تأیید شدند.
 - هنوز تأیید نشده: `execute ha synchronize`، DoH در DNS Filter، نحو دقیق چند فرمان Debug، IKEv2 سمت IOS-XE 17.03، آستانه‌های پیش‌فرض DoS Policy، TLS 1.3/ECH/QUIC در Wireshark.
 - هیچ دستور هنوز «اجراشده با شاهد» نیست.
+
+
+## دور نهم — Cisco سرویس‌ها/اتوماسیون/IPsec (۲۰۲۶-۱۱-۲۷)
+
+### تأییدشده
+| موضوع | نتیجه | مرجع |
+|---|---|---|
+| ICMP: Type 8/0 (Echo)، Type 3 Code 3/4 (Unreachable/Frag-needed)، Type 11 (TTL exceeded)؛ بستن Type 3 باعث خراب‌شدن PMTUD می‌شود | تأیید | [Cisco ping/traceroute](https://www.cisco.com/c/en/us/support/docs/ios-nx-os-software/ios-software-releases-121-mainline/12778-ping-traceroute.html) |
+| DHCP Relay: فقط با `ip helper-address` فعال می‌شود؛ giaddr؛ Option 82 پیش‌فرض خاموش؛ `ip dhcp excluded-address` | تأیید | [Cisco DHCP relay](https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/ipaddr_dhcp/configuration/15-s/dhcp-15-s-book/dhcp-relay-agent.html) |
+| ACL: Wildcard (۰ باید مطابق باشد)، Implicit Deny، `established` فقط TCP؛ شماره‌ی Standard 1–99/1300–1999 و Extended 100–199/2000–2699 | تأیید | [Cisco ACL](https://www.cisco.com/c/en/us/support/docs/security/ios-firewall/23602-confaccesslists.html) |
+| IP SLA + Track + Floating Static: AD پشتیبان باید بزرگ‌تر باشد؛ منبع Probe روی لینک اصلی؛ ICMP مسدود ⇒ Failover کاذب | تأیید | [Cisco ISP failover IP SLA](https://www.cisco.com/c/en/us/support/docs/ip/ip-routing/200785-ISP-Failover-with-default-routes-using-I.pdf) |
+| RSTP: Proposal/Agreement؛ نقش‌های Alternate/Backup؛ در نبود Agreement بازگشت به 802.1D | تأیید | [Cisco RSTP](https://www.cisco.com/c/en/us/support/docs/lan-switching/spanning-tree-protocol/24062-146.pdf) |
+| IKEv2 IOS-XE: Proposal → Policy → Keyring → Profile؛ Crypto-map (Legacy) و IPsec profile + `tunnel protection` | تأیید ساختار | [Cisco FlexVPN/IKEv2](https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_conn_ike2vpn/configuration/xe-3s/sec-flex-vpn-xe-3s-book/sec-cfg-ikev2-flex.html) |
+
+### دقیق‌سازی
+| درس | تغییر | مرجع |
+|---|---|---|
+| ۳-۵ (SVI) | شرط Up: پورت در حالت **STP Forwarding**؛ `autostate exclude` | [Cisco SVI autostate](https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst2960cx_3650cx/software/release/15-2_7_e/configuration_guide/b_1527e_consolidated_3560cx_2960cx_cg/configuring_interface_characteristics.html) |
+| ۷-۴ (ACL) | جای‌گذاری Standard/Extended «قاعده‌ی آموزشی» است، نه الزام مستند رسمی Cisco | [Cisco Community ACL](https://community.cisco.com/t5/networking-knowledge-base/cisco-access-control-lists-acl/ta-p/4182349) |
+| ۸-۵ (Ansible) | محدودیت Diff در Check mode، مشکل Idempotency دستورهای مخفف و ACL | [cisco.ios ios_config](https://docs.ansible.com/ansible/3/collections/cisco/ios/ios_config_module.html) |
+| ۲۵-۴ | Crypto-map حالت Legacy؛ روش مدرن IPsec profile + Tunnel | [Cisco IKEv2 legacy](https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_conn_ike2vpn/configuration/xe-3s/sec-flex-vpn-xe-3s-book/sec-apx-ikev2-legacy.html) |

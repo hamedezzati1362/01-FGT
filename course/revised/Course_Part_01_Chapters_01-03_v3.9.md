@@ -4638,7 +4638,7 @@ PC1 ping PC3 -> works
 SVI فقط وقتی `up/up` می‌شود که همه‌ی شرط‌های زیر برقرار باشند:
 
 1.  VLAN روی سوییچ ساخته شده باشد (`show vlan brief`).
-2.  حداقل یک پورت در آن VLAN فعال باشد (Access Port بالا، یا Trunk که VLAN را عبور می‌دهد).
+2.  حداقل یک پورت لایه‌ی ۲ در آن VLAN فعال باشد: لینک Up **و در حالت STP Forwarding** (Access Port بالا، یا Trunk که VLAN را عبور می‌دهد). طبق مستند Cisco، تنظیم `switchport autostate exclude` یک پورت را از این محاسبه خارج می‌کند؛ اگر آن پورت تنها پورت VLAN باشد SVI down می‌ماند.
 3.  SVI با `no shutdown` روشن شده باشد.
 
 > **TS09: SVI Down/Down**
