@@ -1544,7 +1544,7 @@ config firewall ssl-ssh-profile
   config ssl-exempt
    edit 1
     set type fortiguard-category
-    set fortiguard-category 31
+    set fortiguard-category <ID>
    next
   end
  next

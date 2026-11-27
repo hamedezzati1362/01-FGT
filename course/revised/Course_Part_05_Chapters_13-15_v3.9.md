@@ -3659,6 +3659,75 @@ diagnose sys session filter dst 10.10.10.20
 2. *DMZ به داخل؟* فقط جریان‌های حداقلی و آغاز از داخل.
 3. *هزینه‌ی عملیاتی؟* دو مجموعه Policy و Backup.
 
+### تکمیل عمیق: چرا دو فایروال؟ تحلیل جریان و خرابی
+
+#### چرا باید یاد بگیریم؟
+
+یک قلعه‌ی با یک دیوار، با شکسته‌شدن آن دیوار، همه‌چیز در دسترس است. قلعه‌ی با دو دیوار و حیاط میانی (DMZ) مهاجم را مجبور می‌کند دو بار نفوذ کند و در هر مرحله دیده شود. طراحی دو فایروالی همین «دفاع در عمق» (Defense in Depth) است.
+
+#### توضیح ساده
+
+- **Edge FW**: رو به اینترنت؛ NAT، VIP، DMZ.
+- **Internal FW**: رو به شبکه‌ی داخلی؛ Users، Servers، Mgmt.
+- بین آنها یک لینک /30 (LINK).
+
+``` text
+Internet -- Edge FW -- DMZ
+               |
+            LINK /30
+               |
+           Internal FW -- Users / Servers / Mgmt
+```
+
+#### مثال ساده — مقایسه با عدد
+
+| معیار | یک فایروال | دو فایروال |
+|---|---|---|
+| دفعات نفوذ لازم برای رسیدن به داخل | 1 | 2 |
+| تفکیک مسئولیت | ندارد | دارد |
+| هزینه/پیچیدگی | کم | بیشتر |
+
+#### مثال متوسط — جریان‌ها
+
+``` text
+F1 Users -> Internet : Internal(accept) -> Edge(accept + SNAT) -> ISP
+F2 Internet -> DMZ    : Edge(VIP + policy) -> DMZ
+F3 DMZ -> Internal    : denied by default (only minimal exceptions)
+```
+
+#### مثال سخت — تحلیل خرابی
+
+| خرابی | اثر |
+|---|---|
+| Edge | اینترنت و DMZ قطع؛ داخلی سالم |
+| Internal | ارتباط داخلی/به اینترنت قطع؛ DMZ سالم |
+| لینک LINK | Users بی‌اینترنت |
+
+با HA برای هر کدام این اثرها کم می‌شود.
+
+#### Lab
+
+نمودار را با نام Interface بکشید و سه جریان را ردیابی کنید.
+
+#### عیب‌یابی طراحی
+
+| علامت | علت | رفع |
+|---|---|---|
+| DMZ به داخل باز | Policy | Deny |
+| دو NAT | طراحی | یکی |
+| مسیر ناقص | Route | کامل |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا DMZ جدا؟** سرورهای در معرض اینترنت.
+**۲. DMZ به داخل؟** ممنوع مگر استثنا.
+**۳. NAT کجا؟** Edge.
+
+#### English Corner
+
+- *Defense in depth forces an attacker to defeat multiple independent layers.*
+- Q: Why should DMZ hosts be unable to initiate sessions to the internal network?
+
 ## درس 15-1 — طراحی معماری دوفایروالی: نقش‌ها، Zoneها، آدرس‌دهی و جدول مسیر
 
 **فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۰، ۱۲-۲، ۱۳-۱ · ≈ 10 ساعت**
@@ -3867,6 +3936,76 @@ Edge: 10.10.0.0/24, 10.20.0.0/24, 10.50.0.0/24 via 10.99.0.2
 1. *چرا شبکه‌ی /30 بین فایروال‌ها؟* حداقل آدرس و سطح حمله.
 2. *Mgmt کجا؟* Internal، جدا از Users.
 3. *Route خلاصه؟* 10.0.0.0/8 فقط اگر فضای آدرس هم‌پوشان ندارید.
+
+### تکمیل عمیق: آدرس‌دهی و جدول مسیر دو فایروال
+
+#### چرا؟
+
+بیشتر خطاهای اولیه‌ی این طراحی در Route برگشت است: Edge نمی‌داند شبکه‌های داخلی کجایند.
+
+#### جدول Interface
+
+``` text
+Edge  port1 WAN   203.0.113.2/29  GW 203.0.113.1
+Edge  port2 DMZ   10.30.0.1/24
+Edge  port3 LINK  10.99.0.1/30
+Int   port1 LINK  10.99.0.2/30
+Int   port2 USERS 10.10.0.1/24
+Int   port3 SRV   10.20.0.1/24
+Int   port4 MGMT  10.50.0.1/24
+```
+
+#### مثال ساده — چرا /30؟
+
+``` text
+/30 = 2 usable hosts (4 addresses - network - broadcast)
+```
+
+دو آدرس قابل‌استفاده برای دو فایروال کافی است و سطح حمله‌ی کمینه.
+
+#### Routeها
+
+``` text
+Int : 0.0.0.0/0 via 10.99.0.1
+Edge: 10.10.0.0/24 via 10.99.0.2
+Edge: 10.20.0.0/24 via 10.99.0.2
+Edge: 10.50.0.0/24 via 10.99.0.2
+```
+
+#### مثال متوسط — Summary
+
+اگر 10.10.0.0/24 و 10.20.0.0/24 و 10.50.0.0/24 را بخواهیم خلاصه کنیم، بلوک پیوسته نیست؛ سه Route جدا بهتر از یک Summary خطرناک است.
+
+#### مثال سخت — Route برگشت فراموش‌شده
+
+Users به اینترنت می‌روند؛ پاسخ به Edge می‌رسد ولی Edge Route به 10.10.0.0/24 ندارد و از Default (WAN) خارج می‌کند ⇒ ترافیک گم می‌شود. شاهد: Sniffer روی port1 Edge، بسته‌ی پاسخ خروجی به WAN. رفع: Route برگشت.
+
+``` text
+get router info routing-table details 10.10.0.5
+```
+
+#### Lab
+
+جدول را بنویسید و برای هر جریان Hop-by-hop نگاه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| پاسخ گم | Route برگشت | افزودن |
+| Overlap | IP تکراری | بررسی |
+| Mgmt قابل‌دسترس از Users | Policy | Deny |
+
+#### پرسش‌ها با پاسخ
+
+**۱. /30 چند Host؟** ۲.
+**۲. چرا Route برگشت؟** پاسخ باید برگردد.
+**۳. Summary؟** فقط بلوک پیوسته.
+
+#### English Corner
+
+- *Always verify the return route on the outer firewall.*
+- Q: How many usable addresses are in a /30?
 
 ## درس 15-2 — ساخت Edge: WAN، DMZ، NAT، VIP و Policy ورودی
 
@@ -4099,6 +4238,92 @@ from DMZ     : ping 10.20.0.10                     -> fail (negative test)
 2. *DMZ→داخل؟* ممنوع مگر استثنای مستند.
 3. *VIP بدون Policy؟* ترافیک عبور نمی‌کند.
 
+### تکمیل عمیق: ساخت Edge — WAN، DMZ، NAT، VIP و Policy ورودی
+
+#### چرا؟
+
+Edge اولین خط دفاع است؛ هر خطا در آن مستقیم دیده می‌شود.
+
+#### گام ۱ — Interface
+
+``` text
+config system interface
+ edit port1
+  set mode static
+  set ip 203.0.113.2 255.255.255.248
+  set allowaccess ping
+  set role wan
+ next
+end
+```
+
+فقط `ping` برای WAN؛ مدیریت از WAN را باز نگذارید.
+
+#### گام ۲ — Route و NAT خروجی
+
+Default Route به ISP و Policy `LINK -> WAN` با `nat enable`.
+
+#### گام ۳ — VIP و Policy ورودی
+
+``` text
+config firewall vip
+ edit "VIP-WEB"
+  set extintf "port1"
+  set extip 203.0.113.3
+  set mappedip "10.30.0.10"
+  set portforward enable
+  set extport 443
+  set mappedport 443
+ next
+end
+config firewall policy
+ edit 30
+  set srcintf "port1"
+  set dstintf "port2"
+  set srcaddr "all"
+  set dstaddr "VIP-WEB"
+  set service "HTTPS"
+  set action accept
+  set logtraffic all
+ next
+end
+```
+
+#### آزمون‌ها
+
+``` text
+from Internet: curl -vk https://203.0.113.3      # expect 200
+from Internet: nmap -p 22,80,3389 203.0.113.3    # expect filtered
+from DMZ     : nc -zv 10.20.0.10 445             # expect timeout (negative)
+```
+
+#### مثال سخت — DMZ به داخل
+
+یک Policy قدیمی `DMZ -> any accept` پیدا شد. اقدام: Disable، بررسی Log ۳۰ روزه، Policy حداقلی.
+
+#### Lab
+
+Edge را در Lab بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| VIP کار نمی‌کند | Policy/ARP | بررسی |
+| nmap باز | Policy گسترده | تنگ |
+| WAN مدیریتی | allowaccess | حذف |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا ping فقط؟** حداقل.
+**۲. VIP بدون Policy؟** ترافیک رد.
+**۳. آزمون منفی DMZ؟** Timeout.
+
+#### English Corner
+
+- *Expose only the required service on the VIP and test with a port scan.*
+- Q: Why is management access on the WAN interface dangerous?
+
 ## درس 15-3 — ساخت Internal: Users، Servers، Mgmt و Routing به Edge با آزمون کامل
 
 **فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱، ۱۵-۲ · ≈ 10 ساعت**
@@ -4320,6 +4545,64 @@ Policy 90 any   -> any   deny log
 2. *Mgmt چرا جدا؟* کاهش سطح حمله به ابزار مدیریت.
 3. *دسترسی Mgmt از Users؟* فقط Jump/Bastion.
 
+### تکمیل عمیق: ساخت Internal — Users، Servers، Mgmt
+
+#### چرا؟
+
+Internal جداسازی داخل است؛ جایی که کاربران، سرورها و مدیریت از هم تفکیک می‌شوند.
+
+#### Policyها
+
+``` text
+ID 10 USERS -> SRV   HTTPS,SMB,DNS accept log
+ID 20 USERS -> LINK  HTTP,HTTPS,DNS accept log   (no NAT here; NAT at Edge)
+ID 30 MGMT  -> any   SSH,HTTPS,ICMP accept log
+ID 90 any   -> any   deny log
+```
+
+نکته: NAT را فقط در Edge انجام دهید.
+
+#### مثال ساده — Mgmt
+
+شبکه‌ی Mgmt فقط از ایستگاه مدیریتی (Jump/Bastion) قابل‌دسترس باشد: Policy از Users به Mgmt نباید وجود داشته باشد.
+
+#### مثال متوسط — آزمون
+
+``` text
+Users -> SRV 443 : ok
+Users -> MGMT 22 : timeout (negative)
+SRV   -> Internet: policy-based (usually deny)
+```
+
+هر مورد با Lookup و Log اثبات شود.
+
+#### مثال سخت — دور زدن Mgmt
+
+کاربر از SRV با SSH Tunnel به Mgmt می‌رسد. جلوگیری: SRV→MGMT ممنوع؛ Egress محدود؛ Log.
+
+#### Lab
+
+Policyها را بسازید و چهار آزمون را اجرا کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Users به Mgmt | Policy گسترده | حذف |
+| اینترنت نمی‌آید | Route/Edge | بررسی |
+| دو NAT | تنظیم | غیرفعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. NAT کجا؟** Edge.
+**۲. Mgmt چرا جدا؟** سطح حمله.
+**۳. Jump host؟** نقطه‌ی کنترل.
+
+#### English Corner
+
+- *Management networks should be reachable only from controlled jump hosts.*
+- Q: Why avoid NAT on the internal firewall?
+
 ## درس 15-4 — DMZ سه‌لایه: Web، App، DB؛ Policy، آزمون منفی و پایش
 
 **فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱ تا ۱۵-۳ · ≈ 10 ساعت**
@@ -4518,6 +4801,67 @@ Policy DENY any -> any  deny log
 2. *Egress Web؟* فقط به‌روزرسانی‌های لازم.
 3. *Hit Count اینجا؟* کشف جریان ناخواسته.
 
+### تکمیل عمیق: DMZ سه‌لایه — Web، App، DB
+
+#### چرا؟
+
+اگر وب‌سرور هک شود، مهاجم نباید مستقیم به پایگاه‌داده برسد. سه‌لایه‌بودن این زنجیره را می‌شکند.
+
+#### ماتریس
+
+| از | به | اجازه |
+|---|---|---|
+| Internet | Web | 443 |
+| Web | App | 8443 |
+| App | DB | 5432 |
+| Web | DB | ممنوع |
+| DB | Internet | ممنوع |
+
+#### مثال ساده — Policy
+
+``` text
+Policy W2A Web -> App tcp/8443 accept log
+Policy A2D App -> DB  tcp/5432 accept log
+Policy DENY any -> any deny log
+```
+
+#### مثال متوسط — آزمون منفی
+
+``` text
+from Web: nc -zv 10.30.3.10 5432   # expect timeout; log deny
+```
+
+#### مثال سخت — Egress
+
+وب‌سرور هک‌شده می‌خواهد به C2 در اینترنت وصل شود؛ Egress باید محدود باشد (فقط به‌روزرسانی‌های لازم). Log ترافیک خروجی غیرعادی Alert بدهد.
+
+#### پایش
+
+Hit Count و Deny Log؛ هشدار روی Deny غیرمعمول از Web.
+
+#### Lab
+
+ماتریس را اجرا و Evidence ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Web به DB | Policy | حذف |
+| DB به اینترنت | Egress | Deny |
+| Log نیست | log | فعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Web→DB ممنوع؟** زنجیره‌ی نفوذ.
+**۲. Egress؟** خروجی.
+**۳. پایش؟** Deny.
+
+#### English Corner
+
+- *Restrict outbound traffic from servers to limit data exfiltration.*
+- Q: Why must the web tier never talk directly to the database?
+
 ## درس 15-5 — Packet Walk در دو فایروال: NAT در دو نقطه، Session در هر سمت و اثبات
 
 **فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱ تا ۱۵-۴، ۱۴-۳ · ≈ 10 ساعت**
@@ -4684,6 +5028,65 @@ Edge port1 -> ISP
 2. *مسیر نامتقارن؟* Session ناقص و Drop.
 3. *هم‌گامی Log؟* NTP و Timezone یکسان.
 
+### تکمیل عمیق: Packet Walk در دو فایروال
+
+#### چرا؟
+
+با دو فایروال، هر بسته دو Session، دو Log و دو تصمیم دارد. برای عیب‌یابی باید مسیر را قدم‌به‌قدم دنبال کنید.
+
+#### رفت (Users → Internet)
+
+``` text
+User 10.10.0.5 -> Int port2 : RPF ok, Policy 20 accept (no NAT)
+Int port1 -> Edge port3    : RPF ok (route 10.10.0.0/24 via Int)
+Edge: Policy LINK->WAN accept, SNAT 10.10.0.5 -> 203.0.113.2
+Edge port1 -> ISP
+```
+
+#### برگشت
+
+ISP → Edge (Session معکوس، DNAT به 10.10.0.5) → Int (Session) → User.
+
+#### مثال متوسط — دو Session
+
+``` text
+Edge: diagnose sys session filter dst 198.51.100.8
+Int : diagnose sys session filter src 10.10.0.5
+```
+
+هر دو Session باید وجود داشته باشند و Byteها هم‌خوان.
+
+#### مثال سخت — مسیر نامتقارن
+
+Edge Route برگشت 10.10.0.0/24 ندارد: پاسخ از Default خارج می‌شود ⇒ Int Session ندارد (SYN-ACK بدون SYN) ⇒ Drop. با Sniffer دو سمت دیده می‌شود.
+
+#### هم‌گامی Log
+
+NTP یکسان و Timezone یکسان؛ در غیر این صورت مقایسه‌ی Log غیرممکن است.
+
+#### Lab
+
+یک curl را در هر دو فایروال ردیابی کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| فقط یک Session | نامتقارن | Route |
+| IP عجیب در Log | NAT | بررسی |
+| ساعت‌ها متفاوت | NTP | همگام |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا دو Session؟** دو Stateful.
+**۲. نامتقارن؟** پاسخ از مسیر دیگر.
+**۳. NTP؟** مقایسه‌ی Log.
+
+#### English Corner
+
+- *Each stateful firewall keeps its own session for the same flow.*
+- Q: What does a missing return route do to a flow?
+
 ## درس 15-6 — خرابی‌ها و آزمون G6: Edge، Internal، DMZ و گزارش RCA
 
 **فصل 15 · بازنویسی عمیق · پیش‌نیاز: ۱۵-۱ تا ۱۵-۵ · ≈ 10 ساعت**
@@ -4838,6 +5241,68 @@ Prevent   : change review + pre/post lookup tests
 1. *اولین گام در قطع DMZ؟* Lookup روی Edge.
 2. *Backup چرا؟* بازگشت سریع.
 3. *چرا Review؟* تغییر بدون بازبینی علت اصلی خرابی.
+
+### تکمیل عمیق: خرابی‌ها و آزمون G6 — سه پرونده با RCA
+
+#### چرا؟
+
+G6 تمام ساخت‌های فصل را با سه خرابی واقعی محک می‌زند.
+
+#### خرابی ۱ — DMZ از اینترنت نمی‌رسد
+
+``` text
+diagnose firewall iprope lookup 198.51.100.50 40000 203.0.113.3 443 tcp port1   # on Edge
+ -> policy 0 (deny)
+```
+
+علت: VIP حذف شده. رفع: بازسازی VIP و Policy؛ آزمون curl.
+
+#### خرابی ۲ — Users بی‌اینترنت
+
+Sniffer روی Edge port3: بسته‌ای نمی‌رسد ⇒ مشکل Route Int→Edge (Default Route Int حذف شده). رفع: افزودن.
+
+#### خرابی ۳ — DMZ به DB داخلی Session باز می‌کند
+
+Policy بیش‌ازحد؛ نقض سیاست. رفع: حذف Policy، بررسی Log برای سوءاستفاده، PIR.
+
+#### قالب RCA
+
+``` text
+Title   : DMZ unreachable
+Impact  : public site down 14 min
+Cause   : VIP removed during cleanup
+Fix     : VIP restored from backup
+Prevent : change review + pre/post lookup tests
+```
+
+#### Rubric
+
+``` text
+Diagnosis 30 | Fix 25 | Negative test 15 | RCA 20 | Honesty 10
+```
+
+#### Lab
+
+سه خرابی را ایجاد و رفع کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| چند خرابی | هم‌زمان | یکی‌یکی |
+| بدون Backup | غفلت | Backup |
+| RCA ناقص | عجله | قالب |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Lookup اول؟** سریع و بی‌اثر.
+**۲. چرا Backup؟** بازگشت.
+**۳. RCA چه دارد؟** علت و پیشگیری.
+
+#### English Corner
+
+- *A good root cause analysis ends with a preventive action.*
+- Q: What is your first command when a published service becomes unreachable?
 
 ## پاسخ‌های فصل 15
 
