@@ -4596,137 +4596,119 @@ Tunnel هر ۸ ساعت یک بار برای چند ثانیه قطع می‌ش�
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. از نیاز کسب‌وکار به «برگه‌ی پارامتر IPsec» برسد.
-2. Proposal امن و سازگار انتخاب کند و دلیل بگوید.
-3. محدودیت‌های مسیر (NAT، فایروال میانی، MTU) را پیش از پیاده‌سازی بسنجد.
-4. معیار پذیرش Tunnel را بنویسد.
+1. نیاز کسب‌وکار (اتصال دو شعبه) را به طراحی IPsec ترجمه کنید.
+2. Proposal (Phase 1 و Phase 2) را با معیار امنیت و سازگاری انتخاب کنید.
+3. Subnetهای دو سمت را بدون Overlap طراحی کنید.
+4. برگه‌ی پارامتر هماهنگ دو طرف را بنویسید.
+5. Route-based و Policy-based را مقایسه کنید.
+6. چک‌لیست قبل از ساخت (NAT-T، پورت، Route، Policy) را بشناسید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا قبل از تنظیم IPsec باید «طراحی» کنیم؟** بیشتر Tunnelهایی که بالا نمی‌آیند به یک ناهمخوانی کوچک برمی‌گردند: یک سر AES256 و سر دیگر AES128، یا Lifetime متفاوت، یا Selector ناهمخوان. اگر قبل از CLI همه‌ی پارامترها را روی یک «برگه» بنویسید و دو سر را مقایسه کنید، این خطاها قبل از ساخت دیده می‌شود. مثل هماهنگی قبل از قرارداد: تاریخ، مبلغ و شرایط باید روی کاغذ یکی باشد.
+اگر دو شعبه با نامه‌ی پستی (اینترنت) مکاتبه کنند، هر کس می‌تواند نامه را بخواند. IPsec مثل «کیف دیپلماتیک» است: نامه در جعبه‌ی قفل‌دار می‌رود و فقط گیرنده کلید دارد. ولی دو طرف باید **دقیقاً** روی قفل و کلید توافق کنند؛ یک عدم‌تطابق کوچک (مثلاً DH Group) یعنی تونل بالا نمی‌آید. بیشتر زمان IPsec صرف طراحی و برگه‌ی پارامتر می‌شود نه تایپ دستور.
 
-**پنج تصمیم طراحی**
+### نیاز کسب‌وکار ⇒ طراحی
 
-1. **نسخه‌ی IKE:** IKEv2 ترجیح دارد (ساده‌تر، سریع‌تر، NAT-T بهتر).
-2. **الگوریتم‌ها:** رمزنگاری (AES256)، یکپارچگی (SHA256) و گروه DH (14 یا بالاتر). الگوریتم‌های ضعیف (DES، MD5، DH 1/2/5) کنار گذاشته شوند.
-3. **هویت:** PSK بلند و تصادفی در Vault، یا گواهی.
-4. **شبکه‌های دو سر (Selector):** باید هم‌پوشان نباشند؛ در غیر این صورت NAT ۱:۱ یا Renumber.
-5. **Lifetime/Rekey:** در دو سر یکسان.
+نیاز: «شعبه‌ی تهران (10.1.0.0/24) و تبریز (10.2.0.0/24) به هم دسترسی داشته باشند، امن، با IP عمومی ثابت».
 
-**جمع‌بندی اصلی درس:** در فصل ۱۸-۰ مفاهیم را آموختید. این درس همان مفاهیم را به **تصمیم طراحی** تبدیل می‌کند: چه Proposal، چه Selector، چه Route، چه Policy، و چه چیزی باید قبل از شروع بررسی شود.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) پرسش‌های پیش از طراحی
-
-1. دو سر IP عمومی ثابت دارند یا یکی Dynamic/پشت NAT؟ (Static/Dynamic، NAT-T)
-2. چه شبکه‌هایی باید ارتباط داشته باشند؟ Overlap دارند؟ (IP Plan، NAT)
-3. مسیر بین دو سر چه فایروال‌هایی دارد؟ UDP 500/4500 و ESP باز است؟
-4. چه سرویس‌هایی؟ حجم/Latency؟ (MTU، MSS، Offload)
-5. یک مسیر یا Failover؟ (Dual-ISP، SD-WAN)
-6. هویت با PSK یا گواهی؟
-
-#### ۲) برگه‌ی پارامتر (قالب)
-
-| پارامتر | مقدار پیشنهادی | دلیل |
+| تصمیم | انتخاب | دلیل |
 |---|---|---|
-| IKE | v2 | مدرن‌تر؛ پیش‌فرض 7.0 v1 است و باید صریح تغییر کند |
-| Encryption | AES-256-GCM | AEAD |
-| Integrity/PRF | SHA-256 | امن |
-| DH | 20 (یا ≥ 14) | PFS قوی |
-| PFS | Enable | رازداری رو به جلو |
-| Lifetime | Phase1 86400، Phase2 43200 (پیش‌فرض‌های 7.0) | هماهنگ دو سر |
-| DPD | on-idle/on-demand | کشف مرگ Peer |
-| Auth | PSK قوی/گواهی | مقیاس |
-| Selector | 0.0.0.0/0 (route-based) | Routing تعیین‌کننده |
+| نوع | Route-based | انعطاف Routing (OSPF/BGP) |
+| IKE | IKEv2 | سریع‌تر، قوی‌تر |
+| احراز | PSK قوی (یا Certificate) | ساده/بهتر |
+| Phase1 | AES256-SHA256، DH 14+ | امن و گسترده |
+| Phase2 | AES256-SHA256، PFS | ایمن |
+| Selector | 0.0.0.0/0 (Route-based) | Routing کنترل کند |
 
-#### ۳) معیار پذیرش
+### Route-based در برابر Policy-based
 
-IKE SA Established؛ Child SA با شمارنده‌ی دوطرفه؛ ping/TCP بین شبکه‌ها؛ آزمون منفی؛ MTU بدون فرگمنت؛ Failover (در صورت وجود) در زمان هدف.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| PSK یا Cert | Cert برای مقیاس؛ PSK قوی در کوچک |
-| Failover | دو Tunnel/دو ISP + SD-WAN (۲۱-۷) |
-| Overlap | NAT/Re-IP |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — برگه‌ی پارامتر
-
-| پارامتر | سایت A | سایت B | هم‌خوان؟ |
-|---|---|---|---|
-| IKE | v2 | v2 | بله |
-| رمز | AES256 | AES256 | بله |
-| Integrity | SHA256 | SHA256 | بله |
-| DH | 14 | 14 | بله |
-| Local subnet | 10.1.0.0/24 | 10.2.0.0/24 | — |
-| Keylife P1 | 28800 | 28800 | بله |
-
-اگر یک خانه «خیر» شد، همان‌جا قبل از CLI رفع می‌شود.
-
-#### مثال متوسط — PSK
-
-``` text
-openssl rand -base64 32
-```
-
-حداقل ۳۲ نویسه‌ی تصادفی؛ در Vault؛ هرگز در ایمیل/ریپو. اگر لو رفت، چرخش (Rotate) در دو سر.
-
-#### مثال سخت — شبکه‌های هم‌پوشان
-
-هر دو سایت 192.168.1.0/24 دارند. IPsec نمی‌داند «192.168.1.10» کدام سایت است. راه ۱: NAT ایستا ۱:۱ روی Tunnel (سایت B در A به 10.222.1.0/24 دیده شود)؛ راه ۲: Renumber دائمی. در هر دو، Policy و DNS باید با آدرس ترجمه‌شده هماهنگ باشند و آزمون ping/برنامه ثبت شود.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده:** دو شعبه با IP ثابت و بدون NAT: IKEv2، AES-GCM، DH 20، PFS، Route-based، دو Policy.
-
-**متوسط:** یک سر پشت NAT: NAT-T لازم؛ UDP 4500؛ Peer ID/Local ID مشخص.
-
-**سخت:** دو شعبه با Subnet هم‌پوشان 192.168.1.0/24: Route-based مستقیم ممکن نیست. گزینه‌ها: NAT یکطرفه/دوطرفه (VIP/IP Pool)، یا تغییر Addressing. معیار: ریسک، پیچیدگی، Log. راه‌حل: NAT به Subnetهای یکتا در Tunnel و ثبت در IP Plan.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. VPN → IPsec Wizard یا Custom: گام‌ها مطابق ۱۸-۲.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-show vpn ipsec phase1-interface
-show vpn ipsec phase2-interface
-diagnose vpn ike gateway list
-```
-
-### ۸) Verification (اثبات صحت)
-
-- برگه‌ی پارامتر امضا‌شده توسط دو سر.
-- Pre-check: ping Peer، UDP 500/4500، MTU مسیر.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| ویژگی | Route-based | Policy-based |
 |---|---|---|
-| Pre-check شکست | Sniffer/ping | فایروال میانی/Route |
-| Overlap | Route | NAT/Re-IP |
+| Interface تونل | دارد | ندارد |
+| Routing | Static/OSPF/BGP روی تونل | Selector تعیین |
+| انعطاف | بالا | کم |
+| پیچیدگی عیب‌یابی | کمتر | بیشتر |
+| پیشنهاد | بله | موارد قدیمی |
 
-### ۱۰) نکات امنیتی
+### برگه‌ی پارامتر
 
-- الگوریتم ضعیف را حذف کنید.
-- PSK در ریپو نیست.
+| پارامتر | سمت A (تهران) | سمت B (تبریز) |
+|---|---|---|
+| IP عمومی | 198.51.100.10 | 203.0.113.20 |
+| Subnet داخلی | 10.1.0.0/24 | 10.2.0.0/24 |
+| IKE | v2 | v2 |
+| Proposal P1 | aes256-sha256 | aes256-sha256 |
+| DH | 14 | 14 |
+| Lifetime P1 | 86400 | 86400 |
+| Proposal P2 | aes256-sha256 | aes256-sha256 |
+| PFS | enable (DH 14) | enable (DH 14) |
+| Lifetime P2 | 43200 | 43200 |
+| PSK | <SECRET> | <SECRET> |
+| NAT-T | enable | enable |
 
-### ۱۱) جمع‌بندی مفهومی
+اصل: هر ردیف باید در دو طرف **یکسان** (Lifetime الزاماً یکسان نیست ولی سازگار باشد).
 
-- طراحی پیش از پیکربندی.
-- برگه‌ی پارامتر آینه‌ای.
-- معیار پذیرش قابل‌آزمایش.
+### چک‌لیست پیش از ساخت
 
-### ۱۲) تمرین و ارزیابی
+1. UDP 500 و 4500 و ESP (پروتکل 50) بین دو IP عمومی باز است.
+2. IP عمومی ثابت (یا DDNS/Peer Type Dynamic).
+3. Subnetها Overlap ندارند.
+4. مسیر Default روی WAN درست است.
+5. ساعت (NTP) هماهنگ برای Certificate.
+6. MTU: تونل ≈ ۱۴۲۰–۱۴۳۰ (۱۸-۴).
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Overlap
+
+هر دو شعبه 192.168.1.0/24 ⇒ Overlap. راه: Renumber یک سمت، یا NAT بین دو سمت (Policy NAT/Double NAT)؛ بهترین: آدرس‌دهی یکتا.
+
+#### مثال متوسط — پارامتر ناسازگار
+
+سمت A DH 14 و B DH 5. Debug: `no proposal chosen`. رفع: هر دو 14. در طراحی همیشه برگه‌ی مشترک.
+
+#### مثال متوسط — ساده‌ترین Proposal
+
+Phase1: `aes256-sha256` و `dhgrp 14`؛ Phase2 با PFS 14. لیست کوتاه (یک یا دو Proposal) برای کاهش شانس عدم‌تطابق.
+
+#### مثال سخت — NAT قبل از FortiGate
+
+یک سمت پشت مودم NAT است. نیاز NAT-T (UDP 4500)، و Port Forward 500/4500 روی مودم یا ISP Bridge. علامت: Phase1 بالا ولی ESP عبور نمی‌کند. راه: NAT-T Force یا Bridge.
+
+#### مثال سخت — چند تونل (Hub)
+
+۱۰ شعبه به مرکز: Hub-and-Spoke؛ Subnetها یکتا؛ OSPF/BGP روی تونل‌ها؛ ADVPN برای Spoke-to-Spoke (۱۸-۸). در طراحی اول Subnet Plan.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. برگه‌ی پارامتر را کامل کنید.
+2. چک‌لیست را پر کنید.
+3. Overlap را شبیه‌سازی و راه‌حل بگویید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| no proposal chosen | Proposal | هماهنگ |
+| Phase1 بالا P2 نه | Selector/PFS | تطبیق |
+| ESP عبور نمی‌کند | NAT-T | 4500 |
+| Overlap | آدرس‌دهی | تغییر |
+
+### نکات امنیتی
+
+PSK طولانی و تصادفی (یا Certificate)؛ AES-GCM یا AES256؛ DH 14+؛ DES/3DES/MD5/SHA1 ممنوع؛ Dead Peer Detection.
+
+### جمع‌بندی
+
+طراحی قبل از دستور: نیاز ⇒ پارامتر؛ برگه‌ی مشترک؛ Route-based؛ Subnet یکتا؛ چک‌لیست پورت/NAT-T/MTU.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا IKEv2؟ *(پاسخ: 18-1-ت1)*
 
@@ -4740,7 +4722,7 @@ diagnose vpn ike gateway list
 
 **Q1.** Quick quiz (English): Why prepare a parameter sheet before configuring a tunnel? *(پاسخ: 18-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -4748,95 +4730,16 @@ diagnose vpn ike gateway list
 
 - *Mirror every parameter on both peers.* ← هر پارامتر را روی هر دو سر آینه کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **Lab:** برگه‌ی پارامتر. **Evidence:** `02-design/ipsec-params.md`.
 
-### ۱۵) منابع
+### منابع
 
 - [phase1-interface](https://docs.fortinet.com/document/fortigate/7.0.5/cli-reference/371620/config-vpn-ipsec-phase1-interface)
 - RFC 7296
 
 <a id="l-18-2"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: برگه‌ی پارامتر برای دو سر
-
-| پارامتر | سایت A | سایت B |
-|---|---|---|
-| IKE | v2 | v2 |
-| Encryption | AES256 | AES256 |
-| Integrity | SHA256 | SHA256 |
-| DH Group | 14 | 14 |
-| Local Subnet | 10.1.0.0/24 | 10.2.0.0/24 |
-| Keylife P1 | 28800 | 28800 |
-
-هر ناهمخوانی در این جدول قبل از کانفیگ پیدا می‌شود. **PSK:** ≥۳۲ نویسه تصادفی، در Vault نه ریپو.
-
-**پرسش‌های مصاحبه**
-1. *چرا برگه؟* جلوگیری از Mismatch.
-2. *DH 14 چرا؟* حداقل ایمن قابل قبول (۲۰۴۸ بیت).
-3. *IKEv1 یا v2؟* v2 ترجیح.
-
-### تکمیل عمیق: طراحی IPsec — برگه‌ی پارامتر دو سر
-
-#### چرا؟
-
-بیشتر «Tunnel بالا نمی‌آید»ها به ناهمخوانی یک پارامتر برمی‌گردد. برگه‌ی طراحی، قبل از دست‌بردن به CLI، ناهمخوانی را آشکار می‌کند.
-
-#### برگه‌ی نمونه
-
-| پارامتر | سایت A | سایت B | هم‌خوان؟ |
-|---|---|---|---|
-| IKE نسخه | 2 | 2 | بله |
-| رمزنگاری | AES256 | AES256 | بله |
-| Integrity | SHA256 | SHA256 | بله |
-| DH | 14 | 14 | بله |
-| Keylife P1 | 28800 | 28800 | بله |
-| Local subnet | 10.1.0.0/24 | 10.2.0.0/24 | — |
-| PSK | Vault | Vault | بله |
-
-#### مثال ساده — انتخاب پارامتر
-
-AES256 + SHA256 + DH14 (۲۰۴۸ بیت) حداقل مناسب؛ DH 19/20/21 (ECP) سریع‌تر و امن. پارامترهای ضعیف (DES، MD5، DH 1/2/5) را کنار بگذارید.
-
-#### مثال متوسط — PSK
-
-PSK باید تصادفی و بلند باشد (≥ 32 نویسه) و در Vault نگه‌داری شود؛ هرگز در ریپو یا ایمیل.
-
-``` text
-openssl rand -base64 32
-```
-
-#### مثال سخت — شبکه‌های هم‌پوشان
-
-دو سایت هر دو 192.168.1.0/24 دارند؛ IPsec مسیر مبهم می‌شود. راه: NAT ایستا ۱:۱ روی Tunnel (مثلاً سایت B به 10.222.1.0/24 ترجمه شود) یا Renumber.
-
-#### Lab
-
-برگه را برای دو سایت خودتان پر کنید و با همکار مقابله کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| تونل بالا نمی‌آید | ناهمخوانی | برگه |
-| Overlap | IP | NAT/Renumber |
-| PSK لو رفت | نگهداری | Rotate |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا برگه؟** قبل از CLI ناهمخوانی دیده شود.
-**۲. PSK چگونه؟** تصادفی، بلند، Vault.
-**۳. Overlap؟** NAT یا Renumber.
-
-#### English Corner
-
-- *Agree on all IKE and IPsec parameters on paper before configuring.*
-- Q: How do you build a tunnel between two sites with overlapping subnets?
 
 ## درس 18-2 — ساخت Tunnel Site-to-Site بین دو FortiGate: طراحی، GUI، CLI و Verification
 
@@ -4844,94 +4747,97 @@ openssl rand -base64 32
 
 > **وضعیت (FortiOS 7.0.3):** پیش‌فرض‌ها از CLI Reference 7.0؛ سینتکس `Unverified`؛ PSK نمونه؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
 
-1. برگه‌ی طراحی Tunnel (IP Plan، Proposal، Selector، Route، Policy) را قبل از پیکربندی بنویسد.
-2. Tunnel Route-based را با **GUI و CLI** بسازد.
-3. سه چیز لازم (Route، Policy، Selector) را جداگانه بسنجد.
-4. با `diagnose vpn tunnel list`، Monitor و Ping Verification کند.
-5. Rollback و Backup را اجرا کند.
+### هدف آموزشی
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+در پایان این درس باید بتوانید:
 
-**چرا ساخت Tunnel را «قدم‌به‌قدم» ببینیم؟** Tunnel وقتی «ساخته شده» است که چهار چیز درست باشد: Phase1 (کانال مذاکره)، Phase2 (محافظت از داده و Selector)، Route (ترافیک به Interface Tunnel برود) و Policy (دو جهت). اگر فقط یکی ناقص باشد، «Tunnel Up ولی ping نمی‌رود» می‌شود، که شایع‌ترین علامت است.
+1. Tunnel Site-to-Site بین دو FortiGate را با GUI Wizard و CLI بسازید.
+2. Phase 1 و Phase 2 را با پارامتر هماهنگ تنظیم کنید.
+3. Static Route و Policy دوطرفه را بنویسید.
+4. وضعیت را با `diagnose vpn ike gateway list` و `diagnose vpn tunnel list` تأیید کنید.
+5. ترافیک واقعی را آزمون و Sniffer کنید (ESP/NAT-T).
+6. خطاهای ساخت را رفع کنید.
 
-**مراحل در فورتی‌گیت (Route-based):** Phase1-interface ← Phase2-interface ← Route (Static یا پویا) به Interface Tunnel ← Policy `LAN → Tunnel` و `Tunnel → LAN` بدون NAT (شبکه‌های خصوصی).
+### چرا باید یاد بگیریم؟
 
-**جمع‌بندی اصلی درس:**
+حالا که برگه‌ی پارامتر آماده است، «ساختمان را می‌سازیم». ترتیب مهم است: Phase 1 (قرارداد امنیتی)، Phase 2 (کانال داده)، Route (چه ترافیکی از تونل برود) و Policy (اجازه‌ی عبور). اگر یک تکه جا بیفتد، تونل ممکن است «بالا» باشد ولی ترافیک رد نشود؛ این از شایع‌ترین گیج‌کننده‌هاست.
+
+### توپولوژی
 
 ``` text
-Site A: WAN 203.0.113.1  LAN 192.168.10.0/24   Tunnel if: TO-B
-Site B: WAN 203.0.113.2  LAN 192.168.20.0/24   Tunnel if: TO-A
-IKE: v2  Proposal: aes256gcm-prfsha256  DH 20  PFS on  DPD on-idle  NAT-T: auto
-Phase2 selectors: 0.0.0.0/0 <-> 0.0.0.0/0 (route-based)
-Routing: static 192.168.20.0/24 via TO-B (A) and 192.168.10.0/24 via TO-A (B)
-Policies: LAN->TO-B accept ; TO-B->LAN accept (both sides)
+ LAN-A 10.1.0.0/24 -- [FGT-A 198.51.100.10] ==== IPsec ==== [FGT-B 203.0.113.20] -- LAN-B 10.2.0.0/24
 ```
 
-اصل: **دو سر آینه‌ی هم** (Proposal، DH، PFS، Lifetime، PSK، Selector).
-
-### ۳) پیاده‌سازی
-
-**GUI (Site A):**
-
-1. VPN → IPsec Tunnels → Create New → Custom: Name TO-B.
-2. Network: Remote Gateway = Static IP 203.0.113.2؛ Interface = wan1؛ NAT Traversal = Enable.
-3. Authentication: Method Pre-shared Key؛ IKE Version 2.
-4. Phase 1 Proposal: Encryption AES256GCM؛ DH Group 20.
-5. Phase 2 Selectors: Local/Remote Address = 0.0.0.0/0؛ Phase 2 Proposal AES256GCM؛ Enable PFS (DH 20).
-6. Network → Static Routes → 192.168.20.0/24 → Interface TO-B.
-7. Policy & Objects → Firewall Policy: LAN→TO-B و TO-B→LAN (Accept، NAT خاموش).
-
-**CLI (Site A):**
+### Phase 1 (FGT-A)
 
 ``` text
 config vpn ipsec phase1-interface
     edit "TO-B"
-        set interface "wan1"
+        set interface "port1"
         set ike-version 2
-        set remote-gw 203.0.113.2
-        set proposal aes256gcm-prfsha256
-        set dhgrp 20
+        set peertype any
+        set net-device disable
+        set proposal aes256-sha256
+        set dhgrp 14
+        set remote-gw 203.0.113.20
+        set psksecret <SECRET>
         set dpd on-idle
         set nattraversal enable
-        set psksecret <PSK-LAB>
+        set keylife 86400
     next
 end
+```
+
+### Phase 2
+
+``` text
 config vpn ipsec phase2-interface
     edit "TO-B-P2"
         set phase1name "TO-B"
-        set proposal aes256gcm
+        set proposal aes256-sha256
         set pfs enable
-        set dhgrp 20
+        set dhgrp 14
         set src-subnet 0.0.0.0 0.0.0.0
         set dst-subnet 0.0.0.0 0.0.0.0
+        set keylife-seconds 43200
     next
 end
+```
+
+### Route و Policy
+
+``` text
 config router static
-    edit 100
-        set dst 192.168.20.0 255.255.255.0
+    edit 10
+        set dst 10.2.0.0 255.255.255.0
         set device "TO-B"
+    next
+    edit 11
+        set dst 10.2.0.0 255.255.255.0
+        set blackhole enable
+        set distance 254
     next
 end
 config firewall policy
-    edit 100
+    edit 80
         set name "LAN-to-B"
-        set srcintf "port2"
+        set srcintf "ZN-LAN"
         set dstintf "TO-B"
-        set srcaddr "all"
-        set dstaddr "all"
+        set srcaddr "NET-A"
+        set dstaddr "NET-B"
         set action accept
         set schedule "always"
         set service "ALL"
         set logtraffic all
     next
-    edit 101
+    edit 81
         set name "B-to-LAN"
         set srcintf "TO-B"
-        set dstintf "port2"
-        set srcaddr "all"
-        set dstaddr "all"
+        set dstintf "ZN-LAN"
+        set srcaddr "NET-B"
+        set dstaddr "NET-A"
         set action accept
         set schedule "always"
         set service "ALL"
@@ -4940,92 +4846,79 @@ config firewall policy
 end
 ```
 
-(در تولید `service ALL` و `all` را محدود کنید؛ اینجا برای Lab اولیه است. سینتکس `Unverified`.) Site B آینه است.
+Route blackhole با Distance بالا: وقتی تونل Down است، ترافیک به Default (اینترنت) نشت نمی‌کند. NAT روی Policy تونل **غیرفعال**.
 
-### ۴) Verification (سه سطح)
+سمت B معکوس: `remote-gw 198.51.100.10`، Route به 10.1.0.0/24، Policyهای متقارن.
+
+### تأیید
 
 ``` text
-get vpn ipsec tunnel summary
 diagnose vpn ike gateway list
 diagnose vpn tunnel list
-execute ping-options source 192.168.10.1
-execute ping 192.168.20.1
-get router info routing-table details 192.168.20.5
-diagnose debug flow filter addr 192.168.20.5
+get vpn ipsec tunnel summary
 ```
 
-- **IKE SA:** Established.
-- **Child SA:** Bytes encrypt/decrypt هر دو رشد.
-- **داده:** ping کلاینت‌ها؛ Log Policy.
-
-### ۵) مثال‌ها
-
-#### مثال ساده — Phase1 و Phase2
+نمونه:
 
 ``` text
-config vpn ipsec phase1-interface
- edit "TO-B"
-  set interface "port1"
-  set ike-version 2
-  set remote-gw 198.51.100.2
-  set proposal aes256-sha256
-  set dhgrp 14
-  set psk ENC ***
- next
-end
-config vpn ipsec phase2-interface
- edit "TO-B-P2"
-  set phase1name "TO-B"
-  set src-subnet 10.1.0.0 255.255.255.0
-  set dst-subnet 10.2.0.0 255.255.255.0
- next
-end
+name=TO-B ... status=established
+proxyid=TO-B-P2 ... enc: spi=... bytes=...
 ```
 
-#### مثال متوسط — Route و Policy
+بایت‌های enc/dec باید با ترافیک افزایش یابند.
 
-Route `10.2.0.0/24` از طریق `TO-B` و دو Policy (LAN→TO-B و TO-B→LAN) با `nat disable`. اثبات: `execute ping-options source 10.1.0.1` و `execute ping 10.2.0.1`.
+### آزمون
 
-#### مثال سخت — فقط شمارنده‌ی enc بالا می‌رود
+1. ping از 10.1.0.5 به 10.2.0.5.
+2. `diagnose sniffer packet any 'host 203.0.113.20 and (esp or udp port 500 or udp port 4500)' 4 10 a`.
+3. آزمون منفی: Policy را موقتاً Disable ⇒ ping قطع (اثبات اینکه Policy کنترل می‌کند).
 
-``` text
-diagnose vpn tunnel list
- ... enc pkts = 120  dec pkts = 0
-```
+### مثال‌های حل‌شده
 
-یعنی ما رمز می‌کنیم و می‌فرستیم ولی چیزی رمزگشایی نمی‌کنیم: سمت مقابل Policy/Route برگشت ندارد یا Selector ناهمخوان. روش: همان بررسی را روی سمت B (`dec` باید بالا برود)، Policy دوطرفه، Route برگشت، و Debug IKE.
+#### مثال ساده — موفق
 
-#### مثال‌های اصلی درس (مرور)
+Phase1 established، ping OK، `enc/dec` افزایش. Log Policy 80 و 81.
 
-**ساده:** ping 192.168.10.5 → 192.168.20.5 موفق؛ `tunnel list`: Encrypt/Decrypt افزایش.
+#### مثال متوسط — بالا ولی ترافیک نه
 
-**متوسط:** فقط یک‌سو: Bytes out می‌رود، in صفر؛ بررسی Policy B→LAN و Route برگشت در B.
+Phase1 و Phase2 up ولی ping Timeout. بررسی: Route (آیا 10.2.0.0/24 از TO-B؟)، Policy برگشتی، و در B Route به 10.1.0.0/24. معمولاً Route یا Policy یک سمت فراموش شده.
 
-**سخت:** Tunnel پس از ۸ ساعت یک لحظه قطع می‌شود: Rekey؛ بررسی Lifetime دو سر (۱۸-۰)، DPD، PFS Group ناهمسان؛ شاهد: Log VPN.
+#### مثال متوسط — NAT اشتباه
 
-### ۶) Troubleshooting
+Policy تونل `nat enable` ⇒ مبدأ به IP تونل ترجمه شد و B ترافیک را نمی‌شناسد. رفع: `nat disable`.
 
-| علامت | علت |
-|---|---|
-| IKE برقرار نمی‌شود | Reachability، Proposal، PSK، ID |
-| Phase 2 شکست | Selector/PFS/DH |
-| Up ولی ping نه | Route/Policy/NAT-T |
-| ping کوچک OK و بزرگ نه | MTU/MSS |
+#### مثال سخت — Selector و Route-based
 
-### ۷) نکات امنیتی
+Phase2 با Selector خاص در یک سمت و 0.0.0.0/0 در سمت دیگر ⇒ فقط Phase2 بالا نمی‌آید (`no matching selector`). رفع: هر دو 0.0.0.0/0 (Route-based) یا دقیقاً مطابق.
 
-- PSK قوی و منحصر؛ در ریپو نیست.
-- Policy حداقلی؛ ترافیک Tunnel هم Inspect شود.
-- `service ALL` فقط Lab.
+#### مثال سخت — نشت ترافیک
 
-### ۸) جمع‌بندی
+تونل Down و Route blackhole نیست ⇒ ترافیک 10.2.0.0/24 از Default به اینترنت رفت (نشت اطلاعات!). رفع: blackhole Distance 254. تأیید: تونل قطع ⇒ ping Timeout نه عبور از اینترنت.
 
-- برگه‌ی طراحی آینه‌ای.
-- Route + Policy + Selector.
-- Verification سه‌سطحی.
-- Backup قبل از تغییر.
+### Lab هدایت‌شده (اجرا نشده)
 
-### ۹) تمرین و ارزیابی
+1. P1/P2/Route/Policy دو طرف.
+2. تأیید و آزمون.
+3. نشت و blackhole.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| Phase1 down | PSK/Proposal | Debug IKE |
+| P2 down | Selector/PFS | تطبیق |
+| بالا ولی ping نه | Route/Policy | بررسی |
+| ترافیک بدون رمز | Route نشتی | blackhole |
+
+### نکات امنیتی
+
+PSK قوی؛ NAT روی Policy تونل خاموش؛ DPD؛ Log؛ محدودیت Policy (نه ALL) در عمل.
+
+### جمع‌بندی
+
+ترتیب: Phase1 ⇒ Phase2 ⇒ Route (+ blackhole) ⇒ Policy دوطرفه (بدون NAT) ⇒ تأیید با `ike gateway list` و `tunnel list` ⇒ آزمون مثبت/منفی.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) سه چیز لازم برای ترافیک Tunnel Route-based؟ *(پاسخ: 18-2-ت1)*
 
@@ -5039,7 +4932,7 @@ diagnose vpn tunnel list
 
 **Q1.** Quick quiz (English): Which three elements must be correct for route-based VPN traffic to flow? *(پاسخ: 18-2-Q1)*
 
-### ۱۰) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -5049,132 +4942,15 @@ diagnose vpn tunnel list
 
 - *Both peers must have mirrored proposals and selectors.* ← هر دو Peer باید Proposal و Selector آینه‌ای داشته باشند.
 
-### ۱۱) Lab
+### Lab
 
 **کارت Lab:** Tunnel S2S. **وضعیت:** اجرا نشده. **Verification:** مطابق بخش ۴. **Rollback:** حذف phase2/phase1/Route/Policy. **Evidence:** `03-ops/s2s-a-b.md`.
 
-### ۱۲) منابع
+### منابع
 
 - Fortinet Docs: [config vpn ipsec phase1-interface](https://docs.fortinet.com/document/fortigate/7.0.5/cli-reference/371620/config-vpn-ipsec-phase1-interface)، [phase2-interface](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/371620/config-vpn-ipsec-phase2-interface).
 
 <a id="l-18-3"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: ساخت و اثبات Tunnel
-
-``` text
-config vpn ipsec phase1-interface
- edit "TO-B"
-  set interface port1
-  set ike-version 2
-  set remote-gw 198.51.100.2
-  set proposal aes256-sha256
-  set dhgrp 14
-  set psk ENC ***
- next
-end
-config vpn ipsec phase2-interface
- edit "TO-B-P2"
-  set phase1name TO-B
-  set proposal aes256-sha256
-  set src-subnet 10.1.0.0 255.255.255.0
-  set dst-subnet 10.2.0.0 255.255.255.0
- next
-end
-```
-
-سپس Route `10.2.0.0/24 dev TO-B` و Policy دوطرفه (LAN↔TO-B).
-
-**اثبات:** `ping 10.2.0.1 -S 10.1.0.1`؛ `diagnose vpn tunnel list` با شمارنده‌ی `enc/dec pkts` افزایشی.
-
-**پرسش‌های مصاحبه**
-1. *چرا Policy دوطرفه؟* Stateful فقط جهت آغاز را می‌شناسد.
-2. *Route ناقص؟* ترافیک از Tunnel نمی‌رود.
-3. *کانتر صفر؟* ترافیک اصلاً وارد نمی‌شود.
-
-### تکمیل عمیق: ساخت Tunnel Site-to-Site — GUI، CLI و اثبات
-
-#### چرا؟
-
-یک Tunnel وقتی «ساخته شده» است که هم Phase1/2 بالا باشد، هم Route و Policy درست و هم ترافیک عبور کند و شمارنده‌ها افزایش یابند.
-
-#### مراحل
-
-1. Phase1 (Interface-based).
-2. Phase2 و Selector.
-3. Static Route یا Routing پویا به Interface Tunnel.
-4. Policy دوطرفه.
-5. آزمون.
-
-#### مثال ساده — CLI
-
-``` text
-config vpn ipsec phase1-interface
- edit "TO-B"
-  set interface "port1"
-  set ike-version 2
-  set remote-gw 198.51.100.2
-  set proposal aes256-sha256
-  set dhgrp 14
-  set psk ENC ***
- next
-end
-config vpn ipsec phase2-interface
- edit "TO-B-P2"
-  set phase1name "TO-B"
-  set proposal aes256-sha256
-  set src-subnet 10.1.0.0 255.255.255.0
-  set dst-subnet 10.2.0.0 255.255.255.0
- next
-end
-config router static
- edit 100
-  set dst 10.2.0.0 255.255.255.0
-  set device "TO-B"
- next
-end
-```
-
-#### مثال متوسط — Policy
-
-دو Policy: `LAN -> TO-B` و `TO-B -> LAN`، سرویس و Log مشخص؛ NAT خاموش (ترافیک بین شبکه‌های خصوصی بدون NAT).
-
-#### مثال سخت — اثبات
-
-``` text
-diagnose vpn ike gateway list
-diagnose vpn tunnel list
-execute ping-options source 10.1.0.1
-execute ping 10.2.0.1
-```
-
-شمارنده‌ی `enc pkts` و `dec pkts` باید افزایش یابد؛ اگر فقط یکی، Policy/Route سمت مقابل را بررسی کنید.
-
-#### Lab
-
-دو FortiGate VM (یا یک FGT و یک CSR) را وصل و اثبات را ثبت کنید (اجرا نشده تا اطلاع بعدی).
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| تونل Up بدون ترافیک | Route | افزودن |
-| فقط enc | Policy مقابل | افزودن |
-| ping از LAN نه | NAT فعال | غیرفعال |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Policy دوطرفه؟** هر جهت مجوز می‌خواهد.
-**۲. NAT چرا خاموش؟** شبکه‌های خصوصی.
-**۳. enc بدون dec؟** مشکل سمت مقابل.
-
-#### English Corner
-
-- *If only the encrypted counter increases, check the remote side.*
-- Q: Why disable NAT on the tunnel policy?
 
 ## درس 18-3 — عیب‌یابی IPsec با Debug IKE: خواندن پیام‌ها و تصمیم‌گیری لایه‌ای
 
@@ -5182,142 +4958,124 @@ execute ping 10.2.0.1
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. مراحل IKEv2 (SA_INIT، AUTH، CREATE_CHILD_SA) را بشناسد.
-2. Debug IKE را محدود و ایمن اجرا کند.
-3. پیام‌های رایج (no proposal، AUTHENTICATION_FAILED، TS_UNACCEPTABLE) را تفسیر کند.
-4. عیب را به Phase، Proposal، Auth، Selector یا NAT-T نگاشت کند.
-5. رفع و Verify را انجام دهد.
+1. Debug IKE را با فیلتر اجرا و پایان دهید.
+2. پیام‌های کلیدی (SA_INIT، AUTH، CREATE_CHILD_SA) را بخوانید.
+3. خطاهای رایج را بشناسید (no proposal chosen، AUTH failed، TS_UNACCEPTABLE).
+4. رویکرد لایه‌ای (شبکه ⇒ Phase1 ⇒ Phase2 ⇒ Route/Policy) را اجرا کنید.
+5. نیازمندی‌های NAT-T و Dead Peer Detection را بدانید.
+6. گزارش RCA بنویسید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Debug IKE؟** پیام‌های IKE دقیقاً می‌گویند مذاکره چرا شکست خورد. فقط باید زبانش را بدانید. مثل خواندن پیام‌های خطای یک برنامه: «رمز اشتباه»، «الگوریتم نامعتبر»، «شبکه‌ی ناهمخوان».
+وقتی IPsec بالا نمی‌آید پیام خطا مبهم است: «تونل down». Debug IKE دقیقاً می‌گوید پیشنهاد کدام طرف رد شد. مثل شنیدن مکالمه‌ی دو سفیر که بر سر شرایط توافق نمی‌کنند. با آن عیب‌یابی از «حدس» به «خواندن» می‌رسد.
 
-**راه‌اندازی ایمن:** فیلتر روی Peer هدف، سپس `diagnose debug application ike -1` و در پایان `disable` و `reset`. Debug بدون فیلتر خروجی سنگین و CPU می‌خورد.
-
-**جمع‌بندی اصلی درس:** تونل بالا نمی‌آید و Debug صدها خط می‌نویسد. بدون دانستن ساختار پیام‌ها، غرق می‌شوید؛ با دانستن، فقط به چند خط کلیدی نگاه می‌کنید: کدام مرحله شکست خورد و چرا.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) مراحل IKEv2
-
-| تبادل | هدف | شکست رایج |
-|---|---|---|
-| IKE_SA_INIT | توافق الگوریتم و DH | no proposal chosen |
-| IKE_AUTH | احراز هویت و Child SA | AUTHENTICATION_FAILED، TS_UNACCEPTABLE |
-| CREATE_CHILD_SA | Rekey | عدم‌تطابق PFS/Lifetime |
-
-#### ۲) Debug محدود
+### راه‌اندازی
 
 ``` text
 diagnose vpn ike log-filter clear
-diagnose vpn ike log-filter dst-addr4 203.0.113.2
+diagnose vpn ike log-filter dst-addr4 203.0.113.20
 diagnose debug application ike -1
 diagnose debug enable
-... trigger traffic ...
+# trigger: ping across or 'diagnose vpn ike restart'
 diagnose debug disable
 diagnose debug reset
 ```
 
-#### ۳) تفسیر
-
-| خط | معنی | اقدام |
-|---|---|---|
-| `no suitable proposal found` / `NO_PROPOSAL_CHOSEN` | Proposal یا DH متفاوت | یکسان‌سازی |
-| `AUTHENTICATION_FAILED` | PSK/هویت متفاوت | PSK، peerid |
-| `TS_UNACCEPTABLE` | Selector نامتطابق | Subnet |
-| `negotiation timeout` | Reachability/UDP 500/4500 | ACL/NAT |
-| `NAT-T` مشکل | UDP 4500 | بازکردن |
-
-#### ۴) وضعیت
+### رویکرد لایه‌ای
 
 ``` text
-diagnose vpn ike gateway list
-diagnose vpn tunnel list
-get vpn ipsec tunnel summary
+L0 Network : UDP 500/4500 reachable? (sniffer)
+L1 Phase1  : IKE_SA_INIT / IKE_AUTH
+L2 Phase2  : CREATE_CHILD_SA / selectors
+L3 Data    : route, policy, ESP counters
 ```
 
-#### ۵) درخت تصمیم
+### پیام‌های کلیدی (IKEv2)
 
-Timeout ⇒ Reachability. NO_PROPOSAL ⇒ Proposal/DH. AUTH_FAILED ⇒ PSK/ID. TS_UNACCEPTABLE ⇒ Selector. Up ولی ترافیک نه ⇒ Route/Policy/MTU.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| پیام | معنی |
 |---|---|
-| Debug | فیلتر peer |
-| درخت تصمیم | پایین‌به‌بالا |
+| `IKE_SA_INIT` | توافق الگوریتم و تبادل DH |
+| `IKE_AUTH` | احراز و ایجاد Child SA اول |
+| `CREATE_CHILD_SA` | Rekey/Child جدید |
+| `no proposal chosen` | الگوریتم‌ها نمی‌خوانند |
+| `AUTHENTICATION_FAILED` | PSK/Certificate/ID |
+| `TS_UNACCEPTABLE` | Traffic Selector نمی‌خواند |
+| `INVALID_KE_PAYLOAD` | DH Group |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### خطاها و رفع
 
-#### مثال ساده — جدول پیام‌ها
-
-| پیام | معنی | رفع |
+| خطا | علت | رفع |
 |---|---|---|
-| no proposal chosen | الگوریتم‌ها نمی‌خوانند | Proposal یکسان |
-| AUTHENTICATION_FAILED | PSK/هویت | PSK/ID |
-| TS_UNACCEPTABLE | Selector ناهمخوان | شبکه‌ها یکسان |
-| INVALID_KE_PAYLOAD | DH ناهمخوان | dhgrp |
+| no proposal chosen | Proposal/DH | هماهنگ |
+| AUTHENTICATION_FAILED | PSK/ID | PSK و peerid |
+| TS_UNACCEPTABLE | Selector | 0.0.0.0/0 یا مطابق |
+| timeout در SA_INIT | UDP 500 بسته | Firewall/ISP |
+| Phase1 up، ESP نه | NAT-T/ESP | 4500 |
+| flapping | DPD/Rekey/MTU | تنظیم |
 
-#### مثال متوسط — نبود پاسخ
+### NAT-T و DPD
 
-فقط پیام‌های ارسالی بدون دریافت: ISP/فایروال UDP/500 را می‌بندد. اثبات:
+NAT-T (NAT Traversal): اگر یکی از طرفین NAT شده، IKE به UDP 4500 می‌رود و ESP داخل UDP کپسوله می‌شود. DPD (Dead Peer Detection) همتای مرده را تشخیص می‌دهد (`dpd on-idle`/`on-demand`).
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — no proposal chosen
 
 ``` text
-diagnose sniffer packet port1 'host 198.51.100.2 and udp port 500' 4 10 l
+ike 0:TO-B:100: no proposal chosen
 ```
 
-#### مثال سخت — NAT-T
+مقایسه‌ی Proposal دو سمت: A=`aes256-sha256`/DH14 و B=`aes128-sha1`/DH5. رفع: هماهنگ. بعد از رفع: `IKE_SA_INIT` تکمیل.
 
-IKE_SA موفق ولی ESP قطع: UDP/4500 مسدود است. بررسی با Sniffer روی 4500؛ رفع: باز کردن پورت و `nattraversal enable`.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Debug: NO_PROPOSAL_CHOSEN؛ مقایسه Proposal دو سر؛ یکسان‌سازی؛ Established.
-
-**متوسط (AUTH):** AUTHENTICATION_FAILED. مراحل: PSK دو سر و `peertype`؛ تفاوت یک کاراکتر؛ اصلاح؛ up. درس: PSK را کپی/پیست از Vault.
-
-**سخت (Timeout):** negotiation timeout. مراحل: Sniffer UDP 500/4500: خروج هست، ورود نه؛ ACL ISP/Firewall سایت مقابل؛ رفع؛ تونل up.
-
-### ۷) پیاده‌سازی از مسیر CLI
+#### مثال متوسط — AUTH failed
 
 ``` text
-diagnose vpn ike log-filter dst-addr4 203.0.113.2
-diagnose debug application ike -1
-diagnose debug enable
-diagnose debug disable
-diagnose vpn ike gateway list
+ike 0:TO-B:100: initiator: AUTHENTICATION_FAILED
 ```
 
-### ۸) Verification (اثبات صحت)
+PSK در B یک حرف متفاوت. رفع و آزمون. نکته: PSK را کپی/پیست کنید؛ فاصله‌ی انتهایی دام رایج است.
 
-- Phase 1 و 2 up.
-- ping.
+#### مثال متوسط — Timeout
 
-### ۹) Troubleshooting
+Debug فقط SA_INIT خروجی و پاسخ نمی‌آید. Sniffer: UDP 500 خارج، برگشت نه. ISP/Firewall میانی بلاک. رفع: باز کردن UDP 500/4500 و ESP.
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+#### مثال سخت — TS_UNACCEPTABLE
+
+A: Selector 10.1.0.0/24↔10.2.0.0/24؛ B: 10.2.0.0/24↔10.1.0.0/16. IKEv2 TS را نمی‌پذیرد. راه: مطابقت یا 0.0.0.0/0. توجه: بعضی نسخه‌ها در IKEv1 چند Phase2 می‌سازند؛ IKEv2 یک TS Set.
+
+#### مثال سخت — Flapping
+
+تونل هر چند دقیقه بالا/پایین می‌شود. Log: `DPD timeout`، MTU بزرگ (Fragment شکسته). رفع: MSS Clamp، DPD مناسب، ISP لینک را بررسی. نکته: IKE Fragmentation برای پیام‌های بزرگ با Certificate.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. خطاهای سه‌گانه را بسازید.
+2. Debug و تفسیر.
+3. RCA.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| NO_PROPOSAL | Proposal | یکسان |
-| AUTH_FAILED | PSK | اصلاح |
-| TS_UNACCEPTABLE | Selector | Subnet |
-| Timeout | UDP 500/4500 | ACL |
+| خروجی طوفانی | بی‌فیلتر | log-filter |
+| Debug بسته‌نشده | disable نشده | reset |
+| کار نکرد بعد از تغییر | SA قدیمی | `diagnose vpn ike gateway clear` |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- PSK در Vault.
-- Debug را خاموش کنید.
+Debug IKE ممکن است اطلاعات حساس بدهد؛ در پایان disable/reset؛ لاگ را امن نگه‌دارید.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- IKE سه تبادل.
-- خط کلیدی.
-- درخت تصمیم.
+Debug IKE با فیلتر؛ لایه‌ها (شبکه، P1، P2، Data)؛ پیام‌های SA_INIT/AUTH/CHILD؛ خطاهای رایج و رفع؛ NAT-T و DPD.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) IKE_SA_INIT چه می‌کند؟ *(پاسخ: 18-3-ت1)*
 
@@ -5333,7 +5091,7 @@ diagnose vpn ike gateway list
 
 **Q1.** Quick quiz (English): Which IKEv2 exchange negotiates algorithms and DH? *(پاسخ: 18-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -5341,106 +5099,16 @@ diagnose vpn ike gateway list
 
 - *Filter the IKE debug to a single peer.* ← Debug IKE را به یک peer محدود کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Debug IKE (اجرا نشده). **Evidence:** `03-ops/ike-debug.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: IPsec VPN troubleshooting
 - RFC 7296
 
 <a id="l-18-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: خواندن Debug IKE
-
-``` text
-diagnose vpn ike log filter name TO-B
-diagnose debug application ike -1
-diagnose debug enable
-```
-
-پیام‌های کلیدی:
-- `negotiation failure` + `no proposal chosen` ⇒ Proposal ناهمخوان.
-- `received notify type AUTHENTICATION_FAILED` ⇒ PSK.
-- `TS_UNACCEPTABLE` ⇒ Selector.
-
-پایان: `diagnose debug disable`.
-
-**پرسش‌های مصاحبه**
-1. *Debug چه خطری؟* بار CPU و Log زیاد.
-2. *فیلتر چرا؟* فقط Peer هدف.
-3. *AUTH_FAILED؟* PSK/Identity.
-
-### تکمیل عمیق: Debug IKE — خواندن پیام‌ها
-
-#### چرا؟
-
-پیام‌های Debug IKE دقیقاً می‌گویند چرا مذاکره شکست خورد؛ فقط باید زبانش را بدانید.
-
-#### راه‌اندازی ایمن
-
-``` text
-diagnose vpn ike log filter clear
-diagnose vpn ike log filter rem-addr4 198.51.100.2
-diagnose debug application ike -1
-diagnose debug enable
-```
-
-فیلتر روی Peer هدف؛ پایان: `diagnose debug disable` و `diagnose debug reset`.
-
-#### جدول پیام‌ها
-
-| پیام | معنی | رفع |
-|---|---|---|
-| no proposal chosen | Proposal ناهمخوان | یکسان |
-| AUTHENTICATION_FAILED | PSK/ID | یکسان |
-| TS_UNACCEPTABLE | Selector ناهمخوان | یکسان |
-| peer ... not responding | Reachability/Firewall | UDP 500 |
-| INVALID_KE_PAYLOAD | DH ناهمخوان | یکسان |
-
-#### مثال ساده
-
-خروجی: `negotiation failure ... no proposal chosen`. فوراً Proposal دو سر را مقایسه کنید.
-
-#### مثال متوسط — نبود پاسخ
-
-فقط پیام‌های ارسال بدون دریافت: ISP یا فایروال بین راه UDP/500 را مسدود کرده؛ با Sniffer ببینید.
-
-``` text
-diagnose sniffer packet port1 'host 198.51.100.2 and udp port 500' 4 10 l
-```
-
-#### مثال سخت — NAT-T
-
-پس از IKE_SA موفق، ESP قطع است: UDP/4500 مسدود. با Sniffer روی 4500 بررسی کنید.
-
-#### Lab
-
-PSK را عمداً متفاوت و پیام AUTH_FAILED را مشاهده کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Debug سنگین | بی‌فیلتر | فیلتر |
-| پیام نمی‌آید | Reachability | Sniffer |
-| ESP قطع | 4500 | باز کردن |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا فیلتر؟** CPU.
-**۲. TS_UNACCEPTABLE؟** Selector.
-**۳. NAT-T پورت؟** 4500.
-
-#### English Corner
-
-- *Filter IKE debug to one peer to keep the output readable.*
-- Q: What does a no-proposal-chosen error tell you?
 
 ## درس 18-4 — MTU/MSS و Fragmentation در Tunnel IPsec: محاسبه‌ی سربار، آزمون DF، PMTUD و تنظیم
 
