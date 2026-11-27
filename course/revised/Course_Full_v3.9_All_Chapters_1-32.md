@@ -16895,7 +16895,7 @@ R1 (Border) مسیر خارجی را با Next-hop = IP Peer خارجی (10.0.12
 
 **متوسط (تحلیل):** R3 مسیر خارجی را دارد ولی با `i` و Next-hop 10.0.12.2 (`inaccessible`): `next-hop-self` روی R1؛ پس از ریست نرم، `>` و RIB.
 
-**سخت (طراحی):** ۲۰ روتر Full-mesh = 190 Session؛ RR دوتایی با Cluster-ID یکتا ⇒ ≈ 40 Session؛ ریسک RR: SPOF → دو RR؛ Loop: Cluster-list؛ Policy RR روی Prefix. آزمون: قطع RR1 و Convergence.
+**سخت (طراحی):** ۲۰ روتر Full-mesh = 190 Session؛ RR دوتایی با **همان Cluster-ID روی هر دو RR** (طبق مستند Cisco برای RRهای یک Cluster) ⇒ ≈ 40 Session؛ ریسک RR: SPOF → دو RR؛ Loop: Cluster-list؛ Policy RR روی Prefix. آزمون: قطع RR1 و Convergence.
 
 ### ۷) پیاده‌سازی از مسیر CLI
 
@@ -17760,7 +17760,7 @@ Next-hop inaccessible: مسیر BGP در Table است ولی Next-hop (خارج�
 
 **9-3-ت6** — طرح.
 
-طرح Route Reflector دوتایی: RR1 و RR2 با Cluster-ID یکسان یا متفاوت (طبق طراحی)، Clientها با هر دو Session دارند؛ در خرابی RR1، RR2 جایگزین می‌شود. Session شمار حدود 2×n به‌جای n(n−1)/2. آزمون: قطع RR1 و دیدن Convergence و نبود حلقه.
+طرح Route Reflector دوتایی: RR1 و RR2 طبق مستند Cisco اگر در یک Cluster‌اند باید Cluster-ID یکسان و Client/Non-client یکسان داشته باشند (در غیر این صورت هر RR با Router ID خودش Cluster-ID می‌گیرد)، Clientها با هر دو Session دارند؛ در خرابی RR1، RR2 جایگزین می‌شود. Session شمار حدود 2×n به‌جای n(n−1)/2. آزمون: قطع RR1 و دیدن Convergence و نبود حلقه.
 
 **9-3-Q1** — To preserve the original exit point information; hence the next hop must be reachable via the IGP.
 
@@ -18704,7 +18704,7 @@ interface GigabitEthernet0/2
  ip address 192.168.1.1 255.255.255.0
 ```
 
-دستور `ip vrf forwarding` آدرس Interface را پاک می‌کند: اول forwarding بعد IP.
+دستور `ip vrf forwarding` آدرس Interface را پاک می‌کند (پیام «IPv4 disabled and address(es) removed due to disabling VRF»): اول forwarding بعد IP. نکته: در IOS-XE جدید سینتکس `vrf definition` و `vrf forwarding` ترجیح داده می‌شود و `ip vrf` قدیمی است (طبق مستند Cisco).
 
 #### ۲) مسیریابی
 
@@ -28063,7 +28063,7 @@ Lab معماری ۲ ساخته و Backup؛ لایسنس UTM (Needs-License) بر
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۳، ۱۴.
 **اهداف:** Security Profile و Profile Group؛ AV؛ Web Filter (Static URL به‌جای Category)؛ IPS و DoS؛ Application Control؛ SSL/SSH Inspection؛ اثر Performance و عیب‌یابی.
-**هشدار لایسنس (مهم):** AV/IPS/Web Filter/App Control به **FortiGuard Subscription** وابسته‌اند. در Lab ایزوله و Evaluation این وابستگی `Needs-License` و وضعیتش `Unverified` است. هر درس بخش «بدون لایسنس چه می‌توان کرد» دارد (Static URL، Custom IPS، DoS، Port-based). **همه‌ی دستورها آزمایش‌نشده روی Image.**
+**هشدار لایسنس (مهم):** طبق مستند Fortinet: AV و IPS به لایسنس **FortiGuard AV/IPS** برای به‌روزرسانی Signature؛ Web Filter و DNS Filter (Category) به **Web/DNS Security**؛ و Signature **Application Control** جزو سرویس‌های پایه‌ی قرارداد FortiCare است (لایسنس امنیتی جدا نمی‌خواهد ولی FortiCare معتبر لازم است). اگر لایسنس منقضی شود FortiGate همچنان فایروال می‌ماند: AV/IPS با Signature قدیمی اسکن می‌کنند و فقط به‌روزرسانی قطع می‌شود، ولی Category در Web/DNS Filter کار نمی‌کند. در Lab ایزوله و Evaluation این وابستگی `Needs-License` و وضعیتش `Unverified` است. هر درس بخش «بدون لایسنس چه می‌توان کرد» دارد (Static URL، Custom IPS، DoS، Port-based). **همه‌ی دستورها آزمایش‌نشده روی Image.**
 **معیار تسلط:** Profile ساخته و به Policy وصل؛ اثبات با Log/تست؛ توضیح اثر SSL Inspection بر Performance و Certificate.
 **اشتباهات رایج:** فعال‌کردن Deep Inspection بدون نصب CA؛ Profile روی همه‌ی ترافیک؛ نادیده‌گرفتن لایسنس؛ بدون تست.
 
@@ -28780,7 +28780,7 @@ end
 
 **فصل ۱۶ · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰، ۱۶-۷، ۱۱-۷ · ≈ ۷ ساعت**
 
-> **وضعیت (FortiOS 7.0.3):** Signature IPS و DB برنامه **Needs-License**؛ DoS Policy و Custom Signature بدون لایسنس. سینتکس `Unverified`. تست حمله فقط در Lab ایزوله و مجاز. Lab «اجرا نشده».
+> **وضعیت (FortiOS 7.0.3):** Signature IPS **Needs-License** (FortiGuard AV/IPS)؛ Signature برنامه (Application Control) طبق مستند جزو FortiCare پایه است؛ DoS Policy و Custom Signature بدون لایسنس. سینتکس `Unverified`. تست حمله فقط در Lab ایزوله و مجاز. Lab «اجرا نشده».
 
 ### ۱) هدف آموزشی
 
@@ -36193,7 +36193,7 @@ SD-WAN Rule از بالا به پایین و اولین Rule مطابق اعما
 
 **21-3-ت2** — sla: اولین عضو دارای SLA؛ load-balance: توزیع بین همه‌ی اعضای دارای SLA.
 
-Mode sla اولین عضو دارای SLA؛ load-balance توزیع بین همه‌ی اعضای دارای SLA.
+Mode sla اولین عضو دارای SLA؛ load-balance توزیع بین همه‌ی اعضای دارای SLA. نام‌گذاری مستند Fortinet: Best Quality (حالت priority)، Lowest Cost (حالت sla) و Maximize Bandwidth (load-balance)؛ از 7.4.1 Load-balance داخل Lowest Cost (SLA) ادغام شده است.
 
 **21-3-ت3** — Rule عمومی بالاتر Match می‌شود؛ ترتیب را اصلاح کنید.
 
@@ -39325,7 +39325,7 @@ VDOM فایروال مجازی مستقل است (Routing، Policy، Admin، م�
 
 **24-3-ت2** — لینک منطقی بین دو VDOM.
 
-Inter-VDOM Link لینک منطقی بین دو VDOM بدون پورت فیزیکی است.
+Inter-VDOM Link لینک منطقی بین دو VDOM بدون پورت فیزیکی است. طبق مستند Fortinet به‌صورت پیش‌فرض Point-to-Point (ppp) است؛ برای OSPFv3/IPv6 که به آدرس Link-local نیاز دارد، نوع لینک باید `ethernet` باشد؛ IP روی لینک فقط وقتی لازم است که مسیریابی پویا بخواهید.
 
 **24-3-ت3** — جلوگیری از مصرف همه‌ی منابع.
 

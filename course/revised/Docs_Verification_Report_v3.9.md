@@ -123,3 +123,34 @@
 
 ### هنوز بررسی نشده
 شرایط Up شدن SVI، پیام‌ها/Typeهای ICMP، جدول Subnetting (محاسبه‌ای)، نحو دقیق Wireshark، سازوکار Proposal/Agreement در RSTP (تعریف نظری).
+
+
+## دور پنجم تا هفتم — مسیریابی Cisco و مفاهیم FortiGate (۲۰۲۶-۱۱-۲۷)
+
+### تأییدشده
+| موضوع | نتیجه | مرجع |
+|---|---|---|
+| ترتیب انتخاب Best Path در BGP (Weight، Local-Pref، Locally originated، AS_PATH، Origin، MED، eBGP>iBGP، IGP metric، Router ID) | تأیید با درس ۹-۷ | [Cisco BGP best path](https://www.cisco.com/c/en/us/support/docs/ip/border-gateway-protocol-bgp/13753-25.html) |
+| Communityهای well-known (no-export، no-advertise، local-AS) و لزوم `neighbor send-community` | تأیید | [Cisco BGP community](https://www.cisco.com/c/en/us/support/docs/ip/border-gateway-protocol-bgp/26634-bgp-toc.html) |
+| Route Reflector: Client/Non-client، ORIGINATOR_ID، CLUSTER_LIST | تأیید | [Cisco RR](https://www.cisco.com/c/en/us/support/docs/ip/border-gateway-protocol-bgp/200153-BGP-Route-Reflection-and-Multiple-Cluste.html) |
+| Redistribution: Seed 20 (BGP=1) در OSPF؛ نیاز به Metric در EIGRP؛ ترتیب پارامترهای EIGRP (bandwidth، delay، reliability، load، MTU؛ delay بر حسب ده میکروثانیه) | تأیید | [Cisco Redistribution](https://www.cisco.com/c/en/us/support/docs/ip/enhanced-interior-gateway-routing-protocol-eigrp/8606-redist.html) |
+| `network` در BGP نیاز به Route دقیق در RIB؛ `ip vrf forwarding` آدرس را پاک می‌کند | تأیید | [Cisco VRF-lite](https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst9600/software/release/17-2/configuration_guide/rtng/b_172_rtng_9600_cg/configuring_vrf_lite.html) |
+| FortiOS IP Pool: overload (پیش‌فرض)، one-to-one (PAT خاموش)، fixed-port-range، port-block-allocation | تأیید | [Fortinet ippool](https://docs.fortinet.com/document/fortigate/7.0.2/cli-reference/300620/config-firewall-ippool) |
+| Zone `intrazone deny/allow`؛ Local-in policy و Trusted host دو کنترل جدا | تأیید | [Fortinet Zone](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/116821/zone) |
+| Flow mode پیش‌فرض 7.0؛ Proxy mode دو Session می‌سازد و ویژگی‌های بیشتر دارد | تأیید | [Fortinet Inspection modes](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/721410/inspection-modes) |
+| ADVPN: hub `net-device disable` و `auto-discovery-sender`؛ spoke `auto-discovery-receiver`؛ iBGP | تأیید | [Fortinet ADVPN 7.0.5](https://docs.fortinet.com/document/fortigate/7.0.5/administration-guide/985659/advpn-and-shortcut-paths) |
+| `config system snmp user` با `security-level auth-priv`، `auth-proto sha256`، `priv-proto aes256`؛ پیش‌فرض no-auth-no-priv | تأیید (نام پارامترها) | [Fortinet SNMPv3](https://docs.fortinet.com/document/fortigate/7.0.11/cli-reference/54620/config-system-snmp-user) |
+| ADOM Revision در FortiManager (diff و restore) | تأیید | [FortiManager ADOM revisions](https://docs.fortinet.com/document/fortimanager/7.6.6/administration-guide/54616/adom-revisions) |
+| محاسبات Subnetting فصل ۲ (۶ مثال Network/Broadcast/Host، Summary، Wildcard) | تأیید با محاسبه‌ی برنامه‌ای | Python `ipaddress` |
+
+### اصلاح/دقیق‌سازی
+| درس | تغییر | مرجع |
+|---|---|---|
+| ۹-۳ | RRهای یک Cluster باید Cluster-ID یکسان داشته باشند (در غیر این صورت Router ID خودشان) | [Cisco RR](https://www.cisco.com/c/en/us/support/docs/ip/border-gateway-protocol-bgp/200153-BGP-Route-Reflection-and-Multiple-Cluste.html) |
+| ۱۰-۵ | `ip vrf` قدیمی؛ IOS-XE جدید `vrf definition` + `vrf forwarding`؛ پیام حذف IP | [Cisco VRF-lite](https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst9600/software/release/17-2/configuration_guide/rtng/b_172_rtng_9600_cg/configuring_vrf_lite.html) |
+| ۲۱-۳ | نام‌گذاری Best Quality/Lowest Cost/Maximize Bandwidth؛ از 7.4.1 Load-balance داخل Lowest Cost | [Fortinet SD-WAN strategies](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/342836/lowest-cost-sla-strategy) |
+| ۲۴-۳ | Inter-VDOM Link پیش‌فرض ppp؛ برای OSPFv3 نوع ethernet | [Fortinet Inter-VDOM routing](https://docs.fortinet.com/document/fortigate/7.0.2/administration-guide/335646/inter-vdom-routing) |
+| ۱۶ (لایسنس) | Signature Application Control جزو FortiCare پایه؛ AV/IPS/Web/DNS لایسنس FortiGuard؛ با انقضا فایروال کار می‌کند و AV/IPS Signature قدیمی را نگه می‌دارند | [Fortinet Services and licensing](https://docs.fortinet.com/document/fortigate/7.4.4/ngfw-atp-deployment-guide/758568/services-and-licensing) |
+
+### هنوز بررسی نشده
+نحو دقیق `config log syslogd setting`، `execute ha synchronize start`، `session-pickup-connectionless`، جزئیات DNS Filter و DoS Policy (آستانه‌ها در درس‌ها «نمونه» هستند؛ مرجع: [Fortinet DoS policy](https://docs.fortinet.com/document/fortigate/7.0.14/administration-guide/771644/dos-policy)).

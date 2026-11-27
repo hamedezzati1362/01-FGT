@@ -155,3 +155,8 @@ Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خ�
 - درخواست کاربر: همه‌ی مطالب با منابع رسمی FortiGate و Cisco چک شوند؛ تفاوت منو/نسخه مهم نیست، مفهوم مهم است.
 - دور ۱ و ۲ انجام شد؛ ۶ اشتباه مفهومی اصلاح شد (PBR، Hairpin/nat-source-vip، Timeoutهای Session، Sniffer verbosity، maximum-paths، CEF include-ports). جزئیات در `Docs_Verification_Report_v3.9.md`.
 - بررسی نمونه‌ای است؛ دورهای بعدی فصل‌به‌فصل ادامه می‌یابد.
+
+## D-345 — ادامه‌ی ممیزی منابع رسمی بدون انتظار تأیید (۲۰۲۶-۱۱-۲۷)
+- طبق درخواست کاربر («منتظر تأیید نباش تا انتهای ممیزی»): دورهای ۴ تا ۷ اجرا شد (Cisco فصل ۲ تا ۱۰، FortiGate فصل ۱۱ تا ۲۴).
+- اصلاحات: RR Cluster-ID، VRF syntax، SD-WAN strategy، VDOM link، لایسنس Application Control، TACACS+ obfuscation، RoAS native.
+- محاسبات Subnetting با Python تأیید شد.
