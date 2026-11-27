@@ -1170,7 +1170,7 @@ Last test  : date, tester
 Trigger : Zabbix "VPN tunnel BR-B down"
 Pre     : is ISP up at branch? (ping WAN IP), recent change?
 Step 1  : diagnose vpn ike gateway list name BR-B  -> status?
-Step 2  : diagnose debug application ike -1 (filter dst-addr4 <branch WAN IP>) 2 min
+Step 2  : diagnose debug application ike -1 (filter dst-addr4 <BRANCH-WAN-IP>) 2 min
           read: no proposal chosen / AUTH failed / timeout?
 Step 3  : act per table (Proposal/PSK/UDP 500-4500)
 Verify  : tunnel established; ping 10.1.2.1 from Hub; BGP Established
