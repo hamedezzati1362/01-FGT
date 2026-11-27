@@ -5615,6 +5615,8 @@ Prevent  : change management interface only with console ready + scheduled rever
 
 **درس:** در CLI فرمان `set allowaccess` کل فهرست را جایگزین می‌کند (نه افزودن)؛ برای افزودن از `append` استفاده کنید (`Unverified` در 7.0.3): `append allowaccess https`.
 
+<a id="l-12-10"></a>
+
 ## درس 12-10 — FortiGate در لایه‌ی ۲: Transparent Mode، Virtual Wire Pair و Software Switch
 
 **فصل 12 · درس افزوده برای انطباق با سرفصل رسمی NSE 4 (FortiOS 7.0): «Configure FortiGate interfaces or VDOMs to operate as Layer 2 devices» · پیش‌نیاز: ۱۲-۰، ۱۲-۲، ۱۲-۳**
