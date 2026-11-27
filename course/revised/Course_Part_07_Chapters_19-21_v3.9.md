@@ -1658,133 +1658,130 @@ Overlay شبکه‌ی Tunnel روی ISP و Underlay خود ISP و لینک‌ه�
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده». SSL VPN فقط در Lab ایزوله (CVE).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. مدل تهدید دسترسی راه‌دور (دارایی، مهاجم، مسیر، کنترل) را بنویسد.
-2. IPsec Dial-up، SSL VPN، ZTNA/Agentless و Bastion را با معیار مقایسه و برای هر گروه کاربر انتخاب کند.
-3. Posture/Device Trust، MFA و Least Privilege را در معماری وارد کند.
-4. Split در برابر Full tunnel را با ریسک بسنجد.
-5. معیارهای ظرفیت (کاربر هم‌زمان، Throughput) و دسترس‌پذیری را برآورد کند.
-6. طرح نهایی را با Rubric ریسک ارزیابی کند.
+1. مدل تهدید دسترسی راه‌دور (دارایی، مهاجم، مسیر، کنترل) را بنویسید.
+2. IPsec Dial-up، SSL VPN، ZTNA/Agentless و Bastion را با معیار مقایسه و برای هر گروه کاربر انتخاب کنید.
+3. Posture/Device Trust، MFA و Least Privilege را در معماری وارد کنید.
+4. Split tunnel و Full tunnel را با ریسک بسنجید.
+5. ظرفیت (کاربر هم‌زمان، Throughput) و دسترس‌پذیری را برآورد کنید.
+6. طرح نهایی را با ماتریس ریسک ارزیابی کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا معماری دسترسی راه‌دور؟** دورکاری دسترسی را از ساختمان به هر جای اینترنت می‌برد. هر نقطه‌ی ورود هدف حمله است. قبل از انتخاب فناوری (SSL-VPN، IPsec، ZTNA) بپرسید: چه چیزی را از چه کسی محافظت می‌کنیم؟
+همه‌گیری ثابت کرد که «محل کار» دیگر یک ساختمان نیست. دسترسی راه‌دور درِ پشتی شرکت است که از اینترنت باز می‌شود؛ مهاجمان هم همین را می‌دانند. بیشتر حوادث مهم سال‌های اخیر (باج‌افزار، نفوذ از VPN آسیب‌پذیر، رمز لورفته) از همین مسیر شروع شده‌اند. انتخاب معماری درست (و نه فقط «VPN بگذاریم») تصمیمی است که ریسک سازمان را مستقیماً تعیین می‌کند. مثل انتخاب قفل برای درِ اصلی: کلید ساده یا قفل هوشمند با دوربین؟
 
-**تهدیدها و کنترل‌ها:** سرقت رمز ⇒ MFA؛ دستگاه آلوده ⇒ Posture؛ آسیب‌پذیری Gateway ⇒ Patch؛ حرکت جانبی ⇒ Policy حداقلی. **ZTNA** دسترسی به «برنامه» بر اساس هویت و وضعیت دستگاه است (Needs-License).
+### مدل تهدید
 
-**جمع‌بندی اصلی درس:**
-
-دسترسی راه‌دور درِ ورودیِ اینترنتیِ شبکه‌ی داخلی است. بیشتر نفوذهای مهم (باج‌افزار) از VPN آسیب‌پذیر یا اعتبارنامه‌ی سرقت‌شده شروع شده‌اند. بنابراین انتخاب «چه فناوری» از سؤال «چه کسی، با چه دستگاهی، به چه چیزی، چگونه احراز و چگونه پایش» جدا نیست.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) مدل تهدید (چهارسؤال)
-
-``` text
-Assets    : internal servers, AD, data, management plane
-Attackers : external (credential stuffing, exploit of VPN service), compromised endpoint, malicious insider
-Paths     : internet-facing VPN service -> authenticated session -> flat internal access
-Controls  : MFA, patching, source restriction, posture, least privilege/segmentation, logging, EDR
-```
-
-#### ۲) مقایسه (جدول کمی/کیفی)
-
-| معیار | IPsec Dial-up IKEv2 | SSL VPN Tunnel | SSL VPN Web/Agentless | ZTNA | Bastion/Jump |
-|---|---|---|---|---|---|
-| لایه‌ی دسترسی | شبکه | شبکه | برنامه (Proxy) | برنامه/هویت | سرور واسط |
-| سطح حمله‌ی سرویس | IKE | وب + TLS | وب | Gateway/Proxy | SSH/RDP |
-| کلاینت | FortiClient/native | FortiClient | مرورگر | Agent | Client SSH/RDP |
-| Least privilege | با Policy | با Policy | ذاتی (فقط اپ) | ذاتی | ذاتی |
-| نیاز Posture | بله | بله | محدود | بله | — |
-| وضعیت نسخه | ادامه | **در 7.6.3 حذف** | Agentless | جدید | مستقل |
-
-#### ۳) تصمیم بر اساس گروه
-
-- **کارمند مدیریت‌شده:** IPsec IKEv2 + گواهی/EAP + MFA + Posture + Segmentation.
-- **پیمانکار/BYOD:** دسترسی اپلیکیشنی (Agentless/ZTNA) فقط به سیستم‌های لازم؛ بدون Full network.
-- **مدیر:** Bastion + MFA + Session Recording + محدودیت Source.
-
-#### ۴) Split در برابر Full tunnel
-
-- Full tunnel: همه‌ی ترافیک از فایروال سازمان (کنترل UTM) ولی پهنای باند/Latency بیشتر.
-- Split: فقط شبکه‌ی سازمانی از Tunnel؛ دستگاه کلاینت به اینترنت مستقیم (ریسک: کلاینت پل بین اینترنت و داخل).
-- تصمیم: Full برای کاربران حساس/دستگاه ناشناس؛ Split برای دستگاه مدیریت‌شده با EDR.
-
-#### ۵) ظرفیت
-
-``` text
-Peak concurrent users = users x peak concurrency (e.g. 600 x 40% = 240)
-Throughput = concurrent users x avg Mbps  (e.g. 240 x 2 = 480 Mbps)
-```
-
-با Datasheet VPN Throughput مدل و حاشیه ۳۰٪ بسنجید؛ MFA/Radius باید زیر بار هم پاسخ دهد.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| عنصر | نمونه |
 |---|---|
-| VPN یا ZTNA | بر اساس گروه کاربر، دستگاه و دسترسی لازم |
-| Split/Full | Posture و ریسک |
-| MFA | الزامی |
-| Posture | Patch/EDR/Encryption |
-| ظرفیت | کاربر هم‌زمان × Throughput + حاشیه |
+| دارایی | ERP، فایل‌سرور، DC، پایگاه‌داده |
+| مهاجم | رمز لورفته، بدافزار روی لپ‌تاپ، Insider، اسکنر اینترنتی |
+| مسیر | پورت VPN، Portal، کاربر آلوده، BYOD |
+| کنترل | MFA، Posture، Least Privilege، Log، Patch |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+سناریوهای واقعی:
 
-#### مثال ساده
+1. **رمز لورفته** (Credential Stuffing) ⇒ MFA.
+2. **آسیب‌پذیری VPN** (CVE) ⇒ Patch سریع، محدودیت Source، جایگزین.
+3. **دستگاه آلوده** ⇒ Posture/EMS.
+4. **دسترسی بیش‌ازحد** ⇒ Least Privilege و ZTNA.
 
-کاربر مالی فقط به ERP؛ Policy VPN او `all` نباشد.
+### مقایسه‌ی گزینه‌ها
+
+| معیار | IPsec Dial-up | SSL VPN | ZTNA | Bastion/Jump |
+|---|---|---|---|---|
+| لایه‌ی دسترسی | شبکه (L3) | شبکه/وب | برنامه‌محور | میزبان مشخص |
+| Client | FortiClient/OS | Web/FortiClient | FortiClient + EMS | مرورگر/SSH |
+| Least Privilege | متوسط | متوسط | بالا | بالا |
+| Posture | محدود | محدود | قوی | - |
+| ریسک CVE | کمتر (تاریخچه) | بالاتر (تاریخچه) | وابسته | کمتر |
+| لایسنس | - | - | EMS (Needs-License) | - |
+
+جمع‌بندی (طبق وضعیت ۷.۰): SSL VPN سابقه‌ی آسیب‌پذیری‌های جدی داشته؛ در طراحی جدید IPsec (IKEv2) یا ZTNA ترجیح دارد؛ SSL VPN فقط با Patch به‌روز و در Lab ایزوله (این دوره). (وضعیت دقیق Patch را در PSIRT فورتی‌نت بررسی کنید.)
+
+### Split در برابر Full Tunnel
+
+| ویژگی | Split | Full |
+|---|---|---|
+| ترافیک اینترنت | مستقیم از کاربر | از VPN |
+| پهنای باند فایروال | کم | زیاد |
+| دید امنیتی | کم | کامل |
+| ریسک | کلاینت پل بین اینترنت و شبکه | کم |
+
+تصمیم: کاربران پرخطر/BYOD ⇒ Full؛ مدیران/Managed ⇒ Split + Posture.
+
+### ظرفیت
+
+``` text
+Concurrent users = employees x remote ratio x peak concurrency
+= 400 x 0.5 x 0.8 = 160
+
+Throughput need = users x avg Mbps
+= 160 x 2 = 320 Mbps (VPN throughput, not firewall throughput)
+```
+
+ظرفیت از Datasheet «IPsec VPN Throughput» و «Concurrent SSL-VPN users» مدل؛ عدد را از مستند بخوانید.
+
+### Posture و MFA
+
+- MFA برای همه‌ی دسترسی (FortiToken/Third-party).
+- Posture: آنتی‌ویروس فعال، OS Patch، دیسک رمز (EMS Needs-License).
+- Least Privilege: گروه‌ها جدا، دسترسی به سرویس لازم (نه کل شبکه).
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — انتخاب
+
+۱۰ کارمند، لپ‌تاپ سازمانی، نیاز به فایل‌سرور: IPsec Dial-up + MFA کافی است.
+
+#### مثال متوسط — گروه‌ها
+
+| گروه | دسترسی | روش |
+|---|---|---|
+| مدیران IT | SSH/RDP سرورها | IPsec + MFA + Bastion |
+| فروش | CRM | ZTNA یا Portal |
+| پیمانکار | یک برنامه | ZTNA/Bastion، موقت |
 
 #### مثال متوسط — ظرفیت
 
-``` text
-300 users x 2 Mbps = 600 Mbps VPN throughput
-```
+محاسبه بالا: 160 کاربر، 320Mbps؛ مدل باید حداقل ۲ برابر ظرفیت (حاشیه). بررسی Datasheet.
 
-#### مثال سخت — Split در برابر Full
+#### مثال سخت — حادثه
 
-Split بار را کم می‌کند ولی ترافیک اینترنت بازرسی نمی‌شود؛ تصمیم بر اساس ریسک.
+CVE جدید SSL VPN با Exploit فعال. اقدام: ۱) Patch فوری ۲) محدودیت Source/Geo ۳) قطع SSL VPN اگر Patch نیست و استفاده از IPsec ۴) بررسی Log برای نفوذ (IoC) ۵) تغییر رمزها. اگر این مراحل از قبل در Runbook نباشد، ساعت‌ها هدر می‌رود.
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال سخت — BYOD
 
-**ساده (حل‌شده):** ۳ گروه: کارمند/پیمانکار/مدیر؛ جدول انتخاب (بخش ۳). نتیجه: هر گروه یک «نوع دسترسی» و Least Privilege.
+لپ‌تاپ شخصی بدون Posture. گزینه: Agentless/Web (دسترسی محدود به یک برنامه)، یا VDI/Bastion؛ نه VPN کامل شبکه.
 
-**متوسط (تحلیل):** کارمندی خواهان Split است چون «کند است». تحلیل: Full tunnel Latency را بالا می‌برد؛ اگر لپ‌تاپ مدیریت‌شده با EDR و DNS داخلی/Filter باشد Split قابل‌قبول است؛ در غیر این صورت Full. معیار تصمیم: وضعیت Posture. ثبت استثنا با مالک.
+### Lab هدایت‌شده (اجرا نشده)
 
-**سخت (ریسک):** حمله‌ی Credential stuffing به VPN با ۵۰٬۰۰۰ تلاش/ساعت. تحلیل لایه‌ای: (۱) MFA؛ (۲) Lockout/Rate limit؛ (۳) Source Restriction/Geo؛ (۴) Alert بر نسبت ناموفق/موفق؛ (۵) Credential hygiene (رمزهای نشت‌یافته). حتی اگر رمز درست باشد MFA جلوی ورود را می‌گیرد. معیار: «ورود موفق پس از N تلاش ناموفق» = رویداد بحرانی.
+1. مدل تهدید برای شرکت نمونه.
+2. انتخاب روش برای سه گروه.
+3. محاسبه‌ی ظرفیت.
 
-### ۸) Verification (اثبات صحت)
+### عیب‌یابی سریع
 
-- ماتریس گروه→روش→کنترل امضا‌شده.
-- برآورد ظرفیت با فرمول.
-- Threat model یک‌صفحه‌ای.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| دسترسی بیش‌ازحد پس از اتصال | Policy/Segmentation | Least Privilege؛ Policy گروهی |
-| VPN کند | CPU/Throughput | Full tunnel/ظرفیت |
-| حمله‌ی Brute-force | Log | Lockout/MFA/Source |
+| کاربران کند | Full tunnel | Split/ظرفیت |
+| دسترسی بیش‌ازحد | شبکه کامل | Policy خاص |
+| حادثه | Patch نبود | Runbook |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- VPN سرویس اینترنتی است؛ Patch سریع.
-- MFA بدون استثنا.
-- دسترسی حداقلی پس از اتصال.
+MFA اجباری؛ Patch؛ محدودیت Source؛ Log و آلارم نفوذ؛ آزمون دوره‌ای.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- تصمیم بر پایه‌ی گروه/دستگاه/دسترسی.
-- IPsec سطح حمله‌ی کمتر؛ SSL VPN Tunnel منسوخ‌شونده.
-- Split/Full بر پایه‌ی Posture.
-- ظرفیت را محاسبه کنید.
-- Detection ورودهای مشکوک.
+مدل تهدید ⇒ انتخاب (IPsec/ZTNA/Bastion)؛ SSL VPN با احتیاط؛ Posture، MFA، Least Privilege؛ ظرفیت با فرمول؛ Runbook حادثه.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا دسترسی راه‌دور پرریسک‌ترین مسیر ورود است؟ *(پاسخ: 20-1-ت1)*
 
@@ -1800,7 +1797,7 @@ Split بار را کم می‌کند ولی ترافیک اینترنت بازر
 
 **Q1.** Quick quiz (English): Why is multi-factor authentication essential for remote access? *(پاسخ: 20-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1811,11 +1808,11 @@ Split بار را کم می‌کند ولی ترافیک اینترنت بازر
 
 - *Grant remote users only the access they need.* ← به کاربران راه‌دور فقط دسترسی لازم بدهید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** ماتریس دسترسی. **وضعیت:** طراحی. **Evidence:** `02-design/remote-compare.md`.
 
-### ۱۵) منابع
+### منابع
 
 - NIST SP 800-46 Rev.2
 - NIST SP 800-207 (Zero Trust)
@@ -1823,240 +1820,163 @@ Split بار را کم می‌کند ولی ترافیک اینترنت بازر
 
 <a id="l-20-2"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: مدل تهدید دسترسی راه‌دور با مثال
-
-**سناریو.** ۳۰۰ کارمند دورکار. تهدیدها: سرقت رمز (Credential Stuffing)، دستگاه آلوده، آسیب‌پذیری Gateway.
-
-| کنترل | تهدید که کم می‌کند |
-|---|---|
-| MFA | سرقت رمز |
-| Posture Check | دستگاه آلوده |
-| Patch سریع Gateway | آسیب‌پذیری |
-| Least Privilege Policy | حرکت جانبی |
-
-**ZTNA:** دسترسی بر اساس هویت+وضعیت دستگاه برای هر برنامه (Needs-License؛ FortiClient EMS).
-
-**پرسش‌های مصاحبه**
-1. *VPN در برابر ZTNA؟* شبکه‌محور در برابر برنامه‌محور.
-2. *چرا Gateway هدف حمله است؟* در معرض اینترنت.
-3. *Split در برابر Full؟* ریسک در برابر پهنای باند.
-
-### تکمیل عمیق: معماری دسترسی راه‌دور — مدل تهدید و مقایسه‌ی VPN/ZTNA
-
-#### چرا باید یاد بگیریم؟
-
-دورکاری دسترسی به شبکه را از یک ساختمان محدود به «هر جای اینترنت» گسترش داده است. هر نقطه‌ی ورود از اینترنت، هدف حمله است. پس قبل از انتخاب فناوری (SSL VPN، IPsec، ZTNA) باید بپرسیم: **چه چیزی را از چه کسی محافظت می‌کنیم؟**
-
-#### مدل تهدید
-
-| تهدید | مثال | کنترل |
-|---|---|---|
-| سرقت رمز | Credential Stuffing | MFA |
-| دستگاه آلوده | لپ‌تاپ بدون آنتی‌ویروس | Posture Check |
-| آسیب‌پذیری Gateway | Exploit روی VPN | Patch و کاهش سطح |
-| حرکت جانبی | کاربر VPN به همه‌ی شبکه | Policy حداقلی |
-
-#### مقایسه
-
-| معیار | IPsec RA | SSL VPN | ZTNA |
-|---|---|---|---|
-| سطح دسترسی | شبکه | شبکه/برنامه | برنامه |
-| بررسی دستگاه | ممکن | ممکن | پایه‌ای |
-| لایسنس | پایه | پایه | EMS (Needs-License) |
-
-ZTNA = Zero Trust Network Access، یعنی «دسترسی شبکه‌ای مبتنی بر اعتماد صفر»؛ هر درخواست بر پایه‌ی هویت و وضعیت دستگاه ارزیابی می‌شود.
-
-#### مثال ساده — Least Privilege
-
-کاربر مالی فقط به سرور ERP (10.20.0.10:443) نیاز دارد؛ Policy VPN او نباید `all` باشد.
-
-#### مثال متوسط — Split در برابر Full Tunnel
-
-Split: فقط ترافیک سازمانی از VPN؛ پهنای باند کمتر ولی ترافیک اینترنت بازرسی نمی‌شود. Full: همه از VPN؛ کنترل بیشتر ولی بار روی فایروال.
-
-#### مثال سخت — طراحی برای ۳۰۰ کاربر
-
-نیاز: ۳۰۰ کاربر هم‌زمان با ۲ Mbps هر کدام: ۶۰۰ Mbps. باید ظرفیت VPN فایروال (نه فقط Throughput کلی) را در دیتاشیت بررسی کنید.
-
-``` text
-Required VPN throughput = users x per-user rate = 300 x 2 = 600 Mbps
-```
-
-#### Lab
-
-یک جدول تهدید/کنترل برای سازمان فرضی بنویسید.
-
-#### عیب‌یابی طراحی
-
-| علامت | علت | رفع |
-|---|---|---|
-| دسترسی گسترده | Policy all | حداقل |
-| کندی | Full tunnel | Split |
-| ظرفیت کم | دیتاشیت | بررسی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. ZTNA چیست؟** دسترسی برنامه‌محور و بر اساس اعتماد صفر.
-**۲. Split Tunnel خطر؟** بازرسی نشدن ترافیک اینترنت.
-**۳. ظرفیت VPN را از کجا؟** دیتاشیت.
-
-#### English Corner
-
-- *Remote access gateways are internet-facing and must be hardened.*
-- Q: What is the difference between split and full tunnel?
-
 ## درس 20-2 — SSL VPN در 7.0.3 (فقط Lab ایزوله): سازوکار، Portal، Realm، Tunnel، Split و Hardening
 
 **فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۲۰-۱، ۲۰-۷، ۱۷-۲ · ≈ 9 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده». SSL VPN فقط در Lab ایزوله (CVE).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. سازوکار SSL VPN (TLS، Web/Tunnel، Portal، IP Pool) را توضیح دهد.
-2. در Lab ایزوله Portal، User Group، Policy و Route را بسازد.
-3. Split tunnel، DNS و Realm را تنظیم کند.
-4. Hardening (Source، MFA، Cert، Timeout، Lockout) را اجرا کند.
-5. Log و مشکلات اتصال را عیب‌یابی کند.
-6. ریسک CVE و راه مهاجرت (۲۰-۷) را ارزیابی کند.
+1. سازوکار SSL VPN (TLS، Web Mode، Tunnel Mode، Portal، IP Pool) را توضیح دهید.
+2. در Lab ایزوله Portal، User Group، Policy و Route را بسازید.
+3. Split Tunnel، DNS و Realm را تنظیم کنید.
+4. Hardening (Source، MFA، Certificate، Timeout، Lockout) را اجرا کنید.
+5. Log و مشکلات اتصال را عیب‌یابی کنید.
+6. ریسک CVE و مسیر مهاجرت را ارزیابی کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا SSL-VPN با احتیاط؟** روی 443 کار می‌کند و از اکثر محدودیت‌ها عبور می‌کند ولی سابقه‌ی آسیب‌پذیری مهم دارد. فقط در Lab ایزوله و با نسخه‌ی وصله‌شده، MFA و محدودیت مبدأ.
+SSL VPN هنوز در بسیاری از سازمان‌ها فعال است و در آزمون‌های NSE4 موضوع رسمی بود. ولی درس مهم‌تر این است: SSL VPN روی پورت عمومی (معمولاً 443) باز می‌ماند و در معرض اسکن جهانی است؛ آسیب‌پذیری‌های جدی تاریخی (مثلاً CVE-2018-13379 و CVE-2022-42475) نشان دادند که Patch‌نکردن به معنای نفوذ است. پس هم باید بدانید چطور ساخته می‌شود، هم چطور سخت‌گیری و در کجا نباید استفاده شود. (در این دوره فقط Lab ایزوله و بدون اتصال به اینترنت.)
 
-**جمع‌بندی اصلی درس:**
-
-SSL VPN در 7.0.3 هنوز وجود دارد ولی (۱) آسیب‌پذیری‌های شناخته‌شده‌ی بحرانی در خط 7.0.x دارد (Fortinet PSIRT)، (۲) Tunnel mode در 7.6.3 حذف شده است. پس این درس برای **درک سازوکار و مهاجرت** است و عملی‌سازی فقط در Lab ایزوله (بدون اینترنت) انجام می‌شود.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) سازوکار
-
-- کلاینت به `https://fgt:port` وصل می‌شود (TLS). **Web mode:** FortiGate Proxy اپلیکیشن‌ها (HTTP/RDP/SSH) را ارائه می‌دهد. **Tunnel mode:** FortiClient یک Interface مجازی می‌سازد و بسته‌های IP را داخل TLS (و Datagram TLS در صورت UDP) کپسوله می‌کند.
-- **Portal:** مجموعه‌ی تنظیم (Tunnel/Web، Split، DNS، Bookmarks).
-- **IP Pool:** آدرس کلاینت‌ها.
-- **Policy:** Source Interface = `ssl.root` (Interface مجازی) به LAN.
-- **Realm/User Group → Portal Mapping:** هر گروه Portal متفاوت.
-
-#### ۲) پیکربندی منطقی
+### سازوکار
 
 ``` text
-1 Certificate (valid, not factory)       2 Listening interface/port
-3 Tunnel IP pool + DNS                   4 Portal (tunnel mode, split networks)
-5 User Group (LDAP/RADIUS + MFA)         6 Group->Portal mapping
-7 Firewall policy ssl.root -> LAN (group source)
+User -- TLS (443) --> [FortiGate SSL VPN daemon]
+   Web Mode   : browser portal, proxied apps (RDP/SSH/HTTP bookmarks)
+   Tunnel Mode: FortiClient creates virtual adapter, IP from pool
 ```
 
-#### ۳) Hardening (در Lab و برای درک)
-
-Source Restriction (Address)، MFA، Certificate معتبر، TLS minimum version، `login-attempt-limit`/Block، Idle Timeout، Realm جدا، غیرفعال‌کردن Web mode در صورت نیاز، Log، Patch.
-
-#### ۴) ریسک‌ها
-
-CVEهای RCE/Credential-leak روی 7.0.x؛ سرویس عمومی → اسکن/حمله؛ رفتار پیش‌فرض‌ها. **تولید:** مهاجرت به IPsec (۲۰-۷).
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| بخش | کار |
 |---|---|
-| SSL VPN یا مهاجرت | تولید: مهاجرت؛ Lab: درک |
-| Portal | Tunnel برای مدیریت‌شده؛ Web فقط در صورت نیاز |
-| Certificate | معتبر CA |
-| Source | محدود |
+| Portal | چه چیزی کاربر می‌بیند (Bookmark، Tunnel) |
+| SSL VPN Settings | Interface، پورت، گواهی، IP Pool |
+| User Group | چه کسی |
+| Policy | چه چیزی مجاز |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
+### پیکربندی (Lab)
 
 ``` text
 config vpn ssl settings
- set tunnel-ip-pools "SSLVPN_TUNNEL_ADDR1"
- set source-interface "port1"
- set default-portal "tunnel-access"
-end
-```
-
-#### مثال متوسط — Policy
-
-`ssl.root → port3` برای گروه VPN.
-
-#### مثال سخت — ریسک
-
-PSIRT نسخه را بررسی؛ Local-in Policy؛ برنامه‌ی مهاجرت.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Portal tunnel-access، IP Pool 10.212.134.0/24، Policy ssl.root→LAN برای گروه GRP-IT؛ اتصال با FortiClient و ping به سرور LAN.
-
-**متوسط (تحلیل):** وصل می‌شود ولی به LAN نمی‌رسد: فرضیه‌ها: (۱) Policy ssl.root→LAN نیست/Source گروه نادرست؛ (۲) Route بازگشت LAN به IP Pool (Static/Policy)؛ (۳) Split tunnel Network اشتباه؛ (۴) ترافیک به Local-in رسید ولی Selector. شواهد: Debug Flow (Policy)، `get vpn ssl monitor`، Sniffer.
-
-**سخت (ریسک/طراحی):** یک VPN در معرض اینترنت با 7.0.x: تحلیل: اگر CVE کشف‌شده روی نسخه باشد، حتی با MFA، مهاجم می‌تواند Authentication را دور بزند. اقدام فوری: Patch/غیرفعال، محدودسازی Source، Log retrospective، بازنشانی اعتبارنامه‌ها. اقدام بلندمدت: مهاجرت IPsec، Segmentation پشت VPN، Alert.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. VPN → SSL-VPN Settings: Listen Interface/Port، Server Certificate، Tunnel IP Pool، DNS، Restrict Access.
-2. VPN → SSL-VPN Portals: Tunnel Mode، Split Tunneling، Bookmarks.
-3. User & Authentication → User Groups.
-4. VPN → SSL-VPN Settings → Authentication/Portal Mapping.
-5. Policy & Objects → Firewall Policy: Incoming `ssl.root` → LAN.
-6. Monitor → SSL-VPN Monitor.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-config vpn ssl settings
-    set servercert "LAB-CERT"
+    set servercert "Server_Cert"
     set tunnel-ip-pools "SSLVPN_TUNNEL_ADDR1"
+    set port 10443
     set source-interface "port1"
-    set default-portal "tunnel-access"
-    set login-attempt-limit 3
-    set login-block-time 300
-    set idle-timeout 600
+    set source-address "all"
+    set default-portal "full-access"
 end
-get vpn ssl monitor
-diagnose debug application sslvpn -1
-diagnose debug enable
-diagnose debug disable
-diagnose debug reset
+config vpn ssl web portal
+    edit "PORTAL-STD"
+        set tunnel-mode enable
+        set web-mode disable
+        set split-tunneling enable
+        set split-tunneling-routing-address "NET-CORP"
+        set dns-server1 10.20.0.10
+    next
+end
+config firewall policy
+    edit 100
+        set name "SSLVPN-to-CORP"
+        set srcintf "ssl.root"
+        set dstintf "ZN-SRV"
+        set srcaddr "SSLVPN_TUNNEL_ADDR1"
+        set dstaddr "NET-CORP"
+        set groups "UG-VPN"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+end
 ```
 
-### ۸) Verification (اثبات صحت)
+Route برگشت: شبکه‌ی `SSLVPN_TUNNEL_ADDR1` باید برای سرورها به FortiGate برگردد (اگر FortiGate Gateway آن‌ها نیست).
 
-- اتصال و IP Pool.
-- دسترسی مثبت/منفی (گروه مجاز/غیرمجاز).
-- Lockout بعد از ۳ تلاش.
-- Monitor و Log.
-- هیچ اتصال اینترنتی به Lab (ایزولاسیون).
+### Realm
 
-### ۹) Troubleshooting
+Realm امکان چند Portal با نام مسیر متفاوت (`https://vpn.example:10443/staff`) و Portalهای متفاوت می‌دهد.
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+### Hardening
+
+| اقدام | هدف |
+|---|---|
+| `source-address` محدود | کاهش اسکن/حمله |
+| MFA | رمز لورفته |
+| گواهی معتبر | MITM |
+| `login-attempt-limit` و `login-block-time` | Brute-force |
+| `idle-timeout`، `auth-timeout` | نشست طولانی |
+| Patch فوری | CVE |
+| `tlsv1-3`، حذف TLS 1.0/1.1 | الگوریتم ضعیف |
+| بدون `web-mode` اگر لازم نیست | کاهش سطح |
+
+``` text
+config vpn ssl settings
+    set ssl-min-proto-ver tls1-2
+    set login-attempt-limit 3
+    set login-block-time 600
+    set idle-timeout 300
+    set auth-timeout 28800
+end
+```
+
+(نام و ارزش‌های دقیق باید با مستند 7.0 بررسی شود؛ Unverified.)
+
+### ریسک CVE و مهاجرت
+
+- نسخه‌ی 7.0.3 اسمی این Lab به آسیب‌پذیری‌های شناخته‌شده‌ی بعدی مبتلا است (مثلاً در 7.0.x قبل از 7.0.9 مشکل Heap Overflow در SSL VPN؛ شناسه CVE-2022-42475 — شماره‌ی نسخه‌ی Patch را از PSIRT رسمی بررسی کنید).
+- بنابراین: Lab ایزوله، بدون اتصال اینترنت.
+- برنامه‌ی مهاجرت: به IPsec Dial-up (۲۰-۳) یا ZTNA.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Portal Tunnel
+
+کاربر با FortiClient به `vpn.example:10443` ⇒ احراز LDAP ⇒ IP از Pool 10.212.134.x ⇒ دسترسی به 10.20.0.0/24.
+
+#### مثال متوسط — Split و DNS
+
+Split: فقط 10.20.0.0/24 از تونل. DNS داخلی 10.20.0.10 برای `corp.example`. آزمون: `nslookup app.corp.example` ⇒ IP داخلی. اگر DNS اشتباه: نام داخلی حل نمی‌شود.
+
+#### مثال متوسط — Hardening
+
+`login-attempt-limit 3`، MFA و Source فقط کشورهای مجاز (Geo). Log حمله Brute-force: `ssl-login-fail`.
+
+#### مثال سخت — Route برگشت
+
+اتصال برقرار، ping سرور ناموفق. Sniffer سرور: درخواست ورودی با Src 10.212.134.5؛ پاسخ به Default Gateway غیر FortiGate. رفع: Route برگشت یا NAT روی Policy (ساده‌تر ولی ردیابی کاربر ضعیف).
+
+#### مثال سخت — CVE
+
+Fortinet Advisory جدید. اقدام: ۱) اگر Patch ندارید، `config vpn ssl settings` را غیرفعال/محدود به Source مدیریتی ۲) بررسی Log برای IoC ۳) Patch ۴) تغییر همه‌ی رمزها و گواهی‌ها در صورت مشکوک بودن نفوذ.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Portal Tunnel با Split.
+2. Hardening.
+3. Route برگشت.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Login Loop | Capture/Log | Certificate/Portal |
-| وصل ولی LAN نه | Debug Flow | Policy/Route |
-| وصل نمی‌شود | `sslvpn` debug | Port/Policy/Source |
-| Brute-force | Log | Lockout/MFA/Source |
+| اتصال نمی‌شود | پورت/گواهی | بررسی |
+| وصل ولی دسترسی نه | Policy/Route | بررسی |
+| نام داخلی نه | DNS | dns-server |
+| Brute-force | بدون محدودیت | login-limit |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- فقط ایزوله؛ بدون اینترنت.
-- MFA؛ Source Restriction؛ TLS قوی.
-- Patch/مهاجرت.
+MFA؛ Source محدود؛ Patch؛ TLS 1.2+؛ پایش Log؛ برنامه‌ی مهاجرت.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- SSL VPN: TLS + Portal + IP Pool + Policy ssl.root.
-- 7.0.x آسیب‌پذیر؛ فقط Lab.
-- Hardening لایه‌ای.
-- مهاجرت به IPsec مسیر تولید.
+SSL VPN: Portal/Tunnel/Pool؛ Hardening کامل؛ CVE‌های تاریخی؛ Lab ایزوله؛ مهاجرت به IPsec/ZTNA.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Interface مجازی ssl.root چه نقشی دارد؟ *(پاسخ: 20-2-ت1)*
 
@@ -2072,7 +1992,7 @@ diagnose debug reset
 
 **Q1.** Quick quiz (English): Why is an unpatched SSL VPN a critical risk? *(پاسخ: 20-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2082,11 +2002,11 @@ diagnose debug reset
 
 - *Never expose an unpatched SSL VPN to the internet.* ← هرگز SSL VPN بدون Patch را در معرض اینترنت قرار ندهید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** SSL VPN ایزوله. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/sslvpn.md`. **Rollback:** حذف Portal/Policy.
 
-### ۱۵) منابع
+### منابع
 
 - [SSL VPN tunnel mode replaced (7.6.3)](https://docs.fortinet.com/document/fortigate/7.6.3/fortios-release-notes/173430/ssl-vpn-tunnel-mode-no-longer-supported)
 - FortiGuard PSIRT Advisories
@@ -2094,264 +2014,166 @@ diagnose debug reset
 
 <a id="l-20-3"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: SSL VPN در 7.0.3 — فقط Lab
-
-``` text
-config vpn ssl settings
- set servercert "Fortinet_Factory"
- set tunnel-ip-pools "SSLVPN_TUNNEL_ADDR1"
- set port 10443
- set source-interface port1
-end
-```
-
-Portal `tunnel-access` + Policy `SSLVPN -> LAN` با گروه. **هشدار:** SSL-VPN در نسخه‌های ۷.x سابقه‌ی آسیب‌پذیری‌های جدی (PSIRT) دارد؛ در محیط واقعی نسخه‌ی وصله‌شده و MFA الزامی؛ بسیاری از سازمان‌ها به IPsec مهاجرت می‌کنند (وضعیت طبق مستند Fortinet نسخه).
-
-**آزمون:** اتصال FortiClient، `get vpn ssl monitor`.
-
-**پرسش‌های مصاحبه**
-1. *Realm؟* آدرس/ظاهر Portal جدا.
-2. *Split Tunnel؟* مسیرهای مشخص.
-3. *Host Check؟* وضعیت دستگاه.
-
-### تکمیل عمیق: SSL VPN در 7.0.3 — فقط Lab، با درک ریسک
-
-#### چرا؟
-
-SSL VPN محبوب است چون روی 443 کار می‌کند و از اکثر محدودیت‌ها عبور می‌کند، ولی تاریخچه‌ی آسیب‌پذیری‌های مهم دارد؛ باید با چشم باز استفاده شود.
-
-#### اجزا
-
-- **Portal**: صفحه‌ی ورود و دسترسی (Web mode/Tunnel mode).
-- **Realm**: آدرس/ظاهر جدا.
-- **Tunnel IP Pool**: آدرس داخلی کلاینت.
-- **Policy**: `ssl.root -> LAN`.
-
-#### مثال ساده — تنظیم
-
-``` text
-config vpn ssl settings
- set servercert "Fortinet_Factory"
- set tunnel-ip-pools "SSLVPN_TUNNEL_ADDR1"
- set port 10443
- set source-interface "port1"
- set default-portal "tunnel-access"
-end
-```
-
-Source Interface و Port را به حداقل لازم محدود کنید. گواهی Factory برای Lab است؛ در تولید گواهی معتبر.
-
-#### مثال متوسط — Policy
-
-``` text
-config firewall policy
- edit 200
-  set srcintf "ssl.root"
-  set dstintf "port3"
-  set srcaddr "all"
-  set dstaddr "SRV-ERP"
-  set groups "G-VPN"
-  set service "HTTPS"
-  set action accept
-  set logtraffic all
- next
-end
-```
-
-#### مثال سخت — ریسک و کاهش
-
-PSIRT Fortinet برای SSL-VPN در نسخه‌های ۷.x هشدارهای جدی داشته است. کاهش: نسخه‌ی وصله‌شده، MFA، محدودیت جغرافیا (Local-in)، غیرفعال‌سازی Web mode در صورت نیاز، پایش Log، و برنامه‌ی مهاجرت به IPsec (وضعیت نسخه را از مستند رسمی بخوانید).
-
-#### Lab
-
-SSL VPN را فقط در Lab ایزوله و بدون دسترسی از اینترنت راه‌اندازی کنید.
-
-``` text
-get vpn ssl monitor
-diagnose debug application sslvpn -1
-```
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| اتصال نمی‌شود | Policy/Portal | بررسی |
-| Split نمی‌کند | Routing | Split-include |
-| گواهی خطا | Factory | گواهی معتبر |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Realm؟** آدرس/ظاهر Portal جدا.
-**۲. چرا Local-in؟** محدودکردن مبدأ.
-**۳. ریسک اصلی؟** آسیب‌پذیری Gateway.
-
-#### English Corner
-
-- *Patch promptly and add MFA; limit who can reach the SSL VPN portal.*
-- Q: Why is the factory certificate unsuitable for production?
-
 ## درس 20-3 — IPsec Dial-up (Remote Access): IKEv2، هویت، Mode Config، Split/Full، DNS و Policy
 
 **فصل 20 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۲۰-۱، ۱۷-۳ · ≈ 9 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده». SSL VPN فقط در Lab ایزوله (CVE).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Dial-up IKEv2 را با Phase1 dynamic، Peer ID و Authentication (PSK/گواهی/EAP-RADIUS) بسازد.
-2. Mode Config (IP، DNS، Split) را تنظیم کند.
-3. Policy مبتنی بر گروه و Route برگشت را بنویسد.
-4. MFA از طریق RADIUS/Challenge را معماری کند.
-5. مشکلات اتصال/نام/دسترسی را با Debug عیب‌یابی کند.
-6. ظرفیت و Rekey کلاینت‌های همزمان را بسنجد.
+1. IPsec Dial-up IKEv2 را با Phase1 dynamic و Authentication بسازید.
+2. Mode Config (IP، DNS، Split) را تنظیم کنید.
+3. Policy مبتنی بر گروه و Route برگشت را بنویسید.
+4. MFA از طریق RADIUS (EAP) را معماری کنید.
+5. مشکلات اتصال، نام و دسترسی را با Debug عیب‌یابی کنید.
+6. ظرفیت و Rekey کلاینت‌های هم‌زمان را بسنجید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا IPsec Dial-up؟** سطح حمله‌ی تاریخی کمتر و Performance بهتر از SSL-VPN. Phase1 از نوع `dynamic`، Mode Config برای IP/DNS و هویت با گواهی/EAP.
+IPsec Dial-up راه سنتی و بالغ دسترسی راه‌دور است: کاربر (با FortiClient یا کلاینت بومی ویندوز/macOS) به فایروال تونل می‌زند. نسبت به SSL VPN سطح حمله‌ی کوچک‌تری دارد (UDP 500/4500) و تاریخچه‌ی آسیب‌پذیری کمتر. برای بسیاری از سازمان‌ها این گزینه‌ی پیشنهادی جایگزین SSL VPN است.
 
-**جمع‌بندی اصلی درس:**
-
-IPsec Dial-up سطح حمله‌ی کمتری نسبت به SSL VPN دارد و مسیر پشتیبانی‌شده‌ی آینده است. ولی چالش‌ها: Peer ناشناس (IP پویا)، هویت قوی، تخصیص آدرس و DNS، و رفتار NAT-T کلاینت پشت NAT.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) اجزا
-
-- **Phase1:** `type dynamic`، `ike-version 2`، `peertype`/Peer ID، `mode-cfg enable`، Proposal قوی.
-- **Authentication:** گواهی کلاینت (قوی‌ترین)، EAP با RADIUS (+MFA)، PSK گروهی (ضعیف؛ ممنوع در تولید).
-- **Mode Config:** `ipv4-start-ip`/`end-ip`، DNS، Split networks.
-- **Phase2:** Selector باز/ Subnet مجاز.
-- **Policy:** `dialup-tunnel` → LAN، Source = User Group/Address.
-- **Route:** ترافیک به IP کلاینت از Tunnel (Dynamic route add: `add-route enable`).
-
-#### ۲) مسیر Authentication با MFA
+### سازوکار
 
 ``` text
-Client -> FGT (IKEv2, EAP) -> RADIUS(NPS) -> AD + OTP challenge -> Access-Accept
-FGT assigns IP/DNS via Mode Config; policy by group
+Client (dynamic IP) -- IKEv2 (UDP 500/4500) --> [FortiGate: phase1 type dynamic]
+   Authentication: PSK / Certificate / EAP (RADIUS+MFA)
+   Mode Config: IP, DNS, split routes assigned to client
 ```
 
-#### ۳) Split/Full و DNS
-
-Split: `split-include` Subnetهای سازمانی؛ DNS داخلی با Suffix؛ Full: Default از Tunnel + Policy اینترنت با UTM. مشکل رایج: «اتصال هست ولی نام داخلی resolve نمی‌شود» ⇒ DNS/Suffix.
-
-#### ۴) ظرفیت
-
-هر کلاینت = IKE SA + Child SA؛ Rekey همزمان بار می‌دهد؛ Lifetime را توزیع کنید؛ ظرفیت مدل را بسنجید.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Authentication | گواهی/EAP+MFA؛ PSK فقط Lab |
-| Split/Full | Posture |
-| DNS | داخلی + Suffix |
-| ظرفیت | SA و Rekey |
-| Redundancy | دو RADIUS |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-``` text
-config vpn ipsec phase1-interface
- edit "DIALUP"
-  set type dynamic
-  set ike-version 2
-  set mode-cfg enable
-  set ipv4-start-ip 10.200.0.10
-  set ipv4-end-ip 10.200.0.200
- next
-end
-```
-
-#### مثال متوسط — Split
-
-`ipv4-split-include` و DNS داخلی.
-
-#### مثال سخت — ping نمی‌رود
-
-Policy، Route برگشت، Selector.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** کلاینت با گواهی وصل؛ IP 10.212.1.5 از Mode Config؛ ping به LAN و resolve `erp.lab.local`.
-
-**متوسط (تحلیل):** وصل می‌شود ولی erp.lab.local resolve نمی‌شود: Mode Config DNS تنظیم نشده یا کلاینت Split DNS را نادیده می‌گیرد؛ آزمون: `nslookup` با DNS داخلی، Sniffer روی 53؛ رفع: DNS/Suffix.
-
-**سخت (طراحی):** ۸۰۰ کلاینت: کلاینت‌های Windows و macOS؛ MFA؛ بعضی پشت NAT. تحلیل: IKEv2+EAP-RADIUS؛ NAT-T؛ Lifetime 8h با jitter؛ Policy گروه‌های Finance/IT؛ Posture (FortiClient EMS لایسنس) یا Certificate device؛ ظرفیت Hub: 800 SA×2؛ بحرانی‌ترین ریسک: RADIUS Availability (دو NPS) و Log.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. VPN → IPsec Wizard → Remote Access (Dial-up) → Custom.
-2. Authentication: Peer Options / Mode Config (IP range، DNS، Split).
-3. User Groups و Policy (Incoming `dialup`).
-4. Monitor → IPsec Monitor.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### Phase 1
 
 ``` text
 config vpn ipsec phase1-interface
     edit "DIALUP"
         set type dynamic
-        set interface "wan1"
+        set interface "port1"
         set ike-version 2
-        set mode-cfg enable
-        set proposal aes256gcm-prfsha256
-        set dhgrp 20
         set peertype any
-        set ipv4-start-ip 10.212.1.1
-        set ipv4-end-ip 10.212.1.254
-        set ipv4-dns-server1 192.168.90.40
-        set add-route enable
+        set net-device disable
+        set mode-cfg enable
+        set proposal aes256-sha256
+        set dhgrp 14
+        set authmethod psk
+        set psksecret <SECRET>
+        set eap enable
+        set eap-identity send-request
+        set ipv4-start-ip 10.212.135.10
+        set ipv4-end-ip 10.212.135.200
+        set ipv4-netmask 255.255.255.0
+        set ipv4-dns-server1 10.20.0.10
+        set ipv4-split-include "NET-CORP"
+        set dpd on-idle
     next
 end
+```
+
+`eap enable` + `eap-identity send-request` برای احراز کاربر از RADIUS (NPS با MFA). `ipv4-split-include` Split.
+
+### Phase 2
+
+``` text
 config vpn ipsec phase2-interface
     edit "DIALUP-P2"
         set phase1name "DIALUP"
-        set proposal aes256gcm
+        set proposal aes256-sha256
         set pfs enable
+        set dhgrp 14
+        set src-subnet 0.0.0.0 0.0.0.0
+        set dst-subnet 0.0.0.0 0.0.0.0
     next
 end
-diagnose vpn ike gateway list
 ```
 
-### ۸) Verification (اثبات صحت)
+### Policy و Route
 
-- اتصال و IP/DNS؛ آزمون مثبت/منفی دسترسی گروهی.
-- `ike gateway list` و Log.
-- Rekey بدون قطع.
-- آزمون NAT-T.
+``` text
+config firewall policy
+    edit 110
+        set name "DIALUP-to-CORP"
+        set srcintf "DIALUP"
+        set dstintf "ZN-SRV"
+        set srcaddr "all"
+        set dstaddr "NET-CORP"
+        set groups "UG-VPN"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+end
+```
 
-### ۹) Troubleshooting
+Route برگشت: بازه‌ی 10.212.135.0/24 باید برای سرورها به FortiGate اشاره کند.
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+### هویت
+
+| روش | مزیت | عیب |
 |---|---|---|
-| وصل نمی‌شود | Debug IKE | Proposal/Auth/ID |
-| نام داخلی resolve نمی‌شود | nslookup | DNS Mode Config |
-| وصل ولی LAN نه | Debug Flow | Policy/Route |
-| قطع دوره‌ای | Log | Lifetime/DPD/NAT |
+| PSK مشترک + XAuth/EAP | ساده | PSK مشترک خطرناک |
+| Certificate (کاربر/دستگاه) | قوی | PKI لازم |
+| EAP + RADIUS + MFA | قوی و مرکزی | NPS لازم |
 
-### ۱۰) نکات امنیتی
+توصیه: Certificate دستگاه + EAP کاربر (MFA).
 
-- PSK گروهی ممنوع؛ گواهی/EAP؛ MFA.
-- Policy گروهی.
-- Log ورود.
+### کلاینت‌ها
 
-### ۱۱) جمع‌بندی مفهومی
+FortiClient (VPN-only رایگان؛ EMS برای مدیریت Needs-License)، Windows بومی IKEv2، macOS/iOS بومی. جزئیات تنظیم Client در مستند.
 
-- Dial-up: dynamic + IKEv2 + mode-cfg.
-- Auth قوی + MFA.
-- DNS/Split.
-- ظرفیت و Rekey.
+### ظرفیت و Rekey
 
-### ۱۲) تمرین و ارزیابی
+هر کلاینت یک SA؛ تعداد هم‌زمان تابع مدل (Datasheet). `keylife` کوتاه‌تر برای امنیت ولی Rekey زیاد؛ `dpd` برای حذف Sessionهای مرده.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — اتصال
+
+Windows IKEv2 ⇒ نام کاربر و رمز + OTP ⇒ IP 10.212.135.10 ⇒ ping 10.20.0.30 OK. `diagnose vpn ike gateway list` ⇒ `DIALUP_0`.
+
+#### مثال متوسط — Split و DNS
+
+Split به NET-CORP؛ سایر ترافیک مستقیم. `nslookup app.corp.example` ⇒ DNS 10.20.0.10. اگر Split نباشد: Full tunnel و اینترنت از شرکت.
+
+#### مثال متوسط — EAP/MFA
+
+NPS با Azure MFA Extension؛ Timeout FortiGate کم ⇒ شکست. افزایش Timeout و تنظیم کلاینت. Log NPS 6272/6273.
+
+#### مثال سخت — Route برگشت
+
+اتصال برقرار، فقط Ping به FortiGate OK. پاسخ سرورها به Gateway اشتباه. راه: Route یا NAT روی Policy.
+
+#### مثال سخت — پشت NAT و Fragmentation
+
+کاربر در هتل: UDP 500 بسته. راه‌ها: NAT-T روی UDP 4500؛ بعضی نسخه‌ها/کلاینت‌ها حالت انتقال TCP برای IKE/ESP دارند (در مستند FortiOS 7.0 و FortiClient بررسی شود؛ Unverified). کلاینت‌های بومی ممکن است شکست بخورند و باید گزینه‌ی جایگزین (مثلاً FortiClient) آزمون شود. سیاست: آزمون در شبکه‌های محدود قبل از Rollout.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Dial-up با PSK + EAP.
+2. Split و DNS.
+3. Route برگشت و آزمون.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| Phase1 رد | PSK/ID | بررسی |
+| EAP رد | RADIUS | NPS Log |
+| وصل ولی دسترسی نه | Policy/Route | بررسی |
+| نام داخلی نه | DNS | ipv4-dns |
+
+### نکات امنیتی
+
+PSK مشترک ممنوع؛ Certificate + EAP؛ MFA؛ Policy گروهی حداقل؛ Log و DPD.
+
+### جمع‌بندی
+
+IPsec Dial-up: dynamic Phase1، Mode Config، EAP/MFA، Policy گروهی، Route برگشت، Split؛ جایگزین پیشنهادی SSL VPN.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) type dynamic یعنی چه؟ *(پاسخ: 20-3-ت1)*
 
@@ -2367,7 +2189,7 @@ diagnose vpn ike gateway list
 
 **Q1.** Quick quiz (English): Why prefer certificates or EAP over a shared pre-shared key for dial-up VPN? *(پاسخ: 20-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2377,123 +2199,16 @@ diagnose vpn ike gateway list
 
 - *Authenticate every dial-up user individually.* ← هر کاربر Dial-up را جداگانه احراز کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Dial-up. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/dialup.md`.
 
-### ۱۵) منابع
+### منابع
 
 - RFC 7296
 - Fortinet Docs: IPsec VPN — remote access (7.0)
 
 <a id="l-20-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: IPsec Dial-up با IKEv2
-
-``` text
-config vpn ipsec phase1-interface
- edit "DIALUP"
-  set type dynamic
-  set interface port1
-  set ike-version 2
-  set mode-cfg enable
-  set ipv4-start-ip 10.200.0.10
-  set ipv4-end-ip 10.200.0.200
-  set ipv4-dns-server1 10.20.0.5
-  set authmethod signature
- next
-end
-```
-
-هویت با گواهی/EAP؛ Split با `ipv4-split-include`. **آزمون:** اتصال، `diagnose vpn ike gateway list`، دسترسی به منبع مجاز و رد منبع غیرمجاز.
-
-**پرسش‌های مصاحبه**
-1. *Mode Config؟* IP/DNS به کلاینت.
-2. *PSK گروهی؟* ضعیف؛ گواهی بهتر.
-3. *DNS Leak؟* DNS داخلی ارسال شود.
-
-### تکمیل عمیق: IPsec Dial-up (Remote Access) با IKEv2
-
-#### چرا؟
-
-IPsec RA سطح حمله‌ی تاریخی کمتری نسبت به SSL VPN دارد و Performance بهتری (NPU) می‌دهد. نصب FortiClient و تنظیم درست لازم است.
-
-#### ساختار
-
-Phase1 از نوع `dynamic` (چون IP کلاینت ناشناخته است)، Mode Config برای دادن IP/DNS به کلاینت.
-
-``` text
-config vpn ipsec phase1-interface
- edit "DIALUP"
-  set type dynamic
-  set interface "port1"
-  set ike-version 2
-  set peertype any
-  set mode-cfg enable
-  set ipv4-start-ip 10.200.0.10
-  set ipv4-end-ip 10.200.0.200
-  set ipv4-netmask 255.255.255.0
-  set ipv4-dns-server1 10.20.0.5
-  set proposal aes256-sha256
-  set dhgrp 14
-  set authmethod signature
-  set certificate "vpn-cert"
- next
-end
-```
-
-#### مثال متوسط — Phase2 و Policy
-
-Phase2 با `dst-subnet 0.0.0.0/0` معمولاً برای Dial-up و Policy `DIALUP -> LAN` با گروه کاربران.
-
-#### مثال سخت — Split Tunnel و DNS
-
-``` text
-set ipv4-split-include "INTERNAL-NETS"
-set ipv4-dns-server1 10.20.0.5
-```
-
-اگر DNS داخلی داده نشود، کاربر نام سرورها را حل نمی‌کند؛ اگر Split-DNS لازم است، دامنه را مشخص کنید.
-
-#### هویت
-
-PSK گروهی ضعیف است (همه یک رمز)؛ گواهی (Certificate) یا EAP با RADIUS+MFA بهتر است.
-
-#### آزمون
-
-``` text
-diagnose vpn ike gateway list
-diagnose vpn tunnel list
-```
-
-اتصال کاربر مجاز، رد کاربر غیرگروه، دسترسی به منبع مجاز و رد منبع غیرمجاز.
-
-#### Lab
-
-یک Dial-up را با کلاینت Lab تست کنید (اجرا نشده تا اطلاع بعدی).
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| وصل می‌شود ولی ping نه | Policy/Route | بررسی |
-| DNS حل نمی‌شود | dns-server | تنظیم |
-| AUTH_FAILED | هویت | گواهی/PSK |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Mode Config؟** اعطای IP/DNS.
-**۲. PSK گروهی؟** ضعیف.
-**۳. Split-include؟** مسیرهای تونل.
-
-#### English Corner
-
-- *Prefer certificates or EAP with MFA over a shared group PSK.*
-- Q: What does mode-config provide to the client?
 
 ## درس 20-4 — MFA، پایش و Hardening دسترسی راه‌دور: Detection، Alert، پاسخ و بازبینی
 
