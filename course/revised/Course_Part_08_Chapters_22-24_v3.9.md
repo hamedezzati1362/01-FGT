@@ -2958,139 +2958,148 @@ Per-tenant cap = capacity / tenants = 200000 / 4 = 50000
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده»؛ HA/VDOM وابسته به مدل/لایسنس (Needs-License).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. تفاوت North-South و East-West را بگوید و ریسک East-West را توضیح دهد.
-2. Zoneها و Trust Level را برای DC طراحی کند.
-3. Flow Discovery را با Log و Sniffer اجرا و Matrix واقعی بسازد.
-4. Policy Matrix حداقلی بنویسد و Rollout تدریجی را برنامه‌ریزی کند.
-5. Evidence و ریسک‌ها را مستند کند.
+1. East-West و North-South را تعریف و تفاوت ریسکشان را بگویید.
+2. Segmentation را با Zone و Trust Level طراحی کنید.
+3. Flow Discovery (کشف جریان‌های واقعی) را با Log انجام دهید.
+4. ماتریس Policy مبتنی بر Trust Level بسازید.
+5. Micro-segmentation را از Macro تمایز دهید.
+6. اثر Lateral Movement را با و بدون Segmentation مقایسه کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا East-West؟** اغلب حملات واقعی پس از نفوذ اولیه با **حرکت جانبی** ادامه می‌یابند: مهاجم از یک سرور وب به بقیه‌ی سرورها می‌رود. فایروال لبه فقط ترافیک شمال–جنوب (ورود/خروج از سازمان) را می‌بیند؛ ترافیک بین سرورها (شرق–غرب) را باید با Segmentation کنترل کرد.
+مهاجمان معمولاً از در اصلی (North-South) وارد می‌شوند ولی خسارت اصلی در «حرکت جانبی» داخل شبکه (East-West) است. شبکه‌ی تخت (Flat) مثل ساختمانی است که یک بار از در رد شوید، به همه‌ی اتاق‌ها دسترسی دارید. Segmentation اتاق‌ها را قفل می‌کند. تجربه‌ی حوادث باج‌افزار نشان می‌دهد شبکه‌های Flat در ساعات به‌جای روزها آلوده می‌شوند.
 
-**Segmentation:** شبکه را به بخش‌های با سطح اعتماد متفاوت تقسیم کنید (Web < App < DB < Mgmt) و بین آنها Policy حداقلی بگذارید. **Flow Discovery:** پیش از Deny، جریان‌های واقعی را در یک دوره‌ی کامل (ترجیحاً یک ماه) با Log کشف کنید تا برنامه‌ای (مثل Job فصلی) را نبندید.
+### تعریف‌ها
 
-**جمع‌بندی اصلی درس:**
+| اصطلاح | معنی |
+|---|---|
+| North-South | ترافیک ورود/خروج Data Center یا شبکه |
+| East-West | ترافیک بین سرورها/Zoneهای داخلی |
+| Lateral Movement | حرکت مهاجم بین سیستم‌ها |
+| Segmentation | تقسیم شبکه به بخش‌های قابل‌کنترل |
+| Micro-segmentation | Policy تا سطح هر Workload |
 
-بیشتر ترافیک DC شرق-غربی است (سرور به سرور)، نه از اینترنت. حمله‌های واقعی بعد از ورود از وب‌سرور به سمت سرورهای دیگر حرکت می‌کنند. Segmentation همان دیوارهای داخلی است. ولی نوشتن Policy قبل از دانستن جریان‌ها یعنی قطع سرویس؛ پس اول کشف (Flow Discovery) و بعد سیاست.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) North-South در برابر East-West
-
-North-South: ورود/خروج DC. East-West: بین سرورهای داخلی. فایروال لبه East-West را نمی‌بیند؛ Segmentation داخلی لازم است.
-
-#### ۲) Zone و Trust
-
-| Zone | Trust | نمونه |
-|---|---|---|
-| WEB | کم | وب‌سرور |
-| APP | متوسط | App |
-| DB | بالا | پایگاه داده |
-| MGMT | بالا | مدیریت |
-| BACKUP | بالا | Backup |
-
-#### ۳) Flow Discovery
+### Trust Level
 
 ``` text
-# 1) turn on logging all on a permissive 'discovery' policy for 14 days
-# 2) export unique src/dst/port from logs
-# 3) classify: needed / unknown / suspicious
+Level 0 Internet / Untrusted
+Level 1 DMZ
+Level 2 Users
+Level 3 Servers (App)
+Level 4 Data (DB, Secrets)
+Level 5 Management
 ```
 
-نمونه خروجی:
+قاعده: ترافیک از سطح پایین‌تر به بالاتر باید با Policy صریح و حداقلی باشد؛ از اعتماد بالا به پایین هم بی‌حساب نیست (Outbound Control).
+
+### Zone و ماتریس
 
 ``` text
-WEB -> APP : tcp/8443 (2.1M sessions)
-APP -> DB  : tcp/1433 (900k)
-WEB -> DB  : tcp/1433 (12)   <- suspicious, investigate
+config system zone
+    edit "ZN-WEB"
+        set interface "port5"
+        set intrazone deny
+    next
+    edit "ZN-APP"
+        set interface "port6"
+        set intrazone deny
+    next
+    edit "ZN-DB"
+        set interface "port7"
+        set intrazone deny
+    next
+end
 ```
-
-#### ۴) Matrix حداقلی
 
 | از ↓ به → | WEB | APP | DB | MGMT |
 |---|---|---|---|---|
 | Internet | 443 | - | - | - |
 | WEB | - | 8443 | - | - |
 | APP | - | - | 1433 | - |
+| DB | - | - | - | - |
 | MGMT | SSH | SSH | SSH | - |
 
-#### ۵) Rollout
+### Flow Discovery
 
-مرحله‌ای: ابتدا Policy Allow با Log (Monitor)، بعد Deny با Log فقط برای «suspicious»، سپس Default Deny. هر مرحله یک هفته و Rollback آماده.
+قبل از نوشتن Policy حداقلی باید جریان‌های واقعی را بشناسید:
 
-#### ۶) ریسک
-
-قطع سرویس ناشناخته (Batch شبانه، Backup)؛ پوشش با Log ۳۰ روزه و مشورت مالکان.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Rollout | Monitor → Deny → Default Deny |
-| Log | ۳۰ روز |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — ماتریس
-
-| از | به | سرویس |
-|---|---|---|
-| Web | App | tcp/8443 |
-| App | DB | tcp/5432 |
-| Mgmt | همه | SSH/HTTPS |
-
-هرچه در ماتریس نیست ⇒ Deny.
-
-#### مثال متوسط — Flow Discovery
-
-۲ هفته Log در حالت Monitor؛ فهرست مبدأ/مقصد/پورت؛ سپس Policy دقیق و در پایان Deny.
-
-#### مثال سخت — Job فصلی
-
-گزارش پایان ماه پس از Segmentation قطع شد؛ در ۲ هفته‌ی مشاهده دیده نشده بود. درس: دوره‌ی کامل، تماس با مالکان سرویس‌ها و حالت Monitor قبل از Deny.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Log: WEB→DB 12 Session؛ مشکوک؛ بررسی: اسکریپت قدیمی؛ حذف دسترسی و مستندسازی.
-
-**متوسط (Matrix):** از Log ۱۴ روزه: ۴ مسیر مجاز؛ Matrix 4 خانه؛ بقیه Deny با Log؛ هفته‌ی اول فقط Monitor.
-
-**سخت (Backup شبانه):** پس از Deny، Backup شبانه قطع شد. مراحل: ۱) Log deny: BACKUP→DB 445 ساعت 02:00. ۲) در Discovery ۱۴ روز ثبت نشده بود (Backup هفتگی). ۳) افزودن Policy. درس: Log حداقل ۳۰ روز و مشورت مالک.
-
-### ۷) پیاده‌سازی از مسیر CLI
+1. Policy موقت «Allow + Log» برای مشاهده (فقط در پنجره‌ی مشخص).
+2. Log را تحلیل: Src، Dst، Port، حجم.
+3. فهرست جریان‌های ضروری.
+4. Policy حداقلی ⇒ حذف Policy موقت.
 
 ``` text
-execute log filter field srcintf WEB
+execute log filter category 0
+execute log filter field srcintf port5
 execute log display
 ```
 
-### ۸) Verification (اثبات صحت)
+ابزار: FortiAnalyzer/Fabric، یا Export و تحلیل با اسکریپت.
 
-- Matrix با Log.
-- آزمون منفی.
+### مثال‌های حل‌شده
 
-### ۹) Troubleshooting
+#### مثال ساده — ماتریس
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+Web فقط به App:8443؛ App فقط به DB:1433؛ DB به هیچ‌جا Outbound ندارد. هر Deny Log می‌شود.
+
+#### مثال متوسط — Flow Discovery
+
+یک هفته Log: Web→App 8443 (OK)، Web→DB 1433 (!). فهرست نشان داد یک اسکریپت قدیمی مستقیم به DB وصل می‌شد. تصمیم: اسکریپت اصلاح؛ سپس Policy Web→DB حذف.
+
+``` text
+Flow count by (src,dst,port):
+ web01 -> app01:8443   120000
+ web01 -> db01:1433         14   <- review
+```
+
+#### مثال متوسط — Trust Level
+
+Users (Level 2) به DB (Level 4) مستقیم؟ ممنوع. کاربر از طریق App. Admin از MGMT با Bastion.
+
+#### مثال سخت — Lateral Movement
+
+وب‌سرور آلوده؛ مهاجم اسکن 10.30.0.0/24. در شبکه‌ی Flat: ۵۰ سرور پاسخ می‌دهند و SMB/RDP باز است ⇒ باج‌افزار. با Segmentation: فقط 8443 به App مجاز؛ اسکن Drop و Log. زمان تشخیص از روزها به دقیقه (آلارم Deny).
+
+``` text
+Without segmentation: reachable targets = 50 hosts x many ports
+With segmentation   : reachable targets = 1 host x 1 port
+Reduction           = 1 / (50 x many) -> orders of magnitude
+```
+
+#### مثال سخت — Micro-segmentation
+
+حتی در یک Zone (مثلاً ZN-APP) سرورها نباید به هم Allow باشند (`intrazone deny`)؛ ارتباط‌ها با Policy. ابزار: Address Group جدا، یا Security Group در ابر. هزینه: مدیریت بیشتر. توصیه: از Macro شروع، سپس Micro برای داده‌ی حساس.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Zoneها و ماتریس.
+2. Flow Discovery با Log.
+3. آزمون اسکن و Deny.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| سرویس قطع | Log deny | افزودن Policy |
+| Policy باز | Allow قدیمی | Discovery/حذف |
+| برنامه نمی‌رسد | جریان جا افتاد | Log Deny |
+| intrazone | Policy نیست | صریح |
+| Log حجیم | همه‌چیز Log | فیلتر |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Default Deny با Log.
+Default Deny؛ Log Deny؛ Alert روی Deny غیرعادی؛ Policy موقت با انقضا.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- East-West ریسک اصلی.
-- Flow Discovery.
-- Rollout مرحله‌ای.
+East-West خطر اصلی؛ Trust Level + Zone + intrazone deny؛ Flow Discovery قبل از Policy حداقلی؛ Micro-segmentation برای داده‌ی حساس.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) East-West چیست؟ *(پاسخ: 24-1-ت1)*
 
@@ -3106,7 +3115,7 @@ execute log display
 
 **Q1.** Quick quiz (English): Why is east-west traffic a major risk in data centers? *(پاسخ: 24-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3114,98 +3123,16 @@ execute log display
 
 - *Discover flows before enforcing policies.* ← قبل از اعمال Policy جریان‌ها را کشف کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Segmentation (اجرا نشده). **Evidence:** `02-design/dc-matrix.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Firewall policies
 - NIST SP 800-125B
 
 <a id="l-24-2"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: East-West
-
-Flow Discovery: Log ۲ هفته برای شناخت جریان‌ها؛ سپس Policy حداقلی. Trust Level: Web < App < DB.
-
-**پرسش‌های مصاحبه**
-1. *چرا East-West؟* حرکت جانبی.
-2. *Zone؟* گروه Interface.
-3. *Intra-zone؟* پیش‌فرض رد/مجاز طبق تنظیم.
-
-### تکمیل عمیق: East-West، Segmentation و کشف جریان‌ها
-
-#### چرا؟
-
-بیشتر حملات واقعی پس از نفوذ اولیه با **حرکت جانبی** (Lateral Movement) ادامه می‌یابند: مهاجم از یک سرور وب به بقیه‌ی سرورها می‌رود. فایروال لبه فقط ترافیک شمال–جنوب را می‌بیند. East-West یعنی ترافیک بین سرورها/ Zoneهای داخلی؛ باید آن را هم کنترل کرد.
-
-#### توضیح ساده
-
-Segmentation یعنی شبکه را به بخش‌هایی با «سطح اعتماد» متفاوت تقسیم کنیم و ترافیک بین آنها فقط با Policy حداقلی عبور کند.
-
-| Zone | سطح اعتماد |
-|---|---|
-| Mgmt | بالاترین |
-| DB | بالا |
-| App | متوسط |
-| Web | پایین |
-| Guest | کمترین |
-
-قاعده: ارتباط از اعتماد پایین به بالا فقط در صورت نیاز و از مسیر مشخص.
-
-#### مثال ساده — ماتریس نیاز
-
-| از | به | سرویس |
-|---|---|---|
-| Web | App | tcp/8443 |
-| App | DB | tcp/5432 |
-| Mgmt | همه | SSH/HTTPS |
-
-هرچه در ماتریس نیست ⇒ Deny.
-
-#### مثال متوسط — کشف جریان (Flow Discovery)
-
-پیش از نوشتن Policy، ۲ هفته Log را در حالت «Allow همه + Log» (در Lab/مرحله‌ی یادگیری) جمع کنید و جریان‌های واقعی را فهرست کنید.
-
-``` text
-execute log filter category 0
-execute log filter field srcintf "port-app"
-execute log display | summarize by dstip,dstport
-```
-
-بعد از مشاهده، Policyهای دقیق را بنویسید و در پایان Deny.
-
-#### مثال سخت — جریان‌های فراموش‌شده
-
-پس از Segmentation، گزارش ماهانه‌ی پایان ماه قطع می‌شود؛ علت: Job فصلی که در ۲ هفته‌ی مشاهده دیده نشد. راه: مشاهده‌ی چرخه‌ی کامل (۱ ماه)، تماس با مالکان سرویس‌ها، و دوره‌ی «Monitor» با Log قبل از Deny.
-
-#### Lab
-
-سه Zone بسازید، Policy حداقلی بنویسید و آزمون منفی Web→DB را انجام دهید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| قطع برنامه | جریان فراموش‌شده | Log + افزودن |
-| Policy زیاد | رشد کنترل‌نشده | مالک و بازبینی |
-| Intra-zone باز | تنظیم Zone | `intrazone deny` |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Lateral Movement چیست؟** حرکت جانبی مهاجم.
-**۲. چرا کشف جریان؟** Policy بر اساس واقعیت.
-**۳. Intrazone؟** ترافیک داخل یک Zone.
-
-#### English Corner
-
-- *East-west traffic needs the same scrutiny as north-south.*
-- Q: How do you discover legitimate flows before enforcing deny?
 
 ## درس 24-2 — Policy حداقلی Web/App/DB: ماتریس، پیاده‌سازی و آزمون Isolation
 
@@ -3213,171 +3140,155 @@ execute log display | summarize by dstip,dstport
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده»؛ HA/VDOM وابسته به مدل/لایسنس (Needs-License).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Policyهای حداقلی بین سه لایه را با Object و Service مشخص بنویسد.
-2. Deny صریح با Log را بین لایه‌ها بسازد.
-3. آزمون مثبت/منفی را اجرا و Evidence کند.
-4. Hit Count و Log را برای ممیزی بخواند.
-5. خطاهای رایج را عیب‌یابی کند.
+1. ماتریس Policy سه‌لایه‌ی Web/App/DB را بنویسید.
+2. Policyهای حداقلی را (سرویس‌های مشخص، Address Object، Log) پیاده کنید.
+3. آزمون Isolation (مثبت و منفی) را اجرا کنید.
+4. با `iprope lookup` و Log اثبات کنید.
+5. Outbound سرورها را کنترل کنید.
+6. مستندسازی Policy (Comment/Owner) را رعایت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Policy حداقلی؟** «حداقل دسترسی» با عمل ثابت می‌شود: Policyهایی که فقط جریان‌های لازم را باز می‌کنند و آزمونی که نشان می‌دهد بقیه بسته است. برای هر Policy یک آزمون مثبت و برای خانه‌های خالی ماتریس آزمون منفی.
+«Policy حداقلی» یعنی هر قانون فقط همان چیزی را اجازه دهد که لازم است؛ نه یک پورت بیشتر. ولی ساختن Policy حداقلی بدون آزمون منفی مثل نصب قفل بدون امتحان است: نمی‌دانید واقعاً بسته است. این درس نوشتن و اثبات را با هم آموزش می‌دهد.
 
-**محدودیت:** Policy شبکه فقط یک لایه است؛ مهاجمی که Web را هک کرده از مسیر مجاز App به DB هم می‌رسد؛ پس حساب DB با کمترین مجوز، WAF/IPS و Log لازم است.
+### ماتریس
 
-**جمع‌بندی اصلی درس:**
+| # | از | به | سرویس | اجازه |
+|---|---|---|---|---|
+| 1 | Internet | WEB (VIP) | HTTPS 443 | بله |
+| 2 | WEB | APP | TCP 8443 | بله |
+| 3 | APP | DB | TCP 1433 | بله |
+| 4 | MGMT | WEB/APP/DB | SSH 22 | بله |
+| 5 | WEB | DB | هر | خیر |
+| 6 | DB | Internet | هر | خیر |
+| 7 | APP | Internet | HTTPS (Update) | محدود (FQDN) |
 
-ماتریس روی کاغذ تا وقتی Policy نشده تأثیری ندارد. این درس ماتریس ۲۴-۱ را به Policy تبدیل می‌کند و ثابت می‌کند Isolation واقعی است.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) Objectها
+### پیاده‌سازی
 
 ``` text
 config firewall address
- edit "SRV-WEB"
-  set subnet 10.30.1.10 255.255.255.255
- next
- edit "SRV-APP"
-  set subnet 10.30.2.10 255.255.255.255
- next
- edit "SRV-DB"
-  set subnet 10.30.3.10 255.255.255.255
- next
+    edit "HOST-WEB01"
+        set subnet 10.30.0.10 255.255.255.255
+    next
+    edit "HOST-APP01"
+        set subnet 10.20.0.30 255.255.255.255
+    next
+    edit "HOST-DB01"
+        set subnet 10.20.0.40 255.255.255.255
+    next
 end
 config firewall service custom
- edit "TCP-8443"
-  set tcp-portrange 8443
- next
+    edit "TCP-8443"
+        set tcp-portrange 8443
+    next
+    edit "TCP-1433"
+        set tcp-portrange 1433
+    next
 end
-```
-
-#### ۲) Policyها
-
-``` text
 config firewall policy
- edit 50
-  set name "WEB-to-APP"
-  set srcintf "ZN-WEB"
-  set dstintf "ZN-APP"
-  set srcaddr "SRV-WEB"
-  set dstaddr "SRV-APP"
-  set action accept
-  set schedule "always"
-  set service "TCP-8443"
-  set logtraffic all
- next
- edit 60
-  set name "APP-to-DB"
-  set srcintf "ZN-APP"
-  set dstintf "ZN-DB"
-  set srcaddr "SRV-APP"
-  set dstaddr "SRV-DB"
-  set action accept
-  set schedule "always"
-  set service "MS-SQL"
-  set logtraffic all
- next
- edit 61
-  set name "DENY-WEB-to-DB"
-  set srcintf "ZN-WEB"
-  set dstintf "ZN-DB"
-  set srcaddr "all"
-  set dstaddr "all"
-  set action deny
-  set logtraffic all
- next
+    edit 301
+        set name "WEB-to-APP-8443"
+        set srcintf "ZN-WEB"
+        set dstintf "ZN-APP"
+        set srcaddr "HOST-WEB01"
+        set dstaddr "HOST-APP01"
+        set service "TCP-8443"
+        set action accept
+        set schedule "always"
+        set logtraffic all
+        set comments "owner=AppTeam; ticket=CHG-501; review=2026-Q4"
+    next
+    edit 302
+        set name "APP-to-DB-1433"
+        set srcintf "ZN-APP"
+        set dstintf "ZN-DB"
+        set srcaddr "HOST-APP01"
+        set dstaddr "HOST-DB01"
+        set service "TCP-1433"
+        set action accept
+        set schedule "always"
+        set logtraffic all
+        set comments "owner=DBTeam; ticket=CHG-502; review=2026-Q4"
+    next
 end
 ```
 
-#### ۳) آزمون
+نکته‌ها: Address دقیق (نه subnet)، Service دقیق (نه ALL)، `comments` مالک و تیکت، `logtraffic all` برای اثبات.
 
-| # | آزمون | انتظار |
+### آزمون Isolation
+
+``` text
+# positive
+diagnose firewall iprope lookup 10.30.0.10 40000 10.20.0.30 8443 tcp port5
+# negative
+diagnose firewall iprope lookup 10.30.0.10 40000 10.20.0.40 1433 tcp port5
+diagnose firewall iprope lookup 10.20.0.40 40000 8.8.8.8 443 tcp port7
+```
+
+انتظار: مثبت ⇒ policy 301؛ دو منفی ⇒ policy 0 (Deny). سپس آزمون واقعی از میزبان‌ها: `nc -vz 10.20.0.40 1433` از Web ⇒ Timeout؛ و Log Deny.
+
+### Outbound سرورها
+
+DB: بدون Outbound. APP: فقط FQDN مجاز Update (Address FQDN) با HTTPS. WEB: فقط به APP و پاسخ.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — مثبت
+
+Lookup Web→App:8443 ⇒ policy 301. `nc -vz 10.20.0.30 8443` از Web ⇒ Connected.
+
+#### مثال متوسط — منفی
+
+Web→DB:1433: Lookup ⇒ policy 0؛ `nc` ⇒ Timeout؛ Log: `action=deny policyid=0` (Implicit Deny) با `logtraffic` پیش‌فرض Deny (حتماً فعال).
+
+``` text
+config log setting
+    set fwpolicy-implicit-log enable
+end
+```
+
+#### مثال متوسط — ترتیب
+
+Policy قدیمی «ZN-WEB → ZN-APP ALL» بالاتر از 301 ⇒ Isolation نقض. Hit Count قدیمی را دیدید؛ حذف/Disable و آزمون دوباره.
+
+#### مثال سخت — Outbound DB
+
+DB به اینترنت برای Update باز بود. ممیزی: آزمون منفی DB→Internet شکست (مجاز بود). رفع: Policy حذف؛ Update از Repository داخلی. حادثه‌ی نمونه: DB آلوده Exfiltration.
+
+#### مثال سخت — Isolation در ابر هیبرید
+
+DB روی VLAN دوم با ESXi. Isolation فقط در FortiGate کافی نیست؛ vSwitch/Port Group هم باید جدا باشد. آزمون از VM همسایه در همان Hypervisor. درس: Isolation یک زنجیره است.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. سه Policy و Address/Service.
+2. آزمون مثبت و دو منفی.
+3. Implicit Deny Log.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| 1 | WEB→APP 8443 | Accept (50) |
-| 2 | APP→DB 1433 | Accept (60) |
-| 3 | WEB→DB 1433 | Deny (61) |
-| 4 | WEB→APP 22 | Deny (Default) |
-| 5 | DB→Internet | Deny |
+| منفی مجاز | Policy قدیمی | ترتیب |
+| مثبت رد | Service/Interface | Lookup |
+| Log نیست | implicit log | فعال |
+| DB Outbound | Policy | حذف |
 
-``` text
-diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
-```
+### نکات امنیتی
 
-#### ۴) Evidence
+Policy هر Workload با Owner؛ بازبینی فصلی؛ Alert Deny؛ بدون ALL.
 
-برای هر آزمون: دستور، نتیجه، Log (policyid، action)، زمان.
+### جمع‌بندی
 
-### ۴) طراحی و تصمیم‌گیری
+Policy حداقلی (Address/Service دقیق، Owner، Log)، آزمون مثبت+منفی با Lookup و آزمون واقعی، Outbound کنترل‌شده، Isolation زنجیره‌ای (شبکه + Hypervisor).
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Deny صریح | برای Alert |
-| Object | Host-level |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-``` text
-Policy WEB-to-APP  ZN-WEB -> ZN-APP  tcp/8443  accept log
-Policy APP-to-DB   ZN-APP -> ZN-DB   tcp/5432  accept log
-Policy DENY-ALL    any -> any        deny log
-```
-
-#### مثال متوسط — آزمون
-
-``` text
-from WEB: nc -zv APP 8443    # open
-from WEB: nc -zv DB 5432     # timeout (negative)
-diagnose firewall iprope lookup <WEB> 40000 <DB> 5432 tcp ZN-WEB   # policy DENY-ALL
-```
-
-#### مثال سخت — دور زدن از مسیر مجاز
-
-حمله از Web → App (مجاز) → DB. کاهش: حساب DB با کمترین مجوز، IPS/WAF، پایش Query غیرعادی، Rate.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** WEB→DB: Lookup policy 61؛ telnet Timeout؛ Log deny.
-
-**متوسط (Shadow):** Policy 61 زیر ALL قدیمی؛ Lookup ID قدیمی؛ جابه‌جایی؛ آزمون منفی.
-
-**سخت (ممیزی):** Hit Count: Policy 50 با ۲M، 60 با ۹۰۰k، 61 با ۱۲ (تلاش‌ها). ۱۲ تلاش با Source مشخص بررسی؛ نتیجه: اسکریپت قدیمی؛ مستند.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-show firewall policy 61
-diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
-```
-
-### ۸) Verification (اثبات صحت)
-
-- آزمون ۵‌گانه.
-- Log.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
-|---|---|---|
-| Web به DB می‌رسد | Lookup | Policy ALL |
-
-### ۱۰) نکات امنیتی
-
-- Least privilege.
-
-### ۱۱) جمع‌بندی مفهومی
-
-- Policy از ماتریس.
-- Deny صریح.
-- Evidence.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا Object Host-level؟ *(پاسخ: 24-2-ت1)*
 
@@ -3393,7 +3304,7 @@ diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
 
 **Q1.** Quick quiz (English): Why use host-level address objects between tiers? *(پاسخ: 24-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3401,11 +3312,11 @@ diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
 
 - *Test the denied flows too.* ← جریان‌های ردشده را هم آزمون کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Policy سه‌لایه (اجرا نشده). **Evidence:** `02-design/dc-policy.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Firewall policies
 
@@ -3430,302 +3341,184 @@ diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
 
 **گام ۵ — Evidence:** خروجی Lookup قبل/بعد، Log، زمان، نام مجری.
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: ماتریس Web/App/DB
-
-| از | به | سرویس |
-|---|---|---|
-| Web | App | tcp/8443 |
-| App | DB | tcp/5432 |
-
-هر سطر یک Policy؛ آزمون منفی Web→DB.
-
-**پرسش‌های مصاحبه**
-1. *Policy تعداد؟* به‌اندازه‌ی نیاز.
-2. *Log؟* All.
-3. *Hit Count؟* بازبینی.
-
-### تکمیل عمیق: Policy حداقلی Web/App/DB — پیاده‌سازی و آزمون منفی
-
-#### چرا؟
-
-«حداقل دسترسی» (Least Privilege) تنها در عمل ثابت می‌شود: Policyهایی که فقط همان جریان‌های لازم را باز می‌کنند و آزمونی که نشان می‌دهد بقیه بسته است.
-
-#### پیاده‌سازی
-
-``` text
-config firewall policy
- edit 100
-  set name "WEB-to-APP"
-  set srcintf "ZN-WEB"
-  set dstintf "ZN-APP"
-  set srcaddr "GRP-WEB"
-  set dstaddr "GRP-APP"
-  set service "APP-8443"
-  set action accept
-  set logtraffic all
- next
- edit 110
-  set name "APP-to-DB"
-  set srcintf "ZN-APP"
-  set dstintf "ZN-DB"
-  set srcaddr "GRP-APP"
-  set dstaddr "GRP-DB"
-  set service "PGSQL"
-  set action accept
-  set logtraffic all
- next
- edit 190
-  set name "DENY-ALL"
-  set srcintf "any"
-  set dstintf "any"
-  set srcaddr "all"
-  set dstaddr "all"
-  set service "ALL"
-  set action deny
-  set logtraffic all
- next
-end
-```
-
-#### آزمون مثبت و منفی
-
-``` text
-from WEB: nc -zv 10.30.2.10 8443      # expect open
-from WEB: nc -zv 10.30.3.10 5432      # expect timeout (negative test)
-from APP: nc -zv 10.30.3.10 5432      # expect open
-diagnose firewall iprope lookup 10.30.1.5 40000 10.30.3.10 5432 tcp ZN-WEB   # expect deny policy 190
-```
-
-#### مثال متوسط — Address Group
-
-به‌جای IP تکی از Group استفاده کنید تا افزودن سرور جدید فقط عضوشدن در Group باشد (Standard Change).
-
-#### مثال سخت — دور زدن از مسیر دوم
-
-مهاجم از Web به DB مستقیم نمی‌رسد ولی از طریق App (که Policy دارد) می‌تواند Query بزند. جلوگیری کامل غیرممکن است؛ کاهش: Application-level (WAF/IPS)، حساب DB با کمترین مجوز، Log برای Query غیرعادی. توجه: Policy شبکه فقط یکی از لایه‌هاست.
-
-#### Lab
-
-سه Zone و ۳ Policy بالا را بسازید و چهار آزمون بنویسید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Web به DB وصل می‌شود | Policy گسترده | تنگ‌سازی |
-| App به DB نمی‌رسد | Service/Route | Lookup |
-| Log زیاد | all روی همه | تنظیم |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا آزمون منفی؟** اثبات بسته‌بودن.
-**۲. Group چرا؟** مدیریت ساده.
-**۳. محدودیت Policy شبکه؟** لایه‌ی کاربرد را نمی‌بیند.
-
-#### English Corner
-
-- *Prove that what should be blocked is actually blocked.*
-- Q: Why use address groups in segmentation policies?
-
 ## درس 24-3 — Lab عملی VDOM: ساخت، Inter-VDOM Link، Policy و محدودیت منابع
 
 **فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۲۴-۱، ۲۴-۲ · ≈ 11 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده»؛ HA/VDOM وابسته به مدل/لایسنس (Needs-License).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. VDOM را فعال و VDOM جدید بسازد (Multi-VDOM).
-2. Inter-VDOM Link را بسازد و Routing/Policy بین VDOMها بنویسد.
-3. Resource Limit (Session، Policy) برای هر VDOM تنظیم کند.
-4. Management VDOM و Global را تفکیک کند.
-5. محدودیت‌های لایسنس و خطاهای رایج را بداند.
+1. VDOM (Virtual Domain) را بسازید و وضعیت Multi-VDOM را روشن کنید.
+2. Interface را به VDOM تخصیص دهید.
+3. Inter-VDOM Link بسازید و Policy بین VDOMها بنویسید.
+4. محدودیت منابع هر VDOM (Resource Limits) را تنظیم کنید.
+5. Admin Profile و Administrator هر VDOM را جدا کنید.
+6. ایزولاسیون را با آزمون منفی ثابت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Lab VDOM؟** تا خودتان نسازید ایزولاسیون را نمی‌فهمید. مراحل: ساخت VDOM، تخصیص Interface، Inter-VDOM Link، Route، Policy و آزمون. به نکات: هر VDOM Admin جدا، Backup هم Global هم VDOM، ارتقای نسخه همه‌ی VDOMها را هم‌زمان درگیر می‌کند.
+VDOM یعنی «یک فایروال فیزیکی، چند فایروال مجازی». مثل یک ساختمان که هر طبقه‌اش یک شرکت مستقل با کلید مجزاست. کاربردها: Multi-tenant (ISP/MSP)، جداسازی Production/Test، یا جداسازی دپارتمان‌ها با Admin متفاوت. ولی VDOM لایسنس و ظرفیت دارد (مدل: تعداد پیش‌فرض ۱۰؛ بیشتر Needs-License) و پیچیدگی را بالا می‌برد؛ فقط وقتی لازم است استفاده شود.
 
-**جمع‌بندی اصلی درس:**
+### مفاهیم
 
-VDOM (Virtual Domain) یک فایروال فیزیکی را به چند فایروال مجازی مستقل تقسیم می‌کند؛ هر VDOM Interface، Route و Policy خودش را دارد. استفاده: جداسازی مشتری یا بخش (DMZ، Internal). هزینه: پیچیدگی و محدودیت لایسنس (Needs-License؛ پیش‌فرض ۱۰ VDOM در بسیاری مدل‌ها).
+| مفهوم | معنی |
+|---|---|
+| Global | تنظیمات مشترک (Admin، HA، FortiGuard، Interfaces فیزیکی) |
+| VDOM | Routing، Policy، VPN، Address مستقل |
+| root | VDOM پیش‌فرض (مدیریت در حالت Management VDOM) |
+| Inter-VDOM Link | لینک مجازی بین VDOMها |
+| Resource Limits | سقف Session، Policy و … |
 
-### ۳) توضیح عمیق فنی
-
-#### ۱) فعال‌سازی
+### فعال‌سازی Multi-VDOM
 
 ``` text
 config system global
- set vdom-mode multi-vdom
+    set vdom-mode multi-vdom
 end
 ```
 
-فعال‌سازی سرویس را برای لحظه‌ای قطع و GUI را ریست می‌کند؛ در Window.
+(در 7.0 `vdom-mode multi-vdom` در Global؛ با ورود دوباره Admin؛ Backup قبل از فعال‌سازی؛ بازگشت به Single-VDOM ساده نیست.)
 
-#### ۲) ساخت VDOM
+### ساخت VDOM و تخصیص
 
 ``` text
 config vdom
- edit "DMZ"
- next
- edit "INT"
- next
+    edit TENANT-A
+    next
+    edit TENANT-B
+    next
 end
 config global
- config system interface
-  edit "port3"
-   set vdom "DMZ"
-  next
-  edit "port2"
-   set vdom "INT"
-  next
- end
+    config system interface
+        edit "port5"
+            set vdom "TENANT-A"
+        next
+        edit "port6"
+            set vdom "TENANT-B"
+        next
+    end
 end
 ```
 
-#### ۳) Inter-VDOM Link
+### Inter-VDOM Link
 
 ``` text
 config global
- config system vdom-link
-  edit "vlk"
-   set type ethernet
-  next
- end
- config system interface
-  edit "vlk0"
-   set vdom "DMZ"
-   set ip 10.255.1.1 255.255.255.252
-  next
-  edit "vlk1"
-   set vdom "INT"
-   set ip 10.255.1.2 255.255.255.252
-  next
- end
+    config system vdom-link
+        edit "vlnk-AB"
+        next
+    end
+    config system interface
+        edit "vlnk-AB0"
+            set vdom "TENANT-A"
+            set ip 10.254.0.1 255.255.255.252
+        next
+        edit "vlnk-AB1"
+            set vdom "TENANT-B"
+            set ip 10.254.0.2 255.255.255.252
+        next
+    end
 end
 ```
 
-(در 7.0 ساختار `vdom-link` با Type Ethernet/PPP؛ `Unverified`.)
+سپس در هر VDOM Static Route و Policy. اگر نباید ارتباطی باشد، Inter-VDOM ایجاد نکنید.
 
-#### ۴) Routing و Policy
+### Policy در VDOM
 
-در هر VDOM Route به شبکه‌ی VDOM دیگر از طریق vlk و Policy مربوطه. بین VDOMها Policy برای هر دو جهت.
+``` text
+config vdom
+    edit TENANT-A
+        config firewall policy
+            edit 1
+                set name "A-LAN-to-INTERNET"
+                set srcintf "port5"
+                set dstintf "port1"
+                set srcaddr "all"
+                set dstaddr "all"
+                set action accept
+                set schedule "always"
+                set service "ALL"
+                set nat enable
+                set logtraffic all
+            next
+        end
+    next
+end
+```
 
-#### ۵) Resource Limit
+هر VDOM جدول مسیر، Policy، Address و VPN خودش را دارد. اینترنت مشترک (port1) باید به یک VDOM (مثلاً root یا TRANSIT) تعلق گیرد و بقیه از طریق Inter-VDOM دسترسی بگیرند.
+
+### Resource Limits
 
 ``` text
 config global
- config system vdom-property
-  edit "DMZ"
-   set session 200000
-   set policy 500
-  next
- end
+    config system vdom-property
+        edit "TENANT-A"
+            set session 100000
+            set policy 500
+            set firewall-address 1000
+        next
+    end
 end
 ```
 
-#### ۶) Management
+سقف‌ها از «طغیان» یک VDOM روی دیگران جلوگیری می‌کند. مقدار را از ظرفیت مدل و Baseline تعیین کنید.
 
-Management VDOM (معمولاً root) برای Admin/FortiGuard؛ ترافیک سرویس‌ها از آن VDOM. Admin per-VDOM با Profile محدود.
+### Admin و Profile
 
-#### ۷) خطاها
+Administrator با Admin Profile محدود به VDOM خاص (`set vdom "TENANT-A"`). Super Admin فقط در Global. اصل: هر Tenant فقط VDOM خودش را ببیند.
 
-- Interface در VDOM اشتباه ⇒ Policy پیدا نمی‌شود.
-- DNS/FortiGuard از VDOM غیر Management کار نمی‌کند.
-- لایسنس VDOM محدود.
+### مثال‌های حل‌شده
 
-### ۴) طراحی و تصمیم‌گیری
+#### مثال ساده — دو Tenant
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| VDOM | فقط در صورت نیاز جداسازی |
-| Resource | Limit هر VDOM |
+TENANT-A و B با Interfaceهای جدا. Policy هر کدام اینترنت. آزمون: از A به B ping ⇒ Timeout (هیچ Inter-VDOM نیست). Isolation اثبات.
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+#### مثال متوسط — Inter-VDOM
 
-#### مثال ساده — تخصیص
+A و B باید به یک سرویس مشترک (SHARED VDOM) برسند: Inter-VDOM Link A↔SHARED و B↔SHARED؛ Policyها حداقلی؛ بین A و B ارتباط نه. آزمون: A→B Timeout؛ A→SHARED سرویس OK.
 
-``` text
-config global
- config system interface
-  edit port2
-   set vdom TENANT-A
-  next
-  edit port3
-   set vdom TENANT-B
-  next
- end
-end
-```
+#### مثال متوسط — Resource
 
-#### مثال متوسط — Link
+`session 100000` برای A. یک Tenant حمله‌ی SYN Flood دارد؛ فقط A به سقف می‌رسد؛ B سالم. بدون سقف، Session Table کل دستگاه پر می‌شد.
 
-Link `A-B` با 10.99.60.1/30 و 10.99.60.2/30، Route دو سر و Policy فقط 443.
+#### مثال سخت — Admin نشت
 
-#### مثال سخت — آزمون
+Admin Tenant A دسترسی Global داشت ⇒ می‌تواند Config B را ببیند. رفع: Profile محدود + VDOM مشخص؛ آزمون: Login به‌عنوان Admin-A و تلاش به `config vdom edit TENANT-B` ⇒ Permission denied.
 
-``` text
-from A: curl -m 3 https://10.60.2.10    # OK
-from A: ping 10.60.2.10                 # fail (not allowed)
-```
+#### مثال سخت — لایسنس و HA
 
-اگر ping جواب داد، Policy بیش‌ازحد باز است.
+تعداد VDOM بیش از Default (۱۰) نیاز دارد؛ Needs-License؛ در HA هر دو عضو باید VDOM یکسان؛ Failover برای VDOMهای جداگانه (VCluster) پیچیده‌تر. تصمیم: طراحی با حداقل VDOM و ثبت.
 
-#### مثال‌های اصلی درس (مرور)
+### Lab هدایت‌شده (اجرا نشده)
 
-**ساده (حل‌شده):** DMZ و INT ساخته؛ port3 به DMZ، port2 به INT؛ `get system status` Virtual domain: enable.
+1. دو VDOM و Interface.
+2. Inter-VDOM و Policy.
+3. Resource Limit و Admin محدود.
 
-**متوسط (Inter-VDOM):** DMZ→INT ping ندارد. مراحل: ۱) vlk0 در DMZ و vlk1 در INT IP دارند. ۲) Route در هر VDOM. ۳) Policy هر دو جهت. ۴) ping ok.
+### عیب‌یابی سریع
 
-**سخت (Resource):** VDOM DMZ تمام Session را مصرف می‌کند. مراحل: ۱) `vdom-property` session 200000. ۲) آزمون بار. ۳) هشدار Resource. معیار: INT تحت‌تأثیر نیست.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. System → Settings: Virtual Domains Enable.
-2. Global → Virtual Domains → Create New.
-3. Network → Interfaces → Inter-VDOM Link.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-config global
- config system vdom-link
-  edit "vlk"
-  next
- end
-end
-get system status
-```
-
-### ۸) Verification (اثبات صحت)
-
-- VDOMها و Interfaceها.
-- ping بین VDOMها.
-- Limit.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| Policy پیدا نمی‌شود | VDOM Interface | اصلاح |
-| FortiGuard کار نمی‌کند | Management VDOM | root |
+| Interface تخصیص نمی‌شود | Policy/Route دارد | حذف قبلی |
+| ارتباط A↔B | Inter-VDOM ناخواسته | حذف |
+| VDOM گیر | منابع | Limits |
+| Admin می‌بیند همه | Profile | محدود |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Admin per-VDOM.
+Admin هر VDOM جدا؛ Global فقط Super Admin با MFA؛ Log هر VDOM جدا (یا Tag)؛ Inter-VDOM حداقلی.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- VDOM=فایروال مجازی.
-- Inter-VDOM Link.
-- Limit.
+VDOM = فایروال مجازی مستقل؛ Global/VDOM؛ Interface، Inter-VDOM و Policy؛ Resource Limits؛ Admin محدود؛ آزمون منفی Isolation؛ لایسنس و HA ملاحظه‌ی طراحی.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) VDOM چیست؟ *(پاسخ: 24-3-ت1)*
 
@@ -3741,7 +3534,7 @@ get system status
 
 **Q1.** Quick quiz (English): What is the purpose of an inter-VDOM link? *(پاسخ: 24-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3749,133 +3542,15 @@ get system status
 
 - *Limit the resources of each VDOM.* ← منابع هر VDOM را محدود کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** VDOM (اجرا نشده؛ Needs-License). **Evidence:** `02-design/vdom-lab.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Virtual Domains
 
 <a id="l-24-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Lab VDOM
-
-مراحل: ساخت VDOM، اختصاص Interface، Inter-VDOM Link، Route، Policy، آزمون. محدودیت: هر VDOM Admin جدا.
-
-``` text
-config vdom
- edit TENANT-A
-  config system interface
-   edit A-LINK0
-   next
-  end
-end
-```
-
-**پرسش‌های مصاحبه**
-1. *VDOM Link؟* Interface مجازی دو سر.
-2. *Admin Profile؟* محدوده.
-3. *Backup؟* Global.
-
-### تکمیل عمیق: Lab عملی VDOM — مرحله‌به‌مرحله
-
-#### چرا؟
-
-VDOM را تا وقتی خودتان نسازید، درک نمی‌کنید که ایزولاسیون یعنی چه. این Lab با Checkpoint نوشته شده تا در هر گام بدانید درست است.
-
-#### توپولوژی
-
-``` text
-TENANT-A: port2 10.60.1.1/24  <->  A-B0 10.99.60.1/30
-TENANT-B: port3 10.60.2.1/24  <->  A-B1 10.99.60.2/30
-```
-
-#### گام ۱ — ساخت VDOM و اختصاص Interface
-
-``` text
-config vdom
- edit TENANT-A
- next
- edit TENANT-B
- next
-end
-config global
- config system interface
-  edit port2
-   set vdom TENANT-A
-  next
-  edit port3
-   set vdom TENANT-B
-  next
- end
-end
-```
-
-Checkpoint: `get system interface` در هر VDOM فقط Interface خودش را نشان دهد.
-
-#### گام ۲ — Inter-VDOM Link
-
-``` text
-config global
- config system vdom-link
-  edit "A-B"
-  next
- end
- config system interface
-  edit "A-B0"
-   set vdom TENANT-A
-   set ip 10.99.60.1 255.255.255.252
-  next
-  edit "A-B1"
-   set vdom TENANT-B
-   set ip 10.99.60.2 255.255.255.252
-  next
- end
-end
-```
-
-#### گام ۳ — Route و Policy
-
-در TENANT-A: Route به 10.60.2.0/24 از طریق 10.99.60.2؛ در TENANT-B: مسیر برگشت. Policy فقط برای یک سرویس (مثلاً tcp/443).
-
-#### گام ۴ — آزمون
-
-``` text
-from A: curl -m 3 https://10.60.2.10   # expect OK
-from A: ping 10.60.2.10                # expect fail (not allowed)
-```
-
-#### مثال سخت — محدودیت‌ها
-
-VDOM‌ها یک سخت‌افزار و یک نسخه‌ی مشترک دارند؛ ارتقا همه را هم‌زمان درگیر می‌کند. Config هر VDOM جدا Backup می‌شود (Backup VDOM-مبنا). نقش ادمین: `Prof-admin` با `vdom` مشخص.
-
-#### Lab
-
-Lab را کامل کنید و سه شاهد (Interface، Route، Log) ثبت کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Link Down | VDOM اشتباه | بررسی |
-| ping جواب می‌دهد | Policy بیش‌ازحد | تنگ‌سازی |
-| Route نیست | VDOM اشتباه | اضافه‌کردن |
-
-#### پرسش‌ها با پاسخ
-
-**۱. هر VDOM Route جدا؟** بله.
-**۲. ارتقا؟** هم‌زمان.
-**۳. ادمین محدود؟** با Profile.
-
-#### English Corner
-
-- *Inter-VDOM traffic requires explicit policy on both sides.*
-- Q: What is shared between VDOMs?
 
 ## درس 24-4 — Logging Data Center و Gate G9: اثبات Isolation، آزمون منفی، Alert و مستندسازی
 
@@ -3883,137 +3558,171 @@ Lab را کامل کنید و سه شاهد (Interface، Route، Log) ثبت ک�
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Logging Policy برای DC (Forward Traffic، Event، UTM) را طراحی کند.
-2. آزمون Isolation مثبت/منفی را اجرا و از Log اثبات کند.
-3. Alert برای تلاش‌های ممنوع بسازد.
-4. گزارش Evidence و Rubric G9 را تحویل دهد.
+1. Logging Data Center (مرکز، Tag، Retention) را طراحی کنید.
+2. اثبات Isolation با آزمون منفی و Log را انجام دهید.
+3. Alert برای Deny غیرعادی/Lateral Movement تعریف کنید.
+4. Gate G9 را (طراحی، آزمون، Evidence، Rubric) اجرا کنید.
+5. مستندسازی Policy/Isolation را بنویسید.
+6. صداقت (اجرا نشده/Unverified) را رعایت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا G9؟** ایزولاسیون بدون اثبات ادعاست. G9 از شما می‌خواهد با آزمون منفی و Log ثابت کنید دو مستأجر جدا هستند و منابع محدودند.
+امنیت Data Center بدون Log اثبات‌پذیر نیست. ادعای «وب به DB دسترسی ندارد» تا وقتی Log آزمون منفی را نشان ندهد فقط ادعاست. ممیز و مدیر حادثه به شواهد نیاز دارند: چه کسی، چه زمان، چه چیزی رد شد. G9 از شما می‌خواهد با آزمون منفی و Log ثابت کنید دو مستأجر/لایه جدا هستند و ناهنجاری در دقیقه دیده می‌شود.
 
-**جمع‌بندی اصلی درس:**
+### طراحی Logging
 
-امنیت Data Center بدون Log اثبات‌پذیر نیست. ادعای «وب به DB دسترسی ندارد» تا وقتی Log آزمون منفی را نشان ندهد، فقط ادعاست. G9 همین اثبات را می‌خواهد.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) صورت مسئله
-
-DC با Zoneهای WEB، APP، DB و MGMT. نیاز: Policy حداقلی، آزمون Isolation، Log متمرکز (Syslog/FortiAnalyzer)، Alert روی Deny بین لایه‌ها، گزارش.
-
-#### ۲) Logging
+| مورد | تصمیم |
+|---|---|
+| مقصد | FortiAnalyzer/Syslog/SIEM |
+| فیلد | Traffic، Event، UTM (در صورت لایسنس) |
+| Retention | حداقل ۹۰ روز آنلاین، ۱ سال آرشیو (طبق الزام) |
+| Tag | VDOM/Zone/Tenant در Log |
+| زمان | NTP یکسان |
+| امنیت | انتقال رمزگذاری‌شده (`reliable` + TLS) |
 
 ``` text
 config log syslogd setting
- set status enable
- set server 10.99.0.20
- set port 514
- set facility local7
+    set status enable
+    set server "10.50.0.20"
+    set mode reliable
+    set port 6514
+    set enc-algorithm high
+    set facility local7
 end
-config firewall policy
- edit 61
-  set logtraffic all
- next
+config log setting
+    set fwpolicy-implicit-log enable
+    set local-in-allow enable
+    set local-in-deny-unicast enable
 end
 ```
 
-(`Unverified`.) برای FortiAnalyzer: `config log fortianalyzer setting` (Needs-License اگر Appliance/VM).
+(`mode reliable` و TLS در مستند 7.0 بررسی شود؛ Unverified.)
 
-#### ۳) ماتریس آزمون (مثبت/منفی)
+### آزمون منفی و Log
 
-| # | آزمون | انتظار | Log |
-|---|---|---|---|
-| 1 | Internet→WEB 443 | Accept | policyid VIP |
-| 2 | WEB→APP 8443 | Accept | policy 50 |
-| 3 | APP→DB 1433 | Accept | policy 60 |
-| 4 | WEB→DB 1433 | Deny | policy Deny |
-| 5 | DB→Internet | Deny | policy Deny |
-| 6 | MGMT→WEB SSH | Accept | policy 70 |
-| 7 | WEB→MGMT | Deny | policy Deny |
+برای هر ادعای Isolation:
 
-#### ۴) Alert
+1. اجرای آزمون (مثلاً `nc -vz db 1433` از Web).
+2. مشاهده‌ی Timeout.
+3. پیدا کردن Log Deny متناظر (زمان، Src، Dst، Port، policyid=0).
+4. ثبت Evidence.
 
 ``` text
-Alert: action=deny and (srcintf=WEB and dstintf=DB) count>=5 in 5 min -> notify SOC
-```
-
-#### ۵) نمونه Log
-
-``` text
-date=2026-11-26 time=11:02:10 type="traffic" subtype="forward" srcip=10.30.1.10 dstip=10.30.3.10 dstport=1433 policyid=61 action="deny"
-```
-
-#### ۶) Rubric
-
-طراحی Log ۱۵، آزمون ۷ مورد ۳۰، Alert ۲۰، Evidence ۲۰، گزارش و صداقت ۱۵. قبولی ۷۵.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Log | Deny همیشه؛ Accept حساس |
-| Alert | روی Deny بین لایه‌ها |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-``` text
-from TENANT-A host: nc -zv 10.60.2.10 22   # expect timeout
-diagnose firewall iprope lookup ... -> deny
-```
-
-#### مثال متوسط — Log هر VDOM
-
-Syslog با فیلد `vd=` برای جداسازی.
-
-#### مثال سخت — نقض
-
-Policy قدیمی `all` بین مستأجران پیدا شد؛ Disable، بازبینی همه‌ی Policyهای Inter-VDOM، Evidence و PIR. Rubric: Isolation ۳۰، Least-privilege ۲۵، Logging ۲۰، منابع ۱۵، گزارش ۱۰.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** آزمون ۴: telnet 10.30.3.10 1433 از WEB؛ Timeout؛ Log: action=deny policyid=61؛ ثبت Evidence.
-
-**متوسط (Alert):** ۶ تلاش WEB→DB در ۲ دقیقه؛ Alert ارسال؛ SOC بررسی؛ تشخیص Scan؛ Quarantine وب‌سرور؛ زمان تشخیص ۳ دقیقه.
-
-**سخت (Log ناقص):** Log Deny DB→Internet نیست. مراحل: ۱) Policy Deny صریح با Log ندارد. ۲) Implicit Deny بی‌Log. ۳) افزودن Policy Deny با Log. ۴) آزمون ۵ دوباره Log دارد. درس: Implicit Deny Log ندارد.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-execute log filter field policyid 61
+execute log filter category 0
+execute log filter field dstip 10.20.0.40
+execute log filter field action deny
 execute log display
 ```
 
-### ۸) Verification (اثبات صحت)
+### Alert
 
-- هر ۷ آزمون Log دارد.
-- Alert ارسال شد.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| Alert | شرط | واکنش |
 |---|---|---|
-| Log Deny نیست | Policy Deny صریح | Log |
-| Alert نمی‌آید | فیلتر/Threshold | اصلاح |
+| Lateral scan | >20 Deny از یک Src به Dst‌های مختلف در ۱ دقیقه | Isolation Host |
+| Web→DB | هر Deny | بررسی فوری |
+| DB Outbound | هر Allow/Deny به اینترنت | حادثه |
+| Policy تغییر | Event config | Review |
+| Admin ورود | خارج از ساعت | تأیید |
 
-### ۱۰) نکات امنیتی
+### Gate G9 — صورت مسئله
 
-- Log را متمرکز کنید.
+Data Center با دو Tenant (VDOM A و B) و سه‌لایه Web/App/DB. باید ثابت شود:
 
-### ۱۱) جمع‌بندی مفهومی
+1. A و B هیچ ارتباطی ندارند.
+2. Web به DB ندارد.
+3. DB Outbound ندارد.
+4. Log و Alert کار می‌کند.
 
-- Isolation با Log اثبات می‌شود.
-- Alert روی Deny.
-- Evidence.
+عیب‌های تزریق‌شده:
 
-### ۱۲) تمرین و ارزیابی
+1. Inter-VDOM Link ناخواسته بین A و B با Policy ALL.
+2. Policy Web→DB قدیمی با Hit Count > 0.
+3. Log Deny فعال نیست (implicit log خاموش).
+
+### کلید پاسخ
+
+**عیب ۱:**
+
+1. Evidence: `ping` از A به B موفق؛ Log Policy ALL.
+2. رفع: حذف Inter-VDOM و Policy.
+3. تأیید: آزمون منفی Timeout + Log Deny.
+
+**عیب ۲:**
+
+1. Evidence: `Hit Count` Web→DB؛ Lookup ⇒ مجاز.
+2. رفع: حذف Policy؛ بررسی چه کسی از آن استفاده کرده.
+3. تأیید: Lookup ⇒ policy 0.
+
+**عیب ۳:**
+
+1. Evidence: آزمون منفی انجام شد ولی Log Deny نیست.
+2. رفع: `fwpolicy-implicit-log enable`.
+3. تأیید: Log Deny در FortiAnalyzer.
+
+### Rubric (۱۰۰)
+
+| معیار | امتیاز |
+|---|---|
+| طراحی Log/Tag/Retention | 15 |
+| آزمون منفی و Evidence | 25 |
+| رفع سه عیب | 25 |
+| Alert | 15 |
+| مستندسازی | 10 |
+| صداقت | 10 |
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Evidence
+
+آزمون: Web→DB:1433 Timeout. Log: `2026-11-27 10:15:01 srcip=10.30.0.10 dstip=10.20.0.40 dstport=1433 action=deny policyid=0`. Evidence: فایل `ev_negative_web_db.txt`.
+
+#### مثال متوسط — Alert
+
+Lateral scan: ۳۰ Deny در یک دقیقه از web01. Alert ⇒ Isolation (Quarantine Host) ⇒ تحقیق.
+
+#### مثال متوسط — مستندسازی
+
+جدول Isolation: ادعا، آزمون، Evidence، تاریخ، مالک؛ هر سه ماه تکرار.
+
+| ادعا | آزمون | Evidence | تاریخ |
+|---|---|---|---|
+| A≠B | ping/nc | ev1.txt | 2026-11-27 |
+| Web≠DB | nc 1433 | ev2.txt | 2026-11-27 |
+
+#### مثال سخت — Retention
+
+حادثه ۴ ماه بعد کشف شد؛ Log فقط ۹۰ روز. فاجعه. قاعده: Retention بر اساس «زمان تشخیص تیپیک» (Dwell Time) نه حداقل؛ آرشیو ارزان‌تر (Cold).
+
+#### مثال سخت — صداقت
+
+Lab اجرا نشده؛ Logهای بالا نمونه‌ی آموزشی؛ در گزارش «Unverified».
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Log مرکزی.
+2. آزمون منفی و Evidence.
+3. Alert و گزارش.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| Log Deny نیست | implicit log | enable |
+| Log نمی‌رسد | syslog/TLS | بررسی |
+| زمان متفاوت | NTP | همگام |
+| Alert کاذب | آستانه | تنظیم |
+
+### جمع‌بندی
+
+Log مرکزی با Tag و Retention؛ آزمون منفی + Log = اثبات Isolation؛ Alert برای Lateral Movement؛ G9 با سه عیب؛ مستندسازی و صداقت.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا Deny صریح با Log؟ *(پاسخ: 24-4-ت1)*
 
@@ -4029,7 +3738,7 @@ execute log display
 
 **Q1.** Quick quiz (English): Why is a negative test needed to prove isolation? *(پاسخ: 24-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -4037,89 +3746,13 @@ execute log display
 
 - *Isolation must be proven with logs.* ← ایزولاسیون باید با Log اثبات شود.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** G9 (اجرا نشده). **Evidence:** `03-ops/g9-dc.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Logging
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Logging و G9
-
-Isolation اثبات: آزمون منفی TENANT-A→TENANT-B ⇒ Timeout؛ Log در VDOM مبدأ. معیار G9: ایزولاسیون، Policy حداقلی، Log، Rubric.
-
-**پرسش‌های مصاحبه**
-1. *Log هر VDOM؟* ارسال جدا.
-2. *Evidence ایزولاسیون؟* Lookup + Log.
-3. *منابع؟* محدودیت تنظیم‌شده.
-
-### تکمیل عمیق: Logging دیتاسنتر و Gate G9 — اثبات Isolation
-
-#### چرا؟
-
-ایزولاسیون بدون اثبات فقط ادعاست. G9 از شما می‌خواهد با آزمون منفی و Log ثابت کنید دو مستأجر/Zone از هم جدا هستند.
-
-#### مثال ساده — آزمون Isolation
-
-``` text
-from TENANT-A host: nc -zv 10.60.2.10 22   # to TENANT-B, expect timeout
-diagnose firewall iprope lookup 10.60.1.5 40000 10.60.2.10 22 tcp port2   # expect deny
-```
-
-شاهد: Log Deny با `policyid=0` یا Deny صریح.
-
-#### مثال متوسط — Log هر VDOM
-
-در هر VDOM تنظیم Log جدا:
-
-``` text
-config log syslogd setting
- set status enable
- set server 10.50.0.20
-end
-```
-
-در Syslog سرور فیلد `vd=` را برای جداسازی نگه دارید.
-
-#### مثال سخت — نقض Isolation
-
-Log نشان می‌دهد ترافیک TENANT-A→TENANT-B با Policy 5 (قدیمی `all`) عبور کرده. اقدام: گزارش، Disable Policy، بازبینی همه‌ی Policyهای Inter-VDOM، Evidence، PIR.
-
-#### Rubric G9
-
-``` text
-Isolation proof 30 | Least-privilege policy 25 | Logging 20 | Resource limits 15 | Report 10
-```
-
-#### Lab
-
-آزمون منفی و Log را برای دو VDOM ثبت کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Log مخلوط | بدون vd | فیلتر |
-| نقض | Policy قدیمی | حذف |
-| منابع | سقف نیست | تعیین |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Evidence ایزولاسیون؟** آزمون منفی + Log.
-**۲. چرا vd؟** تفکیک.
-**۳. بازبینی چرا؟** Policy قدیمی.
-
-#### English Corner
-
-- *Isolation is proven by negative tests and logs.*
-- Q: How do you separate logs per tenant?
-
-<a id="l-24-5"></a>
 
 ## درس 24-5 — انواع VDOM، منابع Global و VDOM، مدیریت VDOM و طراحی چندمستاجره
 
