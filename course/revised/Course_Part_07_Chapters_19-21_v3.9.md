@@ -4251,16 +4251,22 @@ SSL VPN Tunnel mode حذف شد و با IPsec جایگزین شد (7.6.3).
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا فقط «دو Route» کافی نیست؟** بسیاری فکر می‌کنند با دو ISP و دو Static Route، قطع یکی خودکار پوشش داده می‌شود. ولی قطع واقعی اغلب این‌گونه نیست: کابل سالم و لینک Up است، اما ISP در بالادست مشکل دارد. فایروال Route اول را هنوز «معتبر» می‌بیند و ترافیک به چاه می‌رود. برای تشخیص باید **Link Monitor** (پایش واقعی مسیر با ping/HTTP به هدف خارجی) باشد.
+**چرا فقط «دو Route» کافی نیست؟** فرض کنید دو راه برای رفتن به محل کار دارید: بزرگراه و جاده‌ی فرعی. می‌گویید «همیشه بزرگراه، فقط اگر بسته بود جاده‌ی فرعی». ولی اگر فقط «تابلوی ورودی بزرگراه» را نگاه کنید و ندانید چند کیلومتر جلوتر تصادف شده، پشت ترافیک می‌مانید. Static Route دوم دقیقاً همین است: تا وقتی **لینک** بالاست، فایروال Route اول را معتبر می‌داند، حتی اگر ISP در بالادست قطع باشد. راه‌حل این است که فایروال مدام از «مقصدی دور» (مثلاً 8.8.8.8) سراغ بگیرد: Link Monitor.
 
-**اجزای Dual-ISP کلاسیک**
+**گام‌به‌گام: Dual-ISP کلاسیک چگونه کار می‌کند؟**
 
-1. دو Default Route با **Distance** متفاوت (کمتر = ترجیح بیشتر).
-2. **Link Monitor** برای هر لینک؛ اگر پاسخ نیامد Route آن غیرفعال می‌شود.
-3. **NAT مناسب هر خروجی** (IP همان ISP).
-4. توجه به Sessionهای قدیمی پس از Failover.
+1. دو Default Route: ISP1 با Distance 10 و ISP2 با Distance 20. **Distance کمتر = اعتبار بیشتر**؛ فقط Route با Distance کمتر در جدول فعال است.
+2. **Link Monitor** برای ISP1: هر `interval` میلی‌ثانیه یک پروب به هدف خارجی می‌فرستد. اگر `failtime` پروب پشت سر هم بی‌پاسخ ماند، Route وابسته غیرفعال می‌شود.
+3. با غیرفعال‌شدن Route اول، Route دوم (Distance 20) در جدول می‌نشیند و ترافیک جدید از ISP2 می‌رود.
+4. وقتی ISP1 برگشت و `recoverytime` پروب موفق شد، Route اول دوباره فعال می‌شود (Failback).
 
-**زمان تشخیص** = interval × failtime.
+**چه چیزی هنوز می‌تواند اشتباه شود؟**
+
+- **NAT:** هر خروجی باید با IP همان ISP ترجمه شود (Policy جدا یا NAT روی Interface خروجی).
+- **Session قدیمی:** اتصال‌های موجود روی لینک قبلی می‌مانند تا Timeout شوند؛ کاربران می‌گویند «اینترنت قطع است» در حالی که اتصال جدید کار می‌کند.
+- **IP عمومی عوض می‌شود:** سرویس‌های وابسته به IP (SSH، VoIP، بانک) قطع می‌شوند.
+
+**فرق Distance و Priority:** Distance Route را انتخاب می‌کند؛ Priority فقط وقتی دو Route هم‌Distance‌اند بین آنها تصمیم می‌گیرد (مثل ECMP با اولویت).
 
 **جمع‌بندی اصلی درس:**
 
@@ -4308,19 +4314,70 @@ Probe (ping/TCP/HTTP) به Server؛ شکست متوالی ⇒ Route آن Interfa
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### مثال ساده — محاسبه
+#### مثال ساده — محاسبه‌ی زمان تشخیص
 
 ``` text
-interval 1000 ms, failtime 5 -> 1 s x 5 = 5 s
+Detection time = interval x failtime
+interval = 1000 ms, failtime = 5  ->  1 s x 5 = 5 s
 ```
+
+مراحل: ۱) هر ۱ ثانیه یک پروب ۲) پس از ۵ پروب بی‌پاسخ، Route غیرفعال ⇒ تقریباً ۵ ثانیه تا شروع Failover. اگر هدف «زیر ۳ ثانیه» باشد: `interval 500` و `failtime 5` ⇒ 2.5 s (با هزینه‌ی ترافیک پروب بیشتر).
+
+#### مثال ساده — پیکربندی
+
+``` text
+config router static
+ edit 1
+  set gateway 203.0.113.1
+  set device "port1"
+  set distance 10
+ next
+ edit 2
+  set gateway 198.51.100.1
+  set device "port2"
+  set distance 20
+ next
+end
+config system link-monitor
+ edit "ISP1"
+  set srcintf "port1"
+  set server "8.8.8.8"
+  set gateway-ip 203.0.113.1
+  set interval 1000
+  set failtime 5
+  set recoverytime 5
+ next
+end
+```
+
+#### مثال متوسط — Failover را اندازه می‌گیریم
+
+``` text
+ping -i 0.2 8.8.8.8      # run from a user PC
+# disconnect ISP1 upstream at t=0
+lost 38 packets x 0.2 s = 7.6 s outage
+```
+
+۷٫۶ ثانیه = ۵ ثانیه تشخیص + همگرایی Route و Session جدید. اگر هدف شما ۵ ثانیه است، مقدار را از همین آزمون واقعی می‌بینید، نه حدس.
 
 #### مثال متوسط — Session قدیمی
 
-پس از Failover کاربران می‌گویند «اینترنت قطع است» ولی اتصال جدید کار می‌کند: Sessionهای قدیم روی لینک قبلی مانده‌اند. رفع: `snat-route-change enable` یا پاک‌سازی با فیلتر.
+کاربر SSH به سرور بیرونی داشت. پس از Failover، SSH قطع می‌شود چون IP مبدأ عوض شد (NAT به IP ISP2). این رفتار طبیعی است؛ «IP ثابت» فقط با BGP به دو ISP یا Cloud Anchor ممکن است. برای وب (اتصال جدید) تجربه‌ی کاربر قطع نمی‌شود.
+
+``` text
+diagnose sys session filter src 10.10.0.5
+diagnose sys session list
+diagnose sys session clear
+diagnose sys session filter clear
+```
 
 #### مثال سخت — Failback ناپایدار
 
-لینک ISP1 چند بار بالا/پایین می‌شود و Failback مدام رخ می‌دهد. با `recoverytime` بیشتر و/یا Failback دستی در پنجره‌ی تغییر، نوسان کم می‌شود. شاهد: Log Link Monitor و شمارش تغییرات.
+لینک ISP1 هر چند دقیقه یک‌بار ۱۰ ثانیه می‌افتد. با `recoverytime 5` هر بار پس از ۵ ثانیه برگشت، Route دوباره به ISP1 می‌رود و بلافاصله می‌افتد؛ کاربران قطع‌وصل می‌بینند. راه‌حل‌ها: افزایش `recoverytime` (مثلاً 60)، Failback دستی در پنجره‌ی تغییر، یا Route با Priority طوری که Failback نکند. شاهد: Log Link Monitor (`status changed`) و شمارش تغییرات در ساعت.
+
+#### مثال سخت — لینک بالا، ISP بالادست قطع
+
+`get system interface physical` Link Up نشان می‌دهد. بدون Link Monitor Route فعال می‌ماند. با Monitor: `diagnose sys link-monitor status` `dead`. این دقیقاً تفاوت «لینک Up» و «مسیر سالم» است.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -4543,9 +4600,22 @@ SD-WAN را از صفر بسازد: انتقال Interface از Policy/Route ق�
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا SD-WAN؟** Dual-ISP فقط «بالا/پایین» را می‌فهمد. SD-WAN **کیفیت** (تأخیر، Jitter، Loss) را اندازه می‌گیرد و بر اساس برنامه مسیر انتخاب می‌کند: Voice روی لینک کم‌تأخیر، دانلود روی لینک ارزان.
+**چرا SD-WAN؟** Dual-ISP فقط می‌فهمد «بالا یا پایین». ولی اغلب مشکل واقعی «بالا ولی بد» است: لینک ISP1 بالاست اما ۸٪ بسته گم می‌شود و تماس تلفنی بریده می‌شود. SD-WAN مثل یک **راهنمای رانندگی هوشمند** است که ترافیک زنده را اندازه می‌گیرد و اگر جاده‌ی اصلی کند بود، تماس تلفنی (حساس) را به جاده‌ی بهتر می‌فرستد و دانلود (غیرحساس) را همان‌جا می‌گذارد.
 
-**اجزا:** Zone، Member (Interface+Gateway)، Health-check، Rule (Service)، Route به Zone و Policy به Zone (نه Interface تکی).
+**اجزای SD-WAN و نقش هرکدام**
+
+| جزء | کار | مثال |
+|---|---|---|
+| Member | Interface و Gateway هر لینک | port1 → ISP1 |
+| Zone | گروه Memberها (یک «لینک منطقی») | `virtual-wan-link` |
+| Health-check | اندازه‌گیری تأخیر، Jitter، Loss | ping به 8.8.8.8 |
+| Rule (Service) | کدام ترافیک روی کدام Member | Voice روی کم‌تأخیر |
+| Route | Default Route به Zone | `0.0.0.0/0 → zone` |
+| Policy | از LAN به **Zone** | نه Interface تکی |
+
+**نکته‌ی مهم:** Interfaceهایی که عضو SD-WAN شده‌اند را نمی‌توان مستقیم در Policy استفاده کرد؛ Policyها باید به Zone اشاره کنند. بنابراین مهاجرت از Dual-ISP قدیمی به SD-WAN یعنی «بازنویسی Policyها» و باید با Backup و Lookup انجام شود.
+
+**مراحل ساخت:** ۱) Memberها ۲) Health-check ۳) Rule (در درس بعد) ۴) Route Default به Zone ۵) Policy به Zone ۶) آزمون و Failover.
 
 **جمع‌بندی اصلی درس:**
 
@@ -4624,31 +4694,81 @@ GUI: Network → SD-WAN → Performance SLAs (نمودار Latency/Jitter/Loss).
 
 ### ۵) مثال‌ها
 
-#### مثال ساده
+#### مثال ساده — ساخت Zone و Member
 
 ``` text
 config system sdwan
  set status enable
+ config zone
+  edit "virtual-wan-link"
+  next
+ end
  config members
   edit 1
    set interface "port1"
    set gateway 203.0.113.1
+   set zone "virtual-wan-link"
   next
   edit 2
    set interface "port2"
    set gateway 198.51.100.1
+   set zone "virtual-wan-link"
+  next
+ end
+ config health-check
+  edit "HC1"
+   set server "8.8.8.8"
+   set members 1 2
   next
  end
 end
 ```
 
-#### مثال متوسط — Policy و Route
+بررسی: `diagnose sys sdwan member` و `diagnose sys sdwan health-check` باید هر دو Member را `alive` نشان دهد.
 
-Default Route با `sdwan-zone`؛ Policyهای قدیمی را به Zone منتقل کنید.
+#### مثال متوسط — Route و Policy
 
-#### مثال سخت — مهاجرت
+``` text
+config router static
+ edit 1
+  set sdwan-zone "virtual-wan-link"
+ next
+end
+config firewall policy
+ edit 10
+  set srcintf "port3"
+  set dstintf "virtual-wan-link"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "ALL"
+  set action accept
+  set nat enable
+ next
+end
+```
 
-Backup ← ساخت SD-WAN ← انتقال Policy با Lookup ← حذف Routeهای قدیمی ← Failover ← Rollback آماده.
+اگر Policy قدیمی `port3 → port1` هنوز هست و Interface عضو SD-WAN شده، GUI اجازه‌ی ویرایش نمی‌دهد؛ باید Policy را به Zone منتقل یا حذف کنید.
+
+#### مثال متوسط — مهاجرت بدون قطع
+
+``` text
+1 Backup config + hash
+2 Create SDWAN zone/members/health-check (no traffic yet)
+3 Create new policies to the zone (placed after old ones)
+4 Lookup: diagnose firewall iprope lookup 10.10.0.5 40000 8.8.8.8 53 udp port3
+5 Remove old static routes, then old policies
+6 Test failover; keep rollback (restore config) ready < 10 min
+```
+
+#### مثال سخت — Member همیشه dead
+
+`diagnose sys sdwan health-check` ⇒ `state(dead)`. بررسی:
+
+1. سرور Health-check از آن Interface قابل‌دسترس است؟ (`execute ping-options source` و ping)
+2. Gateway درست؟
+3. Policy/Local-out اجازه می‌دهد پروب خارج شود؟
+4. ISP ICMP را بسته؟ ⇒ پروب HTTP/DNS.
+5. پس از رفع: `alive` و `sla_map` درست.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -4834,7 +4954,22 @@ SD-WAN را با دو Member بسازید و `diagnose sys sdwan health-check` �
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا Rule و SLA؟** همه‌ی ترافیک ارزش یکسان ندارد. Rule مشخص می‌کند کدام ترافیک روی کدام لینک؛ SLA آستانه‌ی «لینک خوب» (تأخیر ≤ 100ms، Jitter ≤ 30ms، Loss ≤ 2٪).
+**چرا SD-WAN Rule و SLA؟** همه‌ی ترافیک ارزش یکسان ندارد. تماس صوتی با تأخیر 150 ms و Jitter 40 ms «بریده بریده» می‌شود، ولی دانلود فایل به همان شرایط حساس نیست. Rule مشخص می‌کند «کدام ترافیک» روی «کدام لینک» برود؛ SLA «لینک خوب» را با عدد تعریف می‌کند.
+
+**SLA به زبان ساده:** سه آستانه: تأخیر (Latency)، نوسان تأخیر (Jitter) و از دست‌رفتن بسته (Packet Loss). مثال: لینک «مناسب صوت» یعنی تأخیر ≤ 100 ms، Jitter ≤ 30 ms، Loss ≤ 2٪. اگر عددی از آستانه بگذرد، SLA «نقض» می‌شود و Rule لینک دیگری را برمی‌گزیند.
+
+**استراتژی‌های Rule (Mode)**
+
+| Mode | معنی |
+|---|---|
+| manual | ترتیب دستی Memberها |
+| best-quality | بهترین کیفیت طبق معیار |
+| lowest-cost (sla) | ارزان‌ترین لینکی که SLA را رعایت کند |
+| load-balance | توزیع بار |
+
+**Brownout:** لینک «بالا» ولی «بد». Health-check ساده می‌گوید `alive`؛ SLA می‌گوید «نقض شده». این همان مزیت اصلی SD-WAN است.
+
+اگر هیچ Rule مطابق نبود، **Implicit Rule** (بر اساس Route/Cost) اعمال می‌شود.
 
 **جمع‌بندی اصلی درس:**
 
@@ -4912,25 +5047,73 @@ end
 
 ### ۵) Troubleshooting
 
-#### مثال ساده
+#### مثال ساده — تعریف SLA
 
 ``` text
-config sla
- edit 1
-  set latency-threshold 100
-  set jitter-threshold 30
-  set packetloss-threshold 2
- next
+config system sdwan
+ config health-check
+  edit "HC1"
+   set server "8.8.8.8"
+   set members 1 2
+   config sla
+    edit 1
+     set latency-threshold 100
+     set jitter-threshold 30
+     set packetloss-threshold 2
+    next
+   end
+  next
+ end
 end
 ```
 
-#### مثال متوسط — Brownout
+#### مثال ساده — Rule برای Voice
 
-لینک بالا ولی Loss 8٪؛ Health-check «alive» می‌گوید و SLA «violated»؛ Rule مسیر را عوض می‌کند.
+``` text
+config system sdwan
+ config service
+  edit 1
+   set name "VOICE"
+   set mode sla
+   set dst "SIP-PEERS"
+   config sla
+    edit "HC1"
+     set id 1
+    next
+   end
+   set priority-members 1 2
+  next
+ end
+end
+```
 
-#### مثال سخت — بی‌Rule
+منطق: Voice روی عضو 1 تا وقتی SLA 1 رعایت شود؛ در نقض، عضو 2.
 
-Implicit Rule؛ `diagnose sys sdwan service`.
+#### مثال متوسط — خواندن خروجی
+
+``` text
+diagnose sys sdwan health-check
+Seq(1 port1): state(alive), packet-loss(0.000%) latency(12.3) jitter(0.8) sla_map=0x1
+Seq(2 port2): state(alive), packet-loss(8.000%) latency(45.0) jitter(5.1) sla_map=0x0
+```
+
+عضو 1: SLA رعایت (`sla_map=0x1`). عضو 2: Loss 8٪ ⇒ SLA نقض (`0x0`). Voice روی عضو 1 می‌ماند؛ حتی اگر عضو 2 `alive` است.
+
+#### مثال متوسط — تزریق Loss در Lab
+
+``` text
+tc qdisc add dev eth1 root netem delay 150ms loss 5%
+```
+
+اثر: Latency و Loss بالا ⇒ SLA نقض ⇒ Rule Voice عضو دیگر. پاک‌سازی: `tc qdisc del dev eth1 root`.
+
+#### مثال سخت — Flap نزدیک آستانه
+
+تأخیر لینک بین 95 و 105 ms نوسان می‌کند؛ Voice مدام جابه‌جا می‌شود. راه: آستانه‌ی حاشیه‌دار (مثلاً 120 ms)، `recoverytime` بیشتر یا Hysteresis؛ و ثبت دلیل. شاهد: Log تغییر Member.
+
+#### مثال سخت — Rule اعمال نمی‌شود
+
+`diagnose sys sdwan service`. بررسی: `dst` (Address Object) درست؟ ترتیب Ruleها (اولین مطابقت)؟ Rule بدون Service/Dst همه‌چیز را می‌گیرد؟ در نبود تطبیق، Implicit Rule.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -5132,7 +5315,15 @@ tc qdisc add dev eth1 root netem delay 150ms loss 5%
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا Failover را آزمایش کنیم؟** فقط تغییر Route نیست؛ Session، NAT و IP عمومی چه می‌شوند؟ IP عوض می‌شود و اتصال‌های وابسته (SSH، VoIP) قطع می‌شوند؛ IP ثابت فقط با BGP یا Cloud Anchor.
+**چرا Failover را «باید» آزمایش کرد؟** Failover فقط عوض‌شدن Route نیست. وقتی ISP1 قطع می‌شود، پنج چیز تغییر می‌کند: Route، IP عمومی (NAT)، Sessionهای موجود، DNS (اگر وابسته به ISP) و Cache سوییچ/ARP. اگر آزمایش نکرده باشید، در اولین قطع واقعی با «اینترنت دارم ولی برنامه‌ی X قطع است» روبه‌رو می‌شوید.
+
+**چه چیزهایی قطع می‌شود و چه چیزی نه؟**
+
+- **اتصال‌های جدید:** با لینک دوم برقرار می‌شوند.
+- **اتصال‌های قدیمی:** به IP ISP1 وابسته‌اند و پس از Failover معمولاً قطع می‌شوند (مگر Session روی لینک قبلی بماند و پاسخ‌ها برنگردند).
+- **سرویس‌های ورودی:** اگر IP عمومی VIP به ISP1 وابسته بود، از بیرون در دسترس نیست؛ راه: BGP یا DNS با TTL کم.
+
+**Failback:** بازگشت به لینک اصلی. اگر فوری باشد، یک قطع دوم ایجاد می‌کند؛ بهتر است با تأخیر یا دستی در پنجره‌ی تغییر انجام شود.
 
 **جمع‌بندی اصلی درس:**
 
@@ -5183,19 +5374,39 @@ recoverytime بیشتر از failtime؛ Hold-down؛ شاید Failback دستی �
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### مثال ساده
+#### مثال ساده — اندازه‌گیری
 
 ``` text
-lost = 25 x 0.2 s = 5 s
+ping -i 0.2 8.8.8.8
+lost 25 packets x 0.2 s = 5.0 s
 ```
 
-#### مثال متوسط
+#### مثال متوسط — جدول قبل/بعد
 
-پاک‌سازی انتخابی Session یا `snat-route-change`.
+| مورد | قبل از Failover | بعد از Failover |
+|---|---|---|
+| Default Route | via ISP1 | via ISP2 |
+| IP عمومی کاربر | 203.0.113.2 | 198.51.100.2 |
+| Sessionهای باز | روی ISP1 | قطع/جدید |
+| IP VIP وب | ISP1 | از بیرون در دسترس نیست |
 
-#### مثال سخت — Failback
+#### مثال متوسط — پاک‌سازی انتخابی Session
 
-Failback فوری Session را دوباره قطع می‌کند؛ `recoverytime` بیشتر.
+``` text
+diagnose sys session filter src 10.10.0.0/24
+diagnose sys session clear
+diagnose sys session filter clear
+```
+
+یا `set snat-route-change enable` در Policy تا Sessionهای SNAT با تغییر Route مسیر را عوض کنند.
+
+#### مثال سخت — VoIP پس از Failover
+
+تماس جاری قطع می‌شود چون IP عمومی عوض شد؛ تماس جدید برقرار می‌شود. برای حفظ تماس: IP ثابت (BGP)، یا Session Border Controller. این ریسک را باید در مستند طراحی بنویسید و با مدیر تصمیم بگیرید.
+
+#### مثال سخت — Failback ناگهانی
+
+پس از برگشت ISP1، Failback فوری، تماس‌ها دوباره قطع. راه: `recoverytime` بالا یا Failback دستی. آزمون: قطع و وصل ISP1 سه بار با ping مداوم و ثبت Loss هر بار.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -5367,7 +5578,11 @@ Failover را اجرا و جدول «قبل/بعد» (Route، Session، IP عم�
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا G8؟** ثابت می‌کند Dual-ISP و SD-WAN را از طراحی تا اثبات انجام می‌دهید.
+**چرا G8؟** Gate یعنی ایست بازرسی. G8 ثابت می‌کند Dual-ISP و SD-WAN را از طراحی تا اثبات انجام می‌دهید: Member، Health-check، SLA، Rule، Failover، Failback و گزارش. فقط ساختن کافی نیست؛ باید با عدد نشان دهید Failover زیر هدف است و Brownout شناسایی می‌شود.
+
+**صورت مسئله‌ی نمونه:** شعبه با ISP1 (اصلی) و ISP2 (پشتیبان). Voice باید تأخیر زیر 100 ms و Loss زیر 2٪ داشته باشد؛ Failover زیر 5 ثانیه؛ Failback کنترل‌شده.
+
+**مراحل حل:** ۱) برگه‌ی طراحی ۲) ساخت SD-WAN ۳) SLA ۴) Rule Voice ۵) آزمون قطع کامل ۶) آزمون Brownout با تزریق Loss ۷) Failback ۸) Evidence ۹) گزارش.
 
 **جمع‌بندی اصلی درس:**
 
@@ -5478,17 +5693,29 @@ diagnose sys sdwan service
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### مثال ساده
+#### مثال ساده — کلید پاسخ
 
-Build، SLA، Rule.
+| بخش | شاهد |
+|---|---|
+| Build | `diagnose sys sdwan member` |
+| SLA | `health-check` با `sla_map` |
+| Failover | ping + Log |
+| Failback | زمان و روش |
 
-#### مثال متوسط
+#### مثال متوسط — محاسبه‌ی نمره
 
-Failover < 5 s، Failback کنترل‌شده.
+``` text
+Build 20 | SLA 20 | Failover 25 | Failback 10 | Evidence 15 | Report 10
+Example: 20 + 18 + 22 + 8 + 12 + 8 = 88
+```
 
-#### مثال سخت — مرز SLA
+#### مثال سخت — نتیجه‌ی مرزی
 
-98ms در برابر 100ms ⇒ Flap؛ Hysteresis. Rubric: Build ۲۰، SLA ۲۰، Failover ۲۵، Failback ۱۰، Evidence ۱۵، گزارش ۱۰.
+Failover 5.2 ثانیه در حالی که هدف کمتر از ۵ بود. تصمیم صادقانه: «مردود» یا «شرطی قبول» با برنامه‌ی بهبود (کاهش interval/failtime) و آزمون مجدد؛ هرگز عدد را گرد نکنید.
+
+#### مثال سخت — دو خرابی تزریقی
+
+قطع ISP1 + Loss 8٪ روی ISP2. انتظار: Voice روی بهترین لینک موجود با اعلام نقض SLA؛ شاهد: `health-check` و Log. اگر هر دو لینک SLA را نقض کنند، رفتار Rule و هشدار باید مستند شود.
 
 #### مثال‌های اصلی درس (مرور)
 

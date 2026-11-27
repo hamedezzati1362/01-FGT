@@ -356,7 +356,15 @@ Config از Primary به Secondary کپی می‌شود؛ `Configuration Status:
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا قبل از HA «SPOF» را فهرست کنیم؟** HA فقط یک ردیف از فهرست خرابی‌هاست. طراح خوب ابتدا همه‌ی نقاط شکست (دستگاه، لینک، برق، ISP، سوییچ، DNS/NTP) را می‌نویسد.
+**چرا قبل از HA باید SPOF را فهرست کنیم؟** HA مثل بیمه‌ی یک چیز است، نه همه‌چیز. اگر بیمه‌ی خودرو دارید ولی خانه‌ی شما آتش بگیرد، بیمه‌ی خودرو کمک نمی‌کند. SPOF (Single Point of Failure، یعنی «نقطه‌ی شکست یگانه») هر جزئی است که اگر بیفتد کل سرویس می‌خوابد: دستگاه، لینک، برق، ISP، سوییچ، DNS، NTP. طراح خوب ابتدا فهرست می‌نویسد، سپس برای هر مورد افزونگی می‌گذارد.
+
+**سه مفهوم کلیدی طراحی**
+
+- **RTO (Recovery Time Objective):** حداکثر زمان قابل‌قبول برای بازگشت سرویس.
+- **RPO (Recovery Point Objective):** حداکثر داده‌ی قابل‌ازدست‌دادن.
+- **سطوح افزونگی:** دستگاه (HA)، لینک (LAG/دو لینک)، مسیر (Dual-ISP)، برق (دو PSU/UPS)، مکان (دو سایت).
+
+**Active-Passive یا Active-Active؟** A-P ساده است؛ A-A برای بار UTM سنگین و پیچیده‌تر. تصور «A-A یعنی ظرفیت دو برابر» اشتباه رایج است؛ پس از Failover فقط یک دستگاه می‌ماند و باید کل بار را بردارد.
 
 **جمع‌بندی اصلی درس:**
 
@@ -410,16 +418,30 @@ Downtime/year at 99.9% = 8.76 h ; at 99.99% = 52.6 min
 #### مثال ساده — دسترس‌پذیری
 
 ``` text
-99.9% -> ~8.76 h/year ; 99.99% -> ~52.6 min/year
+Availability = uptime / (uptime + downtime)
+99.9%  -> ~8.76 hours downtime / year
+99.99% -> ~52.6 minutes downtime / year
 ```
 
-#### مثال متوسط — A-P در برابر A-A
+#### مثال متوسط — نقشه‌ی SPOF
 
-A-P ساده؛ A-A برای بار UTM.
+| جزء | افزونگی | وضعیت |
+|---|---|---|
+| فایروال | HA A-P | دارد |
+| سوییچ هسته | یک سوییچ | **SPOF** |
+| ISP | تک‌لینک | **SPOF** |
+| برق | UPS تک | **SPOF** |
+| DNS | دو سرور | دارد |
+
+نتیجه: HA فایروال سه SPOF دیگر را نمی‌پوشاند.
 
 #### مثال سخت — SPOF پنهان
 
-دو فایروال به یک سوییچ با برق مشترک وصل‌اند.
+دو فایروال HA هستند ولی هر دو به یک سوییچ با یک منبع برق وصل‌اند. خرابی سوییچ همه را می‌برد. رفع: دو سوییچ و اتصال متقاطع؛ و آزمون واقعی قطع هر جزء (کابل را بکشید و ping مداوم).
+
+#### مثال سخت — ظرفیت پس از Failover
+
+ترافیک 3 Gbps و هر دستگاه با UTM فقط 2 Gbps. با A-A نیز پس از افتادن یک عضو، یک دستگاه 2 Gbps می‌ماند و اشباع می‌شود. نتیجه: مدل بزرگ‌تر یا کاهش Profile؛ HA ظرفیت را حل نمی‌کند.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -590,7 +612,21 @@ HA کامل، ولی هر دو فایروال به یک سوئیچ وصل‌ان
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا برگه‌ی طراحی HA؟** با یک تنظیم اشتباه (Group-name، رمز، Heartbeat) HA برقرار نمی‌شود یا ناپایدار می‌شود. مدل و نسخه یکسان الزامی.
+**چرا قبل از CLI «برگه‌ی طراحی»؟** HA با یک تنظیم اشتباه (Group-name ناهمخوان، رمز متفاوت، Heartbeat روی لینک مشترک) یا برقرار نمی‌شود یا بدتر، ناپایدار می‌شود. برگه‌ی طراحی مثل چک‌لیست خلبان است: قبل از پرواز همه‌چیز بررسی می‌شود.
+
+**پیش‌نیازها:** دو دستگاه با **همان مدل**، **همان نسخه‌ی FortiOS**، لایسنس‌های هم‌ارز و Interfaceهای هم‌نام.
+
+**تنظیمات اصلی**
+
+- `group-name` و `password` یکسان.
+- `mode a-p`.
+- `hbdev`: ۲ لینک Heartbeat مستقل با Priority.
+- `priority`: عضو ترجیحی Primary (مثلاً 200 و 100).
+- `override`: معمولاً خاموش تا Failback خودکار رخ ندهد.
+- `monitor`: Interfaceهایی که قطعشان باید Failover بدهد.
+- `session-pickup`: حفظ Sessionهای TCP هنگام Failover.
+
+**پس از اتصال:** Config فقط از Primary همگام می‌شود؛ `get system ha status` باید `in-sync` نشان دهد.
 
 **جمع‌بندی اصلی درس:**
 
@@ -683,12 +719,22 @@ execute ha manage 1 admin
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### مثال ساده
+#### مثال ساده — برگه
+
+``` text
+Group name : FGT-HA        Mode : a-p        Password : (vault)
+HB devices : port7 (50), port8 (50)
+Priority   : A=200, B=100  Override : disable
+Monitor    : port1, port2  Session pickup : enable
+```
+
+#### مثال ساده — CLI
 
 ``` text
 config system ha
  set group-name "FGT-HA"
  set mode a-p
+ set password ***
  set hbdev "port7" 50 "port8" 50
  set priority 200
  set override disable
@@ -697,13 +743,29 @@ config system ha
 end
 ```
 
-#### مثال متوسط
+روی دستگاه دوم همان با Priority کمتر.
 
-`get system ha status` ⇒ in-sync.
+#### مثال متوسط — بررسی
 
-#### مثال سخت
+``` text
+get system ha status
+diagnose sys ha checksum cluster
+```
 
-MAC مجازی و Gratuitous ARP پس از Failover.
+انتظار: دو عضو، `in-sync`، Primary مورد نظر.
+
+#### مثال متوسط — MAC مجازی
+
+پس از Failover MAC مجازی تغییر نمی‌کند؛ سوییچ‌ها ARP را دوباره یاد نمی‌گیرند و Gratuitous ARP ارسال می‌شود. اگر پس از Failover بعضی دستگاه‌ها قطع بمانند، ARP Cache سوییچ/روتر بررسی شود.
+
+#### مثال سخت — عضو دوم نمی‌پیوندد
+
+1. Group-name/Password یکسان؟
+2. نسخه/مدل/Build یکسان؟
+3. Heartbeat Interface‌ها واقعاً متصل و Link Up؟
+4. همان Interface برای ترافیک عادی هم استفاده شده؟
+5. VLAN/سوییچ بین دو لینک Heartbeat.
+پس از رفع: `get system ha status`.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -906,7 +968,18 @@ get system ha status
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا آزمون Failover؟** «HA داریم» تا وقتی اندازه نگرفته‌اید باور است. باید زمان قطع و حفظ Session را بسنجید.
+**چرا آزمون Failover؟** «HA داریم» تا وقتی Failover را اندازه نگرفته‌اید فقط یک باور است. آزمون باید ۳ چیز را بسنجد: **زمان قطع**، **حفظ Session** و **رفتار Failback**.
+
+**سناریوهای آزمون**
+
+| آزمون | انتظار |
+|---|---|
+| کشیدن کابل WAN Primary | Failover با Monitor |
+| خاموش‌کردن Primary | Failover سریع |
+| قطع یک Heartbeat | بدون Failover (لینک دوم) |
+| قطع هر دو Heartbeat | Split-brain (فقط Lab) |
+
+**Failback:** با `override` خاموش خودکار برنمی‌گردد؛ Failback را در پنجره‌ی تغییر انجام دهید تا قطع دوم در ساعت کاری رخ ندهد.
 
 **جمع‌بندی اصلی درس:**
 
@@ -962,19 +1035,33 @@ end
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### مثال ساده
+#### مثال ساده — اندازه‌گیری
 
 ``` text
-lost = 15 x 0.2 s = 3 s
+ping -i 0.2 8.8.8.8
+lost 15 packets x 0.2 s = 3.0 s
 ```
 
-#### مثال متوسط — Pickup
+معیار نمونه: کمتر از 5 ثانیه.
 
-SSH باز در حین Failover ادامه یابد.
+#### مثال متوسط — Session Pickup
 
-#### مثال سخت
+یک SSH یا دانلود طولانی باز نگه دارید و Failover کنید. با Pickup فعال اتصال TCP ادامه می‌یابد؛ UDP/Multicast و Sessionهای Offload‌شده محدودیت دارند (مستند نسخه).
 
-Failback کنترل‌شده در پنجره؛ `override` خاموش.
+#### مثال متوسط — ثبت نتایج
+
+| آزمون | زمان قطع | Session حفظ؟ | یادداشت |
+|---|---|---|---|
+| قطع WAN | 3.0 s | بله | OK |
+| خاموش Primary | 4.2 s | بله | OK |
+
+#### مثال سخت — Failover ناموفق
+
+پس از Failover کاربران اینترنت ندارند: ARP سوییچ قدیمی، Route/NAT ناهمگام یا Policy روی Interface Secondary. شاهد: `get system ha status`، `diagnose sys ha checksum cluster`، Sniffer.
+
+#### مثال سخت — Flap پس از Failback
+
+Failback فوری باعث دو قطع پشت‌سرهم شد. تصمیم: `override disable` و Failback دستی با اطلاع‌رسانی.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -1153,7 +1240,16 @@ ssh user@10.20.0.10      # keep typing during failover
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا عیب‌یابی HA؟** HA در بدترین لحظه خراب می‌شود؛ ابزارها را از قبل بشناسید: checksum، history، synchronize.
+**چرا عیب‌یابی HA را از قبل بدانیم؟** HA وقتی خراب می‌شود معمولاً در بدترین زمان است (شب، حین حمله). باید ابزارها را از قبل بشناسید. چهار علامت رایج: Out-of-sync، Flap، Split-brain و ارتقای ناموفق.
+
+**ابزارها**
+
+- `get system ha status`: وضعیت و نقش.
+- `diagnose sys ha checksum cluster`: مقایسه‌ی Config دو عضو (کدام بخش فرق دارد).
+- `diagnose sys ha history read`: تاریخچه‌ی رویدادها (چرا Failover شد).
+- `execute ha synchronize start`: همگام‌سازی دستی.
+
+**Split-brain:** هر دو دستگاه خود را Primary می‌دانند (Heartbeat قطع). IP/MAC تکراری و قطعی. پیشگیری: ≥۲ Heartbeat مستقل.
 
 **جمع‌بندی اصلی درس:**
 
@@ -1204,17 +1300,36 @@ diagnose sys ha checksum recalculate
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### مثال ساده
+#### مثال ساده — Out-of-sync
 
-`diagnose sys ha checksum cluster` تفاوت بخش‌ها.
+`checksum cluster` در دو عضو مقایسه ⇒ بخش `firewall.policy` متفاوت. رفع: `execute ha synchronize start`.
 
 #### مثال متوسط — Flap
 
-Heartbeat/Monitor ناپایدار.
+``` text
+diagnose sys ha history read
+```
+
+Failoverهای پیاپی: Heartbeat ناپایدار، Monitor Interface فلپ یا CPU بالا. بررسی لینک‌ها و Timerها.
 
 #### مثال سخت — Split-brain
 
-یک عضو را جدا، HB برقرار، عضو را Secondary برگردانید.
+علامت: دو Primary و IP تکراری.
+
+1. یک دستگاه را از شبکه‌ی داده جدا کنید.
+2. لینک Heartbeat را برقرار کنید.
+3. عضو را Secondary برگردانید.
+4. `in-sync` را تأیید کنید.
+
+#### مثال سخت — ارتقای Cluster
+
+روش مستند Uninterruptible: Secondary ابتدا؛ سپس Failover؛ سپس عضو قدیمی.
+
+``` text
+Pre : get system ha status ; backup
+Do  : upgrade secondary -> failover -> upgrade former primary
+Post: get system ha status (in-sync, same firmware)
+```
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -1388,7 +1503,7 @@ Out-of-sync را عمداً ایجاد (تغییر محلی) و با checksum ت
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا آزمون عملی HA؟** نشان می‌دهد HA را ساخته، آزمایش و مستند کرده‌اید. Split-brain فقط در Lab.
+**چرا آزمون عملی HA؟** نشان می‌دهد HA را ساخته، آزمایش و مستند کرده‌اید. شامل Failover، Failback، Split-brain کنترل‌شده (فقط Lab) و گزارش. چون این Lab به دو FortiGate VM لایسنس‌دار نیاز دارد، در محیط ما «اجرا نشده» است و باید صادقانه برچسب بخورد؛ طراحی و طرح آزمون را می‌توان با «تأیید مستندی» ارزیابی کرد.
 
 **جمع‌بندی اصلی درس:**
 
@@ -1462,17 +1577,25 @@ Path Tool؛ Backup هر دو؛ Upgrade Secondary؛ Failover؛ Upgrade Primary ق
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### مثال ساده
+#### مثال ساده — شواهد
 
-`get system ha status` in-sync.
+| بخش | شاهد |
+|---|---|
+| ساخت | `get system ha status` (in-sync) |
+| Failover | ping با عدد گم‌شده |
+| Failback | زمان و روش |
+| Split-brain | History و رفع |
 
-#### مثال متوسط
+#### مثال متوسط — نمره
 
-ping و Log برای Failover.
+``` text
+Build 20 | Failover 25 | Failback 15 | Split-brain 20 | Report 20
+Example: 20 + 22 + 15 + 10 + 18 = 85
+```
 
 #### مثال سخت — صداقت
 
-بدون دو VM لایسنس‌دار اجرا نشده؛ برچسب «تأیید مستندی». Rubric: ساخت ۲۰، Failover ۲۵، Failback ۱۵، Split-brain ۲۰، گزارش ۲۰.
+بدون دو VM لایسنس‌دار، «اجرا» نمره ندارد ولی طراحی و طرح آزمون قابل ارزیابی است. هرگز خروجی ساختگی ننویسید.
 
 #### مثال‌های اصلی درس (مرور)
 
