@@ -223,6 +223,86 @@ R-02 -> HLD §4.1 (DMZ zone) -> LLD Policy 61 -> Test T-09..T-18 -> Evidence E-0
 | R2 DMZ فقط 443 | VIP+Policy | T2 nmap | خروجی nmap |
 | R3 Failover < 5 s | HA/SD-WAN | T3 قطع لینک | ping Loss |
 
+### تکمیل عمیق: چرا Capstone بدون «معیار پذیرش» فقط یک نمایش است؟
+
+#### چرا باید یاد بگیریم؟
+
+فرض کنید پیمانکار ساختمان به شما بگوید «ساختمان تمام شد». می‌پرسید: «چه چیزی را چک کنم؟». اگر قبلاً روی کاغذ نوشته باشید «آب هر طبقه فشار ≥ ۲ بار، برق سه‌فاز، آسانسور تا طبقه ۵»، پذیرش ساده است. اگر ننوشته باشید، بحث می‌شود. پروژه‌ی شبکه هم همین است. **معیار پذیرش** (Acceptance Criteria) یعنی هر نیازمندی با یک آزمون قابل‌اندازه‌گیری گره می‌خورد تا «تمام شد» معنای مشخص داشته باشد.
+
+#### توضیح ساده
+
+یک Capstone خوب سه ستون دارد: **نیازمندی** (چه می‌خواهیم)، **طراحی** (چطور) و **اثبات** (چطور نشان می‌دهیم). رشته‌ای که این سه را به هم وصل می‌کند ماتریس ردیابی (Traceability Matrix) است.
+
+``` text
+Requirement  ->  Design element  ->  Test  ->  Evidence
+R1           ->  Policy 20       ->  T1    ->  curl output + log
+R2           ->  VIP + Policy 30 ->  T2    ->  nmap output
+R3           ->  SD-WAN/Link mon ->  T3    ->  ping loss count
+```
+
+#### مثال ساده — نیازمندی بد و خوب
+
+| نیازمندی بد | نیازمندی خوب |
+|---|---|
+| «اینترنت سریع باشد» | «۹۵٪ دانلود‌ها زیر ۲ ثانیه برای فایل ۵ مگابایتی» |
+| «امن باشد» | «از Users به Mgmt هیچ پورتی باز نباشد (آزمون nmap)» |
+| «Failover داشته باشد» | «قطع لینک اول؛ از دست‌رفتن کمتر از ۵ بسته با ping هر ۱ ثانیه» |
+
+قاعده‌ی SMART: Specific، Measurable، Achievable، Relevant، Time-bound.
+
+#### مثال متوسط — آزمون نیازمندی Failover
+
+``` text
+ping -i 1 8.8.8.8           # run on a user PC
+# at t=30s disconnect ISP1
+# count lost replies until reply returns
+lost = 3 packets x 1 s = 3 s  -> PASS if target < 5 s
+```
+
+مراحل: ۱) Baseline بگیرید ۲) قطع ۳) شمارش ۴) مقایسه با هدف ۵) ثبت.
+
+#### مثال سخت — نیازمندی‌های متعارض
+
+مدیر می‌خواهد «همه‌ی ترافیک رمزگشایی و بازرسی شود» (SSL Inspection) و هم «تأخیر کمتر از ۲۰ میلی‌ثانیه». تحلیل: Inspection CPU می‌خورد؛ آزمون واقعی لازم است.
+
+راه‌حل: Baseline بگیرید، Inspection را فقط روی دسته‌هایی که ریسک بالا دارند فعال کنید و برای بانک/سلامت Exemption بگذارید. نتیجه را با عدد گزارش دهید و تعارض را به مدیر نشان دهید، نه این‌که پنهان کنید.
+
+#### ساختار پروژه‌ی Capstone
+
+1. نیازمندی و فرضیات
+2. HLD (High-Level Design، یعنی طراحی سطح بالا)
+3. LLD (Low-Level Design، یعنی طراحی تفصیلی)
+4. ساخت مرحله‌ای با Checkpoint
+5. آزمون و Evidence
+6. Runbook و Handover
+7. ارائه و دفاع
+
+#### Lab
+
+برای پروژه‌ی خودتان ۸ نیازمندی SMART بنویسید و برای هر کدام یک آزمون و یک خروجی قابل‌ثبت تعریف کنید.
+
+#### عیب‌یابی طراحی پروژه
+
+| علامت | علت | رفع |
+|---|---|---|
+| آزمون نمی‌توان نوشت | نیازمندی مبهم | بازنویسی SMART |
+| نیازمندی بی‌طرح | ماتریس ناقص | افزودن ستون Design |
+| طرح بی‌نیازمندی | کار اضافه | حذف یا توجیه |
+
+#### پرسش‌های مرور با پاسخ
+
+**۱. Traceability چه فایده‌ای دارد؟** پوشش کامل و پیدا کردن کار اضافه یا جاافتاده.
+
+**۲. SMART یعنی چه؟** مشخص، قابل‌اندازه‌گیری، دست‌یافتنی، مرتبط، زمان‌دار.
+
+**۳. تعارض نیازمندی‌ها را چه کنیم؟** با عدد نشان دهید و تصمیم را مالک بگیرد.
+
+#### English Corner
+
+- *Every requirement must map to at least one test.* هر نیازمندی باید دست‌کم یک آزمون داشته باشد.
+- *Acceptance criteria are agreed before the build starts.*
+- Q: What makes a requirement measurable?
+
 ## درس 31-1 — Capstone I: نیازمندی‌ها و سند طراحی سطح بالا (HLD) — با نمونه‌ی کامل
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰، همه‌ی Gateها · ≈ 8 ساعت**
@@ -373,6 +453,73 @@ Consequences: need UTM at branch; central logging required; review quarterly
 |---|---|---|---|
 | قطع ISP | متوسط | زیاد | Dual-ISP |
 | خطای Policy | زیاد | متوسط | Review+Lookup |
+
+### تکمیل عمیق: نوشتن HLD از نیازمندی تا نمودار و ریسک
+
+#### چرا؟
+
+HLD نقشه‌ی شهر است، نه نقشه‌ی سیم‌کشی خانه. مدیر و همکار باید در ۱۰ دقیقه بفهمند «چه می‌سازیم و چرا». اگر جزئیات (IP، Policy) را زود وارد کنید، تصویر کلی گم می‌شود.
+
+#### اجزای HLD
+
+| بخش | پرسش که پاسخ می‌دهد |
+|---|---|
+| زمینه و هدف | چرا این پروژه؟ |
+| نیازمندی‌ها و فرضیات | چه می‌خواهیم و چه فرض کرده‌ایم؟ |
+| معماری منطقی | اجزا و ارتباطشان |
+| جریان‌های اصلی | Users→Internet، Internet→DMZ و ... |
+| ریسک‌ها | چه چیزی خراب می‌شود؟ |
+| خارج از محدوده | چه چیزی را نمی‌سازیم؟ |
+
+#### مثال ساده — جریان‌ها
+
+``` text
+F1 Users   -> Internet   : via Internal FW then Edge FW (SNAT at Edge)
+F2 Internet-> DMZ web     : via Edge FW VIP 443
+F3 Mgmt    -> all devices : only from MGMT VLAN, SSH/HTTPS
+```
+
+#### مثال متوسط — ماتریس ریسک
+
+``` text
+Risk score = Likelihood x Impact
+ISP outage : 3 x 5 = 15  -> mitigate: Dual-ISP
+Policy error: 4 x 3 = 12 -> mitigate: review + pre/post lookup
+Cert expiry : 3 x 3 = 9  -> mitigate: calendar alert 30d
+```
+
+مراحل: ۱) فهرست ریسک ۲) امتیاز ۳) مرتب‌سازی ۴) اقدام برای بالاترین‌ها.
+
+#### مثال سخت — فرضیه‌ی غلط
+
+فرض: «ISP یک IP عمومی ثابت می‌دهد». در عمل DHCP بود و VIP/VPN شکست خورد. درس: هر فرضیه را در سند بنویسید و پیش از ساخت تأیید کنید؛ فرضیه‌ی تأییدنشده یک ریسک است.
+
+#### نمودار پیشنهادی
+
+نمودار منطقی ساده با پنج جعبه: Internet، Edge FW، DMZ، Internal FW، Users/Servers/Mgmt. حتماً جهت جریان و نقطه‌ی NAT را مشخص کنید.
+
+#### Lab
+
+HLD یک صفحه‌ای بنویسید و از یک همکار بخواهید فقط با آن، جریان F2 را توضیح دهد؛ اگر نتوانست، HLD مبهم است.
+
+#### عیب‌یابی سند
+
+| علامت | علت | رفع |
+|---|---|---|
+| سؤال زیاد از همکار | جریان‌ها ناقص | افزودن جریان |
+| HLD شلوغ | جزئیات LLD | انتقال به LLD |
+| ریسک ثبت نشده | بی‌توجهی | جلسه‌ی ریسک |
+
+#### پرسش‌ها با پاسخ
+
+**۱. HLD و LLD چه فرقی دارند؟** سطح جزئیات: چه/چرا در برابر چطور/دقیقاً چه مقداری.
+**۲. چرا فرضیات؟** هر فرضیه ریسک بالقوه است.
+**۳. «خارج از محدوده» چه فایده‌ای دارد؟** جلوگیری از انتظار اضافی.
+
+#### English Corner
+
+- *The HLD describes what and why; the LLD describes how.*
+- Q: Which assumptions could break your design?
 
 ## درس 31-2 — Capstone I: طراحی تفصیلی (LLD) — جدول Interface/Route/Policy/VPN و ماتریس ردیابی
 
@@ -559,6 +706,95 @@ Int  port2 10.10.0.1/24 USERS
 
 بازبینی: هیچ دو Interface هم‌پوشان نباشند؛ Gateway داخل همان Subnet.
 
+### تکمیل عمیق: LLD دقیق — هر IP یک‌بار، هر Policy یک دلیل
+
+#### چرا؟
+
+LLD دستورالعمل ساختن است. اگر دو نفر با آن بسازند باید دقیقاً یک شبکه به دست آید. اگر در LLD «تقریباً» بنویسید، در Lab «حدس» خواهید زد.
+
+#### جدول Interface
+
+``` text
+Device  Port   Zone   IP              Notes
+Edge    port1  WAN    203.0.113.2/29  GW 203.0.113.1
+Edge    port2  DMZ    10.30.0.1/24
+Edge    port3  LINK   10.99.0.1/30
+Int     port1  LINK   10.99.0.2/30
+Int     port2  USERS  10.10.0.1/24
+Int     port3  SRV    10.20.0.1/24
+Int     port4  MGMT   10.50.0.1/24
+```
+
+#### بررسی هم‌پوشانی
+
+هر Subnet را با بقیه مقایسه کنید. روش: ابتدا آدرس شبکه و آدرس پخش (Broadcast) هر بلوک را بنویسید.
+
+``` text
+10.10.0.0/24 -> 10.10.0.0 - 10.10.0.255
+10.20.0.0/24 -> 10.20.0.0 - 10.20.0.255
+No overlap
+```
+
+#### جدول Route
+
+``` text
+Int : 0.0.0.0/0 via 10.99.0.1 (port1)
+Edge: 10.10.0.0/24 via 10.99.0.2 ; 10.20.0.0/24 via 10.99.0.2 ; 10.50.0.0/24 via 10.99.0.2
+```
+
+#### جدول Policy با دلیل
+
+| ID | مسیر | سرویس | دلیل (نیازمندی) |
+|---|---|---|---|
+| 10 | USERS→SRV | HTTPS,SMB | R4 |
+| 20 | USERS→LINK | HTTP,HTTPS,DNS | R1 |
+| 30 | WAN→DMZ (VIP) | HTTPS | R2 |
+| 90 | any→any | ALL deny log | پیش‌فرض امن |
+
+#### مثال ساده — پیدا کردن خطا در LLD
+
+دو بار 10.20.0.1 به دو Interface داده شده؛ شناسایی با جستجوی IP در جدول. رفع: یکی از آن‌ها را تغییر دهید.
+
+#### مثال متوسط — Route خلاصه
+
+``` text
+10.10.0.0/24, 10.20.0.0/24 can be summarized to 10.10.0.0/15? NO (covers 10.10-10.11)
+Keep separate routes unless a contiguous reserved block exists
+```
+
+خلاصه‌سازی فقط وقتی مجاز است که بلوک پیوسته و رزرو شده باشد.
+
+#### مثال سخت — تناقض NAT
+
+در LLD ننوشته‌اید NAT در کدام فایروال است. در ساخت هر دو NAT زدند؛ ردیابی Log سخت شد. قاعده: هر جریان باید یک «نقطه‌ی NAT» مشخص داشته باشد.
+
+#### Lab
+
+جدول‌های بالا را در یک فایل بنویسید و با اسکریپت ساده هم‌پوشانی را بررسی کنید (مثلاً با پایتون `ipaddress`).
+
+``` text
+python3 -c "import ipaddress as i; print(i.ip_network('10.10.0.0/24').overlaps(i.ip_network('10.20.0.0/24')))"
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| IP تکراری | LLD بی‌کنترل | اسکریپت بررسی |
+| Route برگشت گم | جدول ناقص | افزودن Route |
+| Policy بی‌دلیل | نبود Traceability | ستون Requirement |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا ستون «دلیل» برای Policy؟** حذف یا بازبینی بعدی.
+**۲. هم‌پوشانی IP چه می‌کند؟** مسیر و NAT خراب.
+**۳. نقطه‌ی NAT؟** یکی برای هر جریان.
+
+#### English Corner
+
+- *Each IP address is assigned exactly once.*
+- Q: How do you detect overlapping subnets?
+
 ## درس 31-3 — Capstone II: ساخت مرحله‌ای (S1–S6) با Checkpoint، دستورهای واقعی، آزمون هر مرحله و Rollback
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۲ · ≈ 8 ساعت**
@@ -728,6 +964,81 @@ S1–S6 با Checkpoint؛ هر مرحله Verify قبل از بعدی.
 
 پس از ساخت Edge: ping به GW، Lookup Policy، `get router info routing-table all`؛ فقط در صورت موفقیت به S3.
 
+### تکمیل عمیق: ساخت مرحله‌ای S1–S6 با Checkpoint و Rollback
+
+#### چرا؟
+
+ساختن همه‌چیز یک‌جا مثل چیدن یک ساختمان بدون بازرسی طبقه‌ای است؛ اگر پایه خراب باشد، بعد از طبقه‌ی ششم می‌فهمید. روش درست: هر مرحله ساخته، آزمون و ثبت می‌شود، سپس مرحله‌ی بعد.
+
+#### مراحل
+
+| مرحله | کار | Checkpoint |
+|---|---|---|
+| S1 | Interface و آدرس‌دهی | ping هم‌سایه‌ها |
+| S2 | Routing | `get router info routing-table all` |
+| S3 | Policy پایه و NAT | Lookup + curl |
+| S4 | DMZ و VIP | nmap از اینترنت |
+| S5 | VPN/SD-WAN | Tunnel Up + ping |
+| S6 | Log/Monitoring/Backup | Log رسیده + Backup |
+
+#### مثال ساده — S1
+
+``` text
+config system interface
+ edit port2
+  set ip 10.10.0.1 255.255.255.0
+  set allowaccess ping
+ next
+end
+execute ping 10.10.0.5
+```
+
+Checkpoint: پاسخ ping. Rollback: `unset ip` یا بازگرداندن Config.
+
+#### مثال متوسط — S3 با بررسی منفی
+
+``` text
+diagnose firewall iprope lookup 10.10.0.5 40000 8.8.8.8 53 udp port2   # expect policy 20
+diagnose firewall iprope lookup 10.10.0.5 40000 10.50.0.20 22 tcp port2 # expect deny
+```
+
+هر دو باید جواب مورد انتظار را بدهند؛ آزمون منفی نشان می‌دهد مرز امنیتی کار می‌کند.
+
+#### مثال سخت — شکست Checkpoint S5
+
+Tunnel Up ولی ping نمی‌رود. روش: ۱) شمارنده‌ی enc/dec ۲) Route ۳) Policy دوطرفه ۴) MTU. فرض: Policy یک‌طرفه. رفع: Policy جهت مقابل؛ تکرار Checkpoint.
+
+#### Rollback مرحله‌ای
+
+``` text
+execute backup config tftp S3-ok.conf 10.50.0.30   # before S4
+# if S4 fails:
+execute restore config tftp S3-ok.conf 10.50.0.30
+```
+
+#### Lab
+
+هر مرحله را با Snapshot ماشین مجازی قبل از شروع ثبت کنید؛ شکست عمدی در S4 و بازگشت.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| S2 درست ولی S3 ping ندارد | Policy/RPF | Lookup/Debug Flow |
+| S4 از اینترنت نمی‌رسد | VIP/Route ISP | بررسی VIP و Policy |
+| S5 Tunnel Down | Proposal/PSK | Debug IKE |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا مرحله‌ای؟** کوتاه‌کردن حلقه‌ی خطا.
+**۲. چرا Backup قبل از مرحله؟** Rollback سریع.
+**۳. آزمون منفی چرا؟** اثبات امنیت.
+
+#### English Corner
+
+- *Build in small steps and verify each one.*
+- Q: What is the purpose of a checkpoint?
+
 ## درس 31-4 — Capstone II: آزمون کامل، Evidence Index نمونه‌ی پر، تحلیل سه خرابی و Sign-off
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰ تا ۳۱-۳ · ≈ 11 ساعت**
@@ -878,6 +1189,64 @@ Index شواهد: شماره‌ی آزمون، دستور، خروجی، زما�
 ``` text
 ID T2 ; cmd nmap -p 22,80,443 203.0.113.3 ; 2026-11-27 10:15 ; 443 open, others filtered ; PASS
 ```
+
+### تکمیل عمیق: آزمون کامل و Evidence Index
+
+#### چرا؟
+
+آزمون بدون ثبت شبیه امتحانی است که برگه‌اش گم شود. Evidence Index فهرست مرتب شواهد است؛ هر ردیف قابل بازتولید.
+
+#### قالب Evidence Index
+
+``` text
+ID  Req  Test            Command                                   Time        Result
+T1  R1   Users internet  curl -sI https://example.org              10:05       200 PASS
+T2  R2   DMZ 443 only    nmap -p 22,80,443 203.0.113.3             10:12       only 443 PASS
+T3  R3   Failover        ping -i 1 8.8.8.8 (cut ISP1)              10:20       3 lost PASS
+```
+
+#### مثال ساده
+
+یک ردیف کامل: شناسه‌ی آزمون، نیازمندی، دستور، زمان، نتیجه، مسیر فایل خروجی.
+
+#### مثال متوسط — سه خرابی تزریقی
+
+| خرابی | شاهد | رفع |
+|---|---|---|
+| VIP حذف | Lookup=0 | بازسازی |
+| Route برگشت ناقص | Sniffer: SYN بدون ACK | افزودن Route |
+| PSK متفاوت | Debug IKE: AUTH_FAILED | یکسان‌سازی |
+
+#### مثال سخت — نتیجه‌ی مرزی
+
+Failover 5.2 ثانیه در حالی که هدف کمتر از ۵ بود. تصمیم صادقانه: FAIL یا «شرطی قبول» با برنامه‌ی بهبود (کاهش interval و failtime). هرگز عدد را گرد نکنید تا قبول شود.
+
+#### Sign-off
+
+مالک نیازمندی نتیجه را امضا می‌کند؛ مواردی که اجرا نشد در بخش «Deferred» ثبت می‌شوند.
+
+#### Lab
+
+Evidence Index کامل برای پروژه‌ی خودتان بسازید با ≥ ۱۰ ردیف.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| شاهد بی‌زمان | بی‌دقتی | Timestamp |
+| آزمون تکرارناپذیر | دستور ناقص | ثبت دستور کامل |
+| قبول بدون شاهد | عجله | رد |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا زمان؟** ارتباط با Log.
+**۲. «شرطی قبول» چه وقت؟** با برنامه‌ی رفع و تاریخ.
+**۳. Deferred چیست؟** آنچه اجرا نشده و صادقانه ثبت شده.
+
+#### English Corner
+
+- *Evidence must be repeatable and time-stamped.*
+- Q: How do you handle a borderline test result?
 
 ## درس 31-5 — Capstone II: Runbook کامل نمونه، Handover و آزمون Runbook توسط همکار
 
@@ -1034,6 +1403,75 @@ Step 4 Restore config
  Rollback: previous backup
 ```
 
+### تکمیل عمیق: Runbook عملی و آزمون آن با همکار
+
+#### چرا؟
+
+Runbook برای ساعت ۳ بامدادی نوشته می‌شود، وقتی شما خوابید و همکارتان باید کار را انجام دهد. اگر Runbook مبهم باشد، همان شب مشکل بزرگ می‌شود.
+
+#### قالب هر Runbook
+
+``` text
+Title    : Restore firewall config from backup
+Goal     : return device to last known good config
+Prereq   : backup file + hash verified, console access
+Steps    : 1) copy file 2) execute restore config ... 3) wait reboot
+Verify   : get system status ; ping GW ; test user flow
+Rollback : previous backup
+Contact  : on-call NOC
+```
+
+#### قواعد نگارش
+
+1. هر مرحله یک فعل و یک دستور.
+2. خروجی مورد انتظار کنار هر مرحله.
+3. بدون فرض دانش پنهان.
+4. نسخه و تاریخ.
+
+#### مثال ساده
+
+Runbook «بررسی روزانه»: چهار دستور، چهار خروجی مورد انتظار.
+
+#### مثال متوسط — Runbook قطع ISP
+
+``` text
+Step 1 get router info routing-table details 0.0.0.0/0   expect: via ISP2
+Step 2 diagnose sys sdwan health-check                   expect: ISP1 dead
+Step 3 notify ISP1 NOC ; open ticket
+Step 4 monitor until recovery ; failback verify
+```
+
+#### مثال سخت — آزمون Runbook
+
+یک همکار که پروژه را نمی‌شناسد با فقط Runbook یک Restore را انجام می‌دهد؛ شما فقط مشاهده می‌کنید. هر جا پرسید «کجا؟» یعنی Runbook ناقص است؛ آن را اصلاح و آزمون را تکرار کنید.
+
+#### Handover
+
+لیست: سند طراحی، Runbook، Evidence Index، دسترسی‌ها (در Vault)، محدودیت‌ها، تماس‌ها.
+
+#### Lab
+
+یک Runbook بنویسید و با یک نفر آزمون کنید؛ تعداد سؤال‌های او را ثبت کنید (هدف: صفر).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| همکار گیر کرد | مرحله مبهم | اصلاح |
+| خروجی نامنتظره | نسخه متفاوت | ثبت نسخه |
+| رمز در Runbook | بی‌دقتی | Vault |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا آزمون Runbook؟** ابهام را آشکار می‌کند.
+**۲. چرا خروجی مورد انتظار؟** تشخیص موفقیت.
+**۳. رمز کجا؟** در Vault نه سند.
+
+#### English Corner
+
+- *A runbook must be usable by someone who did not write it.*
+- Q: What belongs in a handover package?
+
 ## درس 31-6 — ارزیابی Capstone I و II: ارائه، Q&A، سؤال‌های دفاع و Rubric تفصیلی
 
 **فصل 31 · بازنویسی عمیق · پیش‌نیاز: ۳۱-۰ تا ۳۱-۵ · ≈ 11 ساعت**
@@ -1182,6 +1620,67 @@ Improvement: run T-12/T-15 in lab; verify commands
 ### مثال حل‌شده: پاسخ به «Evidence کجاست؟»
 
 اشاره به Index شواهد، شماره‌ی T، فایل Log و زمان؛ و در صورت اجرا نشدن، صراحتاً «اجرا نشده/تأیید مستندی».
+
+### تکمیل عمیق: دفاع از پروژه — سؤال‌های سخت و پاسخ‌های نمونه
+
+#### چرا؟
+
+پروژه‌ای که نتوانید از آن دفاع کنید، مال شما نیست. دفاع یعنی توضیح تصمیم‌ها، پذیرش محدودیت‌ها و نشان دادن شواهد.
+
+#### ساختار ارائه‌ی ۱۰ دقیقه‌ای
+
+| دقیقه | محتوا |
+|---|---|
+| 0-2 | مسئله و نیازها |
+| 2-5 | معماری و تصمیم‌ها |
+| 5-8 | اثبات (Evidence) |
+| 8-10 | محدودیت‌ها و گام بعد |
+
+#### سؤال سخت ۱: «اگر Edge بیفتد چه می‌شود؟»
+
+پاسخ نمونه: «اینترنت و DMZ قطع می‌شوند؛ شبکه‌ی داخلی همچنان کار می‌کند. برای کاهش، HA یا Edge دوم پیشنهاد می‌شود؛ در Lab اجرا نشده و به‌عنوان Deferred ثبت است.»
+
+#### سؤال سخت ۲: «چرا NAT فقط در Edge؟»
+
+پاسخ: «یک نقطه‌ی ترجمه ردیابی Log را ساده می‌کند؛ NAT دوگانه Session و عیب‌یابی را پیچیده می‌کند.»
+
+#### سؤال سخت ۳: «شاهد Failover؟»
+
+پاسخ: «ping مداوم، قطع در ساعت X، ۳ بسته گم‌شده، Log رویداد؛ مراجعه به T3 در Evidence Index.»
+
+#### Rubric تفصیلی
+
+``` text
+Design quality 20 | Build correctness 20 | Evidence 20 | Troubleshooting 15 | Docs 10 | Honesty 15
+Example: 18 + 17 + 19 + 12 + 9 + 15 = 90
+```
+
+#### مثال: پاسخ به «چه چیزی اجرا نشده؟»
+
+صادقانه فهرست کنید: HA، UTM با لایسنس، آزمون بار. اضافه کنید چه زمانی و چگونه آزمون می‌شوند.
+
+#### Lab
+
+یک ارائه‌ی ۱۰ دقیقه‌ای را ضبط کنید و با Rubric خودتان را نمره دهید.
+
+#### عیب‌یابی ارائه
+
+| مشکل | رفع |
+|---|---|
+| جزئیات زیاد | تمرکز بر تصمیم |
+| بی‌شاهد | Evidence Index |
+| دفاع نکردن از اشتباه | پذیرش و درس |
+
+#### پرسش‌ها با پاسخ
+
+**۱. صداقت درباره‌ی محدودیت چه اثری دارد؟** اعتماد را بالا می‌برد.
+**۲. چرا Rubric؟** نمره‌دهی شفاف.
+**۳. چگونه دفاع می‌کنید؟** تصمیم، دلیل، شاهد.
+
+#### English Corner
+
+- *I did not test this; here is how I would.*
+- Q: What was your hardest design trade-off?
 
 ## پاسخ‌های فصل 31
 
