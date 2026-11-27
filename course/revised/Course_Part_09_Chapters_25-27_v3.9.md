@@ -382,150 +382,147 @@ Cost = Reference BW / Interface BW
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. مدل پردازش Cisco (ACL/Route/NAT) و Fortinet (Policy/Route/Session) را مقایسه کند.
-2. برگه‌ی تطبیق دستورها (show ↔ get/diagnose) را بسازد.
-3. تفاوت‌های مفهومی (Stateless ACL در برابر Stateful Policy) را درست بفهمد.
-4. برای هر وظیفه دستور معادل را بنویسد.
-5. خطاهای ناشی از «ترجمه‌ی کورکورانه» را بشناسد.
+1. مفاهیم هم‌ارز Cisco و Fortinet را نگاشت کنید (Interface، Zone، ACL/Policy، NAT، VRF/VDOM، Routing).
+2. برگه‌ی تطبیق (Rosetta Sheet) برای تیم بسازید.
+3. تفاوت فلسفه‌ی طراحی (ACL ترتیبی در برابر Policy مبتنی بر Zone و Session) را بگویید.
+4. دستورهای دیدن وضعیت را در دو سازنده مقایسه کنید.
+5. دام‌های رایج مهاجرت/Interop را بشناسید.
+6. نگاشت را با مثال واقعی پیکربندی تأیید کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا برگه‌ی تطبیق؟** کسی که Cisco بلد است و باید روی FortiGate کار کند، با یک برگه‌ی «هدف ← دستور Cisco ← دستور FortiGate ← خروجی مورد انتظار» سرعتش چند برابر می‌شود. برگه را برای کارهای روزمره‌ی خودتان بسازید و هر ردیف را در Lab تأیید کنید.
+مهندسی که فقط Cisco بداند وقتی FortiGate ببیند، مثل کسی است که انگلیسی بلد است و با فرانسوی مواجه می‌شود: مفاهیم یکسان‌اند ولی واژه‌ها و فلسفه‌ی نگارش متفاوت. در شرکت‌های واقعی تقریباً همیشه چند سازنده داریم. «برگه‌ی تطبیق» ساده‌ترین ابزار برای انتقال دانش بین تیم‌هاست و جلوی اشتباه‌های مهاجرت را می‌گیرد.
 
-**جمع‌بندی اصلی درس:**
+### فلسفه‌ی طراحی
 
-مهندسی که فقط Cisco بلد است FortiGate را با نگاه سیسکویی می‌خواند: «ACL کجاست؟». ولی در FortiGate مفهوم ACL جایش را به Policy داده و مسیر پردازش فرق دارد. نگاشت مفاهیم سریع‌ترین راه یادگیری است، به شرط اینکه تفاوت‌ها را هم بدانید.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) نگاشت مفهومی
-
-| مفهوم | Cisco IOS | FortiGate |
+| ویژگی | Cisco IOS/ASA | FortiGate |
 |---|---|---|
-| فیلتر | ACL (Stateless، ترتیبی) | Firewall Policy (Stateful) |
-| NAT | `ip nat inside/outside` | NAT در Policy / VIP / IP Pool |
-| Interface منطقی | Sub-interface / SVI | VLAN interface / Zone |
-| مسیر | `ip route` | `config router static` |
-| جدول مسیر | `show ip route` | `get router info routing-table all` |
-| ARP | `show ip arp` | `diagnose ip arp list` |
-| Session | NAT translations | `diagnose sys session list` |
-| Debug | `debug ip ...` | `diagnose debug flow` |
-| Capture | EPC/SPAN | `diagnose sniffer packet` |
-| ذخیره | `copy run start` | تغییرات خودکار ذخیره می‌شود |
+| تصمیم | ACL ترتیبی روی Interface | Policy بر پایه‌ی Interface/Zone مبدأ↔مقصد |
+| وضعیت | ACL ساده Stateless؛ ASA/Zone-Based FW Stateful | همیشه Stateful |
+| NAT | دستور جدا/Object NAT | داخل Policy یا Central NAT |
+| UTM | ماژول/دستگاه جدا (FirePOWER) | Profile داخل Policy |
+| مجازی‌سازی | VRF/Context | VDOM |
 
-#### ۲) تفاوت‌های مهم
+### نگاشت مفاهیم
 
-- IOS: Config در RAM تا ذخیره. FortiOS: هر تغییر بلافاصله ذخیره (Revision).
-- ACL Stateless و Policy Stateful.
-- Policy در FortiGate بین **جفت Interface/Zone** است.
-- Default Deny ضمنی در FortiGate (Implicit Deny) و در ACL هم، ولی رفتار Log متفاوت.
+| مفهوم | Cisco | FortiGate |
+|---|---|---|
+| Interface مجازی L3 | SVI `interface vlan 10` | VLAN Interface |
+| Trunk | `switchport mode trunk` | VLAN sub-interface روی پورت |
+| ACL ورودی | `ip access-group ACL in` | Firewall Policy |
+| Zone | `zone security` | `config system zone` |
+| NAT خروجی | `ip nat inside source list ... overload` | Policy `nat enable` |
+| Static NAT | `ip nat inside source static` | VIP |
+| Default Route | `ip route 0.0.0.0 0.0.0.0 GW` | `config router static` |
+| VRF | `vrf definition` | VDOM |
+| ECMP | `maximum-paths` | `v4-ecmp-mode` |
+| Floating Static | AD بالاتر | Distance/Priority |
+| IP SLA | `ip sla` + `track` | Link Monitor/SD-WAN Health-check |
+| FHRP | HSRP/VRRP | FGCP/VRRP |
 
-#### ۳) مثال معادل
-
-``` text
-! Cisco
-ip access-list extended OUT
- permit tcp 10.10.0.0 0.0.0.255 any eq 443
-interface Gi0/1
- ip access-group OUT in
-```
-
-``` text
-! FortiGate
-config firewall policy
- edit 10
-  set srcintf "port2"
-  set dstintf "port1"
-  set srcaddr "NET-USERS"
-  set dstaddr "all"
-  set action accept
-  set schedule "always"
-  set service "HTTPS"
-  set nat enable
- next
-end
-```
-
-#### ۴) خطاهای ترجمه
-
-- فرض «ACL ورودی روی Interface» ⇒ Policy باید جفت Interface باشد.
-- فراموشی `nat enable`.
-- انتظار `copy run start`.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| ترجمه | مفهومی نه خط‌به‌خط |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — جدول
+### نگاشت دستورهای مشاهده
 
 | هدف | Cisco | FortiGate |
 |---|---|---|
-| نمایش Route | `show ip route` | `get router info routing-table all` |
-| همسایه OSPF | `show ip ospf neighbor` | `get router info ospf neighbor` |
-| همسایه BGP | `show ip bgp summary` | `get router info bgp summary` |
+| جدول مسیر | `show ip route` | `get router info routing-table all` |
+| جزئیات مسیر | `show ip route 10.1.1.1` | `get router info routing-table details 10.1.1.1` |
+| Interface | `show ip interface brief` | `get system interface physical` |
+| Session/NAT | `show ip nat translations` | `diagnose sys session list` |
 | ARP | `show ip arp` | `get system arp` |
-| Session | `show conn` (ASA) | `diagnose sys session list` |
-| Debug بسته | `debug ip packet` | `diagnose debug flow` |
+| OSPF همسایه | `show ip ospf neighbor` | `get router info ospf neighbor` |
+| BGP خلاصه | `show ip bgp summary` | `get router info bgp summary` |
+| IPsec | `show crypto ikev2 sa` | `diagnose vpn ike gateway list` |
+| Packet Capture | `monitor capture` | `diagnose sniffer packet` |
+| Config فعلی | `show running-config` | `show full-configuration` |
 
-(دقت دستورها را از مستند همان نسخه تأیید کنید.)
+### ACL در برابر Policy — مثال
 
-#### مثال متوسط — ping با منبع
-
-``` text
-execute ping-options source 10.10.0.1
-execute ping 10.20.0.10
-```
-
-#### مثال سخت — ترجمه‌ی یک مسئله
-
-«مسیر 10.30.0.0/24 را از BGP یاد بگیر»: Cisco با `network` و `neighbor`؛ FortiGate با `config router bgp` و در صورت لزوم Route-map برای Policy. تفاوت: Debug در Cisco خطرناک است؛ در FortiGate Debug Flow با فیلتر و سقف.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** `show ip route` ⇒ `get router info routing-table all`.
-
-**متوسط (تفاوت):** ACL Cisco باید برگشت را هم مجاز کند (یا established)؛ Policy Fortinet برگشت را خودکار می‌پذیرد.
-
-**سخت (ترجمه‌ی Config):** ACL 10 خطی را به Policy تبدیل: هر خط به یک یا چند Policy با Object؛ ادغام ردیف‌های مشابه؛ Log؛ آزمون با Lookup. ریسک: ترتیب و Implicit Deny.
-
-### ۷) پیاده‌سازی از مسیر CLI
+Cisco:
 
 ``` text
-get router info routing-table all
-diagnose ip arp list
-diagnose sys session list
+ip access-list extended USERS-IN
+ permit tcp 10.10.0.0 0.0.0.255 host 10.20.0.30 eq 443
+ deny   ip any any log
+interface Gi0/1
+ ip access-group USERS-IN in
 ```
 
-### ۸) Verification (اثبات صحت)
+FortiGate معادل:
 
-- جدول تطبیق.
-- آزمون Lookup.
+``` text
+config firewall policy
+    edit 10
+        set name "USERS-to-APP"
+        set srcintf "ZN-USERS"
+        set dstintf "ZN-SRV"
+        set srcaddr "NET-USERS"
+        set dstaddr "HOST-APP"
+        set service "HTTPS"
+        set action accept
+        set schedule "always"
+        set logtraffic all
+    next
+end
+```
 
-### ۹) Troubleshooting
+تفاوت مهم: ACL سیسکو Wildcard Mask (`0.0.0.255`) دارد، Fortinet Subnet Mask (`255.255.255.0`). ACL در جهت ورودی Interface؛ Policy بر دو سر (src→dst). پاسخ‌ها در Stateful خودکار مجازند.
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+### مثال‌های حل‌شده
+
+#### مثال ساده — Wildcard
+
+``` text
+Cisco  : 10.10.0.0 0.0.0.255
+Fortinet: 10.10.0.0 255.255.255.0 (or 10.10.0.0/24)
+Wildcard = 255.255.255.255 - 255.255.255.0 = 0.0.0.255
+```
+
+#### مثال متوسط — NAT
+
+Cisco: `ip nat inside source list 10 interface Gi0/0 overload`. Fortinet: Policy خروجی با `set nat enable` (و IP Pool اختیاری). Static NAT Cisco ⇒ VIP در Fortinet همراه Policy؛ فراموش کردن Policy دلیل رایج «VIP کار نمی‌کند».
+
+#### مثال متوسط — ترتیب
+
+Cisco ACL: اولین تطابق؛ Implicit Deny انتها. Fortinet: ترتیب Policy از بالا، اولین تطابق؛ Implicit Deny (Policy 0). Log Deny ضمنی باید روشن شود.
+
+#### مثال سخت — مهاجرت ACL با `established`
+
+Cisco: `permit tcp any any established` برای برگشت. در FortiGate لازم نیست (Stateful). کپی ACL به Policy باعث Policyهای اضافی/ناامن می‌شود. درس: «ترجمه‌ی مفهومی»، نه خط‌به‌خط.
+
+#### مثال سخت — VRF به VDOM
+
+VRF جداسازی L3؛ VDOM جداسازی کامل Policy/Admin/VPN. معادل یک‌به‌یک نیستند: VRF-Lite روی یک Router کافی؛ VDOM سنگین‌تر و لایسنس. تصمیم طبق نیاز Admin جدا.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. یک ACL را به Policy ترجمه کنید.
+2. NAT/Static NAT را نگاشت کنید.
+3. جدول Rosetta تیم را کامل کنید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| ترافیک رد می‌شود | Policy جفت Interface | Zone/Interface |
+| Wildcard اشتباه | Mask | تبدیل |
+| VIP بی‌اثر | Policy نیست | افزودن |
+| ACL کپی | established | Stateful |
+| VRF/VDOM | تفاوت | تصمیم |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Default Deny در هر دو.
+ترجمه‌ی مفهومی با بازبینی امنیتی؛ Implicit Deny Log؛ حذف Policyهای اضافی.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- نگاشت+تفاوت.
-- Stateless/Stateful.
-- خودکار ذخیره.
+نگاشت مفاهیم (ACL↔Policy، NAT↔Policy/VIP، VRF↔VDOM، IP SLA↔Link Monitor)؛ Wildcard در برابر Mask؛ Stateful؛ Rosetta Sheet برای تیم.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) معادل show ip route؟ *(پاسخ: 25-1-ت1)*
 
@@ -541,7 +538,7 @@ diagnose sys session list
 
 **Q1.** Quick quiz (English): What is the FortiGate equivalent of a Cisco ACL? *(پاسخ: 25-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -549,106 +546,16 @@ diagnose sys session list
 
 - *Do not translate configs line by line.* ← Config را خط‌به‌خط ترجمه نکنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** نگاشت Cisco–Fortinet (اجرا نشده). **Evidence:** `02-design/mapping-sheet.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Cisco IOS docs
 - Fortinet FortiOS 7.0 Administration Guide
 
 <a id="l-25-2"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: برگه‌ی تطبیق
-
-برای هر قابلیت: دستور Cisco، دستور FortiGate، دستور Verify هر دو، تفاوت رفتار. مثال: `show ip route` ↔ `get router info routing-table all`; `show ip ospf neighbor` ↔ `get router info ospf neighbor`.
-
-**پرسش‌های مصاحبه**
-1. *Verify معادل؟* جدول بالا.
-2. *تفاوت Default؟* مثال Admin Distance.
-3. *Syntax؟* config tree.
-
-### مثال حل‌شده: ساخت برگه‌ی تطبیق برای OSPF
-
-| هدف | Cisco | FortiGate |
-|---|---|---|
-| همسایه‌ها | `show ip ospf neighbor` | `get router info ospf neighbor` |
-| جدول مسیر | `show ip route ospf` | `get router info routing-table ospf` |
-| Interface | `show ip ospf interface` | `get router info ospf interface` |
-| Cost | `ip ospf cost 10` | `set cost 10` در ospf-interface |
-
-**مثال:** پیش‌فرض Reference Bandwidth در Cisco برابر 100 Mbps و در FortiGate هم 100 Mbps است؛ لینک 1 Gbps و 100 Mbps هر دو Cost=1 می‌شوند. در دو سر باید یک مقدار یکسان تنظیم شود.
-
-``` text
-Cost = Reference BW / Interface BW
-100 Mbps / 1000 Mbps = 0.1 -> rounded to 1
-```
-
-**نکته:** پیش‌فرض‌های هر نسخه را در مستند رسمی همان نسخه بررسی کنید؛ این جدول «مفهومی» است.
-
-### تکمیل عمیق: برگه‌ی تطبیق دستورها — ساخت و استفاده
-
-#### چرا؟
-
-از کار روزمره: یک نفر Cisco بلد است و باید با FortiGate تست کند. برگه‌ی تطبیق (Cheat Sheet) سرعت را چند برابر می‌کند.
-
-#### برگه‌ی نمونه
-
-| هدف | Cisco | FortiGate |
-|---|---|---|
-| نمایش Route | `show ip route` | `get router info routing-table all` |
-| همسایه OSPF | `show ip ospf neighbor` | `get router info ospf neighbor` |
-| همسایه BGP | `show ip bgp summary` | `get router info bgp summary` |
-| جدول ARP | `show ip arp` | `get system arp` |
-| وضعیت Interface | `show ip interface brief` | `get system interface` |
-| Session | `show conn` (ASA) | `diagnose sys session list` |
-| Debug بسته | `debug ip packet` | `diagnose debug flow` |
-| Ping با منبع | `ping x source y` | `execute ping-options source y` + `execute ping x` |
-
-دقت دستورها را از مستند همان نسخه تأیید کنید.
-
-#### مثال ساده — Ping با منبع
-
-``` text
-execute ping-options source 10.10.0.1
-execute ping 10.20.0.10
-```
-
-#### مثال متوسط — مقایسه‌ی Debug
-
-Cisco `debug ip packet` ممکن است دستگاه را از پا بیندازد؛ در FortiGate `debug flow` با فیلتر محدود و `trace start 20` ایمن‌تر است. قانون: همیشه فیلتر و سقف تعداد.
-
-#### مثال سخت — ترجمه‌ی یک مسئله‌ی کامل
-
-مسئله: «مسیر 10.30.0.0/24 را از BGP یاد بگیر». ترجمه: Cisco `network` و `neighbor`؛ FortiGate `config router bgp ... config neighbor ... config network`. نکته: FortiGate پیش‌فرض Route-map ندارد و اگر Policy لازم است باید `route-map-in/out` بنویسید.
-
-#### Lab
-
-برگه‌ی ۲۰ ردیفی از دستورهای مورد استفاده‌ی خودتان با ستون «خروجی مورد انتظار».
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| دستور کار نمی‌کند | نسخه | مستند |
-| خروجی متفاوت | قالب | مقایسه |
-| Debug سنگین | بی‌فیلتر | فیلتر |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا فیلتر در Debug؟** CPU.
-**۲. برگه چه کمکی می‌کند؟** سرعت و دقت.
-**۳. چرا ستون خروجی؟** تشخیص موفقیت.
-
-#### English Corner
-
-- *A cheat sheet maps tasks, not just commands.*
-- Q: Why limit the scope of debug commands?
 
 ## درس 25-2 — OSPF و BGP بین FortiGate و CSR: برگه‌ی پارامتر، پیکربندی دوطرفه، Redistribution و عیب‌یابی مقایسه‌ای
 
@@ -656,194 +563,166 @@ Cisco `debug ip packet` ممکن است دستگاه را از پا بینداز
 
 > **وضعیت:** FortiOS 7.0.3 و CSR1000v 17.03.02 (IOS-XE)؛ بوت‌نشده؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. OSPF و eBGP بین FGT و CSR را با برگه‌ی پارامتر مشترک بسازد.
-2. تفاوت پیش‌فرض‌ها (Hello/Dead، Network Type، MTU، Timer، Auth) و اثر ناسازگاری را بگوید.
-3. Redistribution دوطرفه و جلوگیری از Loop (Tag/Route-map) را پیاده کند.
-4. Verification را با دستورهای هر دو سازنده انجام و مقایسه کند.
-5. Neighbor Stuck (Init/Exstart/Active) را با شواهد هر دو سر عیب‌یابی کند.
-6. Convergence و Failover را اندازه بگیرد.
+1. OSPF بین FortiGate و Cisco CSR را با برگه‌ی پارامتر هماهنگ راه بیندازید.
+2. BGP (eBGP) بین FortiGate و CSR را پیکربندی کنید.
+3. Network Type، Hello/Dead، MTU، Area و Authentication را هماهنگ کنید.
+4. Neighbor و جدول را در هر دو سمت تأیید کنید.
+5. Redistribution و Prefix-list را ایمن به‌کار ببرید.
+6. خطاهای رایج Interop را رفع کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا پارامترهای OSPF/BGP بین دو سازنده؟** بیشتر شکست‌های Interop در همسایگی است. دو دستگاه باید روی پارامترها توافق کنند.
+OSPF/BGP استاندارد باز هستند و باید بین دو سازنده کار کنند. ولی پیش‌فرض‌ها متفاوت‌اند: مثلاً Network Type یا MTU، یا Cisco در BGP پیش‌فرض Next-hop را تغییر نمی‌دهد (iBGP). یک پارامتر ناهماهنگ و Neighbor بالا نمی‌آید. برگه‌ی پارامتر مشترک مهم‌ترین ابزار است.
 
-**OSPF:** Area، Network Type، MTU، Hello/Dead، Authentication، Subnet/Mask.
-**BGP:** ASN، `update-source`، Next-hop، Route-map، TCP/179.
-
-وضعیت‌ها را بشناسید: ExStart ⇒ MTU/Router-ID تکراری؛ Init ⇒ Hello یک‌طرفه؛ BGP Idle ⇒ TCP برقرار نیست.
-
-**جمع‌بندی اصلی درس:**
-
-بین دو سازنده، پروتکل یکی است ولی هر سازنده «پیش‌فرض‌ها» و «محدودیت‌ها»ی خودش را دارد. بیشتر مشکلات Interop از فرض یکسان بودن پیش‌فرض‌ها می‌آید: Hello/Dead، MTU، Network Type، یا رفتار Redistribution/Metric. روش درست: برگه‌ی پارامتر مشترک، پیکربندی صریح دو سر، و Debug هم‌زمان.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) برگه‌ی پارامتر (مشترک)
+### توپولوژی نمونه
 
 ``` text
-Link FGT port3 <-> CSR Gi2 : 10.255.0.0/30  (FGT .2, CSR .1)   MTU 1500 both
-OSPF : area 0, network type point-to-point, hello 10, dead 40, auth MD5 key 1 <KEY>
-BGP  : CSR AS 65001 router-id 1.1.1.1 ; FGT AS 65002 router-id 2.2.2.2
-       eBGP over 10.255.0.1/.2, hold 180 (or 9/3 with BFD), prefix-lists both directions
-Redistribution: OSPF<->BGP with tags; never both ways without tag
+LAN-FGT 10.10.0.0/16 -- [FGT 198.51.100.2/30] --- [CSR 198.51.100.1/30] -- LAN-CSR 10.20.0.0/16
 ```
 
-#### ۲) پیکربندی
+### برگه‌ی پارامتر OSPF
+
+| پارامتر | FortiGate | CSR |
+|---|---|---|
+| Router-ID | 10.254.0.1 | 10.254.0.2 |
+| Area | 0.0.0.0 | 0 |
+| Network Type | broadcast/point-to-point | همان |
+| Hello/Dead | 10/40 | 10/40 |
+| Auth | MD5/SHA | هماهنگ |
+| MTU | 1500 | 1500 |
+
+### OSPF — FortiGate
 
 ``` text
-! CSR (IOS-XE)
-interface GigabitEthernet2
- ip address 10.255.0.1 255.255.255.252
- ip ospf network point-to-point
- ip ospf message-digest-key 1 md5 <KEY>
- ip ospf authentication message-digest
- ip mtu 1500
-router ospf 1
- router-id 1.1.1.1
- network 10.255.0.0 0.0.0.3 area 0
-router bgp 65001
- bgp router-id 1.1.1.1
- neighbor 10.255.0.2 remote-as 65002
- neighbor 10.255.0.2 prefix-list FROM-FGT in
- neighbor 10.255.0.2 prefix-list TO-FGT out
-```
-
-``` text
-# FortiGate
 config router ospf
-    set router-id 2.2.2.2
+    set router-id 10.254.0.1
     config area
         edit 0.0.0.0
         next
     end
     config network
         edit 1
-            set prefix 10.255.0.0 255.255.255.252
+            set prefix 198.51.100.0 255.255.255.252
+            set area 0.0.0.0
         next
     end
-    config ospf-interface
-        edit "TO-CSR"
-            set interface "port3"
+    config interface
+        edit "port1"
             set network-type point-to-point
-            set authentication md5
-            set md5-key 1 <KEY>
+            set hello-interval 10
+            set dead-interval 40
         next
     end
 end
+```
+
+### OSPF — CSR
+
+``` text
+router ospf 1
+ router-id 10.254.0.2
+ network 198.51.100.0 0.0.0.3 area 0
+interface GigabitEthernet1
+ ip ospf network point-to-point
+ ip ospf hello-interval 10
+ ip ospf dead-interval 40
+```
+
+### BGP — eBGP
+
+FortiGate (AS 65001):
+
+``` text
 config router bgp
-    set as 65002
-    set router-id 2.2.2.2
+    set as 65001
+    set router-id 10.254.0.1
     config neighbor
-        edit "10.255.0.1"
-            set remote-as 65001
-            set prefix-list-in "FROM-CSR"
-            set prefix-list-out "TO-CSR"
+        edit "198.51.100.1"
+            set remote-as 65002
+            set password <SECRET>
+        next
+    end
+    config network
+        edit 1
+            set prefix 10.10.0.0 255.255.0.0
         next
     end
 end
 ```
 
-(نام فیلدهای FortiOS `Unverified`؛ با CLI Reference 7.0 تطبیق شود.)
-
-#### ۳) Redistribution امن
+CSR (AS 65002):
 
 ``` text
-FGT: redistribute ospf into bgp with route-map tag 100; redistribute bgp into ospf only routes WITHOUT tag 100
-CSR: same tag logic
+router bgp 65002
+ bgp router-id 10.254.0.2
+ neighbor 198.51.100.2 remote-as 65001
+ neighbor 198.51.100.2 password <SECRET>
+ address-family ipv4
+  network 10.20.0.0 mask 255.255.0.0
+  neighbor 198.51.100.2 activate
 ```
 
-بدون Tag، Prefix بین OSPF و BGP رفت‌وبرگشت می‌کند و حلقه یا Metric بی‌ثبات ایجاد می‌شود (۱۰-۲).
+نکته: Cisco برای Prefix باید در جدول مسیر وجود داشته باشد (`network` فقط Prefix موجود در RIB را اعلام می‌کند؛ Null0 برای Summary). FortiGate هم همین.
 
-#### ۴) جدول Verification
+### تأیید
 
-| سؤال | CSR | FortiGate |
+``` text
+FortiGate: get router info ospf neighbor ; get router info bgp summary ; get router info routing-table all
+CSR      : show ip ospf neighbor ; show ip bgp summary ; show ip route
+```
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — OSPF Full
+
+FGT: `get router info ospf neighbor` ⇒ `10.254.0.2 Full`. CSR: `show ip ospf neighbor` ⇒ FULL. Route `O 10.20.0.0/16`.
+
+#### مثال متوسط — MTU
+
+FGT `mtu 1500`؛ CSR `ip mtu 1400` ⇒ Neighbor در ExStart. رفع: هماهنگ یا `ip ospf mtu-ignore` (موقت). علامت: Log `Mismatched MTU`.
+
+#### مثال متوسط — Network Type
+
+FGT broadcast (DR/BDR)، CSR point-to-point: Hello سازگار نیست یا DR انتخاب نمی‌شود. رفع: هر دو point-to-point.
+
+#### مثال سخت — eBGP Multi-hop
+
+Peer روی Loopback (غیر مستقیم) ⇒ eBGP به‌طور پیش‌فرض TTL=1 ⇒ شکست. رفع: `set ebgp-enforce-multihop enable` و `ebgp-multihop-ttl 2` در FGT؛ `neighbor x ebgp-multihop 2` و `update-source Loopback0` در CSR. توصیه: Peer مستقیم برای سادگی.
+
+#### مثال سخت — Redistribution حلقه
+
+دو سازنده هر دو OSPF↔BGP Redistribute می‌کنند ⇒ حلقه‌ی مسیر (Route Feedback). راه: Tag/Route-map، Prefix-list، فقط یک نقطه‌ی Redistribution و AD‌ها را درنظر بگیرید.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. OSPF دو سمت.
+2. eBGP و Prefix.
+3. MTU/Network Type Mismatch.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| همسایه OSPF | `show ip ospf neighbor` | `get router info ospf neighbor` |
-| LSDB | `show ip ospf database` | `get router info ospf database` |
-| BGP | `show ip bgp summary` | `get router info bgp summary` |
-| Route | `show ip route` | `get router info routing-table all` |
-| دریافتی BGP | `show ip bgp neighbors X received-routes` | `get router info bgp neighbors X received-routes` |
+| ExStart | MTU | هماهنگ |
+| Neighbor نیست | Hello/Auth/Area | بررسی |
+| BGP Idle/Active | Reachability/TTL | multihop |
+| Route نمی‌آید | network/Prefix-list | بررسی |
 
-#### ۵) ناسازگاری‌های رایج
+### نکات امنیتی
 
-MTU (Exstart)، Network Type (DR/BDR در یک سر)، Auth، Hello/Dead، Timer BGP، `next-hop` و Filter، AD (eBGP 20 vs OSPF 110؛ مسیر BGP برنده می‌شود).
+Auth OSPF/BGP؛ Prefix-list ورودی؛ Passive Interface؛ `maximum-prefix`.
 
-### ۴) طراحی و تصمیم‌گیری
+### جمع‌بندی
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| OSPF یا BGP | OSPF داخلی/لینک؛ BGP برای مقیاس/Policy |
-| AD | دقت AD: BGP 20 (eBGP) vs OSPF 110 |
-| Auth | MD5/SHA هر دو سر |
-| Tag | اجباری در Redistribution دوطرفه |
+OSPF/BGP بین FGT و CSR: برگه‌ی پارامتر؛ Network Type/MTU/Hello؛ eBGP مستقیم یا multihop؛ تأیید دو سمت؛ Redistribution ایمن.
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — ExStart
-
-``` text
-Cisco  : show interface Gi0/0 | include MTU
-FGT    : get system interface physical
-```
-
-MTU دو سر برابر؛ یا موقت `ip ospf mtu-ignore`.
-
-#### مثال متوسط — BGP
-
-``` text
-show ip bgp summary
-get router info bgp summary
-```
-
-Idle ⇒ ping/TCP 179/Policy.
-
-#### مثال سخت — Next-hop
-
-پیشوند یاد گرفته ولی ترافیک نمی‌رود: Next-hop قابل‌دسترس نیست ⇒ `next-hop-self` یا Route.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** OSPF Full و eBGP Established؛ Route 10.10.0.0/16 (CSR) در FGT با AD 20 (BGP)؛ ping از LAN CSR به LAN FGT موفق.
-
-**متوسط (تحلیل):** OSPF در Exstart: CSR Tunnel MTU 1400 و FGT 1500؛ DBD ارسالی بزرگ‌تر از MTU همتا؛ رفع: MTU یکسان یا `ip ospf mtu-ignore` (ریسک: ناپایداری). شواهد: دو سر `neighbor` و Debug OSPF.
-
-**سخت (Redistribution):** پس از Redistribution دوطرفه بدون Tag، Prefix 10.10.0.0/16 مدام تغییر می‌کند (BGP→OSPF→BGP). علت: Loop Redistribution. شواهد: `show ip bgp 10.10.0.0` Path عجیب و Flap؛ رفع: Tag و Route-map؛ تأیید: Route پایدار؛ آزمون: قطع لینک و بازگشت.
-
-### ۸) Verification (اثبات صحت)
-
-- Neighbor Full/Established.
-- Route‌ها در هر دو.
-- آزمون قطع لینک و Convergence.
-- آزمون منفی: Prefix غیرمجاز رد می‌شود.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
-|---|---|---|
-| Exstart | MTU | هم‌سان |
-| Init | Hello/Auth/Policy | همسان |
-| BGP Active | TCP 179/AS | Policy/AS |
-| Route نصب نمی‌شود | Next-hop/AD | Route/Distance |
-| Flap مسیر | Redistribution | Tag |
-
-### ۱۰) نکات امنیتی
-
-- Authentication OSPF/BGP.
-- Prefix-list ورودی/خروجی.
-- Max-prefix.
-
-### ۱۱) جمع‌بندی مفهومی
-
-- برگه‌ی پارامتر مشترک.
-- MTU/Network Type/Auth ناسازگاری‌های اصلی.
-- Redistribution با Tag.
-- Verification دوطرفه.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا OSPF در Exstart می‌ماند؟ *(پاسخ: 25-2-ت1)*
 
@@ -859,7 +738,7 @@ Idle ⇒ ping/TCP 179/Policy.
 
 **Q1.** Quick quiz (English): Why can a bidirectional redistribution without tags create a routing loop? *(پاسخ: 25-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -869,11 +748,11 @@ Idle ⇒ ping/TCP 179/Policy.
 
 - *Match MTU, network type and authentication on both vendors.* ← MTU، Network Type و Auth را در هر دو سازنده یکسان کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** OSPF/BGP FGT–CSR. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ospf-fgt-csr.md`.
 
-### ۱۵) منابع
+### منابع
 
 - RFC 2328
 - RFC 4271
@@ -882,247 +761,155 @@ Idle ⇒ ping/TCP 179/Policy.
 
 <a id="l-25-3"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: OSPF و BGP بین FGT و CSR
-
-نقاط ناهمخوانی OSPF: Area، Network Type، MTU، Hello/Dead، Authentication. BGP: AS، Update-source، Next-hop، Route-map.
-
-``` text
-show ip ospf neighbor
-get router info ospf neighbor
-show ip bgp summary
-get router info bgp summary
-```
-
-**پرسش‌های مصاحبه**
-1. *گیر در ExStart؟* MTU.
-2. *BGP Idle؟* TCP/179.
-3. *Policy؟* Route-map دو سر.
-
-### مثال حل‌شده: همسایگی OSPF گیر کرده در ExStart
-
-**علامت:** `get router info ospf neighbor` وضعیت `ExStart` نشان می‌دهد.
-
-**مراحل عیب‌یابی**
-1. MTU دو Interface را مقایسه کنید.
-2. سمت Cisco: `show ip ospf interface` و `show interface | include MTU`.
-3. سمت FortiGate: `get system interface physical`.
-4. اگر MTU متفاوت است: برابر کنید یا (موقت) `ip ospf mtu-ignore` در Cisco.
-
-``` text
-Cisco  Gi0/0 MTU 1500
-FGT    port1 MTU 1496   (VLAN tag overhead)
-=> DBD packet size mismatch -> stuck ExStart
-```
-
-**رفع:** هر دو سر 1500 یا 1496. **تأیید:** وضعیت `Full/DR`.
-
-**مثال BGP:** Idle ⇒ `telnet 10.99.0.2 179` از فایروال؛ اگر باز نشد Policy/ACL پورت 179 را بررسی کنید و از Local-in Policy فایروال غافل نشوید.
-
-### تکمیل عمیق: OSPF و BGP بین FortiGate و CSR — پارامترهای همسایگی
-
-#### چرا؟
-
-بیشتر شکست‌های Interop در همسایگی رخ می‌دهد؛ دو دستگاه باید روی پارامترها توافق کنند. ما باید بدانیم کدام پارامتر چرا مهم است.
-
-#### OSPF — پارامترهای باید یکسان
-
-| پارامتر | چرا |
-|---|---|
-| Area ID | همسایگی در یک Area |
-| Hello/Dead | 10/40 پیش‌فرض Broadcast |
-| Network Type | رفتار DR/BDR |
-| MTU | DBD Exchange |
-| Authentication | امنیت |
-| Subnet Mask | همسایگی |
-
-#### مثال ساده — وضعیت‌ها
-
-``` text
-Down -> Init -> 2-Way -> ExStart -> Exchange -> Loading -> Full
-```
-
-- گیر در Init: Hello یک‌طرفه (ACL/Policy).
-- گیر در 2-Way: طبیعی بین DROther‌ها.
-- گیر در ExStart: MTU یا Duplicate Router-ID.
-
-#### مثال متوسط — حل ExStart
-
-``` text
-Cisco : show interface Gi0/0 | include MTU
-FGT   : get system interface physical
-```
-
-MTU دو سر را برابر کنید یا (موقت) `ip ospf mtu-ignore`. تأیید: Full.
-
-#### BGP — نقاط رایج
-
-``` text
-show ip bgp summary     (Cisco)
-get router info bgp summary   (FGT)
-```
-
-State: Idle (TCP/179؟)، Active (تلاش)، OpenSent/Confirm (پارامتر)، Established (PfxRcd عدد). مثال: Idle ⇒ ping/ TCP 179 / Policy Local-in.
-
-#### مثال سخت — Next-hop
-
-پیشوند یاد گرفته شد ولی ترافیک نمی‌رود: Next-hop دست‌نیافتنی. راه: `next-hop-self` یا Route به Next-hop.
-
-#### Lab
-
-دو روتر (یک CSR و یک FortiGate VM) بسازید؛ OSPF را با MTU متفاوت گیر دهید و رفع کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| ExStart | MTU | یکسان‌سازی |
-| Init | یک‌طرفه | Policy/ACL |
-| BGP Idle | TCP179 | Local-in |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا MTU در OSPF؟** DBD اندازه.
-**۲. 2-Way طبیعی کجا؟** DROther.
-**۳. BGP Idle؟** TCP برقرار نیست.
-
-#### English Corner
-
-- *OSPF neighbors must agree on area, timers and MTU.*
-- Q: What does the BGP Idle state indicate?
-
 ## درس 25-3 — IPsec چندسازنده: روش مقایسه‌ی Debug، جدول مغایرت و Interop آزمایشی FGT–CSR
 
 **فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۳، ۲۵-۱، ۲۵-۲ · ≈ 11 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. پارامترهای دو سازنده را در جدول مغایرت (Mismatch) مقایسه کند.
-2. Debug دو سمت را هم‌زمان بخواند و خط متناظر را بیابد.
-3. تفاوت پیش‌فرض‌ها (DH، Lifetime، PFS، DPD) را بشناسد.
-4. Interop آزمایشی را با Test Plan اجرا کند.
-5. نتیجه را مستند و سازگاری را ارزیابی کند.
+1. IPsec چندسازنده را با جدول معادل (Proposal، DH، PFS، Lifetime، Selector) طراحی کنید.
+2. Debug دو سمت (FortiGate و Cisco) را کنار هم بخوانید و Mismatch را بیابید.
+3. تفاوت Selector (ACL/Crypto Map در برابر Route-based) را حل کنید.
+4. NAT-T، ID و Lifetime را هماهنگ کنید.
+5. جدول مغایرت (Mismatch Table) بسازید.
+6. روش عیب‌یابی دوسمتی را اجرا کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا روش مقایسه‌ی Debug؟** در IPsec بین دو سازنده «کار نمی‌کند» معمولاً یعنی یک تفاوت کوچک. روش سیستماتیک: Debug هم‌زمان دو سر، جدول مقایسه‌ی پارامتر (IKE، رمز، DH، Lifetime، Identity، Selector) و تفسیر پیام‌ها.
+وقتی یک سمت Fortinet و سمت دیگر Cisco است، پیام خطا از هر دو سمت بخشی از حقیقت را می‌گوید؛ مثل دو شاهد که هرکدام نیمی از ماجرا را دیده‌اند. مهارت اصلی خواندن هر دو Debug و مقایسه‌ی «چه پیشنهاد کردم» با «چه پذیرفتی» است. اشتباه رایج: فقط یک سمت را بررسی کردن.
 
-**جمع‌بندی اصلی درس:**
+### جدول معادل
 
-وقتی دو دستگاه از دو سازنده IPsec می‌زنند، هر کدام «پیش‌فرض‌های» خودشان را دارند و Debug هرکدام به زبان خودش حرف می‌زند. مقایسه‌ی منظم دو سمت، سریع‌ترین راه برای پیدا کردن Mismatch است.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) جدول مغایرت
-
-| پارامتر | FortiGate | Cisco CSR | بررسی |
-|---|---|---|---|
-| IKE version | `ike-version 2` | `crypto ikev2` | هر دو v2 |
-| Encryption | `proposal aes256-sha256` | `encryption aes-cbc-256` | یکسان |
-| Integrity | sha256 | `integrity sha256` | یکسان |
-| DH | `dhgrp 14` | `group 14` | یکسان |
-| PFS | `pfs enable` + dhgrp | `set pfs group14` | هر دو |
-| Lifetime P1 | `keylife` 86400 | `lifetime 86400` | یکسان یا نزدیک |
-| Selector | Subnet | ACL | آینه |
-| DPD | `dpd on-idle` | `dpd 10 3 on-demand` | سازگار |
-| NAT-T | enable | خودکار | UDP 4500 |
-
-#### ۲) Debug دو سمت
-
-| لحظه | FGT | CSR |
+| مفهوم | FortiGate | Cisco CSR |
 |---|---|---|
-| شروع | `ike ... initiator: ... SA_INIT` | `IKEv2:Received Packet [From ...] ... IKE_SA_INIT` |
-| پیشنهاد | `proposal ...` | `Proposal received` |
-| خطا | `no suitable proposal` | `NO_PROPOSAL_CHOSEN` |
+| IKE نسخه | `ike-version 2` | `crypto ikev2 ...` |
+| رمز P1 | `proposal aes256-sha256` | `encryption aes-cbc-256` + `integrity sha256` |
+| DH | `dhgrp 14` | `group 14` |
+| PFS | `pfs enable` + `dhgrp` | `set pfs group14` |
+| Lifetime P1 | `keylife 86400` | `lifetime 86400` (ikev2 profile) |
+| Lifetime P2 | `keylife-seconds 3600` | `set security-association lifetime seconds 3600` |
+| Selector | `src-subnet/dst-subnet` | ACL در Crypto Map یا VTI 0.0.0.0/0 |
+| ID محلی | `localid` | `identity local` |
+| NAT-T | `nattraversal` | خودکار |
 
-نکته: زمان هر دو با NTP هماهنگ باشد تا خطوط متناظر پیدا شوند.
+### مشکل Selector
 
-#### ۳) Test Plan Interop
+حالت‌های ممکن:
 
-| # | آزمون | معیار |
+| FortiGate | CSR | نتیجه |
 |---|---|---|
-| I-01 | Establish IKEv2 | SA ready |
-| I-02 | ping LAN↔LAN | 0٪ Loss |
-| I-03 | Rekey P1/P2 | بدون قطع > 1 s |
-| I-04 | DPD: قطع یک سر | تشخیص < 60 s |
-| I-05 | MTU/MSS | دانلود 100MB |
-| I-06 | Failover (در صورت دو WAN) | بازگشت |
+| 0.0.0.0/0 (Route-based) | Crypto Map با ACL | IKEv2 TS: FGT 0/0 پیشنهاد، CSR ACL را می‌خواهد ⇒ معمولاً CSR جواب می‌دهد با Narrow؛ ممکن ناسازگار |
+| دقیقاً 10.10/16↔10.20/16 | ACL همان | سازگار |
+| 0.0.0.0/0 | VTI `tunnel mode ipsec` | سازگار (Route-based دو سمت) |
 
-#### ۴) ارزیابی
+توصیه: هر دو Route-based (VTI) یا هر دو Selector دقیقاً یکسان.
 
-اگر I-03 قطع طولانی: Lifetime/Rekey Margin. I-04 کند: DPD interval.
-
-#### ۵) مستندسازی
-
-برای هر Mismatch: شاهد (خط Debug هر دو سمت)، علت، رفع، تاریخ.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Test Plan | ۶ آزمون |
-| Debug | همزمان |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — پیام‌ها
-
-no proposal chosen ⇒ Proposal؛ AUTH_FAILED ⇒ PSK/Identity؛ TS_UNACCEPTABLE ⇒ Selector.
-
-#### مثال متوسط — Debug دو سر
+### CSR با Crypto Map (Policy-based)
 
 ``` text
-FGT: diagnose debug application ike -1 ; diagnose debug enable
-CSR: debug crypto ikev2 ; debug crypto ikev2 error
+ip access-list extended VPN-ACL
+ permit ip 10.20.0.0 0.0.255.255 10.10.0.0 0.0.255.255
+crypto map CM 10 ipsec-isakmp
+ set peer 198.51.100.2
+ set transform-set TS
+ set pfs group14
+ set ikev2-profile PROF
+ match address VPN-ACL
+interface GigabitEthernet1
+ crypto map CM
 ```
 
-#### مثال سخت — پس از ۸ ساعت می‌افتد
-
-Lifetime متفاوت (FGT 28800، CSR 86400) و Rekey Collision؛ یکسان‌سازی.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Mismatch DH: FGT 14، CSR 5؛ شاهد در هر دو سمت؛ یکسان‌سازی.
-
-**متوسط (Rekey):** پس از ۱ ساعت تونل ۸ ثانیه قطع شد. علت: Lifetime P2 در CSR 3600 و FGT 43200؛ Rekey نامتقارن. رفع: یکسان‌سازی؛ آزمون I-03.
-
-**سخت (DPD):** قطع سر CSR؛ FGT تا ۵ دقیقه تونل را زنده می‌بیند. مراحل: DPD FGT on-idle با interval 10 و retry 3؛ CSR on-demand؛ آزمون: تشخیص ۳۰ ثانیه. درس: DPD دو سر.
-
-### ۷) پیاده‌سازی از مسیر CLI
+FortiGate مقابل با Selector دقیق:
 
 ``` text
-diagnose vpn ike gateway list
-show crypto ikev2 sa
+config vpn ipsec phase2-interface
+    edit "TO-CSR-P2"
+        set phase1name "TO-CSR"
+        set proposal aes256-sha256
+        set pfs enable
+        set dhgrp 14
+        set src-subnet 10.10.0.0 255.255.0.0
+        set dst-subnet 10.20.0.0 255.255.0.0
+    next
+end
 ```
 
-### ۸) Verification (اثبات صحت)
+### روش مقایسه‌ی Debug
 
-- I-01..I-06.
+1. فعال‌سازی هم‌زمان:
 
-### ۹) Troubleshooting
+``` text
+FortiGate: diagnose vpn ike log-filter dst-addr4 203.0.113.2 ; diagnose debug application ike -1 ; diagnose debug enable
+CSR      : debug crypto ikev2 ; debug crypto ikev2 error ; terminal monitor
+```
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+2. هم‌زمان ایجاد ترافیک.
+3. جدول: «پیشنهاد Initiator» ⇄ «انتخاب Responder» ⇄ «خطا».
+4. غیرفعال‌سازی: `diagnose debug disable` و `undebug all`.
+
+### جدول مغایرت
+
+| پارامتر | FGT | CSR | هماهنگ؟ | اقدام |
+|---|---|---|---|---|
+| Encryption | aes256 | aes-cbc-256 | بله | - |
+| Integrity | sha256 | sha256 | بله | - |
+| DH | 14 | 14 | بله | - |
+| PFS | 14 | بدون | خیر | `set pfs group14` در CSR |
+| Selector | 10.10/16↔10.20/16 | ACL مخالف جهت | خیر | اصلاح ACL |
+| Lifetime P2 | 3600 | 28800 | کوچک‌تر برنده | هماهنگ |
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — موفق
+
+`show crypto ikev2 sa` ⇒ READY؛ `diagnose vpn ike gateway list` ⇒ established؛ ping 10.10.0.5↔10.20.0.5.
+
+#### مثال متوسط — PFS
+
+Phase2 رد: FGT PFS فعال، CSR بدون. Debug CSR: `Received no_proposal_chosen`. رفع: `set pfs group14` در CSR یا غیرفعال در FGT (ایمن‌تر: فعال در هر دو).
+
+#### مثال متوسط — ACL معکوس
+
+ACL سیسکو برای 10.20↔10.10 (جهت درست) ولی FGT Selector 10.10↔10.20: IKEv2 TS_UNACCEPTABLE. رفع: ACL و Selector آینه‌ای دقیق (Cisco ACL از دید خود: src=LAN محلی، dst=LAN دور).
+
+#### مثال سخت — ID
+
+FGT `localid` خالی (IP). CSR `match identity remote fqdn fgt.example`. `AUTHENTICATION_FAILED`. رفع: `match identity remote address 198.51.100.2` یا `set localid fgt.example` در FGT. Debug دو سمت ID را نشان می‌دهد.
+
+#### مثال سخت — Lifetime و Rekey
+
+FGT 86400؛ CSR 28800. Rekey هر ۸ ساعت، ولی اگر CSR زودتر Rekey کند و DPD/Make-before-break ناسازگار باشد، قطع‌های کوتاه. راه: Lifetime برابر و بررسی Rekey در Log؛ در زمان Rekey اختلال ثانیه‌ای بررسی شود.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. IKEv2 FGT↔CSR (Route-based).
+2. PFS/Selector Mismatch و رفع.
+3. جدول مغایرت.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Rekey قطع | Lifetime | یکسان |
+| no_proposal_chosen | PFS/الگوریتم | هماهنگ |
+| TS_UNACCEPTABLE | Selector | آینه |
+| AUTH_FAILED | ID/PSK | بررسی |
+| قطع دوره‌ای | Lifetime | هماهنگ |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- PSK در Vault.
+Debug هم‌زمان ولی کوتاه؛ PSK قوی؛ الگوریتم قوی؛ Log فقط لازم.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- جدول مغایرت.
-- Debug دو سمت.
-- Test Plan.
+IPsec چندسازنده: جدول معادل، Selector آینه‌ای یا Route-based، ID، PFS و Lifetime؛ Debug دوسمتی و جدول مغایرت.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Mismatch رایج؟ *(پاسخ: 25-3-ت1)*
 
@@ -1138,7 +925,7 @@ show crypto ikev2 sa
 
 **Q1.** Quick quiz (English): Why synchronize clocks when comparing debugs from two vendors? *(پاسخ: 25-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1146,117 +933,16 @@ show crypto ikev2 sa
 
 - *Compare both sides with synchronized clocks.* ← دو سمت را با ساعت‌های هماهنگ مقایسه کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Interop FGT–CSR (اجرا نشده). **Evidence:** `03-ops/interop.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: IPsec
 - Cisco IOS-XE IKEv2
 
 <a id="l-25-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: IPsec چندسازنده
-
-روش: Proposal یکسان، Selector یکسان، Lifetime، Identity؛ Debug دو سر در یک زمان. مقایسه: `diagnose vpn ike` و `debug crypto ikev2`.
-
-**پرسش‌های مصاحبه**
-1. *Lifetime ناهمخوان؟* Rekey ناهماهنگ.
-2. *Identity؟* IP/FQDN.
-3. *Selector؟* VTI در برابر ACL.
-
-### مثال حل‌شده: Debug دوطرفه‌ی IKEv2
-
-**فرض:** Tunnel بین FortiGate (203.0.113.2) و CSR (198.51.100.2) بالا نمی‌آید.
-
-``` text
-FGT: diagnose debug application ike -1 ; diagnose debug enable
-CSR: debug crypto ikev2 ; debug crypto ikev2 error
-```
-
-**تفسیر نمونه**
-- FGT: `no proposal chosen` ⇒ Proposal ناهمخوان.
-- CSR: `Failed to find a matching policy` ⇒ هم‌علت.
-
-**مقایسه‌ی پارامترها**
-
-| پارامتر | FGT | CSR |
-|---|---|---|
-| Encryption | aes256 | aes-cbc-128 |
-| DH | 14 | 14 |
-
-علت: AES256 در برابر AES128. با یکسان‌سازی، `show crypto ikev2 sa` وضعیت READY.
-
-پس از تأیید دیباگ را خاموش کنید: `undebug all` و `diagnose debug disable`.
-
-### تکمیل عمیق: IPsec چندسازنده — روش مقایسه‌ی Debug
-
-#### چرا؟
-
-در IPsec بین دو سازنده، «کار نمی‌کند» معمولاً یعنی یک تفاوت کوچک در پارامترها؛ ولی کدام؟ روش مقایسه‌ی سیستماتیک جواب می‌دهد.
-
-#### جدول مقایسه‌ی پارامتر
-
-| پارامتر | FortiGate | Cisco CSR |
-|---|---|---|
-| IKE نسخه | `ike-version 2` | `crypto ikev2` |
-| رمز | `proposal aes256-sha256` | `encryption aes-cbc-256` + `integrity sha256` |
-| DH | `dhgrp 14` | `group 14` |
-| Lifetime | `keylife` | `lifetime` |
-| Identity | `localid` | `identity local` |
-| Selector | Phase2 selector | Tunnel/ACL |
-
-#### مثال ساده — Debug دو سر هم‌زمان
-
-``` text
-FGT: diagnose debug application ike -1 ; diagnose debug enable
-CSR: debug crypto ikev2 ; debug crypto ikev2 error
-```
-
-#### مثال متوسط — تفسیر
-
-- FGT: `no proposal chosen`، CSR: `Failed to find a matching policy` ⇒ Proposal ناهمخوان.
-- AUTH_FAILED ⇒ PSK/Identity.
-- TS_UNACCEPTABLE ⇒ Selector.
-
-#### مثال سخت — شکست پس از چند ساعت
-
-Tunnel بالا می‌آید و بعد از 8 ساعت قطع می‌شود: Lifetime متفاوت و Rekey ناهماهنگ (FGT 28800، CSR 86400). رفع: یکسان‌سازی؛ در IKEv2 هر طرف مستقل Rekey می‌کند ولی Collision ممکن است.
-
-``` text
-sh crypto ikev2 sa ; sh crypto ipsec sa
-diagnose vpn tunnel list
-```
-
-کانترها: `encaps/decaps` در Cisco و `enc/dec pkts` در FGT باید با هم افزایش یابند.
-
-#### Lab
-
-یک Tunnel را عمداً با Proposal متفاوت بسازید و Debug هر دو سر را تفسیر کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| no proposal chosen | رمز | یکسان |
-| AUTH_FAILED | PSK | یکسان |
-| TS_UNACCEPTABLE | Selector | یکسان |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Debug دو سر؟** دیدن هر دو دید.
-**۲. Collision Rekey؟** هم‌زمانی.
-**۳. کانتر چه می‌گوید؟** عبور ترافیک.
-
-#### English Corner
-
-- *Debug both peers at the same time and compare.*
-- Q: What does TS_UNACCEPTABLE point to?
 
 ## درس 25-4 — آزمون معماری ۶ (FGT+CSR): IPsec چندسازنده، مقایسه‌ی Debug و جدول مغایرت — کلید پاسخ و Rubric
 
@@ -1264,158 +950,132 @@ diagnose vpn tunnel list
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. تونل IKEv2 بین FortiGate و Cisco CSR1000v را طراحی کند.
-2. پارامترهای معادل (Proposal، DH، PFS، Lifetime، Selector) را جدول‌بندی کند.
-3. Debug هر دو سمت را مقایسه و Mismatch را بیابد.
-4. سه خرابی تزریق‌شده را رفع کند.
-5. گزارش و Rubric تحویل دهد.
+1. تونل IKEv2 بین FortiGate و Cisco CSR1000v را طراحی کنید.
+2. پارامترهای معادل را جدول‌بندی کنید.
+3. Debug هر دو سمت را مقایسه و Mismatch را بیابید.
+4. سه خرابی تزریق‌شده را رفع کنید.
+5. گزارش و Rubric تحویل دهید.
+6. صداقت را ثبت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا آزمون معماری ۶؟** نشان می‌دهد می‌توانید دو سازنده را کنار هم راه بیندازید و ثابت کنید: IPsec، OSPF، NAT، آزمون منفی و گزارش.
+در دنیای واقعی طرف مقابل تونل همیشه Fortinet نیست. این آزمون نشان می‌دهد می‌توانید دو سازنده را کنار هم راه بیندازید، ناسازگاری را با Evidence پیدا و رفع کنید و گزارش بنویسید. اشتباه رایج «همه IPsec هستند» است؛ نام پارامترها، پیش‌فرض‌ها و Selector متفاوت است.
 
-**جمع‌بندی اصلی درس:**
+### صورت مسئله
 
-در دنیای واقعی طرف مقابل تونل همیشه Fortinet نیست. اشتباه رایج: فرض اینکه «همه IPsec هستند». ولی نام پارامترها، پیش‌فرض‌ها و Selector (Cisco با ACL، Fortinet با Subnet) متفاوت است. این آزمون مهارت مقایسه‌ی دو CLI را می‌سنجد.
+FGT (`198.51.100.2`، LAN `10.10.0.0/16`) و CSR1000v (`203.0.113.2`، LAN `10.20.0.0/16`). IKEv2، AES-256، SHA-256، DH 14، PFS DH 14، Lifetime P1 86400، P2 3600.
 
-### ۳) توضیح عمیق فنی
+عیب‌های تزریق‌شده:
 
-#### ۱) صورت مسئله
+1. PFS در FGT فعال و در CSR غیرفعال.
+2. ACL CSR جهت معکوس.
+3. Lifetime P2 ناسازگار (FGT 3600، CSR 28800) و NAT اشتباه روی Policy تونل در FGT.
 
-FGT (198.51.100.2، LAN 10.10.0.0/16) و CSR1000v (203.0.113.2، LAN 10.20.0.0/16). IKEv2، AES-256، SHA-256، DH 14، PFS DH 14، Lifetime P1 86400، P2 3600.
-
-#### ۲) جدول معادل
+### جدول معادل مرجع
 
 | مفهوم | FortiGate | Cisco CSR |
 |---|---|---|
-| Proposal P1 | `set proposal aes256-sha256` | `crypto ikev2 proposal P1 ; encryption aes-cbc-256 ; integrity sha256 ; group 14` |
-| Auth | `psksecret` | `crypto ikev2 keyring` |
-| Selector | `src-subnet/dst-subnet` | ACL (`access-list` crypto) |
-| P2 | `phase2-interface` | `crypto ipsec transform-set esp-aes 256 esp-sha256-hmac` |
+| P1 | `proposal aes256-sha256`, `dhgrp 14` | `encryption aes-cbc-256`, `integrity sha256`, `group 14` |
+| Auth | `psksecret` | keyring |
+| Selector | `src-subnet/dst-subnet` | ACL crypto |
+| P2 | `phase2-interface` | transform-set `esp-aes 256 esp-sha256-hmac` |
 | PFS | `set pfs enable` | `set pfs group14` |
 | Lifetime | `keylife` | `lifetime` |
 
-#### ۳) CSR نمونه
+### کلید پاسخ — تشخیص و رفع
 
-``` text
-crypto ikev2 proposal P1
- encryption aes-cbc-256
- integrity sha256
- group 14
-crypto ikev2 policy POL1
- proposal P1
-crypto ikev2 keyring KR
- peer FGT
-  address 198.51.100.2
-  pre-shared-key <FROM-VAULT>
-crypto ikev2 profile PROF
- match identity remote address 198.51.100.2 255.255.255.255
- authentication remote pre-share
- authentication local pre-share
- keyring local KR
-crypto ipsec transform-set TS esp-aes 256 esp-sha256-hmac
- mode tunnel
-ip access-list extended VPN-ACL
- permit ip 10.20.0.0 0.0.255.255 10.10.0.0 0.0.255.255
-crypto map CM 10 ipsec-isakmp
- set peer 198.51.100.2
- set transform-set TS
- set pfs group14
- set ikev2-profile PROF
- match address VPN-ACL
-interface GigabitEthernet1
- crypto map CM
-```
+**عیب ۱ (PFS):**
 
-(`Unverified` در IOS-XE 17.03؛ نام دستورها را با help بررسی.)
+1. Evidence CSR: `debug crypto ikev2` ⇒ no_proposal_chosen در CREATE_CHILD_SA/Phase2.
+2. Evidence FGT: Phase1 up، Phase2 down.
+3. رفع: `set pfs group14` در CSR.
+4. تأیید: `show crypto ipsec sa` ⇒ encaps/decaps.
 
-نکته (مستند Cisco): نمونه‌ی بالا روش **Crypto-map (Policy-based)** است که در راهنمای IKEv2/FlexVPN به‌عنوان حالت Legacy آمده. روش Route-based مدرن: `crypto ipsec profile` با `set ikev2-profile` و اعمال آن روی Interface Tunnel با `tunnel protection ipsec profile ...` (سازگار با FortiGate Route-based).
+**عیب ۲ (ACL):**
 
-#### ۴) خرابی‌ها و کلید
+1. Evidence: TS_UNACCEPTABLE.
+2. علت: ACL CSR: `permit ip 10.10.0.0 0.0.255.255 10.20.0.0 0.0.255.255` (جهت اشتباه).
+3. رفع: ACL از دید CSR: src=10.20/16 dst=10.10/16.
+4. تأیید: `show crypto ipsec sa` ⇒ `local ident (10.20/16) remote ident (10.10/16)`.
 
-**A:** DH گروه 14 در FGT و 5 در CSR (پیش‌فرض). شاهد CSR: `debug crypto ikev2` NO_PROPOSAL؛ FGT: `no proposal chosen`. رفع: `group 14`.
+**عیب ۳ (Lifetime و NAT):**
 
-**B:** Selector نامتقارن: ACL /24 و FGT /16. شاهد: P2 down. رفع: ACL و Selector یکسان.
+1. Evidence: Rekey دوره‌ای قطع کوتاه؛ ترافیک تونل با Src NAT شده.
+2. رفع: Lifetime برابر 3600 و `nat disable` در Policy تونل.
+3. تأیید: Session بدون `snat`؛ Rekey بدون قطع قابل‌توجه.
 
-**C:** Lifetime متفاوت؛ rekey با Flap کوتاه. رفع: یکسان یا Lifetime کوچک‌تر ابتکار.
+### گزارش مقایسه‌ی Debug
 
-#### ۵) Verification
+| لحظه | FGT می‌گوید | CSR می‌گوید | نتیجه |
+|---|---|---|---|
+| IKE_SA_INIT | proposal ok | proposal ok | بله |
+| IKE_AUTH | auth ok | auth ok | بله |
+| CHILD_SA | no proposal | no_proposal_chosen | PFS |
 
-``` text
-FGT: diagnose vpn ike gateway list ; diagnose vpn tunnel list
-CSR: show crypto ikev2 sa ; show crypto ipsec sa
-```
+### Rubric (۱۰۰)
 
-#### ۶) Rubric
-
-طراحی جدول ۲۰، پیکربندی ۲۵، تشخیص ۳ خرابی ۳۰، Verify دوطرفه ۱۵، Evidence و صداقت ۱۰. قبولی ۷۵.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| معیار | امتیاز |
 |---|---|
-| IKE | v2 |
-| Selector | آینه‌ی دقیق |
-| مقایسه Debug | هر دو سمت همزمان |
+| جدول معادل | 15 |
+| راه‌اندازی تونل | 20 |
+| مقایسه‌ی Debug | 20 |
+| رفع سه عیب | 25 |
+| آزمون و گزارش | 10 |
+| صداقت | 10 |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### مثال‌های حل‌شده
 
-#### مثال ساده
+#### مثال ساده — ACL آینه
 
-IPsec برقرار + OSPF Full.
+CSR ACL: `permit ip 10.20.0.0 0.0.255.255 10.10.0.0 0.0.255.255`. FGT Selector: src 10.10/16 dst 10.20/16. آینه‌ی هم‌اند.
 
-#### مثال متوسط
-
-OSPF روی Tunnel با Network Type متفاوت (P2P در Cisco و Broadcast در FGT): همسایگی بالا می‌آید ولی DR و ناپایداری؛ رفع: P2P دو سر.
-
-#### مثال سخت
-
-HTTPS کند ⇒ MSS Clamp 1360. Rubric: نگاشت ۲۵، IPsec ۲۵، Routing ۲۵، Evidence ۱۵، گزارش ۱۰.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** جدول معادل: Proposal FGT=aes256-sha256؛ CSR=aes-cbc-256+sha256+group14؛ برابر.
-
-**متوسط (خرابی A):** DH متفاوت: FGT group14، CSR پیش‌فرض group5. شاهد در هر دو سمت NO_PROPOSAL. با `group 14` تونل up و `show crypto ikev2 sa` READY.
-
-**سخت (Selector):** P1 up ولی ping نه. مراحل: ۱) `diagnose vpn tunnel list` SA صفر. ۲) CSR: `show crypto ipsec sa` بدون SA. ۳) ACL /24 ≠ /16. ۴) یکسان‌سازی. ۵) ping ok. درس: Selector باید آینه‌ی دقیق باشد.
-
-### ۷) پیاده‌سازی از مسیر CLI
+#### مثال متوسط — RCA
 
 ``` text
-diagnose vpn ike gateway list
-diagnose vpn tunnel list
-show crypto ikev2 sa
-show crypto ipsec sa
+Impact  : tunnel P2 down 40 min after change
+Cause   : PFS mismatch (FGT on, CSR off)
+Fix     : enable PFS group14 on CSR
+Prevent : pre-change parameter sheet signed by both teams
 ```
 
-### ۸) Verification (اثبات صحت)
+#### مثال متوسط — اثبات NAT
 
-- P1 و P2 در هر دو سمت up.
-- ping بین LANها.
+Session FGT برای ping 10.10.0.5→10.20.0.5: `act=snat` ⇒ اشتباه. با `nat disable` Session بدون ترجمه.
 
-### ۹) Troubleshooting
+#### مثال سخت — دو عیب هم‌زمان
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+PFS و ACL هر دو؛ Debug یک خطای اولی را نشان می‌دهد (no proposal) و دومی پنهان است تا اولی رفع شود. روش: رفع یکی ⇒ آزمون ⇒ بعدی.
+
+#### مثال سخت — صداقت
+
+Lab اجرا نشده؛ پیام‌های Debug نمونه‌ی آموزشی؛ گزارش «Unverified».
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. تونل FGT↔CSR.
+2. سه عیب را رفع کنید.
+3. جدول مقایسه و گزارش.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| NO_PROPOSAL | DH/Proposal | group |
-| P2 down | Selector/ACL | آینه‌ی دقیق |
+| P2 down | PFS | هماهنگ |
+| TS_UNACCEPTABLE | ACL | آینه |
+| Rekey قطع | Lifetime | برابر |
+| src NAT | Policy | nat disable |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- PSK در Vault.
+آزمون ۶: طراحی FGT↔CSR با جدول معادل؛ مقایسه‌ی Debug؛ سه عیب (PFS، ACL، Lifetime/NAT)؛ گزارش، Rubric و صداقت.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- جدول معادل.
-- Selector آینه.
-- Debug دو سمت.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Selector در Cisco چیست؟ *(پاسخ: 25-4-ت1)*
 
@@ -1431,7 +1091,7 @@ show crypto ipsec sa
 
 **Q1.** Quick quiz (English): Why must crypto ACL and FortiGate selectors mirror each other? *(پاسخ: 25-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1439,98 +1099,14 @@ show crypto ipsec sa
 
 - *Compare both sides debug output.* ← خروجی Debug دو سمت را مقایسه کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** معماری ۶ (اجرا نشده). **Evidence:** `03-ops/arch6.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Cisco IOS-XE IKEv2 guide
 - Fortinet FortiOS 7.0 Administration Guide: IPsec
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Rubric معماری ۶
-
-نگاشت ۲۵، IPsec ۲۵، Routing ۲۵، Evidence ۱۵، گزارش ۱۰.
-
-**پرسش‌های مصاحبه**
-1. *Evidence؟* خروجی دو سر.
-2. *آزمون؟* Ping دوطرفه.
-3. *ثبت؟* تفاوت‌ها.
-
-### مثال حل‌شده: ارزیابی یک تحویل معماری ۶
-
-برای یک تیم که Tunnel، OSPF و NAT را بین FGT و CSR تحویل داده:
-
-| معیار | وزن | شاهد لازم |
-|---|---|---|
-| IPsec برقرار | 25 | `diagnose vpn tunnel list`، `show crypto ikev2 sa` |
-| OSPF Full | 25 | خروجی هر دو سر |
-| نگاشت درست مفاهیم | 25 | جدول تطبیق |
-| آزمون منفی | 15 | رد ترافیک غیرمجاز |
-| گزارش | 10 | RCA/محدودیت‌ها |
-
-**نمره‌گذاری:** اگر IPsec برقرار ولی آزمون منفی ندارد: 25+25+25+0+10 = 85 از 100؛ ایراد باید در بازخورد ذکر شود.
-
-### تکمیل عمیق: ارزیابی معماری ۶ — حل کامل و Rubric
-
-#### چرا؟
-
-این آزمون نشان می‌دهد می‌توانید دو سازنده را با هم کار بیندازید و ثابت کنید.
-
-#### صورت مسئله
-
-بین FortiGate (HQ) و CSR (Branch): IPsec IKEv2، OSPF روی Tunnel، یک Policy اینترنت و NAT. مدارک: تنظیمات، شواهد، آزمون منفی، گزارش.
-
-#### کلید پاسخ
-
-1. **نگاشت**: جدول مفاهیم.
-2. **IPsec**: `diagnose vpn tunnel list`، `show crypto ikev2 sa`.
-3. **OSPF**: Full در دو سر.
-4. **NAT**: یک نقطه.
-5. **آزمون منفی**: Branch→Mgmt رد.
-6. **گزارش**: محدودیت‌ها.
-
-#### محاسبه‌ی نمره
-
-``` text
-Mapping 25 | IPsec 25 | Routing 25 | Evidence 15 | Report 10
-Example: 22 + 25 + 20 + 12 + 8 = 87
-```
-
-#### مثال متوسط — خطای رایج
-
-دانشجو OSPF را روی Tunnel با Network Type متفاوت (P2P در Cisco و Broadcast در FGT) تنظیم کرد؛ همسایگی بالا رفت ولی DR انتخاب‌شد و پایدار نبود. شاهد: `get router info ospf interface`. رفع: Point-to-Point هر دو.
-
-#### مثال سخت — اختلاف MSS
-
-پس از Tunnel، HTTPS کند است. MSS Clamp 1360 روی Policy؛ مقایسه‌ی قبل و بعد با iperf.
-
-#### Lab
-
-آزمون را کامل اجرا و Evidence Index بسازید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| OSPF ناپایدار | Network Type | یکسان |
-| HTTPS کند | MTU | MSS |
-| Tunnel Up بدون ترافیک | Policy/Route | بررسی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا P2P روی Tunnel؟** بدون DR.
-**۲. MSS Clamp؟** جلوگیری از Fragmentation.
-**۳. Evidence چیست؟** خروجی دو سر.
-
-#### English Corner
-
-- *Use point-to-point network type on tunnel interfaces.*
-- Q: Why is MSS clamping useful over IPsec?
 
 ## پاسخ‌های فصل 25
 
