@@ -979,151 +979,178 @@ AV با Signature/Heuristic/Sandbox؛ Flow سریع‌تر و Proxy عمیق‌�
 
 > **وضعیت (FortiOS 7.0.3):** Signature IPS **Needs-License** (FortiGuard AV/IPS)؛ Signature برنامه (Application Control) طبق مستند جزو FortiCare پایه است؛ DoS Policy و Custom Signature بدون لایسنس. سینتکس `Unverified`. تست حمله فقط در Lab ایزوله و مجاز. Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
 
-1. IPS (Signature، Severity، Target، Action) و تفاوت **Monitor/Block** را توضیح دهد.
-2. **DoS Policy** (Anomaly: SYN Flood، UDP Flood، Port Scan، Session Limit) را به Threshold درست تبدیل کند.
-3. **Application Control** را (Category، Application، Action، QUIC/DoH) به کار ببرد.
-4. اثر Performance و FP را بسنجد و **Exception دقیق** بنویسد.
-5. در Lab با ابزار مجاز تست و نتیجه را ثبت کند.
+### هدف آموزشی
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+در پایان این درس باید بتوانید:
 
-**چرا IPS و DoS؟** IPS الگوی حمله به آسیب‌پذیری را می‌شناسد؛ DoS Policy سیل درخواست را می‌گیرد؛ Application Control برنامه‌ها را کنترل می‌کند. هرکدام اگر بد تنظیم شوند یا همه‌چیز را قطع می‌کنند (FP) یا چیزی را نمی‌گیرند.
+1. IPS، DoS Policy و Application Control را با هدف و جای اتصال تفکیک کنید.
+2. IPS Sensor با Severity و Action مناسب بسازید.
+3. DoS Policy با Anomaly و آستانه‌ی مبتنی بر Baseline بنویسید.
+4. Application Control را با Category و Action تنظیم کنید.
+5. False Positive را با Exemption مستند مدیریت کنید.
+6. ترتیب پیاده‌سازی ایمن (Monitor ⇒ Block) را اجرا کنید.
 
-**روش ایمن:** ابتدا Monitor (Pass + Log) دو هفته، سپس Block برای شدت بالا و امضاهای مطمئن؛ استثنا با مالک و تاریخ.
+### چرا باید یاد بگیریم؟
 
-**جمع‌بندی اصلی درس:** - **IPS:** الگوی اکسپلویت را در ترافیک می‌شناسد (مثل «آنتی‌ویروس برای حمله»).
-- **DoS Policy:** حجم/نرخ غیرعادی را می‌گیرد، بدون نیاز به شناخت محتوا.
-- **Application Control:** می‌پرسد «این چه برنامه‌ای است؟» حتی روی پورت غیرمعمول.
+این سه ابزار «سه نوع نگهبان» هستند: IPS (Intrusion Prevention System، یعنی «سامانه‌ی پیشگیری از نفوذ») کارشناس امنیتی است که الگوی حمله را می‌شناسد؛ DoS Policy مأمور کنترل جمعیت است که هجوم را محدود می‌کند؛ Application Control مأمور بازرسی نوع فعالیت است (بازی، پیام‌رسان، Torrent). اگر هرکدام را بدون تنظیم روشن کنید، یا هیچ اثری ندارد یا سرویس‌های قانونی را قطع می‌کند. این درس تنظیم متعادل را آموزش می‌دهد.
 
-### ۳) توضیح عمیق فنی
+### IPS (Intrusion Prevention System)
 
-#### ۳-۱) IPS Sensor
-
-Sensor مجموعه‌ای از Filter/Signature است: انتخاب بر اساس **Severity** (Critical تا Info)، **Target** (Server/Client)، **OS**، **Protocol**. Action: `pass`, `monitor`, `block`, `reset`, `quarantine`. اصول: ابتدا Monitor؛ برای سرور مشخص (Target=Server) Signatureهای مرتبط؛ Severity High/Critical Block؛ کم‌اهمیت‌ها Monitor. **Virtual Patching:** Signature آسیب‌پذیری را تا Patch سرور بلاک می‌کند.
-
-#### ۳-۲) DoS Policy
+IPS ترافیک را با Signature حمله مقایسه می‌کند (پایگاه FortiGuard؛ Needs-License) و در صورت تطبیق Log، Drop یا Quarantine می‌کند.
 
 ``` text
-Threshold examples (tune from baseline, not copied):
-tcp_syn_flood   : 2000 pkts/s per source
-udp_flood       : 2000 pkts/s
-ip_src_session  : 5000 sessions per source
-tcp_port_scan   : 1000 pkts/s
+config ips sensor
+    edit "IPS-SRV"
+        config entries
+            edit 1
+                set severity high critical
+                set action block
+                set status enable
+                set log enable
+            next
+        end
+    next
+end
 ```
 
-اعداد را از **Baseline** (۲۷-۰) بسازید؛ Threshold کم = FP برای کاربران واقعی؛ زیاد = ناکارآمد. DoS Policy **قبل از Firewall Policy** (در مسیر سریع Ingress) اعمال می‌شود و ارزان است؛ روی Interface WAN.
+نکته‌ها:
 
-#### ۳-۳) Application Control
+1. `severity`: low/medium/high/critical؛ برای شروع high و critical.
+2. `action`: `pass` (فقط Log)، `block`، `reset`، `quarantine`.
+3. `os/application/location`: فیلتر مرتبط با دارایی (Linux/Web) برای کاهش FP و CPU.
+4. روی Policy ورودی به سرورها (VIP) و Policy خروجی کاربران.
 
-Signature برنامه‌ها (Teams، Dropbox، BitTorrent، DoH ...). Action: Allow/Monitor/Block/Quarantine. نکات: (۱) **QUIC:** بلاک تا ترافیک به TCP/TLS برگردد و Inspection ممکن شود. (۲) **DoH:** بلاک برنامه‌ی DoH یا Policy DNS فقط به سرور داخلی. (۳) Deep Inspection برای شناسایی دقیق‌تر در HTTPS. (۴) بدون لایسنس: Port-based/Service-based.
+### DoS Policy
 
-#### ۳-۴) Performance
-
-IPS/App بازرسی محتوایی است: CPU↑ و Offload↓ (۱۲-۹). راه: Sensor انتخابی روی Policyهای مهم؛ DoS ارزان‌تر؛ Baseline قبل/بعد.
-
-### ۴) پیاده‌سازی: GUI و CLI
-
-**GUI:** Policy & Objects → DoS Policy → Create New (Incoming: port1؛ Source/Dest: all؛ Service ALL؛ Anomaly: Threshold). Security Profiles → Intrusion Prevention → Create New (Filters: Severity High, Critical؛ Action Block). Security Profiles → Application Control → Create New (Category Proxy/P2P: Block؛ QUIC: Block). Policy: فعال‌سازی هر دو.
-
-**CLI (`Unverified`):**
+DoS Policy روی Interface ورودی و **قبل** از Policy اصلی اجرا می‌شود (کم‌هزینه).
 
 ``` text
 config firewall DoS-policy
     edit 1
         set interface "port1"
         set srcaddr "all"
-        set dstaddr "all"
+        set dstaddr "VIP-WEB"
         set service "ALL"
         config anomaly
             edit "tcp_syn_flood"
                 set status enable
+                set log enable
+                set action block
                 set threshold 2000
-                set action block
             next
         end
     next
 end
-config ips sensor
-    edit "IPS-LAB"
-        config entries
-            edit 1
-                set severity high critical
-                set action block
-            next
-        end
-    next
-end
+```
+
+آستانه را از Baseline بگیرید (مثلاً ۲۰ برابر Peak عادی)، نه عدد خیالی. مراحل: Monitor با `action pass` ⇒ دو هفته Log ⇒ تعیین آستانه ⇒ Block.
+
+### Application Control
+
+``` text
 config application list
-    edit "APP-LAB"
+    edit "APP-STD"
         config entries
             edit 1
                 set category 2
                 set action block
             next
+            edit 2
+                set category 5
+                set action pass
+            next
         end
     next
 end
 ```
 
-### ۵) مثال‌ها
+دسته‌ها (مثل P2P، Proxy، Social Media) از FortiGuard (Needs-License)؛ شماره را از GUI/مستند بخوانید. Application Control برنامه را از رفتار (و SNI/Header) می‌شناسد، نه فقط پورت.
 
-#### مثال ساده — Sensor
+### مقایسه
+
+| ابزار | هدف | محل | لایسنس |
+|---|---|---|---|
+| IPS | نفوذ/Exploit | Policy | بله (Signature) |
+| DoS Policy | سیل و Anomaly | Interface، پیش از Policy | خیر |
+| App Control | کنترل برنامه | Policy | بله |
+
+### False Positive
 
 ``` text
 config ips sensor
- edit "IPS-SRV"
-  config entries
-   edit 1
-    set severity high critical
-    set action block
-   next
-  end
- next
+    edit "IPS-SRV"
+        config entries
+            edit 2
+                set rule 12345
+                set action pass
+                set status enable
+            next
+        end
+        config exempt-ip
+            edit 1
+                set dst-ip 10.20.0.30 255.255.255.255
+            next
+        end
+    next
 end
 ```
 
-#### مثال متوسط — DoS
+قانون: هر Exemption با «مالک، دلیل، تاریخ بازبینی».
 
-آستانه از Baseline: Peak SYN 400/s × 3 = 1200؛ `tcp_syn_flood threshold 1200 action block`.
+### مثال‌های حل‌شده
 
-#### مثال سخت — FP
+#### مثال ساده — IPS
 
-IPS درخواست مشروع را مسدود کرد: Log امضا، تأیید مشروع‌بودن، Exemption مستند، پایش.
+Severity high/critical ⇒ block. آزمون Lab (با لایسنس): ارسال الگوی تست؛ Log `attack="..."` و `action=dropped`.
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال متوسط — DoS با Baseline
 
-**ساده:** SYN Flood آزمایشی (hping3 در Lab) با 5000 pkt/s؛ DoS Policy Block؛ Log anomaly.
+Baseline SYN عادی: ۱۰۰ بسته/ثانیه (Peak ۳۰۰).
 
-**متوسط:** FP: سامانه‌ی مالی با Signature اشتباه قطع شد؛ Log IPS → Signature ID؛ Exception فقط برای آن Signature و آن سرور؛ تاریخ بازبینی.
+``` text
+Threshold = Peak * 6 = 300 * 6 = 1800  (round to 2000)
+```
 
-**سخت:** CPU ۹۰٪ پس از فعال‌کردن IPS روی همه‌ی ترافیک؛ تحلیل: `diagnose sys top` (ipsengine)، Offload کم. راه: Sensor انتخابی (Target=Server، Severity High+) و Monitor برای بقیه؛ اندازه‌گیری مجدد.
+آستانه ۲۰۰۰؛ ابتدا `pass` + Log ⇒ بررسی ⇒ `block`.
 
-### ۶) Troubleshooting
+#### مثال متوسط — App Control
 
-| علامت | علت |
-|---|---|
-| DoS اثر ندارد | Interface اشتباه، Threshold بالا |
-| FP کاربران | Threshold کم |
-| IPS بلاک نمی‌کند | Action=monitor/لایسنس/Profile وصل نیست |
-| QUIC دور می‌زند | بلاک نشده |
-| CPU زیاد | Sensor گسترده |
+کاربران نباید BitTorrent: Category P2P ⇒ block. آزمون: Torrent Client ⇒ Log `appcat="P2P"`، `action=block`.
 
-### ۷) نکات امنیتی
+#### مثال سخت — IPS و FP
 
-- آزمون حمله فقط در Lab ایزوله و مجاز.
-- IPS جایگزین Patch نیست.
-- Exception با تاریخ بازبینی.
+IPS بلاک می‌کند ورودی سامانه‌ی پرداخت را. Log: rule 12345، dst 10.20.0.30. تحلیل: الگوی قانونی. اقدام: Exemption فقط همان rule و همان Host، مالک، تاریخ بازبینی ۹۰ روزه.
 
-### ۸) جمع‌بندی
+#### مثال سخت — DoS و CDN
 
-- IPS بر اساس Signature؛ ابتدا Monitor؛ Virtual Patching.
-- DoS Policy با Baseline؛ ارزان و Ingress.
-- App Control با QUIC/DoH.
-- Performance را اندازه بگیرید.
+آستانه بدون در نظر گرفتن CDN/NAT مشتری (یک IP پشت NAT هزاران کاربر) باعث بلاک مشتریان واقعی شد. راه: آستانه بر اساس Source IP + Exempt برای IPهای مشتری بزرگ؛ Rate-limit به‌جای Block.
 
-### ۹) تمرین و ارزیابی
+### Lab هدایت‌شده (اجرا نشده)
+
+1. IPS Sensor با Monitor.
+2. DoS Policy برای SYN Flood.
+3. App Control برای P2P.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| IPS اثر ندارد | Policy/لایسنس | بررسی |
+| CPU بالا | Sensor کلی | فیلتر |
+| FP زیاد | آستانه | Exemption |
+| DoS مشتری بلاک | NAT/CDN | Exempt |
+
+### نکات امنیتی
+
+از Monitor شروع و بعد Block؛ Exemption‌ها بازبینی دوره‌ای؛ Signature را به‌روز نگه دارید.
+
+### جمع‌بندی
+
+IPS (الگوی حمله)، DoS (حجم/Anomaly)، App Control (برنامه). Monitor ⇒ Block؛ آستانه از Baseline؛ FP با Exemption مستند.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) IPS و DoS Policy چه فرقی دارند؟ *(پاسخ: 16-4-ت1)*
 
@@ -1137,7 +1164,7 @@ IPS درخواست مشروع را مسدود کرد: Log امضا، تأیید 
 
 **Q1.** Quick quiz (English): Why start an IPS sensor in monitor mode? *(پاسخ: 16-4-Q1)*
 
-### ۱۰) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1148,124 +1175,15 @@ IPS درخواست مشروع را مسدود کرد: Log امضا، تأیید 
 
 - *Tune thresholds from your own baseline.* ← آستانه‌ها را از Baseline خودتان تنظیم کنید.
 
-### ۱۱) Lab
+### Lab
 
 **کارت Lab:** DoS و IPS. **وضعیت:** اجرا نشده. **Verification:** Log anomaly/IPS، `sys top`. **Rollback:** حذف Policy/Profile. **Evidence:** `03-ops/ips-dos.md`.
 
-### ۱۲) منابع
+### منابع
 
 - Fortinet Docs: FortiOS 7.0 Administration Guide — DoS policy، Intrusion prevention، Application control.
 
 <a id="l-16-5"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: تنظیم IPS با کاهش False Positive
-
-**روش:** ابتدا Monitor (Pass + Log)، دو هفته مشاهده، سپس Block برای امضاهای ایمن.
-
-``` text
-config ips sensor
- edit "IPS-SRV"
-  config entries
-   edit 1
-    set severity high critical
-    set action block
-   next
-  end
- next
-end
-```
-
-**DoS Policy:** `tcp_syn_flood threshold 2000 action block` برای محافظت VIP؛ آستانه را از Baseline ترافیک واقعی بگیرید (مثلاً Peak × 3).
-
-**Application Control:** مسدودسازی Category (مثل P2P) و محدودیت Shaper.
-
-**FP:** هر Block ناخواسته ⇒ Exemption مستند با مالک و تاریخ.
-
-**پرسش‌های مصاحبه**
-1. *چرا ابتدا Monitor؟* جلوگیری از قطع سرویس.
-2. *DoS بر چه چیزی؟* نرخ بسته/اتصال.
-3. *IPS روی ترافیک رمزی؟* فقط با Inspection.
-
-### تکمیل عمیق: IPS، DoS و Application Control — تنظیم و FP
-
-#### چرا؟
-
-IPS بد تنظیم‌شده یا همه‌چیز را قطع می‌کند (False Positive) یا چیزی را نمی‌گیرد. تنظیم مرحله‌ای کلید است.
-
-#### روش مرحله‌ای
-
-1. Monitor (Pass + Log) برای ۲ هفته.
-2. بررسی Logها: کدام امضاها FP هستند؟
-3. Block برای شدت بالا/بحرانی و امضاهای مطمئن.
-4. Exemption مستند برای FP با مالک و تاریخ.
-
-#### مثال ساده
-
-``` text
-config ips sensor
- edit "IPS-SRV"
-  config entries
-   edit 1
-    set severity high critical
-    set action block
-   next
-  end
- next
-end
-```
-
-#### مثال متوسط — DoS Policy
-
-``` text
-config firewall DoS-policy
- edit 1
-  set interface "port1"
-  set srcaddr "all"
-  set dstaddr "VIP-WEB"
-  set service "ALL"
-  config anomaly
-   edit "tcp_syn_flood"
-    set status enable
-    set threshold 2000
-    set action block
-   next
-  end
- next
-end
-```
-
-آستانه را از Baseline بگیرید: اگر Peak عادی SYN 500/s است، آستانه ≈ Peak × 3 = 1500–2000.
-
-#### مثال سخت — Application Control
-
-مسدودکردن P2P/Proxy-anonymizers؛ ولی بدون Inspection برنامه‌های رمز را نمی‌بیند. و `Shaper` برای محدود کردن پهنای باند برنامه‌های غیرضروری.
-
-#### Lab
-
-IPS را در Monitor بگذارید و Log را بخوانید (در صورت لایسنس).
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| FP زیاد | Block زود | Monitor |
-| DoS قطع قانونی | آستانه کم | افزایش |
-| App رمز دیده نمی‌شود | Inspection | فعال |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Monitor اول؟** جلوگیری از قطع.
-**۲. آستانه DoS؟** Baseline × ضریب.
-**۳. Exemption؟** مستند.
-
-#### English Corner
-
-- *Start in monitor mode and tune before enforcing blocks.*
-- Q: How do you choose a DoS threshold?
 
 ## درس 16-5 — SSL Inspection عملی: ساخت CA، نصب، Exemption و آزمون
 
@@ -1273,62 +1191,57 @@ IPS را در Monitor بگذارید و Log را بخوانید (در صورت �
 
 > **وضعیت (FortiOS 7.0.3):** پروفایل‌های `certificate-inspection`/`deep-inspection` طبق مستند. سینتکس `Unverified`. Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
 
-1. پروفایل SSL سفارشی (Deep) بسازد، CA را Export و روی کلاینت نصب کند.
-2. **Exemption** درست (Category، FQDN، Address) تعریف کند.
-3. رفتار گواهی نامعتبر (Block/Allow/Warn) را تنظیم کند.
-4. نتیجه را با مرورگر/`openssl s_client`/Capture اثبات کند.
-5. مشکلات Pinning، Firefox Trust Store و QUIC را عیب‌یابی کند.
+### هدف آموزشی
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+در پایان این درس باید بتوانید:
 
-**چرا SSL Inspection؟** بیش از ۹۰٪ ترافیک رمز است. بدون رمزگشایی، AV/IPS/Web Filter عمیق نمی‌بینند. فایروال نقش «مرد میانی مجاز» دارد: اتصال کلاینت را با گواهی ساختگی (امضاشده با CA سازمان) خاتمه می‌دهد و اتصال دوم به سرور می‌سازد. کلاینت باید CA سازمان را بپذیرد وگرنه خطای گواهی می‌بیند.
+1. دلیل نیاز به SSL Inspection را از «کوری لایه‌ی ۷» توضیح دهید.
+2. Certificate Inspection و Deep Inspection را تفکیک کنید.
+3. CA داخلی بسازید، به کلاینت‌ها نصب کنید و Profile را بنویسید.
+4. Exemption (بانک، سلامت، حریم خصوصی) و Pinning را مدیریت کنید.
+5. خطای گواهی را عیب‌یابی کنید.
+6. ریسک‌های حقوقی و امنیتی را بدانید.
 
-**نکات:** Sub-CA قابل‌ابطال بهتر از Root خودامضا؛ توزیع با GPO؛ Exemption برای دسته‌های حساس (بانک/سلامت) و برنامه‌های Pinning.
+### چرا باید یاد بگیریم؟
 
-**جمع‌بندی اصلی درس:** ۱۶-۰ (TLS، Chain، Deep vs Certificate).
+بیشتر ترافیک امروز HTTPS است. بدون SSL Inspection، فایروال مثل مأمور پستی است که فقط روی پاکت را می‌بیند: نشانی (SNI) را می‌خواند ولی محتوا (فایل، URL، بدافزار) را نه. مهاجمان هم این را می‌دانند و بدافزار را داخل HTTPS می‌فرستند. Deep Inspection در لبه پاکت را باز می‌کند (با اجازه‌ی کاربر/سازمان)، بازرسی می‌کند و دوباره می‌بندد. هزینه‌اش: CPU، پیچیدگی گواهی و ملاحظات حریم خصوصی.
 
-### ۳) توضیح عمیق فنی
+### دو حالت
 
-#### ۳-۱) تفاوت CA صادرکننده
+| حالت | چه می‌کند | نتیجه |
+|---|---|---|
+| Certificate Inspection | فقط گواهی/SNI را می‌بیند | بدون رمزگشایی، URL کامل نه |
+| Deep Inspection | رمزگشایی کامل با CA فایروال | AV/IPS/Web Filter کامل |
 
-فایروال برای هر سایت گواهی جدید با همان Subject/SAN می‌سازد و با **CA فایروال** امضا می‌کند. اگر CA فایروال Self-signed پیش‌فرض باشد، باید روی همه‌ی کلاینت‌ها دستی/GPO نصب شود. بهتر: **Intermediate CA سازمانی** (ADCS) به فایروال بدهید تا زنجیره به Root سازمان برسد و Trust از قبل موجود باشد.
-
-#### ۳-۲) گواهی نامعتبر (Untrusted)
-
-فایروال گواهی سرور مقصد را اعتبارسنجی می‌کند. اگر نامعتبر/منقضی/Self-signed بود، باید به کلاینت **گواهی ناموثق** بدهد (CA جداگانه‌ی Untrusted) تا مرورگر هشدار بدهد؛ نه گواهی معتبر صادر کند. تنظیم Action برای گواهی نامعتبر: Block (امن‌تر برای کاربران عادی) یا Allow/Ignore (خطرناک).
-
-#### ۳-۳) Exemption
-
-- **Category:** Finance/Health (حریم خصوصی).
-- **FQDN/Address:** Update سرویس‌های Pinned.
-- **Policy جدا:** سرورها با Certificate Inspection.
-اصل: Exemption کمترین گستره + مستند + بازبینی.
-
-#### ۳-۴) Trust Storeها
-
-Windows/Chrome/Edge: Store سیستم. **Firefox:** Store مستقل (یا `security.enterprise_roots.enabled`). **Java/Python/curl:** Store/Bundle خودشان (`curl --cacert`، `REQUESTS_CA_BUNDLE`). **موبایل:** MDM. خطای «فقط یک برنامه» معمولاً Trust Store جدا است.
-
-### ۴) پیاده‌سازی: GUI و CLI
-
-**GUI:**
-
-1. Security Profiles → SSL/SSH Inspection → Create New (Deep-Lab): Inspection Method Full SSL Inspection؛ CA Certificate انتخاب؛ Untrusted SSL Certificates: Block؛ Exempt: Web Categories و Addresses.
-2. System → Certificates → CA مربوطه → Download (برای نصب).
-3. Policy: SSL Inspection = Deep-Lab.
-4. Log & Report → Forward Traffic.
-
-**CLI (`Unverified`):**
+### مکانیزم Deep Inspection (Man-in-the-Middle مجاز)
 
 ``` text
+Client  <-TLS1->  FortiGate  <-TLS2->  Server
+         (cert signed by CA-FGT)   (real server cert)
+```
+
+1. کلاینت به سرور وصل می‌شود؛ FortiGate TLS1 را با گواهی ساخته‌شده توسط CA خودش پاسخ می‌دهد.
+2. FortiGate TLS2 را با سرور واقعی برقرار می‌کند و گواهی را اعتبارسنجی می‌کند.
+3. محتوا رمزگشایی، بازرسی و دوباره رمز می‌شود.
+
+شرط: کلاینت به CA فایروال اعتماد داشته باشد (Trust).
+
+### ساخت CA و Profile
+
+``` text
+config vpn certificate setting
+    set certname-rsa2048 "Fortinet_CA_SSL"
+end
+
 config firewall ssl-ssh-profile
-    edit "Deep-Lab"
+    edit "SSL-DEEP"
         config https
             set ports 443
             set status deep-inspection
         end
-        set untrusted-caname "Fortinet_CA_Untrusted"
+        set caname "Fortinet_CA_SSL"
         config ssl-exempt
             edit 1
                 set type fortiguard-category
@@ -1339,59 +1252,79 @@ config firewall ssl-ssh-profile
 end
 ```
 
-### ۵) مثال‌ها
+در عمل: CA داخلی سازمان (AD CS) را Import کنید تا کلاینت‌ها قبلاً اعتماد داشته باشند؛ CA پیش‌فرض فورتی‌نت فقط برای Lab. شماره‌ی Category (`<ID>`) را از GUI بگیرید.
 
-#### مثال ساده — توزیع CA
+### نصب CA روی کلاینت‌ها
 
-``` text
-certutil -dspublish -f corp-ca.cer RootCA
-gpupdate /force
-```
+1. دریافت CA (`.crt`) از FortiGate (Security Profiles ⇒ SSL/SSH Inspection).
+2. Windows دامنه: GPO ⇒ Computer Config ⇒ Windows Settings ⇒ Security Settings ⇒ Public Key Policies ⇒ Trusted Root Certification Authorities.
+3. Linux/Firefox: Import دستی.
+4. موبایل/BYOD: MDM یا نصب دستی؛ یا Exempt.
 
-#### مثال متوسط — آزمون
+### Exemptions
 
-``` text
-openssl s_client -connect example.org:443 -servername example.org </dev/null | openssl x509 -noout -issuer
-```
+| دسته | چرا Exempt؟ |
+|---|---|
+| بانکی/مالی | حریم و الزام قانونی |
+| سلامت | حریم شخصی |
+| Update سیستم‌عامل (Pinning) | Certificate Pinning |
+| برنامه‌های Pinning (Dropbox، برخی Mobile Apps) | شکست اتصال |
 
-Issuer باید CA سازمان باشد.
-
-#### مثال سخت — Java/Android
-
-CA باید در Keystore هر پلتفرم نصب شود (Java `keytool`). برنامه‌ی بانک با Pinning شکست می‌خورد ⇒ Exemption مستند.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده:** مرورگر روی `https://example.com`؛ گواهی Issuer = CA فایروال؛ بدون خطا (CA نصب‌شده).
-
-**متوسط:** `openssl s_client -connect example.com:443 -servername example.com | openssl x509 -noout -issuer` در کلاینت: Issuer فایروال؛ مقایسه با خارج از فایروال: Issuer واقعی.
-
-**سخت:** بعد از Deep Inspection، `git` و `pip` در Linux خطای گواهی می‌دهند: Trust Store سیستم و Bundle را به‌روز کنید؛ برای Updaterهای Pinned Exemption بگذارید؛ مستند کنید.
-
-### ۶) Troubleshooting
+### خطاها
 
 | علامت | علت |
 |---|---|
-| خطای گواهی همه‌ی سایت‌ها | CA نصب نیست |
-| فقط Firefox | Trust Store جدا |
-| بعضی برنامه‌ها | Pinning/Bundle |
-| کندی | Deep روی ترافیک سنگین |
-| سایت باز نمی‌شود | گواهی مقصد نامعتبر + Block |
+| هشدار گواهی در مرورگر | CA نصب نشده |
+| برنامه کار نمی‌کند | Pinning |
+| `ERR_CERT_AUTHORITY_INVALID` | کلاینت CA را نمی‌شناسد |
+| کندی | CPU/Proxy |
 
-### ۷) نکات امنیتی
+### مثال‌های حل‌شده
 
-- کلید خصوصی CA را حفاظت کنید.
-- Exemption برای حریم خصوصی/قانون.
-- ثبت رضایت/سیاست رمزگشایی.
+#### مثال ساده — Certificate Inspection
 
-### ۸) جمع‌بندی
+حالت ساده: فقط `CN/SNI` دیده می‌شود. Web Filter می‌تواند `badsite.example` را بلاک کند؛ `https://site/path` را نه.
 
-- Deep = CA فایروال + نصب + Exemption.
-- گواهی نامعتبر باید به کاربر منتقل شود.
-- Trust Storeهای متعدد.
-- اثبات با openssl/مرورگر.
+#### مثال متوسط — Deep + GPO
 
-### ۹) تمرین و ارزیابی
+Deep Inspection روی Users؛ CA از AD CS. GPO نصب CA. آزمون: مرورگر ⇒ قفل سبز؛ در Properties Issuer = CA سازمان. Log: `utm ssl` و AV فایل را اسکن می‌کند.
+
+#### مثال متوسط — Exempt بانک
+
+دسته‌ی Finance/Health Exempt؛ آزمون: Issuer = بانک واقعی (نه CA سازمان). حریم حفظ می‌شود.
+
+#### مثال سخت — Pinning
+
+برنامه‌ی موبایل پس از Inspection قطع شد (Certificate Pinning). راه: Exempt با FQDN برنامه (از Log `ssl-anomaly`) نه کل Category.
+
+#### مثال سخت — ملاحظات حقوقی
+
+رمزگشایی ترافیک کارکنان باید در سیاست امنیتی سازمان و قرارداد/اعلان آمده باشد؛ داده‌ی رمزگشایی‌شده (رمز، ایمیل شخصی) محافظت و Log حداقلی. بدون مجوز، ریسک حقوقی.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. CA بسازید/Import و Profile Deep.
+2. CA را روی یک کلاینت نصب کنید.
+3. Exempt و آزمون Pinning.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| هشدار گواهی | CA | GPO/نصب |
+| اپ قطع | Pinning | Exempt |
+| کند | CPU | Offload/Exempt |
+| Bank با CA ما | Exempt نیست | افزودن |
+
+### نکات امنیتی
+
+کلید خصوصی CA را ایمن نگه دارید (HSM/دسترسی محدود)؛ Exempt حریم؛ Log حساس؛ سیاست‌نامه‌ی رمزگشایی.
+
+### جمع‌بندی
+
+SSL Inspection کوری HTTPS را برطرف می‌کند؛ Certificate در برابر Deep؛ CA و Trust؛ Exempt (بانک/Pinning)؛ ملاحظات CPU و حریم خصوصی.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا Intermediate CA سازمانی بهتر است؟ *(پاسخ: 16-5-ت1)*
 
@@ -1405,7 +1338,7 @@ CA باید در Keystore هر پلتفرم نصب شود (Java `keytool`). بر
 
 **Q1.** Quick quiz (English): How can openssl s_client show that traffic is being inspected? *(پاسخ: 16-5-Q1)*
 
-### ۱۰) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1415,122 +1348,15 @@ CA باید در Keystore هر پلتفرم نصب شود (Java `keytool`). بر
 
 - *Verify inspection by comparing the certificate issuer.* ← با مقایسه‌ی Issuer گواهی، Inspection را اثبات کنید.
 
-### ۱۱) Lab
+### Lab
 
 **کارت Lab:** SSL Inspection. **وضعیت:** اجرا نشده. **Verification:** Issuer گواهی، Log. **Rollback:** بازگشت به certificate-inspection. **Evidence:** `03-ops/ssl-inspection.md`.
 
-### ۱۲) منابع
+### منابع
 
 - Fortinet Docs: [SSL & SSH Inspection](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/929997/ssl-ssh-inspection)؛ OpenSSL s_client manual.
 
 <a id="l-16-6"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: ساخت CA و توزیع به کلاینت‌ها
-
-**گام‌ها**
-
-1. ساخت/ورود CA سازمانی (ترجیحاً Sub-CA از CA داخلی، نه Self-Signed پیش‌فرض).
-2. تنظیم Profile `deep-inspection` با همان CA.
-3. توزیع CA با GPO در Active Directory (Trusted Root Certification Authorities).
-4. Exemption برای دسته‌های حساس (Health, Finance).
-
-``` text
-certutil -dspublish -f corp-ca.cer RootCA
-gpupdate /force
-certutil -store Root | findstr Corp
-```
-
-**آزمون:** مرورگر به https://example.org ⇒ زنجیره باید به CA سازمان برسد؛ در Wireshark SNI قابل‌رؤیت.
-
-**اشتباه رایج:** نصب نکردن CA روی Android/Linux و Java Keystore؛ نتیجه خطای SSL در برنامه‌ها.
-
-**پرسش‌های مصاحبه**
-1. *چرا Sub-CA؟* ابطال و کنترل.
-2. *Pinning؟* Exemption.
-3. *مسائل حقوقی؟* اطلاع‌رسانی و سیاست حریم خصوصی.
-
-### تکمیل عمیق: SSL Inspection عملی — CA، توزیع و Exemption
-
-#### چرا؟
-
-بدون نصب CA روی کلاینت‌ها، Inspection صفحه‌های خطا تولید می‌کند. توزیع درست مرحله‌ی کلیدی است.
-
-#### گام‌ها
-
-1. CA مناسب: ترجیحاً Sub-CA از CA سازمان (قابل ابطال).
-2. Import به FortiGate و انتخاب در Profile.
-3. توزیع با GPO (Trusted Root).
-4. Exemption.
-5. آزمون.
-
-#### مثال ساده — GPO
-
-``` text
-certutil -dspublish -f corp-ca.cer RootCA
-gpupdate /force
-certutil -store Root | findstr Corp
-```
-
-#### مثال متوسط — Profile
-
-``` text
-config firewall ssl-ssh-profile
- edit "deep-inspect"
-  config https
-   set ports 443
-   set status deep-inspection
-  end
-  set caname "Corp-SubCA"
-  config ssl-exempt
-   edit 1
-    set type fortiguard-category
-    set fortiguard-category <ID>
-   next
-  end
- next
-end
-```
-
-(کد Category را از مستند بخوانید.)
-
-#### مثال سخت — Android/Linux/Java
-
-CA باید در Keystore هر پلتفرم نصب شود (Java `keytool`، Firefox Store جدا). برنامه‌های Pinning مستثنا.
-
-#### آزمون
-
-مرورگر به https://example.org ⇒ Issuer باید CA سازمان باشد.
-
-``` text
-openssl s_client -connect example.org:443 -servername example.org </dev/null | openssl x509 -noout -issuer
-```
-
-#### Lab
-
-CA آزمایشی بسازید و در یک VM نصب کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| خطای گواهی | CA نصب نشده | GPO |
-| Java شکست | Keystore | keytool |
-| بانک شکست | Pinning | Exemption |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Sub-CA؟** ابطال.
-**۲. Issuer چه می‌گوید؟** Inspection فعال.
-**۳. Keystore؟** فروشگاه گواهی.
-
-#### English Corner
-
-- *Use a revocable sub-CA for inspection rather than a self-signed root.*
-- Q: How can you verify that inspection is active from the client?
 
 ## درس 16-6 — Performance UTM، اندازه‌گیری، عیب‌یابی و آزمون عملی فصل ۱۶
 
@@ -1538,127 +1364,127 @@ CA آزمایشی بسازید و در یک VM نصب کنید.
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده»؛ وابستگی لایسنس هر قابلیت صریح ذکر شده است.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. اثر هر Profile بر CPU/Throughput را با آزمایش کنترل‌شده بسنجد.
-2. مشکلات UTM (کندی، FP، عدم اثر) را با شواهد عیب‌یابی کند.
-3. Exception را امن و مستند بنویسد.
-4. آزمون عملی فصل را با Rubric اجرا کند.
+1. اثر هر Profile روی CPU/Throughput/Latency را بشناسید.
+2. Baseline عملکرد را اندازه‌گیری کنید.
+3. با `get system performance status` و `diagnose sys top` تحلیل کنید.
+4. فعال‌سازی تدریجی و Exempt را برای بهینه‌سازی به‌کار ببرید.
+5. نقش NPU/Offload و Conserve Mode را بدانید.
+6. گزارش اندازه‌گیری بنویسید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا اندازه‌گیری هزینه‌ی UTM؟** «UTM کند می‌کند» بدون عدد بی‌معنی است. هر Profile را جدا فعال و CPU/Throughput را ثبت کنید تا ظرفیت واقعی را بدانید؛ و مهم‌تر: Throughput با SSL Inspection، نه فقط Firewall.
+UTM بدون اندازه‌گیری مثل افزودن بار به کامیون بدون چک‌کردن ظرفیت است: کامیون راه می‌افتد ولی در سربالایی می‌ایستد. در فایروال: روشن‌کردن همه‌ی Profileها بدون سنجش باعث CPU 100٪، قطعی و در نهایت Conserve Mode می‌شود. این درس یاد می‌دهد قبل و بعد اندازه بگیرید و تدریجی پیش بروید.
 
-**جمع‌بندی اصلی درس:** UTM منابع می‌خورد؛ «فعال کن و ببین» روش مهندسی نیست. باید **Baseline** داشت، **یک Profile در هر زمان** اضافه کرد، و اثر را اندازه گرفت.
+### اثر Profileها (کیفی)
 
-### ۳) توضیح عمیق فنی
-
-#### ۱) روش اندازه‌گیری
-
-``` text
-1 Baseline: no profiles; run iperf (N parallel streams, 5 min); record CPU, Throughput, Latency, Sessions
-2 Enable profile A only; repeat; record
-3 Enable A+B; repeat
-4 Compare: delta CPU, delta Throughput
-```
-
-شرایط یکسان: همان سرور، همان تعداد Flow، همان نوع ترافیک. نتیجه = جدول اثر هر Profile.
-
-#### ۲) علل رایج کندی
-
-- Proxy-based + Deep Inspection روی ترافیک سنگین.
-- IPS روی همه‌ی ترافیک (Offload کم، ۱۲-۹).
-- File/Archive بزرگ در AV Proxy (Buffer).
-- Logging همه‌ی Allow (I/O).
-
-#### ۳) ابزارها
-
-``` text
-get system performance status
-diagnose sys top 2 20
-diagnose sys session stat
-diagnose debug flow filter addr <host>
-```
-
-#### ۴) FP: Exception امن
-
-Exception را (۱) فقط برای همان Signature/دامنه، (۲) فقط برای همان Source/Destination، (۳) با تاریخ بازبینی، (۴) با صاحب ثبت کنید.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| Profile | هزینه |
 |---|---|
-| ترتیب فعال‌سازی | Web/DNS → AV → App → IPS → Deep |
-| چه چیزی را Log کنیم | Deny + رویداد UTM؛ نه همه‌ی Allow |
-| مدل فایروال | Throughput با UTM فعال، نه عدد Datasheet خام |
+| IPS، Deep SSL | بالا |
+| Antivirus (Proxy) | بالا |
+| Flow AV | متوسط |
+| Web/DNS Filter | کم تا متوسط |
+| App Control | متوسط |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+اعداد واقعی به مدل و نسخه وابسته‌اند؛ از Datasheet و اندازه‌گیری خودتان استفاده کنید (نه حدس).
 
-#### مثال ساده — روش
-
-Baseline ← +AV ← +IPS ← +SSL Inspection؛ هر مرحله `iperf3` و `diagnose sys top`.
-
-#### مثال متوسط — افت
-
-``` text
-Drop % = (baseline - measured) / baseline x 100
-(900 - 600) / 900 x 100 = 33.3 %
-```
-
-#### مثال سخت — ظرفیت
-
-اگر ۹۰٪ ترافیک رمز است و Inspection ظرفیت را به ۴۰٪ می‌رساند، برای 1 Gbps به مدلی با Inspection ≥ 1 Gbps نیاز دارید.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده:** Baseline 900 Mbps و CPU 12٪؛ با Web Filter 880 Mbps و CPU 20٪؛ اثر کم.
-
-**متوسط:** با IPS: 420 Mbps، CPU 85٪. تحلیل: IPS روی همه‌ی ترافیک. اقدام: Sensor انتخابی (Target=Server) و Monitor برای بقیه؛ اندازه‌گیری مجدد: 760 Mbps.
-
-**سخت:** کاربران گزارش می‌دهند «بعضی سایت‌ها لود نمی‌شود» پس از Deep Inspection. شواهد: Capture: TLS Alert unknown_ca فقط برای چند برنامه؛ Log: Certificate error. علت: Pinning. رفع: Exemption آن FQDN؛ آزمون منفی: برنامه‌های دیگر هنوز Inspect می‌شوند.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Dashboard → Performance (CPU/Memory/Sessions).
-2. FortiView → Sources/Destinations.
-3. Log & Report → Security Events.
-4. Policy → ستون Security Profiles برای مقایسه.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### اندازه‌گیری
 
 ``` text
 get system performance status
 diagnose sys top 2 20
 diagnose sys session stat
+diagnose hardware sysinfo conserve
+get system performance firewall statistics
 ```
 
-### ۸) Verification (اثبات صحت)
+| مورد | معنی |
+|---|---|
+| CPU/Memory | بار کلی |
+| `sys top` | فرآیندهای پرمصرف (ipsengine, wad) |
+| Session count | تعداد اتصال |
+| conserve | حالت محافظتی حافظه |
 
-- جدول Baseline/اثر هر Profile با اعداد واقعی.
-- آزمون مثبت/منفی Exception.
+### Conserve Mode
 
-### ۹) Troubleshooting
+وقتی حافظه به آستانه‌ی بحرانی (مثلاً ۸۸٪) برسد، FortiGate UTM را محدود می‌کند (بلاک یا Bypass طبق `av-failopen`) تا پایدار بماند. علامت: Log `conserve mode`.
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+``` text
+config system global
+    set av-failopen pass
+end
+```
+
+`pass` = در Conserve بازرسی نکن (امنیت کمتر)؛ `off` = Drop (قطع).
+
+### روش فعال‌سازی تدریجی
+
+1. Baseline (بدون UTM): CPU/Throughput.
+2. روشن‌کردن Profile اول (مثلاً Web Filter) و اندازه‌گیری.
+3. Profile بعدی، دوباره اندازه‌گیری.
+4. Exempt برای ترافیک حجیم و بی‌ریسک (Backup، Video Streaming).
+5. Policy جدا برای سرورها (IPS) و کاربران (Web/AV).
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Baseline
+
+``` text
+CPU idle 85%, sessions 12000, throughput 400 Mbps (no UTM)
+```
+
+پس از Web Filter: CPU idle 80%. افزایش کم؛ ادامه.
+
+#### مثال متوسط — IPS
+
+IPS Sensor همه‌ی Signatureها: CPU 40% ⇒ 75%. اقدام: فیلتر `severity high critical` و `os Linux` ⇒ 55%.
+
+``` text
+Cost = (CPU_after - CPU_before) = 75 - 40 = 35 points
+After tuning = 55 - 40 = 15 points
+```
+
+#### متوسط — Exempt ترافیک حجیم
+
+Backup شبانه 5Gbps ⇒ AV/IPS Exempt (Policy جدا از مبدأ سرور Backup به مقصد مشخص). CPU کاهش یافت. ریسک: لایه‌ی دیگر (Endpoint).
+
+#### مثال سخت — Conserve Mode
+
+ساعت اوج، حافظه ۹۰٪؛ Conserve فعال و `av-failopen=pass`: UTM بایپس شد؛ ممیز: «چه مدت بدون AV بودید؟» پاسخ با Log. رفع: افزایش حافظه/مدل بالاتر یا کاهش Profile.
+
+#### مثال سخت — Deep SSL و CPU
+
+Deep Inspection روی همه‌ی ترافیک: Throughput از 800 به 250. راه: Exempt دسته‌های سنگین (Video)، Certificate Inspection برای آن‌ها، و بررسی NPU (پشتیبانی SSL Offload در برخی مدل‌ها).
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Baseline ثبت.
+2. Profile به Profile فعال و اندازه‌گیری.
+3. جدول هزینه.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| CPU بالا | `diagnose sys top` | Profile گسترده؛ Flow/Proxy؛ Deep |
-| FP | Log (Signature ID) | Exception دقیق |
-| برنامه خطا می‌دهد | Capture: TLS Alert | Pinning؛ Exemption |
+| CPU 100٪ | UTM زیاد | فیلتر |
+| Conserve | حافظه | کاهش/ارتقا |
+| کند فقط HTTPS | Deep SSL | Exempt |
+| Offload نیست | UTM فعال | طبیعی |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Exception بدون تاریخ بازبینی ممنوع.
-- Profile را بر اساس ریسک، نه همه‌جا.
+`av-failopen` را آگاهانه انتخاب کنید؛ ظرفیت را برای Peak آینده برنامه‌ریزی کنید.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- Baseline → یک Profile در هر زمان → مقایسه.
-- Exception دقیق و مستند.
-- عدد Datasheet برای انتخاب مدل کافی نیست.
+اندازه‌گیری قبل/بعد؛ فعال‌سازی تدریجی؛ Exempt ترافیک حجیم؛ Conserve Mode و `av-failopen`؛ عدد از Datasheet و اندازه‌گیری نه حدس.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا هر بار فقط یک Profile اضافه می‌کنیم؟ *(پاسخ: 16-6-ت1)*
 
@@ -1672,7 +1498,7 @@ diagnose sys session stat
 
 **Q1.** Quick quiz (English): Why measure performance with one profile at a time? *(پاسخ: 16-6-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1682,107 +1508,13 @@ diagnose sys session stat
 
 - *Measure before and after enabling each profile.* ← قبل و بعد از فعال‌سازی هر Profile اندازه بگیرید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **Lab:** آزمون UTM. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/utm-perf.md`. **Rollback:** حذف Profile از Policy.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet Docs: FortiOS 7.0 — Performance، Inspection modes؛ iperf3 documentation.
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: اندازه‌گیری هزینه‌ی UTM
-
-**روش:** Baseline بدون UTM ⇒ فعال‌سازی هر Profile به‌تنهایی ⇒ ثبت CPU و Throughput.
-
-``` text
-diagnose sys top 2 20
-get system performance status
-iperf3 -c 10.20.0.10 -P 8 -t 30
-```
-
-| حالت | Throughput | CPU |
-|---|---|---|
-| Baseline | مرجع | مرجع |
-| +AV | کمتر | بیشتر |
-| +IPS | کمتر | بیشتر |
-| +SSL Inspection | کمترین | بیشترین |
-
-(اعداد را از Lab خودتان ثبت کنید؛ هیچ عددی ثابت نیست.)
-
-**قاعده‌ی ظرفیت:** مقدار SSL Inspection را بر درصد ترافیک رمزشده (امروز ~۹۰٪) حساب کنید.
-
-**پرسش‌های مصاحبه**
-1. *چرا یکی‌یکی؟* تأثیر هر Profile جدا.
-2. *Offload NPU با UTM؟* کاهش می‌یابد.
-3. *بهینه‌سازی؟* Profile فقط روی Policyهای لازم.
-
-### تکمیل عمیق: اندازه‌گیری هزینه‌ی UTM
-
-#### چرا؟
-
-«UTM کند می‌کند» جمله‌ای است که بدون عدد معنایی ندارد. باید بدانید هر Profile چقدر هزینه دارد.
-
-#### روش
-
-1. Baseline بدون UTM.
-2. فعال‌کردن یک Profile و اندازه‌گیری.
-3. افزودن بعدی.
-4. ثبت CPU و Throughput.
-
-``` text
-diagnose sys top 2 20
-get system performance status
-iperf3 -c 10.20.0.10 -P 8 -t 30
-```
-
-#### جدول ثبت
-
-| حالت | Throughput | CPU |
-|---|---|---|
-| Baseline | ثبت | ثبت |
-| +AV | ثبت | ثبت |
-| +IPS | ثبت | ثبت |
-| +SSL Inspection | ثبت | ثبت |
-
-اعداد را از Lab خودتان بنویسید.
-
-#### محاسبه‌ی افت
-
-``` text
-Drop % = (baseline - measured) / baseline x 100
-(900 - 600) / 900 x 100 = 33.3 %
-```
-
-#### مثال سخت — ظرفیت
-
-اگر ۹۰٪ ترافیک رمز است و Inspection ظرفیت را به ۴۰٪ می‌رساند، برای ۱ Gbps ترافیک به مدلی با Inspection ≥ 1 Gbps نیاز دارید، نه فقط Firewall Throughput.
-
-#### Lab
-
-جدول را در Lab پر کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| افت شدید | Inspection | Exemption/مدل |
-| CPU 100٪ | بی‌Offload | Policy |
-| عدد ناپایدار | آزمون ضعیف | تکرار |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا یکی‌یکی؟** تأثیر جدا.
-**۲. افت چگونه؟** درصد.
-**۳. دیتاشیت؟** Inspection Throughput.
-
-#### English Corner
-
-- *Measure each security profile's cost separately against a baseline.*
-- Q: Why does SSL inspection throughput matter more than firewall throughput?
 
 ## درس 16-7 — کارت قابلیت هر Security Profile: چه می‌بیند، چه نمی‌بیند، هزینه و راستی‌آزمایی
 
@@ -1790,177 +1522,118 @@ Drop % = (baseline - measured) / baseline x 100
 
 > **وضعیت (FortiOS 7.0.3):** برای هر قابلیت وابستگی لایسنس و حالت Inspection در جدول مقایسه‌ی رسمی ([Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison)) باید تأیید شود؛ ستون «Needs-License» برای Signatureهای FortiGuard است. دستورها `Unverified`. Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
 
-برای هر قابلیت UTM دانشجو بتواند هفت سؤال را پاسخ دهد: چه می‌کند؟ چه چیزی را می‌بیند؟ چه چیزی را نمی‌بیند؟ محدودیت؟ اثر Performance؟ کی استفاده شود؟ چگونه نتیجه‌اش را بسنجیم؟ و **تفاوت Detection و Prevention** و **False Positive/Negative** را در مثال بفهمد.
+### هدف آموزشی
 
-### ۲) مفاهیم پایه: False Positive و False Negative
+در پایان این درس باید بتوانید:
 
-| اصطلاح | معنی | مثال | هزینه |
-|---|---|---|---|
-| True Positive | تهدید واقعی، شناسایی شد | بدافزار بلاک شد | — |
-| **False Positive (FP)** | بی‌خطر، به‌اشتباه تهدید گفته شد | سایت قانونی بلاک شد | اختلال کسب‌وکار |
-| **False Negative (FN)** | تهدید واقعی، دیده نشد | بدافزار رد شد | نفوذ |
-| True Negative | بی‌خطر، درست عبور کرد | — | — |
+1. برای هر قابلیت امنیتی «کارت ۱۰پرسشی» پر کنید.
+2. هر قابلیت را از نظر نسخه/لایسنس/محدودیت/عیب‌یابی بشناسید.
+3. ادعای بدون مستند را شناسایی و حذف کنید.
+4. کارت‌ها را برای Runbook تیم بسازید.
+5. وضعیت هر کارت (Verified/Unverified/Needs-License) را صادقانه ثبت کنید.
+6. آزمون ایمن هر قابلیت را تعیین کنید.
 
-``` text
-Precision = TP / (TP + FP)
-Recall    = TP / (TP + FN)
-```
+### چرا باید یاد بگیریم؟
 
-هیچ سامانه‌ای FP و FN را هم‌زمان صفر نمی‌کند؛ کاهش یکی معمولاً دیگری را زیاد می‌کند. تصمیم: برای دارایی حساس FN گران‌تر است (سخت‌گیرتر)؛ برای سرویس عمومی FP گران‌تر است (سهل‌گیرتر + Monitor).
+اگر به مدیر بگویید «این قابلیت را داریم» و بعد معلوم شود لایسنس نیست، اعتبار تیم از دست می‌رود. کارت قابلیت مثل «برچسب غذایی» است: ترکیبات، منشأ، تاریخ انقضا. برای هر قابلیت ده سؤال یکسان می‌پرسیم تا هیچ ادعای بررسی‌نشده‌ای باقی نماند.
 
-### ۳) کارت قابلیت‌ها
+### ده پرسش کارت
 
-#### کارت ۱: Antivirus (AV)
+1. چه مشکلی را حل می‌کند؟
+2. چه چیزی را نمی‌بیند (محدودیت)؟
+3. نسخه‌ی FortiOS و مدل؟
+4. نیاز لایسنس؟
+5. وابستگی (SSL Inspection، Proxy)؟
+6. کجا فعال می‌شود (Policy/Interface)؟
+7. دستور/GUI پیکربندی؟
+8. آزمون ایمن؟
+9. Log/عیب‌یابی؟
+10. ریسک (FP، عملکرد، حریم)؟
 
-- **چه می‌کند:** فایل/محتوا را با Signature بدافزار می‌سنجد (و در بعضی حالت‌ها Heuristic/Sandbox).
-- **می‌بیند:** بدافزار شناخته‌شده در HTTP/FTP/SMTP/...، و با Deep Inspection در HTTPS.
-- **نمی‌بیند:** بدافزار ناشناخته (Zero-day) بدون Sandbox، فایل رمزشده با رمز، ترافیک HTTPS بدون Deep Inspection.
-- **محدودیت:** وابسته به DB (Needs-License)؛ سقف اندازه‌ی فایل؛ گزینه‌ها در Proxy بیشتر از Flow.
-- **Performance:** متوسط تا زیاد (Proxy سنگین‌تر).
-- **کاربرد:** دانلود کاربران، ایمیل.
-- **راستی‌آزمایی:** فایل تست EICAR (بی‌خطر) و Log AV؛ نتیجه واقعی ثبت شود.
+### نمونه‌ی کارت — Web Filter (Category)
 
-#### کارت ۲: Web Filter
-
-- **می‌کند:** مجاز/ممنوع‌کردن وب بر اساس URL/Category/Static List.
-- **می‌بیند:** نام دامنه، Category، URL (HTTP یا HTTPS با Inspection)؛ SNI در HTTPS بدون Deep.
-- **نمی‌بیند:** مسیر کامل URL و محتوای HTTPS بدون Deep؛ سایت‌های Rating‌نشده.
-- **محدودیت:** Category نیاز FortiGuard Rating (Needs-License)؛ Static URL بدون لایسنس.
-- **Performance:** کم تا متوسط.
-- **کاربرد:** سیاست استفاده‌ی قابل‌قبول، جلوگیری از سایت‌های مخرب.
-- **راستی‌آزمایی:** مرورگر به سایت ممنوع؛ Block Page؛ Log Category.
-
-#### کارت ۳: DNS Filter
-
-- **می‌کند:** پرس‌وجوهای DNS را بر اساس Category/دامنه‌ی مخرب بلاک یا Redirect می‌کند.
-- **می‌بیند:** نام دامنه‌ی DNS Query قبل از اتصال (حتی اگر بعداً HTTPS باشد).
-- **نمی‌بیند:** DoH/DoT رمزشده (دور می‌زند)، IP مستقیم بدون DNS.
-- **محدودیت:** Needs-License برای Category؛ DoH باید با Application Control مدیریت شود.
-- **Performance:** کم.
-- **کاربرد:** پوشش اولیه‌ی دامنه‌های مخرب/C2.
-- **راستی‌آزمایی:** `nslookup` دامنه‌ی تست؛ Log DNS.
-
-#### کارت ۴: Application Control
-
-- **می‌کند:** برنامه‌ها را (حتی روی پورت‌های غیراستاندارد) با Signature شناسایی و کنترل می‌کند.
-- **می‌بیند:** برنامه‌ی لایه‌ی کاربرد (Teams، BitTorrent، ...).
-- **نمی‌بیند:** برنامه‌های رمزشده بدون Deep Inspection ممکن است با دقت کمتر؛ برنامه‌های ناشناخته.
-- **محدودیت:** DB برنامه (Needs-License)؛ QUIC؛ بروزرسانی.
-- **Performance:** متوسط.
-- **کاربرد:** بلاک P2P/Proxy/Remote Tools؛ مدیریت QUIC.
-- **راستی‌آزمایی:** اجرای برنامه‌ی تست و Log Application.
-
-#### کارت ۵: IPS
-
-- **می‌کند:** الگوی حمله/اکسپلویت را در ترافیک با Signature می‌شناسد و Block/Monitor می‌کند.
-- **می‌بیند:** حمله‌ی شناخته‌شده علیه سرویس‌ها (CVE).
-- **نمی‌بیند:** حمله‌ی ناشناخته (Zero-day) بدون Signature؛ حمله‌ی داخل TLS بدون Deep.
-- **محدودیت:** Signature (Needs-License)؛ FP؛ تنظیم Severity/Target.
-- **Performance:** زیاد؛ Offload را محدود می‌کند.
-- **کاربرد:** محافظت سرور (Virtual Patching)، لبه‌ی اینترنت.
-- **راستی‌آزمایی:** تست در Lab ایزوله با ابزار تست مجاز؛ Log IPS.
-
-#### کارت ۶: File Filter
-
-- **می‌کند:** فایل را بر اساس نوع/پسوند/Magic بلاک می‌کند.
-- **می‌بیند:** نوع فایل (exe، zip، doc).
-- **نمی‌بیند:** محتوای مخرب داخل نوع مجاز.
-- **محدودیت:** پسوند قابل‌جعل (بهتر Magic/نوع واقعی)؛ فایل رمزشده.
-- **Performance:** کم تا متوسط.
-- **کاربرد:** جلوگیری از exe/script از اینترنت.
-- **راستی‌آزمایی:** دانلود فایل تست exe.
-
-#### کارت ۷: SSL/SSH Inspection
-
-(درس ۱۶-۰) پیش‌نیاز AV/IPS/Web (محتوا) روی HTTPS؛ Performance زیاد؛ Exemption و CA الزامی.
-
-### ۴) Detection در برابر Prevention (روش استقرار)
-
-``` text
-Phase 1  Monitor/Detect  : log only for 2 weeks; collect FP/FN data
-Phase 2  Tune            : exceptions, thresholds, exemptions
-Phase 3  Prevent/Block   : block high-confidence signatures; keep monitor for others
-Phase 4  Review          : monthly FP/FN and performance review
-```
-
-### ۵) مثال حل‌شده
-
-**سناریو:** پس از فعال‌کردن IPS، سیستم مالی قطع می‌شود. تحلیل: Signature اشتباه (FP) روی ترافیک سامانه‌ی مالی. اقدام: Log IPS را بررسی (Signature ID)، Exception برای آن Signature **فقط** روی آن سرور/مقصد (نه حذف کل Signature)، ثبت علت و تاریخ بازبینی. اثر امنیتی: ریسک باقی‌مانده مستند.
-
-**مثال سخت (Evasion):** مهاجم بدافزار را در zip رمزدار می‌فرستد. AV نمی‌بیند؛ File Filter «zip» را اگر مجاز کرده باشید رد می‌کند؛ پس سیاست «zip رمزدار» با File Filter + آموزش/Sandbox تکمیل می‌شود. درس: **هر کنترل حفره دارد؛ لایه‌ها را ترکیب کنید.**
-
-### ۶) پیاده‌سازی (GUI/CLI)
-
-**GUI:** Security Profiles → هر Profile → Create New؛ Policy → Security Profiles → فعال‌کردن؛ Log & Report → Security Events.
-
-**CLI (ساختار):**
-
-``` text
-config antivirus profile
-    edit "AV-LAB"
-    next
-end
-config webfilter profile
-    edit "WF-LAB"
-    next
-end
-config ips sensor
-    edit "IPS-LAB"
-    next
-end
-config application list
-    edit "APP-LAB"
-    next
-end
-config firewall policy
-    edit 10
-        set av-profile "AV-LAB"
-        set webfilter-profile "WF-LAB"
-        set ips-sensor "IPS-LAB"
-        set application-list "APP-LAB"
-        set ssl-ssh-profile "certificate-inspection"
-    next
-end
-```
-
-(نام فیلدها با CLI Reference 7.0 تطبیق شود؛ `Unverified`.)
-
-### ۷) Verification و Performance
-
-``` text
-get system performance status
-diagnose sys top 2 20
-diagnose debug flow filter addr 192.168.10.5
-```
-
-**اندازه‌گیری:** CPU/Throughput را قبل و بعد از فعال‌کردن هر Profile در همان بار ثبت و مقایسه کنید.
-
-### ۸) Troubleshooting
-
-| علامت | علت |
+| پرسش | پاسخ |
 |---|---|
-| Profile اثر ندارد | به Policy وصل نیست، Inspection Mode، SSL Inspection |
-| FP زیاد | Signature/Category، نبود Exception |
-| کندی | Profile روی همه‌ی ترافیک، Proxy، Deep |
-| Log UTM نیست | `logtraffic`/Log Settings |
+| 1 | بلاک دسته‌های سایت |
+| 2 | HTTPS بدون Inspection: فقط دامنه |
+| 3 | 7.0 (طبق مستند) |
+| 4 | FortiGuard Web Filtering (Needs-License) |
+| 5 | SSL Inspection برای URL کامل |
+| 6 | Webfilter Profile در Policy |
+| 7 | `config webfilter profile` |
+| 8 | سایت تست دسته‌بندی‌شده |
+| 9 | Log `utm webfilter` |
+| 10 | بلاک بیش‌ازحد؛ حریم HTTPS |
 
-### ۹) نکات امنیتی
+### نمونه‌ی کارت — IPS
 
-- Exception را محدود (دامنه، زمان) و مستند کنید.
-- UTM جایگزین Patch و Segmentation نیست.
-- Profile پیش‌فرض را بدون بازبینی روی همه‌چیز فعال نکنید.
+| پرسش | پاسخ |
+|---|---|
+| 1 | جلوگیری از Exploit |
+| 2 | ترافیک رمز بدون Inspection |
+| 4 | Signature: Needs-License |
+| 6 | IPS Sensor در Policy |
+| 8 | الگوی تست (Lab با لایسنس) |
+| 10 | CPU، FP |
 
-### ۱۰) جمع‌بندی مفهومی
+### وضعیت‌ها
 
-- هر قابلیت ورودی/محدودیت/هزینه‌ی مشخص دارد.
-- FP و FN هر دو هزینه دارند؛ بر اساس دارایی تعادل بگذارید.
-- Monitor قبل از Block.
-- Needs-License را صریح بدانید.
-- با Capture/Log/EICAR نتیجه را اثبات کنید.
+| وضعیت | معنی |
+|---|---|
+| Verified | در Lab/دستگاه اجرا و Log دیده شد |
+| Unverified | طبق مستند؛ اجرا نشده |
+| Needs-License | بدون لایسنس قابل‌اجرا نیست |
+| Not Applicable | در این مدل/نسخه نیست |
 
-### ۱۱) تمرین و ارزیابی
+در این دوره همه‌ی Labها «اجرا نشده» و دستورها `Unverified` هستند.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — کارت File Filter
+
+لایسنس: ندارد؛ آزمون: دانلود exe ⇒ بلاک؛ وضعیت: Unverified (Lab اجرا نشده).
+
+#### مثال متوسط — ادعای بدون مستند
+
+«FortiGate همه‌ی Ransomware را می‌گیرد». اصلاح: AV/IPS/Sandbox بخشی از تهدیدها را با Signature شناخته‌شده می‌گیرند؛ ادعای کامل بی‌پایه؛ دفاع لایه‌ای. ثبت در کارت «محدودیت».
+
+#### مثال متوسط — Runbook
+
+برای هر کارت: «اگر Log خالی ⇒ ۱) Profile در Policy؟ ۲) لایسنس؟ ۳) Inspection؟». تیم شب با کارت عیب‌یابی می‌کند.
+
+#### مثال سخت — ممیزی
+
+ممیز: «اثبات کنید DNS Filter فعال است». شاهد: ۱) `show dnsfilter profile` ۲) FortiGuard Valid ۳) آزمون دامنه‌ی تست و Log. بدون سومی «ادعا».
+
+#### مثال سخت — تغییر نسخه
+
+پس از ارتقا به 7.2 یک قابلیت تغییر کرد. کارت نسخه‌دار؛ بازبینی کارت‌ها در هر ارتقا؛ DECISIONS_LOG.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. کارت ۱۰پرسشی برای سه قابلیت بنویسید.
+2. وضعیت صادقانه ثبت کنید.
+3. Runbook از کارت‌ها.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| ادعا بدون مستند | کارت نیست | کارت |
+| لایسنس نامشخص | بررسی نشده | FortiGuard |
+| کارت قدیمی | بدون نسخه | بازبینی |
+
+### نکات امنیتی
+
+کارت‌ها در مخزن مستندات نسخه‌دار؛ تغییرات با Review.
+
+### جمع‌بندی
+
+کارت ۱۰پرسشی برای هر قابلیت: حل مسئله، محدودیت، نسخه، لایسنس، وابستگی، فعال‌سازی، دستور، آزمون، Log، ریسک. وضعیت صادقانه و Runbook.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) FP و FN را با مثال تعریف کنید. *(پاسخ: 16-7-ت1)*
 
@@ -1976,7 +1649,7 @@ diagnose debug flow filter addr 192.168.10.5
 
 **Q1.** Quick quiz (English): Why can't a file filter stop malware inside an allowed file type? *(پاسخ: 16-7-Q1)*
 
-### ۱۲) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1990,99 +1663,10 @@ diagnose debug flow filter addr 192.168.10.5
 - *Start in monitor mode, tune, then enforce.* ← با Monitor شروع کنید، تنظیم کنید، سپس اعمال کنید.
 - *Every control has blind spots; combine layers.* ← هر کنترل نقطه‌ی کور دارد؛ لایه‌ها را ترکیب کنید.
 
-### ۱۳) منابع
+### منابع
 
 - Fortinet Docs: [Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison)، FortiOS 7.0 Administration Guide — Security Profiles.
 - EICAR: www.eicar.org (فایل تست).
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: کارت ۱۰ پرسشی برای Web Filter (نمونه‌ی پر)
-
-| # | پرسش | پاسخ |
-|---|---|---|
-| 1 | چه می‌بیند؟ | URL/Category HTTP، SNI در HTTPS |
-| 2 | چه نمی‌بیند؟ | مسیر کامل HTTPS بدون Inspection |
-| 3 | لایسنس؟ | Category: بله؛ Static: خیر |
-| 4 | Inspection لازم؟ | برای URL کامل بله |
-| 5 | هزینه؟ | کم تا متوسط |
-| 6 | Bypass؟ | DoH، VPN، IP مستقیم |
-| 7 | Log؟ | utmaction، catdesc |
-| 8 | آزمون مثبت؟ | سایت Category مسدود |
-| 9 | آزمون منفی؟ | سایت مجاز باز می‌شود |
-| 10 | وضعیت | تأیید مستندی؛ اجرا نشده |
-
-همین قالب برای هر Profile تکمیل شود.
-
-**پرسش‌های مصاحبه**
-1. *چرا ستون «چه نمی‌بیند»؟* جلوگیری از اعتماد کاذب.
-2. *Bypass چرا؟* طراحی دفاع چندلایه.
-3. *وضعیت اجرا؟* صادقانه ثبت.
-
-### تکمیل عمیق: کارت ده‌پرسشی — نمونه‌ی پر برای IPS و DNS Filter
-
-#### چرا؟
-
-هر قابلیت امنیتی باید یک «کارت» داشته باشد تا بدانید دقیقاً چه کاری می‌کند و چه کاری نمی‌کند.
-
-#### کارت IPS
-
-| # | پرسش | پاسخ |
-|---|---|---|
-| 1 | چه می‌بیند؟ | الگوهای حمله در بسته/جریان |
-| 2 | چه نمی‌بیند؟ | ترافیک رمز بدون Inspection |
-| 3 | لایسنس؟ | امضای به‌روز: بله |
-| 4 | Inspection لازم؟ | برای ترافیک رمز بله |
-| 5 | هزینه؟ | متوسط تا زیاد |
-| 6 | Bypass؟ | Tunnel رمز/Fragmentation |
-| 7 | Log؟ | attack, severity |
-| 8 | آزمون مثبت؟ | الگوی تست |
-| 9 | آزمون منفی؟ | ترافیک عادی عبور |
-| 10 | وضعیت | تأیید مستندی؛ اجرا نشده |
-
-#### کارت DNS Filter
-
-| # | پرسش | پاسخ |
-|---|---|---|
-| 1 | چه می‌بیند؟ | پرس‌وجوی DNS |
-| 2 | چه نمی‌بیند؟ | DoH/IP مستقیم |
-| 3 | لایسنس؟ | Category: بله |
-| 4 | Inspection؟ | خیر |
-| 5 | هزینه؟ | کم |
-| 6 | Bypass؟ | DoH |
-| 7 | Log؟ | domain, action |
-| 8-10 | مثبت/منفی/وضعیت | مانند بالا |
-
-#### مثال سخت — استفاده در تصمیم
-
-مدیر می‌پرسد «چرا بدون DoH Block فقط DNS Filter کافی نیست؟». کارت ستون Bypass پاسخ می‌دهد.
-
-#### Lab
-
-کارت‌های Web Filter، AV، App Control را بنویسید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| کارت ناقص | خلأ دانش | مستند |
-| Bypass نادیده | ساده‌انگاری | ستون 6 |
-| وضعیت نادرست | ادعا | صداقت |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا ستون Bypass؟** اعتماد کاذب.
-**۲. وضعیت؟** اجرا شده/مستندی.
-**۳. کارت برای هر قابلیت؟** بله.
-
-#### English Corner
-
-- *Document what each security feature cannot see as well as what it can.*
-- Q: Which bypass techniques affect DNS filtering?
-
-<a id="l-16-8"></a>
 
 ## درس 16-8 — WAF (Web Application Firewall): حفاظت از وب‌سرور در برابر SQL Injection و XSS
 
