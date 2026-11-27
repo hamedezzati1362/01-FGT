@@ -3606,6 +3606,84 @@ get vpn ipsec tunnel summary
 2. *NAT-T چه موقع؟* دستگاه پشت NAT؛ UDP/4500.
 3. *PFS؟* کلید جدید برای Phase2.
 
+### تکمیل عمیق: IPsec از درون — IKE، SA، Selector و Rekey با مثال
+
+#### چرا باید یاد بگیریم؟
+
+IPsec را بسیاری با «کپی کردن پیکربندی» برپا می‌کنند و وقتی بالا نیامد، نمی‌دانند از کجا شروع کنند. درک مراحل داخلی، عیب‌یابی را از «حدس» به «خواندن پیام» تبدیل می‌کند.
+
+#### توضیح ساده
+
+IPsec دو مرحله دارد:
+
+1. **IKE SA (Phase 1)**: دو سر یکدیگر را احراز هویت می‌کنند و یک کانال امن برای مذاکره می‌سازند.
+2. **Child SA / IPsec SA (Phase 2)**: روی همان کانال، پارامترهای رمزنگاری داده و Selector (چه ترافیکی محافظت شود) توافق می‌شود.
+
+IKE = Internet Key Exchange، یعنی «تبادل کلید اینترنتی». SA = Security Association، یعنی «تفاهم امنیتی» بین دو سر.
+
+#### مثال ساده — لایه‌های عیب‌یابی
+
+``` text
+L1 reachability : UDP/500 (and 4500 for NAT-T) reachable?
+L2 IKE SA       : diagnose vpn ike gateway list
+L3 Child SA     : diagnose vpn tunnel list
+L4 route/policy : route to remote subnet + policy both ways
+L5 data         : counters enc/dec increase
+```
+
+#### مثال متوسط — نشانه‌ها
+
+- Gateway ندارید ⇒ Reachability/PSK/نسخه‌ی IKE.
+- Gateway هست ولی Tunnel Down ⇒ Proposal/Selector Phase2.
+- Tunnel Up ولی ping نه ⇒ Route/Policy.
+- Tunnel Up ولی فقط `enc` افزایش می‌یابد، `dec` نه ⇒ طرف مقابل رمزگشایی نمی‌کند (Policy/Route آن سمت).
+
+#### Rekey
+
+کلیدها محدود زمانی دارند؛ قبل از انقضا کلید جدید ساخته می‌شود تا قطع نشود.
+
+``` text
+keylife 43200 s = 12 hours
+Rekey margin ~ a few minutes before expiry
+```
+
+اگر دو سر Lifetime متفاوت دارند، هرکدام زودتر منقضی شود Rekey را آغاز می‌کند؛ بهتر است یکسان باشند.
+
+#### PFS
+
+Perfect Forward Secrecy یعنی برای هر Child SA، DH جدید انجام شود تا لو رفتن یک کلید، کلیدهای دیگر را لو ندهد.
+
+#### NAT-T
+
+اگر یکی از دو سر پشت NAT باشد، ESP روی UDP/4500 کپسوله می‌شود.
+
+#### مثال سخت — شکست متناوب
+
+Tunnel هر ۸ ساعت یک بار برای چند ثانیه قطع می‌شود: Lifetime Phase1 متفاوت و Rekey Collision. رفع: یکسان‌سازی و فعال‌بودن `auto-negotiate`.
+
+#### Lab
+
+دو FortiGate (یا FGT و CSR) را با Proposal یکسان بسازید و سپس عمداً یک پارامتر را عوض کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| no proposal chosen | رمز | یکسان |
+| AUTH_FAILED | PSK/ID | یکسان |
+| TS_UNACCEPTABLE | Selector | یکسان |
+
+#### پرسش‌ها با پاسخ
+
+**۱. تفاوت Phase1 و 2؟** هویت/کانال در برابر داده.
+**۲. PFS چیست؟** DH جدید برای هر SA.
+**۳. NAT-T؟** کپسوله روی UDP/4500.
+
+#### English Corner
+
+- *Phase 1 authenticates the peers; phase 2 negotiates the data protection.*
+- Q: What does perfect forward secrecy protect against?
+
 ## درس 18-1 — IPsec در عمل: از نیاز تا طراحی — Proposal، شبکه‌ها و برگه‌ی پارامتر
 
 **فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۵-۰ · ≈ 5 ساعت**
@@ -3755,6 +3833,63 @@ diagnose vpn ike gateway list
 1. *چرا برگه؟* جلوگیری از Mismatch.
 2. *DH 14 چرا؟* حداقل ایمن قابل قبول (۲۰۴۸ بیت).
 3. *IKEv1 یا v2؟* v2 ترجیح.
+
+### تکمیل عمیق: طراحی IPsec — برگه‌ی پارامتر دو سر
+
+#### چرا؟
+
+بیشتر «Tunnel بالا نمی‌آید»ها به ناهمخوانی یک پارامتر برمی‌گردد. برگه‌ی طراحی، قبل از دست‌بردن به CLI، ناهمخوانی را آشکار می‌کند.
+
+#### برگه‌ی نمونه
+
+| پارامتر | سایت A | سایت B | هم‌خوان؟ |
+|---|---|---|---|
+| IKE نسخه | 2 | 2 | بله |
+| رمزنگاری | AES256 | AES256 | بله |
+| Integrity | SHA256 | SHA256 | بله |
+| DH | 14 | 14 | بله |
+| Keylife P1 | 28800 | 28800 | بله |
+| Local subnet | 10.1.0.0/24 | 10.2.0.0/24 | — |
+| PSK | Vault | Vault | بله |
+
+#### مثال ساده — انتخاب پارامتر
+
+AES256 + SHA256 + DH14 (۲۰۴۸ بیت) حداقل مناسب؛ DH 19/20/21 (ECP) سریع‌تر و امن. پارامترهای ضعیف (DES، MD5، DH 1/2/5) را کنار بگذارید.
+
+#### مثال متوسط — PSK
+
+PSK باید تصادفی و بلند باشد (≥ 32 نویسه) و در Vault نگه‌داری شود؛ هرگز در ریپو یا ایمیل.
+
+``` text
+openssl rand -base64 32
+```
+
+#### مثال سخت — شبکه‌های هم‌پوشان
+
+دو سایت هر دو 192.168.1.0/24 دارند؛ IPsec مسیر مبهم می‌شود. راه: NAT ایستا ۱:۱ روی Tunnel (مثلاً سایت B به 10.222.1.0/24 ترجمه شود) یا Renumber.
+
+#### Lab
+
+برگه را برای دو سایت خودتان پر کنید و با همکار مقابله کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| تونل بالا نمی‌آید | ناهمخوانی | برگه |
+| Overlap | IP | NAT/Renumber |
+| PSK لو رفت | نگهداری | Rotate |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا برگه؟** قبل از CLI ناهمخوانی دیده شود.
+**۲. PSK چگونه؟** تصادفی، بلند، Vault.
+**۳. Overlap؟** NAT یا Renumber.
+
+#### English Corner
+
+- *Agree on all IKE and IPsec parameters on paper before configuring.*
+- Q: How do you build a tunnel between two sites with overlapping subnets?
 
 ## درس 18-2 — ساخت Tunnel Site-to-Site بین دو FortiGate: طراحی، GUI، CLI و Verification
 
@@ -3966,6 +4101,87 @@ end
 2. *Route ناقص؟* ترافیک از Tunnel نمی‌رود.
 3. *کانتر صفر؟* ترافیک اصلاً وارد نمی‌شود.
 
+### تکمیل عمیق: ساخت Tunnel Site-to-Site — GUI، CLI و اثبات
+
+#### چرا؟
+
+یک Tunnel وقتی «ساخته شده» است که هم Phase1/2 بالا باشد، هم Route و Policy درست و هم ترافیک عبور کند و شمارنده‌ها افزایش یابند.
+
+#### مراحل
+
+1. Phase1 (Interface-based).
+2. Phase2 و Selector.
+3. Static Route یا Routing پویا به Interface Tunnel.
+4. Policy دوطرفه.
+5. آزمون.
+
+#### مثال ساده — CLI
+
+``` text
+config vpn ipsec phase1-interface
+ edit "TO-B"
+  set interface "port1"
+  set ike-version 2
+  set remote-gw 198.51.100.2
+  set proposal aes256-sha256
+  set dhgrp 14
+  set psk ENC ***
+ next
+end
+config vpn ipsec phase2-interface
+ edit "TO-B-P2"
+  set phase1name "TO-B"
+  set proposal aes256-sha256
+  set src-subnet 10.1.0.0 255.255.255.0
+  set dst-subnet 10.2.0.0 255.255.255.0
+ next
+end
+config router static
+ edit 100
+  set dst 10.2.0.0 255.255.255.0
+  set device "TO-B"
+ next
+end
+```
+
+#### مثال متوسط — Policy
+
+دو Policy: `LAN -> TO-B` و `TO-B -> LAN`، سرویس و Log مشخص؛ NAT خاموش (ترافیک بین شبکه‌های خصوصی بدون NAT).
+
+#### مثال سخت — اثبات
+
+``` text
+diagnose vpn ike gateway list
+diagnose vpn tunnel list
+execute ping-options source 10.1.0.1
+execute ping 10.2.0.1
+```
+
+شمارنده‌ی `enc pkts` و `dec pkts` باید افزایش یابد؛ اگر فقط یکی، Policy/Route سمت مقابل را بررسی کنید.
+
+#### Lab
+
+دو FortiGate VM (یا یک FGT و یک CSR) را وصل و اثبات را ثبت کنید (اجرا نشده تا اطلاع بعدی).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| تونل Up بدون ترافیک | Route | افزودن |
+| فقط enc | Policy مقابل | افزودن |
+| ping از LAN نه | NAT فعال | غیرفعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Policy دوطرفه؟** هر جهت مجوز می‌خواهد.
+**۲. NAT چرا خاموش؟** شبکه‌های خصوصی.
+**۳. enc بدون dec؟** مشکل سمت مقابل.
+
+#### English Corner
+
+- *If only the encrypted counter increases, check the remote side.*
+- Q: Why disable NAT on the tunnel policy?
+
 ## درس 18-3 — عیب‌یابی IPsec با Debug IKE: خواندن پیام‌ها و تصمیم‌گیری لایه‌ای
 
 **فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۱، ۱۸-۲ · ≈ 11 ساعت**
@@ -4134,6 +4350,72 @@ diagnose debug enable
 1. *Debug چه خطری؟* بار CPU و Log زیاد.
 2. *فیلتر چرا؟* فقط Peer هدف.
 3. *AUTH_FAILED؟* PSK/Identity.
+
+### تکمیل عمیق: Debug IKE — خواندن پیام‌ها
+
+#### چرا؟
+
+پیام‌های Debug IKE دقیقاً می‌گویند چرا مذاکره شکست خورد؛ فقط باید زبانش را بدانید.
+
+#### راه‌اندازی ایمن
+
+``` text
+diagnose vpn ike log filter clear
+diagnose vpn ike log filter rem-addr4 198.51.100.2
+diagnose debug application ike -1
+diagnose debug enable
+```
+
+فیلتر روی Peer هدف؛ پایان: `diagnose debug disable` و `diagnose debug reset`.
+
+#### جدول پیام‌ها
+
+| پیام | معنی | رفع |
+|---|---|---|
+| no proposal chosen | Proposal ناهمخوان | یکسان |
+| AUTHENTICATION_FAILED | PSK/ID | یکسان |
+| TS_UNACCEPTABLE | Selector ناهمخوان | یکسان |
+| peer ... not responding | Reachability/Firewall | UDP 500 |
+| INVALID_KE_PAYLOAD | DH ناهمخوان | یکسان |
+
+#### مثال ساده
+
+خروجی: `negotiation failure ... no proposal chosen`. فوراً Proposal دو سر را مقایسه کنید.
+
+#### مثال متوسط — نبود پاسخ
+
+فقط پیام‌های ارسال بدون دریافت: ISP یا فایروال بین راه UDP/500 را مسدود کرده؛ با Sniffer ببینید.
+
+``` text
+diagnose sniffer packet port1 'host 198.51.100.2 and udp port 500' 4 10 l
+```
+
+#### مثال سخت — NAT-T
+
+پس از IKE_SA موفق، ESP قطع است: UDP/4500 مسدود. با Sniffer روی 4500 بررسی کنید.
+
+#### Lab
+
+PSK را عمداً متفاوت و پیام AUTH_FAILED را مشاهده کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Debug سنگین | بی‌فیلتر | فیلتر |
+| پیام نمی‌آید | Reachability | Sniffer |
+| ESP قطع | 4500 | باز کردن |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا فیلتر؟** CPU.
+**۲. TS_UNACCEPTABLE؟** Selector.
+**۳. NAT-T پورت؟** 4500.
+
+#### English Corner
+
+- *Filter IKE debug to one peer to keep the output readable.*
+- Q: What does a no-proposal-chosen error tell you?
 
 ## درس 18-4 — MTU/MSS و Fragmentation در Tunnel IPsec: محاسبه‌ی سربار، آزمون DF، PMTUD و تنظیم
 
@@ -4330,6 +4612,72 @@ TCP MSS            = 1427 - 40 = 1387  (use 1360 for margin)
 2. *DF bit؟* ممنوعیت Fragment.
 3. *PMTUD Blackhole؟* ICMP مسدود.
 
+### تکمیل عمیق: MTU/MSS در Tunnel — محاسبه و آزمون DF
+
+#### چرا؟
+
+IPsec سربار اضافه می‌کند؛ بسته‌ی ۱۵۰۰ بایتی بعد از کپسوله‌شدن بزرگ‌تر از MTU لینک می‌شود. نتیجه: «سایت باز می‌شود ولی تصاویر نه» یا «ping کار می‌کند ولی HTTPS نه».
+
+#### محاسبه‌ی سربار
+
+``` text
+ESP tunnel mode overhead ~ 50-73 bytes (IP 20 + ESP 8 + IV 16 + pad + ICV 12-32)
+Link MTU 1500 -> inner MTU ~ 1427 (conservative)
+TCP MSS = inner MTU - 40 = ~1387 ; use 1360 for margin
+```
+
+عدد دقیق به الگوریتم بستگی دارد؛ همیشه با آزمون اندازه بگیرید.
+
+#### آزمون DF
+
+``` text
+ping -f -l 1472 10.2.0.1   (Windows: -f = Don't Fragment)
+ping -f -l 1400 10.2.0.1
+ping -M do -s 1400 10.2.0.1   (Linux)
+```
+
+بزرگ‌ترین اندازه‌ای که جواب می‌دهد + 28 = MTU مسیر.
+
+#### مثال متوسط — رفع با MSS Clamp
+
+``` text
+config firewall policy
+ edit 100
+  set tcp-mss-sender 1360
+  set tcp-mss-receiver 1360
+ next
+end
+```
+
+یا کاهش MTU Interface Tunnel: `set mtu 1400` با `mtu-ignore` طبق نیاز.
+
+#### مثال سخت — ICMP مسدود
+
+PMTUD به ICMP «Fragmentation Needed» وابسته است؛ اگر ICMP در مسیر مسدود باشد، فرستنده نمی‌فهمد و Blackhole رخ می‌دهد. رفع: MSS Clamp (چون روی SYN) و باز کردن ICMP Type 3 Code 4.
+
+#### Lab
+
+Path MTU را با ping اندازه بگیرید و MSS را محاسبه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| HTTPS قطع‌قطع | MTU | Clamp |
+| ping بزرگ رد | Fragmentation | MTU Tunnel |
+| ICMP مسدود | PMTUD | باز کردن |
+
+#### پرسش‌ها با پاسخ
+
+**۱. MSS از کجا؟** MTU منهای هدرها.
+**۲. چرا ping کار می‌کند ولی HTTPS نه؟** اندازه‌ی بسته.
+**۳. Clamp روی؟** SYN.
+
+#### English Corner
+
+- *MSS clamping works on the TCP SYN and avoids dependence on PMTUD.*
+- Q: How do you find the path MTU with ping?
+
 ## درس 18-5 — Interop FGT–CSR: IPsec IKEv2 route-based، نگاشت، Debug دوطرفه و آزمون Rekey
 
 **فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۲۵-۰، ۲۵-۳ · ≈ 8 ساعت**
@@ -4518,6 +4866,82 @@ crypto ikev2 keyring KR
 1. *چرا Route-based؟* Routing پویا.
 2. *Selector 0.0.0.0/0؟* با VTI رایج.
 3. *Debug دوطرفه؟* دو سر هم‌زمان.
+
+### تکمیل عمیق: Interop FortiGate–Cisco CSR با IKEv2 Route-based
+
+#### چرا؟
+
+در دنیای واقعی IPsec اغلب بین دو سازنده است. اگر مفهوم را بدانید فقط Syntax عوض می‌شود.
+
+#### پیکربندی Cisco (VTI)
+
+``` text
+crypto ikev2 proposal P1
+ encryption aes-cbc-256
+ integrity sha256
+ group 14
+crypto ikev2 policy POL1
+ proposal P1
+crypto ikev2 keyring KR
+ peer FGT
+  address 203.0.113.2
+  pre-shared-key local ***
+  pre-shared-key remote ***
+crypto ikev2 profile PROF
+ match identity remote address 203.0.113.2 255.255.255.255
+ authentication remote pre-share
+ authentication local pre-share
+ keyring local KR
+crypto ipsec transform-set TS esp-aes 256 esp-sha256-hmac
+ mode tunnel
+crypto ipsec profile IPS
+ set transform-set TS
+ set ikev2-profile PROF
+interface Tunnel0
+ ip address 10.99.0.2 255.255.255.252
+ tunnel source GigabitEthernet1
+ tunnel destination 203.0.113.2
+ tunnel mode ipsec ipv4
+ tunnel protection ipsec profile IPS
+```
+
+سمت FortiGate: Phase1/Phase2 Route-based با Selector 0.0.0.0/0 (VTI معمولاً با Selector کامل کار می‌کند).
+
+#### مثال متوسط — اثبات
+
+``` text
+Cisco: show crypto ikev2 sa ; show crypto ipsec sa | include pkts
+FGT  : diagnose vpn ike gateway list ; diagnose vpn tunnel list
+```
+
+شمارنده‌ها در هر دو سر باید هم‌خوان و افزایشی باشند.
+
+#### مثال سخت — اختلاف Selector
+
+Cisco VTI با Selector any/any و FGT با Selector محدود ⇒ TS_UNACCEPTABLE. رفع: FGT را 0.0.0.0/0 یا Cisco را محدود.
+
+#### Lab
+
+یک CSR و یک FGT VM در PNETLab؛ تغییر ندادن تجهیز واقعی؛ اجرا نشده.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| SA بالا ولی ping نه | Route روی Tunnel0 | افزودن |
+| TS_UNACCEPTABLE | Selector | همسان |
+| Identity | match identity | تصحیح |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Route-based؟** Routing پویا.
+**۲. VTI Selector؟** any/any.
+**۳. چرا Debug دوسر؟** مقایسه.
+
+#### English Corner
+
+- *Route-based VPN uses a virtual tunnel interface and supports dynamic routing.*
+- Q: What does match identity remote address do on the Cisco profile?
 
 ## درس 18-6 — Gate G7: آزمون عملی IPsec — صورت مسئله، کلید پاسخ کامل و Rubric
 
@@ -4777,6 +5201,59 @@ diagnose debug reset
 1. *تفاوت Route-based و Policy-based؟* Interface مجازی در برابر Policy.
 2. *Dead Peer Detection؟* تشخیص قطع.
 3. *شاهد برقراری؟* شمارنده‌ها و ping.
+
+### تکمیل عمیق: G7 — صورت مسئله، کلید پاسخ و Rubric
+
+#### چرا؟
+
+G7 ثابت می‌کند IPsec را از طراحی تا عیب‌یابی اجرا می‌کنید.
+
+#### صورت مسئله
+
+دو سایت 10.1.0.0/24 و 10.2.0.0/24؛ Tunnel IKEv2؛ سه خرابی تزریقی: PSK، Selector، Route.
+
+#### کلید
+
+1. برگه‌ی پارامتر.
+2. ساخت Tunnel.
+3. اثبات (counter + ping).
+4. خرابی ۱: AUTH_FAILED ⇒ PSK.
+5. خرابی ۲: TS_UNACCEPTABLE ⇒ Selector.
+6. خرابی ۳: Tunnel Up بدون ping ⇒ Route.
+7. MTU.
+
+#### Rubric
+
+``` text
+Up 20 | Routing 15 | Policy 15 | MTU 15 | Fault diagnosis 25 | Report 10
+```
+
+#### مثال سخت — دو خرابی هم‌زمان
+
+PSK درست شد ولی Selector هنوز؛ پس از هر رفع آزمون جدید. قاعده: یک تغییر در هر زمان.
+
+#### Lab
+
+سه خرابی را ایجاد و رفع کنید و شواهد را ثبت.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| چند خطا | هم‌زمان | یکی‌یکی |
+| Evidence ناقص | ثبت | الگو |
+| MTU فراموش | آزمون ناقص | DF |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا یکی‌یکی؟** ردیابی.
+**۲. Evidence؟** debug + counters.
+**۳. MTU؟** آزمون DF.
+
+#### English Corner
+
+- *Fix one fault at a time and retest.*
+- Q: How do you distinguish a selector problem from a routing problem?
 
 ## پاسخ‌های فصل 18
 
