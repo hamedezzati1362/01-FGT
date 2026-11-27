@@ -2642,138 +2642,164 @@ Candidates to migrate    = 1200 - 480 - 120 = 600
 
 > **وضعیت:** روش‌شناسی مستقل از برند؛ نگاشت ASA→FortiGate مفهومی/`Unverified`؛ فقط Lab/Change مجاز؛ FortiOS 7.0.3 (بوت‌نشده).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Inventory کامل از دستگاه مبدأ (Interface، Route، NAT، ACL، VPN، User، Log) تهیه کند.
-2. Rule Hygiene (Hit Count، Shadow، Duplicate، Any-Any) را انجام دهد.
-3. نگاشت مفهومی Object/Service/ACL/NAT/VPN به FortiGate را بنویسد و تفاوت مدل را تحلیل کند.
-4. ریسک‌های رفتاری (ترتیب NAT/ACL، Implicit rules، Inspection) را فهرست کند.
-5. Mapping Table و Gap List بسازد.
-6. نیازمندی‌های ابزار خودکار (FortiConverter) و محدودیت‌ها را بداند.
+1. Inventory کامل فایروال قدیمی (Policy، Object، NAT، VPN، Route، Admin، Log) را بسازید.
+2. Rule Hygiene (پاک‌سازی Shadow/بی‌استفاده/تکراری) را قبل از Migration انجام دهید.
+3. Object، Service، NAT، Policy و VPN را به معادل FortiGate نگاشت کنید.
+4. ابزار تبدیل (FortiConverter، اسکریپت) و محدودیت‌های آن را بشناسید.
+5. تفاوت‌های Semantics (ACL ترتیبی، NAT Order، Default Deny، ICMP) را بدانید.
+6. جدول نگاشت و Diff را مستند کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا نگاشت دقیق؟** ترجمه‌ی تحت‌اللفظی غلط است: ACL Stateless و Policy Stateful؛ Static NAT نیازمند VIP و Policy؛ ترتیب ارزیابی متفاوت. نگاشت را با Lookup و Debug تأیید کنید.
+اسباب‌کشی یک خانه‌ی ۱۰ ساله را تصور کنید: اگر همه‌چیز را بدون بازبینی ببرید، خانه‌ی جدید هم از اشیای بی‌مصرف پر می‌شود. Migration فرصت پاک‌سازی است؛ ولی اگر بی‌دقت پاک‌سازی کنید، چیزی را می‌اندازید که ۳ ماه یک‌بار لازم است (مثلاً Job پایان سال). خطر اصلی Migration «کار می‌کرد، حالا نه» است. نگاشت دقیق و آزمون جلوی آن را می‌گیرد.
 
-**جمع‌بندی اصلی درس:**
+### Inventory فایروال قدیمی
 
-مهاجرت موفق یعنی **برابری رفتاری**، نه برابری متن Config. «کپی» خطرناک است چون مدل پردازش فرق دارد: در ASA سطح امنیت و ACL و NAT ترتیب خاص دارند؛ در FortiGate Policy و Session و NAT در Policy/Central NAT. پیش‌شرط: بدانید دقیقاً چه دارید.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) Inventory (منابع)
-
-``` text
-show running-config            show access-list (hit counts) show nat detail
-show route                     show vpn-sessiondb / crypto maps
-show conn count                show xlate count    logs (90 days)
-user/group, certificates, DHCP/DNS/AAA, routing protocols, SNMP/NTP/Syslog
-```
-
-#### ۲) Rule Hygiene
-
-| مورد | تشخیص | اقدام |
-|---|---|---|
-| Rule بدون Hit (90 روز) | Hit count = 0 | حذف/بایگانی |
-| Shadow | Rule بالاتر همه را می‌گیرد | حذف |
-| Duplicate/Overlap | Object/Rule هم‌پوشان | ادغام |
-| Any-Any | مبدأ/مقصد/سرویس any | محدودسازی |
-| Object بی‌استفاده | بدون مرجع | حذف |
-
-#### ۳) نگاشت مفهومی
-
-| مبدأ (ASA) | FortiGate |
+| دسته | شامل |
 |---|---|
-| nameif + security-level | Interface/Zone + Policy صریح (Implicit deny) |
-| object network/service/group | Address/Service/Group |
-| access-list + access-group | Firewall Policy (srcintf/dstintf) |
-| NAT (object/twice) | Policy NAT/VIP/IP Pool/Central NAT |
-| route/dynamic routing | Static/OSPF/BGP |
-| crypto map/tunnel-group | IPsec Phase1/2 Route-based |
-| MPF inspect | Session Helper/ALG/Profile |
-| AAA/LDAP | User/LDAP/RADIUS |
+| Interface/Zone/VLAN | آدرس، Mask، Gateway |
+| Route | Static، Dynamic (OSPF/BGP) |
+| Object | Address، Group، Service |
+| Policy/ACL | ترتیب، Hit Count، Comment |
+| NAT | Static، Dynamic، Policy NAT، Twice NAT |
+| VPN | Site-to-Site، Remote Access، پارامترها |
+| UTM/Inspection | Profileها (AV، IPS، Web) |
+| Admin/Auth | حساب‌ها، RADIUS/LDAP |
+| Log/SNMP/NTP/DNS | سرویس‌های جانبی |
+| HA/Licensing | |
 
-#### ۴) تفاوت‌های رفتاری حیاتی
+Export: `show running-config` (Cisco ASA)، `show full-configuration` (FortiGate قدیمی). Hit Count ۱۲ ماهه (نه ۳۰ روز).
 
-- **Implicit rules:** ASA ترافیک از امنیت بالا به پایین را پیش‌فرض اجازه می‌دهد؛ FortiGate هیچ‌چیز (Implicit deny).
-- **ترتیب NAT:** ASA NAT را پیش از ACL (با Real IP در ACL پس از 8.3)؛ FortiGate DNAT قبل از Policy و SNAT بعد.
-- **Interface:** `nameif` به Zone/Interface؛ چند Interface یک Zone.
-- **Inspection:** پیش‌فرض‌ها متفاوت (ALG).
+### Rule Hygiene
 
-#### ۵) Mapping Table
-
-``` text
-Source object -> Target object | Rule ID -> Policy ID | NAT entry -> Policy/VIP | Gap | Test case
-```
-
-#### ۶) ابزار خودکار
-
-FortiConverter (لایسنس/سرویس) Config را تبدیل می‌کند ولی **خروجی باید بازبینی و آزمون شود** (`Unverified` برای قابلیت‌ها).
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| مشکل | اقدام |
 |---|---|
-| ابزار خودکار یا دستی | Hygiene دستی + ابزار برای حجم؛ بازبینی اجباری |
-| Zone | نگاشت security-level به Zone |
-| Implicit rules | صریح‌سازی |
+| Hit=0 (12 ماه) | بررسی/حذف با مالک |
+| Shadow/تکراری | ادغام/حذف |
+| ALL/ALL | تنگ‌کردن (۱۳-۵) |
+| Object بی‌استفاده | حذف |
+| Comment نداشتن | تکمیل |
+| Policy فصلی | برچسب |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+اصل: پاک‌سازی **قبل** یا **بعد** از Migration، نه هم‌زمان با Cutover (تفکیک علل اختلاف). توصیه: ابتدا Lift-and-Shift (هم‌ارز)، سپس Hygiene در Change جدا.
 
-#### مثال ساده — Wildcard به Mask
+### نگاشت Object/Service
+
+| مبدأ (نمونه ASA) | FortiGate |
+|---|---|
+| `object network WEB` host | `config firewall address` (subnet /32) |
+| `object-group network` | `config firewall addrgrp` |
+| `object service HTTPS` | `config firewall service custom` |
+| `object-group service` | `config firewall service group` |
+| `time-range` | `config firewall schedule` |
+
+### نگاشت ACL/Policy
+
+ASA `access-list OUT extended permit tcp 10.10.0.0 255.255.255.0 host 203.0.113.50 eq 443` ⇒ Policy FortiGate:
 
 ``` text
-wildcard 0.0.0.255 -> /24 ; 0.0.3.255 -> /22
+config firewall policy
+    edit 10
+        set name "USERS-to-SRV-HTTPS"
+        set srcintf "inside"
+        set dstintf "outside"
+        set srcaddr "NET-USERS"
+        set dstaddr "HOST-SRV"
+        set service "HTTPS"
+        set action accept
+        set schedule "always"
+        set logtraffic all
+    next
+end
 ```
 
-#### مثال متوسط — Static NAT
+تفاوت: ACL روی Interface و جهت؛ Policy بر دو سر. ACL ASA ترتیب و Implicit Deny؛ هر دو مشابه. ICMP در ASA پیش‌فرض بسته (Return)؛ در FortiGate Stateful.
 
-``` text
-Cisco: ip nat inside source static tcp 10.30.0.10 443 203.0.113.10 443
-FGT  : VIP (extip 203.0.113.10, mappedip 10.30.0.10) + Policy to VIP
-```
+### نگاشت NAT
 
-#### مثال سخت
+| مبدأ | FortiGate |
+|---|---|
+| Static NAT | VIP + Policy |
+| Dynamic PAT (interface) | Policy `nat enable` |
+| Dynamic Pool | IP Pool (overload/one-to-one) |
+| Twice NAT/Policy NAT | Central NAT یا VIP + Policy ترکیبی |
+| Identity NAT/NAT exempt | Policy بدون NAT |
 
-ترتیب ACL و Shadow؛ Hit Count قدیمی برای حذف.
+دام: ترتیب NAT در ASA (Section 1/2/3) متفاوت با FortiGate؛ تست‌پذیر با `iprope lookup` و Session.
 
-#### مثال‌های اصلی درس (مرور)
+### نگاشت VPN
 
-**ساده (حل‌شده):** ۲۴۰ Rule: ۱۱۰ صفر-Hit حذف؛ ۱۳۰ باقی؛ Mapping Table ۱۳۰ سطری.
-
-**متوسط (تحلیل):** در ASA ترافیک Inside→DMZ بدون Rule مجاز بود (security-level)؛ در FGT بدون Policy Block می‌شود. نتیجه: «قطع پس از Cutover». پیشگیری: استخراج رفتار ضمنی به Policy صریح و آزمون.
-
-**سخت (NAT):** Twice-NAT با ترتیب خاص و Object با Real/Mapped Address. نگاشت به FGT: VIP + Policy با مقصد post-DNAT + IP Pool؛ خطای رایج: Policy با IP عمومی به‌جای داخلی. آزمون: Debug Flow و Test Matrix. ریسک: Hairpin NAT و ALG.
-
-### ۸) Verification (اثبات صحت)
-
-- Mapping Table کامل و Gap List.
-- Hit Count ۹۰ روز.
-- Test Cases قبل از Build.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| مفهوم | ASA/Cisco | FortiGate |
 |---|---|---|
-| Rule ناشناخته | Hit/Log | Owner |
-| NAT نگاشت نمی‌شود | Test | VIP/Pool |
-| Implicit rule | تست | Policy صریح |
+| Phase1 | `crypto ikev2 policy` | `phase1-interface` |
+| Phase2 | `crypto ipsec` + ACL | `phase2-interface` + Selector |
+| PSK | tunnel-group | `psksecret` |
+| Interesting traffic | ACL | Selector/Route |
 
-### ۱۰) نکات امنیتی
+آزمون Interop در Lab قبل از Cutover. PSK از Vault؛ **PSK قدیمی قابل‌استخراج نیست** (Hash/ENC)؛ تعریف مجدد و هماهنگی با Peer.
 
-- Secret/رمز منتقل نشود.
-- Any-Any را منتقل نکنید.
+### ابزار تبدیل
 
-### ۱۱) جمع‌بندی مفهومی
+| ابزار | نکته |
+|---|---|
+| FortiConverter | تبدیل از چند سازنده (لایسنس/Needs-License؛ بازبینی خروجی الزامی) |
+| اسکریپت Python/Ansible | کنترل کامل، Policy ساده |
+| دستی | برای کوچک/حساس |
 
-- برابری رفتاری هدف است.
-- Hygiene قبل از نگاشت.
-- Implicit rules را صریح کنید.
-- Mapping/Gap Table.
+هیچ ابزاری تبدیل 100٪ نیست؛ خروجی را Review و Diff کنید.
 
-### ۱۲) تمرین و ارزیابی
+### مثال‌های حل‌شده
+
+#### مثال ساده — نگاشت Object
+
+`object network WEB host 10.20.0.30` ⇒ `edit "HOST-WEB" set subnet 10.20.0.30 255.255.255.255`.
+
+#### مثال متوسط — Hit Count
+
+Policy بدون Hit در ۳۰ روز؛ در ۱۲ ماه Hit دارد (پایان سال). حذف نشد؛ برچسب «فصلی». درس: دوره‌ی بررسی کوتاه گمراه‌کننده است.
+
+#### مثال متوسط — NAT
+
+Static NAT ASA `10.20.0.30 ⇒ 203.0.113.30` ⇒ VIP `203.0.113.30→10.20.0.30` + Policy `outside→inside dstaddr VIP`. بدون Policy VIP کار نمی‌کند (خطای رایج).
+
+#### مثال سخت — Twice NAT
+
+NAT ASA فقط وقتی مقصد خاص باشد (Policy NAT). FortiGate معادل: Policy مقصد‌محور با IP Pool، یا Central NAT. اگر تبدیل نادرست باشد، فقط بعضی مقاصد ترجمه می‌شوند. آزمون با دو مقصد.
+
+#### مثال سخت — تفاوت Default
+
+ASA: ترافیک High→Low سطح امنیت Interface پیش‌فرض مجاز؛ FortiGate: همه Deny پیش‌فرض. پس از Migration، کاربران اینترنت ندارند چون «Policy ضمنی ASA» وجود داشت. کشف با مقایسه‌ی رفتار (Session پیش/پس).
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Inventory و Hit Count.
+2. نگاشت Object/Policy/NAT.
+3. Diff و Review.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| VIP کار نمی‌کند | Policy | افزودن |
+| اینترنت نیست | Policy ضمنی | Policy صریح |
+| VPN شکست | PSK/Proposal | هماهنگ |
+| NAT ناقص | ترتیب/Twice | تست |
+
+### نکات امنیتی
+
+Config قدیمی حاوی Secret است؛ Sanitize؛ حذف پس از Cutover؛ دسترسی محدود.
+
+### جمع‌بندی
+
+Inventory با Hit Count ۱۲ماهه؛ Hygiene جدا از Cutover؛ نگاشت Object/Policy/NAT/VPN؛ ابزار تبدیل + Review؛ تفاوت‌های Semantics را آزمون کنید.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Hit Count چیست؟ *(پاسخ: 30-1-ت1)*
 
@@ -2789,7 +2815,7 @@ FGT  : VIP (extip 203.0.113.10, mappedip 10.30.0.10) + Policy to VIP
 
 **Q1.** Quick quiz (English): Why is behavioral equivalence the goal rather than configuration equivalence? *(پاسخ: 30-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2799,11 +2825,11 @@ FGT  : VIP (extip 203.0.113.10, mappedip 10.30.0.10) + Policy to VIP
 
 - *Remove dead rules before migrating.* ← قبل از مهاجرت Ruleهای مرده را حذف کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Inventory/Mapping. **وضعیت:** اجرا نشده. **Evidence:** `02-design/mig-inventory.md`.
 
-### ۱۵) منابع
+### منابع
 
 - NIST SP 800-41
 - Fortinet FortiConverter documentation
@@ -2811,224 +2837,146 @@ FGT  : VIP (extip 203.0.113.10, mappedip 10.30.0.10) + Policy to VIP
 
 <a id="l-30-2"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: نگاشت
-
-Object/NAT/Policy: هر مورد Cisco به معادل Fortinet با تفاوت Stateful. Hit Count قدیمی برای حذف.
-
-**پرسش‌های مصاحبه**
-1. *NAT Order؟* تفاوت.
-2. *Service Object؟* پورت.
-3. *Implicit Deny؟* مقایسه.
-
-### مثال حل‌شده: نگاشت NAT
-
-Cisco: `ip nat inside source static 10.30.0.10 203.0.113.10` ⇒ FortiGate: VIP (`extip 203.0.113.10`, `mappedip 10.30.0.10`) + Policy به VIP. تفاوت: در FortiGate بدون Policy ترافیک رد می‌شود.
-
-### تکمیل عمیق: نگاشت دقیق Object، NAT و Policy از Cisco به FortiGate
-
-#### چرا؟
-
-ترجمه‌ی تحت‌اللفظی غلط است. مثل ترجمه‌ی ضرب‌المثل‌ها: ظاهر کلمات یکی است ولی معنا فرق می‌کند. مثلاً ACL سیسکو Stateless است و ترتیب Wildcard دارد؛ Policy فورتی‌گیت Stateful است و بر اساس Interface/Zone.
-
-#### جدول نگاشت
-
-| مفهوم | Cisco | FortiGate |
-|---|---|---|
-| Host/Network Object | `object network` | `firewall address` |
-| Service Object | `object service` | `firewall service custom` |
-| ACL | `access-list` | `firewall policy` |
-| Static NAT | `ip nat inside source static` | VIP + Policy |
-| PAT | `ip nat inside source list ... overload` | Policy NAT (Interface/IP Pool) |
-
-#### مثال ساده — Wildcard به Mask
-
-``` text
-wildcard 0.0.0.255  -> mask 255.255.255.0 (/24)
-wildcard 0.0.3.255  -> mask 255.255.252.0 (/22)
-```
-
-قاعده: Mask = 255.255.255.255 منهای Wildcard (در هر بایت).
-
-#### مثال متوسط — Static NAT
-
-سیسکو:
-
-``` text
-ip nat inside source static tcp 10.30.0.10 443 203.0.113.10 443
-```
-
-FortiGate:
-
-``` text
-config firewall vip
- edit "VIP-WEB"
-  set extintf "port1"
-  set extip 203.0.113.10
-  set mappedip "10.30.0.10"
-  set portforward enable
-  set extport 443
-  set mappedport 443
- next
-end
-```
-
-بعد یک Policy با dstaddr = VIP. فراموشی Policy یعنی ترافیک رد می‌شود.
-
-#### مثال سخت — ترتیب ACL و Overlap
-
-در ACL سیسکو یک `deny` خاص قبل از `permit` عمومی است. وقتی هر خط به Policy تبدیل می‌شود، ترتیب را عیناً نگه دارید و Shadow را با iprope lookup بررسی کنید.
-
-#### Lab
-
-سه ACL نمونه را دستی به Policy تبدیل کنید و با Lookup بررسی کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| ترافیک برگشت رد | فرض Stateless | Stateful بودن |
-| NAT کار نمی‌کند | Policy بدون nat | `set nat enable` |
-| VIP جواب نمی‌دهد | Policy ناقص | افزودن Policy |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Wildcard 0.0.0.63 یعنی؟** Mask 255.255.255.192 (/26).
-**۲. چرا VIP Policy می‌خواهد؟** DNAT جدا از مجوز.
-**۳. تفاوت Stateless/Stateful؟** برگشت خودکار.
-
-#### English Corner
-
-- *A wildcard mask is the inverse of a subnet mask.*
-- Q: Why does a VIP still need a policy?
-
 ## درس 30-2 — Plan، Cutover و Rollback: برنامه‌ی تغییر، معیار Go/No-Go، Trigger و ارتباطات
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰، ۳۰-۱، ۳۲-۰ · ≈ 8 ساعت**
 
 > **وضعیت:** روش‌شناسی مستقل از برند؛ نگاشت ASA→FortiGate مفهومی/`Unverified`؛ فقط Lab/Change مجاز؛ FortiOS 7.0.3 (بوت‌نشده).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Plan Cutover ده‌مرحله‌ای را با زمان‌بندی دقیقه‌ای بنویسد.
-2. معیار Go/No-Go و Rollback Trigger را تعریف کند.
-3. Pre-check/Post-check و آزمون مثبت/منفی را بنویسد.
-4. ارتباطات و Escalation را برنامه‌ریزی کند.
-5. Cutover را در Lab اجرا و Rollback را آزمایش کند.
+1. Plan Migration (خط زمان T-7d تا T+1d) را بنویسید.
+2. معیار Go/No-Go و Trigger Rollback را تعیین کنید.
+3. Cutover Runbook دقیقه‌به‌دقیقه بسازید.
+4. Rollback را (زیر ۱۰ دقیقه) طراحی و آزمون کنید.
+5. ارتباطات (ذی‌نفعان، Status Update) را برنامه‌ریزی کنید.
+6. ریسک‌ها (Matrix) را ثبت و کاهش دهید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Go/No-Go؟** شب Cutover تصمیم‌ها زیر فشار گرفته می‌شود؛ معیار از پیش نوشته شود: Checklist پس از سوییچ، شرط Rollback، زمان‌بندی (T-7 freeze، T-1h backup، T0 switch، T+15 verify، T+30 decision).
+تعویض فایروال مثل تعویض موتور هواپیما در حین پرواز است؛ اگر شکست بخورد باید بتوانید در چند دقیقه برگردید. Plan بد یعنی «بالا بیایید و ببینید چه می‌شود». Plan خوب یعنی هر گام، زمان، مسئول، آزمون و تصمیم بازگشت از قبل نوشته شده است. حدود نیمی از Migrationهای بحرانی به‌دلیل نبود Rollback آزمون‌شده بود.
 
-**جمع‌بندی اصلی درس:**
-
-Cutover لحظه‌ی خطر است. Plan باید طوری باشد که یک مهندس دیگر هم بتواند اجرا کند؛ و تصمیم Rollback پیش از شروع مشخص باشد تا زیر فشار تصمیم احساسی نگیرید.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) اجزای Plan
+### خط زمان
 
 ``` text
-Scope / Window / Team roles (executor, verifier, comms, approver)
-Pre-checks: backups both, access (OOB), license, firmware, test matrix ready
-Go/No-Go checklist (T-60 min)
-Steps with timing: T+0 ... (each step: action, expected result, verification)
-Post-checks: test matrix, Log/Session, monitoring
-Rollback: trigger criteria, steps, time to complete
-Communication: start, milestones, completion, escalation
+T-14d  scope, inventory, owners, risks
+T-7d   baseline capture, backup, config conversion
+T-3d   review diff, lab test (functional + VPN + HA)
+T-1d   dry run in Lab, rollback rehearsal, Go/No-Go meeting
+T0     cutover (window 60 min)
+T+1h   post-check (test matrix)
+T+1d   monitoring review, close CHG, decommission plan (T+30d)
 ```
 
-#### ۲) Go/No-Go
+### Go/No-Go
 
-همه‌ی Pre-checkها OK؛ OOB کار می‌کند؛ Backup تأیید؛ تیم کامل؛ شرایط (بدون Freeze). یک «No» ⇒ لغو.
-
-#### ۳) Rollback Trigger (نمونه)
-
-- سرویس حیاتی X پس از ۳۰ دقیقه برنگشت.
-- ≥ ۲ آزمون مثبت حیاتی شکست.
-- مشکل ناشناخته‌ی امنیتی.
-Rollback باید زمان‌بندی داشته باشد (مثلاً ۱۵ دقیقه) و در Lab آزمایش شده باشد.
-
-#### ۴) مراحل نمونه
-
-``` text
-T-60 Go/No-Go     T-30 final backups     T+0 announce
-T+5 move gateway/route to new FGT        T+10 pre-defined smoke tests
-T+20 full test matrix                    T+35 decision: continue / rollback
-T+45 monitor + comms                     T+60 close window or hypercare
-```
-
-#### ۵) Hypercare
-
-۷ تا ۱۴ روز پایش تشدیدشده؛ Log؛ تماس سریع؛ نگه‌داشتن دستگاه قدیمی آماده تا N روز.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| معیار | Go اگر |
 |---|---|
-| Window | کم‌ترافیک |
-| Trigger | پیش‌تعریف |
-| OOB | اجباری |
-| Hypercare | ۷–۱۴ روز |
+| Lab تست | ۱۰۰٪ آزمون‌های بحرانی موفق |
+| Rollback | آزمون‌شده و ≤ ۱۰ دقیقه |
+| Backup | Full رمزگذاری‌شده + Hash |
+| Peer VPN | هماهنگ و Window تأییدشده |
+| تیم | در دسترس + On-call پشتیبان |
+| ریسک باز | هیچ ریسک High بدون کنترل |
+| Freeze | تغییر دیگری هم‌زمان نیست |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+اگر یکی «No» ⇒ تعویق.
 
-#### مثال ساده — Checklist
+### Cutover Runbook (نمونه ۶۰ دقیقه)
 
-DNS، ۵ کاربر نمونه، ERP، VPN شعب، Log.
+| زمان | گام | مسئول | آزمون |
+|---|---|---|---|
+| 00:00 | شروع، اعلان، Backup OLD | NetOps | Hash |
+| 00:05 | Backup NEW، تأیید Config | NetOps | Diff |
+| 00:10 | قطع OLD (کابل/VIP) طبق ترتیب مستند | NetOps | - |
+| 00:15 | NEW در سرویس | NetOps | ping GW/DNS |
+| 00:20 | Test Matrix 1-7 | QA/NetOps | جدول |
+| 00:35 | VPNها و UTM | SecOps | up |
+| 00:45 | تصمیم Go/Rollback نهایی | مدیر | معیار |
+| 00:60 | پایان/اعلان | Lead | گزارش |
 
-#### مثال متوسط
-
-No-Go: برنامه‌ی بحرانی پایین و بدون رفع ظرف ۳۰ دقیقه، یا >۱۰٪ Tunnel پایین.
-
-#### مثال سخت — Rollback ناقص
-
-ARP Cache سوییچ‌ها IP دستگاه قدیمی را ۵ دقیقه نگه داشت؛ در Runbook Gratuitous ARP/پاک‌سازی ARP و زمان‌گیری تمرین Rollback.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Plan یک‌صفحه‌ای با ۱۰ مرحله و Rollback.
-
-**متوسط (تحلیل):** در T+20 فقط ۲ از ۱۰ آزمون شکست می‌خورد: تصمیم بر پایه‌ی Trigger: اگر سرویس حیاتی نیست ادامه با رفع؛ اگر حیاتی ⇒ Rollback. ثبت تصمیم و دلیل.
-
-**سخت (ریسک):** Cutover ساعت ۲ بامداد؛ دسترسی OOB قطع می‌شود. شواهد: ممنوعیت Cutover بدون OOB. طرح: Console Server/مسیر دوم؛ Go/No-Go شامل تست OOB. اگر مشکل پس از شروع: Rollback با دسترسی فیزیکی. درس: Pre-check OOB اجباری.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### Rollback
 
 ``` text
-execute backup config sftp pre-cutover.conf 192.168.90.10 backup-user <PASSWORD>
-get system status
+Trigger: critical test fails & cannot be fixed within 15 min, OR any critical service down > 10 min
+Steps  : 1 announce rollback
+         2 reconnect OLD (cables/IP/VIP as documented)
+         3 verify OLD: test matrix
+         4 announce completion; schedule RCA
+Target : <= 10 minutes
 ```
 
-### ۸) Verification (اثبات صحت)
+Rollback باید یک‌بار در Lab/پنجره‌ی قبلی تمرین شود. ثبت زمان: «Rollback Rehearsal: ۷ دقیقه».
 
-- Plan بازبینی‌شده.
-- Rollback آزمایش‌شده در Lab.
-- Go/No-Go امضا.
+### ارتباطات
 
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| مخاطب | پیام | زمان |
 |---|---|---|
-| Cutover شکست | Post-check | Rollback |
-| OOB نیست | تست | لغو |
+| ذی‌نفعان | شروع/پایان | T0، T+60 |
+| Help Desk | علائم احتمالی | T-1d |
+| مدیریت | تصمیم Go/Rollback | لحظه‌ای |
+| Peer/ISP | Window | T-3d |
 
-### ۱۰) نکات امنیتی
+### ماتریس ریسک
 
-- Change رسمی و Rollback.
+| ریسک | احتمال | اثر | کاهش |
+|---|---|---|---|
+| VPN Peer ناسازگار | M | H | Lab Interop، تماس Peer |
+| Policy ناقص | M | H | Test Matrix، Diff |
+| ARP/MAC Cache | H | M | `clear arp` / Gratuitous ARP |
+| HA Sync | L | H | آزمون Lab |
+| Session قطع | H | L | اعلان |
 
-### ۱۱) جمع‌بندی مفهومی
+### مثال‌های حل‌شده
 
-- Plan + Go/No-Go + Trigger + Rollback.
-- OOB و Backup الزامی.
-- Hypercare.
+#### مثال ساده — Go/No-Go
 
-### ۱۲) تمرین و ارزیابی
+روز T-1: Rollback ۱۲ دقیقه (بیش از ۱۰). No-Go؛ بهینه‌سازی (از Cutover کابل به Switch VLAN) و Rehearsal دوباره ⇒ ۷ دقیقه ⇒ Go.
+
+#### مثال متوسط — ARP Cache
+
+بعد از جابه‌جایی کابل، IP Gateway همان ولی MAC جدید؛ سوئیچ/روتر بالادست ARP قدیمی دارند ⇒ ۵ دقیقه قطعی. راه: Gratuitous ARP/`clear ip arp` در بالادست، یا استفاده از همان MAC (VMAC) در HA. در Plan نوشته شد.
+
+#### مثال متوسط — Trigger
+
+۱۵ دقیقه پس از Cutover VPN اصلی Down. Trigger: «سرویس بحرانی > ۱۰ دقیقه» ⇒ Rollback. بدون Trigger از قبل، بحث و تأخیر.
+
+#### مثال سخت — Rollback ناممکن
+
+NEW نسخه‌ی Config OLD را روی سوئیچ تغییر داده (VLAN). Rollback به OLD بدون بازگرداندن سوئیچ ناقص. درس: Rollback تمام تغییرات جانبی (سوئیچ، DNS، ISP) را شامل شود. Runbook «Rollback Checklist» جدا.
+
+#### مثال سخت — Window ناکافی
+
+آزمون‌ها ۴۵ دقیقه طول کشید و Window ۶۰ دقیقه؛ فشار برای ادامه. اصل: ساعت ۴۵ تصمیم نهایی از قبل ثابت؛ اگر Test نامتمام، Rollback نه «امیدوارانه ادامه».
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Plan و Go/No-Go.
+2. Runbook ۶۰ دقیقه.
+3. Rollback Rehearsal و زمان.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| قطع پس از جابه‌جایی | ARP | Gratuitous |
+| Rollback کند | بی‌تمرین | Rehearsal |
+| بحث Trigger | معیار نیست | از قبل |
+| Window تمام | بی‌زمان‌بندی | نقطه‌ی تصمیم |
+
+### نکات امنیتی
+
+Window تغییر + MFA؛ ثبت اقدام؛ Backup رمزگذاری‌شده؛ Config قدیمی بعد از ۳۰ روز امحا.
+
+### جمع‌بندی
+
+Plan زمان‌دار؛ Go/No-Go؛ Runbook دقیقه‌ای؛ Rollback آزمون‌شده با Trigger؛ ارتباطات؛ ماتریس ریسک؛ نقطه‌ی تصمیم از قبل.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Go/No-Go چیست؟ *(پاسخ: 30-2-ت1)*
 
@@ -3044,7 +2992,7 @@ get system status
 
 **Q1.** Quick quiz (English): Why must rollback criteria be defined before the change? *(پاسخ: 30-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3053,106 +3001,16 @@ get system status
 
 - *Always have a tested rollback plan.* ← همیشه Rollback Plan آزمون‌شده داشته باشید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Plan. **وضعیت:** اجرا نشده. **Evidence:** `02-design/mig-plan.md`.
 
-### ۱۵) منابع
+### منابع
 
 - ITIL 4 Change Enablement
 - Google SRE Book (Release engineering)
 
 <a id="l-30-3"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Cutover
-
-پنجره، Checklist، معیار Go/No-Go، Rollback < ۳۰ دقیقه.
-
-``` text
-T-7d freeze ; T-1h backup ; T0 switch ; T+15m verify ; T+30m decide
-```
-
-**پرسش‌های مصاحبه**
-1. *No-Go؟* معیار قبلی.
-2. *Rollback؟* ساده.
-3. *ارتباط؟* اطلاع‌رسانی.
-
-### مثال حل‌شده: Go/No-Go
-
-``` text
-T+15m: Tunnels up 12/12, DNS ok, ERP ok, Users sample 5/5 -> GO
-If any critical app fails and no fix in 30m -> ROLLBACK
-```
-
-Rollback: بازگرداندن کابل/Route به دستگاه قدیم و Config قبلی.
-
-### تکمیل عمیق: برنامه‌ی Cutover، معیار Go/No-Go و Rollback
-
-#### چرا؟
-
-شب Cutover، تصمیم‌ها زیر فشار گرفته می‌شود. اگر معیار را از قبل ننوشته باشید، همه‌چیز احساسی می‌شود. «Go/No-Go» یعنی شرط‌های از پیش‌نوشته برای ادامه یا بازگشت.
-
-#### خط زمانی نمونه
-
-``` text
-T-7d   freeze changes on old device
-T-3d   rehearsal in Lab ; communicate to users
-T-1h   backup old + new, verify access, console ready
-T0     switch (routes/cables/DNS)
-T+15m  verify (checklist)
-T+30m  Go/No-Go decision
-T+24h  monitor, then close
-```
-
-#### Checklist پس از سوییچ
-
-1. DNS درست؟ (`nslookup`)
-2. ۵ کاربر نمونه اینترنت دارند؟
-3. برنامه‌ی حیاتی (ERP) باز می‌شود؟
-4. VPN شعب Up؟
-5. Log جدید دریافت می‌شود؟
-
-#### مثال ساده
-
-همه‌ی ۵ مورد OK ⇒ GO.
-
-#### مثال متوسط — معیار No-Go
-
-``` text
-If critical app down AND no fix within 30 min -> ROLLBACK
-If >10% of tunnels down -> ROLLBACK
-```
-
-#### مثال سخت — Rollback ناقص
-
-در Rollback IP دستگاه قدیم به ARP Cache سوییچ‌ها گیر کرده و ۵ دقیقه طول کشید. درس: در تمرین Rollback زمان بگیرید و Gratuitous ARP یا پاک‌سازی ARP را در Runbook بنویسید.
-
-#### Lab
-
-Cutover را در Lab اجرا و Rollback را زمان بگیرید؛ هدف < ۱۰ دقیقه.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| بعضی کاربران قطع | ARP قدیمی | پاک‌سازی ARP |
-| DNS قدیمی | TTL بالا | کاهش TTL قبل از Cutover |
-| VPN بالا نمی‌آید | IP عمومی تغییر | هماهنگی با Peer |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا TTL قبل از Cutover کم می‌شود؟** تغییر DNS سریع اعمال شود.
-**۲. چرا Rehearsal؟** کشف مشکلات.
-**۳. Go/No-Go چیست؟** معیار از پیش‌تعریف‌شده.
-
-#### English Corner
-
-- *Define rollback criteria before the window starts.*
-- Q: What do you verify after the switch?
 
 ## درس 30-3 — تست پیش/پس Migration و Evidence: Test Matrix، مقایسه‌ی Session/Log، RCA اختلاف‌ها
 
@@ -3160,134 +3018,136 @@ Cutover را در Lab اجرا و Rollback را زمان بگیرید؛ هدف <
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Test Matrix پیش و پس را با معیار عددی بنویسد.
-2. Session، Route، Policy hit و Log را قبل/بعد مقایسه کند.
-3. اختلاف‌ها را دسته‌بندی (قابل‌قبول/نیازمند رفع) و RCA کند.
-4. Evidence را سازمان‌دهی کند.
-5. تصمیم Go/No-Go بگیرد.
+1. Test Matrix پیش/پس از Migration طراحی کنید.
+2. Baseline قبل (Session، Hit Count، Throughput، Latency) را ثبت کنید.
+3. مقایسه‌ی Session/Log/Hit Count را انجام دهید.
+4. اختلاف‌ها را تحلیل و RCA کنید.
+5. Evidence را با Hash/زمان نگه دارید.
+6. معیار «Migration موفق» را تعریف کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا تست پیش/پس؟** «به نظرم خوب است» کافی نیست. Matrix «از ← به ← سرویس ← قبل ← بعد» همان آزمون را قبل و بعد اجرا می‌کند و diff می‌گیرد. هر تفاوت (به‌خصوص چیزی که قبلاً بسته بود و حالا باز است) باید بررسی شود.
+بدون اندازه‌گیری قبل، «بعد از Migration همه‌چیز خوب است» فقط احساس است. Baseline مثل عکس قبل از نقاشی ساختمان است: بعد از کار می‌فهمید چه چیزی عوض شد. بسیاری از مشکلات پنهان (یک VPN کم‌ترافیک، یک Policy فصلی) در روز اول دیده نمی‌شود؛ فقط مقایسه‌ی سیستماتیک آن‌ها را آشکار می‌کند.
 
-**جمع‌بندی اصلی درس:**
-
-پس از Migration می‌پرسند «همه‌چیز مثل قبل است؟». بدون Baseline نمی‌توانید جواب دهید. این درس نشان می‌دهد چه چیزهایی را قبل از تغییر اندازه بگیرید تا پس از آن با عدد جواب دهید.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) Baseline
+### Baseline قبل
 
 ``` text
-get system status
+# FortiGate OLD
+get system performance status
 diagnose sys session stat
-get router info routing-table all
-diagnose firewall iprope list (summary)   Unverified
-policy hit counts (top 20)
-IPsec: get vpn ipsec tunnel summary
+get system interface physical
+diagnose vpn tunnel list
+# Policy hit counts (12 months export)
 ```
 
-#### ۲) Test Matrix
+معیارها: CPU، Memory، Session Count، Throughput پیک، Latency به نقاط کلیدی، تعداد VPN Up، Policy Hit Count، Log Rate.
+
+### Test Matrix
 
 | # | آزمون | قبل | بعد | معیار |
 |---|---|---|---|---|
-| 1 | ping/DNS | ok | ok | برابر |
+| 1 | ping GW/DNS | ok | ok | برابر |
 | 2 | HTTPS خروج | ok | ok | برابر |
-| 3 | VIP وب | ok | ok | برابر |
-| 4 | IPsec | up | up | برابر |
-| 5 | تعداد Session | 41k | 39k | ±10٪ |
-| 6 | Routeها | N | N | برابر |
-| 7 | Policy hit | baseline | مقایسه | روند مشابه |
-| 8 | Log | ok | ok | ورود Log |
+| 3 | VIP وب از بیرون | ok | ok | برابر |
+| 4 | IPsec Site-to-Site | up | up | برابر |
+| 5 | Session count | N | ≈N | ±۱۰٪ |
+| 6 | Hit Count توزیع | baseline | مقایسه | Policyهای فعال هنوز Hit |
+| 7 | Log به SIEM | ok | ok | برابر |
+| 8 | Latency | L | ≤ L+۵٪ | |
+| 9 | UTM (AV/Web) | بلاک | بلاک | برابر |
+| 10 | SNMP/Monitoring | ok | ok | برابر |
 
-#### ۳) دسته‌بندی اختلاف
-
-| اختلاف | دسته | اقدام |
-|---|---|---|
-| Session 5٪ کمتر | قابل‌قبول | ثبت |
-| IPsec down | بحرانی | RCA و رفع |
-| Policy hit صفر | بررسی | Mapping |
-
-#### ۴) RCA نمونه
-
-IPsec down: Proposal پیش‌فرض نسخه‌ی جدید تغییر کرده؛ شاهد Debug؛ رفع صریح؛ پیشگیری: Config صریح (نه اتکا به پیش‌فرض).
-
-#### ۵) Go/No-Go
-
-Go اگر همه‌ی بحرانی‌ها OK و اختلاف قابل‌قبول؛ No-Go ⇒ Rollback.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Baseline | قبل از تغییر |
-| Go/No-Go | معیار عددی |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-| # | از | به | سرویس | قبل | بعد |
-|---|---|---|---|---|---|
-| 1 | Users | ERP | 443 | OK | OK |
-| 3 | Users | DB | 1433 | Block | OPEN ⟵ بررسی |
-
-#### مثال متوسط
+### مقایسه Session/Log
 
 ``` text
-diff before.txt after.txt
-```
-
-#### مثال سخت — معیار تأخیر
-
-``` text
-Increase % = (new - old) / old x 100 = (18 - 12) / 12 x 100 = 50 %
-```
-
-معیار «حداکثر +۲۰٪» نقض شده؛ بررسی UTM/Offload.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Session قبل 41k، بعد 39k ⇒ −۴٫۹٪ ⇒ قابل‌قبول.
-
-**متوسط (Policy hit):** Policy 20 قبل Hit 1M، بعد 0. علت: Interface Mapping اشتباه (port2 ↔ port3). رفع: Mapping؛ Hit بازگشت.
-
-**سخت (Go/No-Go):** IPsec up ولی دانلود می‌ایستد، Log ingestion قطع. تصمیم: No-Go؛ Rollback ظرف ۱۰ دقیقه؛ RCA در Lab (MTU/Log setting)؛ اقدام: آزمون کامل پیش از تلاش دوم.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
+# Top talkers before/after
 diagnose sys session stat
-get vpn ipsec tunnel summary
+execute log filter category 0
+execute log filter field action deny
+execute log display
 ```
 
-### ۸) Verification (اثبات صحت)
+Deny غیرمنتظره بعد از Cutover = Policy ناقص. مقایسه‌ی «Top 20 Deny» قبل/بعد.
 
-- Test Matrix.
-- Evidence.
+### اختلاف‌ها و RCA
 
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| اختلاف | علت‌های محتمل | بررسی |
 |---|---|---|
-| Session کم | Timeout | session-ttl |
+| Session بعد ۱۰٪ کمتر | Timeout/Offload متفاوت | `get system session-ttl` |
+| VPN Up نمی‌شود | Proposal پیش‌فرض عوض | Release Notes/Debug |
+| Policy Hit صفر | Interface/ترتیب | Lookup |
+| Latency بیشتر | UTM/Inspection | Profile |
+| Deny جدید | Policy ضمنی OLD | Policy صریح |
+| NAT متفاوت | ترتیب NAT | Session |
 
-### ۱۰) نکات امنیتی
+### معیار موفقیت
 
-- Evidence بدون رمز.
+1. آزمون‌های بحرانی ۱۰۰٪.
+2. بدون Deny غیرمنتظره‌ی معنی‌دار پس از ۲۴ ساعت.
+3. Session/Latency در محدوده‌ی تعریف‌شده.
+4. شکایت کاربران صفر/مدیریت‌شده.
+5. مانیتورینگ/Log سالم.
 
-### ۱۱) جمع‌بندی مفهومی
+### Evidence
 
-- Baseline.
-- Matrix.
-- RCA.
-- Go/No-Go.
+برای هر آزمون: دستور، خروجی، زمان، Hash، مسئول. فایل‌ها در پوشه‌ی CHG. مثال: `CHG-801/evidence/post_session_stat_2026-11-27T22:10.txt`.
 
-### ۱۲) تمرین و ارزیابی
+### مثال‌های حل‌شده
+
+#### مثال ساده — Test 5
+
+Session قبل 12000؛ بعد 11200 (۶٫۷٪ کمتر) در محدوده. توضیح: کمی ترافیک شب.
+
+``` text
+Diff% = (12000 - 11200) / 12000 x 100 = 6.67 %
+```
+
+#### مثال متوسط — Hit صفر
+
+Policy 55 (Backup شبانه) Hit قبلی بالا؛ بعد 0. Lookup: Interface نگاشت اشتباه (`dmz` به‌جای `srv`). رفع و تأیید شبانه‌ی بعد.
+
+#### مثال متوسط — Deny جدید
+
+پس از Cutover Deny زیاد از 10.10.0.0/24 به 53/udp: Policy DNS ضمنی ASA بود، نگاشت نشد. رفع: Policy DNS صریح. اگر Log Deny روشن نبود (`fwpolicy-implicit-log`) کشف نمی‌شد.
+
+#### مثال سخت — VPN کم‌ترافیک
+
+VPN به شریک ماهی یک بار استفاده می‌شد؛ در Cutover Test Matrix نبود؛ بعد از ۲۰ روز کشف. درس: Inventory VPN کامل و آزمون هر تونل (حتی کم‌ترافیک)، و ترافیک مصنوعی (Ping/Probe).
+
+#### مثال سخت — اختلاف Latency
+
+Latency 8ms به 14ms (+75٪). علت: UTM Deep Inspection روی Policyی که قبلاً بدون Inspection بود. تصمیم: Inspection برای دسته‌های پرخطر؛ Exempt برای مسیرهای داخلی؛ تأیید با تست.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Baseline و Test Matrix.
+2. مقایسه‌ی Deny.
+3. RCA یک اختلاف.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| Hit صفر | Interface/ترتیب | Lookup |
+| VPN Down | Proposal | Debug |
+| Deny زیاد | Policy ضمنی | صریح |
+| Latency | UTM | Profile |
+
+### نکات امنیتی
+
+Evidence شامل داده‌ی حساس؛ دسترسی محدود؛ حذف Config قدیمی؛ بازبینی Policy پس از ۳۰ روز.
+
+### جمع‌بندی
+
+Baseline قبل؛ Test Matrix با معیار؛ مقایسه‌ی Session/Hit/Deny؛ RCA اختلاف‌ها؛ Evidence؛ معیار موفقیت صریح.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا Baseline؟ *(پاسخ: 30-3-ت1)*
 
@@ -3303,7 +3163,7 @@ get vpn ipsec tunnel summary
 
 **Q1.** Quick quiz (English): Why must you collect a baseline before migration? *(پاسخ: 30-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3311,11 +3171,11 @@ get vpn ipsec tunnel summary
 
 - *Compare before and after with evidence.* ← قبل و بعد را با شواهد مقایسه کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** تست Migration (اجرا نشده). **Evidence:** `03-ops/migration-tests.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Upgrade
 
@@ -3339,142 +3199,51 @@ get vpn ipsec tunnel summary
 Evidence: E-31..E-38 (baseline, post-check, diffs, decision, timestamp, operator)
 ```
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: تست پیش/پس
-
-Matrix: مبدأ، مقصد، سرویس، نتیجه‌ی قبل/بعد. تفاوت = تحقیق.
-
-**پرسش‌های مصاحبه**
-1. *Evidence؟* خروجی دو سمت.
-2. *Automation؟* اسکریپت.
-3. *Negative؟* حتماً.
-
-### مثال حل‌شده: Matrix
-
-| # | از | به | سرویس | قبل | بعد |
-|---|---|---|---|---|---|
-| 1 | Users | ERP | 443 | OK | OK |
-| 2 | Guest | Servers | any | Block | Block |
-| 3 | Users | DB | 1433 | Block | OPEN ⟵ بررسی |
-
-ردیف ۳ تفاوت است و باید قبل از Cutover حل شود.
-
-### تکمیل عمیق: تست پیش/پس Migration با Matrix و Evidence
-
-#### چرا؟
-
-بعد از Cutover «به نظر خوب است» کافی نیست. باید بدانید دقیقاً چه چیزی قبل از Cutover کار می‌کرد و بعد هم کار می‌کند. Matrix قبل/بعد این کار را ساده می‌کند.
-
-#### ساخت Matrix
-
-ستون‌ها: شماره، از، به، سرویس، نتیجه‌ی قبل، نتیجه‌ی بعد، وضعیت.
-
-| # | از | به | سرویس | قبل | بعد | وضعیت |
-|---|---|---|---|---|---|---|
-| 1 | Users | ERP | 443 | OK | OK | هم‌خوان |
-| 2 | Guest | Servers | any | Block | Block | هم‌خوان |
-| 3 | Users | DB | 1433 | Block | OPEN | **بررسی** |
-
-ردیف ۳ نقض است: چیزی که قبلاً بسته بود، حالا باز است؛ این خطر امنیتی است.
-
-#### مثال ساده — اسکریپت آزمون
-
-``` text
-for t in "10.20.0.10 443" "10.30.3.10 1433"; do
-  set -- $t
-  nc -z -w2 $1 $2 && echo "$1:$2 OPEN" || echo "$1:$2 CLOSED"
-done
-```
-
-یک بار قبل و یک بار بعد اجرا و خروجی‌ها را با `diff` مقایسه کنید.
-
-#### مثال متوسط — مقایسه با diff
-
-``` text
-diff before.txt after.txt
-< 10.30.3.10:1433 CLOSED
-> 10.30.3.10:1433 OPEN
-```
-
-تفسیر: یک پورت جدید باز شده؛ علت را در Policy پیدا کنید (احتمالاً Policy عمومی).
-
-#### مثال سخت — تفاوت قابل‌قبول
-
-پس از Migration، تأخیر ۱۲ms به ۱۸ms رسید. آیا خطاست؟ معیار پذیرش: «تأخیر حداکثر +۲۰٪». ۱۸/۱۲ = ۱.۵ ⇒ ۵۰٪ افزایش ⇒ غیرقابل‌قبول؛ بررسی UTM/Offload.
-
-``` text
-Increase % = (new - old) / old x 100
-(18 - 12) / 12 x 100 = 50 %
-```
-
-#### Lab
-
-Matrix با ۲۰ ردیف بسازید، دو بار اجرا کنید و تفاوت‌ها را تحلیل کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| تفاوت ناگهانی | Policy گسترده | تنگ‌سازی |
-| آزمون ناپایدار | زمان‌بندی | تکرار ۳ بار |
-| افت کارایی | UTM | بهینه‌سازی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا آزمون منفی؟** چیزی که باید بسته باشد، باز نشده باشد.
-**۲. diff چرا؟** تفاوت خودکار.
-**۳. معیار تأخیر؟** از قبل تعیین.
-
-#### English Corner
-
-- *Compare before and after with the same test set.*
-- Q: What does a new OPEN result in the matrix mean?
-
 ## درس 30-4 — Gate G11: آزمون عملی Migration — صورت مسئله، کلید پاسخ کامل و Rubric
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۱ تا ۳۰-۳ · ≈ 12 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. برنامه‌ی Migration (Plan، Pre-check، Cutover، Post-check، Rollback) را بنویسد.
-2. Test Matrix پیش/پس را اجرا و مقایسه کند.
-3. اختلاف‌ها را با RCA تحلیل کند.
-4. Rollback را در Lab آزمون کند.
-5. گزارش و Rubric را تحویل دهد.
+1. جایگزینی FGT-OLD (v6.4) با FGT-NEW (v7.0.3) را از Plan تا Evidence اجرا کنید.
+2. Config تبدیل‌شده را بازبینی و Diff کنید.
+3. Cutover در Window ۶۰ دقیقه‌ای و Rollback زیر ۱۰ دقیقه را اثبات کنید.
+4. Test Matrix و مقایسه‌ی اختلاف‌ها را انجام دهید.
+5. سه عیب تزریق‌شده را رفع کنید.
+6. Rubric را اجرا و صداقت را ثبت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا G11؟** کل چرخه‌ی Migration را می‌سنجد: Inventory، نگاشت، Cutover، تست و گزارش. صورت مسئله‌ی نمونه: ASA با ۳۰۰ ACL و ۲۰ NAT و ۸ شعبه‌ی VPN؛ پنجره‌ی ۴ ساعت.
+Migration آزمونی است که همه‌ی مهارت‌ها را یکجا می‌سنجد: طراحی، Config، Routing، NAT، VPN، آزمون، ارتباط و صداقت. مشتری انتظار دارد «شبانه عوض شود و صبح کسی نفهمد». این Gate همین را تمرین می‌کند.
 
-**جمع‌بندی اصلی درس:**
+### صورت مسئله
 
-Migration یعنی تعویض فایروال قدیمی با جدید بدون قطع طولانی. خطر اصلی «کار می‌کرد، حالا نه» است؛ پس باید از قبل بدانید چه چیزی کار می‌کرد (Baseline) و پس از آن همان را اندازه بگیرید. این Gate سنجش همین انضباط است.
+جایگزینی `FGT-OLD` (FortiOS 6.4) با `FGT-NEW` (7.0.3) در Lab. نیاز: Config تبدیل‌شده، Policyها هم‌ارز، Cutover در Window ۶۰ دقیقه، Rollback زیر ۱۰ دقیقه.
 
-### ۳) توضیح عمیق فنی
+عیب‌های تزریق‌شده:
 
-#### ۱) صورت مسئله
+1. Policy VIP بدون Policy مقابل (Static NAT قدیمی).
+2. IPsec Phase1 پیش‌فرض نسخه‌ی جدید با Peer ناسازگار.
+3. Interface نگاشت اشتباه در Policy پشتیبان‌گیری شبانه (Hit=0).
 
-جایگزینی FGT-OLD (v6.4) با FGT-NEW (v7.0.3) در Lab. نیاز: Config تبدیل‌شده، Policyها هم‌ارز، Cutover در Window ۶۰ دقیقه‌ای، Rollback زیر ۱۰ دقیقه.
-
-#### ۲) Plan
+### Plan
 
 ``` text
 T-7d  inventory, baseline, backup
 T-3d  convert config, review diff, lab test
-T-1d  dry run in Lab, rollback test
-T0    cutover (change window 60 min)
+T-1d  dry run in Lab, rollback test, Go/No-Go
+T0    cutover (window 60 min)
 T+1h  post-check
 T+1d  monitoring review, close CHG
 ```
 
-#### ۳) Test Matrix
+### Test Matrix
 
 | # | آزمون | قبل | بعد |
 |---|---|---|---|
@@ -3486,87 +3255,102 @@ T+1d  monitoring review, close CHG
 | 6 | Policy hit counts | baseline | مقایسه |
 | 7 | Log ingestion | ok | ok |
 
-#### ۴) Cutover و Rollback
+### Cutover و Rollback
 
 ``` text
-1 backup OLD and NEW
+1 backup OLD and NEW (hash)
 2 move cables or VIP in documented order
 3 run test matrix (items 1-7)
 4 if any critical fail within 15 min -> rollback: restore cabling/IP, verify OLD
 ```
 
-#### ۵) مقایسه‌ی اختلاف‌ها
+### کلید پاسخ — سه عیب
 
-- Session count بعد ۱۰٪ کمتر: Timeout یا offload متفاوت؛ بررسی `get system session-ttl`.
-- IPsec up نمی‌شود: Proposal پیش‌فرض نسخه‌ی جدید عوض شده؛ مقایسه با Release Notes.
+**عیب ۱ (VIP):**
+
+1. Evidence: بیرون به VIP Timeout؛ `iprope lookup` ⇒ policy 0.
+2. علت: VIP ساخته شده ولی Policy `outside→inside dstaddr VIP` نیست.
+3. رفع: افزودن Policy.
+4. تأیید: Lookup ⇒ policy؛ Session `dnat`.
+
+**عیب ۲ (IPsec):**
+
+1. Evidence: Debug IKE: `no proposal chosen`.
+2. علت: Default Proposal نسخه‌ی 7.0 با Peer قدیمی نمی‌خواند.
+3. رفع: Proposal صریح هم‌ارز OLD (`aes256-sha256`، DH 14) یا ارتقای Peer.
+4. تأیید: `diagnose vpn tunnel list` ⇒ up؛ ping.
+
+**عیب ۳ (Hit=0):**
+
+1. Evidence: Policy 55 Hit=0 پس از شب اول؛ Backup شکست.
+2. علت: `srcintf` اشتباه در نگاشت.
+3. رفع: Interface صحیح.
+4. تأیید: Hit>0 شب بعد؛ Log.
+
+### مقایسه‌ی اختلاف‌ها
+
+- Session بعد ۱۰٪ کمتر: Timeout/Offload؛ `get system session-ttl`.
+- IPsec up نمی‌شود: Proposal پیش‌فرض عوض شده؛ Release Notes.
 - Policy hit صفر: ترتیب/Interface نگاشت اشتباه.
 
-#### ۶) Rubric
+### Rubric (۱۰۰)
 
-Plan ۲۰، Test Matrix ۲۵، Cutover/Rollback ۲۰، اختلاف‌ها و RCA ۲۰، Evidence و صداقت ۱۵. قبولی ۷۵.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| معیار | امتیاز |
 |---|---|
-| Window | ۶۰ دقیقه با Rollback |
-| Baseline | قبل از تغییر |
+| Plan و Go/No-Go | 15 |
+| Config/Diff Review | 15 |
+| Cutover و Rollback (زمان) | 20 |
+| Test Matrix/مقایسه | 15 |
+| رفع سه عیب | 25 |
+| گزارش/صداقت | 10 |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### مثال‌های حل‌شده
 
-#### مثال ساده — کلید
+#### مثال ساده — Rollback
 
-Inventory، Hygiene، نگاشت، Lab، Plan، اجرا، Closure.
+Rehearsal: ۷ دقیقه (≤ ۱۰). ثبت: ساعت، مسئول، مراحل.
 
-#### مثال متوسط — زمان‌بندی
-
-``` text
-00:00-00:30 backup ; 00:30-01:30 switch ; 01:30-02:30 VPN peers (8 x ~7 min)
-02:30-03:15 test matrix ; 03:15-03:45 decision ; 03:45-04:00 buffer
-```
-
-#### مثال سخت — Peer ناهماهنگ
-
-دو شعبه Tunnel ندارند: تماس زودتر؛ در غیر این صورت Deferred و گزارش. Rubric: Inventory ۲۰، نگاشت ۲۵، Cutover ۲۵، تست ۲۰، گزارش ۱۰.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Test Matrix ردیف ۱–۳ قبل از Cutover ok؛ بعد ok؛ ثبت زمان و خروجی.
-
-**متوسط (اختلاف):** IPsec پس از Cutover down. مراحل: ۱) Debug IKE: NO_PROPOSAL. ۲) نسخه‌ی جدید Proposal پیش‌فرض متفاوت. ۳) تنظیم صریح Proposal. ۴) up. RCA: وابستگی به پیش‌فرض نسخه.
-
-**سخت (Rollback):** ۱۵ دقیقه پس از Cutover VIP وب کار نمی‌کند و علت نامشخص. تصمیم: Rollback طبق Plan: بازگرداندن کابل/IP، تأیید Test Matrix روی OLD (۸ دقیقه). پس از آن RCA در Lab. درس: Rollback بر اساس زمان از پیش تعیین‌شده است نه عجله.
-
-### ۷) پیاده‌سازی از مسیر CLI
+#### مثال متوسط — RCA
 
 ``` text
-diagnose sys session stat
-get system session-ttl
+Impact  : inbound web unreachable 20 min after cutover
+Cause   : VIP migrated without matching policy
+Fix     : add policy outside->inside dstaddr VIP
+Prevent : post-conversion lint: every VIP must have a policy; test matrix includes external probe
 ```
 
-### ۸) Verification (اثبات صحت)
+#### مثال متوسط — Lint
 
-- Test Matrix همه‌ی ردیف‌ها.
-- Rollback آزمون شده.
+اسکریپت: برای هر VIP، Policy با `dstaddr` همان VIP وجود دارد؟ اگر نه ⇒ هشدار. جلوگیری از عیب ۱.
 
-### ۹) Troubleshooting
+#### مثال سخت — دو عیب هم‌زمان
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+VIP و IPsec هر دو؛ اولویت: IPsec (سرویس داخلی حیاتی)؛ سپس VIP. هر رفع با آزمون. ثبت ترتیب و دلیل.
+
+#### مثال سخت — صداقت
+
+Lab اجرا نشده؛ زمان‌ها (۷ دقیقه) و Hit Count نمونه‌ی آموزشی؛ گزارش «Unverified».
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Migration را در Lab اجرا کنید.
+2. سه عیب را رفع کنید.
+3. گزارش و Evidence.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Session کمتر | Timeout | session-ttl |
-| IPsec down | Proposal | تنظیم صریح |
+| VIP Timeout | Policy | افزودن |
+| VPN no proposal | Proposal | صریح |
+| Hit 0 | Interface | تصحیح |
+| Rollback کند | بی‌تمرین | Rehearsal |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- Backup رمزگذاری.
+G11: Migration با Plan، Go/No-Go، Cutover/Rollback زمان‌دار، Test Matrix، سه عیب (VIP، IPsec، Interface)، Lint پس از تبدیل، گزارش و صداقت.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- Baseline.
-- Test Matrix.
-- Rollback زمان‌دار.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا Baseline؟ *(پاسخ: 30-4-ت1)*
 
@@ -3582,7 +3366,7 @@ get system session-ttl
 
 **Q1.** Quick quiz (English): Why must the rollback plan be tested before cutover? *(پاسخ: 30-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3590,95 +3374,13 @@ get system session-ttl
 
 - *Test the rollback before the cutover.* ← Rollback را پیش از Cutover آزمون کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** G11 (اجرا نشده). **Evidence:** `03-ops/g11-migration.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Upgrade and migration
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Rubric G11
-
-Inventory ۲۰، نگاشت ۲۵، Cutover ۲۵، تست ۲۰، گزارش ۱۰.
-
-**پرسش‌های مصاحبه**
-1. *Rollback آزمون؟* در Lab.
-2. *Hit Count؟* حذف.
-3. *ثبت؟* Evidence.
-
-### مثال حل‌شده: نمره‌ی G11
-
-اگر Inventory و نگاشت کامل ولی Cutover بدون Rollback آزمون‌شده: 20+25+10+20+10 = 85 از 100؛ نمره‌ی Cutover کامل فقط با آزمون Rollback.
-
-### تکمیل عمیق: ارزیابی G11 — حل کامل یک پروژه‌ی Migration نمونه
-
-#### چرا؟
-
-Gate یعنی ایست بازرسی. فقط وقتی از G11 عبور می‌کنید که ثابت کنید یک Migration را از ابتدا تا انتها درست می‌توانید انجام دهید.
-
-#### صورت مسئله‌ی نمونه
-
-یک ASA با ۳۰۰ ACL و ۲۰ NAT باید به FortiGate منتقل شود. ۸ شعبه VPN دارند. پنجره‌ی تغییر: ۴ ساعت.
-
-#### کلید پاسخ مرحله‌ای
-
-1. **Inventory**: شمارش، Hit Count، تماس مالکان.
-2. **Hygiene**: ۳۰٪ بی‌استفاده؛ تأیید حذف.
-3. **نگاشت**: Objectها، NAT (VIP/IP Pool)، VPN.
-4. **Lab**: ساخت و Matrix.
-5. **Plan**: Cutover T0، Go/No-Go، Rollback.
-6. **اجرا و Verify**.
-7. **Closure**: گزارش و درس‌ها.
-
-#### مثال متوسط — زمان‌بندی ۴ ساعته
-
-``` text
-00:00-00:30 backup + verify
-00:30-01:30 switch + routing
-01:30-02:30 VPN peers (8 x ~7 min)
-02:30-03:15 test matrix
-03:15-03:45 decision + comms
-03:45-04:00 buffer
-```
-
-#### مثال سخت — دو Peer VPN هماهنگ نشدند
-
-شعبه ۳ و ۶ Tunnel ندارند. بررسی: IP عمومی جدید در Peer هنوز تغییر نکرده. تصمیم: پیش از ساعت ۰۲:۳۰ هماهنگی تلفنی؛ در غیر این صورت این دو شعبه را «Deferred» کنید و گزارش دهید.
-
-#### Rubric
-
-``` text
-Inventory 20 | Mapping 25 | Cutover plan 25 | Testing 20 | Report 10
-Example: 18 + 22 + 20 + 18 + 9 = 87
-```
-
-#### Lab
-
-یک صورت مسئله‌ی خودتان بنویسید و با Rubric نمره‌گذاری کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| ناتمام ماندن زمان | برنامه‌ریزی ضعیف | Buffer |
-| Peer ناهماهنگ | ارتباط | تماس زودتر |
-| Rollback ناکافی | آزمون‌نشده | تمرین |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Deferred چیست؟** کار موکول‌شده با ثبت.
-**۲. Buffer چرا؟** غافلگیری.
-**۳. G11 چه می‌سنجد؟** کل چرخه.
-
-#### English Corner
-
-- *Not everything must succeed on cutover night, but everything must be recorded.*
-- Q: How do you schedule a four-hour window?
 
 ## پاسخ‌های فصل 30
 
