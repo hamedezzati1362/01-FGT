@@ -526,6 +526,115 @@ Router#
 
 <a id="ans-1"></a>
 
+<a id="l-1-C"></a>
+
+## درس 1-C — مجازی‌سازی: Hypervisor، ماشین مجازی و Container
+
+**فصل 1 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 1.2: Describe the role and function of hypervisors, virtual machines, and containers) · پیش‌نیاز: ۱-A، ۱-B**
+
+> **وضعیت:** نظری/مستندی؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** Hypervisor چیست، ماشین مجازی (VM) و Container چه فرقی دارند، و Virtual Switch چطور شبکه‌ی مجازی را به شبکه‌ی فیزیکی وصل می‌کند.
+
+**چرا لازم است؟** Lab این دوره روی ESXi و PNetLab ساخته شده است؛ سرور فیزیکی بدون مجازی‌سازی برای هر کار یک دستگاه می‌خواهد. با مجازی‌سازی یک سرور قوی ده‌ها «دستگاه» می‌شود. و چون سرورهای امروزی (وب، پایگاه‌داده، حتی فایروال VM) داخل VM یا Container اجرا می‌شوند، مهندس شبکه باید بداند ترافیک آنها از کدام مسیر می‌گذرد.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) Hypervisor
+
+برنامه‌ای که منابع سخت‌افزار (CPU، RAM، دیسک، شبکه) را بین چند ماشین مجازی تقسیم می‌کند.
+
+| نوع | شرح | مثال |
+|---|---|---|
+| Type 1 (Bare-metal) | مستقیم روی سخت‌افزار نصب می‌شود | VMware ESXi، Hyper-V، KVM |
+| Type 2 (Hosted) | روی یک سیستم‌عامل معمولی اجرا می‌شود | VirtualBox، VMware Workstation |
+
+سازمان‌ها برای تولید از Type 1 استفاده می‌کنند چون سریع‌تر و پایدارتر است.
+
+#### ۲-۲) ماشین مجازی (VM)
+
+یک «کامپیوتر نرم‌افزاری» کامل با سیستم‌عامل مستقل (Guest OS)، دیسک مجازی و کارت شبکه‌ی مجازی. مزیت: ایزولاسیون قوی؛ عیب: سنگین (هر VM یک سیستم‌عامل کامل).
+
+#### ۲-۳) Container
+
+برنامه و وابستگی‌هایش در یک بسته؛ همه‌ی Containerها **هسته‌ی سیستم‌عامل میزبان** را به اشتراک می‌گذارند. بسیار سبک و سریع.
+
+``` text
+VM        : Hardware -> Hypervisor -> [Guest OS + App] x N
+Container : Hardware -> Host OS -> Container engine -> [App + libs] x N
+```
+
+| معیار | VM | Container |
+|---|---|---|
+| ایزولاسیون | قوی (هسته‌ی جدا) | متوسط (هسته‌ی مشترک) |
+| زمان راه‌اندازی | دقیقه | ثانیه |
+| حجم | گیگابایت | مگابایت |
+| مثال | ESXi VM | Docker |
+
+#### ۲-۴) شبکه‌ی مجازی
+
+- **vSwitch (Virtual Switch):** سوییچ نرم‌افزاری داخل Hypervisor؛ VMها را به هم و به شبکه‌ی فیزیکی وصل می‌کند.
+- **Port Group/VLAN:** VLAN روی vSwitch.
+- **Uplink:** کارت فیزیکی که vSwitch را به سوییچ واقعی وصل می‌کند.
+- در Container: شبکه‌ی Bridge، Host و Overlay.
+
+نکته‌ی امنیتی: ترافیک بین دو VM روی یک میزبان ممکن است هرگز به شبکه‌ی فیزیکی نرسد و فایروال فیزیکی آن را نبیند (East-West). راه: فایروال مجازی یا Micro-segmentation.
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده.** `VM1` و `VM2` روی یک ESXi و یک Port Group ⇒ ترافیک داخل vSwitch می‌ماند. اگر بخواهیم فایروال ببیند، باید دو VM در Port Group/VLAN‌های متفاوت و مسیر از فایروال.
+
+**متوسط — بار منابع.** ۱۰ VM هر کدام 4 vCPU روی میزبان 16 هسته.
+
+``` text
+Total vCPU = 10 x 4 = 40
+Physical cores = 16
+Overcommit ratio = 40 / 16 = 2.5
+```
+
+نسبت 2.5:1 برای بارهای سبک ممکن است؛ برای VMهای شبکه‌ای (مثل فایروال VM) باید CPU رزرو شود.
+
+**سخت — «VM در Lab به اینترنت نمی‌رسد».**
+
+1. VM به کدام Port Group وصل است؟
+2. Port Group روی کدام vSwitch و Uplink؟ (Uplink خالی = ایزوله، مثل `vSwitch-FGT` در این دوره.)
+3. VLAN ID درست؟ (VLAN 4095 در ESXi یعنی همه‌ی VLANها.)
+4. Promiscuous/Forged Transmits برای VMهای شبکه‌ای.
+5. NAT/Route در VM گیرنده.
+
+### ۴) Lab (اجرا نشده)
+
+نمودار vSwitch/Port Group/Uplink Lab خودتان را بکشید و نشان دهید ترافیک کدام VM از فایروال می‌گذرد.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| VM | Virtual Machine | ماشین مجازی |
+| vCPU | Virtual CPU | هسته‌ی مجازی |
+| vSwitch | Virtual Switch | سوییچ مجازی |
+| KVM | Kernel-based Virtual Machine | Hypervisor لینوکس |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) تفاوت Hypervisor نوع 1 و 2؟ *(پاسخ: 1-C-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) چرا Container سبک‌تر از VM است؟ *(پاسخ: 1-C-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) ۲۴ vCPU روی ۱۲ هسته؛ نسبت Overcommit؟ *(پاسخ: 1-C-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) چرا فایروال فیزیکی ترافیک دو VM همسایه را نمی‌بیند و راه‌حل؟ *(پاسخ: 1-C-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *A hypervisor allocates physical resources to virtual machines.*
+- *Containers share the host kernel; virtual machines each have their own.*
+- **Q1.** Which type of hypervisor runs directly on hardware? *(پاسخ: 1-C-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 1
 
 > ابتدا بدون نگاه حل کنید. هر پاسخ با شناسه‌ی «درس-نوع+شماره» مشخص است (ت = تمرین، م = سؤال مرور، Q = Quick quiz انگلیسی).
@@ -620,6 +729,20 @@ Because the command may be accepted without the feature actually functioning; it
 ---
 
 <a id="ch2"></a>
+
+### پاسخ‌های درس افزوده‌ی 1-C (فصل 1)
+
+**1-C-ت1** — نوع 1 مستقیم روی سخت‌افزار نصب می‌شود (ESXi، KVM)؛ نوع 2 روی یک سیستم‌عامل معمولی اجرا می‌شود (VirtualBox).
+
+**1-C-ت2** — چون Containerها هسته‌ی سیستم‌عامل میزبان را به اشتراک می‌گذارند و سیستم‌عامل کامل ندارند.
+
+**1-C-ت3** — 24 / 12 = 2 (نسبت 2:1).
+
+**1-C-ت4** — چون ترافیک داخل vSwitch همان میزبان می‌ماند و به شبکه‌ی فیزیکی نمی‌رسد. راه: قرار دادن VMها در VLAN/Port Group جدا و عبور از فایروال، یا فایروال مجازی/Micro-segmentation.
+
+**1-C-Q1** — Type 1 (bare-metal) hypervisor.
+
+---
 
 # فصل 2 — IP، VLSM، IPv6، CLI، SSH و Wireshark
 
@@ -2883,6 +3006,475 @@ Mask یک طرف را عمداً اشتباه کنید (درس ۲-۱) و Capture
 
 <a id="ans-2"></a>
 
+<a id="l-2-7"></a>
+
+## درس 2-7 — IPv6 عملی: آدرس‌دهی، Modified EUI-64، SLAAC و اندازه‌ی Prefix
+
+**فصل 2 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 1.4: Troubleshoot IPv6 address configuration, assignment, and prefix sizing — unicast and modified EUI 64) · پیش‌نیاز: ۲-۱ تا ۲-۶**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** آدرس IPv6 را بخوانیم و بنویسیم (فشرده‌سازی)، آدرس Link-local، Global Unicast و Unique Local را تشخیص دهیم، Modified EUI-64 را با دست محاسبه کنیم، تفاوت SLAAC و DHCPv6 را بدانیم و Prefix را درست انتخاب کنیم.
+
+**چرا لازم است؟** IPv4 مثل شماره‌ی تلفن‌های ۷ رقمی است که تمام شده‌اند. IPv6 فضای آدرس عملاً بی‌پایان دارد، ولی قواعدش (به‌خصوص ساخت آدرس خودکار از MAC) سؤال ثابت آزمون CCNA و علت بسیاری از خطاهای عملی است: «چرا گوشی IPv6 گرفت ولی Gateway ندارد؟»
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) ساختار
+
+آدرس IPv6 ۱۲۸ بیت است و به ۸ گروه ۱۶ بیتی (هر کدام ۴ رقم هگزا) تقسیم می‌شود.
+
+``` text
+2001:0DB8:0001:0001:0000:0000:0000:0001
+```
+
+قواعد فشرده‌سازی:
+
+1. صفرهای ابتدای هر گروه حذف می‌شود: `0001` ⇒ `1`.
+2. یک رشته‌ی متوالی از گروه‌های صفر را (فقط یک‌بار) با `::` جایگزین کنید.
+
+``` text
+Full      : 2001:0DB8:0001:0001:0000:0000:0000:0001
+Step 1    : 2001:DB8:1:1:0:0:0:1
+Step 2    : 2001:DB8:1:1::1
+```
+
+#### ۲-۲) انواع مهم آدرس
+
+| نوع | Prefix | کاربرد |
+|---|---|---|
+| Global Unicast | 2000::/3 | قابل‌مسیریابی در اینترنت |
+| Link-local | FE80::/10 | فقط روی همان لینک |
+| Unique Local | FC00::/7 (عملاً FD00::/8) | داخلی (مثل RFC1918) |
+| Multicast | FF00::/8 | چندپخشی |
+| Loopback | ::1/128 | خود دستگاه |
+| Unspecified | ::/128 | آدرس نامشخص |
+
+IPv6 Broadcast ندارد؛ جای آن Multicast است (مثلاً FF02::1 همه‌ی Nodeها).
+
+#### ۲-۳) Modified EUI-64
+
+EUI-64 = Extended Unique Identifier ۶۴ بیتی. روشی برای ساخت ۶۴ بیت پایینی آدرس (Interface ID) از MAC ۴۸ بیتی:
+
+1. MAC را نصف کنید: بخش OUI (۲۴ بیت) و بخش دستگاه (۲۴ بیت).
+2. بین آنها `FFFE` درج کنید.
+3. بیت هفتم (Universal/Local) از بایت اول را **معکوس** کنید.
+
+``` text
+MAC            : 00:1A:2B:3C:4D:5E
+Split          : 00:1A:2B | 3C:4D:5E
+Insert FFFE    : 00:1A:2B:FF:FE:3C:4D:5E
+First byte 00  : 00000000 -> flip bit 7 (value 0x02) -> 00000010 = 02
+Interface ID   : 021A:2BFF:FE3C:4D5E
+```
+
+**چرا معکوس؟** در MAC بیت U/L برابر 0 یعنی «جهانی/Universal» است و در IPv6 قرارداد برعکس است؛ پس معکوس می‌شود. روش سریع: بایت اول را با `02` XOR کنید.
+
+#### ۲-۴) SLAAC و DHCPv6
+
+| روش | شرح |
+|---|---|
+| SLAAC | Host از RA، Prefix را می‌گیرد و Interface ID را خودش می‌سازد (EUI-64 یا تصادفی) |
+| DHCPv6 Stateless | آدرس با SLAAC؛ DNS و ... از DHCPv6 (پرچم O) |
+| DHCPv6 Stateful | آدرس هم از DHCPv6 (پرچم M) |
+
+پرچم‌ها در RA: **M** = Managed (آدرس از DHCPv6) و **O** = Other (اطلاعات دیگر از DHCPv6).
+
+نکته‌ی حریم خصوصی: EUI-64 MAC را در آدرس نشان می‌دهد؛ سیستم‌عامل‌های امروزی معمولاً Interface ID پایدار-مات (RFC 7217) یا موقت تصادفی (RFC 4941) می‌سازند.
+
+#### ۲-۵) اندازه‌ی Prefix
+
+| Prefix | کاربرد |
+|---|---|
+| /48 | سایت (معمولاً به یک سازمان داده می‌شود) |
+| /56 | سایت کوچک/منزل |
+| /64 | هر LAN (برای SLAAC الزامی) |
+| /127 | لینک Point-to-Point بین روترها (RFC 6164) |
+| /128 | Loopback/میزبان |
+
+SLAAC فقط با Prefix طول 64 کار می‌کند.
+
+### ۳) دستورهای سیسکو (Unverified)
+
+``` text
+ipv6 unicast-routing
+interface GigabitEthernet0/0
+ ipv6 address 2001:DB8:1:1::/64 eui-64
+ no shutdown
+interface GigabitEthernet0/1
+ ipv6 address 2001:DB8:1:2::1/64
+ ipv6 nd other-config-flag
+```
+
+``` text
+show ipv6 interface brief
+show ipv6 interface GigabitEthernet0/0
+show ipv6 route
+ping 2001:DB8:1:2::10
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — فشرده‌سازی.** `2001:0db8:0000:0000:0000:ff00:0042:8329` ⇒ `2001:db8::ff00:42:8329`.
+
+**متوسط — EUI-64 با Flip واقعی.** MAC `AC:DE:48:12:34:56`.
+
+``` text
+Split       : AC:DE:48 | 12:34:56
+Insert      : AC:DE:48:FF:FE:12:34:56
+AC in binary: 10101100  -> flip bit 7 -> 10101110 = AE
+Interface ID: AEDE:48FF:FE12:3456
+Prefix 2001:DB8:1:1::/64 -> 2001:DB8:1:1:AEDE:48FF:FE12:3456
+```
+
+**سخت — عیب‌یابی.** Host آدرس Global گرفته ولی به اینترنت نمی‌رسد.
+
+1. `ipconfig` / `ip -6 addr`: Prefix درست؟
+2. Gateway: `ip -6 route` ⇒ Default via `fe80::...` وجود دارد؟
+3. روتر: `ipv6 unicast-routing` فعال است؟ (بدون آن روتر RA نمی‌فرستد.)
+4. `show ipv6 interface` روی روتر: Prefix/Flags.
+5. ping به Gateway Link-local با Interface: `ping fe80::1%12` (Windows) یا `ping6 -I eth0 fe80::1`.
+
+نتیجه رایج: فراموشی `ipv6 unicast-routing`.
+
+### ۵) Lab (اجرا نشده)
+
+دو روتر و یک Host؛ آدرس با eui-64 بسازید و با محاسبه‌ی دستی مقایسه کنید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| EUI-64 | Extended Unique Identifier 64-bit | ساخت Interface ID از MAC |
+| SLAAC | Stateless Address Autoconfiguration | آدرس‌دهی خودکار بدون DHCP |
+| RA | Router Advertisement | اعلان روتر |
+| NDP | Neighbor Discovery Protocol | جایگزین ARP در IPv6 |
+| ULA | Unique Local Address | آدرس داخلی |
+| DHCPv6 | Dynamic Host Configuration Protocol for IPv6 | DHCP برای IPv6 |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) `FE80::1` چه نوع آدرسی است؟ *(پاسخ: 2-7-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) آدرس `2001:0DB8:0000:0000:0000:0000:0000:0001` را فشرده کنید. *(پاسخ: 2-7-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) برای MAC `00:50:56:A1:B2:C3` و Prefix `2001:DB8:A::/64` آدرس EUI-64 بسازید. *(پاسخ: 2-7-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) Host آدرس Global دارد ولی Gateway ندارد؛ سه علت محتمل و آزمون هر یک. *(پاسخ: 2-7-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *Modified EUI-64 inserts FFFE in the middle of the MAC and flips the universal/local bit.*
+- *A /64 prefix is required for SLAAC.*
+- **Q1.** Which flag in the RA tells hosts to use DHCPv6 for addresses? *(پاسخ: 2-7-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
+<a id="l-2-8"></a>
+
+## درس 2-8 — مبانی شبکه‌ی بی‌سیم (Wireless): باند، کانال، RF، امنیت و معماری
+
+**فصل 2 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 1.5: Describe wireless principles — band and channel selection, RF characteristics, security protocols, cause of interference) · پیش‌نیاز: ۲-۰**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** شبکه‌ی بی‌سیم چطور کار می‌کند: باندها و کانال‌ها، ویژگی‌های سیگنال (dBm، SNR)، علت تداخل، پروتکل‌های امنیتی (WEP تا WPA3) و معماری‌های AP (مستقل، کنترلری، ابری).
+
+**چرا لازم است؟** کابل شبکه «اختصاصی» است؛ هوا «مشترک» است. وقتی ۳۰ نفر در یک اتاق با یک کانال صحبت کنند، همه کند می‌شوند. اگر کانال و قدرت را درست انتخاب نکنید، شکایت «Wi-Fi کند است» هیچ‌وقت تمام نمی‌شود. و چون امنیت بی‌سیم از هوا عبور می‌کند، رمزنگاری ضعیف یعنی هر کس بیرون ساختمان بتواند ترافیک را بخواند.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) استانداردهای 802.11
+
+| استاندارد | نام تجاری | باند | ویژگی کلیدی |
+|---|---|---|---|
+| 802.11b | — | 2.4 GHz | 11 Mbps |
+| 802.11a | — | 5 GHz | 54 Mbps |
+| 802.11g | — | 2.4 GHz | 54 Mbps |
+| 802.11n | Wi-Fi 4 | 2.4 و 5 GHz | MIMO، کانال 40 MHz |
+| 802.11ac | Wi-Fi 5 | 5 GHz | MU-MIMO (Downlink)، تا 160 MHz |
+| 802.11ax | Wi-Fi 6 / 6E | 2.4، 5 و 6 GHz (6E) | OFDMA، کارایی در تراکم بالا |
+| 802.11be | Wi-Fi 7 | 2.4، 5، 6 GHz | کانال 320 MHz، Multi-Link Operation |
+
+MIMO = Multiple Input Multiple Output (چند آنتن برای چند جریان داده).
+
+#### ۲-۲) باند و کانال
+
+- **2.4 GHz:** برد بیشتر، ازدحام بیشتر. در آمریکا کانال‌های 1 تا 11، در اروپا 1 تا 13. فقط **سه کانال بدون هم‌پوشانی** با عرض 20 MHz: 1، 6، 11.
+- **5 GHz:** کانال‌های زیاد بدون هم‌پوشانی، برد کمتر. بعضی کانال‌ها DFS (Dynamic Frequency Selection) دارند: اگر رادار تشخیص داده شود، AP باید کانال را ترک کند.
+- **6 GHz (Wi-Fi 6E/7):** باند تمیز با کانال‌های بیشتر؛ فقط دستگاه‌های جدید.
+
+قاعده‌ی طراحی: در 2.4 GHz فقط 1/6/11؛ AP‌های مجاور کانال متفاوت؛ کانال‌های 20 MHz در تراکم بالا.
+
+#### ۲-۳) ویژگی‌های RF
+
+- **فرکانس و طول موج:** فرکانس بالاتر ⇒ برد کمتر و نفوذ ضعیف‌تر در دیوار.
+- **توان:** با dBm سنجیده می‌شود (نسبت به 1 mW).
+
+``` text
+dBm = 10 x log10(P in mW)
+1 mW   =  0 dBm
+10 mW  = 10 dBm
+100 mW = 20 dBm
+```
+
+- قواعد سریع: **+3 dB یعنی دو برابر توان**، **+10 dB یعنی ده برابر**.
+- **RSSI** = Received Signal Strength Indicator (قدرت سیگنال دریافتی، مثل -60 dBm).
+- **Noise Floor:** نویز پس‌زمینه، مثلاً -90 dBm.
+- **SNR** = Signal-to-Noise Ratio.
+
+``` text
+SNR (dB) = Signal (dBm) - Noise (dBm)
+Signal = -65 dBm, Noise = -90 dBm -> SNR = 25 dB
+```
+
+راهنمای رایج طراحی (برای کیفیت صوت/تصویر): RSSI بهتر از حدود -67 dBm و SNR حدود 25 dB یا بیشتر. عدد دقیق را از راهنمای سازنده بگیرید.
+
+- **EIRP** = توان تشعشعی مؤثر = توان فرستنده + بهره‌ی آنتن - تلفات کابل.
+- **تضعیف (Attenuation):** دیوار بتنی، شیشه‌ی رنگی، آب (بدن انسان) و فلز سیگنال را ضعیف می‌کنند.
+
+#### ۲-۴) علل تداخل
+
+1. **Co-channel interference:** چند AP در یک کانال ⇒ باید نوبت بگیرند (CSMA/CA) و ظرفیت تقسیم می‌شود.
+2. **Adjacent channel interference:** کانال‌های هم‌پوشان در 2.4 GHz (مثلاً 3 و 4).
+3. **تداخل غیر Wi-Fi:** مایکروویو، Bluetooth، تلفن بی‌سیم، رادار (در DFS).
+4. **Hidden node و دیوارها.**
+
+#### ۲-۵) امنیت
+
+| پروتکل | رمزنگاری | وضعیت |
+|---|---|---|
+| Open | ندارد | ناامن |
+| WEP | RC4 | شکسته؛ ممنوع |
+| WPA | TKIP | قدیمی؛ توصیه نمی‌شود |
+| WPA2 | AES-CCMP | رایج؛ تا حد زیادی امن |
+| WPA3 | SAE (Personal)، GCMP (Enterprise) | جدید؛ PMF اجباری |
+
+- **Personal (PSK):** یک رمز مشترک؛ در WPA3 با SAE در برابر حدس آفلاین مقاوم‌تر.
+- **Enterprise (802.1X):** هر کاربر هویت جدا با EAP و RADIUS؛ مناسب سازمان.
+- **OWE (Enhanced Open):** رمزنگاری بدون رمز برای شبکه‌های باز (مهمان).
+- PMF = Protected Management Frames (محافظت از فریم‌های مدیریتی در برابر Deauth جعلی).
+
+#### ۲-۶) معماری
+
+| مدل | شرح |
+|---|---|
+| Autonomous AP | هر AP مستقل پیکربندی می‌شود |
+| Lightweight AP + WLC | WLC (Wireless LAN Controller) مدیریت مرکزی؛ AP با CAPWAP تونل می‌سازد (کنترل UDP 5246، داده UDP 5247) |
+| Cloud-managed | مدیریت از ابر (مثل Meraki) |
+
+مفاهیم: SSID (نام شبکه)، BSSID (MAC رادیوی AP)، BSS (یک AP و کلاینت‌هایش)، ESS (چند AP با یک SSID برای Roaming).
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — تبدیل dBm.** فرستنده 100 mW. که برابر است با:
+
+``` text
+10 x log10(100) = 20 dBm
+```
+
+**متوسط — طرح کانال.** ۶ AP در یک راهرو خطی در 2.4 GHz: کانال‌ها به‌صورت 1، 6، 11، 1، 6، 11. AP‌های هم‌کانال دو AP فاصله دارند تا تداخل کم شود.
+
+**متوسط — SNR.** کلاینت RSSI = -72 dBm و Noise = -92 dBm.
+
+``` text
+SNR = -72 - (-92) = 20 dB
+```
+
+برای ویدیو کم است؛ ⇒ AP نزدیک‌تر یا توان بیشتر.
+
+**سخت — «Wi-Fi گاهی قطع می‌شود».** علائم: ظهر قطع‌قطع.
+
+1. نقشه‌ی کانال: چند AP هم‌کانال؟
+2. غیر Wi-Fi: مایکروویو آشپزخانه در 2.4 GHz (ساعت ناهار)؟
+3. DFS: در 5 GHz رادار تشخیص داده می‌شود و AP کانال عوض می‌کند؟
+4. روش: Spectrum Analyzer یا Log کنترلر.
+5. رفع: انتقال دستگاه‌ها به 5 GHz، کانال ثابت غیر DFS، Band Steering.
+
+### ۴) Lab (اجرا نشده)
+
+با اپ تحلیل Wi-Fi کانال‌ها و RSSI یک محیط را ثبت و نقشه‌ی کانال بکشید.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| RF | Radio Frequency | فرکانس رادیویی |
+| RSSI | Received Signal Strength Indicator | قدرت سیگنال |
+| SNR | Signal-to-Noise Ratio | نسبت سیگنال به نویز |
+| EIRP | Effective Isotropic Radiated Power | توان تشعشعی مؤثر |
+| DFS | Dynamic Frequency Selection | ترک کانال هنگام رادار |
+| WLC | Wireless LAN Controller | کنترلر بی‌سیم |
+| CAPWAP | Control And Provisioning of Wireless Access Points | تونل AP و WLC |
+| SSID | Service Set Identifier | نام شبکه |
+| PMF | Protected Management Frames | محافظت فریم مدیریتی |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) کدام کانال‌های 2.4 GHz بدون هم‌پوشانی‌اند؟ *(پاسخ: 2-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) WPA2 و WPA3 را مقایسه کنید. *(پاسخ: 2-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) Signal = -68 dBm و Noise = -95 dBm؛ SNR چیست؟ *(پاسخ: 2-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) دو علت تداخل در 2.4 GHz و روش تشخیص هر کدام. *(پاسخ: 2-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *Use channels 1, 6 and 11 in the 2.4 GHz band to avoid overlap.*
+- *WPA3 replaces the pre-shared key exchange with SAE.*
+- **Q1.** What does SNR stand for? *(پاسخ: 2-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
+<a id="l-2-9"></a>
+
+## درس 2-9 — عیب‌یابی اتصال کلاینت سیمی و بی‌سیم در Windows، macOS و Linux
+
+**فصل 2 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 1.6: Troubleshoot wired and wireless client connectivity — IP configuration, network reachability, wireless security parameters on Windows, MacOS, Linux) · پیش‌نیاز: ۲-۴، ۲-۷، ۲-۸**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** روش لایه‌به‌لایه برای پاسخ به «اینترنت من کار نمی‌کند» روی سه سیستم‌عامل، با تفسیر هر خروجی.
+
+**چرا لازم است؟** اولین تماس پشتیبانی همیشه از کلاینت است. ادمینی که فقط روی سوییچ و روتر کار کرده، وقتی کاربر پشت تلفن می‌گوید «وصل می‌شود ولی کار نمی‌کند» بدون روش، گیج می‌شود. روش درست در دو دقیقه علت را به یکی از چهار دسته می‌رساند: لینک، آدرس IP، مسیر (Gateway)، یا DNS.
+
+### ۲) روش چهارمرحله‌ای
+
+``` text
+Step 1  Link        : is the interface up / associated to the right SSID?
+Step 2  IP config   : address, mask, gateway, DNS correct?
+Step 3  Reachability: ping gateway -> ping external IP -> ping name
+Step 4  Application : browser/app specific issue
+```
+
+قاعده: ping به **IP** و ping به **نام** را جدا بزنید. IP موفق و نام ناموفق = DNS.
+
+### ۳) دستورها
+
+#### Windows
+
+``` text
+ipconfig /all
+ipconfig /release
+ipconfig /renew
+ipconfig /flushdns
+netsh wlan show interfaces
+netsh wlan show profiles
+netsh wlan show wlanreport
+ping 192.168.1.1
+ping 8.8.8.8
+ping www.example.com
+tracert 8.8.8.8
+nslookup www.example.com
+```
+
+#### macOS
+
+``` text
+networksetup -getinfo Wi-Fi
+ifconfig en0
+sudo wdutil info
+ping -c 4 192.168.1.1
+traceroute 8.8.8.8
+scutil --dns
+```
+
+(ابزار قدیمی `airport -I` در نسخه‌های جدید macOS حذف شده؛ `wdutil` جایگزین است.)
+
+#### Linux
+
+``` text
+ip addr
+ip route
+iw dev wlan0 link
+nmcli dev wifi
+nmcli -p device show wlan0
+resolvectl status
+ping -c 4 192.168.1.1
+traceroute 8.8.8.8
+dig www.example.com
+```
+
+### ۴) تفسیر نتایج
+
+| مشاهده | معنی | اقدام |
+|---|---|---|
+| آدرس 169.254.x.x | APIPA؛ DHCP پاسخ نداده | DHCP/VLAN/Relay |
+| آدرس درست ولی بدون Gateway | RA/DHCP ناقص | بررسی DHCP |
+| Gateway اشتباه | Static غلط یا Rogue DHCP | بررسی |
+| ping IP موفق، ping نام ناموفق | DNS | DNS سرور |
+| ping Gateway ناموفق | مشکل L2/VLAN/امنیت | سوییچ/AP |
+| «Connected, no internet» | Gateway/Internet/DNS | ping مرحله‌ای |
+| پیوسته قطع | RSSI کم/تداخل | AP/کانال |
+| رمز درست ولی وصل نمی‌شود | نوع امنیت/Band ناسازگار | WPA3/2، 5 GHz |
+
+### ۵) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — APIPA.** دستور `ipconfig` آدرس `169.254.33.17` نشان می‌دهد. نتیجه: DHCP نیامده. مراحل: ۱) کابل/SSID ۲) VLAN پورت ۳) DHCP Server (درس ۷) ۴) `ipconfig /renew`.
+
+**متوسط — فقط نام کار نمی‌کند.**
+
+``` text
+ping 8.8.8.8          -> reply
+ping www.example.com  -> could not find host
+nslookup www.example.com -> timeout
+```
+
+نتیجه DNS است. بررسی DNS که DHCP داده؛ تست دستی: `nslookup www.example.com 8.8.8.8`. اگر با 8.8.8.8 کار کرد، DNS داخلی مشکل دارد.
+
+**سخت — بی‌سیم «وصل است ولی کند و قطع‌قطع».**
+
+1. `netsh wlan show interfaces`: Signal 38٪، Radio type 802.11n، Channel 6، Band 2.4 GHz.
+2. سیگنال کم و 2.4 GHz پرتراکم.
+3. `netsh wlan show wlanreport`: علت قطع‌ها (Disassociation).
+4. اقدام: انتقال به 5 GHz (SSID جدا یا Band Steering)، AP نزدیک‌تر، بررسی کانال‌های همسایه.
+5. تأیید: Signal بالا 70٪ و ping پایدار.
+
+### ۵-۱) بررسی پارامترهای امنیتی بی‌سیم
+
+- نوع امنیت مطابقت دارد؟ (WPA2/WPA3)؛ کلاینت قدیمی WPA3 پشتیبانی نمی‌کند (Transition Mode).
+- رمز با فاصله/حروف بزرگ و کوچک.
+- 802.1X: گواهی/اعتبار کاربر، ساعت سیستم (گواهی)، Profile.
+
+### ۶) Lab (اجرا نشده)
+
+سه ماشین (Windows، macOS، Linux) و یک AP؛ سه خطای تزریقی (DHCP خاموش، DNS اشتباه، رمز اشتباه) را تشخیص دهید.
+
+### ۷) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| APIPA | Automatic Private IP Addressing | آدرس 169.254 هنگام نبود DHCP |
+| DNS | Domain Name System | سیستم نام دامنه |
+| DHCP | Dynamic Host Configuration Protocol | تخصیص خودکار IP |
+| BSSID | Basic Service Set Identifier | MAC رادیوی AP |
+| 802.1X | — | احراز هویت مبتنی بر پورت |
+
+### ۸) تمرین‌ها
+
+**ت1.** (ساده) آدرس 169.254.x.x چه معنایی دارد؟ *(پاسخ: 2-9-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) چرا ping IP و ping نام را جدا می‌زنیم؟ *(پاسخ: 2-9-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) ping Gateway موفق است ولی ping 8.8.8.8 نه؛ علت محتمل؟ *(پاسخ: 2-9-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) کلاینت بی‌سیم وصل می‌شود ولی پس از چند دقیقه قطع می‌شود؛ پنج گام تشخیص. *(پاسخ: 2-9-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۹) English Corner
+
+- *If pinging an IP address works but pinging a name fails, the problem is DNS.*
+- *An address starting with 169.254 means the client could not reach a DHCP server.*
+- **Q1.** Which command shows the IP configuration on Windows? *(پاسخ: 2-9-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 2
 
 > ابتدا بدون نگاه حل کنید. هر پاسخ با شناسه‌ی «درس-نوع+شماره» مشخص است (ت = تمرین، م = سؤال مرور، Q = Quick quiz انگلیسی).
@@ -3412,6 +4004,44 @@ The broadcast address ff:ff:ff:ff:ff:ff.
 ---
 
 <a id="ch3"></a>
+
+### پاسخ‌های درس افزوده‌ی 2-7 (فصل 2)
+
+**2-7-ت1** — Link-local؛ فقط روی همان لینک معتبر است و از روتر عبور نمی‌کند.
+
+**2-7-ت2** — `2001:DB8::1`.
+
+**2-7-ت3** — MAC: 00:50:56:A1:B2:C3 ⇒ بعد از درج FFFE: 00:50:56:FF:FE:A1:B2:C3. بایت اول 00 با 02 XOR می‌شود: 02. Interface ID: 0250:56FF:FEA1:B2C3. آدرس: `2001:DB8:A::250:56FF:FEA1:B2C3` (صفر ابتدای گروه حذف شد).
+
+**2-7-ت4** — ۱) `ipv6 unicast-routing` روی روتر خاموش است ⇒ `show running-config | include ipv6 unicast` ۲) RA نمی‌رسد/فیلتر شده ⇒ Wireshark `icmpv6.type == 134` ۳) Prefix طول 64 نیست ⇒ SLAAC کار نمی‌کند.
+
+**2-7-Q1** — The M (Managed address configuration) flag.
+
+### پاسخ‌های درس افزوده‌ی 2-8 (فصل 2)
+
+**2-8-ت1** — 1، 6 و 11 (با عرض 20 MHz).
+
+**2-8-ت2** — WPA2 با AES-CCMP رایج و امن (ولی PSK در برابر حدس آفلاین آسیب‌پذیر)؛ WPA3 با SAE، PMF اجباری و در Enterprise رمزنگاری قوی‌تر (GCMP-256).
+
+**2-8-ت3** — SNR = Signal − Noise = -68 − (-95) = 27 dB.
+
+**2-8-ت4** — ۱) تداخل هم‌کانال: چند AP در یک کانال؛ تشخیص با اسکن کانال‌ها ۲) تداخل غیر Wi-Fi مانند مایکروویو؛ تشخیص با Spectrum Analyzer و ارتباط با ساعت وقوع.
+
+**2-8-Q1** — Signal-to-Noise Ratio.
+
+### پاسخ‌های درس افزوده‌ی 2-9 (فصل 2)
+
+**2-9-ت1** — APIPA؛ کلاینت DHCP Server را پیدا نکرده و خودش آدرس Link-local IPv4 ساخته است.
+
+**2-9-ت2** — برای جداکردن مشکل شبکه (IP) از مشکل نام‌گذاری (DNS). IP موفق و نام ناموفق یعنی DNS.
+
+**2-9-ت3** — مسیر بعد از Gateway: روتر/NAT/ISP یا Policy فایروال؛ مشکل کلاینت نیست چون Gateway پاسخ می‌دهد.
+
+**2-9-ت4** — ۱) `netsh wlan show interfaces` برای Signal/Band ۲) `wlanreport` برای دلیل Disassociation ۳) بررسی تداخل/کانال ۴) Log کنترلر/AP برای Roaming/Deauth ۵) آزمون روی 5 GHz و AP نزدیک‌تر.
+
+**2-9-Q1** — `ipconfig /all`.
+
+---
 
 # فصل 3 — Switching I: MAC، VLAN، Trunk، Router-on-a-Stick و SVI
 
@@ -5018,6 +5648,168 @@ Lesson   : always "add"; backup + review show before and after
 
 <a id="ans-3"></a>
 
+<a id="l-3-7"></a>
+
+## درس 3-7 — PoE و تنظیم پورت سوییچ برای دستگاه‌های لبه (تلفن IP، Access Point، دوربین)
+
+**فصل 3 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 2.2: Configure Layer 2 switch port attributes for edge-host connectivity) · پیش‌نیاز: ۳-۱ تا ۳-۵**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified` و Lab اجرا نشده. خروجی‌های نمونه برای آموزش‌اند، نه اندازه‌گیری واقعی.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** PoE (Power over Ethernet، یعنی «برق از روی کابل شبکه») چیست، استانداردهایش چه فرقی دارند، سوییچ چطور بودجه‌ی توان را مدیریت می‌کند و چطور پورت را برای هر نوع دستگاه لبه (کامپیوتر، چاپگر، تلفن IP، Access Point، دوربین) تنظیم می‌کنیم.
+
+**چرا لازم است؟** تصور کنید ۴۰ تلفن IP و ۱۰ Access Point در یک ساختمان نصب می‌کنید. اگر هر کدام آداپتور برق جدا بخواهند، ۵۰ پریز، ۵۰ کابل برق و ۵۰ نقطه‌ی خرابی اضافه می‌شود. PoE یک کابل برای هر دو کار است. ولی برق «خرج» دارد: سوییچ بودجه‌ی محدودی دارد و اگر بیش از آن مصرف شود، پورت‌ها خاموش می‌شوند. مهندسی که بودجه را حساب نکرده باشد، روز نصب Access Point دهم می‌فهمد که پورت‌ها بالا نمی‌آیند.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) دو نقش: PSE و PD
+
+- **PSE** = Power Sourcing Equipment، یعنی «تجهیز منبع برق»؛ همان سوییچ (یا Injector).
+- **PD** = Powered Device، یعنی «دستگاه برق‌گیر»؛ تلفن، AP، دوربین.
+
+سوییچ برق را بدون پرسیدن ارسال نمی‌کند؛ چون ممکن است کامپیوتر معمولی وصل شود و بسوزد. مراحل:
+
+1. **Detection:** سوییچ ولتاژ کم می‌فرستد و مقاومت مشخصه‌ی PD (حدود 25 کیلواهم) را می‌سنجد.
+2. **Classification:** PD با «کلاس» خود می‌گوید چه توانی لازم دارد.
+3. **Power-up:** سوییچ برق را وصل می‌کند.
+4. **Monitoring:** اگر دستگاه جدا شود یا اضافه‌بار شود، برق قطع می‌شود.
+
+#### ۲-۲) استانداردهای IEEE
+
+| استاندارد | نام رایج | حداکثر توان در PSE | حداکثر توان قابل‌استفاده در PD |
+|---|---|---|---|
+| 802.3af | PoE (Type 1) | 15.4 W | 12.95 W |
+| 802.3at | PoE+ (Type 2) | 30 W | 25.5 W |
+| 802.3bt Type 3 | PoE++ / 4PPoE | 60 W | 51 W |
+| 802.3bt Type 4 | PoE++ | 100 W | 71.3 W |
+
+نکته‌ی مهم: اختلاف ستون دوم و سوم «تلفات کابل» است. برای طراحی، توان **PD** را معیار بگیرید و بودجه را بر اساس توان **PSE** حساب کنید.
+
+سیسکو دو برند اختصاصی هم دارد: UPOE (تا 60 W) و UPOE+ (تا 90 W)؛ مقادیر دقیق را از دیتاشیت مدل بخوانید.
+
+#### ۲-۳) کلاس‌ها
+
+کلاس‌های PD از 0 تا 8 هستند و هر کلاس سقف توان مشخصی دارد (مثلاً کلاس 3: 15.4 W در PSE). اگر سوییچ کلاس را نداند، به‌صورت پیش‌فرض بر اساس کلاس عمل می‌کند و ممکن است بیش از نیاز واقعی بودجه رزرو کند.
+
+#### ۲-۴) بودجه‌ی توان (Power Budget)
+
+``` text
+Total PoE budget      = switch PoE power supply capacity (e.g. 370 W)
+Allocated per port    = by class (default) or by actual consumption (if enabled)
+Remaining budget      = Total - sum of allocated
+```
+
+اگر مجموع نیاز از بودجه بیشتر شود، سوییچ پورت‌های جدید را (طبق اولویت و ترتیب) برق نمی‌دهد.
+
+### ۳) دستورهای سیسکو (Unverified)
+
+``` text
+interface GigabitEthernet1/0/5
+ switchport mode access
+ switchport access vlan 20
+ power inline auto
+ power inline max 15400
+ spanning-tree portfast
+```
+
+- `power inline auto`: Detection و تأمین برق خودکار (پیش‌فرض).
+- `power inline never`: برق هرگز ارسال نشود (مثلاً پورت چاپگر).
+- `power inline static max 15400`: رزرو ثابت (میلی‌وات) برای PD‌هایی که کلاس درست اعلام نمی‌کنند.
+- `power inline max <mW>`: سقف توان این پورت.
+
+``` text
+show power inline
+show power inline GigabitEthernet1/0/5 detail
+show power inline module 1
+```
+
+خروجی نمونه (آموزشی):
+
+``` text
+Available:370.0(w)  Used:96.5(w)  Remaining:273.5(w)
+Interface Admin  Oper       Power   Device              Class Max
+                             (Watts)
+Gi1/0/5   auto   on         15.4    Cisco IP Phone 8845  4     30.0
+Gi1/0/6   auto   on         25.5    AIR-AP2802I          4     30.0
+Gi1/0/7   auto   off        0.0     n/a                  n/a   30.0
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — تلفن + کامپیوتر پشت تلفن.** تلفن IP به پورت سوییچ وصل است و کامپیوتر به تلفن. پورت باید Access برای Data VLAN و Voice VLAN باشد:
+
+``` text
+interface GigabitEthernet1/0/10
+ switchport mode access
+ switchport access vlan 20
+ switchport voice vlan 120
+ power inline auto
+ spanning-tree portfast
+```
+
+سوییچ با CDP/LLDP-MED به تلفن می‌گوید Voice VLAN کدام است؛ ترافیک تلفن با Tag 120 و کامپیوتر بدون Tag.
+
+**متوسط — محاسبه‌ی بودجه.** سوییچ 24 پورت با بودجه 370 W. ۱۲ تلفن (هرکدام 7 W واقعی ولی کلاس 2 با رزرو 7 W) و ۸ AP (هرکدام 25.5 W).
+
+``` text
+Phones : 12 x 7.0   =  84.0 W
+APs    :  8 x 25.5  = 204.0 W
+Total  = 84.0 + 204.0 = 288.0 W
+Remaining = 370 - 288 = 82 W
+```
+
+باقی‌مانده 82 W؛ برای ۲ AP دیگر (51 W) کافی است ولی برای ۴ AP (102 W) نه.
+
+مراحل: ۱) هر گروه دستگاه را جمع بزنید ۲) از بودجه کم کنید ۳) حاشیه‌ی 20٪ بگذارید (370 × 0.2 = 74 W) ⇒ استفاده‌ی امن حداکثر 296 W.
+
+**سخت — تلفن Class 4 ولی «بالا نمی‌آید».** علامت: Gi1/0/12 در حالت `off` و Log:
+
+``` text
+%ILPOWER-3-CONTROLLER_PORT_ERR: Controller port error, Interface Gi1/0/12: Power Controller reports power Imax error detected
+```
+
+روش عیب‌یابی:
+
+1. `show power inline Gi1/0/12 detail` ⇒ کلاس و توان درخواستی.
+2. اگر دستگاه بیش از `power inline max` می‌خواهد ⇒ سقف را افزایش دهید.
+3. با کابل و تلفن دیگر آزمایش کنید (کابل خراب مقاومت زیاد می‌دهد).
+4. اگر بودجه تمام شده ⇒ `show power inline` را ببینید.
+
+### ۵) Lab (اجرا نشده)
+
+۱) یک سوییچ با PoE و یک تلفن/AP. ۲) `show power inline` را ثبت کنید. ۳) `power inline never` و تأیید قطع برق. ۴) سقف توان را کم کنید و علامت را مشاهده کنید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| PoE | Power over Ethernet | برق از روی کابل شبکه |
+| PSE | Power Sourcing Equipment | منبع برق (سوییچ) |
+| PD | Powered Device | دستگاه برق‌گیر |
+| IEEE | Institute of Electrical and Electronics Engineers | نهاد استاندارد |
+| LLDP-MED | Link Layer Discovery Protocol – Media Endpoint Discovery | تبادل VLAN و توان با تلفن |
+| UPOE | Universal PoE | PoE سیسکو تا 60 W |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) PSE و PD را تعریف کنید. *(پاسخ: 3-7-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) تفاوت 802.3af و 802.3at از نظر توان چیست؟ *(پاسخ: 3-7-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) سوییچ با بودجه 740 W دارید؛ ۲۰ AP با 25.5 W و ۳۰ تلفن با 7 W. بودجه کافی است؟ *(پاسخ: 3-7-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) AP روی پورت بالا نمی‌آید؛ چهار گام عیب‌یابی را بنویسید. *(پاسخ: 3-7-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *The switch acts as the power sourcing equipment and the phone is the powered device.* سوییچ منبع برق و تلفن دستگاه برق‌گیر است.
+- *Check the PoE budget before adding more access points.*
+- **Q1.** What does `power inline never` do? *(پاسخ: 3-7-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 3
 
 > ابتدا بدون نگاه حل کنید. هر پاسخ با شناسه‌ی «درس-نوع+شماره» مشخص است (ت = تمرین، م = سؤال مرور، Q = Quick quiz انگلیسی).
@@ -5433,6 +6225,20 @@ Symptom, Scope, Hypothesis, Test, Fix and Verify.
 **3-0-ت6** — Aging کمتر (مثلاً 60–120 s) تا MAC جابه‌جاشده زودتر پاک شود؛ هزینه: Flood بیشتر؛ بر اساس اندازه‌گیری.
 
 **3-0-Q1** — It floods the frame out of all ports in the same VLAN except the ingress port.
+
+### پاسخ‌های درس افزوده‌ی 3-7 (فصل 3)
+
+**3-7-ت1** — PSE همان تجهیز تأمین‌کننده‌ی برق (سوییچ یا Injector) و PD دستگاه مصرف‌کننده‌ی برق (تلفن، AP، دوربین) است.
+
+**3-7-ت2** — 802.3af حداکثر 15.4 W در PSE (12.95 W در PD) می‌دهد؛ 802.3at (PoE+) تا 30 W در PSE (25.5 W در PD).
+
+**3-7-ت3** — نیاز: 20 × 25.5 = 510 W و 30 × 7 = 210 W؛ جمع 720 W. بودجه 740 W است؛ باقی‌مانده فقط 20 W (حدود 2.7٪)، پس از نظر عددی کافی است ولی بدون حاشیه‌ی ایمن؛ باید حاشیه 20٪ (148 W) در نظر گرفت، یعنی برای این بار به سوییچ/منبع بزرگ‌تر نیاز است.
+
+**3-7-ت4** — ۱) `show power inline <port> detail` برای کلاس و توان ۲) مقایسه با `power inline max` ۳) تعویض کابل/دستگاه ۴) بررسی بودجه‌ی باقی‌مانده.
+
+**3-7-Q1** — It disables PoE on the port, so the switch never supplies power to the connected device.
+
+---
 
 # پایان بخش ۱ (فصل‌های ۱ تا ۳)
 
@@ -7389,6 +8195,158 @@ udld enable
 - IEEE 802.1D/802.1w
 - Cisco Spanning Tree Protocol guides
 
+<a id="l-4-8"></a>
+
+## درس 4-8 — Storm Control و RA Guard: جلوگیری از طوفان ترافیک و Router Advertisement جعلی
+
+**فصل 4 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 4.7: Configure Layer 2 security features؛ بخش‌های Storm Control و RA Guard) · پیش‌نیاز: ۴-۴، ۴-۵**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** دو سپر لایه‌ی ۲: (۱) **Storm Control** که جلوی طوفان Broadcast/Multicast/Unicast را می‌گیرد و (۲) **RA Guard** که جلوی روتر جعلی در شبکه‌ی IPv6 را می‌گیرد.
+
+**چرا لازم است؟** تصور کنید در یک سالن یک نفر مدام با بلندگو داد می‌زند؛ هیچ‌کس نمی‌تواند حرف بزند. طوفان Broadcast همین است: یک حلقه‌ی L2 یا کارت شبکه‌ی خراب، میلیون‌ها فریم Broadcast تولید می‌کند و CPU همه‌ی دستگاه‌ها را پر می‌کند. RA Guard هم مثل کسی است که در سالن ادعا می‌کند «من مدیر هستم، همه از من پیروی کنید»؛ مهاجم با یک Router Advertisement جعلی خودش را Default Gateway معرفی می‌کند و ترافیک را از خود عبور می‌دهد (Man-in-the-Middle).
+
+### ۲) Storm Control
+
+#### ۲-۱) مفهوم
+
+Storm Control ترافیک Broadcast، Multicast یا Unicast ناشناخته را روی هر پورت **اندازه می‌گیرد** و اگر از سطح (Threshold) گذشت، ترافیک اضافه را رد یا پورت را خاموش می‌کند.
+
+Threshold را می‌توان به‌صورت درصد پهنای باند، bps یا pps داد.
+
+#### ۲-۲) دستورها (Unverified)
+
+``` text
+interface GigabitEthernet1/0/10
+ storm-control broadcast level 20.00 10.00
+ storm-control multicast level 30.00
+ storm-control unicast level 50.00
+ storm-control action shutdown
+ storm-control action trap
+```
+
+- `level 20.00 10.00`: سطح بالا (Rising) 20٪ و سطح پایین (Falling) 10٪.
+- پیش‌فرض Action: ترافیک اضافه در بازه‌ی جاری (۱ ثانیه) **Drop** می‌شود (حالت filter).
+- `action shutdown`: پورت `err-disabled` می‌شود.
+- `action trap`: فقط SNMP Trap ارسال می‌شود.
+
+بازیابی خودکار:
+
+``` text
+errdisable recovery cause storm-control
+errdisable recovery interval 300
+```
+
+بررسی:
+
+``` text
+show storm-control
+show storm-control broadcast
+show interfaces Gi1/0/10 status err-disabled
+```
+
+#### ۲-۳) محاسبه‌ی Threshold
+
+``` text
+Port speed = 1 Gbps
+Broadcast level = 20 %
+Allowed broadcast = 1000 Mbps x 0.20 = 200 Mbps
+```
+
+در شبکه‌ی عادی Broadcast بسیار کمتر از 1٪ است؛ پس 20٪ بسیار سخاوتمندانه است. برای انتخاب عدد واقعی ابتدا Baseline بگیرید.
+
+### ۳) RA Guard
+
+#### ۳-۱) پیش‌زمینه: RA در IPv6
+
+در IPv6 روترها با پیام **RA** (Router Advertisement، یعنی «اعلان روتر»؛ ICMPv6 Type 134) به Hostها می‌گویند: Prefix چیست، Default Gateway کیست و آیا از DHCPv6 استفاده کنند. Hostها با **SLAAC** (Stateless Address Autoconfiguration) آدرس می‌سازند.
+
+#### ۳-۲) حمله
+
+مهاجم با ابزاری (مثلاً `radvd` یا ابزارهای تست) RA جعلی می‌فرستد: خودش را Gateway معرفی می‌کند، Prefix اشتباه می‌دهد یا DNS مخرب (RDNSS). نتیجه: قطع شبکه یا شنود ترافیک. این حمله شبیه Rogue DHCP در IPv4 است.
+
+#### ۳-۳) راه‌حل: RA Guard
+
+RA Guard روی پورت سوییچ، پیام‌های RA را فقط از پورت‌هایی که «Router» هستند قبول می‌کند و از پورت‌های «Host» حذف می‌کند.
+
+``` text
+ipv6 nd raguard policy HOST-POLICY
+ device-role host
+ipv6 nd raguard policy ROUTER-POLICY
+ device-role router
+!
+interface GigabitEthernet1/0/10
+ ipv6 nd raguard attach-policy HOST-POLICY
+interface GigabitEthernet1/0/1
+ ipv6 nd raguard attach-policy ROUTER-POLICY
+```
+
+بررسی:
+
+``` text
+show ipv6 nd raguard policies
+show ipv6 snooping counters
+```
+
+محدودیت: پیاده‌سازی‌های قدیمی با Fragmentation/Extension Header دور زده می‌شدند؛ RFC 7113 ضعف‌ها را توضیح داده است و باید نسخه‌ی سیستم‌عامل و پشتیبانی را بررسی کرد.
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — کدام پورت Host و کدام Router؟** پورت متصل به روتر Uplink ⇒ `device-role router`. تمام پورت‌های کاربران ⇒ `device-role host`.
+
+**متوسط — طوفان Broadcast.** علامت: CPU سوییچ 95٪ و کاربران کند. روش:
+
+1. `show processes cpu sorted` و `show interfaces counters`.
+2. پورتی که Broadcast بسیار بالا دارد را پیدا کنید.
+3. `storm-control broadcast level 5` (Lab/Baseline) و `action shutdown`.
+4. علت را (حلقه‌ی L2 یا کارت خراب) رفع کنید.
+
+``` text
+Gi1/0/14  Broadcast  rising=20.00  falling=10.00  action=shutdown  current=87.3%
+```
+
+**سخت — RA جعلی.** کاربران IPv6 ناگهان Default Gateway عجیب (`fe80::dead:beef`) دارند.
+
+1. در کلاینت: `ipconfig` یا `ip -6 route` ⇒ Gateway نامعتبر.
+2. با Wireshark: فیلتر `icmpv6.type == 134` ⇒ MAC فرستنده.
+3. MAC را در جدول CAM بیابید: `show mac address-table address <mac>` ⇒ پورت.
+4. پورت را خاموش و RA Guard روی همه‌ی پورت‌های Host فعال کنید.
+
+### ۵) Lab (اجرا نشده)
+
+دو ماشین و یک سوییچ؛ یک ماشین با ابزار تست RA؛ پیش و پس از RA Guard رفتار را مقایسه کنید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| RA | Router Advertisement | اعلان روتر در IPv6 |
+| SLAAC | Stateless Address Autoconfiguration | ساخت خودکار آدرس |
+| NDP | Neighbor Discovery Protocol | کشف همسایه |
+| MITM | Man-in-the-Middle | مهاجم میانی |
+| RDNSS | Recursive DNS Server option | DNS در RA |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) Storm Control چه ترافیک‌هایی را کنترل می‌کند؟ *(پاسخ: 4-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) RA Guard چه حمله‌ای را می‌گیرد؟ *(پاسخ: 4-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) روی لینک 10 Gbps سطح Broadcast برابر 1٪ است؛ چند Mbps مجاز است؟ *(پاسخ: 4-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) مراحل یافتن منبع RA جعلی را بنویسید. *(پاسخ: 4-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *Storm control limits broadcast, multicast and unicast traffic on a port.*
+- *RA guard drops router advertisements received on host-facing ports.*
+- **Q1.** Which ICMPv6 message type is a router advertisement? *(پاسخ: 4-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 4
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -7786,6 +8744,20 @@ Because all traffic would flow through a low-capacity edge device instead of the
 **4-7-ت6** — Rapid-PVST، Root Primary/Secondary، PortFast+BPDU Guard، Root Guard، UDLD روی Fiber.
 
 **4-7-Q1** — It places the port in err-disabled state to protect the spanning tree.
+
+### پاسخ‌های درس افزوده‌ی 4-8 (فصل 4)
+
+**4-8-ت1** — Broadcast، Multicast و Unicast (ناشناخته). هر نوع جداگانه Threshold می‌گیرد.
+
+**4-8-ت2** — Router Advertisement جعلی (Rogue RA) که مهاجم برای معرفی خود به‌عنوان Gateway یا دادن Prefix/DNS اشتباه می‌فرستد.
+
+**4-8-ت3** — 10 Gbps = 10000 Mbps؛ 1٪ آن 100 Mbps. فرمول: 10000 × 0.01 = 100.
+
+**4-8-ت4** — ۱) Capture با `icmpv6.type == 134` ۲) MAC فرستنده ۳) `show mac address-table address <mac>` برای پورت ۴) خاموش‌کردن پورت و فعال‌سازی RA Guard.
+
+**4-8-Q1** — Type 134.
+
+---
 
 # فصل 5 — Routing I: Static، Floating و OSPF
 
@@ -13977,6 +14949,140 @@ show ntp associations
 - RFC 5905 (NTPv4)
 - Cisco DHCP snooping/DAI guides
 
+<a id="l-7-8"></a>
+
+## درس 7-8 — انواع رکورد DNS و عیب‌یابی نام‌ها: A، AAAA، CNAME، MX، NS، PTR
+
+**فصل 7 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 4.4: Diagnose issues with DNS records — A, AAAA, CNAME, MX, NS, PTR) · پیش‌نیاز: ۷-۲**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ Lab اجرا نشده. دامنه‌های مثال همه `example.com` هستند.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** هر نوع رکورد DNS چه چیزی را می‌گوید و وقتی «سایت باز نمی‌شود» یا «ایمیل نمی‌رسد» کدام رکورد را باید بررسی کنیم.
+
+**چرا لازم است؟** DNS دفترچه‌ی تلفن اینترنت است. ولی دفترچه چند ستون دارد: شماره‌ی وب‌سایت، شماره‌ی صندوق ایمیل، شماره‌ی دفتر مرکزی، و حتی «از شماره به نام». ادمینی که فقط `nslookup` ساده می‌زند، علت «ایمیل نمی‌رسد» را نمی‌یابد چون ایمیل رکورد دیگری (MX) استفاده می‌کند.
+
+### ۲) توضیح از پایه
+
+| رکورد | معنی | مثال |
+|---|---|---|
+| A | نام ⇒ آدرس IPv4 | `www.example.com. A 198.51.100.10` |
+| AAAA | نام ⇒ آدرس IPv6 | `www.example.com. AAAA 2001:db8::10` |
+| CNAME | نام مستعار (Alias) به نام دیگر | `shop.example.com. CNAME www.example.com.` |
+| MX | سرور ایمیل دامنه + اولویت | `example.com. MX 10 mail1.example.com.` |
+| NS | سرورهای مرجع (Authoritative) دامنه | `example.com. NS ns1.example.com.` |
+| PTR | آدرس ⇒ نام (معکوس) | `10.100.51.198.in-addr.arpa. PTR www.example.com.` |
+| SOA | مشخصات Zone (سریال، Refresh، ...) | — |
+| TXT | متن آزاد (مثلاً SPF) | — |
+
+**قواعد مهم**
+
+1. **CNAME** نمی‌تواند همراه رکورد دیگر روی همان نام باشد و برای ریشه‌ی دامنه (Apex) مجاز نیست.
+2. **MX** عدد کمتر = اولویت بیشتر. MX باید به نام اشاره کند که رکورد A/AAAA دارد، نه CNAME.
+3. **PTR** در Zone معکوس است: بایت‌های IPv4 برعکس + `in-addr.arpa`. برای IPv6: نیبل‌ها برعکس + `ip6.arpa`.
+4. **TTL** مدت نگهداری در Cache است؛ تغییر رکورد تا پایان TTL در Cacheها دیده نمی‌شود.
+
+#### ترتیب ترجمه‌ی نام در کلاینت
+
+``` text
+1 local hosts file
+2 local resolver cache
+3 configured DNS server (recursive resolver)
+4 root -> TLD -> authoritative server (if not cached)
+```
+
+### ۳) دستورها
+
+``` text
+nslookup -type=A www.example.com
+nslookup -type=AAAA www.example.com
+nslookup -type=MX example.com
+nslookup -type=NS example.com
+nslookup -type=PTR 10.100.51.198.in-addr.arpa
+nslookup www.example.com 8.8.8.8
+
+dig www.example.com A +short
+dig example.com MX +short
+dig -x 198.51.100.10 +short
+dig example.com NS +trace
+```
+
+روی IOS (برای خود روتر):
+
+``` text
+ip domain name example.com
+ip name-server 10.20.0.5
+ip domain lookup
+show hosts
+ping www.example.com
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — نام به IP.** `dig www.example.com A +short` ⇒ `198.51.100.10`. اگر پاسخ نیامد: `dig @8.8.8.8` برای مقایسه (DNS داخلی یا خارجی؟).
+
+**متوسط — PTR.** IP `198.51.100.10` ⇒ نام Zone معکوس:
+
+``` text
+IP            : 198.51.100.10
+Reverse the 4 octets : 10.100.51.198
+Query name    : 10.100.51.198.in-addr.arpa
+```
+
+مراحل: ۱) بایت‌ها را برعکس کنید ۲) `.in-addr.arpa` اضافه کنید ۳) نوع PTR را بپرسید. بسیاری از سرورهای ایمیل بدون PTR درست، پیام را رد می‌کنند.
+
+**سخت — «ایمیل به example.com نمی‌رسد ولی سایت باز می‌شود».**
+
+1. `dig example.com MX +short` ⇒ هیچ پاسخ. (وب با A کار می‌کند؛ ایمیل با MX.)
+2. اگر MX هست: `10 mail1.example.com.` ⇒ `dig mail1.example.com A +short`. اگر MX به CNAME اشاره کند، برخی سرورها مشکل دارند.
+3. `dig example.com NS +short` و سپس هر NS را مستقیماً بپرسید؛ اگر یک NS پاسخ متفاوت بدهد (Lame/Out-of-sync)، نتیجه‌ی متناوب می‌گیرید.
+4. SOA Serial را بین NSها مقایسه کنید.
+5. TTL قدیمی: پس از اصلاح، منتظر پایان TTL بمانید یا Cache را پاک کنید (`ipconfig /flushdns`).
+
+مثال خطای CNAME ریشه:
+
+``` text
+example.com.  CNAME  other.net.     <-- invalid at the zone apex (conflicts with SOA/NS/MX)
+```
+
+رفع: A/AAAA یا ALIAS/ANAME (قابلیت ارائه‌دهنده‌ی DNS).
+
+### ۵) Lab (اجرا نشده)
+
+با یک سرور DNS آزمایشی (BIND یا Windows DNS) هر شش رکورد را بسازید و با nslookup/dig بپرسید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| DNS | Domain Name System | سیستم نام دامنه |
+| A / AAAA | Address record | رکورد آدرس IPv4/IPv6 |
+| CNAME | Canonical Name | نام مستعار |
+| MX | Mail Exchanger | سرور ایمیل |
+| NS | Name Server | سرور نام مرجع |
+| PTR | Pointer | نگاشت معکوس |
+| SOA | Start of Authority | مشخصات Zone |
+| TTL | Time To Live | مدت نگهداری در Cache |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) کدام رکورد برای نشانی IPv6 است؟ *(پاسخ: 7-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) نام Zone معکوس برای 192.0.2.25 چیست؟ *(پاسخ: 7-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) دو MX با اولویت 10 و 20 داریم؛ ایمیل ابتدا به کدام ارسال می‌شود؟ *(پاسخ: 7-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) سایت باز می‌شود ولی ایمیل نمی‌رسد؛ چهار گام عیب‌یابی. *(پاسخ: 7-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *A CNAME record maps an alias name to a canonical name.*
+- *The MX record with the lowest preference value is tried first.*
+- **Q1.** Which record type is used for reverse lookups? *(پاسخ: 7-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 7
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -14356,6 +15462,20 @@ Only when there is congestion on a link.
 **7-7-ت6** — Snooping+DAI، Resolver امن، NTP Auth، Detection.
 
 **7-7-Q1** — DHCP snooping, which only allows DHCP server messages from trusted ports.
+
+### پاسخ‌های درس افزوده‌ی 7-8 (فصل 7)
+
+**7-8-ت1** — AAAA.
+
+**7-8-ت2** — بایت‌ها برعکس: 25.2.0.192 ⇒ `25.2.0.192.in-addr.arpa`.
+
+**7-8-ت3** — به MX با اولویت 10 (عدد کمتر ترجیح دارد)؛ اگر در دسترس نبود، MX با 20.
+
+**7-8-ت4** — ۱) `dig example.com MX +short` ۲) بررسی A/AAAA نام MX ۳) مقایسه‌ی پاسخ NSها و SOA Serial ۴) بررسی TTL/Cache و پاک‌سازی.
+
+**7-8-Q1** — PTR.
+
+---
 
 # فصل 8 — Hardening، AAA، Automation و As-Built (CP1)
 
@@ -15896,6 +17016,129 @@ Action: rotate the community immediately, sanitize history, enable secret scanni
 
 <a id="ans-8"></a>
 
+<a id="l-8-10"></a>
+
+## درس 8-10 — هوش مصنوعی در عملیات شبکه: Agentic AI، نوشتن Prompt و ارزیابی خروجی
+
+**فصل 8 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 نسخه‌ی v2.0 (مورد 5.1: Describe the role of agentic AI in network operations؛ 5.2: Select a prompt for generative AI … data classification, output format, persona, instructions) · پیش‌نیاز: ۸-۱ تا ۸-۶**
+
+> **وضعیت:** نظری؛ این بخش مهارت کار با ابزار است، نه دستور تجهیز. هیچ داده‌ی واقعی یا رمز نباید در ابزار AI خارجی گذاشته شود.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** AI تولیدی (Generative AI) و AI عامل‌محور (Agentic AI) چیست، چه کارهایی در عملیات شبکه برایشان مناسب است، یک Prompt خوب چه اجزایی دارد و چطور خروجی AI را قبل از اجرا راستی‌آزمایی می‌کنیم.
+
+**چرا لازم است؟** AI مثل یک همکار تازه‌کار بسیار سریع و بسیار مطمئن‌به‌خود است: گاهی عالی کمک می‌کند و گاهی با اعتمادبه‌نفس کامل چیز غلط می‌گوید (توهم/Hallucination). مهندسی که بلد باشد درست سؤال بپرسد و جواب را درست وارسی کند، چند برابر سریع‌تر می‌شود؛ مهندسی که کورکورانه دستور را کپی کند، شبکه را از کار می‌اندازد. و سرنوشت داده‌ی محرمانه‌ای که در یک ابزار خارجی چسبانده شود، قابل‌بازگشت نیست.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) دو مفهوم
+
+| مفهوم | شرح | مثال در شبکه |
+|---|---|---|
+| Generative AI | به یک درخواست پاسخ متنی/کد می‌دهد | توضیح خروجی `show ip ospf neighbor` |
+| Agentic AI | هدف می‌گیرد، چند گام برنامه می‌ریزد و با ابزارها اقدام می‌کند | بررسی خودکار آلارم، جمع‌آوری `show`ها، پیشنهاد علت، ارسال تیکت |
+
+عامل‌محور بودن یعنی AI خودش چند قدم برمی‌دارد؛ پس **کنترل انسان (Human-in-the-loop)** و محدودکردن دسترسی (فقط خواندن) اهمیت بیشتری دارد.
+
+#### ۲-۲) کاربردهای مناسب
+
+1. خلاصه‌سازی Log و Syslog.
+2. توضیح Config/خروجی دستور برای تازه‌کارها.
+3. پیش‌نویس CHG، Runbook و گزارش PIR.
+4. تولید پیش‌نویس اسکریپت (Ansible/Python) که انسان بازبینی می‌کند.
+5. پیشنهاد فرضیه برای عیب‌یابی.
+
+#### ۲-۳) خطرها
+
+- **Hallucination:** دستور یا ویژگی ناموجود.
+- **نشت داده:** چسباندن Config با رمز/IP واقعی.
+- **تعصب به نسخه:** پاسخ برای نسخه‌ی دیگر.
+- **اقدام خودکار خطرناک:** Agent با دسترسی نوشتن.
+
+#### ۲-۴) طبقه‌بندی داده (Data Classification)
+
+| سطح | مثال | قاعده |
+|---|---|---|
+| عمومی | مستندات رسمی | آزاد |
+| داخلی | توپولوژی بدون رمز | فقط ابزار تأییدشده |
+| محرمانه | Config با Secret، IP مشتری | ممنوع در ابزار خارجی؛ ابتدا Sanitize |
+| بسیار محرمانه | کلید، رمز، داده‌ی کاربر | ممنوع |
+
+#### ۲-۵) اجزای یک Prompt خوب
+
+``` text
+Persona      : who the AI should act as (senior network engineer)
+Context/Data : sanitized input + data classification note
+Instructions : the task, step by step, constraints
+Output format: table / bullet list / commands with verification steps
+Constraints  : version (IOS XE 17.x), do not suggest destructive commands
+```
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — Prompt ضعیف و قوی.**
+
+ضعیف: «OSPF من کار نمی‌کند.»
+
+قوی:
+
+``` text
+Act as a senior network engineer.
+Context: two Cisco IOS XE routers, single-area OSPF; neighbor stuck in EXSTART.
+Data (sanitized, no passwords): output of "show ip ospf neighbor" and "show interface Gi0/0 | include MTU" from both routers.
+Task: list the three most likely causes in order of probability and the show command that confirms each.
+Output: a table with columns Cause, Evidence to check, Command.
+Do not suggest changes that restart the routing process.
+```
+
+**متوسط — پاک‌سازی Config.** قبل از ارسال: حذف `password`، `secret`، `snmp community`، IPهای واقعی (جایگزین `10.x.x.x` نمونه). فهرست جایگزینی را نگه دارید تا پاسخ را برگردانید.
+
+``` text
+sed -E 's/(password|secret|community) .*/\1 REDACTED/' running.cfg > clean.cfg
+```
+
+**سخت — ارزیابی خروجی عامل (Agent).** Agent پیشنهاد می‌دهد: «برای رفع قطعی `no router ospf 1` را اجرا کن». روش ارزیابی:
+
+1. آیا دستور مخرب است؟ بله؛ OSPF حذف می‌شود ⇒ رد.
+2. آیا مدارک پشتیبان دارد؟ نه (فقط ادعا).
+3. جایگزین: ابتدا `show`های فقط‌خواندنی، سپس تغییر کوچک با CHG و Rollback.
+4. ثبت: «پیشنهاد AI رد شد؛ علت: عدم Evidence و ریسک بالا».
+
+قانون: **هر دستور پیشنهادی AI را قبل از اجرا با مستند رسمی و در Lab راستی‌آزمایی کنید.**
+
+### ۴) Lab (اجرا نشده)
+
+یک Log نمونه را Sanitize کنید، Prompt بنویسید، پاسخ را با مستند Cisco بسنجید و موارد نادرست را فهرست کنید.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| AI | Artificial Intelligence | هوش مصنوعی |
+| LLM | Large Language Model | مدل زبانی بزرگ |
+| Prompt | — | دستور/سؤال ورودی |
+| Hallucination | — | پاسخ ساختگی با اطمینان |
+| HITL | Human-in-the-loop | انسان در چرخه‌ی تصمیم |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) تفاوت Generative و Agentic AI؟ *(پاسخ: 8-10-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) اجزای یک Prompt خوب را نام ببرید. *(پاسخ: 8-10-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) کدام داده نباید در ابزار AI خارجی قرار گیرد؟ *(پاسخ: 8-10-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) AI دستوری مخرب پیشنهاد داد؛ چهار گام ارزیابی. *(پاسخ: 8-10-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *Always verify AI-generated commands against vendor documentation before applying them.*
+- *Keep a human in the loop for any change on production devices.*
+- **Q1.** Name the four components of a good prompt mentioned in this lesson. *(پاسخ: 8-10-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 8
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -16251,6 +17494,20 @@ Rotate the secret immediately, clean the history and enable secret scanning.
 ---
 
 <a id="ch9"></a>
+
+### پاسخ‌های درس افزوده‌ی 8-10 (فصل 8)
+
+**8-10-ت1** — Generative AI به یک درخواست پاسخ می‌دهد؛ Agentic AI هدف می‌گیرد، چند گام برنامه می‌ریزد و با ابزارها اقدام می‌کند؛ پس به کنترل انسانی و دسترسی محدود نیاز دارد.
+
+**8-10-ت2** — Persona، Context/Data (با طبقه‌بندی)، Instructions، Output format (و Constraints).
+
+**8-10-ت3** — Config با رمز/Secret/Community، کلیدها، داده‌ی کاربران و IP مشتری؛ داده‌ی محرمانه فقط پس از Sanitize و در ابزار تأییدشده.
+
+**8-10-ت4** — ۱) مخرب‌بودن دستور ۲) مدرک پشتیبان ۳) جایگزین کم‌ریسک (show سپس تغییر کوچک با CHG/Rollback) ۴) ثبت دلیل رد/پذیرش.
+
+**8-10-Q1** — Persona, data/context, instructions, output format.
+
+---
 
 # فصل 9 — BGP عملی و Route Filtering
 
@@ -26454,6 +27711,281 @@ Planning 20 | Execution 30 | Rollback 25 | Evidence 15 | Report 10
 - *Use configuration revert so that a lockout rolls back automatically.*
 - Q: What should you do if you lock yourself out of the GUI?
 
+<a id="l-12-10"></a>
+
+## درس 12-10 — FortiGate در لایه‌ی ۲: Transparent Mode، Virtual Wire Pair و Software Switch
+
+**فصل 12 · درس افزوده برای انطباق با سرفصل رسمی NSE 4 (FortiOS 7.0): «Configure FortiGate interfaces or VDOMs to operate as Layer 2 devices» · پیش‌نیاز: ۱۲-۰، ۱۲-۲، ۱۲-۳**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی (بوت نشده)؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** سه روش برای اینکه FortiGate مثل «سوییچ/سیم» رفتار کند: Transparent Mode (VDOM)، Virtual Wire Pair و Software Switch.
+
+**چرا لازم است؟** فرض کنید شبکه‌ی موجودی دارید با آدرس‌دهی ثابت، و می‌خواهید فایروال را بدون تغییر IP و Route بین سوییچ و روتر بگذارید. اگر فایروال در حالت Route/NAT باشد باید آدرس‌ها و مسیرها را عوض کنید. اگر در حالت L2 باشد، مثل یک «سیم هوشمند» وارد می‌شود: ترافیک را بازرسی می‌کند ولی IP/Routing را عوض نمی‌کند. این سناریو در آزمون NSE4 هم آمده است.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) حالت‌های عملکرد هر VDOM
+
+| Mode | رفتار |
+|---|---|
+| NAT/Route (پیش‌فرض) | Interfaceها L3 با IP؛ Routing و NAT |
+| Transparent | فایروال مثل Bridge L2؛ یک IP مدیریتی؛ بدون Routing/NAT معمول |
+
+در Transparent، فایروال MAC آدرس‌ها را یاد می‌گیرد و فریم‌ها را بین Interfaceها Forward می‌کند ولی Policy و UTM را اعمال می‌کند.
+
+#### ۲-۲) Virtual Wire Pair
+
+دو Interface که مثل یک «سیم» به هم وصل می‌شوند. هر ترافیک وارد شده از یکی از دو Interface، از دیگری خارج می‌شود؛ بدون Learning MAC و بدون IP. نیاز به Policy بین دو Interface دارد.
+
+#### ۲-۳) Software Switch
+
+چند Interface که در یک دامنه‌ی L2 (یک Bridge) قرار می‌گیرند و **یک IP مشترک** روی Interface سوییچ می‌گیرند. در حالت NAT/Route کار می‌کند و برای ساخت یک LAN از چند پورت مفید است. (در مدل‌های دارای Hardware Switch، پورت‌های داخلی با چیپ سخت‌افزاری سوییچ می‌شوند.)
+
+#### ۲-۴) مقایسه
+
+| معیار | Transparent | Virtual Wire Pair | Software Switch |
+|---|---|---|---|
+| IP روی Interface | فقط IP مدیریتی | ندارد | IP روی Switch Interface |
+| Routing/NAT | ندارد (L2) | ندارد | دارد |
+| مقیاس Interface | چند | دقیقاً 2 | چند |
+| کاربرد | درج فایروال بدون تغییر IP | بازرسی بین دو نقطه (مثلاً IPS Inline) | یک LAN از چند پورت |
+
+### ۳) دستورها (Unverified)
+
+**Transparent Mode**
+
+``` text
+config system settings
+ set opmode transparent
+ set manageip 192.168.1.99/24
+ set gateway 192.168.1.1
+end
+```
+
+هشدار: تغییر Mode ممکن است Config را پاک/ناسازگار کند؛ ابتدا Backup بگیرید.
+
+**Virtual Wire Pair**
+
+``` text
+config system virtual-wire-pair
+ edit "VWP1"
+  set member "port3" "port4"
+ next
+end
+config firewall policy
+ edit 100
+  set name "VWP-INSPECT"
+  set srcintf "port3"
+  set dstintf "port4"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "ALL"
+  set action accept
+  set logtraffic all
+ next
+end
+```
+
+(برای جهت مقابل هم Policy لازم است.)
+
+**Software Switch**
+
+``` text
+config system switch-interface
+ edit "SW-LAN"
+  set vdom "root"
+  set member "port5" "port6"
+  set type switch
+ next
+end
+config system interface
+ edit "SW-LAN"
+  set ip 10.60.0.1 255.255.255.0
+  set allowaccess ping
+ next
+end
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — کدام حالت؟** می‌خواهیم بین سوییچ هسته و روتر لبه یک فایروال را بدون تغییر IP قرار دهیم ⇒ Transparent یا Virtual Wire.
+
+**متوسط — تصمیم.** فقط دو پورت و نیاز به IPS روی ترافیک ⇒ Virtual Wire (ساده‌تر). اگر چند VLAN و Management IP لازم است ⇒ Transparent.
+
+**سخت — حلقه‌ی L2.** پس از درج فایروال Transparent بین دو سوییچ، شبکه کند و Broadcast زیاد شد.
+
+1. دو مسیر L2 موازی بین سوییچ‌ها (یکی از فایروال، دیگری مستقیم) ⇒ حلقه.
+2. STP: فایروال به‌صورت پیش‌فرض BPDU را عبور نمی‌دهد؛ تنظیم `stpforward` (روی Interface) تا STP حلقه را ببیند.
+3. با `show spanning-tree` روی سوییچ‌ها بررسی کنید.
+4. یا یکی از مسیرها را حذف کنید.
+
+``` text
+config system interface
+ edit "port3"
+  set stpforward enable
+ next
+end
+```
+
+### ۵) Lab (اجرا نشده)
+
+FortiGate VM با دو پورت: یک بار Virtual Wire و یک بار Transparent؛ ping بین دو سمت با IP یکسان و Log Policy را ببینید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| VDOM | Virtual Domain | دامنه‌ی مجازی |
+| STP | Spanning Tree Protocol | جلوگیری از حلقه‌ی L2 |
+| BPDU | Bridge Protocol Data Unit | پیام STP |
+| VLAN | Virtual LAN | شبکه‌ی محلی مجازی |
+| NAT | Network Address Translation | ترجمه‌ی آدرس |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) Transparent Mode چه تفاوتی با NAT/Route دارد؟ *(پاسخ: 12-10-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Virtual Wire Pair چند Interface دارد؟ *(پاسخ: 12-10-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) چرا Software Switch IP دارد ولی Virtual Wire نه؟ *(پاسخ: 12-10-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) پس از درج فایروال Transparent حلقه ایجاد شد؛ علت و رفع. *(پاسخ: 12-10-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *In transparent mode the FortiGate forwards frames like a bridge but still applies firewall policies.*
+- *A virtual wire pair connects exactly two interfaces.*
+- **Q1.** Which mode lets you insert a FortiGate without changing IP addressing? *(پاسخ: 12-10-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
+<a id="l-12-11"></a>
+
+## درس 12-11 — Fortinet Security Fabric: معماری، اتصال FortiGateها و Automation
+
+**فصل 12 · درس افزوده برای انطباق با سرفصل رسمی NSE 4 (FortiOS 7.0): «Implement the Fortinet Security Fabric» · پیش‌نیاز: ۱۲-۱، ۲۶-۰**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ بخش‌هایی به لایسنس نیاز دارند (Needs-License)؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** Security Fabric چیست، چطور چند FortiGate به هم وصل می‌شوند (Root و Downstream)، چه چیزی در Fabric به اشتراک گذاشته می‌شود و Automation Stitch چیست.
+
+**چرا لازم است؟** اگر هر فایروال/سوییچ/AP یک جزیره باشد، مهاجم از شکاف بین جزایر عبور می‌کند. Security Fabric مثل «سیستم هشدار یکپارچه‌ی ساختمان» است: اگر دوربین یک طبقه خطر ببیند، در همه‌ی طبقات واکنش نشان داده می‌شود (مثلاً دستگاه آلوده در همه‌ی فایروال‌ها قرنطینه شود).
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) اجزا
+
+- **Root FortiGate:** بالاترین FortiGate Fabric؛ دید کامل توپولوژی.
+- **Downstream FortiGate:** FortiGateهایی که به Root (یا میانی) وصل می‌شوند.
+- **سایر محصولات:** FortiAnalyzer (Log)، FortiManager، FortiSwitch/FortiAP، FortiClient EMS، FortiSandbox و ...
+- **Fabric Connectors:** اتصال به سرویس‌های دیگر (Cloud، SDN، Threat Feed، FSSO).
+
+#### ۲-۲) چه چیزی دیده/اجرا می‌شود
+
+1. **Topology Views:** نقشه‌ی فیزیکی و منطقی.
+2. **Security Rating:** امتیازدهی تنظیمات بر اساس بهترین‌روش‌ها (بخشی با لایسنس).
+3. **Automation (Stitch):** ترکیب Trigger (رویداد) + Action (واکنش).
+4. **Single Pane of Glass:** مدیریت/مشاهده‌ی مرکزی.
+
+#### ۲-۳) Automation Stitch
+
+``` text
+Trigger : Compromised host detected (IOC) / Event log / Config change
+Action  : Quarantine host / Send email / Run CLI script / Webhook
+```
+
+مثال: «اگر FortiClient EMS میزبانی را آلوده اعلام کرد، Address آن را در Group قرنطینه بگذار تا Policy آن را ببندد.» (EMS: Needs-License).
+
+### ۳) دستورها (Unverified)
+
+**Root**
+
+``` text
+config system csf
+ set status enable
+ set group-name "CORP-FABRIC"
+ set group-password ***
+end
+```
+
+**Downstream**
+
+``` text
+config system csf
+ set status enable
+ set group-name "CORP-FABRIC"
+ set group-password ***
+ set upstream-ip 10.50.0.1
+end
+```
+
+سپس روی Root در GUI (Security Fabric ← Fabric Connectors/Physical Topology) دستگاه Downstream را **Authorize** کنید. ارتباط Fabric روی پورت مخصوص (طبق مستند، TCP/8013) انجام می‌شود و باید Policy/Allowaccess لازم باز باشد (`set allowaccess fabric` روی Interface مربوطه).
+
+``` text
+config system interface
+ edit "port5"
+  set allowaccess ping fabric
+ next
+end
+```
+
+بررسی:
+
+``` text
+get system status
+diagnose sys csf downstream
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — تشخیص نقش.** دو FortiGate: HQ و Branch. HQ Root؛ Branch Downstream با `upstream-ip` برابر HQ.
+
+**متوسط — Stitch ساده.** Trigger: «Configuration changed»؛ Action: ارسال ایمیل به NOC. فایده: هر تغییر خارج از CHG فوری دیده می‌شود (ارتباط با درس ۳۲-۰).
+
+**سخت — Downstream «Pending» می‌ماند.**
+
+1. Root روی `fabric` در allowaccess Interface رو به Downstream مجاز؟
+2. `group-name` و `group-password` یکسان؟
+3. Downstream به `upstream-ip` می‌رسد؟ (`execute ping`، Policy Local-in)
+4. ساعت/NTP برای گواهی‌ها.
+5. در Root Authorize شده؟
+
+### ۵) Lab (اجرا نشده)
+
+دو FortiGate VM؛ ساخت Fabric و دیدن Topology؛ ساخت یک Stitch ایمیل.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| CSF | Cooperative Security Fabric | نام داخلی Fabric در CLI |
+| EMS | Endpoint Management Server | مدیریت FortiClient |
+| IOC | Indicator of Compromise | نشانه‌ی آلودگی |
+| NOC | Network Operations Center | مرکز عملیات شبکه |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) Root و Downstream چیست؟ *(پاسخ: 12-11-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Stitch از چه دو بخش ساخته می‌شود؟ *(پاسخ: 12-11-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) سه شرط اتصال Downstream. *(پاسخ: 12-11-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) Downstream در حالت Pending؛ پنج گام عیب‌یابی. *(پاسخ: 12-11-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *The root FortiGate must authorize each downstream device joining the Security Fabric.*
+- *An automation stitch combines a trigger and an action.*
+- **Q1.** What is the purpose of the Security Rating feature? *(پاسخ: 12-11-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 12
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -26716,6 +28248,32 @@ Log in via the console and restore the management setting.
 **12-9-م1** — Slow path در CPU با بررسی کامل؛ Fast path Session موجود را سریع می‌فرستد (و NPU در سخت‌افزار).
 
 **12-9-Q1** — Because offloaded packets are forwarded in hardware and never reach the CPU path that debug flow monitors.
+
+### پاسخ‌های درس افزوده‌ی 12-10 (فصل 12)
+
+**12-10-ت1** — در Transparent فایروال L2 است (Bridge با IP مدیریتی، بدون Routing/NAT معمول)؛ در NAT/Route فایروال L3 است با IP روی Interfaceها.
+
+**12-10-ت2** — دقیقاً دو Interface.
+
+**12-10-ت3** — Software Switch چند پورت را به یک LAN L3 تبدیل می‌کند و باید Gateway/IP داشته باشد؛ Virtual Wire فقط یک سیم L2 بین دو پورت است و Routing ندارد.
+
+**12-10-ت4** — دو مسیر L2 موازی ساخت حلقه؛ فایروال BPDU را عبور نمی‌داد. رفع: `stpforward enable` یا حذف مسیر اضافه؛ تأیید با `show spanning-tree`.
+
+**12-10-Q1** — Transparent mode (یا Virtual Wire Pair).
+
+### پاسخ‌های درس افزوده‌ی 12-11 (فصل 12)
+
+**12-11-ت1** — Root بالاترین FortiGate در Fabric با دید کامل توپولوژی؛ Downstream FortiGateهایی که به آن (یا یک میانی) وصل و توسط Root Authorize می‌شوند.
+
+**12-11-ت2** — Trigger (رویداد) و Action (واکنش).
+
+**12-11-ت3** — group-name/password یکسان، `upstream-ip` قابل‌دسترس و allowaccess `fabric` روی Interface، و Authorize در Root.
+
+**12-11-ت4** — ۱) allowaccess fabric روی Root ۲) group-name/password ۳) ارتباط شبکه به upstream-ip ۴) NTP/زمان ۵) Authorize در Root.
+
+**12-11-Q1** — It scores the configuration against best practices and recommends improvements.
+
+---
 
 # پایان بخش ۴ (فصل‌های ۱۰ تا ۱۲)
 
@@ -35354,6 +36912,142 @@ diagnose debug flow filter addr 192.168.10.5
 - *Document what each security feature cannot see as well as what it can.*
 - Q: Which bypass techniques affect DNS filtering?
 
+<a id="l-16-8"></a>
+
+## درس 16-8 — WAF (Web Application Firewall): حفاظت از وب‌سرور در برابر SQL Injection و XSS
+
+**فصل 16 · درس افزوده برای انطباق با سرفصل رسمی NSE 4 (FortiOS 7.0): «Configure IPS, DoS, and WAF to protect the network from hacking and DDoS attacks» · پیش‌نیاز: ۱۶-۰، ۱۶-۴، ۱۳-۳**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ WAF و امضاهای آن Needs-License/وابسته به نسخه و مدل؛ Lab اجرا نشده و فقط در Lab ایزوله مجاز است.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** WAF چه فرقی با فایروال معمولی و IPS دارد، چه حمله‌هایی را می‌گیرد (SQL Injection، XSS)، و در FortiGate چطور برای یک وب‌سرور منتشرشده با VIP اعمال می‌شود.
+
+**چرا لازم است؟** فایروال معمولی فقط می‌گوید «پورت 443 باز است». ولی مهاجم از همان پورت باز، با یک درخواست آلوده (مثل `' OR 1=1 --` در فیلد ورود) بانک اطلاعات را می‌خواند. WAF مثل نگهبانی است که نه فقط «چه کسی وارد می‌شود» بلکه «چه می‌گوید» را هم می‌خواند.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) تفاوت‌ها
+
+| ابزار | از چه کسی/چه چیزی حفاظت می‌کند | مثال |
+|---|---|---|
+| Firewall Policy | شبکه (پورت/IP) | فقط 443 باز |
+| Web Filter | کاربران داخلی در برابر سایت بد | بلوک دسته‌ی «Malicious» |
+| IPS | آسیب‌پذیری سرویس‌ها (امضا) | Exploit شناخته‌شده |
+| **WAF** | **برنامه‌ی وب** (HTTP) | SQL Injection، XSS |
+
+#### ۲-۲) حمله‌های اصلی (OWASP)
+
+OWASP = Open Worldwide Application Security Project؛ فهرست «Top 10» ریسک‌های وب.
+
+- **SQL Injection:** ورودی کاربر داخل Query پایگاه‌داده تزریق می‌شود.
+
+``` text
+Request: GET /login?user=admin'--&pass=x
+Query  : SELECT * FROM users WHERE user='admin'--' AND pass='x'
+Effect : password check is commented out
+```
+
+- **XSS (Cross-Site Scripting):** کد جاوااسکریپت مهاجم در صفحه‌ی قربانی اجرا می‌شود.
+
+``` text
+Request: GET /search?q=<script>alert(1)</script>
+```
+
+- **سایر:** Path Traversal (`../../etc/passwd`)، Command Injection، Cookie Tampering.
+
+#### ۲-۳) چگونه WAF تشخیص می‌دهد
+
+1. **Signature:** الگوهای شناخته‌شده‌ی حمله.
+2. **Constraints:** محدودیت طول URL/Header/Parameter، متدهای مجاز.
+3. **URL Access Control:** فقط مسیرهای مجاز.
+4. **Rate/Behavior:** رفتار غیرعادی.
+
+در FortiGate، پروفایل WAF بخشی از Security Profiles است و (طبق مستند) نیاز به حالت بازرسی **Proxy-based** دارد؛ برای حفاظت جدی و پیشرفته، محصول اختصاصی **FortiWeb** است. محدودیت‌های دقیق را از مستند FortiOS نسخه بخوانید.
+
+### ۳) دستورهای نمونه (Unverified)
+
+``` text
+config waf profile
+ edit "WAF-WEB"
+  config signature
+   set credit-card-detection-threshold 3
+  end
+  config constraint
+   config header-length
+    set status enable
+    set length 8192
+    set action block
+    set log enable
+    set severity high
+   end
+  end
+ next
+end
+config firewall policy
+ edit 30
+  set inspection-mode proxy
+  set waf-profile "WAF-WEB"
+  set ssl-ssh-profile "deep-inspection"
+ next
+end
+```
+
+(نام و ساختار دقیق Signature/Class را در GUI/CLI Help نسخه بررسی کنید.) برای HTTPS به SSL Inspection با گواهی سرور (Full SSL Inspection برای Server Protection) نیاز است تا WAF محتوا را ببیند.
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — کجا WAF بگذاریم؟** وب‌سرور DMZ با VIP روی Edge ⇒ WAF روی Policy `INET -> DMZ` (ورودی).
+
+**متوسط — آزمون ایمن در Lab.**
+
+``` text
+curl -sk "https://203.0.113.3/search?q=<script>alert(1)</script>"
+curl -sk "https://203.0.113.3/login?user=admin'--"
+```
+
+انتظار: درخواست Block و Log با نوع `waf`. فقط روی Lab ایزوله و با سرور تست (مثل DVWA) این آزمون را انجام دهید.
+
+**سخت — False Positive.** WAF درخواست مشروع یک فرم (با علامت `'` در نام «O'Brien») را مسدود می‌کند. راه:
+
+1. Log: کدام Signature؟
+2. بررسی: ورودی واقعاً مشروع است؟
+3. Exemption مستند فقط برای آن URL/Parameter، با مالک و تاریخ.
+4. پایش دو هفته.
+
+### ۵) Lab (اجرا نشده)
+
+یک وب‌سرور آزمایشی پشت VIP؛ ابتدا حالت Monitor (Pass+Log) و سپس Block.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| WAF | Web Application Firewall | فایروال برنامه‌ی وب |
+| XSS | Cross-Site Scripting | اسکریپت‌نویسی میان‌سایتی |
+| SQLi | SQL Injection | تزریق SQL |
+| OWASP | Open Worldwide Application Security Project | پروژه‌ی امنیت برنامه‌ی وب |
+| FP | False Positive | هشدار غلط |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) تفاوت WAF و Web Filter؟ *(پاسخ: 16-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) SQL Injection چیست؟ *(پاسخ: 16-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) چرا WAF برای HTTPS به SSL Inspection نیاز دارد؟ *(پاسخ: 16-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) False Positive روی یک فرم؛ چهار گام رفع. *(پاسخ: 16-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *A web application firewall inspects HTTP requests for attacks such as SQL injection and cross-site scripting.*
+- *Start in monitor mode to find false positives.*
+- **Q1.** What does XSS stand for? *(پاسخ: 16-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 16
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -35525,6 +37219,20 @@ IPS به بازرسی محتوا در CPU/CP نیاز دارد و Offload کام
 **16-7-ت6** — سرور مالی: IPS Prevention + SSL Certificate + AV؛ کاربران: Web+AV+App+Deep؛ مهمان: Web Filter+DNS Filter، Prevention سبک.
 
 **16-7-Q1** — Because the file type is allowed and the malicious content is inside that type; the filter only looks at the type.
+
+### پاسخ‌های درس افزوده‌ی 16-8 (فصل 16)
+
+**16-8-ت1** — Web Filter کاربران داخلی را هنگام مرور سایت‌های بیرونی کنترل می‌کند؛ WAF وب‌سرور شما را از درخواست‌های مخرب ورودی (SQLi، XSS) حفاظت می‌کند.
+
+**16-8-ت2** — تزریق ورودی مخرب داخل Query پایگاه‌داده تا منطق Query تغییر کند (مثلاً دور زدن بررسی رمز).
+
+**16-8-ت3** — چون HTTPS رمز است و WAF بدون رمزگشایی محتوای HTTP را نمی‌بیند؛ باید با گواهی سرور (Server Protection) بازرسی عمیق انجام شود.
+
+**16-8-ت4** — ۱) بررسی Log و Signature ۲) تأیید مشروع‌بودن ورودی ۳) Exemption مستند فقط برای همان URL/Parameter ۴) پایش و بازبینی.
+
+**16-8-Q1** — Cross-Site Scripting.
+
+---
 
 # فصل 17 — Authentication: AD، LDAP، RADIUS، FSSO و Captive Portal
 
@@ -39525,6 +41233,157 @@ PSK درست شد ولی Selector هنوز؛ پس از هر رفع آزمون ج
 - *Fix one fault at a time and retest.*
 - Q: How do you distinguish a selector problem from a routing problem?
 
+<a id="l-18-7"></a>
+
+## درس 18-7 — IPsec: پروتکل‌ها (AH/ESP)، حالت‌ها (Transport/Tunnel) و انواع VPN (Site-to-Site و Remote Access)
+
+**فصل 18 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 4.5: Describe IPsec remote access and site-to-site VPNs — protocols and transport modes) و NSE4 (Implement a meshed or partially redundant IPsec VPN) · پیش‌نیاز: ۱۸-۰**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** IPsec از چه قطعاتی ساخته شده، فرق AH و ESP، فرق Transport و Tunnel Mode و فرق VPN بین دو سایت با VPN کاربر راه‌دور.
+
+**چرا لازم است؟** اگر نامه‌ی محرمانه‌ای را با پست عادی بفرستید، همه می‌خوانند. IPsec یعنی نامه را در پاکت قفل‌دار بگذارید. ولی سؤال این است: فقط «محتوای نامه» را قفل کنیم یا «کل نامه به‌همراه آدرس‌ها» را داخل پاکت بزرگ‌تری بگذاریم؟ این همان تفاوت Transport و Tunnel است. و سؤال آزمون CCNA همین است.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) چهار هدف IPsec
+
+1. **Confidentiality:** رمزنگاری.
+2. **Integrity:** تغییرنکردن داده.
+3. **Authentication:** هویت طرف مقابل.
+4. **Anti-replay:** جلوگیری از بازپخش بسته.
+
+#### ۲-۲) دو پروتکل داده
+
+| پروتکل | شماره‌ی IP Protocol | کار | با NAT |
+|---|---|---|---|
+| AH (Authentication Header) | 51 | فقط احراز هویت/یکپارچگی؛ رمزنگاری ندارد | معمولاً ناسازگار (هدر IP را هم پوشش می‌دهد) |
+| ESP (Encapsulating Security Payload) | 50 | رمزنگاری + احراز هویت | با NAT-T سازگار |
+
+در عمل تقریباً همه از **ESP** استفاده می‌کنند.
+
+#### ۲-۳) دو حالت (Mode)
+
+``` text
+Original packet : [IP hdr A->B][TCP][data]
+
+Transport mode  : [IP hdr A->B][ESP hdr][TCP][data][ESP trailer/auth]
+                  (original IP header kept; only the payload is protected)
+
+Tunnel mode     : [New IP hdr GW1->GW2][ESP hdr][IP hdr A->B][TCP][data][ESP trailer/auth]
+                  (entire original packet is protected and hidden)
+```
+
+| معیار | Transport | Tunnel |
+|---|---|---|
+| هدر IP اصلی | قابل‌مشاهده | رمز و پنهان |
+| کاربرد | بین دو میزبان (مثلاً GRE over IPsec، L2TP) | بین دو Gateway (Site-to-Site) و Remote Access |
+| سربار | کمتر | بیشتر (هدر IP اضافه) |
+
+#### ۲-۴) IKE: مذاکره‌ی کلید
+
+IKE (Internet Key Exchange) کانال امن و کلیدها را می‌سازد. UDP/500؛ در حضور NAT از **NAT-T** روی UDP/4500 استفاده می‌شود.
+
+| IKEv1 | IKEv2 |
+|---|---|
+| Phase 1: Main Mode (6 پیام) یا Aggressive (3) | IKE_SA_INIT + IKE_AUTH (4 پیام) |
+| Phase 2: Quick Mode | CREATE_CHILD_SA |
+
+IKEv2 ساده‌تر، سریع‌تر و با پشتیبانی بهتر از NAT-T و MOBIKE است.
+
+#### ۲-۵) دو نوع VPN
+
+| معیار | Site-to-Site | Remote Access |
+|---|---|---|
+| طرفین | دو Gateway | کاربر (کلاینت) و Gateway |
+| اتصال | دائمی | موقت |
+| IP | شبکه‌ها ثابت | IP داخلی به کلاینت داده می‌شود (Mode Config) |
+| هویت | PSK/گواهی بین دستگاه‌ها | کاربر (و گاهی دستگاه) + MFA |
+| مثال | شعبه ⇄ مرکز | کارمند دورکار |
+
+### ۳) دستورهای نمونه (Unverified)
+
+نمونه‌ی Cisco IOS با Crypto Map (روش قدیمی):
+
+``` text
+crypto isakmp policy 10
+ encryption aes 256
+ hash sha256
+ authentication pre-share
+ group 14
+crypto isakmp key MySecret address 198.51.100.2
+crypto ipsec transform-set TS esp-aes 256 esp-sha256-hmac
+ mode tunnel
+access-list 110 permit ip 10.1.0.0 0.0.0.255 10.2.0.0 0.0.0.255
+crypto map CMAP 10 ipsec-isakmp
+ set peer 198.51.100.2
+ set transform-set TS
+ match address 110
+interface GigabitEthernet0/0
+ crypto map CMAP
+```
+
+بررسی:
+
+``` text
+show crypto isakmp sa
+show crypto ipsec sa
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — کدام Mode؟** دو شعبه با روتر؛ شبکه‌های LAN را وصل می‌کنیم ⇒ **Tunnel** (چون Gatewayها به‌جای میزبان‌ها صحبت می‌کنند و آدرس‌های خصوصی باید پنهان بماند).
+
+**متوسط — سربار.** ESP Tunnel با AES-CBC و SHA-256: هدر IP جدید 20 بایت + ESP هدر 8 + IV 16 + Padding/Trailer و ICV (حدود 12 تا 32). مجموع حدود 50 تا 73 بایت.
+
+``` text
+Overhead ~ 20 (new IP) + 8 (ESP) + 16 (IV) + padding/trailer (2-17) + ICV (12-32)
+Inner MTU = 1500 - overhead  ~ 1427 (conservative)
+```
+
+بنابراین باید MTU/MSS را تنظیم کرد (درس ۱۸-۴).
+
+**سخت — AH پشت NAT.** سایتی با AH و NAT: Tunnel بالا نمی‌آید؛ چون NAT آدرس را عوض می‌کند و AH هدر IP را در Hash دارد. راه: ESP + NAT-T (UDP/4500). تشخیص: Capture نشان می‌دهد پروتکل 51 رد می‌شود ولی Integrity خطا می‌دهد.
+
+**سخت — Remote Access.** کاربر در هتل UDP/500 مسدود دارد: IPsec وصل نمی‌شود. راه: NAT-T روی 4500 (اگر باز است)، یا IPsec over TCP/SSL VPN (درس ۲۰-۷).
+
+### ۵) Lab (اجرا نشده)
+
+یک Tunnel بین دو روتر؛ با Wireshark ESP را ببینید و تأیید کنید Payload رمز است.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| IPsec | Internet Protocol Security | امنیت لایه‌ی IP |
+| AH | Authentication Header | هدر احراز هویت |
+| ESP | Encapsulating Security Payload | بار امن کپسوله‌شده |
+| IKE | Internet Key Exchange | تبادل کلید |
+| SA | Security Association | تفاهم امنیتی |
+| NAT-T | NAT Traversal | عبور از NAT |
+| PSK | Pre-Shared Key | کلید از پیش‌اشتراکی |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) AH و ESP چه فرقی دارند؟ *(پاسخ: 18-7-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Transport در برابر Tunnel؟ *(پاسخ: 18-7-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) چرا برای Site-to-Site معمولاً Tunnel Mode؟ *(پاسخ: 18-7-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) VPN با AH پشت NAT بالا نمی‌آید؛ علت و راه‌حل. *(پاسخ: 18-7-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *ESP provides confidentiality and authentication; AH provides authentication only.*
+- *Tunnel mode encapsulates the entire original IP packet.*
+- **Q1.** Which UDP port is used for NAT traversal? *(پاسخ: 18-7-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 18
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -39700,6 +41559,20 @@ NAT-T ESP را در UDP 4500 کپسوله می‌کند تا از NAT عبور �
 DPD پیام دوره‌ای برای تشخیص مرگ Peer و پاک‌کردن SA است.
 
 **18-0-Q1** — Because it gives forward secrecy: compromise of a long-term key does not expose past sessions.
+
+### پاسخ‌های درس افزوده‌ی 18-7 (فصل 18)
+
+**18-7-ت1** — AH فقط احراز هویت/یکپارچگی (IP Protocol 51، بدون رمزنگاری) ولی ESP رمزنگاری و احراز هویت (Protocol 50).
+
+**18-7-ت2** — Transport هدر IP اصلی را نگه می‌دارد و فقط Payload را محافظت می‌کند؛ Tunnel کل بسته‌ی اصلی را کپسوله و رمز می‌کند و هدر IP جدید اضافه می‌کند.
+
+**18-7-ت3** — چون Gatewayها به‌جای میزبان‌ها صحبت می‌کنند، شبکه‌های داخلی نباید دیده شوند و ترافیک LAN به LAN باید کپسوله شود.
+
+**18-7-ت4** — AH هدر IP را در Hash دارد؛ NAT آن را عوض می‌کند و Integrity شکست می‌خورد. راه‌حل: ESP با NAT-T (UDP/4500).
+
+**18-7-Q1** — UDP 4500.
+
+---
 
 # پایان بخش ۶ (فصل‌های ۱۶ تا ۱۸)
 

@@ -1705,6 +1705,140 @@ show ntp associations
 - RFC 5905 (NTPv4)
 - Cisco DHCP snooping/DAI guides
 
+<a id="l-7-8"></a>
+
+## درس 7-8 — انواع رکورد DNS و عیب‌یابی نام‌ها: A، AAAA، CNAME، MX، NS، PTR
+
+**فصل 7 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 4.4: Diagnose issues with DNS records — A, AAAA, CNAME, MX, NS, PTR) · پیش‌نیاز: ۷-۲**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ Lab اجرا نشده. دامنه‌های مثال همه `example.com` هستند.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** هر نوع رکورد DNS چه چیزی را می‌گوید و وقتی «سایت باز نمی‌شود» یا «ایمیل نمی‌رسد» کدام رکورد را باید بررسی کنیم.
+
+**چرا لازم است؟** DNS دفترچه‌ی تلفن اینترنت است. ولی دفترچه چند ستون دارد: شماره‌ی وب‌سایت، شماره‌ی صندوق ایمیل، شماره‌ی دفتر مرکزی، و حتی «از شماره به نام». ادمینی که فقط `nslookup` ساده می‌زند، علت «ایمیل نمی‌رسد» را نمی‌یابد چون ایمیل رکورد دیگری (MX) استفاده می‌کند.
+
+### ۲) توضیح از پایه
+
+| رکورد | معنی | مثال |
+|---|---|---|
+| A | نام ⇒ آدرس IPv4 | `www.example.com. A 198.51.100.10` |
+| AAAA | نام ⇒ آدرس IPv6 | `www.example.com. AAAA 2001:db8::10` |
+| CNAME | نام مستعار (Alias) به نام دیگر | `shop.example.com. CNAME www.example.com.` |
+| MX | سرور ایمیل دامنه + اولویت | `example.com. MX 10 mail1.example.com.` |
+| NS | سرورهای مرجع (Authoritative) دامنه | `example.com. NS ns1.example.com.` |
+| PTR | آدرس ⇒ نام (معکوس) | `10.100.51.198.in-addr.arpa. PTR www.example.com.` |
+| SOA | مشخصات Zone (سریال، Refresh، ...) | — |
+| TXT | متن آزاد (مثلاً SPF) | — |
+
+**قواعد مهم**
+
+1. **CNAME** نمی‌تواند همراه رکورد دیگر روی همان نام باشد و برای ریشه‌ی دامنه (Apex) مجاز نیست.
+2. **MX** عدد کمتر = اولویت بیشتر. MX باید به نام اشاره کند که رکورد A/AAAA دارد، نه CNAME.
+3. **PTR** در Zone معکوس است: بایت‌های IPv4 برعکس + `in-addr.arpa`. برای IPv6: نیبل‌ها برعکس + `ip6.arpa`.
+4. **TTL** مدت نگهداری در Cache است؛ تغییر رکورد تا پایان TTL در Cacheها دیده نمی‌شود.
+
+#### ترتیب ترجمه‌ی نام در کلاینت
+
+``` text
+1 local hosts file
+2 local resolver cache
+3 configured DNS server (recursive resolver)
+4 root -> TLD -> authoritative server (if not cached)
+```
+
+### ۳) دستورها
+
+``` text
+nslookup -type=A www.example.com
+nslookup -type=AAAA www.example.com
+nslookup -type=MX example.com
+nslookup -type=NS example.com
+nslookup -type=PTR 10.100.51.198.in-addr.arpa
+nslookup www.example.com 8.8.8.8
+
+dig www.example.com A +short
+dig example.com MX +short
+dig -x 198.51.100.10 +short
+dig example.com NS +trace
+```
+
+روی IOS (برای خود روتر):
+
+``` text
+ip domain name example.com
+ip name-server 10.20.0.5
+ip domain lookup
+show hosts
+ping www.example.com
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — نام به IP.** `dig www.example.com A +short` ⇒ `198.51.100.10`. اگر پاسخ نیامد: `dig @8.8.8.8` برای مقایسه (DNS داخلی یا خارجی؟).
+
+**متوسط — PTR.** IP `198.51.100.10` ⇒ نام Zone معکوس:
+
+``` text
+IP            : 198.51.100.10
+Reverse the 4 octets : 10.100.51.198
+Query name    : 10.100.51.198.in-addr.arpa
+```
+
+مراحل: ۱) بایت‌ها را برعکس کنید ۲) `.in-addr.arpa` اضافه کنید ۳) نوع PTR را بپرسید. بسیاری از سرورهای ایمیل بدون PTR درست، پیام را رد می‌کنند.
+
+**سخت — «ایمیل به example.com نمی‌رسد ولی سایت باز می‌شود».**
+
+1. `dig example.com MX +short` ⇒ هیچ پاسخ. (وب با A کار می‌کند؛ ایمیل با MX.)
+2. اگر MX هست: `10 mail1.example.com.` ⇒ `dig mail1.example.com A +short`. اگر MX به CNAME اشاره کند، برخی سرورها مشکل دارند.
+3. `dig example.com NS +short` و سپس هر NS را مستقیماً بپرسید؛ اگر یک NS پاسخ متفاوت بدهد (Lame/Out-of-sync)، نتیجه‌ی متناوب می‌گیرید.
+4. SOA Serial را بین NSها مقایسه کنید.
+5. TTL قدیمی: پس از اصلاح، منتظر پایان TTL بمانید یا Cache را پاک کنید (`ipconfig /flushdns`).
+
+مثال خطای CNAME ریشه:
+
+``` text
+example.com.  CNAME  other.net.     <-- invalid at the zone apex (conflicts with SOA/NS/MX)
+```
+
+رفع: A/AAAA یا ALIAS/ANAME (قابلیت ارائه‌دهنده‌ی DNS).
+
+### ۵) Lab (اجرا نشده)
+
+با یک سرور DNS آزمایشی (BIND یا Windows DNS) هر شش رکورد را بسازید و با nslookup/dig بپرسید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| DNS | Domain Name System | سیستم نام دامنه |
+| A / AAAA | Address record | رکورد آدرس IPv4/IPv6 |
+| CNAME | Canonical Name | نام مستعار |
+| MX | Mail Exchanger | سرور ایمیل |
+| NS | Name Server | سرور نام مرجع |
+| PTR | Pointer | نگاشت معکوس |
+| SOA | Start of Authority | مشخصات Zone |
+| TTL | Time To Live | مدت نگهداری در Cache |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) کدام رکورد برای نشانی IPv6 است؟ *(پاسخ: 7-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) نام Zone معکوس برای 192.0.2.25 چیست؟ *(پاسخ: 7-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) دو MX با اولویت 10 و 20 داریم؛ ایمیل ابتدا به کدام ارسال می‌شود؟ *(پاسخ: 7-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) سایت باز می‌شود ولی ایمیل نمی‌رسد؛ چهار گام عیب‌یابی. *(پاسخ: 7-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *A CNAME record maps an alias name to a canonical name.*
+- *The MX record with the lowest preference value is tried first.*
+- **Q1.** Which record type is used for reverse lookups? *(پاسخ: 7-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 7
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -2084,6 +2218,20 @@ Only when there is congestion on a link.
 **7-7-ت6** — Snooping+DAI، Resolver امن، NTP Auth، Detection.
 
 **7-7-Q1** — DHCP snooping, which only allows DHCP server messages from trusted ports.
+
+### پاسخ‌های درس افزوده‌ی 7-8 (فصل 7)
+
+**7-8-ت1** — AAAA.
+
+**7-8-ت2** — بایت‌ها برعکس: 25.2.0.192 ⇒ `25.2.0.192.in-addr.arpa`.
+
+**7-8-ت3** — به MX با اولویت 10 (عدد کمتر ترجیح دارد)؛ اگر در دسترس نبود، MX با 20.
+
+**7-8-ت4** — ۱) `dig example.com MX +short` ۲) بررسی A/AAAA نام MX ۳) مقایسه‌ی پاسخ NSها و SOA Serial ۴) بررسی TTL/Cache و پاک‌سازی.
+
+**7-8-Q1** — PTR.
+
+---
 
 # فصل 8 — Hardening، AAA، Automation و As-Built (CP1)
 
@@ -3624,6 +3772,129 @@ Action: rotate the community immediately, sanitize history, enable secret scanni
 
 <a id="ans-8"></a>
 
+<a id="l-8-10"></a>
+
+## درس 8-10 — هوش مصنوعی در عملیات شبکه: Agentic AI، نوشتن Prompt و ارزیابی خروجی
+
+**فصل 8 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 نسخه‌ی v2.0 (مورد 5.1: Describe the role of agentic AI in network operations؛ 5.2: Select a prompt for generative AI … data classification, output format, persona, instructions) · پیش‌نیاز: ۸-۱ تا ۸-۶**
+
+> **وضعیت:** نظری؛ این بخش مهارت کار با ابزار است، نه دستور تجهیز. هیچ داده‌ی واقعی یا رمز نباید در ابزار AI خارجی گذاشته شود.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** AI تولیدی (Generative AI) و AI عامل‌محور (Agentic AI) چیست، چه کارهایی در عملیات شبکه برایشان مناسب است، یک Prompt خوب چه اجزایی دارد و چطور خروجی AI را قبل از اجرا راستی‌آزمایی می‌کنیم.
+
+**چرا لازم است؟** AI مثل یک همکار تازه‌کار بسیار سریع و بسیار مطمئن‌به‌خود است: گاهی عالی کمک می‌کند و گاهی با اعتمادبه‌نفس کامل چیز غلط می‌گوید (توهم/Hallucination). مهندسی که بلد باشد درست سؤال بپرسد و جواب را درست وارسی کند، چند برابر سریع‌تر می‌شود؛ مهندسی که کورکورانه دستور را کپی کند، شبکه را از کار می‌اندازد. و سرنوشت داده‌ی محرمانه‌ای که در یک ابزار خارجی چسبانده شود، قابل‌بازگشت نیست.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) دو مفهوم
+
+| مفهوم | شرح | مثال در شبکه |
+|---|---|---|
+| Generative AI | به یک درخواست پاسخ متنی/کد می‌دهد | توضیح خروجی `show ip ospf neighbor` |
+| Agentic AI | هدف می‌گیرد، چند گام برنامه می‌ریزد و با ابزارها اقدام می‌کند | بررسی خودکار آلارم، جمع‌آوری `show`ها، پیشنهاد علت، ارسال تیکت |
+
+عامل‌محور بودن یعنی AI خودش چند قدم برمی‌دارد؛ پس **کنترل انسان (Human-in-the-loop)** و محدودکردن دسترسی (فقط خواندن) اهمیت بیشتری دارد.
+
+#### ۲-۲) کاربردهای مناسب
+
+1. خلاصه‌سازی Log و Syslog.
+2. توضیح Config/خروجی دستور برای تازه‌کارها.
+3. پیش‌نویس CHG، Runbook و گزارش PIR.
+4. تولید پیش‌نویس اسکریپت (Ansible/Python) که انسان بازبینی می‌کند.
+5. پیشنهاد فرضیه برای عیب‌یابی.
+
+#### ۲-۳) خطرها
+
+- **Hallucination:** دستور یا ویژگی ناموجود.
+- **نشت داده:** چسباندن Config با رمز/IP واقعی.
+- **تعصب به نسخه:** پاسخ برای نسخه‌ی دیگر.
+- **اقدام خودکار خطرناک:** Agent با دسترسی نوشتن.
+
+#### ۲-۴) طبقه‌بندی داده (Data Classification)
+
+| سطح | مثال | قاعده |
+|---|---|---|
+| عمومی | مستندات رسمی | آزاد |
+| داخلی | توپولوژی بدون رمز | فقط ابزار تأییدشده |
+| محرمانه | Config با Secret، IP مشتری | ممنوع در ابزار خارجی؛ ابتدا Sanitize |
+| بسیار محرمانه | کلید، رمز، داده‌ی کاربر | ممنوع |
+
+#### ۲-۵) اجزای یک Prompt خوب
+
+``` text
+Persona      : who the AI should act as (senior network engineer)
+Context/Data : sanitized input + data classification note
+Instructions : the task, step by step, constraints
+Output format: table / bullet list / commands with verification steps
+Constraints  : version (IOS XE 17.x), do not suggest destructive commands
+```
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — Prompt ضعیف و قوی.**
+
+ضعیف: «OSPF من کار نمی‌کند.»
+
+قوی:
+
+``` text
+Act as a senior network engineer.
+Context: two Cisco IOS XE routers, single-area OSPF; neighbor stuck in EXSTART.
+Data (sanitized, no passwords): output of "show ip ospf neighbor" and "show interface Gi0/0 | include MTU" from both routers.
+Task: list the three most likely causes in order of probability and the show command that confirms each.
+Output: a table with columns Cause, Evidence to check, Command.
+Do not suggest changes that restart the routing process.
+```
+
+**متوسط — پاک‌سازی Config.** قبل از ارسال: حذف `password`، `secret`، `snmp community`، IPهای واقعی (جایگزین `10.x.x.x` نمونه). فهرست جایگزینی را نگه دارید تا پاسخ را برگردانید.
+
+``` text
+sed -E 's/(password|secret|community) .*/\1 REDACTED/' running.cfg > clean.cfg
+```
+
+**سخت — ارزیابی خروجی عامل (Agent).** Agent پیشنهاد می‌دهد: «برای رفع قطعی `no router ospf 1` را اجرا کن». روش ارزیابی:
+
+1. آیا دستور مخرب است؟ بله؛ OSPF حذف می‌شود ⇒ رد.
+2. آیا مدارک پشتیبان دارد؟ نه (فقط ادعا).
+3. جایگزین: ابتدا `show`های فقط‌خواندنی، سپس تغییر کوچک با CHG و Rollback.
+4. ثبت: «پیشنهاد AI رد شد؛ علت: عدم Evidence و ریسک بالا».
+
+قانون: **هر دستور پیشنهادی AI را قبل از اجرا با مستند رسمی و در Lab راستی‌آزمایی کنید.**
+
+### ۴) Lab (اجرا نشده)
+
+یک Log نمونه را Sanitize کنید، Prompt بنویسید، پاسخ را با مستند Cisco بسنجید و موارد نادرست را فهرست کنید.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| AI | Artificial Intelligence | هوش مصنوعی |
+| LLM | Large Language Model | مدل زبانی بزرگ |
+| Prompt | — | دستور/سؤال ورودی |
+| Hallucination | — | پاسخ ساختگی با اطمینان |
+| HITL | Human-in-the-loop | انسان در چرخه‌ی تصمیم |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) تفاوت Generative و Agentic AI؟ *(پاسخ: 8-10-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) اجزای یک Prompt خوب را نام ببرید. *(پاسخ: 8-10-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) کدام داده نباید در ابزار AI خارجی قرار گیرد؟ *(پاسخ: 8-10-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) AI دستوری مخرب پیشنهاد داد؛ چهار گام ارزیابی. *(پاسخ: 8-10-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *Always verify AI-generated commands against vendor documentation before applying them.*
+- *Keep a human in the loop for any change on production devices.*
+- **Q1.** Name the four components of a good prompt mentioned in this lesson. *(پاسخ: 8-10-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 8
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -3979,6 +4250,20 @@ Rotate the secret immediately, clean the history and enable secret scanning.
 ---
 
 <a id="ch9"></a>
+
+### پاسخ‌های درس افزوده‌ی 8-10 (فصل 8)
+
+**8-10-ت1** — Generative AI به یک درخواست پاسخ می‌دهد؛ Agentic AI هدف می‌گیرد، چند گام برنامه می‌ریزد و با ابزارها اقدام می‌کند؛ پس به کنترل انسانی و دسترسی محدود نیاز دارد.
+
+**8-10-ت2** — Persona، Context/Data (با طبقه‌بندی)، Instructions، Output format (و Constraints).
+
+**8-10-ت3** — Config با رمز/Secret/Community، کلیدها، داده‌ی کاربران و IP مشتری؛ داده‌ی محرمانه فقط پس از Sanitize و در ابزار تأییدشده.
+
+**8-10-ت4** — ۱) مخرب‌بودن دستور ۲) مدرک پشتیبان ۳) جایگزین کم‌ریسک (show سپس تغییر کوچک با CHG/Rollback) ۴) ثبت دلیل رد/پذیرش.
+
+**8-10-Q1** — Persona, data/context, instructions, output format.
+
+---
 
 # فصل 9 — BGP عملی و Route Filtering
 

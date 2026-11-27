@@ -7835,6 +7835,281 @@ Planning 20 | Execution 30 | Rollback 25 | Evidence 15 | Report 10
 - *Use configuration revert so that a lockout rolls back automatically.*
 - Q: What should you do if you lock yourself out of the GUI?
 
+<a id="l-12-10"></a>
+
+## درس 12-10 — FortiGate در لایه‌ی ۲: Transparent Mode، Virtual Wire Pair و Software Switch
+
+**فصل 12 · درس افزوده برای انطباق با سرفصل رسمی NSE 4 (FortiOS 7.0): «Configure FortiGate interfaces or VDOMs to operate as Layer 2 devices» · پیش‌نیاز: ۱۲-۰، ۱۲-۲، ۱۲-۳**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی (بوت نشده)؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** سه روش برای اینکه FortiGate مثل «سوییچ/سیم» رفتار کند: Transparent Mode (VDOM)، Virtual Wire Pair و Software Switch.
+
+**چرا لازم است؟** فرض کنید شبکه‌ی موجودی دارید با آدرس‌دهی ثابت، و می‌خواهید فایروال را بدون تغییر IP و Route بین سوییچ و روتر بگذارید. اگر فایروال در حالت Route/NAT باشد باید آدرس‌ها و مسیرها را عوض کنید. اگر در حالت L2 باشد، مثل یک «سیم هوشمند» وارد می‌شود: ترافیک را بازرسی می‌کند ولی IP/Routing را عوض نمی‌کند. این سناریو در آزمون NSE4 هم آمده است.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) حالت‌های عملکرد هر VDOM
+
+| Mode | رفتار |
+|---|---|
+| NAT/Route (پیش‌فرض) | Interfaceها L3 با IP؛ Routing و NAT |
+| Transparent | فایروال مثل Bridge L2؛ یک IP مدیریتی؛ بدون Routing/NAT معمول |
+
+در Transparent، فایروال MAC آدرس‌ها را یاد می‌گیرد و فریم‌ها را بین Interfaceها Forward می‌کند ولی Policy و UTM را اعمال می‌کند.
+
+#### ۲-۲) Virtual Wire Pair
+
+دو Interface که مثل یک «سیم» به هم وصل می‌شوند. هر ترافیک وارد شده از یکی از دو Interface، از دیگری خارج می‌شود؛ بدون Learning MAC و بدون IP. نیاز به Policy بین دو Interface دارد.
+
+#### ۲-۳) Software Switch
+
+چند Interface که در یک دامنه‌ی L2 (یک Bridge) قرار می‌گیرند و **یک IP مشترک** روی Interface سوییچ می‌گیرند. در حالت NAT/Route کار می‌کند و برای ساخت یک LAN از چند پورت مفید است. (در مدل‌های دارای Hardware Switch، پورت‌های داخلی با چیپ سخت‌افزاری سوییچ می‌شوند.)
+
+#### ۲-۴) مقایسه
+
+| معیار | Transparent | Virtual Wire Pair | Software Switch |
+|---|---|---|---|
+| IP روی Interface | فقط IP مدیریتی | ندارد | IP روی Switch Interface |
+| Routing/NAT | ندارد (L2) | ندارد | دارد |
+| مقیاس Interface | چند | دقیقاً 2 | چند |
+| کاربرد | درج فایروال بدون تغییر IP | بازرسی بین دو نقطه (مثلاً IPS Inline) | یک LAN از چند پورت |
+
+### ۳) دستورها (Unverified)
+
+**Transparent Mode**
+
+``` text
+config system settings
+ set opmode transparent
+ set manageip 192.168.1.99/24
+ set gateway 192.168.1.1
+end
+```
+
+هشدار: تغییر Mode ممکن است Config را پاک/ناسازگار کند؛ ابتدا Backup بگیرید.
+
+**Virtual Wire Pair**
+
+``` text
+config system virtual-wire-pair
+ edit "VWP1"
+  set member "port3" "port4"
+ next
+end
+config firewall policy
+ edit 100
+  set name "VWP-INSPECT"
+  set srcintf "port3"
+  set dstintf "port4"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "ALL"
+  set action accept
+  set logtraffic all
+ next
+end
+```
+
+(برای جهت مقابل هم Policy لازم است.)
+
+**Software Switch**
+
+``` text
+config system switch-interface
+ edit "SW-LAN"
+  set vdom "root"
+  set member "port5" "port6"
+  set type switch
+ next
+end
+config system interface
+ edit "SW-LAN"
+  set ip 10.60.0.1 255.255.255.0
+  set allowaccess ping
+ next
+end
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — کدام حالت؟** می‌خواهیم بین سوییچ هسته و روتر لبه یک فایروال را بدون تغییر IP قرار دهیم ⇒ Transparent یا Virtual Wire.
+
+**متوسط — تصمیم.** فقط دو پورت و نیاز به IPS روی ترافیک ⇒ Virtual Wire (ساده‌تر). اگر چند VLAN و Management IP لازم است ⇒ Transparent.
+
+**سخت — حلقه‌ی L2.** پس از درج فایروال Transparent بین دو سوییچ، شبکه کند و Broadcast زیاد شد.
+
+1. دو مسیر L2 موازی بین سوییچ‌ها (یکی از فایروال، دیگری مستقیم) ⇒ حلقه.
+2. STP: فایروال به‌صورت پیش‌فرض BPDU را عبور نمی‌دهد؛ تنظیم `stpforward` (روی Interface) تا STP حلقه را ببیند.
+3. با `show spanning-tree` روی سوییچ‌ها بررسی کنید.
+4. یا یکی از مسیرها را حذف کنید.
+
+``` text
+config system interface
+ edit "port3"
+  set stpforward enable
+ next
+end
+```
+
+### ۵) Lab (اجرا نشده)
+
+FortiGate VM با دو پورت: یک بار Virtual Wire و یک بار Transparent؛ ping بین دو سمت با IP یکسان و Log Policy را ببینید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| VDOM | Virtual Domain | دامنه‌ی مجازی |
+| STP | Spanning Tree Protocol | جلوگیری از حلقه‌ی L2 |
+| BPDU | Bridge Protocol Data Unit | پیام STP |
+| VLAN | Virtual LAN | شبکه‌ی محلی مجازی |
+| NAT | Network Address Translation | ترجمه‌ی آدرس |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) Transparent Mode چه تفاوتی با NAT/Route دارد؟ *(پاسخ: 12-10-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Virtual Wire Pair چند Interface دارد؟ *(پاسخ: 12-10-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) چرا Software Switch IP دارد ولی Virtual Wire نه؟ *(پاسخ: 12-10-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) پس از درج فایروال Transparent حلقه ایجاد شد؛ علت و رفع. *(پاسخ: 12-10-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *In transparent mode the FortiGate forwards frames like a bridge but still applies firewall policies.*
+- *A virtual wire pair connects exactly two interfaces.*
+- **Q1.** Which mode lets you insert a FortiGate without changing IP addressing? *(پاسخ: 12-10-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
+<a id="l-12-11"></a>
+
+## درس 12-11 — Fortinet Security Fabric: معماری، اتصال FortiGateها و Automation
+
+**فصل 12 · درس افزوده برای انطباق با سرفصل رسمی NSE 4 (FortiOS 7.0): «Implement the Fortinet Security Fabric» · پیش‌نیاز: ۱۲-۱، ۲۶-۰**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ بخش‌هایی به لایسنس نیاز دارند (Needs-License)؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** Security Fabric چیست، چطور چند FortiGate به هم وصل می‌شوند (Root و Downstream)، چه چیزی در Fabric به اشتراک گذاشته می‌شود و Automation Stitch چیست.
+
+**چرا لازم است؟** اگر هر فایروال/سوییچ/AP یک جزیره باشد، مهاجم از شکاف بین جزایر عبور می‌کند. Security Fabric مثل «سیستم هشدار یکپارچه‌ی ساختمان» است: اگر دوربین یک طبقه خطر ببیند، در همه‌ی طبقات واکنش نشان داده می‌شود (مثلاً دستگاه آلوده در همه‌ی فایروال‌ها قرنطینه شود).
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) اجزا
+
+- **Root FortiGate:** بالاترین FortiGate Fabric؛ دید کامل توپولوژی.
+- **Downstream FortiGate:** FortiGateهایی که به Root (یا میانی) وصل می‌شوند.
+- **سایر محصولات:** FortiAnalyzer (Log)، FortiManager، FortiSwitch/FortiAP، FortiClient EMS، FortiSandbox و ...
+- **Fabric Connectors:** اتصال به سرویس‌های دیگر (Cloud، SDN، Threat Feed، FSSO).
+
+#### ۲-۲) چه چیزی دیده/اجرا می‌شود
+
+1. **Topology Views:** نقشه‌ی فیزیکی و منطقی.
+2. **Security Rating:** امتیازدهی تنظیمات بر اساس بهترین‌روش‌ها (بخشی با لایسنس).
+3. **Automation (Stitch):** ترکیب Trigger (رویداد) + Action (واکنش).
+4. **Single Pane of Glass:** مدیریت/مشاهده‌ی مرکزی.
+
+#### ۲-۳) Automation Stitch
+
+``` text
+Trigger : Compromised host detected (IOC) / Event log / Config change
+Action  : Quarantine host / Send email / Run CLI script / Webhook
+```
+
+مثال: «اگر FortiClient EMS میزبانی را آلوده اعلام کرد، Address آن را در Group قرنطینه بگذار تا Policy آن را ببندد.» (EMS: Needs-License).
+
+### ۳) دستورها (Unverified)
+
+**Root**
+
+``` text
+config system csf
+ set status enable
+ set group-name "CORP-FABRIC"
+ set group-password ***
+end
+```
+
+**Downstream**
+
+``` text
+config system csf
+ set status enable
+ set group-name "CORP-FABRIC"
+ set group-password ***
+ set upstream-ip 10.50.0.1
+end
+```
+
+سپس روی Root در GUI (Security Fabric ← Fabric Connectors/Physical Topology) دستگاه Downstream را **Authorize** کنید. ارتباط Fabric روی پورت مخصوص (طبق مستند، TCP/8013) انجام می‌شود و باید Policy/Allowaccess لازم باز باشد (`set allowaccess fabric` روی Interface مربوطه).
+
+``` text
+config system interface
+ edit "port5"
+  set allowaccess ping fabric
+ next
+end
+```
+
+بررسی:
+
+``` text
+get system status
+diagnose sys csf downstream
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — تشخیص نقش.** دو FortiGate: HQ و Branch. HQ Root؛ Branch Downstream با `upstream-ip` برابر HQ.
+
+**متوسط — Stitch ساده.** Trigger: «Configuration changed»؛ Action: ارسال ایمیل به NOC. فایده: هر تغییر خارج از CHG فوری دیده می‌شود (ارتباط با درس ۳۲-۰).
+
+**سخت — Downstream «Pending» می‌ماند.**
+
+1. Root روی `fabric` در allowaccess Interface رو به Downstream مجاز؟
+2. `group-name` و `group-password` یکسان؟
+3. Downstream به `upstream-ip` می‌رسد؟ (`execute ping`، Policy Local-in)
+4. ساعت/NTP برای گواهی‌ها.
+5. در Root Authorize شده؟
+
+### ۵) Lab (اجرا نشده)
+
+دو FortiGate VM؛ ساخت Fabric و دیدن Topology؛ ساخت یک Stitch ایمیل.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| CSF | Cooperative Security Fabric | نام داخلی Fabric در CLI |
+| EMS | Endpoint Management Server | مدیریت FortiClient |
+| IOC | Indicator of Compromise | نشانه‌ی آلودگی |
+| NOC | Network Operations Center | مرکز عملیات شبکه |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) Root و Downstream چیست؟ *(پاسخ: 12-11-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Stitch از چه دو بخش ساخته می‌شود؟ *(پاسخ: 12-11-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) سه شرط اتصال Downstream. *(پاسخ: 12-11-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) Downstream در حالت Pending؛ پنج گام عیب‌یابی. *(پاسخ: 12-11-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *The root FortiGate must authorize each downstream device joining the Security Fabric.*
+- *An automation stitch combines a trigger and an action.*
+- **Q1.** What is the purpose of the Security Rating feature? *(پاسخ: 12-11-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 12
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -8097,6 +8372,32 @@ Log in via the console and restore the management setting.
 **12-9-م1** — Slow path در CPU با بررسی کامل؛ Fast path Session موجود را سریع می‌فرستد (و NPU در سخت‌افزار).
 
 **12-9-Q1** — Because offloaded packets are forwarded in hardware and never reach the CPU path that debug flow monitors.
+
+### پاسخ‌های درس افزوده‌ی 12-10 (فصل 12)
+
+**12-10-ت1** — در Transparent فایروال L2 است (Bridge با IP مدیریتی، بدون Routing/NAT معمول)؛ در NAT/Route فایروال L3 است با IP روی Interfaceها.
+
+**12-10-ت2** — دقیقاً دو Interface.
+
+**12-10-ت3** — Software Switch چند پورت را به یک LAN L3 تبدیل می‌کند و باید Gateway/IP داشته باشد؛ Virtual Wire فقط یک سیم L2 بین دو پورت است و Routing ندارد.
+
+**12-10-ت4** — دو مسیر L2 موازی ساخت حلقه؛ فایروال BPDU را عبور نمی‌داد. رفع: `stpforward enable` یا حذف مسیر اضافه؛ تأیید با `show spanning-tree`.
+
+**12-10-Q1** — Transparent mode (یا Virtual Wire Pair).
+
+### پاسخ‌های درس افزوده‌ی 12-11 (فصل 12)
+
+**12-11-ت1** — Root بالاترین FortiGate در Fabric با دید کامل توپولوژی؛ Downstream FortiGateهایی که به آن (یا یک میانی) وصل و توسط Root Authorize می‌شوند.
+
+**12-11-ت2** — Trigger (رویداد) و Action (واکنش).
+
+**12-11-ت3** — group-name/password یکسان، `upstream-ip` قابل‌دسترس و allowaccess `fabric` روی Interface، و Authorize در Root.
+
+**12-11-ت4** — ۱) allowaccess fabric روی Root ۲) group-name/password ۳) ارتباط شبکه به upstream-ip ۴) NTP/زمان ۵) Authorize در Root.
+
+**12-11-Q1** — It scores the configuration against best practices and recommends improvements.
+
+---
 
 # پایان بخش ۴ (فصل‌های ۱۰ تا ۱۲)
 

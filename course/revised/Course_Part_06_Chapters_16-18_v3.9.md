@@ -2111,6 +2111,142 @@ diagnose debug flow filter addr 192.168.10.5
 - *Document what each security feature cannot see as well as what it can.*
 - Q: Which bypass techniques affect DNS filtering?
 
+<a id="l-16-8"></a>
+
+## درس 16-8 — WAF (Web Application Firewall): حفاظت از وب‌سرور در برابر SQL Injection و XSS
+
+**فصل 16 · درس افزوده برای انطباق با سرفصل رسمی NSE 4 (FortiOS 7.0): «Configure IPS, DoS, and WAF to protect the network from hacking and DDoS attacks» · پیش‌نیاز: ۱۶-۰، ۱۶-۴، ۱۳-۳**
+
+> **وضعیت:** نظری/مستندی؛ FortiOS 7.0.3 نامی؛ دستورها `Unverified`؛ WAF و امضاهای آن Needs-License/وابسته به نسخه و مدل؛ Lab اجرا نشده و فقط در Lab ایزوله مجاز است.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** WAF چه فرقی با فایروال معمولی و IPS دارد، چه حمله‌هایی را می‌گیرد (SQL Injection، XSS)، و در FortiGate چطور برای یک وب‌سرور منتشرشده با VIP اعمال می‌شود.
+
+**چرا لازم است؟** فایروال معمولی فقط می‌گوید «پورت 443 باز است». ولی مهاجم از همان پورت باز، با یک درخواست آلوده (مثل `' OR 1=1 --` در فیلد ورود) بانک اطلاعات را می‌خواند. WAF مثل نگهبانی است که نه فقط «چه کسی وارد می‌شود» بلکه «چه می‌گوید» را هم می‌خواند.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) تفاوت‌ها
+
+| ابزار | از چه کسی/چه چیزی حفاظت می‌کند | مثال |
+|---|---|---|
+| Firewall Policy | شبکه (پورت/IP) | فقط 443 باز |
+| Web Filter | کاربران داخلی در برابر سایت بد | بلوک دسته‌ی «Malicious» |
+| IPS | آسیب‌پذیری سرویس‌ها (امضا) | Exploit شناخته‌شده |
+| **WAF** | **برنامه‌ی وب** (HTTP) | SQL Injection، XSS |
+
+#### ۲-۲) حمله‌های اصلی (OWASP)
+
+OWASP = Open Worldwide Application Security Project؛ فهرست «Top 10» ریسک‌های وب.
+
+- **SQL Injection:** ورودی کاربر داخل Query پایگاه‌داده تزریق می‌شود.
+
+``` text
+Request: GET /login?user=admin'--&pass=x
+Query  : SELECT * FROM users WHERE user='admin'--' AND pass='x'
+Effect : password check is commented out
+```
+
+- **XSS (Cross-Site Scripting):** کد جاوااسکریپت مهاجم در صفحه‌ی قربانی اجرا می‌شود.
+
+``` text
+Request: GET /search?q=<script>alert(1)</script>
+```
+
+- **سایر:** Path Traversal (`../../etc/passwd`)، Command Injection، Cookie Tampering.
+
+#### ۲-۳) چگونه WAF تشخیص می‌دهد
+
+1. **Signature:** الگوهای شناخته‌شده‌ی حمله.
+2. **Constraints:** محدودیت طول URL/Header/Parameter، متدهای مجاز.
+3. **URL Access Control:** فقط مسیرهای مجاز.
+4. **Rate/Behavior:** رفتار غیرعادی.
+
+در FortiGate، پروفایل WAF بخشی از Security Profiles است و (طبق مستند) نیاز به حالت بازرسی **Proxy-based** دارد؛ برای حفاظت جدی و پیشرفته، محصول اختصاصی **FortiWeb** است. محدودیت‌های دقیق را از مستند FortiOS نسخه بخوانید.
+
+### ۳) دستورهای نمونه (Unverified)
+
+``` text
+config waf profile
+ edit "WAF-WEB"
+  config signature
+   set credit-card-detection-threshold 3
+  end
+  config constraint
+   config header-length
+    set status enable
+    set length 8192
+    set action block
+    set log enable
+    set severity high
+   end
+  end
+ next
+end
+config firewall policy
+ edit 30
+  set inspection-mode proxy
+  set waf-profile "WAF-WEB"
+  set ssl-ssh-profile "deep-inspection"
+ next
+end
+```
+
+(نام و ساختار دقیق Signature/Class را در GUI/CLI Help نسخه بررسی کنید.) برای HTTPS به SSL Inspection با گواهی سرور (Full SSL Inspection برای Server Protection) نیاز است تا WAF محتوا را ببیند.
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — کجا WAF بگذاریم؟** وب‌سرور DMZ با VIP روی Edge ⇒ WAF روی Policy `INET -> DMZ` (ورودی).
+
+**متوسط — آزمون ایمن در Lab.**
+
+``` text
+curl -sk "https://203.0.113.3/search?q=<script>alert(1)</script>"
+curl -sk "https://203.0.113.3/login?user=admin'--"
+```
+
+انتظار: درخواست Block و Log با نوع `waf`. فقط روی Lab ایزوله و با سرور تست (مثل DVWA) این آزمون را انجام دهید.
+
+**سخت — False Positive.** WAF درخواست مشروع یک فرم (با علامت `'` در نام «O'Brien») را مسدود می‌کند. راه:
+
+1. Log: کدام Signature؟
+2. بررسی: ورودی واقعاً مشروع است؟
+3. Exemption مستند فقط برای آن URL/Parameter، با مالک و تاریخ.
+4. پایش دو هفته.
+
+### ۵) Lab (اجرا نشده)
+
+یک وب‌سرور آزمایشی پشت VIP؛ ابتدا حالت Monitor (Pass+Log) و سپس Block.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| WAF | Web Application Firewall | فایروال برنامه‌ی وب |
+| XSS | Cross-Site Scripting | اسکریپت‌نویسی میان‌سایتی |
+| SQLi | SQL Injection | تزریق SQL |
+| OWASP | Open Worldwide Application Security Project | پروژه‌ی امنیت برنامه‌ی وب |
+| FP | False Positive | هشدار غلط |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) تفاوت WAF و Web Filter؟ *(پاسخ: 16-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) SQL Injection چیست؟ *(پاسخ: 16-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) چرا WAF برای HTTPS به SSL Inspection نیاز دارد؟ *(پاسخ: 16-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) False Positive روی یک فرم؛ چهار گام رفع. *(پاسخ: 16-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *A web application firewall inspects HTTP requests for attacks such as SQL injection and cross-site scripting.*
+- *Start in monitor mode to find false positives.*
+- **Q1.** What does XSS stand for? *(پاسخ: 16-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 16
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -2282,6 +2418,20 @@ IPS به بازرسی محتوا در CPU/CP نیاز دارد و Offload کام
 **16-7-ت6** — سرور مالی: IPS Prevention + SSL Certificate + AV؛ کاربران: Web+AV+App+Deep؛ مهمان: Web Filter+DNS Filter، Prevention سبک.
 
 **16-7-Q1** — Because the file type is allowed and the malicious content is inside that type; the filter only looks at the type.
+
+### پاسخ‌های درس افزوده‌ی 16-8 (فصل 16)
+
+**16-8-ت1** — Web Filter کاربران داخلی را هنگام مرور سایت‌های بیرونی کنترل می‌کند؛ WAF وب‌سرور شما را از درخواست‌های مخرب ورودی (SQLi، XSS) حفاظت می‌کند.
+
+**16-8-ت2** — تزریق ورودی مخرب داخل Query پایگاه‌داده تا منطق Query تغییر کند (مثلاً دور زدن بررسی رمز).
+
+**16-8-ت3** — چون HTTPS رمز است و WAF بدون رمزگشایی محتوای HTTP را نمی‌بیند؛ باید با گواهی سرور (Server Protection) بازرسی عمیق انجام شود.
+
+**16-8-ت4** — ۱) بررسی Log و Signature ۲) تأیید مشروع‌بودن ورودی ۳) Exemption مستند فقط برای همان URL/Parameter ۴) پایش و بازبینی.
+
+**16-8-Q1** — Cross-Site Scripting.
+
+---
 
 # فصل 17 — Authentication: AD، LDAP، RADIUS، FSSO و Captive Portal
 
@@ -6282,6 +6432,157 @@ PSK درست شد ولی Selector هنوز؛ پس از هر رفع آزمون ج
 - *Fix one fault at a time and retest.*
 - Q: How do you distinguish a selector problem from a routing problem?
 
+<a id="l-18-7"></a>
+
+## درس 18-7 — IPsec: پروتکل‌ها (AH/ESP)، حالت‌ها (Transport/Tunnel) و انواع VPN (Site-to-Site و Remote Access)
+
+**فصل 18 · درس افزوده برای انطباق با سرفصل رسمی CCNA 200-301 (مورد 4.5: Describe IPsec remote access and site-to-site VPNs — protocols and transport modes) و NSE4 (Implement a meshed or partially redundant IPsec VPN) · پیش‌نیاز: ۱۸-۰**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** IPsec از چه قطعاتی ساخته شده، فرق AH و ESP، فرق Transport و Tunnel Mode و فرق VPN بین دو سایت با VPN کاربر راه‌دور.
+
+**چرا لازم است؟** اگر نامه‌ی محرمانه‌ای را با پست عادی بفرستید، همه می‌خوانند. IPsec یعنی نامه را در پاکت قفل‌دار بگذارید. ولی سؤال این است: فقط «محتوای نامه» را قفل کنیم یا «کل نامه به‌همراه آدرس‌ها» را داخل پاکت بزرگ‌تری بگذاریم؟ این همان تفاوت Transport و Tunnel است. و سؤال آزمون CCNA همین است.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) چهار هدف IPsec
+
+1. **Confidentiality:** رمزنگاری.
+2. **Integrity:** تغییرنکردن داده.
+3. **Authentication:** هویت طرف مقابل.
+4. **Anti-replay:** جلوگیری از بازپخش بسته.
+
+#### ۲-۲) دو پروتکل داده
+
+| پروتکل | شماره‌ی IP Protocol | کار | با NAT |
+|---|---|---|---|
+| AH (Authentication Header) | 51 | فقط احراز هویت/یکپارچگی؛ رمزنگاری ندارد | معمولاً ناسازگار (هدر IP را هم پوشش می‌دهد) |
+| ESP (Encapsulating Security Payload) | 50 | رمزنگاری + احراز هویت | با NAT-T سازگار |
+
+در عمل تقریباً همه از **ESP** استفاده می‌کنند.
+
+#### ۲-۳) دو حالت (Mode)
+
+``` text
+Original packet : [IP hdr A->B][TCP][data]
+
+Transport mode  : [IP hdr A->B][ESP hdr][TCP][data][ESP trailer/auth]
+                  (original IP header kept; only the payload is protected)
+
+Tunnel mode     : [New IP hdr GW1->GW2][ESP hdr][IP hdr A->B][TCP][data][ESP trailer/auth]
+                  (entire original packet is protected and hidden)
+```
+
+| معیار | Transport | Tunnel |
+|---|---|---|
+| هدر IP اصلی | قابل‌مشاهده | رمز و پنهان |
+| کاربرد | بین دو میزبان (مثلاً GRE over IPsec، L2TP) | بین دو Gateway (Site-to-Site) و Remote Access |
+| سربار | کمتر | بیشتر (هدر IP اضافه) |
+
+#### ۲-۴) IKE: مذاکره‌ی کلید
+
+IKE (Internet Key Exchange) کانال امن و کلیدها را می‌سازد. UDP/500؛ در حضور NAT از **NAT-T** روی UDP/4500 استفاده می‌شود.
+
+| IKEv1 | IKEv2 |
+|---|---|
+| Phase 1: Main Mode (6 پیام) یا Aggressive (3) | IKE_SA_INIT + IKE_AUTH (4 پیام) |
+| Phase 2: Quick Mode | CREATE_CHILD_SA |
+
+IKEv2 ساده‌تر، سریع‌تر و با پشتیبانی بهتر از NAT-T و MOBIKE است.
+
+#### ۲-۵) دو نوع VPN
+
+| معیار | Site-to-Site | Remote Access |
+|---|---|---|
+| طرفین | دو Gateway | کاربر (کلاینت) و Gateway |
+| اتصال | دائمی | موقت |
+| IP | شبکه‌ها ثابت | IP داخلی به کلاینت داده می‌شود (Mode Config) |
+| هویت | PSK/گواهی بین دستگاه‌ها | کاربر (و گاهی دستگاه) + MFA |
+| مثال | شعبه ⇄ مرکز | کارمند دورکار |
+
+### ۳) دستورهای نمونه (Unverified)
+
+نمونه‌ی Cisco IOS با Crypto Map (روش قدیمی):
+
+``` text
+crypto isakmp policy 10
+ encryption aes 256
+ hash sha256
+ authentication pre-share
+ group 14
+crypto isakmp key MySecret address 198.51.100.2
+crypto ipsec transform-set TS esp-aes 256 esp-sha256-hmac
+ mode tunnel
+access-list 110 permit ip 10.1.0.0 0.0.0.255 10.2.0.0 0.0.0.255
+crypto map CMAP 10 ipsec-isakmp
+ set peer 198.51.100.2
+ set transform-set TS
+ match address 110
+interface GigabitEthernet0/0
+ crypto map CMAP
+```
+
+بررسی:
+
+``` text
+show crypto isakmp sa
+show crypto ipsec sa
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — کدام Mode؟** دو شعبه با روتر؛ شبکه‌های LAN را وصل می‌کنیم ⇒ **Tunnel** (چون Gatewayها به‌جای میزبان‌ها صحبت می‌کنند و آدرس‌های خصوصی باید پنهان بماند).
+
+**متوسط — سربار.** ESP Tunnel با AES-CBC و SHA-256: هدر IP جدید 20 بایت + ESP هدر 8 + IV 16 + Padding/Trailer و ICV (حدود 12 تا 32). مجموع حدود 50 تا 73 بایت.
+
+``` text
+Overhead ~ 20 (new IP) + 8 (ESP) + 16 (IV) + padding/trailer (2-17) + ICV (12-32)
+Inner MTU = 1500 - overhead  ~ 1427 (conservative)
+```
+
+بنابراین باید MTU/MSS را تنظیم کرد (درس ۱۸-۴).
+
+**سخت — AH پشت NAT.** سایتی با AH و NAT: Tunnel بالا نمی‌آید؛ چون NAT آدرس را عوض می‌کند و AH هدر IP را در Hash دارد. راه: ESP + NAT-T (UDP/4500). تشخیص: Capture نشان می‌دهد پروتکل 51 رد می‌شود ولی Integrity خطا می‌دهد.
+
+**سخت — Remote Access.** کاربر در هتل UDP/500 مسدود دارد: IPsec وصل نمی‌شود. راه: NAT-T روی 4500 (اگر باز است)، یا IPsec over TCP/SSL VPN (درس ۲۰-۷).
+
+### ۵) Lab (اجرا نشده)
+
+یک Tunnel بین دو روتر؛ با Wireshark ESP را ببینید و تأیید کنید Payload رمز است.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| IPsec | Internet Protocol Security | امنیت لایه‌ی IP |
+| AH | Authentication Header | هدر احراز هویت |
+| ESP | Encapsulating Security Payload | بار امن کپسوله‌شده |
+| IKE | Internet Key Exchange | تبادل کلید |
+| SA | Security Association | تفاهم امنیتی |
+| NAT-T | NAT Traversal | عبور از NAT |
+| PSK | Pre-Shared Key | کلید از پیش‌اشتراکی |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) AH و ESP چه فرقی دارند؟ *(پاسخ: 18-7-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Transport در برابر Tunnel؟ *(پاسخ: 18-7-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) چرا برای Site-to-Site معمولاً Tunnel Mode؟ *(پاسخ: 18-7-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) VPN با AH پشت NAT بالا نمی‌آید؛ علت و راه‌حل. *(پاسخ: 18-7-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *ESP provides confidentiality and authentication; AH provides authentication only.*
+- *Tunnel mode encapsulates the entire original IP packet.*
+- **Q1.** Which UDP port is used for NAT traversal? *(پاسخ: 18-7-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 18
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور).
@@ -6457,6 +6758,20 @@ NAT-T ESP را در UDP 4500 کپسوله می‌کند تا از NAT عبور �
 DPD پیام دوره‌ای برای تشخیص مرگ Peer و پاک‌کردن SA است.
 
 **18-0-Q1** — Because it gives forward secrecy: compromise of a long-term key does not expose past sessions.
+
+### پاسخ‌های درس افزوده‌ی 18-7 (فصل 18)
+
+**18-7-ت1** — AH فقط احراز هویت/یکپارچگی (IP Protocol 51، بدون رمزنگاری) ولی ESP رمزنگاری و احراز هویت (Protocol 50).
+
+**18-7-ت2** — Transport هدر IP اصلی را نگه می‌دارد و فقط Payload را محافظت می‌کند؛ Tunnel کل بسته‌ی اصلی را کپسوله و رمز می‌کند و هدر IP جدید اضافه می‌کند.
+
+**18-7-ت3** — چون Gatewayها به‌جای میزبان‌ها صحبت می‌کنند، شبکه‌های داخلی نباید دیده شوند و ترافیک LAN به LAN باید کپسوله شود.
+
+**18-7-ت4** — AH هدر IP را در Hash دارد؛ NAT آن را عوض می‌کند و Integrity شکست می‌خورد. راه‌حل: ESP با NAT-T (UDP/4500).
+
+**18-7-Q1** — UDP 4500.
+
+---
 
 # پایان بخش ۶ (فصل‌های ۱۶ تا ۱۸)
 
