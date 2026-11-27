@@ -70,9 +70,15 @@
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا Interoperability؟** سازمان‌ها معمولاً چند سازنده دارند: Cisco در هسته، Fortinet در لبه. اگر «مفهوم» را بدانید، تغییر سازنده فقط تغییر Syntax است؛ اگر فقط دستور حفظ کرده باشید، با هر سازنده از صفر شروع می‌کنید. مثل مترجم: «آب» و «Water» یک مفهوم‌اند.
+**چرا Interoperability؟** سازمان‌ها معمولاً چند سازنده دارند: Cisco در هسته، Fortinet در لبه، شاید یک سازنده‌ی سوم در شعب. اگر «مفهوم» را بدانید، تغییر سازنده فقط تغییر Syntax است. اگر فقط دستور حفظ کرده باشید، با هر سازنده از صفر شروع می‌کنید. مثل مترجم: «آب» و «Water» یک مفهوم‌اند.
 
-**نگاشت‌های مهم:** SVI ↔ VLAN Interface؛ ACL ↔ Firewall Policy (با تفاوت Stateless/Stateful)؛ NAT ↔ Policy NAT/VIP؛ VRF ↔ VDOM (تقریبی).
+**سه سطح نگاشت**
+
+1. **مفهومی:** SVI ↔ VLAN Interface؛ ACL ↔ Policy؛ NAT ↔ Policy NAT/VIP؛ VRF ↔ VDOM (تقریبی).
+2. **رفتاری:** ACL بی‌حافظه است و باید برگشت را بنویسید؛ Policy فورتی‌گیت Stateful است. ترتیب NAT و Policy هم فرق دارد.
+3. **پیش‌فرض‌ها:** مثلاً Reference Bandwidth OSPF، Timerها، Admin Distance، Keepalive.
+
+**قاعده‌ی عملی:** هر نگاشت را با آزمون تأیید کنید (Lookup، Debug Flow، show ip route)، نه فقط با خواندن مستند.
 
 **جمع‌بندی اصلی درس:**
 
@@ -147,19 +153,30 @@ end
 #### مثال ساده — ACL به Policy
 
 ``` text
-Cisco: permit tcp 10.10.0.0 0.0.0.255 host 10.20.0.10 eq 443
-FGT  : srcaddr NET-USERS, dstaddr SRV-ERP, service HTTPS, accept
+Cisco:
+ip access-list extended USERS-OUT
+ permit tcp 10.10.0.0 0.0.0.255 host 10.20.0.10 eq 443
+ deny ip any any log
+
+FortiGate:
+ srcaddr NET-USERS, dstaddr SRV-ERP, service HTTPS, action accept, log
+ + final deny with log
 ```
 
-Wildcard 0.0.0.255 ⇒ /24؛ برگشت در Stateful خودکار.
+مراحل: ۱) Wildcard 0.0.0.255 یعنی /24 ۲) permit به Policy Accept ۳) deny پایانی با Log ۴) برگشت در FortiGate خودکار.
 
-#### مثال متوسط — پیش‌فرض‌ها
+#### مثال متوسط — پیش‌فرض OSPF
 
-Reference Bandwidth OSPF هر دو 100 Mbps؛ باید یکسان تنظیم شود.
+``` text
+Cost = Reference BW / Interface BW
+100 / 1000 = 0.1 -> rounded to 1
+```
 
-#### مثال سخت — ترتیب ارزیابی
+1G و 10G هر دو Cost=1 ⇒ باید `auto-cost reference-bandwidth` هر دو سر یکسان تنظیم شود.
 
-Policy فورتی‌گیت بعد از DNAT و قبل از SNAT؛ Debug Flow ترتیب را نشان می‌دهد.
+#### مثال سخت — ترتیب ارزیابی NAT/Policy
+
+مهندسی Policy ورودی VIP را با IP داخلی نوشت و Lookup مطابق نشد، چون در FortiGate Policy بعد از DNAT ارزیابی می‌شود و باید به VIP اشاره کند. با Debug Flow ترتیب را اثبات کنید.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -377,7 +394,7 @@ Cost = Reference BW / Interface BW
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا برگه‌ی تطبیق؟** کسی که Cisco بلد است و باید با FortiGate تست کند، با یک برگه‌ی «هدف ← دستور Cisco ← دستور FortiGate ← خروجی مورد انتظار» سرعت چند برابر می‌گیرد.
+**چرا برگه‌ی تطبیق؟** کسی که Cisco بلد است و باید روی FortiGate کار کند، با یک برگه‌ی «هدف ← دستور Cisco ← دستور FortiGate ← خروجی مورد انتظار» سرعتش چند برابر می‌شود. برگه را برای کارهای روزمره‌ی خودتان بسازید و هر ردیف را در Lab تأیید کنید.
 
 **جمع‌بندی اصلی درس:**
 
@@ -447,21 +464,29 @@ end
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### مثال ساده
+#### مثال ساده — جدول
 
 | هدف | Cisco | FortiGate |
 |---|---|---|
-| Route | `show ip route` | `get router info routing-table all` |
-| OSPF | `show ip ospf neighbor` | `get router info ospf neighbor` |
-| BGP | `show ip bgp summary` | `get router info bgp summary` |
+| نمایش Route | `show ip route` | `get router info routing-table all` |
+| همسایه OSPF | `show ip ospf neighbor` | `get router info ospf neighbor` |
+| همسایه BGP | `show ip bgp summary` | `get router info bgp summary` |
+| ARP | `show ip arp` | `get system arp` |
+| Session | `show conn` (ASA) | `diagnose sys session list` |
+| Debug بسته | `debug ip packet` | `diagnose debug flow` |
 
-#### مثال متوسط — Ping با منبع
+(دقت دستورها را از مستند همان نسخه تأیید کنید.)
 
-`execute ping-options source 10.10.0.1` سپس `execute ping x`.
+#### مثال متوسط — ping با منبع
 
-#### مثال سخت — ترجمه‌ی مسئله
+``` text
+execute ping-options source 10.10.0.1
+execute ping 10.20.0.10
+```
 
-«مسیر 10.30.0.0/24 را از BGP یاد بگیر»: Cisco `network/neighbor`؛ FortiGate `config router bgp` و Route-map در صورت لزوم.
+#### مثال سخت — ترجمه‌ی یک مسئله
+
+«مسیر 10.30.0.0/24 را از BGP یاد بگیر»: Cisco با `network` و `neighbor`؛ FortiGate با `config router bgp` و در صورت لزوم Route-map برای Policy. تفاوت: Debug در Cisco خطرناک است؛ در FortiGate Debug Flow با فیلتر و سقف.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -644,7 +669,12 @@ Cisco `debug ip packet` ممکن است دستگاه را از پا بینداز
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا پارامترهای OSPF/BGP؟** شکست Interop در همسایگی رخ می‌دهد: Area، Network Type، MTU، Hello/Dead، Authentication؛ و در BGP: ASN، update-source، Next-hop.
+**چرا پارامترهای OSPF/BGP بین دو سازنده؟** بیشتر شکست‌های Interop در همسایگی است. دو دستگاه باید روی پارامترها توافق کنند.
+
+**OSPF:** Area، Network Type، MTU، Hello/Dead، Authentication، Subnet/Mask.
+**BGP:** ASN، `update-source`، Next-hop، Route-map، TCP/179.
+
+وضعیت‌ها را بشناسید: ExStart ⇒ MTU/Router-ID تکراری؛ Init ⇒ Hello یک‌طرفه؛ BGP Idle ⇒ TCP برقرار نیست.
 
 **جمع‌بندی اصلی درس:**
 
@@ -753,17 +783,27 @@ MTU (Exstart)، Network Type (DR/BDR در یک سر)، Auth، Hello/Dead، Timer
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### مثال ساده — OSPF ExStart
+#### مثال ساده — ExStart
 
-MTU دو سر را مقایسه کنید.
+``` text
+Cisco  : show interface Gi0/0 | include MTU
+FGT    : get system interface physical
+```
 
-#### مثال متوسط — BGP Idle
+MTU دو سر برابر؛ یا موقت `ip ospf mtu-ignore`.
 
-TCP/179 و Local-in.
+#### مثال متوسط — BGP
+
+``` text
+show ip bgp summary
+get router info bgp summary
+```
+
+Idle ⇒ ping/TCP 179/Policy.
 
 #### مثال سخت — Next-hop
 
-مسیر یادگرفته ولی ترافیک نمی‌رود ⇒ `next-hop-self`.
+پیشوند یاد گرفته ولی ترافیک نمی‌رود: Next-hop قابل‌دسترس نیست ⇒ `next-hop-self` یا Route.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -972,7 +1012,7 @@ State: Idle (TCP/179؟)، Active (تلاش)، OpenSent/Confirm (پارامتر)�
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا روش مقایسه‌ی Debug؟** بین دو سازنده «کار نمی‌کند» یعنی یک تفاوت کوچک. Debug هم‌زمان دو سر و جدول مغایرت آن را پیدا می‌کند.
+**چرا روش مقایسه‌ی Debug؟** در IPsec بین دو سازنده «کار نمی‌کند» معمولاً یعنی یک تفاوت کوچک. روش سیستماتیک: Debug هم‌زمان دو سر، جدول مقایسه‌ی پارامتر (IKE، رمز، DH، Lifetime، Identity، Selector) و تفسیر پیام‌ها.
 
 **جمع‌بندی اصلی درس:**
 
@@ -1032,17 +1072,20 @@ State: Idle (TCP/179؟)، Active (تلاش)، OpenSent/Confirm (پارامتر)�
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### مثال ساده
+#### مثال ساده — پیام‌ها
 
-no proposal chosen ⇒ Proposal.
+no proposal chosen ⇒ Proposal؛ AUTH_FAILED ⇒ PSK/Identity؛ TS_UNACCEPTABLE ⇒ Selector.
 
-#### مثال متوسط
+#### مثال متوسط — Debug دو سر
 
-AUTH_FAILED ⇒ PSK/Identity.
+``` text
+FGT: diagnose debug application ike -1 ; diagnose debug enable
+CSR: debug crypto ikev2 ; debug crypto ikev2 error
+```
 
-#### مثال سخت — Lifetime
+#### مثال سخت — پس از ۸ ساعت می‌افتد
 
-Tunnel پس از ساعاتی می‌افتد؛ Lifetime متفاوت و Rekey Collision.
+Lifetime متفاوت (FGT 28800، CSR 86400) و Rekey Collision؛ یکسان‌سازی.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -1233,7 +1276,7 @@ diagnose vpn tunnel list
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا آزمون معماری ۶؟** نشان می‌دهد می‌توانید دو سازنده را کنار هم راه بیندازید و ثابت کنید.
+**چرا آزمون معماری ۶؟** نشان می‌دهد می‌توانید دو سازنده را کنار هم راه بیندازید و ثابت کنید: IPsec، OSPF، NAT، آزمون منفی و گزارش.
 
 **جمع‌بندی اصلی درس:**
 
@@ -1327,11 +1370,11 @@ IPsec برقرار + OSPF Full.
 
 #### مثال متوسط
 
-Network Type ناهمخوان ⇒ P2P.
+OSPF روی Tunnel با Network Type متفاوت (P2P در Cisco و Broadcast در FGT): همسایگی بالا می‌آید ولی DR و ناپایداری؛ رفع: P2P دو سر.
 
 #### مثال سخت
 
-MSS Clamp. Rubric: نگاشت ۲۵، IPsec ۲۵، Routing ۲۵، Evidence ۱۵، گزارش ۱۰.
+HTTPS کند ⇒ MSS Clamp 1360. Rubric: نگاشت ۲۵، IPsec ۲۵، Routing ۲۵، Evidence ۱۵، گزارش ۱۰.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -1653,7 +1696,9 @@ Rekey Flap: Lifetime را یکسان کنید.
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا مدیریت مرکزی؟** با ۳ فایروال دستی ممکن است؛ با ۳۰ یک تغییر ساده ۳۰ بار ورود و ۳۰ فرصت خطا. FortiManager پیکربندی و FortiAnalyzer Log را مرکزی می‌کند (هر دو Needs-License). جایگزین بدون لایسنس: Git + rsyslog.
+**چرا مدیریت مرکزی؟** با ۳ فایروال دستی ممکن است؛ با ۳۰ یک تغییر ساده ۳۰ ورود و ۳۰ فرصت خطا است. FortiManager پیکربندی (Policy Package) و FortiAnalyzer Log را مرکزی می‌کند. هر دو Needs-License؛ جایگزین بدون لایسنس: Git + rsyslog.
+
+**ریسک:** نقطه‌ی مرکزی هدف جذاب مهاجم است؛ Hardening، شبکه‌ی Mgmt جدا، MFA و Backup خود FMG الزامی.
 
 **جمع‌بندی اصلی درس:**
 
@@ -1720,17 +1765,17 @@ end
 
 ### ۵) GUI و CLI
 
-#### مثال ساده
+#### مثال ساده — تصمیم
 
-≤5 دستگاه: Git+rsyslog؛ بیشتر: ارزیابی FMG/FAZ.
+≤5 دستگاه: Git+rsyslog؛ 6 تا 20: ارزیابی؛ بیش از 20: FMG/FAZ.
 
 #### مثال متوسط — Policy Package
 
-یک Package برای ۱۰ شعبه.
+یک Package «Branch-Standard» روی ۱۰ شعبه؛ Object خاص هر شعبه با Meta Variable.
 
 #### مثال سخت — ADOM
 
-جداسازی مشتریان/بخش‌ها.
+جداسازی مشتریان: ادمین A به Log B دسترسی ندارد.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -1891,7 +1936,7 @@ ADOM = Administrative Domain، یعنی «دامنه‌ی مدیریتی». شر
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا نقش‌ها و ظرفیت؟** قبل از طراحی باید ظرفیت لازم را بدانید.
+**چرا ظرفیت و لایسنس؟** قبل از طراحی باید بدانید چه ظرفیتی لازم است. FAZ بر پایه‌ی حجم Log روزانه (GB/Day) لایسنس می‌شود؛ بیشتر از سقف رد یا کنار گذاشته می‌شود.
 
 **جمع‌بندی اصلی درس:**
 
@@ -1957,16 +2002,16 @@ FMG/FAZ هدف ارزشمند (دسترسی به همه‌ی فایروال‌ه
 #### مثال ساده
 
 ``` text
-2 GB/day x 12 x 90 = 2160 GB
+2 GB/day x 12 devices x 90 days = 2160 GB ~ 2.1 TB (+30% = 2.8 TB)
 ```
 
-#### مثال متوسط
+#### مثال متوسط — کاهش Log
 
-سقف GB/Day و کاهش Log.
+Policy اینترنت `utm` و Policy DMZ `all`؛ حجم حدود ۴۰٪ کم شد و شواهد کلیدی ماند.
 
 #### مثال سخت
 
-Revision و Script انبوه با آزمون روی یک دستگاه.
+Revision و Script انبوه: ابتدا یک دستگاه.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -2171,7 +2216,7 @@ FMG هر تغییر را Revision می‌کند؛ می‌توانید برگرد
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا Syslog مرکزی؟** اگر بودجه‌ی FAZ نیست، rsyslog پایه‌ی SIEM است.
+**چرا Syslog مرکزی؟** اگر بودجه‌ی FAZ نیست، سرور rsyslog همان کار جمع‌آوری را می‌کند و پایه‌ی SIEM می‌شود. گام‌ها: سرور، فایروال سرور، FortiGate با `mode reliable`، تأیید دریافت، Rotation.
 
 **جمع‌بندی اصلی درس:**
 
@@ -2252,16 +2297,20 @@ config log syslogd setting
  set status enable
  set server 10.50.0.20
  set mode reliable
+ set source-ip 10.50.0.1
 end
 ```
 
-#### مثال متوسط
+#### مثال متوسط — تأیید
 
-`tcpdump -ni eth0 tcp port 514`.
+``` text
+tcpdump -ni eth0 tcp port 514 -c 5
+tail -f /var/log/fgt/10.50.0.1/*.log
+```
 
-#### مثال سخت
+#### مثال سخت — Log نمی‌رسد
 
-Source IP/Route/فایروال سرور.
+Route، Policy/Local-out، `ss -ltn`، فایروال سرور، Source IP، TLS.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -2485,7 +2534,7 @@ end
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا Git برای Config؟** ردپای تغییرات رایگان؛ ولی Secret نباید به ریپو برود.
+**چرا Git برای Config؟** تاریخچه‌ی تغییرات رایگان؛ ولی Secret به ریپو نرود (Sanitize)، و Restore آزمایشی ماهانه.
 
 **جمع‌بندی اصلی درس:**
 
@@ -2543,17 +2592,24 @@ Drift = تفاوت بین Config مرجع (Git) و دستگاه. Diff خودکا
 
 ### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
 
-#### مثال ساده — Sanitize
+#### مثال ساده
 
-`sed -E 's/(psk|password|secret) .*/\1 REDACTED/'`.
+``` text
+sed -E 's/(set (psk|password|secret) ).*/\1REDACTED/' cfg.conf > cfg.clean
+git add cfg.clean && git commit -m weekly
+```
 
 #### مثال متوسط — Diff
 
-`git diff HEAD~1`.
+``` text
+git diff HEAD~1 -- cfg.clean | head -40
+```
+
+تغییر بدون CHG ⇒ بررسی.
 
 #### مثال سخت
 
-Secret لو رفت: Rotate نه فقط حذف.
+Secret لو رفت: Rotate (چرخش) نه فقط حذف از Git.
 
 #### مثال‌های اصلی درس (مرور)
 
@@ -2755,7 +2811,7 @@ Cron روزانه: Backup با SCP، Sanitize، Commit، و اگر Diff غیرخ
 
 ### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
 
-**چرا معماری عملیات؟** RBAC، Out-of-band، Audit: هر کس فقط کار لازم.
+**چرا RBAC و Out-of-band؟** هر کس فقط کار لازم؛ و مدیریت هنگام خرابی هم باید ممکن باشد (شبکه‌ی OOB). Audit: چه کسی، کی، چه چیزی.
 
 **جمع‌بندی اصلی درس:**
 
@@ -2807,15 +2863,23 @@ Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ �
 
 #### مثال ساده
 
-NOC فقط خواندن.
+NOC فقط خواندن؛ Network Eng تغییر؛ Security Log.
 
 #### مثال متوسط
 
-`accprofile`.
+``` text
+config system accprofile
+ edit "noc-ro"
+  set netgrp read
+  set fwgrp read
+  set loggrp read
+ next
+end
+```
 
 #### مثال سخت
 
-OOB با Console Server.
+مدیریت Inband قطع شد؛ OOB با Console Server/LTE نجات می‌دهد.
 
 #### مثال‌های اصلی درس (مرور)
 
