@@ -879,150 +879,143 @@ Monitor port2 (داخلی) در Primary Down (سوئیچ داخلی خراب). F
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده»؛ HA/VDOM وابسته به مدل/لایسنس (Needs-License).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. علائم و علل Out-of-sync، Flap و Split-brain را بشناسد.
-2. با دستورهای HA (status، checksum، history) علت را بیابد.
-3. Split-brain را رفع و پیشگیری کند.
-4. Upgrade Cluster بدون قطع طولانی را برنامه‌ریزی کند.
-5. Rollback را آزمون کند.
+1. علائم و علل Out-of-sync، Flapping، Split-brain و Join‌نشدن را بشناسید.
+2. با `get system ha status`، `checksum`، `history` علت را پیدا کنید.
+3. Split-brain را رفع و پیشگیری کنید.
+4. Upgrade Cluster را با حداقل قطعی (Uninterruptible Upgrade) برنامه‌ریزی و Rollback را آزمون کنید.
+5. دسترسی به عضو Secondary را بدانید (`execute ha manage`).
+6. Runbook عیب‌یابی HA بنویسید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا عیب‌یابی HA را از قبل بدانیم؟** HA وقتی خراب می‌شود معمولاً در بدترین زمان است (شب، حین حمله). باید ابزارها را از قبل بشناسید. چهار علامت رایج: Out-of-sync، Flap، Split-brain و ارتقای ناموفق.
+HA وقتی خراب شود معمولاً در بدترین زمان است: ساعت ۳ شب یا وسط حمله. دو دستگاه هر دو خود را «اصلی» می‌دانند (Split-brain)، Primary مدام عوض می‌شود، یا Config یکی نیست. اگر ابزار و ترتیب را از قبل ندانید، با تغییرات تصادفی وضع را بدتر می‌کنید. این درس Runbook آماده می‌دهد.
 
-**ابزارها**
-
-- `get system ha status`: وضعیت و نقش.
-- `diagnose sys ha checksum cluster`: مقایسه‌ی Config دو عضو (کدام بخش فرق دارد).
-- `diagnose sys ha history read`: تاریخچه‌ی رویدادها (چرا Failover شد).
-- `execute ha synchronize start`: همگام‌سازی دستی.
-
-**Split-brain:** هر دو دستگاه خود را Primary می‌دانند (Heartbeat قطع). IP/MAC تکراری و قطعی. پیشگیری: ≥۲ Heartbeat مستقل.
-
-**جمع‌بندی اصلی درس:**
-
-HA وقتی خراب شود بد خراب می‌شود: دو دستگاه فکر می‌کنند هر دو اصلی‌اند، یا مدام Primary عوض می‌شود، یا Config یکی نیست. چون HA برای افزایش پایداری است، خرابی آن بدترین نوع خرابی است: «سیستم افزونگی دارد ولی دچار قطعی شد». روش منظم لازم است.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) علائم و علل
+### علائم و علل
 
 | علامت | علت | شاهد |
 |---|---|---|
-| Out-of-sync | تغییر مستقیم Secondary، HB ضعیف | checksum متفاوت |
-| Flap پیاپی | override، Monitor ناپایدار، HB | `diagnose sys ha history read` |
-| Split-brain | قطع همه‌ی HB | دو Primary |
+| Out-of-sync | تغییر مستقیم Secondary، Heartbeat ضعیف | checksum متفاوت |
+| Flapping | override، Monitor ناپایدار، HB | `history read` |
+| Split-brain | قطع همه‌ی Heartbeatها | دو Primary |
 | عضو Join نمی‌شود | نسخه/Group/Password | status |
+| لایسنس/UTM متفاوت | FortiGuard یک عضو | System > FortiGuard |
 
-#### ۲) ابزارها
+### ابزارها
 
 ``` text
 get system ha status
 diagnose sys ha status
-diagnose sys ha history read
 diagnose sys ha checksum cluster
 diagnose sys ha checksum show
-diagnose sys ha checksum recalculate
+diagnose sys ha history read
+execute ha synchronize start
+execute ha manage 1 admin
 ```
 
-#### ۳) Split-brain
+`ha manage` ورود به Secondary از Primary (CLI).
 
-تشخیص: روی هر دو `get system ha status` Primary. اثر: IP/MAC یکسان در شبکه، ARP ناپایدار. رفع: بازگرداندن HB؛ یک عضو را Reboot؛ Primary را تعیین؛ Re-sync. پیشگیری: دو HB مستقل، Monitor، Alert روی تغییر Primary.
+### Split-brain
 
-#### ۴) Upgrade Cluster
+وقتی هیچ Heartbeat بین دو عضو نمی‌رسد ولی هر دو زنده‌اند، هر دو Primary می‌شوند ⇒ MAC مجازی تکراری ⇒ قطعی و آشفتگی ARP.
 
-1. Upgrade Path Tool و Release Notes. 2. Backup هر دو. 3. Upgrade Secondary و Boot. 4. Failover به Secondary (جدید). 5. Upgrade قبلی Primary. 6. checksum. 7. آزمون Sessionها.
+پیشگیری:
 
-در 7.0 گزینه‌ی Upgrade بدون وقفه (uninterruptible) وجود دارد (`Unverified`؛ شرایط نسخه‌ها را از مستند بخوانید).
+1. حداقل دو Heartbeat مستقل (کابل مستقیم، پورت‌های متفاوت).
+2. `ha-mgmt` برای دسترسی جدا.
+3. Monitor Interface برای Failover منطقی.
+4. در صورت نیاز لینک Heartbeat از طریق سوئیچ ایزوله با VLAN اختصاصی.
 
-#### ۵) Rollback
+رفع:
 
-اگر پس از Upgrade مشکل: Boot از Partition قبلی هر دو؛ یا Restore Config+Firmware. زمان تصمیم Rollback را از پیش تعیین کنید.
+1. تشخیص: هر دو عضو `HA state: primary`.
+2. بازگرداندن Heartbeat.
+3. Primary درست را حفظ و Secondary را Restart/Rejoin کنید؛ اگر Config متفاوت شده، بررسی کنید کدام Config درست است.
+4. Backup و ثبت.
 
-### ۴) طراحی و تصمیم‌گیری
+### Upgrade Cluster
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Upgrade | Secondary اول |
-| Rollback | Partition قبلی |
+``` text
+# on primary
+execute restore image tftp <file> <server>
+# cluster upgrades secondary first, then fails over, then upgrades old primary
+```
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+مراحل رسمی (Uninterruptible Upgrade، مستند FortiOS):
+
+1. Backup همه‌ی Config.
+2. بررسی مسیر Upgrade (Upgrade Path Tool).
+3. آپلود Image روی Primary.
+4. Secondary ارتقا و Reboot؛ Cluster Sync.
+5. Failover به Secondary (جدید)؛ ارتقای Primary قدیمی.
+6. بازگشت (اختیاری).
+7. آزمون کامل.
+
+Rollback: Image قبلی (Backup Partition) یا Restore Config.
+
+### Runbook
+
+``` text
+1 get system ha status           (who is primary?)
+2 diagnose sys ha history read   (why did it change?)
+3 diagnose sys ha checksum cluster (config equal?)
+4 check heartbeat links physical state
+5 check monitor interfaces
+6 sync / restart secondary if needed
+7 record evidence + RCA
+```
+
+### مثال‌های حل‌شده
 
 #### مثال ساده — Out-of-sync
 
-`checksum cluster` در دو عضو مقایسه ⇒ بخش `firewall.policy` متفاوت. رفع: `execute ha synchronize start`.
+Checksum متفاوت: `diagnose sys ha checksum show` بخش `firewall.policy` متفاوت است. کسی روی B تغییر داده. رفع: `execute ha synchronize start` از Primary و جلوگیری از ورود مستقیم به B.
 
-#### مثال متوسط — Flap
+#### مثال متوسط — Flapping
 
-``` text
-diagnose sys ha history read
-```
+`history read` ⇒ هر ۲ دقیقه `monitor interface port2 failed`. لینک port2 ناپایدار (کابل). رفع کابل؛ اگر Monitor به SFP ناپایدار وابسته است، Hold-down.
 
-Failoverهای پیاپی: Heartbeat ناپایدار، Monitor Interface فلپ یا CPU بالا. بررسی لینک‌ها و Timerها.
+#### مثال متوسط — Join نشد
+
+B به Cluster نمی‌پیوندد. `get system ha status` ⇒ تنها یک عضو. بررسی: group-name متفاوت، یا Password، یا `group-id`. رفع و آزمون.
 
 #### مثال سخت — Split-brain
 
-علامت: دو Primary و IP تکراری.
+هر دو Heartbeat روی یک سوئیچ بودند و سوئیچ ریبوت شد ⇒ هر دو Primary و IP تکراری. رفع: کابل Heartbeat مستقیم؛ طراحی اصلاح. RCA: SPOF مشترک.
 
-1. یک دستگاه را از شبکه‌ی داده جدا کنید.
-2. لینک Heartbeat را برقرار کنید.
-3. عضو را Secondary برگردانید.
-4. `in-sync` را تأیید کنید.
+#### مثال سخت — Upgrade ناموفق
 
-#### مثال سخت — ارتقای Cluster
+Secondary پس از ارتقا Boot Loop. Rollback: Boot به Partition قبلی (`execute set-next-reboot primary/secondary`)، Restore Config، بررسی Upgrade Path (پرش نسخه‌ی غیرمجاز). درس: Lab/Staging قبل از Production، Console دسترسی.
 
-روش مستند Uninterruptible: Secondary ابتدا؛ سپس Failover؛ سپس عضو قدیمی.
+### Lab هدایت‌شده (اجرا نشده)
 
-``` text
-Pre : get system ha status ; backup
-Do  : upgrade secondary -> failover -> upgrade former primary
-Post: get system ha status (in-sync, same firmware)
-```
+1. Out-of-sync عمدی و Sync.
+2. Flapping با کابل ناپایدار.
+3. Upgrade با Rollback.
 
-#### مثال‌های اصلی درس (مرور)
+### عیب‌یابی سریع
 
-**ساده (حل‌شده):** checksum متفاوت: Secondary Config دستی خورده؛ `ha checksum recalculate`/Sync و Verify.
-
-**متوسط (Flap):** Primary هر ۲ دقیقه عوض می‌شود. شاهد: `ha history read` علت «link failure port2». مراحل: بررسی کابل/SFP و Monitor؛ تعویض؛ تثبیت. پاسخ: Monitor Interface ناپایدار.
-
-**سخت (Split-brain و Upgrade):** هر دو Primary پس از قطع HB. مراحل رفع: ۱) وصل HB. ۲) Reboot Secondary. ۳) Re-sync. ۴) Alert. سپس Upgrade برنامه‌ریزی‌شده: Secondary اول، Failover، Primary قبلی؛ معیار: قطع < 10 s؛ Rollback آزمون شده در Lab.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-get system ha status
-diagnose sys ha history read
-diagnose sys ha checksum cluster
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Cluster سالم.
-- checksum یکسان.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| Out-of-sync | checksum | Sync |
-| Flap | history | کابل/Monitor |
-| Split-brain | دو Primary | HB |
+| دو Primary | Heartbeat | کابل/طراحی |
+| checksum | تغییر Secondary | sync |
+| Flap | Monitor/override | تنظیم |
+| Boot Loop | Upgrade | Rollback |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Backup پیش از Upgrade.
+Image از منبع رسمی و بررسی Hash؛ Backup رمزگذاری‌شده؛ Console ایمن؛ ثبت Change.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- روش منظم.
-- Split-brain.
-- Upgrade Secondary اول.
-- Rollback.
+ابزارهای HA (status، checksum، history)؛ Split-brain با پیشگیری و رفع؛ Upgrade بدون قطع طولانی و Rollback؛ Runbook.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Split-brain چیست؟ *(پاسخ: 22-4-ت1)*
 
@@ -1038,7 +1031,7 @@ diagnose sys ha checksum cluster
 
 **Q1.** Quick quiz (English): Which command shows the reason for a recent HA failover? *(پاسخ: 22-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1046,95 +1039,15 @@ diagnose sys ha checksum cluster
 
 - *Upgrade the secondary unit first.* ← ابتدا Secondary را ارتقا دهید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** عیب‌یابی HA (اجرا نشده). **Evidence:** `03-ops/ha-troubleshoot.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: HA troubleshooting; Upgrade
 
 <a id="l-22-5"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: عیب‌یابی
-
-``` text
-diagnose sys ha checksum cluster
-diagnose sys ha checksum show
-execute ha synchronize start
-```
-
-Out-of-sync: Checksum متفاوت. Flap: Heartbeat ناپایدار/Monitor. ارتقای Cluster: Uninterruptible Upgrade طبق مستند.
-
-**پرسش‌های مصاحبه**
-1. *Split-brain رفع؟* قطع یکی و بازگردانی.
-2. *Checksum؟* مقایسه Config.
-3. *ارتقا؟* ابتدا Secondary.
-
-### تکمیل عمیق: عیب‌یابی HA و ارتقا — Checksum، Flap و Split-brain
-
-#### چرا؟
-
-HA وقتی خراب می‌شود معمولاً در بدترین لحظه است. باید ابزار تشخیص را از قبل بشناسید.
-
-#### ابزارها
-
-``` text
-get system ha status
-diagnose sys ha checksum cluster
-diagnose sys ha checksum show
-diagnose sys ha history read
-execute ha synchronize start
-```
-
-#### مثال ساده — Out-of-sync
-
-`checksum cluster` در دو عضو را مقایسه کنید؛ اگر بخشی (مثلاً `firewall.policy`) متفاوت بود، همان بخش مشکل دارد. رفع: `execute ha synchronize start`.
-
-#### مثال متوسط — Flap
-
-Failover رفت و برگشتی هر چند دقیقه: علل: Heartbeat ناپایدار، Monitor Interface فلپ، CPU بالا. بررسی History و Log رویداد؛ لینک‌ها و Timerها (`hb-interval`, `hb-lost-threshold`).
-
-#### مثال سخت — Split-brain
-
-علامت: دو دستگاه هر دو Primary، IP تکراری. رفع در Lab/عملیات: ۱) یک دستگاه را از شبکه‌ی داده جدا کنید ۲) لینک HB را برقرار ۳) بازگرداندن عضو به‌عنوان Secondary ۴) تأیید Sync.
-
-#### ارتقا
-
-روش مستند: Uninterruptible Upgrade؛ ابتدا Secondary، سپس Failover، سپس عضو قدیمی. Release Notes و Upgrade Path را بخوانید.
-
-``` text
-Pre : get system ha status ; backup config
-Do  : upgrade secondary -> failover -> upgrade former primary
-Post: get system ha status (in-sync, same firmware)
-```
-
-#### Lab
-
-Out-of-sync را عمداً ایجاد (تغییر محلی) و با checksum تشخیص دهید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Checksum متفاوت | تغییر محلی | Sync |
-| Flap | HB | لینک |
-| ارتقا ناموفق | مسیر | Upgrade Path |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Checksum چه می‌گوید؟** تفاوت Config.
-**۲. چرا ابتدا Secondary؟** حداقل قطع.
-**۳. Flap؟** Failover مکرر.
-
-#### English Corner
-
-- *Compare cluster checksums to locate configuration drift.*
-- Q: In what order do you upgrade an HA pair?
 
 ## درس 22-5 — آزمون عملی HA: طراحی، Failover، Split-brain کنترل‌شده، Upgrade و RCA — کلید پاسخ و Rubric
 
@@ -1142,162 +1055,156 @@ Out-of-sync را عمداً ایجاد (تغییر محلی) و با checksum ت
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Cluster Active-Passive FGCP را با پارامترهای درست طراحی و Verify کند.
-2. Failover و Failback را اندازه‌گیری و Session Pickup را آزمون کند.
-3. Split-brain را در Lab کنترل‌شده تولید، تشخیص و رفع کند.
-4. Upgrade Cluster و Rollback را برنامه‌ریزی کند.
-5. RCA و گزارش تحویل دهد.
+1. Cluster Active-Passive FGCP را با پارامتر درست طراحی و Verify کنید.
+2. Failover و Failback را اندازه‌گیری و Session Pickup را آزمون کنید.
+3. Split-brain را در Lab کنترل‌شده تولید، تشخیص و رفع کنید.
+4. Upgrade Cluster و Rollback را برنامه‌ریزی کنید.
+5. RCA و Evidence Index بنویسید.
+6. Rubric را اجرا و صداقت را ثبت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا آزمون عملی HA؟** نشان می‌دهد HA را ساخته، آزمایش و مستند کرده‌اید. شامل Failover، Failback، Split-brain کنترل‌شده (فقط Lab) و گزارش. چون این Lab به دو FortiGate VM لایسنس‌دار نیاز دارد، در محیط ما «اجرا نشده» است و باید صادقانه برچسب بخورد؛ طراحی و طرح آزمون را می‌توان با «تأیید مستندی» ارزیابی کرد.
+Gate HA همه‌ی مهارت‌های فصل را یکجا می‌سنجد: طراحی، ساخت، آزمون Failover، Split-brain و Upgrade. در دنیای واقعی مشتری می‌گوید «ما دو فایروال داریم ولی دیشب همه چیز قطع شد». شما باید بتوانید بگویید چرا و چگونه جلوگیری کنیم.
 
-**جمع‌بندی اصلی درس:**
+### صورت مسئله
 
-HA مثل دو راننده‌ی هم‌ماشین است: یکی رانندگی می‌کند و دیگری آماده. اگر ارتباط بین دو راننده قطع شود (Heartbeat) و هر دو فکر کنند راننده‌اند، تصادف رخ می‌دهد: Split-brain. این Gate همین ریسک‌ها را آزمون می‌کند. HA به لایسنس/مدل وابسته است؛ در Lab VM لایسنس لازم است (Needs-License).
+سازمان دو FortiGate هم‌مدل دارد. نیازمندی‌ها:
 
-### ۳) توضیح عمیق فنی
+1. Active-Passive با Failover زیر ۱۰ ثانیه.
+2. Session Pickup برای TCP.
+3. Management جدا برای هر عضو.
+4. آزمون Split-brain کنترل‌شده.
+5. برنامه‌ی Upgrade بدون قطع طولانی.
 
-#### ۱) صورت مسئله
+عیب‌های تزریق‌شده:
 
-دو FortiGate (FGT-A، FGT-B) هم‌مدل و هم‌نسخه 7.0.3. نیاز: Active-Passive؛ Failover زیر ۵ ثانیه؛ Session Pickup برای TCP؛ Heartbeat روی دو لینک جدا؛ Monitor روی WAN و LAN؛ Upgrade بدون قطع طولانی.
+1. Heartbeat فقط یک لینک و روی پورت مشترک با ترافیک.
+2. `override enable` با Priority بالا روی A، باعث Failback ناخواسته.
+3. B Config دستی دارد (Out-of-sync).
 
-#### ۲) طراحی
+### طراحی مرجع
 
 | پارامتر | مقدار |
 |---|---|
-| Mode | a-p |
-| Group name / password | FGT-HA / از Vault |
-| hbdev | port3 (50)، port4 (100) |
-| Priority | A=200، B=100 |
-| override | disable (پیش‌فرض ایمن) |
-| session-pickup | enable |
-| monitor | port1 port2 |
-
-``` text
-config system ha
- set group-name "FGT-HA"
- set mode a-p
- set password <FROM-VAULT>
- set hbdev "port3" 50 "port4" 100
- set priority 200
- set session-pickup enable
- set monitor "port1" "port2"
- set override disable
-end
-```
-
-#### ۳) Verification
-
-``` text
-get system ha status
-diagnose sys ha status
-diagnose sys ha checksum cluster
-execute ha manage 1 admin
-```
-
-انتظار: دو عضو، Primary=A، checksum یکسان (in-sync).
-
-#### ۴) آزمون‌ها
-
-1. ping -t از LAN به اینترنت؛ Reboot Primary؛ شمارش بسته‌های گمشده؛ Failover.
-2. Session TCP (SSH) باز؛ Failover؛ ماندگاری Session با session-pickup.
-3. قطع یک لینک HB: Cluster باید هنوز یکپارچه (HB دوم).
-4. Split-brain کنترل‌شده: قطع هر دو HB؛ ثبت دو Primary.
-5. بازیابی: وصل HB؛ تعیین Primary؛ بررسی out-of-sync و Re-sync.
-
-#### ۵) Upgrade Cluster
-
-Path Tool؛ Backup هر دو؛ Upgrade Secondary؛ Failover؛ Upgrade Primary قبلی؛ تأیید checksum؛ Rollback: Partition قبلی.
-
-#### ۶) Rubric
-
-طراحی ۱۵، Verify ۱۵، Failover/Session ۲۵، Split-brain ۲۰، Upgrade/Rollback ۱۵، RCA ۱۰. قبولی ۷۵.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Heartbeat | دو لینک مستقل |
+| mode | a-p |
+| hbdev | port3 (100)، port4 (50) مستقیم |
+| priority | A=200، B=100 |
 | override | disable |
-| Session pickup | enable برای TCP مهم |
+| monitor | port1، port2 |
+| session-pickup | enable (+connectionless) |
+| ha-mgmt | port8 |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### کلید پاسخ — سه عیب
 
-#### مثال ساده — شواهد
+**عیب ۱ (Heartbeat مشترک):**
 
-| بخش | شاهد |
-|---|---|
-| ساخت | `get system ha status` (in-sync) |
-| Failover | ping با عدد گم‌شده |
-| Failback | زمان و روش |
-| Split-brain | History و رفع |
+1. Evidence: `history read` ⇒ `heartbeat lost` در ساعات اوج؛ Flapping.
+2. علت: hbdev روی لینک شلوغ و تکی.
+3. رفع: دو لینک اختصاصی مستقیم.
+4. تأیید: بدون Flapping در ۲۴ ساعت.
 
-#### مثال متوسط — نمره
+**عیب ۲ (override):**
+
+1. Evidence: پس از Reboot A، A فوراً Primary؛ Session قطع.
+2. علت: `override enable`.
+3. رفع: `override disable` + Failback دستی در پنجره.
+4. تأیید: Reboot A ⇒ B Primary می‌ماند.
+
+**عیب ۳ (Out-of-sync):**
+
+1. Evidence: `checksum cluster` متفاوت (policy).
+2. علت: تغییر مستقیم روی B.
+3. رفع: `execute ha synchronize start`؛ دسترسی ادمین B محدود.
+4. تأیید: checksum برابر.
+
+### آزمون Split-brain کنترل‌شده
 
 ``` text
-Build 20 | Failover 25 | Failback 15 | Split-brain 20 | Report 20
-Example: 20 + 22 + 15 + 10 + 18 = 85
+1 backup both configs
+2 disconnect all heartbeat links (lab only, maintenance window)
+3 observe: both primary? (get system ha status on both via console/ha-mgmt)
+4 reconnect heartbeat
+5 observe re-election, check which config wins
+6 verify checksum, session, traffic
 ```
+
+نتیجه: Cluster پس از اتصال دوباره بر اساس Election (monitored interfaces ⇒ uptime ⇒ priority ⇒ serial) یک Primary انتخاب می‌کند. ثبت: چه Sessionهایی قطع شد.
+
+### Upgrade و Rollback
+
+1. Backup + Upgrade Path.
+2. Secondary ارتقا؛ Failover؛ Primary ارتقا.
+3. آزمون: Ping، Session، Policy، UTM.
+4. Rollback آزمایشی (Boot Partition قبلی) در Lab.
+
+### Rubric (۱۰۰)
+
+| معیار | امتیاز |
+|---|---|
+| طراحی/پارامتر | 15 |
+| ساخت و Verify | 15 |
+| Failover و Session Pickup با اندازه‌گیری | 20 |
+| سه عیب با Evidence | 25 |
+| Split-brain و Upgrade | 15 |
+| RCA/صداقت | 10 |
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Evidence Index
+
+| مورد | فایل | دستور |
+|---|---|---|
+| وضعیت | ev1_ha.txt | `get system ha status` |
+| Sync | ev2_cs.txt | `checksum cluster` |
+| تاریخچه | ev3_hist.txt | `history read` |
+
+#### مثال متوسط — RCA
+
+``` text
+Impact  : outage 12 s + session loss at 02:10
+Cause   : override enabled, A returned and took over
+Fix     : override disable, planned failback
+Prevent : HA change checklist; test reboot in window
+```
+
+#### مثال متوسط — اندازه‌گیری
+
+Reboot Primary: ۴ ping قطع (۴ ثانیه) و SSH باقی ماند ⇒ زیر هدف ۱۰ ثانیه.
+
+#### مثال سخت — Split-brain ناخواسته
+
+در Production Heartbeat قطع شد. هر دو Primary؛ ARP آشفته. اقدام: ۱) Console به B ۲) Shutdown پورت‌های داده‌ی B ۳) اصلاح Heartbeat ۴) Rejoin ۵) RCA. درس: دو Heartbeat مستقل.
 
 #### مثال سخت — صداقت
 
-بدون دو VM لایسنس‌دار، «اجرا» نمره ندارد ولی طراحی و طرح آزمون قابل ارزیابی است. هرگز خروجی ساختگی ننویسید.
+Lab اجرا نشده؛ زمان‌ها مدل‌اند؛ گزارش باید «Unverified» بنویسد.
 
-#### مثال‌های اصلی درس (مرور)
+### Lab هدایت‌شده (اجرا نشده)
 
-**ساده (حل‌شده):** `get system ha status` نشان می‌دهد دو عضو، Primary=FGT-A. checksum یکسان ⇒ هماهنگ.
+1. Cluster، سه عیب را رفع کنید.
+2. Split-brain کنترل‌شده.
+3. Upgrade با Rollback.
 
-**متوسط (Failover):** ping -t با Interval 200 ms؛ Reboot Primary؛ ۱۲ بسته‌ی گمشده ⇒ ۲٫۴ ثانیه قطع؛ کمتر از ۵ ثانیه؛ پذیرفته. Session SSH با session-pickup باقی ماند.
+### عیب‌یابی سریع
 
-**سخت (Split-brain):** دو لینک HB هم‌زمان قطع شد؛ هر دو خود را Primary دیدند و IP/MAC یکسان روی شبکه آمد؛ ARP ناپایدار. اثبات: `get system ha status` در هر دو Primary. رفع: بازگرداندن HB؛ تعیین Primary با Priority و Reboot Secondary؛ پیشگیری: دو لینک HB مستقل، Monitor Interface و Alert. درس: Heartbeat تنها نقطه‌ی هماهنگی است.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. System → HA: Mode، Group name، Password، Heartbeat Interfaces، Priority.
-2. Monitor Interfaces را انتخاب کنید.
-3. System → Firmware برای Upgrade.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-get system ha status
-diagnose sys ha status
-diagnose sys ha checksum cluster
-execute ha manage 1 admin
-```
-
-### ۸) Verification (اثبات صحت)
-
-- دو عضو و Primary درست.
-- checksum یکسان.
-- Failover < 5 s.
-- Session پایدار.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| Out-of-sync | checksum | ha sync/ریبوت Secondary |
-| Split-brain | دو Primary | HB |
-| Failover طولانی | Monitor/Heartbeat | Interface |
+| Flapping | Heartbeat | اختصاصی |
+| Failback ناخواسته | override | disable |
+| checksum | Config | sync |
+| دو Primary | HB | کابل |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- رمز HA در Vault.
-- HB را از شبکه‌ی کاربر جدا کنید.
+G-HA: طراحی، ساخت، Failover، Session Pickup، Split-brain، Upgrade/Rollback، سه عیب، RCA و Evidence با صداقت.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- HA=Heartbeat+Priority+Monitor.
-- Split-brain خطرناک.
-- Upgrade ثانویه اول.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Heartbeat چیست؟ *(پاسخ: 22-5-ت1)*
 
@@ -1313,7 +1220,7 @@ execute ha manage 1 admin
 
 **Q1.** Quick quiz (English): What causes a split-brain in an HA cluster? *(پاسخ: 22-5-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1322,83 +1229,14 @@ execute ha manage 1 admin
 
 - *Use two independent heartbeat links.* ← از دو لینک Heartbeat مستقل استفاده کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** آزمون HA (اجرا نشده؛ Needs-License). **Evidence:** `03-ops/g-ha.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: HA (FGCP)
 - FortiOS 7.0 HA guide
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Rubric HA
-
-ساخت ۲۰، Failover ۲۵، Failback ۱۵، Split-brain کنترل‌شده ۲۰، گزارش ۲۰.
-
-**پرسش‌های مصاحبه**
-1. *Split-brain آزمون؟* قطع Heartbeat در Lab.
-2. *Evidence؟* `get system ha status` قبل/بعد.
-3. *Needs-License؟* HA روی VM نیازمند لایسنس معتبر برای هر عضو است؛ در Lab بدون لایسنس اجرا نشده.
-
-### تکمیل عمیق: آزمون عملی HA — Rubric و شواهد
-
-#### چرا؟
-
-این آزمون ثابت می‌کند که HA را ساخته، آزمایش و درباره‌ی آن مستند کرده‌اید.
-
-#### صورت مسئله
-
-دو FortiGate VM: HA A-P، Failover، Failback، Split-brain کنترل‌شده (Lab)، گزارش.
-
-#### شواهد لازم
-
-| بخش | شاهد |
-|---|---|
-| ساخت | `get system ha status` (in-sync) |
-| Failover | ping با عدد گم‌شده |
-| Failback | زمان و روش |
-| Split-brain | History + رفع |
-| گزارش | محدودیت‌ها |
-
-#### Rubric
-
-``` text
-Build 20 | Failover 25 | Failback 15 | Split-brain 20 | Report 20
-Example: 20 + 22 + 15 + 10 + 18 = 85
-```
-
-#### مثال سخت — شرط صداقت
-
-اگر دو VM لایسنس‌دار ندارید، بخش اجرا نشده است و نمره‌ی «اجرا» گرفته نمی‌شود؛ ولی طراحی و طرح آزمون می‌تواند با برچسب «تأیید مستندی» ارزیابی شود. هرگز خروجی ساختگی ننویسید.
-
-#### Lab
-
-یک گزارش یک‌صفحه‌ای با جدول بالا بنویسید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| نمره کم | شاهد ندارد | ثبت |
-| ادعای بی‌اجرا | بی‌صداقتی | برچسب |
-| Split-brain واقعی | تست در Production | فقط Lab |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Split-brain فقط Lab؟** اثر مخرب.
-**۲. ادعای بدون اجرا؟** نادرست.
-**۳. شاهد Failover؟** ping + Log.
-
-#### English Corner
-
-- *Never fabricate evidence; label untested items honestly.*
-- Q: Why run split-brain tests only in a lab?
-
-<a id="l-22-6"></a>
 
 ## درس 22-6 — HA در عمق: Active-Active، Load Balancing، Virtual Cluster و Management Interface
 
