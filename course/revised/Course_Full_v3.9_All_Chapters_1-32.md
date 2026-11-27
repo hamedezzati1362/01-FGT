@@ -4646,7 +4646,7 @@ PC1 ping PC3 -> works
 SVI فقط وقتی `up/up` می‌شود که همه‌ی شرط‌های زیر برقرار باشند:
 
 1.  VLAN روی سوییچ ساخته شده باشد (`show vlan brief`).
-2.  حداقل یک پورت در آن VLAN فعال باشد (Access Port بالا، یا Trunk که VLAN را عبور می‌دهد).
+2.  حداقل یک پورت لایه‌ی ۲ در آن VLAN فعال باشد: لینک Up **و در حالت STP Forwarding** (Access Port بالا، یا Trunk که VLAN را عبور می‌دهد). طبق مستند Cisco، تنظیم `switchport autostate exclude` یک پورت را از این محاسبه خارج می‌کند؛ اگر آن پورت تنها پورت VLAN باشد SVI down می‌ماند.
 3.  SVI با `no shutdown` روشن شده باشد.
 
 > **TS09: SVI Down/Down**
@@ -13118,7 +13118,7 @@ ACL فهرستی از قوانین است. هر قانون می‌گوید: «ا
 | جای نصب | نزدیک مقصد           | نزدیک مبدأ               |
 | کاربرد  | فیلتر ساده (مثل VTY) | Policy دقیق بین VLANها   |
 
-چرا Standard نزدیک مقصد؟ چون فقط مبدأ را می‌شناسد؛ اگر نزدیک مبدأ بگذارید، ترافیک آن مبدأ به همه‌ی مقصدها بسته می‌شود. Extended را نزدیک مبدأ می‌گذارند تا ترافیک ناخواسته زودتر از شبکه خارج شود.
+(نکته: جای‌گذاری Standard نزدیک مقصد و Extended نزدیک مبدأ «قاعده‌ی عملی/آموزشی» است که در منابع آموزشی Cisco Community و CCNA آمده؛ مستند رسمی پیکربندی Cisco آن را الزام نکرده است.) چرا Standard نزدیک مقصد؟ چون فقط مبدأ را می‌شناسد؛ اگر نزدیک مبدأ بگذارید، ترافیک آن مبدأ به همه‌ی مقصدها بسته می‌شود. Extended را نزدیک مبدأ می‌گذارند تا ترافیک ناخواسته زودتر از شبکه خارج شود.
 
 ### ۳. دستورها (خط‌به‌خط)
 
@@ -15428,6 +15428,8 @@ Check: ping, SSH enabled, VTY ACL allows the automation host, route
 | Vault       | Ansible Vault    | رمزگذاری فایل‌های حساس      |
 | Check mode  | --check          | اجرای آزمایشی بدون تغییر   |
 | Diff        | --diff           | نمایش تفاوت                |
+
+> **محدودیت‌های مستند/تجربی `ios_config`:** در Check mode ماژول `cisco.ios.ios_config` اغلب نمی‌تواند Diff در برابر running-config بسازد (هشدار «unable to perform diff against running-config due to check mode»)؛ برای مقایسه از `diff_against: intended` با فایل `intended_config` استفاده کنید. دستورهای مخفف Idempotent نیستند، و ACLها چون IOS شماره‌ی Sequence را در running-config نمی‌گذارد ممکن است همیشه `changed` بشوند؛ پس نتیجه‌ی اجرای دوم را (باید `changed=0` باشد) حتماً آزمون کنید. (منبع: مستند collection و گزارش‌های جامعه‌ی Ansible؛ نسخه‌ی خود را بسنجید.)
 
 ### ۱. تفاوت اسکریپت و Ansible
 
@@ -28587,7 +28589,7 @@ end
 
 - ترتیب: Static → Category → سایر؛ Exempt همه چیز بعدی را رد می‌کند.
 - HTTPS بدون Deep فقط دامنه؛ با Deep مسیر کامل.
-- DNS Filter قبل از اتصال؛ ضعف DoH.
+- DNS Filter قبل از اتصال؛ ضعف DoH. طبق مستند Fortinet بازرسی DoT/DoH فقط با Deep Inspection ممکن است (قبل از 7.6.0 فقط Proxy mode)؛ جایگزین: مسدودسازی TCP 853/443 به ارائه‌دهندگان شناخته‌شده یا (7.6.0+) Blocklist خارجی.
 - آزمون مثبت/منفی و Log.
 
 ### ۱۰) تمرین و ارزیابی
@@ -32171,6 +32173,8 @@ end
 ```
 
 (PSK را هرگز در ریپو ننویسید؛ دستورها `Unverified` تا Lab؛ نام پارامتر `dpd` و `net-device` را با CLI help تأیید کنید.)
+
+دقت DPD (طبق مستند/KB Fortinet): حالت پیش‌فرض DPD بسته به نوع تونل فرق دارد (on-demand یا on-idle برای dynamic)؛ در **IKEv2** تنظیم‌های `dpd-retrycount` و `dpd-retryinterval` به‌طور مستقل رعایت نمی‌شوند و Retransmission IKEv2 زمان ثابت حدود ۹۳ ثانیه دارد؛ اگر retrycount × retryinterval از ۹۳ بیشتر شود SA در ۹۳ ثانیه پاک می‌شود. پس زمان تشخیص قطع را روی IKEv2 با آزمون اندازه بگیرید.
 
 #### ۴) خرابی‌های تزریق‌شده و کلید پاسخ
 
@@ -36780,10 +36784,12 @@ Downtime/year at 99.9% = 8.76 h ; at 99.99% = 52.6 min
 | Group name | FGT-HA | یکسان در هر دو |
 | Password | از Vault | احراز اعضا |
 | hbdev | port3 (50)، port4 (100) | دو لینک مستقل |
-| Priority | A=200، B=100 | A ترجیحاً Primary |
+| Priority | A=200، B=100 | فقط وقتی تعیین‌کننده است که Age برابر باشد یا override فعال باشد (به توضیح انتخاب Primary پایین‌تر نگاه کنید) |
 | override | disable | جلوگیری از Flap |
 | session-pickup | enable | ماندگاری TCP |
 | monitor | port1 port2 | Failover با خرابی لینک |
+
+**ترتیب انتخاب Primary در FGCP (طبق مستند Fortinet):** وقتی override غیرفعال است (پیش‌فرض): ۱) Monitored Interface خراب‌نشده، ۲) **Age** (مدت کارکرد HA؛ اختلاف کمتر از ۳۰۰ ثانیه «مساوی» حساب می‌شود)، ۳) Device Priority، ۴) Serial Number. وقتی override فعال است: Monitored Interface، سپس **Priority**، بعد Age، بعد Serial. پس با override خاموش، عضو با Priority بالاتر فقط وقتی Primary می‌شود که با اختلاف Age کمتر از ۵ دقیقه هم‌زمان بالا آمده باشد؛ وگرنه عضو قدیمی‌تر Primary می‌ماند. Priority پیش‌فرض ۱۲۸ است و override بین اعضا همگام نمی‌شود (باید روی هر دو یکسان تنظیم شود). خرابی Monitored Interface یا Reboot، Age آن عضو را صفر می‌کند.
 
 #### ۳) CLI
 
@@ -40216,6 +40222,8 @@ interface GigabitEthernet1
 
 (`Unverified` در IOS-XE 17.03؛ نام دستورها را با help بررسی.)
 
+نکته (مستند Cisco): نمونه‌ی بالا روش **Crypto-map (Policy-based)** است که در راهنمای IKEv2/FlexVPN به‌عنوان حالت Legacy آمده. روش Route-based مدرن: `crypto ipsec profile` با `set ikev2-profile` و اعمال آن روی Interface Tunnel با `tunnel protection ipsec profile ...` (سازگار با FortiGate Route-based).
+
 #### ۴) خرابی‌ها و کلید
 
 **A:** DH گروه 14 در FGT و 5 در CSR (پیش‌فرض). شاهد CSR: `debug crypto ikev2` NO_PROPOSAL؛ FGT: `no proposal chosen`. رفع: `group 14`.
@@ -43210,6 +43218,8 @@ Issuer = CA فایروال ⇒ Deep Inspection فعال؛ Issuer = CA عمومی
 #### ۴) QUIC و ECH
 
 QUIC (UDP 443) با TLS 1.3؛ Deep Inspection سخت؛ سیاست بلاک QUIC. ECH SNI را رمز می‌کند؛ Web Filter بر پایه‌ی SNI کور می‌شود (آینده).
+
+دقت مرجع: ECH در RFC 9849 (مارس ۲۰۲۶، Proposed Standard) تعریف شده و روی TLS 1.3 و DTLS 1.3 کار می‌کند؛ SNI را رمز می‌کند و ابزارهای مبتنی بر SNI (Web Filter، Application Control، رمزگشایی انتخابی) دید خود را از دست می‌دهند. رویکرد مستند Fortinet: جلوگیری/مسدودسازی ECH و تنظیم SNI در پروفایل SSL Inspection بر اساس SNI بیرونی؛ رفتار دقیق QUIC/HTTP/3 را در مستند نسخه‌ی خود بسنجید ([RFC 9849](https://datatracker.ietf.org/doc/rfc9849/)).
 
 #### ۵) فیلترها
 

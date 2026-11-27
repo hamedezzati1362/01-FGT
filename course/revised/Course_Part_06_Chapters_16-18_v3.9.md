@@ -571,7 +571,7 @@ end
 
 - ترتیب: Static → Category → سایر؛ Exempt همه چیز بعدی را رد می‌کند.
 - HTTPS بدون Deep فقط دامنه؛ با Deep مسیر کامل.
-- DNS Filter قبل از اتصال؛ ضعف DoH.
+- DNS Filter قبل از اتصال؛ ضعف DoH. طبق مستند Fortinet بازرسی DoT/DoH فقط با Deep Inspection ممکن است (قبل از 7.6.0 فقط Proxy mode)؛ جایگزین: مسدودسازی TCP 853/443 به ارائه‌دهندگان شناخته‌شده یا (7.6.0+) Blocklist خارجی.
 - آزمون مثبت/منفی و Log.
 
 ### ۱۰) تمرین و ارزیابی
@@ -4155,6 +4155,8 @@ end
 ```
 
 (PSK را هرگز در ریپو ننویسید؛ دستورها `Unverified` تا Lab؛ نام پارامتر `dpd` و `net-device` را با CLI help تأیید کنید.)
+
+دقت DPD (طبق مستند/KB Fortinet): حالت پیش‌فرض DPD بسته به نوع تونل فرق دارد (on-demand یا on-idle برای dynamic)؛ در **IKEv2** تنظیم‌های `dpd-retrycount` و `dpd-retryinterval` به‌طور مستقل رعایت نمی‌شوند و Retransmission IKEv2 زمان ثابت حدود ۹۳ ثانیه دارد؛ اگر retrycount × retryinterval از ۹۳ بیشتر شود SA در ۹۳ ثانیه پاک می‌شود. پس زمان تشخیص قطع را روی IKEv2 با آزمون اندازه بگیرید.
 
 #### ۴) خرابی‌های تزریق‌شده و کلید پاسخ
 

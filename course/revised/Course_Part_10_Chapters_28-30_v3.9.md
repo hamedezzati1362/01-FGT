@@ -548,6 +548,8 @@ Issuer = CA فایروال ⇒ Deep Inspection فعال؛ Issuer = CA عمومی
 
 QUIC (UDP 443) با TLS 1.3؛ Deep Inspection سخت؛ سیاست بلاک QUIC. ECH SNI را رمز می‌کند؛ Web Filter بر پایه‌ی SNI کور می‌شود (آینده).
 
+دقت مرجع: ECH در RFC 9849 (مارس ۲۰۲۶، Proposed Standard) تعریف شده و روی TLS 1.3 و DTLS 1.3 کار می‌کند؛ SNI را رمز می‌کند و ابزارهای مبتنی بر SNI (Web Filter، Application Control، رمزگشایی انتخابی) دید خود را از دست می‌دهند. رویکرد مستند Fortinet: جلوگیری/مسدودسازی ECH و تنظیم SNI در پروفایل SSL Inspection بر اساس SNI بیرونی؛ رفتار دقیق QUIC/HTTP/3 را در مستند نسخه‌ی خود بسنجید ([RFC 9849](https://datatracker.ietf.org/doc/rfc9849/)).
+
 #### ۵) فیلترها
 
 ``` text

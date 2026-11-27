@@ -424,10 +424,12 @@ Downtime/year at 99.9% = 8.76 h ; at 99.99% = 52.6 min
 | Group name | FGT-HA | یکسان در هر دو |
 | Password | از Vault | احراز اعضا |
 | hbdev | port3 (50)، port4 (100) | دو لینک مستقل |
-| Priority | A=200، B=100 | A ترجیحاً Primary |
+| Priority | A=200، B=100 | فقط وقتی تعیین‌کننده است که Age برابر باشد یا override فعال باشد (به توضیح انتخاب Primary پایین‌تر نگاه کنید) |
 | override | disable | جلوگیری از Flap |
 | session-pickup | enable | ماندگاری TCP |
 | monitor | port1 port2 | Failover با خرابی لینک |
+
+**ترتیب انتخاب Primary در FGCP (طبق مستند Fortinet):** وقتی override غیرفعال است (پیش‌فرض): ۱) Monitored Interface خراب‌نشده، ۲) **Age** (مدت کارکرد HA؛ اختلاف کمتر از ۳۰۰ ثانیه «مساوی» حساب می‌شود)، ۳) Device Priority، ۴) Serial Number. وقتی override فعال است: Monitored Interface، سپس **Priority**، بعد Age، بعد Serial. پس با override خاموش، عضو با Priority بالاتر فقط وقتی Primary می‌شود که با اختلاف Age کمتر از ۵ دقیقه هم‌زمان بالا آمده باشد؛ وگرنه عضو قدیمی‌تر Primary می‌ماند. Priority پیش‌فرض ۱۲۸ است و override بین اعضا همگام نمی‌شود (باید روی هر دو یکسان تنظیم شود). خرابی Monitored Interface یا Reboot، Age آن عضو را صفر می‌کند.
 
 #### ۳) CLI
 

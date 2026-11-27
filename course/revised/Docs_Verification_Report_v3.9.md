@@ -200,3 +200,38 @@
 | ۷-۴ (ACL) | جای‌گذاری Standard/Extended «قاعده‌ی آموزشی» است، نه الزام مستند رسمی Cisco | [Cisco Community ACL](https://community.cisco.com/t5/networking-knowledge-base/cisco-access-control-lists-acl/ta-p/4182349) |
 | ۸-۵ (Ansible) | محدودیت Diff در Check mode، مشکل Idempotency دستورهای مخفف و ACL | [cisco.ios ios_config](https://docs.ansible.com/ansible/3/collections/cisco/ios/ios_config_module.html) |
 | ۲۵-۴ | Crypto-map حالت Legacy؛ روش مدرن IPsec profile + Tunnel | [Cisco IKEv2 legacy](https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/sec_conn_ike2vpn/configuration/xe-3s/sec-flex-vpn-xe-3s-book/sec-apx-ikev2-legacy.html) |
+
+
+## دور دهم — FortiGate: Offload، DoH، HA، SSL-VPN، DPD (۲۰۲۶-۱۱-۲۷)
+
+### تأییدشده
+| موضوع | نتیجه | مرجع |
+|---|---|---|
+| `auto-asic-offload disable` روی Policy (IPv4/IPv6/Multicast) برای دیدن بسته‌ها در Sniffer؛ در NP7 فقط per-policy؛ `npu-offload disable` روی IPsec Phase1 | تأیید (رفع ابهام دور اول) | [Disabling NP offloading](https://docs.fortinet.com/document/fortigate/7.6.4/hardware-acceleration/392369/disabling-np-offloading-for-firewall-policies) |
+| SSL-VPN Tunnel mode از 7.6.3 حذف شد؛ Web mode به Agentless VPN تغییر نام داد؛ مدل‌های ۲GB از 7.6.0 SSL-VPN ندارند؛ جایگزین: IPsec/ZTNA | تأیید | [Migration SSL VPN to IPsec](https://docs.fortinet.com/document/fortigate/latest/administration-guide/155142/ssl-vpn-tunnel-mode-to-ipsec-vpn-migration-new) |
+| Link-monitor در برابر Performance SLA (SD-WAN): Link-monitor فقط خرابی کامل، SLA کیفیت را می‌سنجد؛ `update-policy-route` از 7.0.1 | تأیید | [Link monitoring and failover](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/723056/link-monitoring-and-failover) |
+
+### اصلاح/دقیق‌سازی
+| درس | تغییر | مرجع |
+|---|---|---|
+| ۲۲-۲ (HA) | **ترتیب انتخاب Primary**: override خاموش ⇒ Monitored Interface > **Age** (حاشیه‌ی ۳۰۰ ثانیه) > Priority > Serial؛ override روشن ⇒ Priority قبل از Age؛ Priority پیش‌فرض ۱۲۸؛ override همگام نمی‌شود | [HA primary unit selection](https://docs.fortinet.com/document/fortigate/7.6.6/administration-guide/996846/ha-primary-unit-selection-criteria) |
+| ۱۸ (DPD) | در IKEv2 مقدار `dpd-retrycount`/`dpd-retryinterval` مستقل رعایت نمی‌شود؛ Retransmission ثابت ≈ ۹۳ ثانیه؛ پیش‌فرض DPD بسته به نوع تونل | [Fortinet KB: IKEv2 retransmission and DPD](https://community.fortinet.com/fortigate-3/technical-tip-ikev2-retransmission-and-dpd-156278) |
+| ۱۶-۷ (DoH) | بازرسی DoT/DoH فقط با Deep Inspection (قبل از 7.6.0 فقط Proxy mode)؛ جایگزین مسدودسازی 853/443 یا Blocklist خارجی | [DNS inspection with DoT and DoH](https://docs.fortinet.com/document/fortigate/8.0.0/administration-guide/620551/dns-inspection-with-dot-and-doh) |
+
+
+## دور یازدهم — Microsoft/AD و TLS (۲۰۲۶-۱۱-۲۷)
+
+| موضوع | نتیجه | مرجع |
+|---|---|---|
+| Kerberos: حداکثر اختلاف ساعت پیش‌فرض ۵ دقیقه (RFC 4120)؛ خطای KRB_AP_ERR_SKEW | تأیید | [Microsoft: Maximum tolerance](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/jj852172(v=ws.11)) |
+| AD: DC Locator با SRV (`_ldap._tcp.dc._msdcs.<domain>`)؛ پورت‌ها 389/3268/88؛ LDAP ping روی UDP 389 قبل از TCP | تأیید (LDAPS 636 جداگانه تأیید نشد) | [MS-ADTS SRV records](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/c1987d42-1847-4cc9-acf7-aab2136d6952) |
+| NPS: UDP 1812/1813 (استاندارد) و 1645/1646 (قدیمی)؛ Policy با Conditions/Constraints؛ PEAP و EAP-TLS؛ MFA Extension | تأیید | [Microsoft NPS plan](https://learn.microsoft.com/en-us/windows-server/networking/technologies/nps/nps-plan-server) |
+| زمان در AD: PDC Emulator دامنه‌ی ریشه با منبع خارجی؛ بقیه از سلسله‌مراتب (`syncfromflags:domhier`) | تأیید | [Windows Time Service](https://learn.microsoft.com/en-us/windows-server/networking/windows-time-service/windows-time-service-tools-and-settings) |
+| ECH: RFC 9849 (۲۰۲۶)، TLS 1.3/DTLS 1.3؛ رمز کردن SNI؛ اثر روی فایروال | تأیید؛ دقت مرجع در ۲۸-۳ اضافه شد | [RFC 9849](https://datatracker.ietf.org/doc/rfc9849/) |
+
+## جمع‌بندی نهایی ممیزی (دور ۱ تا ۱۱)
+
+- ≈ ۱۱۰ ادعای مفهومی/دستوری با منبع رسمی بررسی شد؛ ≈ ۲۶ اصلاح یا دقیق‌سازی در متن درس‌ها اعمال شد.
+- اشتباه‌های پرتأثیر: PBR، Hairpin (`nat-source-vip`)، **ترتیب انتخاب Primary در HA (Age قبل از Priority وقتی override خاموش است)**، Timeoutهای Session، FSSO Polling، `policyid=0`، لایسنس Application Control، `session-pickup-nat` (فقط FGSP).
+- هنوز تأیید نشده: LDAPS 636 در مستند Microsoft، آستانه‌های پیش‌فرض DoS Policy، رفتار دقیق QUIC در FortiOS، نحو دقیق چند فرمان Debug، IKEv2 IOS-XE 17.03 روی Image واقعی.
+- هیچ دستور هنوز «اجراشده با شاهد» نیست.
