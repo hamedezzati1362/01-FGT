@@ -3715,7 +3715,7 @@ A negative test: connect from the DMZ to the database and verify it is denied an
 
 ``` text
 1. Ingress           : packet arrives on an interface (L2 checks, VLAN)
-2. Anti-spoofing     : reverse path check (RPF)
+2. Anti-spoofing     : reverse path check (RPF)   [position not confirmed by an official table]
 3. Session lookup    : is it an existing session (fast path)?
                        YES -> apply session state (NAT, profile) and forward
                        NO  -> continue (new session)
@@ -3724,9 +3724,11 @@ A negative test: connect from the DMZ to the database and verify it is denied an
 6. Policy lookup     : match firewall policy (in order, first match)
 7. Security profiles : AV / IPS / Web / App / SSL (if enabled in policy)
 8. SNAT              : source NAT (policy NAT or IP pool)
-9. Session create    : install session entry (with NAT info)
+9. Session create    : finalize session entry with NAT info (Debug shows a new session ALLOCATED earlier, before route/policy)
 10. Egress           : ARP/next-hop MAC, send
 ```
+
+**شاهد رسمی (FortiOS 7.0.3، صفحه‌ی «Debugging the packet flow»، خوانده‌شده):** نمونه‌ی Trace در مستند به این ترتیب است: بسته‌ی SYN دریافت می‌شود ← «SYN sent and a new session is allocated» ← Lookup برای Gateway/Route ← انتخاب پورت برای Source NAT ← «Matched security policy» (`Allowed by Policy-3: SNAT`) ← اعمال Source NAT. مستند همچنین می‌گوید «FortiASIC NP4 or NP6 interface pairs that offload traffic will change the packet flow». دو نتیجه: (۱) **Session در Debug پیش از Route/Policy «تخصیص» می‌یابد**؛ پس «Session create» در مرحله‌ی ۹ مدل ساده فقط به معنای ثبت نهایی ورودی است و تخصیص اولیه زودتر رخ می‌دهد؛ (۲) این یک **نمونه‌ی Trace** است نه جدول رسمی ترتیب؛ ترتیب DNAT/RPF/Profile در این صفحه نشان داده نشد.
 
 **حدود اعتبار این ترتیب (مدل مفهومی ساده‌شده):**
 
@@ -3757,9 +3759,9 @@ FortiGate هر بسته‌ی ورودی را با **Reverse Path Forwarding (RPF
 
 **چرا نمی‌توان گفت «Session موجود هرگز Route یا Policy را دوباره بررسی نمی‌کند»؟** چون رفتار به عوامل زیر وابسته است و تعمیم مطلق نادرست است:
 
-1. **تغییر Route:** Session معمولاً به Interface/Gateway ثبت‌شده وابسته می‌ماند، ولی FortiOS گزینه‌هایی برای بازبینی مسیر Session دارد (مثل تنظیمات `snat-route-change`، `session-route-check`/رفتار Route-change؛ **نام و رفتار دقیق وابسته به نسخه‌اند و در منابع این بازنگری تأیید نشدند → نیازمند بررسی در مستند نسخه‌ی هدف**).
+1. **تغییر Route:** Session معمولاً به Interface/Gateway ثبت‌شده وابسته می‌ماند، ولی FortiOS گزینه‌هایی برای بازبینی مسیر Session دارد (در منابع غیررسمی نام‌هایی مثل `snat-route-change` دیده می‌شود، ولی **وجود، نام دقیق، پیش‌فرض و رفتار هیچ‌یک در صفحات رسمی خوانده‌شده‌ی 7.0.0/7.0.3 تأیید نشد؛ هیچ گزینه‌ای در این درس به‌عنوان مستند‌شده معرفی نمی‌شود → نیازمند بررسی در CLI Reference نسخه‌ی هدف**؛ از `session-route-check` هم هیچ شاهدی به دست نیامد).
 2. **تغییر Policy:** تغییر یا حذف Policy ممکن است Sessionهای موجود را فوراً قطع نکند، ولی در بعضی نسخه‌ها/حالت‌ها (مثلاً Proxy-based، یا Policyهایی که Session را با Policy ID مرتبط می‌کنند، یا Session Helper/UTM) Session دوباره ارزیابی یا بازنشانی می‌شود. این رفتار را بدون مستند نسخه قطعی ننویسید.
-3. **Offload (NPU):** Session Offload شده در سخت‌افزار پردازش می‌شود و تغییرات نرم‌افزاری ممکن است نیاز به پاک‌کردن/بازسازی Session داشته باشد.
+3. **Offload (NPU):** Session Offload شده (روی مدل‌های دارای پردازنده‌ی شبکه) در سخت‌افزار پردازش می‌شود و تغییرات نرم‌افزاری ممکن است نیاز به پاک‌کردن/بازسازی Session داشته باشد.
 4. **انقضای Session:** Timeout هر پروتکل، Session را پایان می‌دهد و بسته‌ی بعدی دوباره «جدید» محسوب می‌شود.
 
 **جمع‌بندی آموزشی (قابل‌اتکا):** «Session موجود *معمولاً* بدون ارزیابی مجدد Policy ادامه می‌یابد؛ بنابراین بعد از تغییر Route/Policy، نتیجه را با **اتصال جدید** آزمون کنید و برای Session قدیمی وضعیت (`diagnose sys session list`) را ببینید؛ پاک‌کردن Session (فقط با فیلتر و Change) راه تضمین ارزیابی دوباره است.» جزئیات وابسته به نسخه: نیازمند بررسی.
@@ -3798,9 +3800,12 @@ FortiGate هر بسته‌ی ورودی را با **Reverse Path Forwarding (RPF
 - Policy بدون Policy مقابل VIP کار نمی‌کند؛ VIP فقط «ترجمه» است نه «اجازه».
 - پاسخ سرور داخلی با Session برعکس ترجمه می‌شود (Reverse DNAT/SNAT).
 
-#### ۴-۱۰) Hardware Acceleration و رابطه‌اش با Flow
+#### ۴-۱۰) Hardware Acceleration و رابطه‌اش با Flow (فقط آنچه منبع پشتیبانی می‌کند)
 
-Session می‌تواند به NPU **Offload** شود؛ در این حالت بسته‌های بعدی ممکن است از مسیر نرم‌افزاری (CPU) نگذرند. پیامدها: ۱) Sniffer/Debug Flow همه‌ی بسته‌ها را نشان نمی‌دهد؛ ۲) تغییرات Policy/Route ممکن است نیاز به پاک‌کردن Session داشته باشد؛ ۳) Offload با بعضی Security Profileها (به‌ویژه Proxy-based) یا ویژگی‌ها ممکن نیست. شرایط دقیق Offload وابسته به مدل/NP/نسخه است (درس ۱۲-۹)؛ در منابع این بازنگری فقط جزئیات IPsec Offload تأیید شد (`npu-offload` در Phase1؛ `auto-asic-offload disable` در Policy ترافیک را Offload نمی‌کند).
+- **تأییدشده (مستند 7.0.3، نقل صریح):** جفت‌Interfaceهای FortiASIC NP4/NP6 که ترافیک را Offload می‌کنند، Packet Flow را تغییر می‌دهند (برای Debug مهم است).
+- **از خلاصه‌ی مستند 7.0.0 (نه متن صریح):** «بسیاری از مدل‌ها» پردازنده‌ی شبکه (NP) و «بیشتر مدل‌ها» واحد SPU دارند؛ برخی مدل‌های ورودی CP ندارند. فهرست مدل‌به‌مدل پیدا نشد؛ پس **هرگز Offload را به همه‌ی دستگاه‌ها تعمیم ندهید**.
+- **نیازمند تأیید (منبع قابل‌خواندن نبود):** شرایط دقیقی که Session عمومی Offload نمی‌شود (مثلاً با Proxy-based Profile، Traffic Shaping)، رابطه‌ی Flow-based UTM با NTurbo/IPSA (در مستند فقط عنوان‌های «NTurbo offloads flow-based processing» و «IPSA offloads flow-based advanced pattern matching» دیده شد)، و جزئیات `npu-offload`/`auto-asic-offload` (در خلاصه‌ی صفحه‌ی IPsec آمد ولی متن صریح خوانده نشد).
+- **پیامد آموزشی مطمئن:** هنگام عیب‌یابی، اگر Sniffer/Debug همه‌ی بسته‌ها را نشان نمی‌دهد، Offload را به‌عنوان یک فرضیه (نه علت اثبات‌شده) بررسی کنید.
 
 ### ۵) مثال حل‌شده: Debug Flow
 
@@ -4731,7 +4736,7 @@ lost 38 packets x 0.2 s = 7.6 s outage
 
 #### مثال سخت — Failover ناقص
 
-ISP-A بالادست مشکل دارد (لینک Up). بدون Link Monitor، Route فعال می‌ماند. با Monitor: `diagnose sys link-monitor status` ⇒ `dead`، Route دوم فعال. سپس Sessionهای قدیمی: Clear یا `snat-route-change`.
+ISP-A بالادست مشکل دارد (لینک Up). بدون Link Monitor، Route فعال می‌ماند. با Monitor: `diagnose sys link-monitor status` ⇒ `dead`، Route دوم فعال. سپس Sessionهای قدیمی: Clear با فیلتر (گزینه‌های خودکار مثل `snat-route-change` در منبع رسمی تأیید نشد).
 
 #### مثال سخت — Policy Route و Failover
 

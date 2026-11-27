@@ -6706,6 +6706,10 @@ Cisco IOS / IOS XE (document 13753), highest priority first:
 13. Lowest neighbor address
 ```
 
+**نسبت RFC 4271 با الگوریتم Cisco (خوانده‌شده در این بازنگری):** RFC 4271 بخش 9.1.2.2 می‌گوید معیارهای شکستن تساوی «MUST be applied in the order specified»: کوتاه‌ترین AS_PATH ← کمترین ORIGIN ← MED (فقط بین مسیرهای همان AS همسایه) ← ترجیح eBGP بر iBGP ← کمترین هزینه‌ی IGP تا NEXT_HOP ← کمترین BGP Identifier ← کمترین آدرس Peer. «Local Preference» در RFC در فاز ۱ (Degree of Preference) محاسبه می‌شود، و **Weight در RFC تعریف نشده و ویژگی Cisco است**. ردیف‌های ۱ تا ۳ Cisco (Weight، Local-Pref، مسیر محلی) و ریزمراحل ۹ تا ۱۳ افزوده‌های پیاده‌سازی‌اند. نگاشت ORIGIN به IGP<EGP<INCOMPLETE از بخش 5.1.1 RFC است که بازخوانی نشد.
+
+**FortiOS (وضعیت نهایی بازنگری):** ترتیب کامل Best Path و وجود/نقش `weight` برای Neighbor در FortiOS در صفحات رسمی قابل‌خواندن 7.0 **پیدا نشد → نیازمند تأیید**. فقط وجود گزینه‌های `always-compare-med`، `deterministic-med`، `default-local-preference`، `distance-external/internal/local` در CLI Reference `config router bgp` 7.0.0 از خلاصه‌ی صفحه دیده شد (بدون مقدار پیش‌فرض/توضیح). مستندات 7.0 همچنین از BGP multipath/additional-path (`ibgp-multipath`، `additional-path`) برای ADVPN یاد می‌کنند؛ نحوه‌ی انتخاب میان مسیرها در آن صفحه شرح داده نشده. بنابراین هیچ ترتیب یا پیش‌فرضی برای FortiOS در این درس قطعی نیست.
+
 نکات دقیق:
 
 - **تفاوت پلتفرم:** این ترتیب مربوط به Cisco IOS/IOS XE است. ترتیب و مجموعه‌ی معیارها در FortiOS الزاماً همین نیست (مثلاً Weight مفهومی Cisco-specific است). در منابع رسمی FortiOS 7.0 که برای این بازنگری در دسترس بود، **ترتیب کامل Best Path در FortiOS تأیید نشد**؛ بنابراین دانشجو نباید ترتیب Cisco را به FortiGate تعمیم دهد و باید جدول مستند همان نسخه‌ی FortiOS را بخواند (وضعیت: «نیازمند بررسی»).
@@ -6778,7 +6782,7 @@ Case 3 (Reachability): B has the shortest AS_PATH but its NEXT_HOP has no IGP/co
 
 | عامل | رفتار پیش‌فرض | نکته |
 |---|---|---|
-| Keepalive/Hold | 60 / 180 s (Cisco) | Detect خرابی تا ۱۸۰ ثانیه؛ با `neighbor timers` یا BFD کم می‌شود |
+| Keepalive/Hold | 60 / 180 s (پیش‌فرض Cisco طبق دانش عملیاتی؛ RFC 4271 بخش 10: HoldTime «پیشنهادی» 90 ثانیه و Keepalive یک‌سوم آن؛ Hold باید صفر یا حداقل ۳ ثانیه باشد و مقدار مذاکره‌شده کوچک‌ترِ دو طرف است) | Detect خرابی تا ۱۸۰ ثانیه؛ با `neighbor timers` یا BFD کم می‌شود |
 | BFD | اختیاری | زیر ثانیه؛ نیاز دو سر |
 | MRAI | eBGP ~30 s، iBGP ~5 s (پیش‌فرض‌های متداول؛ `Unverified` روی vIOS) | فاصله‌ی ارسال به‌روزرسانی؛ Convergence را کند می‌کند |
 | Graceful Restart | اختیاری | حفظ ارسال هنگام ریستارت Control Plane؛ ریسک نگه‌داشتن مسیر کهنه |

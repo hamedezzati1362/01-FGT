@@ -4764,7 +4764,7 @@ Total convergence time =
 
 #### ۴-۲) Detection در OSPF
 
-پیش‌فرض OSPF روی Ethernet (Broadcast/Point-to-Point): Hello = 10 ثانیه، Dead = 40 ثانیه (۴ برابر Hello).
+مقادیر رایج OSPF روی Ethernet (Broadcast/Point-to-Point) در پیاده‌سازی‌های متداول: Hello = 10 ثانیه، Dead = 40 ثانیه (۴ برابر Hello). **توجه (RFC 2328، خوانده‌شده):** RFC عدد پیش‌فرض ثابت نمی‌دهد؛ در پیوست C.3 برای LAN «Sample value: 10 seconds» و برای Dead «some multiple of HelloInterval (say 4)» آمده است. پس ۱۰/۴۰ «پیش‌فرض پیاده‌سازی» (مثلاً Cisco IOS؛ در این بازنگری از مستند Cisco بازخوانی نشد) است نه الزام پروتکل.
 
 ``` text
 Detect time (worst case) = Dead interval

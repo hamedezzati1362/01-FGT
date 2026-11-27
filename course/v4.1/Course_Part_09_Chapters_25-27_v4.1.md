@@ -2501,6 +2501,7 @@ Install Preview تا اثر نصب پیش از اعمال دیده شود.
 > **یادداشت علمی v4.0 — فصل 27:** عمومی: Logging، SNMP، API، Hardening. مختص محصول: FortiOS 7.0 و Zabbix.
 > فرض: OIDها و سینتکس نیازمند تطبیق با MIB/مستند نسخه؛ آستانه‌ها از Baseline.
 > مراجع: RFC 5424، SNMPv3 (RFC 3414)؛ Fortinet MIB.
+> **وضعیت منبع v4.1:** OIDهای SNMP (CPU/Memory/Session)، فیلدهای `config system snmp user` و `api-user` و مسیرهای REST API از MIB/CLI Reference رسمی بازخوانی نشدند → `Unverified`؛ برای پیاده‌سازی با FORTINET-FORTIGATE-MIB و CLI Reference نسخه‌ی خود تطبیق دهید.
 
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۴، ۲۶.

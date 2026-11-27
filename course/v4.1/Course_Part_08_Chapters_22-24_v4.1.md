@@ -43,6 +43,7 @@
 > **یادداشت علمی v4.0 — فصل 22:** عمومی: SPOF، RTO/RPO. مختص محصول: FGCP. زمان‌ها و Election نیازمند تطبیق با مستند نسخه.
 > فرض: A-P، Heartbeat جدا؛ Failover زمانی تضمین نیست.
 > مرجع: Fortinet FGCP docs (در این بازنگری بازخوانی نشد).
+> **وضعیت منبع v4.1:** صفحه‌های FGCP و FGSP در Administration Guide 7.0.0 یافت شد ولی بدنه‌ی آن‌ها قابل‌خواندن نبود؛ ترتیب Election، `ha-uptime-diff-margin`، Timerهای Heartbeat، دامنه‌ی `session-pickup` و سینتکس FGSP تأیید نشدند → از حافظه و `Unverified`.
 
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۳، ۲۱.
@@ -1691,6 +1692,7 @@ Checksum Cluster هم‌خوانی Config بین اعضا را بررسی می�
 > **یادداشت علمی v4.0 — فصل 23:** عمومی: Asymmetric Routing و Stateful. مختص محصول: RPF/`asymroute`/FGSP در FortiOS.
 > فرض: رفتار RPF/Session وابسته به نسخه؛ غیرفعال‌سازی کنترل‌ها فقط موقت.
 > مرجع: Fortinet Docs.
+> **وضعیت منبع v4.1:** وجود، نام و رفتار `asymroute`، `tcp-session-without-syn`، `strict-src-check` و سینتکس FGSP در صفحات رسمی خوانده‌شده تأیید نشد؛ آن‌ها از حافظه‌اند و نباید قطعی تلقی شوند.
 
 
 **مدت:** ۳۶ ساعت | **پیش‌نیاز:** فصل ۱۰، ۱۵، ۲۲.
