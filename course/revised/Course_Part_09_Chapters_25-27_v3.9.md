@@ -1499,150 +1499,135 @@ ADOM = Administrative Domain، یعنی «دامنه‌ی مدیریتی». شر
 
 > **وضعیت:** FortiOS 7.0.3 / FortiManager-FortiAnalyzer 7.0 (Needs-License؛ بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. نقش FortiManager (پیکربندی) و FortiAnalyzer (Log/Report) را از نظر معماری و جریان داده تفکیک کند.
-2. ADOM، Policy Package، Device Manager، Install و Revision را توضیح دهد.
-3. محدودیت‌های مستند (تداخل Log Forwarding با FAZ features، یک FAZ برای هر ADOM) را بگوید.
-4. برای سازمان‌های با اندازه‌ی مختلف تصمیم «FMG/FAZ یا جایگزین» را با معیار کمی بگیرد.
-5. ریسک مرکزی‌سازی (SPOF، هدف حمله) و کنترل آن را بنویسد.
-6. سند تصمیم معماری (ADR) تولید کند.
+1. نقش FortiManager (FMG) و FortiAnalyzer (FAZ) را تفکیک کنید.
+2. معماری، ADOM، Device Manager، Policy Package و Provisioning Template را توضیح دهید.
+3. وابستگی لایسنس (Device License، VM در برابر Hardware) را بشناسید.
+4. تصمیم «ابزار یا جایگزین» (Syslog + Git + Ansible) را با تحلیل هزینه و ریسک بگیرید.
+5. مدل استقرار (HA، فاصله‌ی شبکه، Fabric) را بشناسید.
+6. ریسک‌های مدیریت مرکزی (SPOF، دسترسی بالا) را کنترل کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا ظرفیت و لایسنس؟** قبل از طراحی باید بدانید چه ظرفیتی لازم است. FAZ بر پایه‌ی حجم Log روزانه (GB/Day) لایسنس می‌شود؛ بیشتر از سقف رد یا کنار گذاشته می‌شود.
+اگر ۵ فایروال دارید، مدیریت تک‌تک ممکن است. با ۵۰ فایروال، هر تغییر Policy ۵۰ ورود و ۵۰ احتمال اشتباه است. FortiManager مثل «دفتر مرکزی» است که یک Policy را برای همه توزیع می‌کند؛ FortiAnalyzer «بایگانی و تحلیل‌گر» است که Logها را جمع می‌کند. ولی هر دو لایسنس و هزینه دارند و خودشان هدف حمله‌ی پرارزش‌اند (کنترل همه‌ی فایروال‌ها). تصمیم باید آگاهانه باشد: گاهی Syslog + Git + Ansible کافی و ارزان‌تر است.
 
-**جمع‌بندی اصلی درس:**
+### نقش‌ها
 
-وقتی تعداد فایروال‌ها از چند دستگاه بیشتر می‌شود، مدیریت دستی خطا، ناهمگونی و بی‌Audit می‌سازد. دو محصول مکمل وجود دارد: **FortiManager (FMG)** پیکربندی/Policy را مرکزی نگه می‌دارد و **FortiAnalyzer (FAZ)** Logها را جمع، نگه‌داری و تحلیل می‌کند. ولی این‌ها لایسنس و منابع می‌خواهند؛ و مرکزی‌سازی خود یک هدف حمله و نقطه‌ی شکست است. تصمیم «ابزار یا جایگزین» باید کمی و ریسک‌محور باشد.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) جریان داده و نقش‌ها
-
-``` text
-FortiGate x N  --(FGFM: config/policy install)-->  FortiManager (FMG)
-FortiGate x N  --(logs: OFTP/syslog)------------>  FortiAnalyzer (FAZ)
-FMG <--> FAZ   (FMG can manage FAZ; ADOM-aligned)
-Admins -> FMG (RBAC, ADOM scoped) ; Analysts -> FAZ (reports, event handlers)
-```
-
-#### ۲) مفاهیم FMG (طبق مستند 7.0)
-
-- **Device Manager:** ثبت دستگاه/گروه، وضعیت Sync، تنظیمات مختص دستگاه.
-- **ADOM:** دامنه‌ی مدیریتی؛ جداسازی دستگاه‌ها/مدیران/Policy (چندمستأجر یا نسخه‌ی FortiOS).
-- **Policy Package:** Policy/Object قابل‌نصب روی یک یا چند دستگاه؛ Install Wizard: انتخاب Package، هدف و زمان‌بندی اختیاری؛ **Install Preview** تغییرات را قبل از اعمال نشان می‌دهد.
-- **Revision History:** نسخه‌ی تنظیمات؛ Revert.
-- **Template/Provisioning:** Interface/Routing/SD-WAN Template.
-
-#### ۳) محدودیت‌ها (از مستند)
-
-- با ADOM فعال، **هر ADOM یک FAZ** را می‌پذیرد و نام ADOM باید در دو سو یکی باشد.
-- هنگام فعال بودن ویژگی‌های FAZ روی FMG، **Log Forwarding/Fetching/Aggregation پشتیبانی نمی‌شود**؛ افزودن FAZ، ویژگی‌های FAZ را خودکار فعال می‌کند و قابل‌غیرفعال‌شدن نیست.
-- ظرفیت دستگاه/لایسنس VM باید با مستند و قرارداد بررسی شود (`Unverified`).
-
-#### ۴) تصمیم کمی
-
-``` text
-Operational cost of manual mgmt ~= N firewalls x changes per month x minutes per change x error rate x incident cost
-Tool cost = license + hosting + admin time
-```
-
-معیارها: تعداد دستگاه، فراوانی تغییر، تنوع Policy، الزام انطباق/Audit، مهارت تیم، بودجه.
-
-| وضعیت | پیشنهاد |
-|---|---|
-| ≤ ۳ فایروال، تغییر کم | Backup + Git + Syslog |
-| ۴ تا ۱۰، Policy مشابه | Ansible/API + Git؛ FMG اختیاری |
-| > ۱۰ یا چندمستأجر | FMG |
-| الزام Log/گزارش انطباق | FAZ یا SIEM |
-
-#### ۵) ریسک مرکزی‌سازی
-
-FMG/FAZ هدف ارزشمند (دسترسی به همه‌ی فایروال‌ها) و SPOF مدیریتی‌اند. کنترل: شبکه‌ی مدیریت جدا، HA/Backup، MFA، RBAC، Patch، Audit تغییرات، و برنامه‌ی «مدیریت بدون FMG» (Break-glass).
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| FMG لازم است؟ | بر اساس تعداد دستگاه/تغییر/چندمستأجر/Audit |
-| ADOM | مشتری/نسخه؛ نه صرفاً جغرافیا |
-| FAZ یا Syslog | الزام گزارش و ظرفیت Log |
-| Break-glass | دسترسی مستقیم اضطراری |
-| HA | برای FMG/FAZ تولید |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-``` text
-2 GB/day x 12 devices x 90 days = 2160 GB ~ 2.1 TB (+30% = 2.8 TB)
-```
-
-#### مثال متوسط — کاهش Log
-
-Policy اینترنت `utm` و Policy DMZ `all`؛ حجم حدود ۴۰٪ کم شد و شواهد کلیدی ماند.
-
-#### مثال سخت
-
-Revision و Script انبوه: ابتدا یک دستگاه.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** سازمان با ۳ فایروال: نیاز اصلی Backup، Log و ثبت تغییر؛ تصمیم: rsyslog + Git + Backup روزانه؛ FMG توجیه ندارد. ثبت ADR با دلیل.
-
-**متوسط (تحلیل):** ۱۲ فایروال با ۲۰ تغییر Policy در ماه؛ خطای دستی ۳٪. تحلیل: ۲۴۰ تغییر/سال × ۳٪ ≈ ۷ خطا/سال؛ هر خطا ۲ ساعت قطع/رفع. FMG با Install Preview و Revert خطا را کم می‌کند؛ هزینه‌ی لایسنس را با هزینه‌ی ساعت‌های رفع مقایسه کنید. تصمیم: FMG یا Ansible+Git با Review.
-
-**سخت (معماری):** چهار مشتری مجزا با ۳۰ فایروال؛ الزام جداسازی مدیریتی و گزارش جدا. تحلیل: ADOM به ازای هر مشتری؛ هر ADOM یک FAZ (طبق مستند)؛ RBAC سطح ADOM؛ Policy Package پایه + Override؛ ریسک: FMG نقطه‌ی مرکزی؛ HA، Backup، شبکه‌ی OOB، MFA؛ Break-glass روی هر فایروال. معیار موفقیت: آزمون Revert و Install Preview در Lab.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. FMG: Device Manager → Add Device/Group.
-2. FMG: Policy & Objects → Policy Package → Install Wizard (Preview).
-3. FMG: System Settings → Administrators/ADOMs.
-4. FGT: Security Fabric → Fabric Connectors / System → Central Management.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-config system central-management
-    set type fortimanager
-    set fmg "192.168.90.30"
-end
-get system central-management
-```
-
-### ۸) Verification (اثبات صحت)
-
-- ADR امضا‌شده.
-- در Lab: افزودن یک FGT، Install Preview، Revert.
-- برنامه‌ی Break-glass.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| ابزار | وظیفه | خروجی |
 |---|---|---|
-| دستگاه Out-of-sync | Device Manager وضعیت | Install/Retrieve Config |
-| FAZ اضافه نمی‌شود | نام ADOM/نسخه | هم‌نام‌کردن ADOM؛ سازگاری نسخه |
-| Log Forwarding کار نمی‌کند | تنظیمات FMG | تداخل با FAZ features (مستند) |
+| FortiManager (FMG) | مدیریت Config مرکزی، Policy Package، Template، Firmware | یک نقطه‌ی تغییر |
+| FortiAnalyzer (FAZ) | جمع‌آوری Log، گزارش، رویداد، IOC | دید و Compliance |
+| FortiGate | اجرا | ترافیک |
 
-### ۱۰) نکات امنیتی
+### مفاهیم FMG
 
-- شبکه‌ی OOB، MFA، RBAC، Audit.
-- Backup رمزشده و HA.
-- Patch فوری.
+| مفهوم | معنی |
+|---|---|
+| ADOM | Administrative Domain؛ جداسازی دستگاه‌ها/Tenantها |
+| Device Manager | فهرست دستگاه‌ها و وضعیت |
+| Policy Package | مجموعه Policy که روی چند دستگاه اعمال می‌شود |
+| Provisioning/System Template | قالب Interface/DNS/NTP |
+| Install | ارسال Config به دستگاه |
+| Revision | نسخه‌ی تاریخی Config |
+| Firmware Management | ارتقا مرکزی |
 
-### ۱۱) جمع‌بندی مفهومی
+جریان کار:
 
-- FMG = پیکربندی؛ FAZ = Log.
-- ADOM، Policy Package، Install Preview، Revision.
-- محدودیت‌های مستند را بشناسید.
-- تصمیم بر پایه‌ی هزینه/ریسک.
-- مرکزی‌سازی = ریسک جدید.
+``` text
+Edit Policy Package -> Install Preview -> Install -> Verify on device -> Revision saved
+```
 
-### ۱۲) تمرین و ارزیابی
+### مفاهیم FAZ
+
+| مفهوم | معنی |
+|---|---|
+| Log Storage | آنلاین/آرشیو |
+| ADOM | تفکیک Logها |
+| FortiView/Reports | تحلیل |
+| Event Handler | هشدار |
+| Fabric/Security Rating | نمای سازمانی |
+
+### لایسنس (کلیات؛ مدل را در مستند بررسی کنید)
+
+| مورد | نکته |
+|---|---|
+| FMG/FAZ Hardware یا VM | VM بر اساس تعداد Device/ظرفیت لاگ لایسنس می‌شود |
+| Device License | تعداد دستگاه مدیریت‌شده |
+| ADOM | تعداد ADOM به لایسنس/مدل |
+| Log GB/Day | ظرفیت FAZ |
+| Support (FortiCare) | به‌روزرسانی/Patch |
+
+(Needs-License؛ در این دوره Lab بدون FMG/FAZ، همه‌ی بخش‌ها «اجرا نشده».)
+
+### تصمیم: ابزار یا جایگزین
+
+| معیار | FMG/FAZ | Syslog + Git + Ansible |
+|---|---|---|
+| هزینه | لایسنس | کمتر (زمان مهندسی) |
+| یکپارچگی با Fortinet | کامل | نیازمند توسعه |
+| Policy Package | آماده | دستی/Template |
+| Log Analytics | FortiView | ELK/Graylog |
+| Compliance گزارش | آماده | ساخت |
+| مهارت | Fortinet | DevOps |
+| مقیاس | زیاد | بسته به پروژه |
+
+قاعده‌ی تجربی: زیر ~۱۰ دستگاه، با تیم DevOps ⇒ جایگزین؛ ۵۰+ دستگاه یا Compliance سخت ⇒ FMG/FAZ.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — تغییر Policy
+
+۲۰ شعبه، یک Policy جدید: در FMG یک بار Policy Package، Install Preview و Install؛ ۲۰ دستگاه. بدون FMG: ۲۰ ورود.
+
+#### مثال متوسط — ADOM
+
+MSP با ۳ مشتری: ADOM جدا برای هر مشتری، Admin جدا؛ مشتری A Config B را نمی‌بیند.
+
+#### مثال متوسط — هزینه
+
+۱۲ دستگاه؛ لایسنس FMG-VM + FAZ-VM سالانه X؛ جایگزین: rsyslog + Git + Ansible (۱۰ نفر-روز راه‌اندازی + ۱ نفر-روز در ماه). تصمیم: جایگزین، با طرح مهاجرت.
+
+``` text
+Break-even = license cost per year / (engineer cost per day x maintenance days)
+```
+
+#### مثال سخت — ریسک FMG
+
+FMG هک می‌شود ⇒ مهاجم Config ۵۰ دستگاه را تغییر می‌دهد. کنترل‌ها: MFA، دسترسی فقط از Mgmt، Trusted Host، Log Audit، Backup آفلاین، RBAC، Install فقط با Approval (Workflow Mode).
+
+#### مثال سخت — HA
+
+FMG تک ⇒ SPOF مدیریتی (ترافیک اثر ندارد ولی مدیریت قطع). راه: FMG HA، Backup دوره‌ای، دسترسی مستقیم اضطراری (Break-glass) به فایروال‌ها. FAZ: Log Forward/HA برای عدم از دست‌رفتن Log.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. معماری FMG/FAZ را رسم کنید.
+2. Break-even را محاسبه کنید.
+3. ریسک و کنترل را جدول کنید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| Install ناموفق | Conflict/Revision | Preview |
+| Log نمی‌رسد | Reliable/FW | بررسی |
+| دستگاه Out of Sync | تغییر مستقیم | Retrieve/Import |
+| هزینه بالا | لایسنس | جایگزین |
+
+### نکات امنیتی
+
+دسترسی FMG/FAZ به شبکه‌ی Mgmt؛ MFA؛ Workflow؛ Backup؛ Break-glass؛ Audit Log.
+
+### جمع‌بندی
+
+FMG مدیریت Config، FAZ Log؛ ADOM/Policy Package؛ لایسنس؛ تصمیم با هزینه و ریسک؛ FMG خودش هدف حمله است و باید سخت شود.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) تفاوت FMG و FAZ؟ *(پاسخ: 26-1-ت1)*
 
@@ -1658,7 +1643,7 @@ get system central-management
 
 **Q1.** Quick quiz (English): Why is a central manager both a benefit and a risk? *(پاسخ: 26-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1669,11 +1654,11 @@ get system central-management
 
 - *Preview changes before installing a policy package.* ← قبل از نصب Policy Package تغییرات را پیش‌نمایش کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** سند تصمیم FMG/FAZ. **وضعیت:** طراحی (Needs-License). **Evidence:** `02-design/fmg-faz.md`.
 
-### ۱۵) منابع
+### منابع
 
 - [Device Manager](https://docs.fortinet.com/document/fortimanager/7.0.0/administration-guide/478145/device-manager)
 - [Add FortiAnalyzer](https://docs.fortinet.com/document/fortimanager/7.0.0/administration-guide/654379/add-fortianalyzer)
@@ -1681,272 +1666,172 @@ get system central-management
 
 <a id="l-26-2"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: نقش‌ها
-
-FMG: Config، Policy Package، Device Manager. FAZ: Log، گزارش، Event Handler. ارتباط FGFM (TCP/541). **لایسنس/ظرفیت** بر اساس تعداد دستگاه و GB/Day.
-
-**پرسش‌های مصاحبه**
-1. *Revision؟* نسخه‌ی تغییرات.
-2. *Script؟* تغییر انبوه.
-3. *HA؟* دو FMG.
-
-### مثال حل‌شده: ظرفیت FortiAnalyzer
-
-``` text
-Log per device = 2 GB/day
-Devices        = 12
-Retention      = 90 days
-Total          = 2 x 12 x 90 = 2160 GB ~ 2.1 TB
-With 30% headroom ~ 2.8 TB
-```
-
-مراحل: ۱) حجم روزانه را از `diagnose log device` یا مانیتور واقعی بگیرید؛ ۲) ضرب در دستگاه و روز؛ ۳) حاشیه‌ی ظرفیت؛ ۴) لایسنس بر اساس GB/Day مطابق مستند.
-
-ADOM: برای جداسازی مشتریان/محیط‌ها، هر ADOM Policy و Log جدا.
-
-### تکمیل عمیق: FMG/FAZ — معماری، ظرفیت و لایسنس
-
-#### چرا؟
-
-قبل از خرید یا طراحی باید بدانید چه ظرفیتی لازم است. خطای ظرفیت یعنی Log از دست‌رفته یا هزینه‌ی اضافی.
-
-#### ارتباط‌ها
-
-``` text
-FortiGate  <--FGFM TCP/541-->  FortiManager (config)
-FortiGate  --OFTP TCP/514-->   FortiAnalyzer (logs)
-```
-
-نام پورت‌ها را از مستند همان نسخه تأیید کنید.
-
-#### مثال ساده — ظرفیت
-
-``` text
-Log per device = 2 GB/day
-Devices        = 12
-Retention      = 90 days
-Total          = 2 x 12 x 90 = 2160 GB ~ 2.1 TB
-With 30% headroom ~ 2.8 TB
-```
-
-#### مثال متوسط — GB/Day لایسنس
-
-لایسنس FAZ معمولاً بر پایه‌ی حجم Log روزانه است. اگر روزانه 24 GB تولید می‌شود ولی لایسنس 10 GB/Day است، Log اضافه کنار گذاشته یا رد می‌شود. پس باید Log غیرضروری را (مثلاً Traffic Allow برای Policyهای کم‌اهمیت) کاهش دهید.
-
-#### مثال سخت — طراحی Log
-
-``` text
-Policy Internet : log utm only
-Policy DMZ-in   : log all
-Deny final      : log all
-Result          : daily volume drops ~40%, key evidence kept
-```
-
-#### Revision و Script
-
-FMG هر تغییر را Revision می‌کند؛ می‌توانید برگردید. Script انبوه برای تغییر یکباره‌ی چندین دستگاه (با آزمون روی یک دستگاه ابتدا).
-
-#### Lab
-
-ظرفیت را برای سناریوی خودتان با جدول محاسبه کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Log رد می‌شود | سقف GB/Day | کاهش Log |
-| دیسک پر | Retention | تنظیم |
-| FGFM نمی‌رسد | Route/پورت | بررسی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Headroom؟** رشد.
-**۲. Revision چه فایده‌ای؟** بازگشت.
-**۳. چرا Script ابتدا روی یکی؟** ریسک.
-
-#### English Corner
-
-- *Size log storage as volume times retention plus headroom.*
-- Q: What happens when the daily log quota is exceeded?
-
 ## درس 26-2 — Syslog مرکزی (جایگزین FAZ): FortiGate → rsyslog با TCP/TLS، قالب، Parse، Retention و آزمون
 
 **فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۰، ۲۶-۱، ۲۷-۰ · ≈ 8 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 / FortiManager-FortiAnalyzer 7.0 (Needs-License؛ بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Syslog reliable را روی FortiGate و rsyslog پیکربندی و آزمون کند.
-2. قالب (default/CSV/CEF/RFC5424)، Facility و `source-ip` را انتخاب کند.
-3. Parse فیلدهای Log (key=value) و ساخت فایل‌های ساختارمند را انجام دهد.
-4. Retention، چرخش، فضا و دسترسی را برنامه‌ریزی کند.
-5. از دست رفتن Log (UDP، قطع TCP) را تشخیص و مدیریت کند.
-6. Logهای حیاتی (Deny، Event، VPN) را مرتب و Alert بسازد.
+1. FortiGate را به‌عنوان Syslog Client با TCP/TLS (Reliable) تنظیم کنید.
+2. rsyslog را به‌عنوان Collector (دریافت، قالب، ذخیره) پیکربندی کنید.
+3. قالب Log FortiGate (Key=Value) را Parse کنید.
+4. Retention، Rotation و حجم را برنامه‌ریزی کنید.
+5. آزمون انتها‌به‌انتها (ارسال → دریافت → جست‌وجو) را اجرا کنید.
+6. محدودیت‌های جایگزین FAZ را بدانید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Syslog مرکزی؟** اگر بودجه‌ی FAZ نیست، سرور rsyslog همان کار جمع‌آوری را می‌کند و پایه‌ی SIEM می‌شود. گام‌ها: سرور، فایروال سرور، FortiGate با `mode reliable`، تأیید دریافت، Rotation.
+Log فقط روی دستگاه، مثل دفتر ثبت پشت در که اگر مهاجم در را بشکند، دفتر را هم می‌سوزاند. Log باید فوراً به جای امن دیگری برود. وقتی FAZ لایسنس نیست، rsyslog و Syslog روی Linux راه‌حل ارزان و قدرتمندی است؛ فقط باید قابل‌اعتماد (TCP/TLS)، قابل‌جست‌وجو و با Retention مشخص باشد.
 
-**جمع‌بندی اصلی درس:**
+### جریان
 
-FAZ همه‌چیز نیست؛ برای Audit، Correlation و نگهداری Log، یک Syslog مرکزی خوب (rsyslog/Elastic/Zabbix) کافی و ارزان است. ولی «Syslog خوب» یعنی: انتقال مطمئن، قالب پایدار، زمان همگام، نگهداری مشخص و دسترسی کنترل‌شده.
+``` text
+FortiGate --(TCP 6514 TLS)--> rsyslog (Linux) --> files / Elasticsearch / Graylog
+```
 
-### ۳) توضیح عمیق فنی
+UDP 514 ساده ولی بدون تضمین؛ در شبکه‌ی شلوغ Log گم می‌شود. TCP/TLS (Reliable) برای Production.
 
-#### ۱) پیکربندی FortiGate (طبق CLI Reference 7.0)
+### FortiGate (Client)
 
 ``` text
 config log syslogd setting
     set status enable
-    set server "192.168.90.20"
+    set server "10.50.0.20"
     set mode reliable
-    set port 514
+    set port 6514
     set facility local7
-    set source-ip 192.168.90.1
-    set format rfc5424
+    set format default
+    set enc-algorithm high
+end
+config log syslogd filter
+    set severity information
+    set forward-traffic enable
+    set local-traffic enable
+    set anomaly enable
 end
 ```
 
-- `mode`: udp / reliable / legacy-reliable؛ **reliable** برای Extended Logging لازم است (مستند Log Message Reference).
-- `format`: default، csv، cef، rfc5424.
-- `source-ip`: برای مسیر/ACL و یکتایی مبدأ.
-- TLS (در صورت پشتیبانی نسخه): `enc-algorithm` و گواهی (`Unverified`).
+(TLS در FortiOS 7.0 با `mode reliable` و `enc-algorithm`؛ CA/Certificate را در مستند بررسی کنید؛ Unverified.)
 
-#### ۲) rsyslog (سرور)
+### rsyslog (Collector)
 
 ``` text
-module(load="imtcp")
-input(type="imtcp" port="514")
-template(name="FGT" type="string" string="/var/log/fgt/%fromhost-ip%/%$YEAR%-%$MONTH%-%$DAY%.log")
-if $fromhost-ip startswith '192.168.90.' then ?FGT
-& stop
+# /etc/rsyslog.d/10-fortigate.conf
+module(load="imtcp"
+       StreamDriver.Name="gtls"
+       StreamDriver.Mode="1"
+       StreamDriver.AuthMode="x509/name")
+global(
+  DefaultNetstreamDriver="gtls"
+  DefaultNetstreamDriverCAFile="/etc/rsyslog.d/ca.pem"
+  DefaultNetstreamDriverCertFile="/etc/rsyslog.d/server.pem"
+  DefaultNetstreamDriverKeyFile="/etc/rsyslog.d/server.key")
+input(type="imtcp" port="6514")
+
+template(name="FgtPerHost" type="string"
+         string="/var/log/fortigate/%HOSTNAME%/%$YEAR%-%$MONTH%-%$DAY%.log")
+if $fromhost-ip startswith '10.' then {
+   action(type="omfile" dynaFile="FgtPerHost")
+   stop
+}
 ```
 
-چرخش: `logrotate` روزانه، فشرده‌سازی، حذف پس از N روز.
+(حداقل نمونه؛ در Production AuthMode و Firewall دقیق‌تر.)
 
-#### ۳) Parse
-
-Logهای FortiOS به‌صورت `key=value` هستند:
+### قالب Log
 
 ``` text
-date=2026-11-26 time=19:20:01 devname="FGT-A" type="traffic" subtype="forward" srcip=10.1.4.10 dstip=203.0.113.80 dstport=443 action="deny" policyid=0 service="HTTPS"
+date=2026-11-27 time=10:15:01 devname="FGT-A" logid="0000000013" type="traffic" subtype="forward" level="notice"
+srcip=10.10.0.5 srcport=50000 dstip=198.51.100.8 dstport=443 policyid=30 action="accept" proto=6 sentbyte=1200 rcvdbyte=9800
 ```
 
-با `grep`/`awk` یا Logstash/Fluent Bit به JSON تبدیل و فیلدها را ایندکس کنید (`srcip`, `dstip`, `action`, `policyid`).
-
-#### ۴) اطمینان
-
-UDP ممکن است Log از دست بدهد؛ TCP reliable؛ **صف محلی** در FortiGate هنگام قطع سرور محدود است؛ پس سرور Syslog باید HA/Monitor داشته باشد. پایش «آخرین Log دریافتی» برای هر دستگاه Alert بدهد.
-
-#### ۵) ظرفیت
+ساختار Key=Value ⇒ با Grok/Regex/Logstash قابل Parse.
 
 ``` text
-Daily volume ~= events/day x avg bytes/event    e.g. 8M x 450 B = 3.6 GB/day
-Storage = daily volume x retention days x compression factor
+grep 'policyid=30' /var/log/fortigate/FGT-A/2026-11-27.log | grep 'action="deny"'
 ```
 
-مثال: ۳٫۶ GB × ۱۸۰ روز = ۶۴۸ GB؛ با فشرده‌سازی ۱۰:۱ ≈ ۶۵ GB.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| UDP یا TCP | TCP reliable (+TLS در صورت پشتیبانی) |
-| قالب | RFC5424/CEF برای ابزار |
-| Retention | محاسبه‌ی حجم×روز |
-| HA | دو مقصد/سرور |
-| زمان | NTP |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
+### Retention و حجم
 
 ``` text
-config log syslogd setting
- set status enable
- set server 10.50.0.20
- set mode reliable
- set source-ip 10.50.0.1
-end
+Daily volume = events/sec x avg bytes x 86400
+Example: 500 ev/s x 500 B x 86400 = 21.6 GB/day
+90 days = 1.94 TB (before compression)
 ```
 
-#### مثال متوسط — تأیید
+با فشرده‌سازی ۸:۱ حدود ۲۴۰ گیگابایت. `logrotate` روزانه + `compress` + حذف پس از N روز؛ آرشیو سرد برای الزامات حقوقی.
 
 ``` text
-tcpdump -ni eth0 tcp port 514 -c 5
-tail -f /var/log/fgt/10.50.0.1/*.log
+# /etc/logrotate.d/fortigate
+/var/log/fortigate/*/*.log {
+    daily
+    rotate 90
+    compress
+    missingok
+    notifempty
+}
 ```
 
-#### مثال سخت — Log نمی‌رسد
+### آزمون انتها‌به‌انتها
 
-Route، Policy/Local-out، `ss -ltn`، فایروال سرور، Source IP، TLS.
+1. FortiGate: `execute log test`/ترافیک واقعی.
+2. Collector: `ss -tnp | grep 6514`.
+3. `tail -f /var/log/fortigate/FGT-A/...`.
+4. جست‌وجوی سیاست خاص.
+5. قطع Collector و بازگشت: آیا Log بافر می‌شود؟ (FortiGate بافر محدود دارد.)
 
-#### مثال‌های اصلی درس (مرور)
+### مثال‌های حل‌شده
 
-**ساده (حل‌شده):** Log Event «admin login» از FGT در `/var/log/fgt/192.168.90.1/…log` دیده می‌شود؛ `tcpdump -i eth0 port 514` TCP.
+#### مثال ساده — گرفتن Log
 
-**متوسط (تحلیل):** Log نمی‌رسد: بررسی به ترتیب: Route/Local-out به 192.168.90.20؛ Firewall سرور TCP 514؛ `mode`/`port`؛ `source-ip`؛ `diagnose log test`. شواهد: Sniffer روی Interface خروجی FGT و tcpdump سرور. نمونه علت: Policy Local-out/ACL.
+ترافیک Policy 30 ⇒ خط Log در فایل روز. جست‌وجو با policyid.
 
-**سخت (از دست رفتن Log):** پس از قطع ۱۰ دقیقه‌ای سرور، Logهای آن بازه موجود نیست. تحلیل: صف محلی محدود؛ UDP؛ حل: reliable + سرور HA یا دو Syslog؛ Alert «بدون Log ۲ دقیقه»؛ برای رویدادهای حیاتی ذخیره‌ی محلی روی دیسک FGT با Retention. طراحی: دو مقصد (Primary/Secondary) و آزمون قطع.
+#### مثال متوسط — حجم
 
-### ۶) پیاده‌سازی از مسیر GUI
+۵۰۰ ev/s ⇒ ۲۱٫۶GB در روز؛ فضا برای ۹۰ روز بعد از فشرده‌سازی ≈ ۲۴۰GB. دیسک ۵۰۰GB با حاشیه OK.
 
-1. Log & Report → Log Settings → Remote Logging and Archiving → Send Logs to Syslog.
-2. Log & Report → Forward Traffic/Events برای بررسی.
+#### مثال متوسط — UDP یا TCP
 
-### ۷) پیاده‌سازی از مسیر CLI
+UDP: در ازدحام ۵٪ Log گم شد. با TCP/TLS: بدون گم‌شدن (تا بافر). برای ممیزی TCP/TLS.
 
-``` text
-config log syslogd setting
-    set status enable
-    set server "192.168.90.20"
-    set mode reliable
-    set port 514
-    set format rfc5424
-end
-diagnose log test
-execute ping-options source 192.168.90.1
-execute ping 192.168.90.20
-```
+#### مثال سخت — قطع Collector
 
-### ۸) Verification (اثبات صحت)
+Collector ۲ ساعت Down؛ FortiGate Log را فقط تا ظرفیت بافر نگه می‌دارد؛ بخشی از دست می‌رود. راه: دو Collector (`server` و `second-server`)، ذخیره‌ی محلی به‌عنوان پشتیبان، آلارم قطع.
 
-- `tcpdump` روی سرور: TCP 514 از FGT.
-- فایل Log روزانه با رویداد آزمایشی.
-- Alert «بدون Log».
-- آزمون قطع/وصل سرور و اندازه‌گیری Loss.
+#### مثال سخت — محدودیت جایگزین
 
-### ۹) Troubleshooting
+FAZ تحلیل آماده (FortiView، IOC، Compliance) می‌دهد؛ rsyslog فقط ذخیره. برای تحلیل: Graylog/ELK و Dashboard. هزینه‌ی مهندسی را حساب کنید. همچنین Time-sync و Parse نسخه‌ها.
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+### Lab هدایت‌شده (اجرا نشده)
+
+1. rsyslog Collector.
+2. FortiGate Reliable.
+3. آزمون و Logrotate.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Log نمی‌رسد | Sniffer/tcpdump | Route/Firewall/mode/port |
-| Log ناقص | شمارش | UDP/قطع |
-| فیلدها Parse نمی‌شوند | فرمت | format/Parser |
-| دیسک پر | df | Retention/Rotate |
+| Log نمی‌رسد | Firewall/پورت | 6514 |
+| TLS خطا | CA/زمان | همگام |
+| فایل رشد | rotate | logrotate |
+| گم‌شدن | UDP | TCP |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- TLS/شبکه‌ی مدیریت.
-- دسترسی خواندنی Log محدود.
-- Log تغییرناپذیر برای حادثه.
+TLS؛ دسترسی Collector محدود؛ Log فقط‌خواندنی؛ Integrity (Hash)؛ Retention طبق قانون؛ جدا از سیستم عملیاتی.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- reliable + قالب پایدار.
-- Parse key=value.
-- Retention محاسبه‌شده.
-- Alert «بدون Log».
-- HA برای Syslog.
+Syslog مرکزی با TCP/TLS و rsyslog؛ قالب Key=Value و Parse؛ Retention با محاسبه‌ی حجم؛ آزمون انتها‌به‌انتها؛ جایگزین FAZ بدون تحلیل آماده.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا `mode reliable`؟ *(پاسخ: 26-2-ت1)*
 
@@ -1962,7 +1847,7 @@ execute ping 192.168.90.20
 
 **Q1.** Quick quiz (English): Why is UDP syslog unsuitable for critical firewall logs? *(پاسخ: 26-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1972,11 +1857,11 @@ execute ping 192.168.90.20
 
 - *Alert when a device stops sending logs.* ← وقتی دستگاه Log نمی‌فرستد هشدار بدهید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Syslog. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/syslog.md`.
 
-### ۱۵) منابع
+### منابع
 
 - [config log syslogd setting](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/456620/config-log-syslogd-setting)
 - RFC 5424
@@ -1984,255 +1869,156 @@ execute ping 192.168.90.20
 
 <a id="l-26-3"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Syslog مرکزی
-
-``` text
-config log syslogd setting
- set status enable
- set server 10.50.0.20
- set mode reliable
- set port 514
- set format default
-end
-```
-
-در rsyslog: `module(load="imtcp") input(type="imtcp" port="514")`. تأیید: `logger` و رسیدن Log.
-
-**پرسش‌های مصاحبه**
-1. *UDP/TCP؟* Reliable بهتر.
-2. *TLS؟* حفاظت.
-3. *Retention؟* سیاست.
-
-### مثال حل‌شده: Syslog TCP تا رسیدن Log
-
-``` text
-FGT: config log syslogd setting ; set status enable ; set server 10.50.0.20 ; set mode reliable ; end
-Srv: sudo tcpdump -ni eth0 tcp port 514 -c 5
-Srv: tail -f /var/log/fgt/*.log
-```
-
-**اگر Log نرسید:** ۱) Route/Policy از Mgmt به سرور ۲) پورت 514 روی سرور (`ss -ltn`) ۳) Firewall سرور ۴) Source Interface (`set source-ip`).
-
-**تست دستی از FGT:** با رویداد تغییر Config یا ورود ادمین یک Log ایجاد و رسیدن آن را بررسی کنید.
-
-### تکمیل عمیق: Syslog مرکزی با rsyslog — از FortiGate تا فایل
-
-#### چرا؟
-
-اگر بودجه‌ی FAZ ندارید، یک سرور لینوکس با rsyslog همان کار جمع‌آوری Log را می‌کند و پایه‌ی SIEM هم می‌شود.
-
-#### گام‌ها
-
-1. سرور Syslog: TCP/514 باز.
-2. فایروال سرور: فقط IP فایروال‌ها.
-3. FortiGate: ارسال با `mode reliable`.
-4. تأیید دریافت.
-5. چرخش (Rotation) و نگهداری.
-
-#### مثال ساده — سمت سرور
-
-``` text
-# /etc/rsyslog.d/10-fgt.conf
-module(load="imtcp")
-input(type="imtcp" port="514")
-template(name="fgt" type="string" string="/var/log/fgt/%fromhost-ip%/%$YEAR%-%$MONTH%-%$DAY%.log")
-*.* ?fgt
-```
-
-#### مثال متوسط — سمت FortiGate
-
-``` text
-config log syslogd setting
- set status enable
- set server 10.50.0.20
- set mode reliable
- set port 514
- set source-ip 10.50.0.1
-end
-```
-
-تأیید: `tcpdump -ni eth0 tcp port 514 -c 5` روی سرور؛ سپس `tail -f /var/log/fgt/10.50.0.1/*.log`.
-
-#### مثال سخت — Log نمی‌رسد
-
-روش ده‌گامی کوتاه: ۱) Route فایروال به سرور ۲) Policy/Local-out ۳) پورت در `ss -ltn` ۴) فایروال سرور ۵) `source-ip` ۶) TLS (اگر فعال).
-
-#### Rotation
-
-``` text
-# /etc/logrotate.d/fgt
-/var/log/fgt/*/*.log { daily rotate 90 compress missingok notifempty }
-```
-
-#### Lab
-
-یک VM لینوکس با rsyslog بسازید، Log بفرستید و Rotation را تست کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| فایل ساخته نمی‌شود | مجوز | دسترسی پوشه |
-| فقط UDP | حالت پیش‌فرض | `reliable` |
-| دیسک پر | Rotation | logrotate |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا TCP؟** تحویل مطمئن.
-**۲. چرا Rotation؟** دیسک.
-**۳. TLS Syslog؟** حفاظت محتوا.
-
-#### English Corner
-
-- *Use reliable (TCP) syslog for security logs.*
-- Q: How do you confirm logs are arriving?
-
 ## درس 26-3 — Backup خودکار و مدیریت Config با Git: Sanitize، Diff، Audit، Restore و Drift
 
 **فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۰، ۲۷-۷ · ≈ 8 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 / FortiManager-FortiAnalyzer 7.0 (Needs-License؛ بوت‌نشده)؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Backup دوره‌ای و ایمن (SFTP/SCP) را طراحی و اجرا کند.
-2. Sanitizer برای حذف Secret بنویسد و آزمون کند.
-3. Git (commit، diff، tag، branch) را برای Config به‌کار ببرد.
-4. Drift بین نسخه‌ی مرجع و دستگاه را کشف کند.
-5. Restore را در Lab اثبات و RTO را ثبت کند.
-6. Audit تغییرات (چه کسی/چه زمانی/چرا) را پیاده کند.
+1. Backup خودکار Config را (API/SSH/Scheduler) طراحی کنید.
+2. Sanitize (حذف Secret) را قبل از ذخیره در Git اجرا کنید.
+3. Diff و Audit را برای کشف تغییر غیرمجاز به‌کار ببرید.
+4. Restore و تأیید آن را آزمون کنید.
+5. Config Drift (انحراف از Baseline) را تشخیص دهید.
+6. برنامه‌ی نگهداری (Retention، رمزگذاری، دسترسی) را بنویسید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Git برای Config؟** تاریخچه‌ی تغییرات رایگان؛ ولی Secret به ریپو نرود (Sanitize)، و Restore آزمایشی ماهانه.
+Backup قدیمی مثل بیمه‌ای است که هرگز ادعا نکرده‌اید: تا وقتی نیاز نشده، نمی‌دانید کار می‌کند یا نه. دو مشکل رایج: Backup دستی که فراموش می‌شود، و Backup که در Git می‌رود و رمز/PSK را لو می‌دهد. ترکیب Backup خودکار + Sanitize + Git + Diff، هم ردپای تغییرات را می‌دهد و هم کشف تغییر غیرمجاز را ممکن می‌کند. این Pattern «Config as Code» است.
 
-**جمع‌بندی اصلی درس:**
-
-Config مرجع حقیقت دستگاه است. سه خطای رایج: (۱) Backup نداریم، (۲) Backup داریم ولی Restore نشده، (۳) Backup در Git با Secret ذخیره شده. روش درست: Backup خودکار → Sanitize → Git → Diff/Audit → آزمون Restore.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) جریان
+### جریان
 
 ``` text
-FGT --(execute backup config sftp)--> backup server (restricted)
-  -> sanitize (remove/tokenize secrets) -> git commit (author=system, message=ticket)
-  -> diff vs previous -> alert on unexpected change
-  -> periodic restore test in lab (same firmware)
+Scheduler -> backup script (API/SSH) -> sanitize -> git commit -> diff report -> alert on unexpected change
+                                   \-> encrypted full backup (offline vault)
 ```
 
-#### ۲) Backup از FortiGate
+### دو نوع Backup
 
-``` text
-execute backup config sftp fgt-A-daily.conf 192.168.90.10 backup-user <PASSWORD>
-```
-
-(روش دقیق و رمز: کاربر محدود، کلید SSH در صورت پشتیبانی؛ `Unverified`.) Backup شامل Hash/رمزهای رمزشده است؛ **حساس** حساب کنید.
-
-#### ۳) Sanitize
-
-الگوها: `set password ENC ...`، `set psksecret ENC ...`، `set secret ...`، گواهی/کلید خصوصی. استراتژی: جایگزینی با `<REDACTED>` در نسخه‌ی Git، و نگهداری نسخه‌ی کامل رمزشده جداگانه (Vault).
-
-``` text
-sed -E 's/(set (password|psksecret|secret|passwd) ).*/\1<REDACTED>/' fgt.conf > fgt.sanitized.conf
-```
-
-#### ۴) Git
-
-- Branch/Tag: `daily/YYYY-MM-DD`، Tag قبل از Change.
-- Diff روزانه: تغییرات ناشناس ⇒ Alert.
-- Pre-commit hook: اسکن Secret (جلوگیری از Commit).
-
-#### ۵) Drift
-
-Drift = تفاوت بین Config مرجع (Git) و دستگاه. Diff خودکار و اعلان؛ دلیل: تغییر مستقیم روی دستگاه بدون Ticket.
-
-#### ۶) Restore و RTO
-
-آزمون: Lab هم‌نسخه، Restore، مقایسه (`show full-configuration`)، اندازه‌گیری RTO. نسخه‌ی Firmware باید یکسان/سازگار باشد.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| مقصد Backup | سرور محدود+رمزنگاری |
-| Secret | Sanitize + Vault |
-| Retention | روزانه ۳۰، هفتگی ۱۲، ماهانه ۱۲ |
-| Restore test | فصلی |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-``` text
-sed -E 's/(set (psk|password|secret) ).*/\1REDACTED/' cfg.conf > cfg.clean
-git add cfg.clean && git commit -m weekly
-```
-
-#### مثال متوسط — Diff
-
-``` text
-git diff HEAD~1 -- cfg.clean | head -40
-```
-
-تغییر بدون CHG ⇒ بررسی.
-
-#### مثال سخت
-
-Secret لو رفت: Rotate (چرخش) نه فقط حذف از Git.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Backup شبانه با cron؛ Sanitize؛ `git commit`؛ `git log --stat` تغییرات.
-
-**متوسط (تحلیل):** Diff نشان می‌دهد Policy جدید ساعت ۲ بامداد اضافه شده بدون Ticket. بررسی: Log Event Admin؛ کاربر؛ مستند؛ در صورت نامجاز: Revert و تحقیق. درس: Audit و Alert Drift.
-
-**سخت (حادثه‌ی Secret):** Backup خام با PSK به مخزن Commit شد. اقدام: (۱) حذف از تاریخچه (git filter-repo/BFG) و Force-push با تأیید، (۲) چرخش همه‌ی رمزها/PSKها/توکن‌ها، (۳) بازبینی دسترسی به مخزن، (۴) افزودن Pre-commit و اسکن Secret، (۵) PIR. توجه: حذف از تاریخچه کافی نیست؛ فرض کنید افشا شده است ⇒ چرخش اعتبارنامه‌ها اجباری.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-execute backup config sftp fgt-A-daily.conf 192.168.90.10 backup-user <PASSWORD>
-# on backup server (shell)
-sed -E 's/(set (password|psksecret|secret|passwd) ).*/\1<REDACTED>/' fgt-A-daily.conf > fgt-A.sanitized.conf
-git add -A && git commit -m "fgt-A daily backup"
-git diff HEAD~1 -- fgt-A.sanitized.conf
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Diff روزانه تولید و بررسی.
-- Restore در Lab و RTO ثبت.
-- Pre-commit Secret scan آزمایشی (باید Block کند).
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| نوع | محتوا | محل |
 |---|---|---|
-| Backup خالی | لاگ/مجوز | دسترسی/مسیر |
-| Diff نویزی | Diff | Sanitize/ترتیب |
-| Restore ناسازگار | نسخه | Firmware برابر |
+| Full (با Secret) | برای Restore واقعی | رمزگذاری‌شده، آفلاین/Vault |
+| Sanitized | بدون Secret | Git برای Diff/Audit |
 
-### ۱۰) نکات امنیتی
+هیچ‌گاه Full را در Git ننویسید.
 
-- Secret هرگز در Git عمومی.
-- Backup رمزشده و دسترسی محدود.
-- چرخش رمز پس از افشا.
+### Backup با API
 
-### ۱۱) جمع‌بندی مفهومی
+``` text
+curl -sk -H "Authorization: Bearer <API_TOKEN>" \
+  "https://10.50.0.1/api/v2/monitor/system/config/backup?scope=global" -o fgt-a.conf
+```
 
-- Backup خودکار + Sanitize + Git + Diff.
-- Drift و Audit.
-- Restore اثبات‌شده.
-- افشای Secret = چرخش رمز.
+توکن در Vault؛ API User با Profile فقط برای Backup و Trusted Host فقط سرور Backup.
 
-### ۱۲) تمرین و ارزیابی
+### Sanitize
+
+مواردی که باید حذف/ماسک شوند: `set password ENC ...`، `set psksecret ENC ...`، `set secret`، `set passwd`، گواهی خصوصی.
+
+``` text
+sed -E 's/(set (password|psksecret|passwd|secret|private-key) ).*/\1<REDACTED>/' fgt-a.conf > fgt-a.sanitized.conf
+```
+
+بررسی: `grep -E 'ENC |private-key' fgt-a.sanitized.conf` باید خالی باشد.
+
+### Git و Diff
+
+``` text
+cd /srv/fgt-config
+cp /tmp/fgt-a.sanitized.conf ./fgt-a.conf
+git add fgt-a.conf
+git diff --stat HEAD
+git commit -m "backup 2026-11-27 FGT-A"
+git diff HEAD~1 -- fgt-a.conf
+```
+
+Diff روزانه می‌گوید «چه چیزی عوض شد». اگر تغییر با Ticket (CHG) مطابقت نداشت: هشدار.
+
+### Drift
+
+Baseline: Config تأییدشده (Golden). Drift: هر تفاوت از Baseline.
+
+``` text
+diff <(grep -v '^#' baseline.conf) <(grep -v '^#' current.conf)
+```
+
+نکته: خطوط غیرقطعی (timestamp، uuid) فیلتر شوند.
+
+### Restore و آزمون
+
+``` text
+# GUI: System > Configuration > Restore
+# CLI:
+execute restore config tftp fgt-a.conf <server>
+```
+
+آزمون دوره‌ای (فصلی) Restore روی دستگاه Lab: بوت، Policy، Route، VPN. «Backup که Restore نشده، Backup نیست».
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Diff
+
+``` text
++ edit 305
++     set name "TEMP-ANY"
++     set srcaddr "all"
++     set dstaddr "all"
++     set service "ALL"
+```
+
+تغییر ناخواسته (Policy ALL). Alert ⇒ بررسی ⇒ حذف.
+
+#### مثال متوسط — Sanitize
+
+PSK در فایل Git ماند ⇒ حادثه‌ی نشت. راه: pre-commit hook که `ENC ` را پیدا کند و Commit را رد کند.
+
+``` text
+# .git/hooks/pre-commit
+if grep -qE 'ENC |private-key' *.conf; then echo "secret found"; exit 1; fi
+```
+
+#### مثال متوسط — Retention
+
+۳۰ روز روزانه + ۱۲ ماه ماهانه؛ رمزگذاری با GPG؛ کپی خارج از سایت.
+
+#### مثال سخت — Restore ناموفق
+
+Restore Config روی نسخه‌ی متفاوت FortiOS شکست یا بخشی از Config ردشد. راه: Backup همراه نسخه؛ Restore روی همان نسخه؛ آزمون فصلی؛ ثبت نسخه در نام فایل.
+
+#### مثال سخت — Drift هدفمند
+
+تیم عملیات در اضطرار روی فایروال Policy اضافه کرد (بدون CHG). Diff شبانه تشخیص داد. فرایند: ثبت بعدی CHG، بازبینی، یا Rollback. Policy: «Break-glass تغییر» با گزارش بعدی.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. اسکریپت Backup و Sanitize.
+2. Git و Diff.
+3. Restore در Lab.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| Secret در Git | Sanitize ناقص | hook |
+| Diff پر از نویز | timestamp | فیلتر |
+| Restore شکست | نسخه | هم‌نسخه |
+| Backup نشد | Token/Trusted | بررسی |
+
+### نکات امنیتی
+
+Full رمزگذاری و آفلاین؛ Git خصوصی با MFA؛ دسترسی Read-only؛ Audit؛ تست Restore فصلی.
+
+### جمع‌بندی
+
+Config as Code: Backup خودکار + Sanitize + Git + Diff؛ Full رمزگذاری‌شده؛ Drift و Audit؛ Restore آزمون‌شده.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا Backup بدون Restore کافی نیست؟ *(پاسخ: 26-3-ت1)*
 
@@ -2248,7 +2034,7 @@ git diff HEAD~1 -- fgt-A.sanitized.conf
 
 **Q1.** Quick quiz (English): Why is removing a secret from Git history not enough after it was committed? *(پاسخ: 26-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2258,11 +2044,11 @@ git diff HEAD~1 -- fgt-A.sanitized.conf
 
 - *Never commit secrets to a repository.* ← هرگز Secret را در مخزن Commit نکنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Backup/Git. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/backup.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Git documentation
 - NIST SP 800-53 CM-2/CM-3
@@ -2270,230 +2056,172 @@ git diff HEAD~1 -- fgt-A.sanitized.conf
 
 <a id="l-26-4"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Backup با Git
-
-Sanitize: حذف `ENC` و Secret؛ Diff هفتگی.
-
-``` text
-execute backup config ftp cfg.conf 10.50.0.30 user ***
-git add -A && git commit -m "daily"
-git diff HEAD~1 -- cfg.conf
-```
-
-هرگز Secret در ریپو.
-
-**پرسش‌های مصاحبه**
-1. *Sanitize؟* حذف رمز.
-2. *Diff؟* تغییر ناخواسته.
-3. *Restore آزمون؟* دوره‌ای.
-
-### مثال حل‌شده: Diff هفتگی Config
-
-``` text
-sed -E 's/(set (psk|password|secret) ).*/\1REDACTED/' cfg.conf > cfg.clean
-git add cfg.clean && git commit -m weekly
-git diff HEAD~1 -- cfg.clean | head -30
-```
-
-تفسیر: خطوط `+` افزوده‌شده، `-` حذف‌شده. اگر Policy جدیدی بدون Change Ticket دیدید ⇒ تغییر خارج از فرایند؛ بررسی Log Admin.
-
-**هشدار:** `ENC` هم Secret است؛ فایل Sanitize نشده را در ریپو قرار ندهید.
-
-### تکمیل عمیق: Backup خودکار، Diff و Git بدون نشت Secret
-
-#### چرا؟
-
-تغییر Config بدون ردپا یعنی نمی‌دانید دیشب چه شد. Git + Backup خودکار تاریخچه‌ی تغییرات را رایگان می‌دهد؛ ولی اگر Secret به ریپو برود، فاجعه است.
-
-#### جریان
-
-``` text
-Backup -> Sanitize secrets -> Commit -> Diff -> Alert on unexpected change
-```
-
-#### مثال ساده — Sanitize
-
-``` text
-sed -E 's/(set (psk|password|secret|passwd) ).*/\1REDACTED/; s/ENC [^ ]+/ENC REDACTED/' cfg.conf > cfg.clean
-```
-
-هشدار: `ENC` هم یک Secret رمزنگاری‌شده است؛ در ریپوی عمومی/مشترک نگذارید.
-
-#### مثال متوسط — Commit و Diff
-
-``` text
-git add cfg.clean && git commit -m "daily backup"
-git diff HEAD~1 -- cfg.clean | head -40
-```
-
-خطوط `+` افزوده‌شده، `-` حذف‌شده. تغییر بدون CHG ⇒ بررسی.
-
-#### مثال سخت — اتوماسیون
-
-Cron روزانه: Backup با SCP، Sanitize، Commit، و اگر Diff غیرخالی بود ایمیل به Owner.
-
-``` text
-0 2 * * * /opt/fgt/backup.sh >> /var/log/fgt-backup.log 2>&1
-```
-
-اسکریپت باید خطا را گزارش کند (Exit Code) و Hash را ثبت.
-
-#### Restore آزمایشی
-
-ماهانه یک Config را در Lab Restore کنید و Policy/Route را مقایسه کنید.
-
-#### Lab
-
-یک ریپوی خصوصی محلی بسازید، سه نسخه‌ی Config با تغییر را Commit و Diff را تحلیل کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Secret در Git | Sanitize ناقص | حذف از تاریخچه + تغییر رمز |
-| Diff خیلی بزرگ | ترتیب تصادفی | ثابت‌کردن خروجی |
-| Backup خالی | دسترسی | بررسی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. اگر Secret به Git رفت؟** آن را چرخش (Rotate) کنید، نه فقط حذف.
-**۲. چرا Diff؟** تغییر ناخواسته.
-**۳. Restore چرا آزمایشی؟** اعتبار Backup.
-
-#### English Corner
-
-- *Never commit secrets; rotate any that leak.*
-- Q: What does an unexpected diff indicate?
-
 ## درس 26-4 — طراحی معماری ۹ (مدیریت مرکزی و عملیات): RBAC، Change، Audit و آزمون با Rubric
 
 **فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۱ تا ۲۶-۳، ۳۲-۱ · ≈ 11 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید آموزشی؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ FMG/FAZ وابسته به لایسنس (Needs-License).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. معماری مدیریت مرکزی (FortiManager، FortiAnalyzer، ADOM) را طراحی کند.
-2. RBAC چندسطحی (Super، Network، ReadOnly، Auditor) را مدل کند.
-3. فرایند Change از طریق Policy Package و Revision را بنویسد.
-4. Audit و Alert روی تغییر Config را طراحی کند.
-5. آزمون و Rubric را تحویل دهد.
+1. معماری مدیریت مرکزی و عملیات (RBAC، Change، Audit، Backup، Log) را طراحی کنید.
+2. نقش‌ها و Admin Profile حداقلی تعریف کنید.
+3. فرایند Change (Request، Review، Window، Rollback، Verify) را بنویسید.
+4. Audit و گزارش را مستند کنید.
+5. سه عیب تزریق‌شده را در Gate رفع کنید.
+6. Rubric را اجرا و صداقت را ثبت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا RBAC و Out-of-band؟** هر کس فقط کار لازم؛ و مدیریت هنگام خرابی هم باید ممکن باشد (شبکه‌ی OOB). Audit: چه کسی، کی، چه چیزی.
+بیشتر حوادث امنیتی/قطعی از «عملیات» می‌آید نه از فناوری: دسترسی زیاد، تغییر بدون Review، بی‌Audit، بی‌Backup. معماری مدیریت یعنی قانون‌گذاری برای همین‌ها. مثل قانون ساختمان: هر کارگر کلید همه‌ی اتاق‌ها را ندارد، هر تغییر مجوز می‌خواهد، و دفتری ثبت می‌کند چه کسی چه کرد.
 
-**جمع‌بندی اصلی درس:**
+### RBAC — نقش‌ها
 
-با ۲۰ فایروال، ورود دستی به هر کدام ناممکن و ناهمگن می‌شود. مدیریت مرکزی یک منبع حقیقت می‌دهد: Policy Package، Revision و Audit. ولی همین مرکز، هدف جذاب مهاجم است؛ پس RBAC و Hardening آن حیاتی است. FMG/FAZ وابسته به لایسنس هستند (Needs-License).
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) معماری
-
-``` text
-FortiManager (policy, device DB, revisions)  --FGFM-->  FGT-1..N
-FortiAnalyzer (logs, reports, events)        <--logs--  FGT-1..N
-ADOM: per region / per customer
-```
-
-#### ۲) RBAC
-
-| نقش | دسترسی |
-|---|---|
-| Super | همه (۲ نفر، MFA) |
-| Network Admin | Policy Package ADOM خود |
-| ReadOnly (NOC) | مشاهده |
-| Auditor | Log و Revision خواندنی |
-
-#### ۳) فرایند Change
-
-1. ایجاد Revision/Backup. 2. ویرایش Policy Package. 3. Review (Workflow Session). 4. Install Preview. 5. Install در Window. 6. Verify. 7. Close.
-
-#### ۴) Audit
-
-Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ سال.
-
-#### ۵) Hardening مدیریت مرکزی
-
-شبکه‌ی Mgmt جدا؛ Trusted host؛ MFA؛ Backup FMG؛ HA.
-
-#### ۶) آزمون و Rubric
-
-سناریو: افزودن Policy به ۵ شعبه با CHG؛ Install Preview؛ Rollback به Revision قبلی. Rubric: معماری ۲۰، RBAC ۲۰، Change ۲۰، Audit ۲۰، آزمون و صداقت ۲۰.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| ADOM | بر اساس منطقه |
-| RBAC | حداقل |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-NOC فقط خواندن؛ Network Eng تغییر؛ Security Log.
-
-#### مثال متوسط
+| نقش | دسترسی | Profile (مثال) |
+|---|---|---|
+| NOC-Read | فقط خواندن | `prof_readonly` |
+| Net-Ops | Policy/Route غیرحساس | `prof_netops` |
+| Sec-Admin | UTM/VPN/Auth | `prof_secadmin` |
+| Super-Admin | همه (کم و با MFA) | `super_admin` |
+| Auditor | Log و Config فقط‌خواندنی | `prof_audit` |
+| Automation | API فقط Backup | `prof_api_backup` |
 
 ``` text
 config system accprofile
- edit "noc-ro"
-  set netgrp read
-  set fwgrp read
-  set loggrp read
- next
+    edit "prof_readonly"
+        set secfabgrp read
+        set ftviewgrp read
+        set authgrp read
+        set sysgrp read
+        set netgrp read
+        set loggrp read
+        set fwgrp read
+        set vpngrp read
+        set utmgrp read
+        set wifi read
+    next
+end
+config system admin
+    edit "noc-alice"
+        set accprofile "prof_readonly"
+        set trusthost1 10.50.0.0 255.255.255.0
+        set two-factor fortitoken
+    next
 end
 ```
 
-#### مثال سخت
+اصل: Least Privilege، `trusthost`، MFA، حساب شخصی (نه مشترک)، Break-glass فقط یکی با رمز در Vault.
 
-مدیریت Inband قطع شد؛ OOB با Console Server/LTE نجات می‌دهد.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** ADOM-EU و ADOM-US؛ Network Admin هر ADOM فقط ADOM خودش.
-
-**متوسط (Change):** Install Preview نشان داد Policy ۶۲ در ۵ دستگاه؛ Install در Window؛ Verify؛ Revision ثبت.
-
-**سخت (Rollback):** Install باعث قطع VPN شد. مراحل: Revision قبلی؛ Install مجدد؛ ۸ دقیقه؛ RCA: Object مشترک تغییر کرده بود؛ اقدام: Preview با Diff و آزمون در Lab.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### فرایند Change
 
 ``` text
-! FMG/FAZ operations are mostly GUI; verify license (Needs-License)
+1 Request (ticket CHG-xxx: what, why, risk, rollback)
+2 Review/Approval (peer + owner)
+3 Window (approved time)
+4 Pre-check + Backup
+5 Implement
+6 Verify (test list)
+7 Close (evidence, update docs)
+8 Post-implementation review (if failed)
 ```
 
-### ۸) Verification (اثبات صحت)
+Change اضطراری (Emergency) با تأیید سریع و Review بعدی.
 
-- Revision.
-- Audit Alert.
+### Audit
 
-### ۹) Troubleshooting
+| سؤال | منبع |
+|---|---|
+| چه کسی؟ | Admin Log (`logid` Config change) |
+| چه چیزی؟ | Diff در Git |
+| چرا؟ | Ticket |
+| چه زمانی؟ | Log |
+| نتیجه؟ | Verify |
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+گزارش ماهانه: تغییرات، Break-glass، ورودهای ناموفق، Policy بدون Owner.
+
+### Gate — صورت مسئله
+
+سازمان ۱۵ فایروال، ۸ ادمین، بدون فرایند. باید: RBAC، Change، Backup/Audit، Log مرکزی طراحی و ثابت شود.
+
+عیب‌های تزریق‌شده:
+
+1. همه‌ی ادمین‌ها `super_admin` و حساب مشترک `admin`.
+2. تغییر در Production بدون Ticket (Policy ALL موقت).
+3. Backup فقط دستی و Restore آزمون‌نشده.
+
+### کلید پاسخ
+
+| عیب | Evidence | رفع |
 |---|---|---|
-| Install شکست | Preview/Connectivity | FGFM |
+| ۱ | `show system admin` | Profile حداقلی، حساب شخصی، MFA، Trusthost |
+| ۲ | Diff Git و Log Admin | Policy حذف؛ فرایند Change؛ Alert روی Policy جدید |
+| ۳ | تاریخ آخرین Backup | Backup خودکار + آزمون Restore فصلی |
 
-### ۱۰) نکات امنیتی
+### Rubric (۱۰۰)
 
-- MFA.
-- Mgmt جدا.
+| معیار | امتیاز |
+|---|---|
+| RBAC | 20 |
+| فرایند Change | 20 |
+| Audit/Log | 15 |
+| Backup/Restore | 15 |
+| رفع سه عیب | 20 |
+| مستندسازی/صداقت | 10 |
 
-### ۱۱) جمع‌بندی مفهومی
+### مثال‌های حل‌شده
 
-- مرکز=منبع حقیقت.
-- RBAC.
-- Revision و Rollback.
+#### مثال ساده — Profile
 
-### ۱۲) تمرین و ارزیابی
+NOC فقط می‌خواند. تلاش `config firewall policy` ⇒ Permission denied. آزمون منفی RBAC.
+
+#### مثال متوسط — Change
+
+CHG-601: افزودن Policy HTTPS به سرور جدید. Review، Window شنبه ۲۲:۰۰، Backup، اجرا، Verify (`iprope lookup`)، Close.
+
+``` text
+Rollback plan: delete policy 340; restore backup fgt-a-2026-11-27.conf
+```
+
+#### مثال متوسط — Audit
+
+Log: `user=bob action=Edit cfgpath=firewall.policy cfgobj=305`. Ticket نیست ⇒ بررسی. نتیجه: تغییر اضطراری؛ ثبت بعدی و Review.
+
+#### مثال سخت — حساب مشترک
+
+سه نفر با `admin`. حادثه: Policy ALL ایجاد شد؛ نمی‌توان فهمید چه کسی. راه: حساب شخصی، حذف/غیرفعال admin (یا Break-glass)، Audit.
+
+#### مثال سخت — Emergency Change
+
+قطعی ساعت ۲ شب؛ Emergency Change با تأیید تلفنی مدیر؛ انجام؛ فردا Review و مستند. بدون این، یا قطعی طولانی یا تغییر پنهان.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Profile و Admin.
+2. فرایند Change و یک CHG نمونه.
+3. گزارش Audit.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| همه Super | RBAC نیست | Profile |
+| تغییر بی‌Ticket | فرایند | Alert/Policy |
+| Restore نشد | آزمون نیست | فصلی |
+| حساب مشترک | ردگیری | شخصی |
+
+### نکات امنیتی
+
+MFA، Trusthost، Break-glass، Log مرکزی، Backup رمزگذاری‌شده، بازبینی فصلی دسترسی.
+
+### جمع‌بندی
+
+معماری مدیریت: RBAC حداقلی، Change با Ticket/Review/Rollback، Audit، Backup آزمون‌شده، Log مرکزی؛ سه عیب و Rubric؛ صداقت.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) ADOM؟ *(پاسخ: 26-4-ت1)*
 
@@ -2509,7 +2237,7 @@ end
 
 **Q1.** Quick quiz (English): Why use install preview before pushing a policy package? *(پاسخ: 26-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2517,11 +2245,11 @@ end
 
 - *Review the diff before installing.* ← قبل از Install تفاوت‌ها را بازبینی کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** معماری ۹ (اجرا نشده؛ Needs-License). **Evidence:** `02-design/arch9.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiManager Administration Guide
 - FortiAnalyzer Administration Guide
@@ -2541,104 +2269,6 @@ end
 ``` text
 Audit alert: 'Configuration changed' by user net01 at 22:03 -> ticket CHG-0123
 ```
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: معماری مدیریت و عملیات
-
-Runbook، Change، Monitoring، Backup، RBAC. شاخص: RPO/RTO مستند.
-
-**پرسش‌های مصاحبه**
-1. *RBAC؟* Profile.
-2. *Out-of-band؟* Mgmt شبکه‌ی جدا.
-3. *Audit؟* Log تغییر.
-
-### مثال حل‌شده: RBAC مدیریتی
-
-| نقش | دسترسی |
-|---|---|
-| NOC | فقط خواندن (super_admin_readonly) |
-| Network Eng | Policy/Route |
-| Security | Log/UTM |
-
-``` text
-config system accprofile
- edit "noc-ro"
-  set netgrp read
-  set fwgrp read
-  set loggrp read
- next
-end
-```
-
-آزمون: کاربر NOC تلاش به تغییر Policy ⇒ رد؛ Log رویداد ثبت شود.
-
-### تکمیل عمیق: معماری عملیات — RBAC، Out-of-band، Audit
-
-#### چرا؟
-
-عملیات مقیاس‌پذیر یعنی «هر کس فقط همان کاری را بتواند انجام دهد که باید». این‌جا RBAC (Role-Based Access Control، یعنی «کنترل دسترسی نقش‌محور»)، شبکه‌ی مدیریتی جدا و ممیزی را کنار هم می‌گذاریم.
-
-#### مثال ساده — نقش‌ها
-
-| نقش | دسترسی | مثال |
-|---|---|---|
-| NOC | فقط‌خواندنی | بررسی Health |
-| Network Eng | Policy/Route | تغییر با CHG |
-| Security | Log/UTM | تحلیل |
-| Super Admin | کامل | 2 نفر |
-
-#### مثال متوسط — Profile
-
-``` text
-config system accprofile
- edit "noc-ro"
-  set netgrp read
-  set fwgrp read
-  set loggrp read
-  set sysgrp read
- next
-end
-```
-
-آزمون: کاربر NOC تلاش به تغییر Policy ⇒ رد و Log رویداد.
-
-#### مثال سخت — Out-of-band
-
-اگر مدیریت از همان شبکه‌ی Production برود و فایروال یا لینک خراب شود، دسترسی هم قطع می‌شود. راه: شبکه‌ی Mgmt جدا (OOB) با Console Server/LTE.
-
-#### Audit
-
-Log تغییرات: چه کسی، کی، چه چیزی (`config log eventfilter`). هفتگی با CHGها تطبیق دهید؛ تغییر بدون CHG یعنی خارج از فرایند.
-
-``` text
-Unmatched changes = total config changes - changes with CHG
-```
-
-#### Lab
-
-سه پروفایل بسازید و رفتار هر کدام را تست کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| همه Super Admin | سهل‌انگاری | RBAC |
-| تغییر بدون ردپا | Log غیرفعال | eventfilter |
-| قطع مدیریت | Inband | OOB |
-
-#### پرسش‌ها با پاسخ
-
-**۱. RBAC چیست؟** دسترسی بر اساس نقش.
-**۲. OOB چرا؟** مدیریت هنگام خرابی.
-**۳. چرا Audit؟** ردگیری.
-
-#### English Corner
-
-- *Apply least privilege through role-based profiles.*
-- Q: Why keep a separate out-of-band management path?
 
 ## پاسخ‌های فصل 26
 
