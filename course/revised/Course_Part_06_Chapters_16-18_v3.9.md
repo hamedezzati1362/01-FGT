@@ -310,6 +310,64 @@ get firewall ssl-ssh-profile
 2. *Certificate Pinning؟* برنامه گواهی را قفل می‌کند؛ Exemption لازم.
 3. *هزینه CPU؟* رمزگشایی/رمزگذاری دوباره.
 
+### تکمیل عمیق: Flow در برابر Proxy و TLS Inspection — انتخاب درست
+
+#### چرا باید یاد بگیریم؟
+
+فایروال نسل جدید فقط «پورت» را نمی‌بیند؛ محتوا را هم بازرسی می‌کند. ولی بازرسی هزینه دارد و دو روش دارد که هر کدام جای خود را دارند. انتخاب غلط یا سرعت را می‌کشد یا قابلیت لازم را از دست می‌دهد.
+
+#### توضیح ساده
+
+- **Flow-based**: بسته‌ها در حین عبور بازرسی می‌شوند، بدون ذخیره‌ی کامل فایل. سریع‌تر؛ قابلیت NPU Offload بیشتر.
+- **Proxy-based**: فایروال فایل/ارتباط را کامل دریافت و سپس تصمیم می‌گیرد. کندتر ولی بازرسی عمیق‌تر برای بعضی قابلیت‌ها.
+
+جدول قابلیت‌های هر حالت در مستند Fortinet نسخه آمده؛ قاعده‌ی عملی: پیش‌فرض Flow، و Proxy فقط وقتی قابلیت مورد نیاز آن را بخواهد.
+
+#### مثال ساده — انتخاب
+
+شعبه 1 Gbps با Web Filter Category + Antivirus: Flow-based معمولاً کافی و سریع است.
+
+#### مثال متوسط — SSL/TLS Inspection
+
+بیش از ۹۰٪ ترافیک رمز است؛ بدون Inspection، AV/IPS/Web Filter عمیق نمی‌بینند. فایروال نقش «مرد میانی مجاز» دارد: اتصال کلاینت را با گواهی ساختگی (امضاشده با CA سازمان) خاتمه می‌دهد و اتصال دوم را به سرور می‌سازد.
+
+``` text
+Client <-TLS(cert signed by Corp CA)-> FortiGate <-TLS(real server cert)-> Server
+```
+
+کلاینت باید CA سازمان را بپذیرد.
+
+#### مثال سخت — Certificate Pinning
+
+برنامه‌هایی که گواهی را «قفل» می‌کنند (بانک، برخی Appها) با Inspection شکست می‌خورند. راه: Exemption برای آن دسته/Domain؛ و مستندسازی دلیل. همچنین دسته‌های حساس حریم (سلامت، مالی) را از Inspection مستثنی کنید.
+
+#### هزینه
+
+رمزگشایی/رمزنگاری دوباره CPU می‌خورد؛ ظرفیت را با Baseline اندازه بگیرید (درس 16-6).
+
+#### Lab
+
+یک Policy با Inspection را تنها در Lab بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| هشدار گواهی | CA نصب نیست | توزیع |
+| برنامه شکست | Pinning | Exemption |
+| CPU بالا | Inspection | مقیاس/Exemption |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Flow یا Proxy؟** پیش‌فرض Flow.
+**۲. چرا CA؟** اعتماد.
+**۳. Pinning؟** گواهی قفل‌شده.
+
+#### English Corner
+
+- *Deep inspection requires clients to trust the inspection CA.*
+- Q: Why are some categories exempted from SSL inspection?
+
 ## درس 16-1 — نقشه‌ی UTM: Security Profileها، لایسنس FortiGuard و ماتریس قابلیت
 
 **فصل 16 · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰، ۱۲-۰، ۱۳-۱ · ≈ 6 ساعت**
@@ -478,6 +536,65 @@ show webfilter profile
 1. *تفاوت Static و Category؟* دستی در برابر پایگاه داده‌ی ابری.
 2. *لایسنس منقضی چه می‌شود؟* به‌روزرسانی متوقف؛ تنظیم فعلی ممکن است کار کند ولی Category جدید نه.
 3. *چرا Evidence لایسنس؟* ادعای ظرفیت بدون آن خطاست.
+
+### تکمیل عمیق: نقشه‌ی UTM و ماتریس لایسنس
+
+#### چرا؟
+
+قبل از وعده‌دادن به مدیر که «فایروال ویروس‌ها را می‌گیرد»، باید بدانید چه Profileی چه لایسنسی می‌خواهد.
+
+#### ماتریس
+
+| قابلیت | لایسنس | بدون لایسنس |
+|---|---|---|
+| Web Filter Category | FortiGuard Web Filtering | فقط Static URL |
+| Antivirus | FortiGuard AV | امضای قدیمی/غیرفعال |
+| IPS | FortiGuard IPS | امضای محدود |
+| Application Control | FortiGuard AppCtrl | امضای محدود |
+| DNS Filter | FortiGuard | محدود |
+
+(وضعیت دقیق را از مستند همان نسخه تأیید کنید.)
+
+#### مثال ساده — بررسی
+
+``` text
+get system status
+diagnose debug rating
+execute update-now
+```
+
+در GUI صفحه‌ی FortiGuard وضعیت لایسنس و آخرین به‌روزرسانی را می‌دهد.
+
+#### مثال متوسط — VM بدون لایسنس
+
+در Lab ما FortiGate VM لایسنس ندارد ⇒ Category/AV/IPS «Needs-License» و اجرا نشده؛ فقط Static URL و تنظیم Profile (Syntax) مستند می‌شود.
+
+#### مثال سخت — لایسنس منقضی
+
+لایسنس تمام شد؛ Profile هنوز روی Policy است ولی Category نمی‌تواند Rating بگیرد. رفتار پیش‌فرض (Allow/Block) را از مستند بخوانید (`rating-error` در Web Filter) و تنظیم کنید.
+
+#### Lab
+
+فهرست Profileهای شعبه‌ی خودتان با ستون لایسنس بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Category کار نمی‌کند | لایسنس/Rating | بررسی |
+| IPS قدیمی | به‌روزرسانی | update-now |
+| Log بی‌Category | rating error | تنظیم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Static URL لایسنس می‌خواهد؟** خیر.
+**۲. rating-error؟** رفتار هنگام خطای Rating.
+**۳. چرا ماتریس؟** وعده‌ی غلط.
+
+#### English Corner
+
+- *UTM features that rely on FortiGuard require an active subscription.*
+- Q: What happens to category filtering when the license expires?
 
 ## درس 16-2 — Web Filter و DNS Filter: Static URL، Category، FQDN و عیب‌یابی HTTPS
 
@@ -678,6 +795,68 @@ end
 2. *DoH مشکل؟* DNS Filter دور می‌خورد؛ بلاک DoH Resolverها.
 3. *Block Page روی HTTPS؟* نیازمند Inspection یا ارسال Reset.
 
+### تکمیل عمیق: Web Filter و DNS Filter — HTTPS بدون Inspection
+
+#### چرا؟
+
+بسیاری از سازمان‌ها نمی‌خواهند ترافیک را رمزگشایی کنند؛ آیا باز هم می‌توان وب را فیلتر کرد؟ بله، با SNI و DNS.
+
+#### آنچه بدون Inspection دیده می‌شود
+
+در HTTPS مسیر کامل URL رمز است؛ ولی **SNI** (نام سرور در ClientHello) دیده می‌شود. پس Domain را می‌توان مسدود کرد، ولی نه مسیر خاص (`/video/123`).
+
+#### مثال ساده — Static URL
+
+``` text
+config webfilter urlfilter
+ edit 1
+  set name "BLOCK-LIST"
+  config entries
+   edit 1
+    set url "*.example-bad.com"
+    set type wildcard
+    set action block
+   next
+  end
+ next
+end
+```
+
+#### مثال متوسط — DNS Filter
+
+پاسخ DNS را بر اساس Category تغییر/مسدود می‌کند؛ مستقل از TLS. دور زدن: DoH (DNS over HTTPS) به Resolverهای بیرونی؛ راه: مسدودکردن DoH Resolverهای شناخته‌شده یا App Control.
+
+#### مثال سخت — Block Page
+
+برای HTTPS بدون Inspection، فایروال نمی‌تواند Block Page سالم نشان دهد (گواهی نامعتبر)؛ معمولاً اتصال Reset می‌شود. با Inspection صفحه‌ی بلوک نمایش داده می‌شود.
+
+#### آزمون
+
+به https://www.example-bad.com برو ⇒ بلوک؛ Log: `utmaction=blocked`.
+
+#### Lab
+
+Static URL را بدون لایسنس تست کنید (اجرا نشده).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| مسدود نمی‌شود | wildcard | الگو |
+| DoH دور می‌زند | Resolver بیرونی | مسدود |
+| Block Page نه | بدون Inspection | Reset طبیعی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. SNI چیست؟** نام سرور.
+**۲. DNS Filter مزیت؟** مستقل از TLS.
+**۳. DoH؟** دور زدن DNS.
+
+#### English Corner
+
+- *Without inspection, the firewall can filter by SNI and DNS but not by URL path.*
+- Q: How can users bypass DNS filtering?
+
 ## درس 16-3 — Antivirus و File Filter: سازوکار، حالت‌ها و تست امن
 
 **فصل ۱۶ · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰، ۱۶-۲ · ≈ ۶ ساعت**
@@ -843,6 +1022,74 @@ curl -O https://secure.eicar.org/eicar.com.txt
 1. *چرا EICAR؟* تست بی‌خطر.
 2. *فایل zip رمزدار؟* قابل اسکن نیست؛ Policy جدا.
 3. *AV در HTTPS؟* فقط با SSL Inspection.
+
+### تکمیل عمیق: Antivirus و File Filter
+
+#### چرا؟
+
+فایل آلوده معمولاً از وب یا ایمیل می‌آید؛ AV امضا را بررسی و File Filter نوع فایل را کنترل می‌کند.
+
+#### آزمون امن با EICAR
+
+EICAR یک فایل متنی بی‌خطر است که همه‌ی AVها آن را «ویروس تست» می‌شناسند.
+
+``` text
+curl -O https://secure.eicar.org/eicar.com.txt
+```
+
+انتظار: Block و Log `virus=EICAR_TEST_FILE`.
+
+#### مثال ساده — File Filter
+
+مسدودکردن `exe` و `scr` از اینترنت:
+
+``` text
+config file-filter profile
+ edit "FF1"
+  config rules
+   edit 1
+    set name "block-exe"
+    set protocol http https
+    set action block
+    set file-type "exe"
+   next
+  end
+ next
+end
+```
+
+(Syntax را از مستند نسخه تأیید کنید.)
+
+#### مثال متوسط — محدودیت‌ها
+
+فایل رمزدار (zip با رمز) و فایل بزرگ‌تر از Oversize Limit اسکن نمی‌شود؛ Policy برای رفتار Oversize (block/pass) را صریح بگذارید.
+
+#### مثال سخت — HTTPS
+
+بدون SSL Inspection، فایل داخل HTTPS دیده نمی‌شود؛ AV در وب رمز بی‌اثر است. با Inspection فعال می‌شود.
+
+#### Lab
+
+EICAR را در Lab با AV (در صورت لایسنس) تست کنید؛ در غیر این صورت «اجرا نشده».
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| EICAR عبور می‌کند | بدون Inspection/لایسنس | بررسی |
+| فایل بزرگ | Oversize | سیاست |
+| zip رمزدار | قابل اسکن نیست | سیاست |
+
+#### پرسش‌ها با پاسخ
+
+**۱. EICAR چیست؟** ویروس تست بی‌خطر.
+**۲. Oversize؟** فایل بزرگ‌تر از حد.
+**۳. AV در HTTPS؟** نیاز به Inspection.
+
+#### English Corner
+
+- *The EICAR test file safely validates antivirus inspection.*
+- Q: Why is an encrypted archive hard for antivirus to scan?
 
 ## درس 16-4 — IPS، DoS Policy و Application Control: سازوکار، تنظیم و FP
 
@@ -1028,6 +1275,83 @@ end
 2. *DoS بر چه چیزی؟* نرخ بسته/اتصال.
 3. *IPS روی ترافیک رمزی؟* فقط با Inspection.
 
+### تکمیل عمیق: IPS، DoS و Application Control — تنظیم و FP
+
+#### چرا؟
+
+IPS بد تنظیم‌شده یا همه‌چیز را قطع می‌کند (False Positive) یا چیزی را نمی‌گیرد. تنظیم مرحله‌ای کلید است.
+
+#### روش مرحله‌ای
+
+1. Monitor (Pass + Log) برای ۲ هفته.
+2. بررسی Logها: کدام امضاها FP هستند؟
+3. Block برای شدت بالا/بحرانی و امضاهای مطمئن.
+4. Exemption مستند برای FP با مالک و تاریخ.
+
+#### مثال ساده
+
+``` text
+config ips sensor
+ edit "IPS-SRV"
+  config entries
+   edit 1
+    set severity high critical
+    set action block
+   next
+  end
+ next
+end
+```
+
+#### مثال متوسط — DoS Policy
+
+``` text
+config firewall DoS-policy
+ edit 1
+  set interface "port1"
+  set srcaddr "all"
+  set dstaddr "VIP-WEB"
+  set service "ALL"
+  config anomaly
+   edit "tcp_syn_flood"
+    set status enable
+    set threshold 2000
+    set action block
+   next
+  end
+ next
+end
+```
+
+آستانه را از Baseline بگیرید: اگر Peak عادی SYN 500/s است، آستانه ≈ Peak × 3 = 1500–2000.
+
+#### مثال سخت — Application Control
+
+مسدودکردن P2P/Proxy-anonymizers؛ ولی بدون Inspection برنامه‌های رمز را نمی‌بیند. و `Shaper` برای محدود کردن پهنای باند برنامه‌های غیرضروری.
+
+#### Lab
+
+IPS را در Monitor بگذارید و Log را بخوانید (در صورت لایسنس).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| FP زیاد | Block زود | Monitor |
+| DoS قطع قانونی | آستانه کم | افزایش |
+| App رمز دیده نمی‌شود | Inspection | فعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Monitor اول؟** جلوگیری از قطع.
+**۲. آستانه DoS؟** Baseline × ضریب.
+**۳. Exemption؟** مستند.
+
+#### English Corner
+
+- *Start in monitor mode and tune before enforcing blocks.*
+- Q: How do you choose a DoS threshold?
+
 ## درس 16-5 — SSL Inspection عملی: ساخت CA، نصب، Exemption و آزمون
 
 **فصل ۱۶ · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰ (مفاهیم TLS/CA)، ۱۶-۲ · ≈ ۶ ساعت**
@@ -1184,6 +1508,85 @@ certutil -store Root | findstr Corp
 1. *چرا Sub-CA؟* ابطال و کنترل.
 2. *Pinning؟* Exemption.
 3. *مسائل حقوقی؟* اطلاع‌رسانی و سیاست حریم خصوصی.
+
+### تکمیل عمیق: SSL Inspection عملی — CA، توزیع و Exemption
+
+#### چرا؟
+
+بدون نصب CA روی کلاینت‌ها، Inspection صفحه‌های خطا تولید می‌کند. توزیع درست مرحله‌ی کلیدی است.
+
+#### گام‌ها
+
+1. CA مناسب: ترجیحاً Sub-CA از CA سازمان (قابل ابطال).
+2. Import به FortiGate و انتخاب در Profile.
+3. توزیع با GPO (Trusted Root).
+4. Exemption.
+5. آزمون.
+
+#### مثال ساده — GPO
+
+``` text
+certutil -dspublish -f corp-ca.cer RootCA
+gpupdate /force
+certutil -store Root | findstr Corp
+```
+
+#### مثال متوسط — Profile
+
+``` text
+config firewall ssl-ssh-profile
+ edit "deep-inspect"
+  config https
+   set ports 443
+   set status deep-inspection
+  end
+  set caname "Corp-SubCA"
+  config ssl-exempt
+   edit 1
+    set type fortiguard-category
+    set fortiguard-category 31
+   next
+  end
+ next
+end
+```
+
+(کد Category را از مستند بخوانید.)
+
+#### مثال سخت — Android/Linux/Java
+
+CA باید در Keystore هر پلتفرم نصب شود (Java `keytool`، Firefox Store جدا). برنامه‌های Pinning مستثنا.
+
+#### آزمون
+
+مرورگر به https://example.org ⇒ Issuer باید CA سازمان باشد.
+
+``` text
+openssl s_client -connect example.org:443 -servername example.org </dev/null | openssl x509 -noout -issuer
+```
+
+#### Lab
+
+CA آزمایشی بسازید و در یک VM نصب کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| خطای گواهی | CA نصب نشده | GPO |
+| Java شکست | Keystore | keytool |
+| بانک شکست | Pinning | Exemption |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Sub-CA؟** ابطال.
+**۲. Issuer چه می‌گوید؟** Inspection فعال.
+**۳. Keystore؟** فروشگاه گواهی.
+
+#### English Corner
+
+- *Use a revocable sub-CA for inspection rather than a self-signed root.*
+- Q: How can you verify that inspection is active from the client?
 
 ## درس 16-6 — Performance UTM، اندازه‌گیری، عیب‌یابی و آزمون عملی فصل ۱۶
 
@@ -1349,6 +1752,70 @@ iperf3 -c 10.20.0.10 -P 8 -t 30
 1. *چرا یکی‌یکی؟* تأثیر هر Profile جدا.
 2. *Offload NPU با UTM؟* کاهش می‌یابد.
 3. *بهینه‌سازی؟* Profile فقط روی Policyهای لازم.
+
+### تکمیل عمیق: اندازه‌گیری هزینه‌ی UTM
+
+#### چرا؟
+
+«UTM کند می‌کند» جمله‌ای است که بدون عدد معنایی ندارد. باید بدانید هر Profile چقدر هزینه دارد.
+
+#### روش
+
+1. Baseline بدون UTM.
+2. فعال‌کردن یک Profile و اندازه‌گیری.
+3. افزودن بعدی.
+4. ثبت CPU و Throughput.
+
+``` text
+diagnose sys top 2 20
+get system performance status
+iperf3 -c 10.20.0.10 -P 8 -t 30
+```
+
+#### جدول ثبت
+
+| حالت | Throughput | CPU |
+|---|---|---|
+| Baseline | ثبت | ثبت |
+| +AV | ثبت | ثبت |
+| +IPS | ثبت | ثبت |
+| +SSL Inspection | ثبت | ثبت |
+
+اعداد را از Lab خودتان بنویسید.
+
+#### محاسبه‌ی افت
+
+``` text
+Drop % = (baseline - measured) / baseline x 100
+(900 - 600) / 900 x 100 = 33.3 %
+```
+
+#### مثال سخت — ظرفیت
+
+اگر ۹۰٪ ترافیک رمز است و Inspection ظرفیت را به ۴۰٪ می‌رساند، برای ۱ Gbps ترافیک به مدلی با Inspection ≥ 1 Gbps نیاز دارید، نه فقط Firewall Throughput.
+
+#### Lab
+
+جدول را در Lab پر کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| افت شدید | Inspection | Exemption/مدل |
+| CPU 100٪ | بی‌Offload | Policy |
+| عدد ناپایدار | آزمون ضعیف | تکرار |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا یکی‌یکی؟** تأثیر جدا.
+**۲. افت چگونه؟** درصد.
+**۳. دیتاشیت؟** Inspection Throughput.
+
+#### English Corner
+
+- *Measure each security profile's cost separately against a baseline.*
+- Q: Why does SSL inspection throughput matter more than firewall throughput?
 
 ## درس 16-7 — کارت قابلیت هر Security Profile: چه می‌بیند، چه نمی‌بیند، هزینه و راستی‌آزمایی
 
@@ -1582,6 +2049,67 @@ diagnose debug flow filter addr 192.168.10.5
 1. *چرا ستون «چه نمی‌بیند»؟* جلوگیری از اعتماد کاذب.
 2. *Bypass چرا؟* طراحی دفاع چندلایه.
 3. *وضعیت اجرا؟* صادقانه ثبت.
+
+### تکمیل عمیق: کارت ده‌پرسشی — نمونه‌ی پر برای IPS و DNS Filter
+
+#### چرا؟
+
+هر قابلیت امنیتی باید یک «کارت» داشته باشد تا بدانید دقیقاً چه کاری می‌کند و چه کاری نمی‌کند.
+
+#### کارت IPS
+
+| # | پرسش | پاسخ |
+|---|---|---|
+| 1 | چه می‌بیند؟ | الگوهای حمله در بسته/جریان |
+| 2 | چه نمی‌بیند؟ | ترافیک رمز بدون Inspection |
+| 3 | لایسنس؟ | امضای به‌روز: بله |
+| 4 | Inspection لازم؟ | برای ترافیک رمز بله |
+| 5 | هزینه؟ | متوسط تا زیاد |
+| 6 | Bypass؟ | Tunnel رمز/Fragmentation |
+| 7 | Log؟ | attack, severity |
+| 8 | آزمون مثبت؟ | الگوی تست |
+| 9 | آزمون منفی؟ | ترافیک عادی عبور |
+| 10 | وضعیت | تأیید مستندی؛ اجرا نشده |
+
+#### کارت DNS Filter
+
+| # | پرسش | پاسخ |
+|---|---|---|
+| 1 | چه می‌بیند؟ | پرس‌وجوی DNS |
+| 2 | چه نمی‌بیند؟ | DoH/IP مستقیم |
+| 3 | لایسنس؟ | Category: بله |
+| 4 | Inspection؟ | خیر |
+| 5 | هزینه؟ | کم |
+| 6 | Bypass؟ | DoH |
+| 7 | Log؟ | domain, action |
+| 8-10 | مثبت/منفی/وضعیت | مانند بالا |
+
+#### مثال سخت — استفاده در تصمیم
+
+مدیر می‌پرسد «چرا بدون DoH Block فقط DNS Filter کافی نیست؟». کارت ستون Bypass پاسخ می‌دهد.
+
+#### Lab
+
+کارت‌های Web Filter، AV، App Control را بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| کارت ناقص | خلأ دانش | مستند |
+| Bypass نادیده | ساده‌انگاری | ستون 6 |
+| وضعیت نادرست | ادعا | صداقت |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا ستون Bypass؟** اعتماد کاذب.
+**۲. وضعیت؟** اجرا شده/مستندی.
+**۳. کارت برای هر قابلیت؟** بله.
+
+#### English Corner
+
+- *Document what each security feature cannot see as well as what it can.*
+- Q: Which bypass techniques affect DNS filtering?
 
 ## پاسخ‌های فصل 16
 
