@@ -1905,150 +1905,142 @@ Debug Flow: ورود، Route، Policy، NAT. سه نتیجه Allowed/Denied/RPF�
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. جدول مسیر را با `get router info routing-table` (all/details/database) بخواند.
-2. Policy Route و جدول ARP را بررسی کند.
-3. iprope lookup و `diagnose firewall iprope list` را به‌کار ببرد.
-4. Session را برای اثبات NAT/Policy تفسیر کند.
-5. نتایج را در یک «پرونده‌ی شواهد» جمع کند.
+1. `diagnose sys session list` را با فیلتر بخوانید (state، proto_state، NAT).
+2. جدول Routing را با سه دستور (all، database، details) بررسی کنید.
+3. `iprope lookup` را برای پیش‌بینی Policy به‌کار ببرید.
+4. Session، Route و Policy را برای اثبات یک تصمیم ترکیب کنید.
+5. Session را با فیلتر ایمن پاک کنید.
+6. `get router info kernel` و Policy Route را بشناسید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا سه ابزار مکمل؟** Route می‌گوید «کجا»، iprope می‌گوید «مجاز؟»، Session می‌گوید «چه چیزی باز است». با هر سه، تصمیم را ثابت می‌کنید.
+Sniffer «بسته‌ها» را نشان می‌دهد و Debug Flow «تصمیم لحظه‌ای» را؛ ولی **وضعیت پایدار** (چه Sessionهایی باز است، چه Routeی فعال است، کدام Policy برنده می‌شود) را سه دستور دیگر می‌دهند. مثل پزشکی که علاوه بر نوار قلب، پرونده‌ی پزشکی و آزمایش خون هم می‌بیند. این سه ابزار ارزان و بی‌خطرند و اغلب بدون هیچ debugی علت را نشان می‌دهند.
 
-**جمع‌بندی اصلی درس:** گاهی debug flow کافی نیست یا نمی‌خواهید روی Production Debug بزنید. ابزارهای «فقط‌خواندنی» مثل جدول مسیر، ARP، Session و iprope بدون اثر جانبی جواب می‌دهند. یک مهندس خوب اول این‌ها را می‌خواند.
+### Session list
 
-### ۳) توضیح عمیق فنی
+``` text
+diagnose sys session filter clear
+diagnose sys session filter src 10.10.0.5
+diagnose sys session filter dst 198.51.100.8
+diagnose sys session filter dport 443
+diagnose sys session list
+```
 
-#### ۱) جدول مسیر
+نمونه:
+
+``` text
+session info: proto=6 proto_state=01 duration=35 expire=3565 timeout=3600
+state=may_dirty npu
+statistic(bytes/packets/allow_err): org=1540/12/1 reply=9800/11/1
+orgin->sink: org pre->post, reply pre->post dev=5->3/3->5 gwy=203.0.113.1/10.10.0.5
+hook=post dir=org act=snat 10.10.0.5:50000->198.51.100.8:443(203.0.113.2:50000)
+hook=pre dir=reply act=dnat 198.51.100.8:443->203.0.113.2:50000(10.10.0.5:50000)
+policy_id=30 auth_info=0 chk_client_info=0 vd=0
+```
+
+| فیلد | معنی |
+|---|---|
+| proto/proto_state | TCP و وضعیت (01=established) |
+| timeout/expire | زمان باقی‌مانده |
+| act=snat | ترجمه‌ی مبدأ |
+| policy_id | Policy تطبیق‌خورده |
+| dev=5->3 | Interface ورودی و خروجی (index) |
+| npu | شتاب‌داده‌شده |
+
+### Routing
 
 ``` text
 get router info routing-table all
-get router info routing-table details 203.0.113.10
 get router info routing-table database
+get router info routing-table details 198.51.100.8
 get router info kernel
 ```
 
-- `all`: مسیرهای فعال (RIB).
-- `details`: چرا این مسیر انتخاب شد (Distance، Metric، Interface).
-- `database`: همه‌ی مسیرهای دریافتی حتی غیرفعال (برای فهم اینکه چرا مسیر بهتر استفاده نمی‌شود).
-- `kernel`: جدول Forwarding واقعی.
+- `all`: Routeهای فعال.
+- `database`: همه‌ی Routeها با Distance/Priority (حتی غیرفعال).
+- `details <ip>`: Route برنده برای یک مقصد.
+- `kernel`: FIB واقعی که Kernel استفاده می‌کند.
 
-#### ۲) ARP و MAC
-
-``` text
-diagnose ip arp list
-get system arp
-```
-
-اگر Next-hop ARP ندارد (INCOMPLETE) یعنی لایه‌ی ۲ مشکل دارد، نه Policy.
-
-#### ۳) Policy Route
+### iprope lookup
 
 ``` text
-diagnose firewall proute list
+diagnose firewall iprope lookup 10.10.0.5 50000 198.51.100.8 443 tcp port2
 ```
 
-Policy Route قبل از جدول مسیر اعمال می‌شود؛ مسیر «عجیب» اغلب از همین‌جاست.
+پیش‌بینی می‌کند چه Policyی تطبیق می‌خورد؛ بدون ایجاد ترافیک واقعی. پارامتر آخر Interface ورودی است.
 
-#### ۴) iprope
+### ترکیب سه ابزار
 
 ``` text
-diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
-diagnose firewall iprope list 100004
+Route   -> egress interface (port1)
+Policy  -> policy 30 (srcintf->dstintf pair)
+Session -> actual NAT & state
 ```
 
-lookup: کدام Policy؛ list: لیست Policyها با شمارنده‌ها (`Unverified` برای شماره‌ی گروه).
+اگر سه مورد با هم سازگار باشند و باز هم کار نکند، مشکل خارج از FGT است.
 
-#### ۵) Session
+### پاک‌کردن Session
 
 ``` text
 diagnose sys session filter src 10.10.0.5
-diagnose sys session list
+diagnose sys session clear
+diagnose sys session filter clear
 ```
 
-فیلدهای مهم: policy_id، act=snat/dnat، state، npu.
+هشدار: بدون فیلتر، `clear` **همه‌ی** Sessionها را پاک می‌کند و قطعی ایجاد می‌شود.
 
-#### ۶) پرونده‌ی شواهد
+### مثال‌های حل‌شده
 
-برای هر پرونده: خروجی‌ها (Route، ARP، Lookup، Session) با زمان و علت؛ بدون رمز/اطلاعات حساس.
+#### مثال ساده — Session باز؟
 
-### ۴) طراحی و تصمیم‌گیری
+`filter dst 198.51.100.8` و `list`: `proto_state=01` یعنی Established؛ اتصال برقرار. `proto_state=02` (SYN_SENT) یعنی پاسخی نیامده.
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| ابزار فقط‌خواندنی | قبل از debug |
-| Evidence | زمان‌دار |
+#### مثال متوسط — Policy و NAT واقعی
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+Session ⇒ `policy_id=30 act=snat ...(203.0.113.2)`. با این Evidence ثابت می‌شود چه Policyی و چه IPی ترجمه کرده؛ حدس لازم نیست.
 
-#### مثال ساده
+#### مثال متوسط — Route بهتر
 
-``` text
-get router info routing-table details 198.51.100.8
-diagnose firewall iprope lookup 10.10.0.5 40000 198.51.100.8 443 tcp port2
-diagnose sys session filter dst 198.51.100.8
-diagnose sys session list
-```
+Default جدید اضافه شد ولی ترافیک از مسیر قدیمی می‌رود. `routing-table database` هر دو را نشان می‌دهد؛ `all` فقط قدیمی (Distance کمتر). رفع: Priority/Distance.
 
-#### مثال متوسط — مسیر قدیمی
+#### مثال سخت — Session قدیمی
 
-پس از تغییر Default Route بعضی کاربران از ISP قدیم می‌روند: Session مسیر لحظه‌ی ساخت را دارد؛ Clear با فیلتر یا `snat-route-change`.
+Policy عوض شد ولی کاربر هنوز با قانون قدیمی کار می‌کند. Session: `policy_id=5` (قدیمی). رفع: `session filter` ⇒ `clear` فقط برای همان کاربر.
 
-#### مثال سخت — Policy Route
+#### مثال سخت — Offload
 
-PBR قبل از جدول عادی؛ `diagnose firewall proute list` را ببینید.
+`npu` در Session: ترافیک شتاب‌داده؛ Sniffer ممکن است همه‌ی بسته‌ها را نشان ندهد. برای آزمون: Session را پاک و موقت Offload را محدود کنید (آزمایشی).
 
-#### مثال‌های اصلی درس (مرور)
+### Lab هدایت‌شده (اجرا نشده)
 
-**ساده (حل‌شده):** `get router info routing-table details 203.0.113.10`: Default via 198.51.100.1 port1 [10/0]؛ Policy Lookup: ID 2؛ نتیجه: مسیر و Policy سالم.
+1. اتصال بزنید و Session را بخوانید.
+2. Route دوم اضافه و database/all را مقایسه کنید.
+3. Lookup قبل و بعد از تغییر Policy.
 
-**متوسط (ARP):** Route درست و Policy درست ولی ping به Next-hop نمی‌رود: `diagnose ip arp list` ورودی `incomplete`؛ لینک یا VLAN سوییچ؛ رفع و آزمون ping.
+### عیب‌یابی سریع
 
-**سخت (Policy Route پنهان):** ترافیک مالی از ISP2 می‌رود در حالی که Default ISP1 است. مراحل: ۱) routing-table درست. ۲) `proute list`: Policy Route 3 برای 10.10.20.0/24 به ISP2. ۳) علت: Policy قدیمی. رفع: حذف/اصلاح؛ آزمون traceroute.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Monitor → Routing Monitor.
-2. Network → Policy Routes.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-get router info routing-table details 203.0.113.10
-get router info routing-table database
-diagnose ip arp list
-diagnose firewall proute list
-diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
-diagnose sys session list
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Route/ARP/Policy/Session هماهنگ.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| مسیر عجیب | proute | Policy Route |
-| ARP incomplete | L2 | سوییچ |
-| مسیر بهتر استفاده نمی‌شود | database | Distance |
+| Session نیست | بسته نرسیده/Deny | Sniffer/Debug |
+| SYN_SENT | پاسخ نیامده | بالادست |
+| Policy قدیمی | Session قدیمی | clear با فیلتر |
+| Route نامنتظره | Distance | database |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- خروجی‌ها را بدون اطلاعات حساس نگه دارید.
+پاک‌کردن Session کاربران را قطع می‌کند؛ با فیلتر و در پنجره‌ی مجاز. Sessionها اطلاعات IP و ترافیک را نشان می‌دهند؛ دسترسی محدود.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- ابزار فقط‌خواندنی.
-- proute.
-- پرونده‌ی شواهد.
+Session، Routing و iprope سه ابزار بی‌خطر برای اثبات Policy، NAT و Route‌اند؛ ترکیب آن‌ها بسیاری از خرابی‌ها را بدون debug حل می‌کند.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) routing-table database چیست؟ *(پاسخ: 14-4-ت1)*
 
@@ -2064,7 +2056,7 @@ diagnose sys session list
 
 **Q1.** Quick quiz (English): Which command lists policy routes? *(پاسخ: 14-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2072,103 +2064,16 @@ diagnose sys session list
 
 - *Prove each decision with evidence.* ← هر تصمیم را با شواهد ثابت کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** ابزارهای تکمیلی (اجرا نشده). **Evidence:** `03-ops/full-picture.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Routing monitor
 - FortiOS 7.0 CLI Reference: get router info
 
 <a id="l-14-5"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: ترکیب Session + Route + iprope در یک پرونده
-
-**سناریو.** پس از تغییر Default Route، بعضی کاربران هنوز از ISP قدیم خارج می‌شوند.
-
-``` text
-get router info routing-table details 0.0.0.0/0 -> via port4 (new)
-diagnose sys session filter src 10.10.0.5
-diagnose sys session list -> ... gw=198.18.0.1 via port1 (old)
-```
-
-علت: Sessionهای موجود مسیر قدیم را نگه می‌دارند (Route cache در Session). راه حل: پاک‌سازی Session با فیلتر یا `set snat-route-change enable` برای حالتی که SNAT استفاده می‌شود (طبق مستند Fortinet).
-
-**Lookup**
-
-``` text
-diagnose firewall iprope lookup 10.10.0.5 40000 8.8.8.8 53 udp port2
-```
-
-**نکته.** `get router info routing-table all` بهترین مسیر فعال؛ `database` همه‌ی مسیرها (Admin Distance/Priority).
-
-**اشتباهات رایج:** Clear بدون فیلتر، فراموشی `diagnose sys session filter clear`.
-
-**پرسش‌های مصاحبه**
-1. *چرا Session قدیم مسیر قدیم را دارد؟* Session Route را در لحظه‌ی ساخت ثبت می‌کند.
-2. *iprope چه می‌گوید؟* Policy مطابق بدون ترافیک.
-3. *Policy Route کجا؟* قبل از جدول مسیر عادی.
-
-### تکمیل عمیق: Session، Routing و iprope
-
-#### چرا؟
-
-سه ابزار هر کدام یک سؤال را جواب می‌دهند: Route می‌گوید «کجا»، iprope می‌گوید «مجاز؟»، Session می‌گوید «چه چیزی الان باز است».
-
-#### مثال ساده
-
-``` text
-get router info routing-table details 198.51.100.8
-diagnose firewall iprope lookup 10.10.0.5 40000 198.51.100.8 443 tcp port2
-diagnose sys session filter dst 198.51.100.8
-diagnose sys session list
-```
-
-#### مثال متوسط — Session مسیر قدیم
-
-پس از تغییر Default Route، بعضی کاربران هنوز از ISP قدیم می‌روند: Session مسیر را در لحظه‌ی ساخت دارد. رفع: پاک‌سازی با فیلتر یا `snat-route-change`.
-
-``` text
-diagnose sys session filter src 10.10.0.5
-diagnose sys session clear
-diagnose sys session filter clear
-```
-
-#### مثال سخت — Policy Route
-
-Policy Route قبل از Routing عادی ارزیابی می‌شود؛ اگر مطابق باشد و Gateway ناتمام باشد، ترافیک مسیر دیگر می‌رود. مشاهده: `diagnose firewall proute list`.
-
-#### نکته
-
-`routing-table all` بهترین مسیرهای فعال؛ `database` همه‌ی مسیرها (Distance/Priority).
-
-#### Lab
-
-یک Route را تغییر دهید و رفتار Session را مشاهده کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| مسیر قدیم | Session | Clear |
-| Policy Route | proute | بررسی |
-| Clear همه‌چیز | بی‌فیلتر | فیلتر |
-
-#### پرسش‌ها با پاسخ
-
-**۱. iprope؟** Policy مطابق.
-**۲. چرا Session مسیر قدیم؟** لحظه‌ی ساخت.
-**۳. proute؟** Policy Route.
-
-#### English Corner
-
-- *Existing sessions keep their original route until they expire or are cleared.*
-- Q: What does the iprope lookup command tell you?
 
 ## درس 14-5 — MTU/MSS، DNS و مشکلات TCP/UDP: عیب‌یابی «نیمه‌کارکرده» با محاسبه و آزمون پایدار
 
@@ -2176,143 +2081,135 @@ Policy Route قبل از Routing عادی ارزیابی می‌شود؛ اگر 
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. PMTU را با ping و DF با جست‌وجوی دودویی اندازه بگیرد.
-2. MSS-clamp را محاسبه و روی Policy/Tunnel اعمال کند.
-3. DNS (Resolver، Forwarder، TCP/UDP 53، EDNS) را عیب‌یابی کند.
-4. علائم Black-hole، Retransmission و RST را در Capture بخواند.
-5. رفع را با آزمون پایدار تأیید کند.
+1. MTU و MSS را تعریف و رابطه‌ی آن‌ها را محاسبه کنید.
+2. علائم «نیمه‌کارکرده» (ping بله، فایل بزرگ نه) را تشخیص دهید.
+3. با `ping -f -l` (Windows) یا `ping -M do -s` (Linux) MTU مسیر را پیدا کنید.
+4. TCP MSS Clamp را روی FortiGate تنظیم کنید.
+5. DNS را از چهار زاویه عیب‌یابی کنید.
+6. تفاوت مشکلات TCP و UDP را بشناسید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا MTU/DNS؟** مشکل «گاهی کار می‌کند» اغلب MTU یا DNS است. بسته‌ی کوچک رد می‌شود ولی بزرگ نه؛ یا نام حل می‌شود با تأخیر.
+یکی از آزاردهنده‌ترین خرابی‌ها: «ping جواب می‌دهد، سایت باز می‌شود ولی فایل بزرگ یا ایمیل با پیوست قطع می‌شود». علت اغلب MTU است. مثل جاده‌ای که تنها کامیون‌های کوچک را رد می‌کند: ماشین‌های سبک (ping) رد می‌شوند ولی کامیون (بسته‌ی بزرگ) گیر می‌کند. DNS هم «تلفن‌چی» شبکه است؛ اگر خراب باشد، همه‌چیز «اینترنت قطع است» به نظر می‌رسد در حالی که IPها کار می‌کنند.
 
-**جمع‌بندی اصلی درس:** بدترین گزارش «بعضی وقت‌ها کار می‌کند» است. صفحه‌ی ساده باز می‌شود ولی ورود به پورتال تا لود شدن می‌ماند؛ ping کار می‌کند و دانلود می‌ایستد؛ نام کار نمی‌کند ولی IP می‌کند. اینها اغلب MTU یا DNS هستند.
+### MTU و MSS
 
-### ۳) توضیح عمیق فنی
-
-#### ۱) اندازه‌گیری PMTU
-
-``` text
-execute ping-options df-bit yes
-execute ping-options data-size 1472
-execute ping 203.0.113.10        -> fail
-execute ping-options data-size 1372
-execute ping 203.0.113.10        -> ok
-execute ping-options data-size 1422
-...
-```
-
-جست‌وجوی دودویی بین موفق و ناموفق؛ PMTU = اندازه‌ی موفق + 28.
+| اصطلاح | معنی |
+|---|---|
+| MTU (Maximum Transmission Unit) | بزرگ‌ترین اندازه‌ی بسته‌ی IP در یک لینک (معمولاً ۱۵۰۰) |
+| MSS (Maximum Segment Size) | بزرگ‌ترین payload TCP |
+| PMTUD | کشف MTU مسیر با ICMP |
 
 ``` text
-Example: success at 1400 -> PMTU = 1428
-MSS = PMTU - 40 = 1388 ; use 1380 for margin
+MSS = MTU - IP header (20) - TCP header (20)
+MSS = 1500 - 20 - 20 = 1460
 ```
 
-#### ۲) MSS-clamp
+با تونل (IPsec حدود ۷۰–۷۵ بایت overhead):
+
+``` text
+Effective MTU = 1500 - 73 = 1427 (approx)
+MSS           = 1427 - 40 = 1387
+```
+
+### چرا PMTUD گاهی شکست می‌خورد؟
+
+بسته‌ی بزرگ با بیت DF (Don't Fragment) فرستاده می‌شود؛ مسیر کوچک‌تر ICMP «Fragmentation needed» برمی‌گرداند؛ اگر Firewall این ICMP را بلاک کند، فرستنده هرگز نمی‌فهمد ⇒ اتصال گیر می‌کند (Black hole).
+
+### یافتن MTU مسیر
+
+``` text
+Windows: ping -f -l 1472 198.51.100.8
+Linux  : ping -M do -s 1472 198.51.100.8
+```
+
+1472 + 28 (ICMP+IP) = 1500. اگر شکست خورد، کم کنید (1452، 1400 ...) تا موفق شود؛ MTU = عدد موفق + 28.
+
+### راه‌حل: MSS Clamp
 
 ``` text
 config firewall policy
- edit 2
-  set tcp-mss-sender 1380
-  set tcp-mss-receiver 1380
- next
+    edit 30
+        set tcp-mss-sender 1360
+        set tcp-mss-receiver 1360
+    next
 end
 ```
 
-(`Unverified` روی 7.0.3.) برای IPsec روی Phase/Interface تونل هم MSS تنظیم کنید.
+یا روی Interface: `set tcp-mss 1360`. این کار MSS را در SYN تنظیم می‌کند تا بسته‌ها از ابتدا کوچک باشند.
 
-#### ۳) DNS
+### DNS — چهار زاویه
 
-- UDP/TCP 53؛ پاسخ بزرگ نیاز به TCP/EDNS.
-- FortiGate می‌تواند Forwarder/DNS Server باشد.
-- علامت: ping IP ok، ping name نه.
-
-``` text
-execute ping www.example.com
-diagnose test application dnsproxy 3
-```
-
-#### ۴) الگوها در Capture
-
-- بسته‌ی بزرگ بی‌پاسخ + Retransmission ⇒ MTU.
-- Query بدون Response ⇒ Policy 53/Resolver.
-- RST ⇒ سرور/Policy.
-
-#### ۵) آزمون پایدار
-
-دانلود ۱۰۰ MB، صفحه‌ی HTTPS بزرگ، ۲۰ DNS Query؛ ۳ بار تکرار.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| زاویه | آزمون |
 |---|---|
-| MSS | PMTU−40 با حاشیه |
-| ICMP | Frag-needed مجاز |
+| Resolver کاربر | `nslookup name 10.20.0.53` |
+| DNS خود FGT | `execute ping name` |
+| مسیر DNS | UDP/53 و TCP/53 در Policy |
+| پاسخ بزرگ | TCP/53 یا EDNS |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### TCP در برابر UDP
 
-#### مثال ساده — MSS
+- TCP: Handshake، Retransmission؛ علامت: Timeout/RST.
+- UDP: بی‌اتصال؛ علامت: بی‌پاسخ ساکت؛ Session کوتاه (UDP timeout).
+- DNS روی UDP؛ پاسخ بزرگ ⇒ TCP.
 
-``` text
-Path MTU 1400 -> MSS = 1400 - 40 = 1360
-ping -f -l 1372 198.51.100.8
-```
+### مثال‌های حل‌شده
 
-#### مثال متوسط — Clamp
+#### مثال ساده — محاسبه‌ی MSS
 
-`set tcp-mss-sender 1360` و `tcp-mss-receiver 1360` روی Policy.
+Ethernet: MTU 1500 ⇒ MSS 1460 (بلوک بالا).
 
-#### مثال سخت — PMTUD Blackhole و DNS
+#### مثال متوسط — یافتن MTU مسیر
 
-ICMP Type 3 Code 4 فیلتر؛ ping کار می‌کند ولی HTTPS نه. و DNS: AAAA بی‌پاسخ 5 ثانیه ⇒ کندی؛ `diagnose test application dnsproxy 3`.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** PMTU=1428 ⇒ MSS=1388؛ clamp 1380.
-
-**متوسط (DNS):** ping IP ok، name no. مراحل: ۱) Policy پورت 53 به Resolver نیست. ۲) افزودن UDP/TCP 53. ۳) آزمون nslookup. نتیجه: نام کار می‌کند.
-
-**سخت (IPsec):** تونل MTU 1438؛ دانلود می‌ایستد؛ ICMP frag-needed بسته. مراحل: ۱) ping DF: 1372 ok، 1422 fail ⇒ PMTU 1400. ۲) MSS 1360 روی Policy تونل. ۳) باز کردن ICMP 3/4. ۴) آزمون ۱۰۰MB. معیار: بدون Retransmission.
-
-### ۷) پیاده‌سازی از مسیر CLI
+ping 1472 DF ⇒ «Packet needs to be fragmented». 1452 ⇒ شکست. 1400 ⇒ موفق. 1420 ⇒ موفق؛ 1430 ⇒ شکست. حداکثر موفق 1420 ⇒ MTU = 1420 + 28 = 1448 (محاسبه در بلوک).
 
 ``` text
-execute ping-options df-bit yes
-execute ping-options data-size 1372
-execute ping 203.0.113.10
-execute ping www.example.com
+Path MTU = 1420 + 28 = 1448
+MSS      = 1448 - 40  = 1408
 ```
 
-### ۸) Verification (اثبات صحت)
+#### مثال متوسط — DNS
 
-- دانلود بزرگ.
-- DNS جواب.
-- Retransmission کم.
+نام باز نمی‌شود ولی IP باز می‌شود. `nslookup` به DNS داخلی ⇒ Timeout. Policy UDP/53 به DNS Server وجود نداشت. رفع: افزودن سرویس DNS. تأیید: nslookup جواب.
 
-### ۹) Troubleshooting
+#### مثال سخت — فایل بزرگ و IPsec
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+Site-to-Site: وب سبک باز می‌شود، دانلود ۵۰MB قطع. IPsec overhead ⇒ MTU موثر ۱۴۲۷؛ ICMP frag بلاک. رفع: MSS Clamp 1360 روی Policy تونل. تأیید: دانلود کامل و Sniffer: SYN با `mss 1360`.
+
+#### مثال سخت — DNS بزرگ
+
+پاسخ DNSSEC بزرگ (>512 بایت) روی UDP قطع می‌شود؛ fallback TCP/53 بلاک. رفع: TCP/53 مجاز.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. MTU مسیر را با ping DF پیدا کنید.
+2. MSS Clamp بگذارید و SYN را در Sniffer ببینید.
+3. DNS را از چهار زاویه آزمون کنید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| فقط بزرگ | DF ping | MSS/MTU |
-| نام کار نمی‌کند | DNS | Policy 53 |
+| فایل بزرگ قطع | MTU/PMTUD | Clamp/ICMP |
+| نام نه، IP بله | DNS | Policy/Resolver |
+| UDP بی‌جواب | Policy/Session | سرویس |
+| فقط HTTPS کند | MTU/Inspection | Clamp |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- ICMP frag-needed را کامل نبندید.
+ICMP را کامل بلاک نکنید؛ نوع 3 کد 4 را مجاز کنید. DNS را فقط به Resolverهای مجاز اجازه دهید.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- PMTU باینری.
-- MSS−40.
-- DNS.
-- آزمون پایدار.
+MTU/MSS با فرمول؛ علامت نیمه‌کارکرده نشانه‌ی MTU؛ آزمون ping DF؛ Clamp؛ DNS از چهار زاویه؛ TCP و UDP علائم متفاوت دارند.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) MSS برای MTU 1400؟ *(پاسخ: 14-5-ت1)*
 
@@ -2328,7 +2225,7 @@ execute ping www.example.com
 
 **Q1.** Quick quiz (English): How do you measure path MTU with ping? *(پاسخ: 14-5-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2336,126 +2233,16 @@ execute ping www.example.com
 
 - *Lower the MSS on tunnels.* ← MSS را روی تونل‌ها کاهش دهید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** MTU/DNS (اجرا نشده). **Evidence:** `03-ops/mtu-mss.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Troubleshooting
 - RFC 1191
 
 <a id="l-14-6"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: محاسبه‌ی MTU/MSS و پرونده‌ی «سایت باز می‌شود ولی بارگذاری نمی‌شود»
-
-**محاسبه**
-
-``` text
-Path MTU            = 1400   (found by ping -f)
-MSS = MTU - IP(20) - TCP(20) = 1360
-IPsec ESP overhead ~ 73 bytes -> inner MTU ~ 1427 for MTU 1500
-```
-
-**تست**
-
-``` text
-ping -f -l 1472 198.51.100.8   -> fragmentation needed (too big)
-ping -f -l 1372 198.51.100.8   -> reply (1400 total)
-```
-
-**رفع** با MSS Clamping روی Policy:
-
-``` text
-config firewall policy
- edit 30
-  set tcp-mss-sender 1360
-  set tcp-mss-receiver 1360
- next
-end
-```
-
-یا کاهش MTU Interface Tunnel. علت اصلی: ICMP «Fragmentation needed» بین مسیر فیلتر شده (PMTUD Black Hole).
-
-**DNS:** `diagnose test application dnsproxy 3` وضعیت؛ UDP بزرگ (EDNS) و TCP/53.
-
-**پرسش‌های مصاحبه**
-1. *چرا ping کار می‌کند ولی HTTPS نه؟* بسته‌ی کوچک رد می‌شود، بزرگ نه.
-2. *MSS Clamp کجا؟* روی TCP SYN.
-3. *چرا ICMP را کامل نبندیم؟* PMTUD.
-
-### تکمیل عمیق: MTU/MSS، DNS و مشکلات نیمه‌کارکرده
-
-#### چرا؟
-
-بدترین مشکلات «گاهی کار می‌کند» هستند؛ MTU و DNS دو علت اصلی‌اند.
-
-#### MTU و MSS
-
-``` text
-Path MTU = 1400 (found with ping -f)
-MSS = MTU - IP(20) - TCP(20) = 1360
-```
-
-``` text
-ping -f -l 1372 198.51.100.8   -> reply
-ping -f -l 1373 198.51.100.8   -> fragmentation needed
-```
-
-رفع با MSS Clamp:
-
-``` text
-config firewall policy
- edit 30
-  set tcp-mss-sender 1360
-  set tcp-mss-receiver 1360
- next
-end
-```
-
-#### مثال سخت — PMTUD Blackhole
-
-ICMP Type 3 Code 4 فیلتر شده؛ فرستنده نمی‌فهمد؛ HTTPS قطع می‌شود در حالی که ping کار می‌کند. Clamp روی SYN مستقل از ICMP عمل می‌کند.
-
-#### DNS
-
-``` text
-diagnose test application dnsproxy 3
-nslookup app.example.com 10.20.0.5
-```
-
-پاسخ بزرگ (EDNS/DNSSEC) و TCP/53؛ Truncation.
-
-#### مثال متوسط — کندی
-
-AAAA بی‌پاسخ ۵ ثانیه؛ سپس A. علت: DNS Server؛ رفع روی سرور.
-
-#### Lab
-
-Path MTU را اندازه و MSS را محاسبه کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| HTTPS قطع | MTU | Clamp |
-| DNS کند | AAAA | سرور |
-| TC | TCP/53 | باز |
-
-#### پرسش‌ها با پاسخ
-
-**۱. MSS چگونه؟** MTU منهای ۴۰.
-**۲. چرا Clamp؟** مستقل از ICMP.
-**۳. TC flag؟** پاسخ بریده.
-
-#### English Corner
-
-- *If small packets work and large ones fail, suspect an MTU problem.*
-- Q: How do you compute the TCP MSS from the MTU?
 
 ## درس 14-6 — تحلیل Log، Packet Walk و آزمون عملی فصل ۱۴: سه پرونده‌ی کامل
 
@@ -2463,122 +2250,122 @@ Path MTU را اندازه و MSS را محاسبه کنید.
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Log ترافیک را (action، policyid، srcip، dstip، service، byte) بخواند.
-2. با فیلتر Log علت Deny را بیابد.
-3. Packet Walk کامل را از Log و Flow بسازد.
-4. سه پرونده را حل و RCA کند.
-5. آزمون عملی فصل ۱۴ را با Rubric تحویل دهد.
+1. Log ترافیک را برای یافتن الگو فیلتر و تفسیر کنید.
+2. Packet Walk را برای یک جریان کامل (داخل → اینترنت) بنویسید.
+3. سه پرونده‌ی کامل را با روش ده‌پرسشی حل کنید.
+4. Evidence را در جدول ثبت کنید.
+5. RCA کوتاه بنویسید.
+6. آزمون عملی فصل را بشناسید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Log و Packet Walk؟** Log اولین منبع است؛ باید هر فیلد را بخوانید و به گام‌های مسیر بسته وصل کنید.
+عیب‌یابی یعنی ترکیب همه‌ی ابزارها روی یک پرونده. مثل خلبانی که همه‌ی ابزارها را در شرایط واقعی تمرین می‌کند. در این درس سه پرونده‌ی کامل از علامت تا رفع حل می‌شود تا مهارت در عمل جا بیفتد.
 
-**جمع‌بندی اصلی درس:** Debug لحظه است؛ Log حافظه‌ی بلندمدت است. «ساعت ۹ دیروز چرا قطع شد؟» فقط با Log جواب داده می‌شود. این درس خواندن Log را به عیب‌یابی کامل تبدیل می‌کند.
+### Log ترافیک
 
-### ۳) توضیح عمیق فنی
+GUI: Log & Report > Forward Traffic. فیلدهای مهم: Source، Destination، Policy ID، Action، Result، Sent/Received.
 
-#### ۱) خواندن Log
+| Action | معنی |
+|---|---|
+| accept | مجاز |
+| deny | رد با Policy |
+| close/timeout | پایان Session |
+| ip-conn | Session بدون پاسخ |
 
-``` text
-date=2026-11-26 time=10:05:11 type="traffic" subtype="forward" level="notice" srcip=10.10.0.5 srcport=40000 srcintf="port2" dstip=203.0.113.10 dstport=443 dstintf="port1" policyid=2 action="accept" service="HTTPS" sentbyte=5320 rcvdbyte=48200
-```
+CLI: `execute log filter category 0`، `execute log filter field dstip 198.51.100.8`، `execute log display`.
 
-policyid=0 و action=deny ⇒ معمولاً Implicit Deny. rcvdbyte=0 ⇒ پاسخی نیامده. نکته‌ی مستند Fortinet: policyid=0 فقط مخصوص Implicit Deny نیست؛ ترافیک Local (Local-in/Local-out) بدون Policy تعریف‌شده هم با policyid=0 ثبت می‌شود؛ پس `subtype` (forward یا local) را هم بخوانید.
-
-#### ۲) فیلتر
-
-``` text
-execute log filter category 0
-execute log filter field srcip 10.10.0.5
-execute log filter field action deny
-execute log display
-```
-
-GUI: Log & Report → Forward Traffic → Filter.
-
-#### ۳) پرونده ۱: Deny
-
-Log: action=deny policyid=0 dstport=22. علت: SSH در Policy نیست. رفع: Policy مجزا برای مقاصد لازم. آزمون: accept.
-
-#### ۴) پرونده ۲: Accept با rcvdbyte=0
-
-Log: accept، sentbyte>0، rcvdbyte=0. علت: سرور پاسخ نمی‌دهد یا Route برگشت. شاهد: Sniffer دو سمت. رفع: Route/سرور.
-
-#### ۵) پرونده ۳: Drop بی‌Log
-
-ترافیک رد می‌شود ولی Log ندارد: Implicit Deny. رفع: Deny صریح با Log.
-
-#### ۶) Packet Walk از Log
+### Packet Walk
 
 ``` text
-Log: srcintf=port2 -> dstintf=port1, policy 2, SNAT
-Walk: ingress port2 -> route port1 -> policy 2 -> SNAT -> egress
+1 PC 10.10.0.5 -> DNS 10.20.0.53 (UDP 53)  resolve name
+2 PC -> default gateway (ARP)
+3 FGT port2 receives SYN (Sniffer in)
+4 Route lookup -> port1
+5 Policy lookup -> policy 30
+6 SNAT 10.10.0.5 -> 203.0.113.2
+7 Session created
+8 SYN leaves port1 (Sniffer out)
+9 SYN-ACK returns, reverse NAT
+10 ACK ... data
 ```
 
-#### ۷) آزمون
+### پرونده ۱ — کاربران به اینترنت نمی‌رسند
 
-سه پرونده، Evidence: Log+Flow+Sniffer، علت، رفع، آزمون. Rubric: Log ۲۰، تحلیل ۳۰، رفع ۲۰، Evidence ۱۵، صداقت ۱۵.
+1. Scope: همه.
+2. L1/L2: port2 up.
+3. Sniffer port2: ICMP از PC دیده می‌شود.
+4. Route: Default حذف شده (CHG دیروز).
+5. Debug: `Denied: failed to find route`.
+6. رفع: Default برگشت؛ تأیید: ping، curl.
+7. RCA: Static Route اشتباهی حذف شد؛ Change با Peer Review.
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### پرونده ۲ — فقط HTTPS کند
+
+1. HTTP سریع، HTTPS کند.
+2. Sniffer: `ICMP need to frag`.
+3. MTU مسیر ۱۴۴۸؛ Clamp وجود ندارد.
+4. رفع: Clamp 1360.
+5. تأیید: سرعت و `mss 1360` در SYN.
+
+### پرونده ۳ — یک سرور از اینترنت
+
+1. VIP + Policy وجود دارد.
+2. Lookup خارجی: policy 0.
+3. علت: Policy از port1 به DMZ ولی Interface مقصد اشتباه (port4).
+4. رفع: dstintf DMZ؛ تأیید: Debug `DNAT` و Session.
+
+### قالب Evidence
+
+| گام | دستور | خروجی کلیدی | نتیجه |
+|---|---|---|---|
+| Route | `routing-table details` | no route | علت |
+| Debug | `debug flow` | Denied route | تأیید |
+| رفع | Default Route | via port1 | حل |
+| Verify | `curl` | 200 | تأیید |
+
+### مثال‌های حل‌شده
 
 #### مثال ساده — خواندن Log
 
-``` text
-srcip=10.10.0.5 dstip=198.51.100.8 dstport=443 action=timeout policyid=30 sentbyte=60 rcvdbyte=0 duration=60
-```
+Log: `srcip=10.10.0.5 dstip=198.51.100.8 policyid=30 action=accept sent=1.2KB rcvd=0`. rcvd=0 یعنی پاسخی نیامده ⇒ بالادست.
 
-Session باز شد (policy 30) ولی پاسخی نیامد.
+#### مثال متوسط — الگوی زمانی
 
-#### مثال متوسط — Packet Walk
+خرابی هر شب ۲:۰۰. Log: `action=deny policyid=0` از ۱:۵۹. بررسی: Script پشتیبان Policy را موقت Disable می‌کند. رفع: اصلاح Script.
 
-User → port2 (RPF ok) → Policy 30 → SNAT → Route port1 → ISP → بدون پاسخ.
+#### مثال سخت — پرونده‌ی ترکیبی
 
-#### مثال سخت — سه پرونده
+علامت: «اپلیکیشن کند و گاهی قطع». یافته‌ها: ۱) Route درست ۲) Session `SYN_SENT` تکراری ۳) Sniffer: Retransmission ۴) ICMP frag. دو علت: MTU و پایداری لینک ISP. هر کدام جدا رفع و ثبت.
 
-deny با policyid=0، timeout با rcvdbyte=0، close سریع با بایت کم (RST/برنامه). Rubric: گام‌ها ۳۰، Evidence ۳۰، علت ۲۰، رفع ۱۰، صداقت ۱۰.
+### آزمون عملی فصل
 
-#### مثال‌های اصلی درس (مرور)
+سه خرابی تزریقی؛ ده پرسش، Evidence، رفع، RCA. معیار: Evidence ۳۰، رفع ۳۰، روش ۲۰، RCA ۲۰.
 
-**ساده (حل‌شده):** Log accept policyid=2؛ Walk مطابق.
+### Lab هدایت‌شده (اجرا نشده)
 
-**متوسط (تحلیل):** Deny با policyid=0 و dstport=22 ⇒ Implicit Deny؛ Policy SSH برای Admin؛ آزمون accept.
+1. سه پرونده را بسازید.
+2. جدول Evidence را کامل کنید.
+3. RCA بنویسید.
 
-**سخت (rcvdbyte=0):** Accept ولی rcvdbyte=0: Sniffer port1 خروج SYN، بدون SYN-ACK؛ سرور خاموش؛ تیم سرور؛ ثبت RCA.
+### عیب‌یابی سریع
 
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-execute log filter category 0
-execute log filter field srcip 10.10.0.5
-execute log display
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Log و Flow همسو.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| Log نیست | logtraffic | Policy Log All |
+| Log خالی | logtraffic disable | all |
+| Log زیاد | بی‌فیلتر | فیلتر |
+| زمان‌نامنطبق | NTP | همگام‌سازی |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- Log بدون رمز.
+Log الگو می‌دهد، Packet Walk مسیر را می‌گوید، و سه پرونده نشان می‌دهد ترکیب ابزارها و ثبت Evidence چگونه به رفع می‌رسد.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- Log=گذشته.
-- policyid=0.
-- rcvdbyte=0.
-- Walk.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) policyid=0 یعنی؟ *(پاسخ: 14-6-ت1)*
 
@@ -2594,7 +2381,7 @@ execute log display
 
 **Q1.** Quick quiz (English): What does policyid=0 mean in a traffic log? *(پاسخ: 14-6-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2602,11 +2389,11 @@ execute log display
 
 - *Logs explain what happened in the past.* ← Log گذشته را توضیح می‌دهد.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** آزمون ۱۴ (اجرا نشده). **Evidence:** `03-ops/walk-arch2.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Log & Report
 
@@ -2640,273 +2427,126 @@ ingress port2 -> RPF ok -> route 10.20.0.0/24 via port3 -> policy 62 accept -> e
 
 **درس:** Log اثبات می‌کند چه شد؛ Lookup نشان می‌دهد چرا.
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: پرونده‌ی کامل Log → Packet Walk
-
-**Log**
-
-``` text
-date=2026-11-27 time=10:12:01 logid=0000000013 type=traffic subtype=forward
-srcip=10.10.0.5 dstip=198.51.100.8 dstport=443 action=timeout policyid=30
-sentbyte=60 rcvdbyte=0 duration=60
-```
-
-**تفسیر:** `action=timeout` با rcvdbyte=0 یعنی Session باز شد ولی جوابی نیامد؛ مشکل بعد از فایروال.
-
-**Packet Walk:** کاربر → port2 (RPF OK) → Policy 30 → SNAT → Route port1 → ISP ⇒ بدون پاسخ.
-
-**جدول Evidence**
-
-| گام | ابزار | نتیجه |
-|---|---|---|
-| Route | get router info routing-table | OK |
-| Policy | iprope lookup | 30 |
-| Wire | sniffer | SYN out فقط |
-
-**آزمون عملی.** سه پرونده؛ برای هرکدام Timeline، Evidence، علت، رفع و آزمون منفی؛ Rubric: گام‌ها ۳۰، Evidence ۳۰، علت ۲۰، رفع ۱۰، صداقت ۱۰.
-
-**پرسش‌های مصاحبه**
-1. *action=close و timeout؟* close پایان عادی؛ timeout انقضا.
-2. *چرا sentbyte مهم است؟* ترافیک واقعی را نشان می‌دهد.
-3. *Log کجا ناقص؟* Offload و Sampling.
-
-### تکمیل عمیق: تحلیل Log و Packet Walk — سه پرونده
-
-#### چرا؟
-
-Log اولین جایی است که نگاه می‌کنیم؛ باید بتوانیم هر فیلد را بخوانیم و به Packet Walk وصل کنیم.
-
-#### مثال ساده — خواندن Log
-
-``` text
-date=2026-11-27 time=10:12:01 type=traffic subtype=forward srcip=10.10.0.5 dstip=198.51.100.8 dstport=443 action=timeout policyid=30 sentbyte=60 rcvdbyte=0 duration=60
-```
-
-تفسیر: Session باز شد (policy 30)؛ ۶۰ بایت فرستاد و صفر دریافت کرد؛ ۶۰ ثانیه ⇒ پاسخ نیامد؛ مشکل بعد از فایروال.
-
-#### Packet Walk
-
-``` text
-User -> port2 (RPF ok) -> Policy 30 -> SNAT -> Route port1 -> ISP -> (no reply)
-```
-
-#### جدول Evidence
-
-| گام | ابزار | نتیجه |
-|---|---|---|
-| Route | routing-table | OK |
-| Policy | iprope | 30 |
-| Wire | sniffer | SYN out فقط |
-
-#### مثال سخت — سه پرونده
-
-1. `action=deny policyid=0` ⇒ Policy نیست.
-2. `action=timeout rcvdbyte=0` ⇒ بعد از فایروال.
-3. `action=close` با `rcvdbyte` کم و زمان کوتاه ⇒ اتصال سریع بسته (RST/برنامه).
-
-#### Rubric
-
-``` text
-Steps 30 | Evidence 30 | Cause 20 | Fix 10 | Honesty 10
-```
-
-#### Lab
-
-سه Log نمونه را تحلیل و Packet Walk بنویسید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| فیلد نامفهوم | نداشتن مرجع | مستند |
-| Log ناقص | Offload/Sampling | Sniffer |
-| زمان اشتباه | NTP | همگام |
-
-#### پرسش‌ها با پاسخ
-
-**۱. timeout با rcvdbyte=0؟** پاسخ نیامد.
-**۲. close چه؟** پایان عادی/ناگهانی.
-**۳. چرا Packet Walk؟** ترتیب تصمیم‌ها.
-
-#### English Corner
-
-- *A session with zero received bytes means the reply never arrived.*
-- Q: How do you read the action field in a traffic log?
-
 ## درس 14-7 — روش نظام‌مند عیب‌یابی: از علامت تا علت و رفع (با پرونده‌های واقعی)
 
 **فصل ۱۴ · درس افزوده (تکمیل ۱۴-۶) · پیش‌نیاز: ۱۲-۰، ۱۲-۸، ۱۳-۷، ۵-۰ · ≈ ۸ ساعت**
 
 > **وضعیت:** روش مستقل از برند + دستورهای FortiOS 7.0.3 (`Unverified` روی Image). خروجی‌ها نمونه‌ی آموزشی‌اند.
 
-### ۱) هدف آموزشی
+<!--deep-->
 
-دانشجو در پایان می‌تواند:
+### هدف آموزشی
 
-1. یک **فرایند عیب‌یابی ثابت** را اجرا کند (علامت، دامنه، فرضیه، شاهد، آزمون، رفع، تأیید، مستندسازی).
-2. با «تقسیم مسیر» (Divide and Conquer) مرحله‌ی خرابی را در Packet Flow پیدا کند.
-3. ابزارها را به سؤال درست وصل کند: Sniffer، Debug Flow، Session، Routing، ARP، Log، CPU/Memory، Interface Errors، DNS/DHCP/Auth.
-4. از شواهد به **علت ریشه‌ای** برسد و دو علت هم‌زمان را از هم جدا کند.
-5. پیش از «رفع»، اثر تغییر را پیش‌بینی و پس از آن اندازه‌گیری کند.
+در پایان این درس باید بتوانید:
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+1. روش نظام‌مند (علامت → فرضیه → آزمون → رفع → تأیید) را اجرا کنید.
+2. الگوی «Divide and Conquer» را روی مسیر بسته به‌کار ببرید.
+3. Baseline و Change را برای عیب‌یابی استفاده کنید.
+4. ارتباط با تیم و مستندسازی (Ticket/RCA) را انجام دهید.
+5. دام‌های رایج (Confirmation bias، تغییر هم‌زمان) را بشناسید.
+6. قالب Runbook عیب‌یابی بسازید.
 
-**چرا فرضیه‌محور؟** عیب‌یاب حدس‌محور فقط با شانس موفق است. فرضیه‌محور هر بار یک احتمال را با شاهد رد/تأیید می‌کند و پیشرفت قابل‌اثبات است.
+### چرا باید یاد بگیریم؟
 
-**جمع‌بندی اصلی درس:** Packet Flow (۱۲-۰)، Local-in/out (۱۲-۸)، Session (۱۳-۷)، ابزارهای Linux/Wireshark (فصل ۲، ۲۸).
+ابزار بدون روش مثل جعبه‌ابزار بدون نقشه‌ی ساختمان است. روش نظام‌مند باعث می‌شود حتی در ساعت ۳ شب، با فشار مدیر، کارتان قابل‌پیش‌بینی و قابل‌ثبت باشد. همچنین نفر بعدی (یا خودتان فردا) بفهمد چه کردید.
 
-### ۳) مفهوم پایه
-
-عیب‌یابی ضعیف = «دستورها را حفظ کردن و پشت‌سرهم زدن». عیب‌یابی قوی = **فرضیه‌محور**: هر دستور برای پاسخ به یک سؤال مشخص است. اگر نتیجه فرضیه را رد کرد، فرضیه‌ی بعد.
-
-### ۴) توضیح عمیق فنی
-
-#### ۴-۱) فرایند هشت‌مرحله‌ای
+### حلقه‌ی عیب‌یابی
 
 ``` text
-1. Symptom      : what exactly fails? who? since when? what changed?
-2. Scope        : one user / one subnet / everyone? one app / all apps?
-3. Hypotheses   : list likely causes by layer (L1..L7, route, policy, NAT, profile, DNS, auth)
-4. Evidence     : choose the cheapest test that splits the hypothesis space
-5. Test         : run it with a narrow filter; record raw output
-6. Root cause   : the change/condition that explains ALL evidence
-7. Fix + verify : minimal change; positive and negative test; measure
-8. Document     : symptom, evidence, cause, fix, prevention
+1 Define symptom (who/what/when)
+2 Collect facts (logs, baseline, changes)
+3 Hypothesize (ranked by likelihood x cost)
+4 Test one hypothesis (tool -> evidence)
+5 Fix (minimal change)
+6 Verify (positive + negative test)
+7 Document (RCA, prevent)
 ```
 
-#### ۴-۲) تقسیم مسیر روی Packet Flow
+### Divide and Conquer
 
-مسیر: کلاینت → سوئیچ → FortiGate Ingress → Route → Policy → NAT/Profile → Egress → ISP/سرور → برگشت. **در نقطه‌ی میانی** آزمون بگذارید:
-
-- بسته در Ingress دیده می‌شود؟ (`diagnose sniffer packet <port> "host X" 4`)
-- اگر نه: مشکل قبل از فایروال (کابل، VLAN، ARP، کلاینت).
-- اگر بله: Debug Flow (Route/Policy/Drop؟).
-- اگر Allowed و Egress دیده می‌شود: مشکل بعد از فایروال یا مسیر برگشت.
-
-#### ۴-۳) نقشه‌ی «سؤال → ابزار»
-
-| سؤال | ابزار |
-|---|---|
-| بسته به Interface رسید؟ | Sniffer/Packet Capture |
-| ARP/Neighbor درست است؟ | `diagnose ip arp list`، `get system arp` |
-| Route چیست؟ | `get router info routing-table details <ip>` |
-| Policy کدام است؟ | Debug Flow، `diagnose firewall iprope lookup`، Log Forward |
-| NAT چه شد؟ | `diagnose sys session list` |
-| Session هست؟ | `diagnose sys session filter ...` |
-| Interface خطا دارد؟ | `get system interface physical`، `diagnose hardware deviceinfo nic <port>` |
-| CPU/Memory؟ | `get system performance status`، `diagnose sys top` |
-| DNS؟ | `execute nslookup` (Local-out)، Sniffer روی 53 |
-| DHCP؟ | Sniffer روی 67/68، `diagnose ... dhcp` |
-| Auth؟ | `diagnose test authserver`، `diagnose debug application fnbamd -1` |
-| VPN؟ | `diagnose vpn ike log filter`، `diagnose vpn tunnel list` |
-| HA؟ | `get system ha status` |
-
-(نام و فرمت دستورها با CLI Reference 7.0 تطبیق شود؛ `Unverified`.)
-
-#### ۴-۴) خطاهای فکری
-
-- **Confirmation bias:** فقط دنبال شاهد برای فرضیه‌ی اول بودن.
-- **Fix-first:** تغییر چند چیز هم‌زمان؛ نمی‌دانید کدام اثر کرد.
-- **Symptom ≠ cause:** «Drop شد» علامت است؛ علت Route/Policy/RPF است.
-- **Debug طولانی:** Debug بدون Filter CPU را می‌خورد.
-
-#### ۴-۵) مستندسازی RCA
-
-قالب یک‌صفحه‌ای: عنوان، زمان، اثر، Timeline، شواهد (خروجی خام)، علت ریشه‌ای، اقدام فوری، اقدام پیشگیرانه.
-
-### ۵) پرونده‌های حل‌شده
-
-#### مثال ساده — الگو
-
-H1 Route غلط ⇒ رد؛ H2 Policy نیست ⇒ رد؛ H3 بالادست ⇒ Sniffer: SYN بدون ACK ⇒ تأیید.
-
-#### مثال متوسط — پرونده‌ها
-
-IP قبلی در لیست سرور؛ Schedule منقضی؛ DNS با TTL قدیمی.
-
-#### مثال سخت — Rollback
-
-هر رفع با Rollback آماده؛ اگر بدتر شد بازگردید و فرضیه را اصلاح کنید.
-
-#### مثال‌های اصلی درس (مرور)
-
-**پرونده ۱: «سایت X باز نمی‌شود»**
-
-علامت: کاربر 192.168.10.5 به www.example.com نمی‌رسد؛ دیگران می‌رسند. دامنه: فقط یک کاربر.
+مسیر را نصف کنید: «بسته به FGT می‌رسد؟» اگر بله، نیمه‌ی مبدأ سالم؛ بعد «از FGT خارج می‌شود؟». هر آزمون نصف فضا را حذف می‌کند.
 
 ``` text
-FGT # diagnose sniffer packet any "host 192.168.10.5 and port 53" 4 10 l
-FGT # diagnose debug flow filter addr 192.168.10.5
-FGT # diagnose debug flow trace start 20
+PC -- SW -- [FGT] -- ISP -- Server
+ Q: arrives at FGT?   yes -> left half ok
+ Q: leaves FGT?       yes -> FGT ok
+ Q: reply returns?    no  -> right half/upstream
 ```
 
-شاهد: کلاینت از DNS داخلی 192.168.10.2 درخواست می‌دهد؛ پاسخ NXDOMAIN. نتیجه: DNS ✓ فایروال بی‌تقصیر؛ سمت DNS Server/Cache. رفع: پاک کردن Cache، بررسی Record.
+### Baseline و Change
 
-**پرونده ۲: «VPN بالاست ولی ترافیک نیست»**
+- **Baseline:** وضعیت سالم (Config backup، Session count، CPU، Route table).
+- **Change:** `execute backup`/Config diff، CHG، لیست تغییرات اخیر.
+- «چه چیزی تغییر کرد؟» ارزان‌ترین پرسش با بیشترین نتیجه است.
 
-شواهد: `diagnose vpn tunnel list` نشان می‌دهد Bytes out زیاد، in صفر. Debug Flow در سایت مقابل: «Denied by forward policy check (policy 0)». علت: Policy سمت مقابل نیست. رفع: Policy دوطرفه (فصل ۱۸).
+### دام‌ها
 
-**پرونده ۳: «کند است»**
+| دام | معنی | درمان |
+|---|---|---|
+| Confirmation bias | فقط شواهد موافق فرضیه | آزمون رد‌کننده |
+| تغییر هم‌زمان | معلوم نیست چه اثر کرد | یکی‌یکی |
+| بی‌Evidence | حدس | ثبت خروجی |
+| رفع موقت | علت اصلی باقی | RCA |
+| عجله در Debug | CPU/نویز | فیلتر |
 
-شواهد: `get system performance status` CPU 85٪؛ `diagnose sys top` فرایند ipsengine/wad. علت: Profile روی همه‌ی ترافیک. رفع: Profile انتخابی و اندازه‌گیری قبل/بعد (فصل ۱۶). **علت دوم** هم‌زمان: Interface خطا (CRC) روی لینک — شواهد `get system interface physical`. پس «دو علت هم‌زمان» جدا مستند شوند.
+### ارتباط با تیم
 
-**پرونده ۴ (سخت): «فقط وب‌های بزرگ باز نمی‌شود»**
+- هر ۳۰ دقیقه به‌روزرسانی Ticket.
+- جملات خروجی: «Scope، Impact، Hypothesis، Next step».
+- Escalation با Evidence (نه «کار نمی‌کند»).
 
-شواهد: ping معمولی OK؛ `ping -f` اندازه‌ی بزرگ شکست؛ Capture: Retransmission دانلودهای بزرگ. علت: MTU/MSS در Tunnel (فصل ۱۸). رفع: `tcp-mss` و MTU Tunnel؛ بازبینی با Capture.
-
-### ۶) طراحی و تصمیم‌گیری
-
-| تصمیم | معیار |
-|---|---|
-| Debug یا Sniffer اول؟ | Sniffer ارزان‌تر؛ Debug برای Policy/Route/NAT |
-| چقدر Capture؟ | Filter باریک، تعداد محدود |
-| چه کسی تغییر می‌دهد؟ | Change مجاز، یک تغییر در هر زمان |
-| Evidence | خروجی خام، زمان، دستور؛ در تیکت |
-
-### ۷) پیاده‌سازی: GUI و CLI
-
-**GUI:** Log & Report → Forward Traffic / System Events؛ Network → Diagnostics → Packet Capture؛ Dashboard → Performance؛ FortiView.
-
-**CLI:** مطابق جدول ۴-۳؛ مثال الگو:
+### قالب Runbook عیب‌یابی
 
 ``` text
-diagnose sniffer packet any "host 192.168.10.5" 4 20 l
-diagnose debug reset
-diagnose debug flow filter addr 192.168.10.5
-diagnose debug flow show function-name enable
-diagnose debug flow trace start 20
-diagnose debug enable
-diagnose debug disable
-diagnose debug reset
+Title   : Users cannot reach <service>
+Scope   : who/what
+Checks  : Q1..Q10 with commands
+Decision: if X -> do Y
+Rollback: how to undo
+Owner   : team
 ```
 
-### ۸) Troubleshooting خود فرایند
+### مثال‌های حل‌شده
 
-| مشکل | اصلاح |
-|---|---|
-| Debug بسیار طولانی | Filter + `trace start N` محدود |
-| خروجی نامفهوم | اول Sniffer؛ سپس Debug |
-| علت مبهم | فرضیه را رد/تأیید کنید؛ دو علت ممکن است |
-| بعد از رفع هنوز خراب | Session قدیمی (۱۳-۷) |
+#### مثال ساده — Divide and Conquer
 
-### ۹) نکات امنیتی
+PC به سرور نمی‌رسد. Sniffer port2: ICMP ورودی دیده شد. Sniffer port1: خروجی دیده شد؛ پاسخ نه. نتیجه: FGT سالم؛ مشکل در نیمه‌ی راست.
 
-- Capture/Debug ممکن است داده‌ی حساس (رمز، توکن) ثبت کند؛ فایل را رمز/حذف کنید.
-- Debug را همیشه Disable/Reset کنید.
-- تغییر موقت (any-any) ممنوع؛ Policy موقت با Source دقیق و زمان.
+#### مثال متوسط — Change
 
-### ۱۰) جمع‌بندی مفهومی
+«دیروز اینترنت کار می‌کرد». Config diff: Policy 30 `set nat disable` شده. رفع: enable. ثبت.
 
-- عیب‌یابی = فرضیه + شاهد، نه حفظ دستور.
-- تقسیم مسیر روی Packet Flow سریع‌ترین راه است.
-- یک تغییر در هر زمان؛ شواهد خام ثبت شود.
-- علت ریشه‌ای باید همه‌ی شواهد را توضیح دهد.
-- پس از رفع: آزمون مثبت/منفی و مستندسازی.
+#### مثال متوسط — Confirmation bias
 
-### ۱۱) تمرین و ارزیابی
+فرضیه «DNS خراب است»؛ nslookup خوب بود ولی گفت «پس DNS Cache». آزمون رد‌کننده: `ping 8.8.8.8` هم Timeout ⇒ مشکل Route نه DNS. درس: به‌دنبال شواهد مخالف باشید.
+
+#### مثال سخت — فشار مدیریت
+
+ساعت ۳ شب، ۲۰۰ کاربر قطع. روش: ۱) اعلام Scope/Impact ۲) Rollback آخرین Change (۵ دقیقه) ۳) پس از بازگشت سرویس، RCA بدون فشار. اصل: اول بازگردانی سرویس، بعد ریشه‌یابی.
+
+#### مثال سخت — رفع موقت در برابر دائمی
+
+Session پاک‌شد و کار کرد؛ ولی هر ساعت تکرار شد. RCA: Timeout پایین Session Helper. رفع دائمی: تنظیم Timeout. ثبت: Prevent با پایش.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. چهار خرابی بسازید؛ حلقه‌ی هفت‌گامی را اجرا کنید.
+2. Runbook بنویسید.
+3. RCA کوتاه بنویسید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| هر روز تکرار | رفع موقت | RCA |
+| تیم نمی‌داند | ثبت نشده | Ticket |
+| Rollback ندارید | Change بی‌طرح | طرح |
+
+### جمع‌بندی
+
+روش نظام‌مند: علامت، حقایق، فرضیه، آزمون، رفع، تأیید، ثبت. Divide and Conquer، Baseline و Change، پرهیز از دام‌ها، و اولویت بازگردانی سرویس سپس ریشه‌یابی.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) هشت مرحله‌ی عیب‌یابی را بنویسید. *(پاسخ: 14-7-ت1)*
 
@@ -2924,7 +2564,7 @@ diagnose debug reset
 
 **Q1.** Quick quiz (English): Why start with a sniffer before a debug flow? *(پاسخ: 14-7-Q1)*
 
-### ۱۲) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2937,88 +2577,10 @@ diagnose debug reset
 - *Change one thing at a time and record the evidence.* ← هر بار یک چیز را تغییر دهید و شاهد را ثبت کنید.
 - *The symptom is not the root cause.* ← علامت همان علت ریشه‌ای نیست.
 
-### ۱۳) منابع
+### منابع
 
 - Fortinet Docs: [Debugging the packet flow](https://docs.fortinet.com/document/fortigate/7.0.3/administration-guide/54688/debugging-the-packet-flow)؛ FortiOS 7.0 Administration Guide — Troubleshooting.
 - ITIL 4 — Incident and Problem Management (مفهومی).
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: «فرضیه‌محور» به‌جای «حدس‌محور»
-
-**الگو:** فرضیه ← آزمون ← پذیرش/رد.
-
-``` text
-H1: Route wrong       -> test: routing-table details   -> rejected
-H2: Policy missing    -> test: iprope lookup           -> rejected
-H3: Upstream drop     -> test: sniffer SYN without ACK -> accepted
-```
-
-**پرونده‌ی ۱:** سرور بیرونی فقط به IP قبلی اجازه می‌داد؛ پس از Pool جدید قطع.
-**پرونده‌ی ۲:** Policy درست ولی Schedule منقضی.
-**پرونده‌ی ۳:** DNS داخلی جواب قدیم می‌داد (TTL).
-
-**گزارش:** علامت، اثر، Timeline، فرضیه‌ها، Evidence، علت ریشه، رفع، پیشگیری.
-
-**اشتباهات رایج:** رفع بدون Evidence، تغییر چندتایی، ثبت‌نکردن.
-
-**پرسش‌های مصاحبه**
-1. *چرا یک تغییر در هر زمان؟* ردیابی علت.
-2. *Evidence بد؟* «به نظرم».
-3. *Rollback؟* همیشه آماده.
-
-### تکمیل عمیق: روش نظام‌مند — فرضیه‌محور در برابر حدس‌محور
-
-#### چرا؟
-
-عیب‌یاب حدس‌محور فقط زمانی موفق است که شانس بیاورد. فرضیه‌محور هر بار یک احتمال را با شاهد رد یا تأیید می‌کند.
-
-#### الگو
-
-``` text
-H1 Route wrong       -> test: routing-table details  -> rejected
-H2 Policy missing    -> test: iprope lookup          -> rejected
-H3 Upstream drop     -> test: sniffer SYN no ACK     -> accepted
-```
-
-#### پرونده‌های واقعی
-
-1. سرور بیرونی فقط IP قبلی را اجازه می‌داد ⇒ پس از Pool جدید قطع.
-2. Policy درست ولی Schedule منقضی.
-3. DNS داخلی پاسخ قدیمی (TTL).
-
-#### مثال سخت — Rollback
-
-در هر رفع، Rollback را آماده نگه دارید؛ اگر تغییر بدتر کرد، برگردید.
-
-#### گزارش
-
-علامت، اثر، Timeline، فرضیه‌ها، Evidence، علت ریشه، رفع، پیشگیری.
-
-#### Lab
-
-یک پرونده را با سه فرضیه بنویسید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| رفع بدون Evidence | عجله | فرضیه |
-| چند تغییر | بی‌انضباط | یکی |
-| ثبت نشد | غفلت | قالب |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا یک تغییر؟** ردیابی.
-**۲. Evidence بد؟** «به نظرم».
-**۳. Rollback؟** آماده.
-
-#### English Corner
-
-- *Form a hypothesis, design a test, and accept or reject it with evidence.*
-- Q: Why change only one thing at a time?
 
 ## پاسخ‌های فصل 14
 
