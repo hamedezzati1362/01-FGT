@@ -69,72 +69,77 @@
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. هشت جزء اصلی یک Firewall Policy را نام ببرد و نقش هرکدام را توضیح دهد.
-2. قاعده‌ی First Match و Implicit Deny را با یک مثال عددی اثبات کند.
-3. ترتیب Policy را برای یک سناریوی واقعی طراحی کند.
-4. Logging (all/utm/disable) و Log ضمنی Deny را تنظیم کند.
-5. با GUI و CLI یک Policy بسازد و با Session/Log آن را تأیید کند.
-6. خطاهای رایج (Policy بدون Route، ترتیب غلط، Service اشتباه) را عیب‌یابی کند.
+1. اجزای یک Firewall Policy و نقش هرکدام را بگویید.
+2. قاعده‌ی First Match، Implicit Deny و Policy 0 را توضیح دهید.
+3. ترتیب Policyها را از خاص به عام و بدون Shadow بنویسید.
+4. با `iprope lookup` بدون ترافیک Policy مطابق را پیدا کنید.
+5. Logging را در سطح Policy و Implicit Deny تنظیم کنید.
+6. یک مجموعه‌ی Policy کامل را با آزمون مثبت و منفی اثبات کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Firewall Policy قلب فایروال است؟** تقریباً هر حادثه‌ی امنیتی یا قطعی در فایروال به یک Policy برمی‌گردد: یا بیش‌ازحد باز (امنیت) یا اشتباه/به‌ترتیب نادرست (قطعی). برای همین باید Policy را مثل یک جمله‌ی دقیق بخوانید: «چه کسی، از کجا، به کجا، چه سرویسی، چه کاری، چه زمانی، با چه بازرسی و آیا ثبت شود».
+Policy قلب فایروال است. تقریباً هر حادثه‌ی امنیتی یا قطعی در فایروال به یک Policy برمی‌گردد: یا بیش‌ازحد باز (امنیت)، یا اشتباه/به‌ترتیب نادرست (قطعی). باید Policy را مثل یک جمله‌ی دقیق بخوانید و بنویسید: «چه کسی، از کجا، به کجا، چه سرویسی، چه کاری، چه زمانی، با چه بازرسی و آیا ثبت شود». مثل نگهبانی که فهرست مهمانان را از بالا به پایین می‌خواند و اولین سطر مطابق را اجرا می‌کند؛ اگر نامی نبود، رد می‌کند. جابه‌جایی دو سطر می‌تواند همه را داخل کند یا همه را بیرون.
 
-**اجزای یک Policy به زبان ساده**
+### اجزای Policy
 
-- **Incoming/Outgoing Interface (یا Zone):** از کدام در وارد و به کدام در خارج می‌شود.
-- **Source / Destination:** چه کسی (آدرس، گروه یا کاربر) به چه کسی.
-- **Service:** کدام پورت/پروتکل.
-- **Schedule:** چه زمانی.
-- **Action:** Accept یا Deny.
-- **NAT، Security Profile، Log:** ترجمه، بازرسی و ثبت.
-
-**قاعده‌ی First Match:** مثل فهرست مهمانان یک مهمانی: نگهبان از بالا می‌خواند و **اولین** سطر مطابق را اجرا می‌کند. اگر هیچ سطری مطابق نبود، **Implicit Deny** (Policy شماره‌ی 0) رد می‌کند و به‌صورت پیش‌فرض Log ثبت نمی‌شود؛ پس بهتر است یک Deny صریح با Log در انتها بگذارید.
-
-**ترتیب درست:** از خاص به عام. اگر یک Policy عمومی بالاتر از خاص باشد، Policy خاص هرگز اجرا نمی‌شود (Shadow).
-
-**جمع‌بندی اصلی درس:** تصور کنید در ورودی یک ساختمان اداری یک دفترچه‌ی قوانین دارید. نگهبان هر مراجعه‌کننده را با قوانین از اولین سطر مقایسه می‌کند؛ به محض اینکه یک سطر با او جور شد، همان سطر اجرا می‌شود و بقیه‌ی دفترچه را نمی‌خواند. اگر هیچ سطری جور نشد، اجازه‌ی ورود نمی‌دهد. Firewall Policy در FortiGate دقیقاً همین دفترچه است.
-
-نتیجه‌ی عملی: «ترتیب» به‌اندازه‌ی «محتوا» مهم است. یک Policy درست که در جای غلط قرار گرفته یا هرگز اجرا نمی‌شود (Shadowed) یا قاعده‌ی دیگری را بی‌اثر می‌کند. در این درس یاد می‌گیرید هر Policy از چه اجزایی ساخته می‌شود، چطور FortiGate بین آن‌ها انتخاب می‌کند و چطور با Log ثابت کنید که چه اتفاقی افتاده است.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) اجزای Policy
-
-| جزء | نقش | نمونه |
+| جزء | نقش | مثال |
 |---|---|---|
-| Name | نام قابل‌خواندن | USERS-to-INTERNET |
-| Incoming Interface | از کدام Interface/Zone وارد شده | ZN-USERS |
-| Outgoing Interface | به کدام Interface/Zone می‌رود (از Route تعیین می‌شود) | port1 |
-| Source | آدرس مبدأ (Address، User، Device) | NET-USERS |
-| Destination | آدرس مقصد | all |
-| Schedule | زمان فعال‌بودن | always |
-| Service | پروتکل/پورت | HTTP، HTTPS، DNS |
-| Action | ACCEPT یا DENY (یا IPsec) | ACCEPT |
-| NAT | ترجمه‌ی مبدأ | Enable (Outgoing Interface Address) |
-| Security Profiles | AV/IPS/Web Filter/... | Needs-License |
-| Log | چه چیزی ثبت شود | All Sessions |
+| Incoming Interface/Zone | ورودی | port2 / ZN-USERS |
+| Outgoing Interface/Zone | خروجی | port1 / ZN-INET |
+| Source | چه کسی (آدرس، گروه، کاربر) | NET-USERS |
+| Destination | به چه کسی | SRV-ERP / VIP-WEB / all |
+| Schedule | چه زمانی | always / WORK-HOURS |
+| Service | پورت/پروتکل | HTTPS، DNS |
+| Action | عمل | accept / deny |
+| NAT | ترجمه | enable + IP Pool |
+| Security Profiles | بازرسی | AV، IPS، Web |
+| Log | ثبت | all / utm / disable |
 
-نکته: Outgoing Interface را FortiGate از **جدول مسیریابی** پیدا می‌کند و بعد دنبال Policyای می‌گردد که برای همین جفت (ورودی، خروجی) باشد. پس اگر Route نباشد، به Policy هم نمی‌رسد.
-
-#### ۲) First Match
+### First Match و Implicit Deny
 
 ``` text
-Policy 1: ZN-USERS -> port1  src NET-MGMT        service ALL   ACCEPT
-Policy 2: ZN-USERS -> port1  src NET-USERS       service HTTP,HTTPS,DNS  ACCEPT
-Policy 3: ZN-USERS -> port1  src all             service ALL   DENY
-(implicit) deny all
+packet -> Policy 10? match -> apply, stop
+       -> Policy 20? match -> apply, stop
+       -> ...
+       -> no match -> Implicit Deny (policy 0)
 ```
 
-بسته‌ای از NET-USERS با سرویس SSH: Policy 1 نه (مبدأ فرق دارد)، Policy 2 نه (سرویس فرق دارد)، Policy 3 بله ⇒ Deny. اگر Policy 3 بالاتر از 2 بود، همه‌ی ترافیک NET-USERS رد می‌شد و Policy 2 هرگز اجرا نمی‌شد (Shadow).
+- **First Match:** از بالا به پایین؛ اولین مطابقت اعمال می‌شود.
+- **Implicit Deny (Policy 0):** اگر هیچ Policy مطابق نباشد، بسته رد می‌شود. این قاعده در GUI دیده نمی‌شود و **به‌صورت پیش‌فرض Log ندارد.**
+- **Shadow:** Policy که هرگز اجرا نمی‌شود چون Policy بالاتر همه‌ی ترافیکش را می‌گیرد.
 
-#### ۳) Implicit Deny و Log آن
+### ترتیب درست: از خاص به عام
 
-در پایان لیست یک Deny ضمنی هست که **Log ندارد** مگر اینکه فعال کنید:
+``` text
+10 USERS -> SERVERS  svc HTTPS,SMB       accept log all
+20 GUEST -> INTERNET svc HTTP,HTTPS,DNS  accept nat log utm
+30 USERS -> INTERNET svc HTTP,HTTPS,DNS  accept nat log utm
+90 any   -> any      svc ALL             deny   log all
+```
+
+اگر Policy 30 با `dstaddr all` قبل از 10 بود، ترافیک USERS→SERVERS (اگر در Zone اینترنت هم می‌شد دید) را می‌گرفت؛ و اگر 90 (Deny) بالاتر بود، هیچ‌چیز کار نمی‌کرد.
+
+### Lookup بدون ترافیک
+
+``` text
+diagnose firewall iprope lookup <src> <sport> <dst> <dport> <proto> <srcintf>
+diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 445 tcp port2
+ -> policy 10
+diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 22 tcp port2
+ -> policy 90 (deny)
+```
+
+Lookup بسته‌ی فرضی را مثل بسته‌ی واقعی Policy می‌سنجد بدون اینکه ترافیک بفرستد؛ ابزار اصلی آزمون قبل/بعد از تغییر.
+
+### Logging
+
+سه حالت `logtraffic`: `all` (همه‌ی Sessionها)، `utm` (فقط رویدادهای UTM)، `disable`. Deny ضمنی:
 
 ``` text
 config log setting
@@ -142,47 +147,16 @@ config log setting
 end
 ```
 
-این دستور برای 7.0 گزارش شده ولی روی Image شما `Unverified` است. جایگزین پایدار: یک Policy صریح Deny در انتها با Log All (در GUI به آن Policy ID مشخص می‌دهد).
+یا بهتر: Policy Deny صریح با `logtraffic all` در انتها.
 
-#### ۴) Log
-
-| گزینه | مقدار | کاربرد |
-|---|---|---|
-| Disabled | هیچ Log | فقط ترافیک بی‌اهمیت |
-| Security Events | فقط رویدادهای UTM | کاهش حجم |
-| All Sessions | شروع/پایان هر Session | عیب‌یابی و ممیزی |
-
-Log همه‌ی Sessionها روی سخت‌افزار کوچک CPU/Disk می‌خورد؛ برای Deny و Policyهای حساس همیشه روشن، برای ترافیک وب انبوه با مصرف سنجیده.
-
-#### ۵) ID و Name
-
-ID عددی یکتا و ثابت است (برای Log و Debug)؛ ترتیب با ID یکی نیست. هر Policy باید Name و Comment (چرا ساخته شد، چه کسی) داشته باشد.
-
-#### ۶) Policy Lookup
-
-``` text
-diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
-```
-
-نشان می‌دهد کدام Policy برای این جریان انتخاب می‌شود (`Unverified` تا Lab). در GUI معادل «Policy Lookup» در صفحه‌ی Firewall Policy است.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| ترتیب | خاص به عام؛ Deny صریح در انتها |
-| Log | All برای Deny و حساس؛ کم‌تر برای انبوه |
-| نام‌گذاری | SRC-to-DST-SERVICE + Comment |
-| Interface | Zone به‌جای Interface برای خوانایی |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### مثال‌های حل‌شده
 
 #### مثال ساده — خواندن یک Policy
 
 ``` text
 edit 30
- set srcintf "port2"        # incoming
- set dstintf "port1"        # outgoing
+ set srcintf "port2"
+ set dstintf "port1"
  set srcaddr "NET-USERS"
  set dstaddr "all"
  set service "HTTP" "HTTPS" "DNS"
@@ -191,97 +165,50 @@ edit 30
  set logtraffic all
 ```
 
-خوانش: «کاربران شبکه‌ی NET-USERS که از port2 وارد می‌شوند، به هر مقصد از port1 با HTTP/HTTPS/DNS اجازه دارند، با NAT و ثبت کامل».
+«کاربران NET-USERS که از port2 وارد می‌شوند، به هر مقصد از port1 با HTTP/HTTPS/DNS اجازه دارند، با NAT و ثبت کامل».
 
-#### مثال متوسط — ترتیب و Shadow
+#### مثال متوسط — Shadow
 
 ``` text
-ID 30 USERS -> any  svc ALL accept
+ID 30 USERS -> any  svc ALL  accept
 ID 10 USERS -> SRV  svc HTTPS accept log
 ```
 
-Policy 10 هیچ‌وقت اجرا نمی‌شود چون 30 قبل از آن، همه‌چیز را می‌گیرد. رفع: جابه‌جایی (`move 10 before 30`) و تنگ‌کردن 30.
+Policy 10 هرگز اجرا نمی‌شود (Hit Count صفر). رفع: `move 10 before 30` و تنگ‌کردن 30 (service محدود).
 
-#### مثال متوسط — Lookup بدون ترافیک
+#### مثال متوسط — اثبات با Lookup
 
-``` text
-diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 445 tcp port2
-```
+۱) آزمون مثبت: Users→ERP:443 ⇒ policy 10 ۲) آزمون منفی: Users→Mgmt:22 ⇒ policy 90 ۳) آزمون Guest→Servers ⇒ 90. ثبت خروجی‌ها در Evidence.
 
-خروجی «policy 10» یعنی این جریان Policy 10 را می‌خورد. آزمون منفی: پورت 22 باید «policy 90 (deny)» بدهد.
+#### مثال سخت — اسکن دیده نمی‌شود
 
-#### مثال سخت — Deny بی‌Log
+اسکن پورت از اینترنت: Log ندارد. علت: Deny ضمنی بی‌Log. رفع: `fwpolicy-implicit-log enable` یا Policy 90. شاهد: Log با `policyid=90` و `action=deny` برای هر پورت اسکن‌شده. حجم Log هم مدیریت شود (Rate).
 
-اسکن از اینترنت ثبت نمی‌شود. بررسی: Deny ضمنی Log ندارد. رفع: `set fwpolicy-implicit-log enable` یا Policy Deny صریح با `logtraffic all`. شاهد: Log با `policyid=90`.
+#### مثال سخت — تغییر امن
 
-#### مثال‌های اصلی درس (مرور)
+افزودن Policy جدید: ۱) Backup ۲) Lookup قبل ۳) ایجاد با Disable ۴) Lookup بعد (باید مطابق شود) ۵) Enable ۶) آزمون واقعی و Log ۷) Hit Count افزایش ۸) CHG بسته. اگر Lookup بعد policy 0 دهد، Interface/Address/Service را بازبینی.
 
-**ساده (حل‌شده):** ورودی: کاربر 10.10.0.5 به 203.0.113.10:443. مراحل: ۱) Route: خروج port1. ۲) Policy 2 را با Source، Service و Interface مطابقت می‌دهیم. ۳) مطابق است ⇒ ACCEPT، Log All. پاسخ: Session ساخته می‌شود و در `diagnose sys session list` با policy_id=2 دیده می‌شود.
+### Lab هدایت‌شده (اجرا نشده)
 
-**متوسط (تحلیل ترتیب):** سازمان گزارش داد «سایت داخلی باز نمی‌شود». Policy 5 (`USERS→SERVERS HTTPS accept`) پایین‌تر از Policy 3 (`USERS→all DENY`) است. مراحل: ۱) Policy Lookup نشان می‌دهد Policy 3. ۲) hit-count Policy 5 صفر است. ۳) علت: Shadow. رفع: Policy 5 را بالاتر از 3 ببرید (یا Policy 3 را محدود کنید). آزمون: Lookup دوباره ⇒ Policy 5؛ از کلاینت HTTPS موفق.
+1. چهار Policy بالا را بسازید.
+2. چهار Lookup (دو مثبت، دو منفی).
+3. Shadow عمدی و مشاهده‌ی Hit Count.
+4. Deny بی‌Log و فعال‌سازی Log.
 
-**سخت (طراحی و Log):** نیاز: کاربران وب را ببینند، سرور DB فقط از App در دسترس، همه‌ی Denyها ثبت شوند و دیسک کوچک است. طراحی: ۱) Policyهای خاص در بالا (App→DB 1433، Users→Web 443). ۲) Users→Internet با Log Security Events + Web/DNS. ۳) Deny صریح انتهایی با Log All برای ممیزی. ۴) Logها به FortiAnalyzer/Syslog (فصل ۲۴). معیار پذیرش: آزمون منفی (Users→DB) رد و در Log ظاهر شود؛ حجم Log روزانه < ظرفیت دیسک.
+### عیب‌یابی سریع
 
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Policy & Objects → Firewall Policy → Create New.
-2. Name، Incoming/Outgoing Interface، Source، Destination، Schedule، Service را پر کنید.
-3. Action = ACCEPT؛ NAT را بر اساس نیاز؛ Log = All Sessions.
-4. Comments را بنویسید؛ OK.
-5. با کشیدن (Drag) ترتیب را اصلاح کنید؛ ستون ID و Hit Count را فعال کنید.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-config firewall policy
- edit 2
-  set name "USERS-to-INTERNET"
-  set srcintf "ZN-USERS"
-  set dstintf "port1"
-  set srcaddr "NET-USERS"
-  set dstaddr "all"
-  set action accept
-  set schedule "always"
-  set service "HTTP" "HTTPS" "DNS"
-  set nat enable
-  set logtraffic all
-  set comments "Internet browsing; owner NOC"
- next
-end
-show firewall policy 2
-diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Policy Lookup همان ID مورد انتظار را می‌دهد.
-- Hit Count بعد از آزمون افزایش می‌یابد.
-- Log با policyid و action=accept دیده می‌شود.
-- آزمون منفی (سرویس غیرمجاز) در Log با action=deny.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| Policy تطابق نمی‌کند | Route و Interface ورودی/خروجی | Routing/Interface Policy را یکی کنید |
-| Policy بالاتر همه چیز را می‌گیرد | Hit Count و Lookup | ترتیب/Shadow |
-| Deny در Log نیست | Implicit Deny | Deny صریح با Log |
-| Log دیسک را پر می‌کند | حجم Log | Log Security Events یا Syslog |
+| Policy اجرا نمی‌شود | Shadow | ترتیب |
+| Deny بی‌Log | implicit | Deny صریح |
+| ترافیک رد می‌شود | Interface/Address | Lookup |
+| همه باز است | Policy ALL | تنگ‌کردن |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- Policy با Source/Destination/Service برابر `all` فقط با دلیل مستند.
-- Deny صریح انتهایی با Log.
-- تغییر Policy را با Change ticket ثبت کنید.
+Policy: Interface، Source، Destination، Service، Schedule، Action، NAT، Profile، Log. First Match از بالا؛ Implicit Deny بی‌Log. خاص به عام، Lookup برای اثبات، Deny صریح با Log در انتها.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- Policy = دفترچه‌ی قوانین با First Match.
-- Route قبل از Policy انتخاب می‌شود.
-- Implicit Deny بی‌Log است؛ Deny صریح بسازید.
-- ترتیب، Hit Count و Lookup ابزار اثبات‌اند.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) First Match یعنی چه؟ *(پاسخ: 13-1-ت1)*
 
@@ -297,7 +224,7 @@ diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
 
 **Q1.** Quick quiz (English): Why does an explicit deny rule with logging help compared to the implicit deny? *(پاسخ: 13-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -308,136 +235,16 @@ diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 443 tcp port2
 - *The first matching policy wins.* ← اولین Policy مطابق برنده است.
 - *Always log denied traffic.* ← ترافیک ردشده را همیشه Log کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** سه Policy و آزمون ترتیب (اجرا نشده). **Evidence:** `03-ops/policy-review.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Firewall policies
 - FortiOS 7.0 CLI Reference: config firewall policy
 
 <a id="l-13-2"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: ساخت مجموعه‌ی Policy یک شعبه از صفر تا آزمون منفی
-
-**سناریو.** شعبه‌ی ۸۰ نفره: Users (VLAN10)، Servers (VLAN20)، Guest و اینترنت. می‌خواهیم Policy اولیه را با ترتیب درست بنویسیم.
-
-**ترتیب Policyها (خاص → عام)**
-
-``` text
-ID 10  USERS  -> SERVERS  src NET-USERS   dst GRP-SERVERS  svc HTTPS,SMB  accept log all
-ID 20  GUEST  -> INTERNET src NET-GUEST   dst all          svc HTTP,HTTPS,DNS accept nat log utm
-ID 30  USERS  -> INTERNET src NET-USERS   dst all          svc HTTP,HTTPS,DNS accept nat log utm
-ID 90  any    -> any      src all         dst all          svc ALL  deny log all
-```
-
-**محاسبه‌ی پوشش.** هر Policy باید به یک نیازمندی وصل شود؛ Policy ۳۰ اگر قبل از ۱۰ باشد (با dst=all)، ترافیک داخلی را هم می‌گیرد و ۱۰ هرگز اجرا نمی‌شود (Shadow).
-
-**گام ۱ — Lookup.**
-
-``` text
-diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 445 tcp port2
- -> policy 10
-diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 22 tcp port2
- -> policy 90 (deny)
-```
-
-**گام ۲ — Log آزمون منفی.** ssh به یک سرور اینترنتی: `action=deny policyid=90`؛ این Log همان Evidence است.
-
-**گام ۳ — Hit Count و بازبینی.** بعد از ۲ هفته Hit Count هر Policy را ببینید؛ Policyهای صفر کاندید بازبینی (نه حذف فوری).
-
-**اشتباهات رایج**
-- Policy ALL/ALL «موقت».
-- Log خاموش روی Deny.
-- نداشتن Comment/Owner.
-
-**پرسش‌های مصاحبه**
-1. *Implicit Deny و Policy 0؟* Log پیش‌فرض ندارد؛ `fwpolicy-implicit-log` یا Deny صریح.
-2. *Policy بدون Route؟* بی‌اثر؛ Route Interface خروجی را تعیین می‌کند.
-3. *Policy Lookup چه می‌دهد؟* Policy مطابق جریان بدون ارسال ترافیک.
-
-### تکمیل عمیق: Firewall Policy از صفر — اجزا، ترتیب و ساخت یک مجموعه‌ی کامل
-
-#### چرا باید یاد بگیریم؟
-
-Policy قلب فایروال است. بیشتر حوادث امنیتی و قطعی‌ها از دو چیز می‌آیند: Policy بیش‌ازحد باز (امنیت) یا Policy اشتباه/به‌ترتیب نادرست (قطعی). یاد بگیرید Policy را مثل یک جمله‌ی دقیق بخوانید و بنویسید: «چه کسی، از کجا، به کجا، چه سرویسی، چه کاری، چه زمانی».
-
-#### اجزای یک Policy
-
-| جزء | نقش |
-|---|---|
-| Incoming Interface | ورودی |
-| Outgoing Interface | خروجی |
-| Source | چه کسی/آدرس |
-| Destination | به کجا |
-| Schedule | چه زمانی |
-| Service | پورت/پروتکل |
-| Action | Accept/Deny |
-| NAT | ترجمه |
-| Security Profiles | UTM |
-| Log | ثبت |
-
-#### قاعده‌ی First Match
-
-Policyها از بالا به پایین بررسی می‌شوند؛ **اولین مطابقت** اعمال می‌شود. اگر هیچ‌کدام مطابق نبود، **Implicit Deny** (Policy 0) رد می‌کند و به‌صورت پیش‌فرض Log نمی‌شود.
-
-#### مثال ساده — ترتیب خاص به عام
-
-``` text
-ID 10 USERS -> SERVERS  svc HTTPS,SMB  accept log all
-ID 20 GUEST -> INTERNET svc HTTP,HTTPS,DNS accept nat log utm
-ID 30 USERS -> INTERNET svc HTTP,HTTPS,DNS accept nat log utm
-ID 90 any   -> any      svc ALL deny log all
-```
-
-اگر 30 با dst=all قبل از 10 بود، ترافیک داخلی را هم می‌گرفت و 10 هرگز اجرا نمی‌شد (Shadow).
-
-#### مثال متوسط — Lookup
-
-``` text
-diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 445 tcp port2
- -> policy 10
-diagnose firewall iprope lookup 10.10.0.5 40000 203.0.113.10 22 tcp port2
- -> policy 90 (deny)
-```
-
-#### مثال سخت — Log برای Implicit Deny
-
-``` text
-config log setting
- set fwpolicy-implicit-log enable
-end
-```
-
-بدون آن، Deny ضمنی نامرئی است و اسکن‌ها دیده نمی‌شوند. بهتر: یک Policy Deny صریح در پایین با Log All.
-
-#### Lab
-
-چهار Policy بالا را بسازید و چهار Lookup (دو مثبت، دو منفی) اجرا کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Policy اجرا نمی‌شود | Shadow | ترتیب |
-| Deny بی‌Log | implicit | Deny صریح |
-| ترافیک رد می‌شود | Interface | بررسی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. First Match یعنی؟** اولین مطابقت.
-**۲. Policy 0؟** Implicit Deny.
-**۳. Lookup چه؟** Policy مطابق بدون ترافیک.
-
-#### English Corner
-
-- *Policies are evaluated top-down and the first match wins.*
-- Q: Why add an explicit logged deny at the bottom?
 
 ## درس 13-2 — NAT در FortiGate: Policy NAT، IP Pool، Central NAT و انتخاب درست
 
@@ -445,338 +252,46 @@ end
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Source NAT را با Outgoing Interface Address و IP Pool مقایسه کند.
-2. چهار نوع IP Pool را بشناسد و برای هر کدام کاربرد بگوید.
-3. Central NAT را در برابر Policy NAT بسنجد و فعال‌سازی آن را بداند.
-4. تعداد Sessionهای ممکن با یک IP عمومی را برآورد کند.
-5. خطاهای رایج NAT (برگشت نیست، Pool خالی، Central NAT فراموش) را رفع کند.
+1. انواع NAT در FortiGate (Interface NAT، IP Pool انواع، Central NAT) را تمایز دهید.
+2. ظرفیت NAT/IP Pool را محاسبه کنید.
+3. Policy NAT را با IP Pool بسازید و تأیید کنید.
+4. Central NAT و تفاوت رفتار آن را بدانید.
+5. Pool Exhaustion را تشخیص و رفع کنید.
+6. NAT را با Session و Sniffer اثبات کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا NAT؟** آدرس‌های خصوصی (10.x، 192.168.x) در اینترنت مسیر ندارند. NAT آنها را به آدرس عمومی ترجمه می‌کند. تصمیم اینکه چه نوع NAT و با چه ظرفیتی، به تعداد کاربران و Sessionها بستگی دارد.
+آدرس‌های خصوصی (10.x، 192.168.x) در اینترنت مسیر ندارند. NAT آنها را به آدرس عمومی ترجمه می‌کند. تصمیم اینکه چه نوع NAT، با چند IP عمومی و چطور ردیابی شود، بر ظرفیت، تجربه‌ی کاربر و ممیزی اثر مستقیم دارد. مثل میز پذیرش شرکت که نام داخلی را به شماره‌ی بیرونی تبدیل می‌کند: اگر شماره‌ها کم باشد، صف می‌شود.
 
-**انواع NAT در FortiGate**
+### انواع NAT
 
-- **Interface NAT:** با IP همان Interface خروجی (ساده‌ترین).
-- **IP Pool Overload:** چند IP عمومی با PAT (تغییر پورت).
-- **IP Pool One-to-One:** هر کاربر یک IP (بدون PAT).
-- **Fixed Port Range / Port Block Allocation:** ردیابی ساده‌تر.
-- **Central NAT:** ترجمه از Policy جدا و در جدول `central-snat-map` مدیریت می‌شود.
-
-**نکته‌ی ظرفیت:** یک IP عمومی حدود ۶۴ هزار پورت دارد؛ پورت‌ها **برای هر مقصد** (IP:Port) جدا شمرده می‌شوند. پس مقصدهای متنوع فشار را کم می‌کنند و مقصد واحد (مثل یک CDN) بدترین حالت است.
-
-**جمع‌بندی اصلی درس:** یک ساختمان ۵۰۰ نفره با یک شماره‌ی تلفن بیرونی را در نظر بگیرید. وقتی کارمندی تماس می‌گیرد، تلفن‌چی شماره‌ی بیرونی را می‌گذارد و یادش می‌ماند «داخلی 214 زنگ زد». جواب برمی‌گردد به همان داخلی. این PAT است. اگر شرکت چند شماره‌ی بیرونی داشته باشد (Pool)، می‌شود شماره را به‌صورت دلخواه یا ثابت به افراد داد.
-
-مسئله‌ی عملی: «اینترنت دارم ولی سرور سازمانی ما را Block کرده چون IP مشترک است»؛ یا «ترافیک برگشت نمی‌رسد». پاسخ در NAT است.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) NAT داخل Policy (پیش‌فرض)
-
-``` text
-config firewall policy
- edit 2
-  set nat enable
-  ! default: use outgoing interface address
- next
-end
-```
-
-مبدأ با IP Interface خروجی ترجمه می‌شود (PAT). ساده‌ترین حالت.
-
-#### ۲) IP Pool
-
-| نوع | رفتار | کاربرد |
+| نوع | شرح | کاربرد |
 |---|---|---|
-| Overload | چند Host با یک/چند IP، پورت‌ها اشتراکی | پیش‌فرض اینترنت |
-| One-to-One | هر IP داخلی یک IP عمومی ثابت | سرویس نیازمند IP اختصاصی |
-| Fixed Port Range | هر Host بازه‌ی پورت ثابت | ردیابی قانونی |
-| Port Block Allocation | بلوک پورت به هر Host | Log کم‌حجم CGN |
+| Interface NAT | با IP Interface خروجی | ساده‌ترین |
+| IP Pool Overload (PAT) | چند IP عمومی با تغییر پورت | ظرفیت بالا |
+| IP Pool One-to-One | هر کاربر یک IP | نیاز IP اختصاصی |
+| Fixed Port Range | هر کاربر بازه‌ی پورت ثابت | ردیابی |
+| Port Block Allocation (PBA) | بلوک پورت به هر کاربر | Log کم‌حجم (CGN) |
+| Central NAT | ترجمه از Policy جدا | مدیریت متمرکز |
+
+### ظرفیت
+
+یک IP عمومی حدود ۶۴ هزار پورت دارد (۱۰۲۴ تا ۶۵۵۳۵). پورت **به‌ازای هر مقصد** (IP:Port) جدا شمرده می‌شود؛ پس مقصدهای متنوع فشار را کم می‌کنند و مقصد واحد (CDN) بدترین حالت است.
 
 ``` text
-config firewall ippool
- edit "POOL-WAN"
-  set type overload
-  set startip 203.0.113.20
-  set endip 203.0.113.21
- next
-end
-config firewall policy
- edit 2
-  set ippool enable
-  set poolname "POOL-WAN"
- next
-end
-```
-
-نکته: IP Pool باید آدرسی باشد که **ISP به شما Route می‌کند** و ARP/Proxy-ARP برای آن (در صورت لزوم) تنظیم شود.
-
-#### ۳) ظرفیت
-
-``` text
-Ports per IP ~ 65535 - 1024 = ~64500
-Max concurrent sessions per public IP (to ONE destination ip:port) ~ 64500
-```
-
-فرمول برای همان Destination:Port؛ برای مقاصد متفاوت بیشتر است. با ۱۰۰۰ کاربر و ۵۰ Session هر کدام = ۵۰۰۰۰ ⇒ نزدیک سقف؛ Pool دو IP.
-
-#### ۴) Central NAT
-
-در 7.0 ترجمه از Policy جدا و در جدول جدا (`config firewall central-snat-map`) مدیریت می‌شود:
-
-``` text
-config system settings
- set central-nat enable
-end
-config firewall central-snat-map
- edit 1
-  set srcintf "ZN-USERS"
-  set dstintf "port1"
-  set orig-addr "NET-USERS"
-  set dst-addr "all"
-  set nat-ippool "POOL-WAN"
- next
-end
-```
-
-بعد از فعال‌سازی، گزینه‌ی NAT در Policy کار نمی‌کند و باید Central SNAT Map ساخت: «NAT فعال شد ولی اثر نکرد» ⇒ اغلب همین.
-
-#### ۵) انتخاب
-
-| معیار | Policy NAT | Central NAT |
-|---|---|---|
-| سادگی | بله | نیاز به نگهداری جدول جدا |
-| ترجمه‌های پیچیده/چند Pool | سخت | مناسب |
-
-#### ۶) ترتیب
-
-SNAT بعد از Policy (مبدأ در Policy آدرس داخلی است) و DNAT/VIP قبل از Policy.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| PAT ساده یا Pool | Overload Pool برای بیش از ۴۰k Session |
-| Central NAT | فقط وقتی ترجمه‌ها زیاد/پیچیده |
-| IP Pool | IP تحویلی ISP؛ ARP/Route را هماهنگ کنید |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — Interface NAT
-
-در Policy `set nat enable` بدون Pool: Src IP با آدرس port1 ترجمه می‌شود. بررسی با `diagnose sys session list` (فیلد snat).
-
-#### مثال متوسط — محاسبه‌ی Pool
-
-``` text
-Users 1200 x 60 sessions = 72000
+Users 1200 x sessions per user 60 = 72000 sessions
 Ports per IP ~ 64500
-Worst case one destination: 72000 / 64500 = 1.12 -> 2 IPs
-With 50% headroom -> 3 IPs
+Worst case (one destination): 72000 / 64500 = 1.12 -> 2 IPs
+With 50 % headroom: 3 IPs
 ```
 
-``` text
-config firewall ippool
- edit "POOL-INET"
-  set type overload
-  set startip 203.0.113.20
-  set endip 203.0.113.22
- next
-end
-```
-
-#### مثال متوسط — Central NAT
-
-با فعال‌شدن Central NAT، `nat enable` روی Policy اثر ندارد؛ باید `central-snat-map` تعریف شود. اشتباه رایج پس از تغییر حالت: «NAT ناگهان کار نمی‌کند».
-
-#### مثال سخت — «پاسخ نمی‌آید»
-
-Session با SNAT به 203.0.113.21 ساخته می‌شود ولی پاسخ نمی‌آید: ISP آن IP را Route نکرده. شاهد: Sniffer روی WAN فقط خروجی. رفع: هماهنگی ISP یا استفاده از IP Interface. آزمون: curl و session list.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** ۲۰۰ کاربر از یک IP WAN: Policy با `nat enable`؛ `diagnose sys session list` نشان می‌دهد `hook=post dir=org act=snat 10.10.0.5:40000->203.0.113.10:443(198.51.100.2:40000)`. پاسخ: PAT با IP Interface.
-
-**متوسط (ظرفیت):** ۱۰۰۰ کاربر با میانگین ۵۰ Session هم‌زمان به یک سرویس 443. مراحل: ۱) کل Session = 1000×50 = 50000. ۲) سقف هر IP ≈ 64500. ۳) حاشیه‌ی ایمنی کم؛ پاسخ: Pool با دو IP (Overload) تا ظرفیت ≈ 129000 و حاشیه‌ی ۵۰٪. آزمون: بار با iperf/ab و مشاهده‌ی `nat-pool exhausted` در لاگ.
-
-**سخت (Central NAT):** پس از فعال‌سازی Central NAT کاربران اینترنت را از دست دادند. مراحل: ۱) Policy ها `nat enable` دارند ولی Central NAT فعال است. ۲) `show firewall central-snat-map` خالی. ۳) علت: SNAT Map نیست. رفع: ساخت Map برای ZN-USERS→port1. آزمون: Session با snat؛ Log. درس: قبل از فعال‌سازی Central NAT نقشه‌ی ترجمه را آماده کنید و در Maintenance Window.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Policy & Objects → IP Pools → Create New (Type Overload، Start/End IP).
-2. Firewall Policy → NAT = Enable → Dynamic IP Pool → انتخاب Pool.
-3. برای Central NAT: System → Feature Visibility → Central SNAT را روشن؛ Policy & Objects → Central SNAT → Create New.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-config firewall ippool
- edit "POOL-WAN"
-  set type overload
-  set startip 203.0.113.20
-  set endip 203.0.113.21
- next
-end
-config firewall policy
- edit 2
-  set nat enable
-  set ippool enable
-  set poolname "POOL-WAN"
- next
-end
-diagnose sys session filter src 10.10.0.5
-diagnose sys session list
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Session دارای NAT مبدأ جدید است.
-- Source IP در سرور مقصد همان Pool است.
-- ظرفیت: عدم Pool exhausted در Log.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
-|---|---|---|
-| برگشت نیست | Route برگشت/NAT | Route و ARP |
-| NAT اثر ندارد | Central NAT فعال؟ | SNAT Map |
-| Pool exhausted | Session شمار | IP بیشتر/Port block |
-| IP Pool کار نمی‌کند | ISP Route | هماهنگی با ISP |
-
-### ۱۰) نکات امنیتی
-
-- اطلاعات NAT برای رد‌یابی ثبت شود.
-- Pool را فقط برای Zoneهای لازم.
-
-### ۱۱) جمع‌بندی مفهومی
-
-- PAT پیش‌فرض.
-- IP Pool: Overload/One-to-One/Fixed/PBA.
-- ظرفیت ≈ 64500 Session به ازای هر IP و مقصد.
-- Central NAT جدول جدا و Policy NAT را کنار می‌گذارد.
-
-### ۱۲) تمرین و ارزیابی
-
-**ت1.** (ساده) PAT چیست؟ *(پاسخ: 13-2-ت1)*
-
-**ت2.** (ساده) تفاوت Overload و One-to-One؟ *(پاسخ: 13-2-ت2)*
-
-**ت3.** (متوسط) برآورد ظرفیت یک IP؟ *(پاسخ: 13-2-ت3)*
-
-**ت4.** (متوسط) چرا پس از Central NAT اینترنت قطع شد؟ *(پاسخ: 13-2-ت4)*
-
-**ت5.** (سخت) ۱۰۰۰ کاربر، ۸۰ Session هر نفر. *(پاسخ: 13-2-ت5)*
-
-**ت6.** (سخت، طراحی) NAT برای سه Zone با Poolهای متفاوت. *(پاسخ: 13-2-ت6)*
-
-**Q1.** Quick quiz (English): What happens to the NAT option in policies after Central NAT is enabled? *(پاسخ: 13-2-Q1)*
-
-### ۱۳) اصطلاحات و English Corner
-
-| مخفف | شکل کامل | معنی |
-|---|---|---|
-| PAT | Port Address Translation | ترجمه‌ی پورت |
-| PBA | Port Block Allocation | تخصیص بلوک پورت |
-| CGN | Carrier-Grade NAT | NAT مقیاس اپراتور |
-
-- *The pool must be routed to you by the ISP.* ← ISP باید Pool را به شما Route کند.
-
-### ۱۴) کارت Lab
-
-**کارت Lab:** NAT و Pool (اجرا نشده). **Evidence:** `02-design/fgt-nat.md`.
-
-### ۱۵) منابع
-
-- Fortinet FortiOS 7.0 Administration Guide: NAT
-- FortiOS 7.0: IP pools
-- FortiOS 7.0: Central NAT
-
-<a id="l-13-3"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: برآورد ظرفیت NAT و انتخاب Pool با عدد
-
-**سناریو.** ۱۲۰۰ کاربر؛ هر کدام ۶۰ Session هم‌زمان؛ بیشتر ترافیک به چند CDN (Destination محدود).
-
-**محاسبه**
-
-``` text
-Total sessions = 1200 x 60 = 72000
-Ports per public IP (~64500) per destination ip:port
-Worst case (all to ONE destination ip:port): need >= 72000/64500 = 1.12 -> 2 IPs
-With 50% headroom: 3 IPs
-```
-
-در عمل مقصدها متفاوت‌اند و محدودیت پورت برای هر مقصد جدا حساب می‌شود، پس این بدترین حالت است؛ ولی برای CDN محدود نزدیک واقعیت است.
-
-**انتخاب نوع Pool (مستند Fortinet)**
-
-| نیاز | نوع | نکته |
-|---|---|---|
-| اینترنت عمومی | overload (پیش‌فرض) | IPها اشتراکی |
-| سرویس نیازمند IP اختصاصی | one-to-one | PAT خاموش؛ دو IP یعنی دو Host |
-| ردیابی قانونی/Log کم | fixed-port-range یا port-block-allocation | بازه‌ی پورت یا بلوک به Host |
-
-**پیکربندی Overload با دو IP**
-
-``` text
-config firewall ippool
- edit "POOL-INET"
-  set type overload
-  set startip 203.0.113.20
-  set endip 203.0.113.22
- next
-end
-```
-
-**آزمون بار.** ۱۰۰۰۰۰ اتصال با ab/hping؛ `diagnose sys session stat` و Log «nat pool exhausted»؛ در صورت پر شدن Pool را بزرگ کنید یا PBA.
-
-**اشتباهات رایج**
-- Central NAT فعال و Policy NAT بی‌اثر.
-- IP Pool که ISP به شما Route نکرده.
-- Pool یک IP برای صدها کاربر با مقصد یکسان.
-
-**پرسش‌های مصاحبه**
-1. *تفاوت PAT و Static NAT؟* PAT پورت را تغییر می‌دهد؛ Static یک‌به‌یک.
-2. *Central NAT چه می‌کند؟* ترجمه را از Policy جدا و در جدول central-snat-map مدیریت می‌کند.
-3. *چرا PBA؟* Log کم‌حجم و ردیابی در CGN.
-
-### تکمیل عمیق: NAT — Policy NAT، IP Pool و Central NAT با محاسبه
-
-#### چرا؟
-
-آدرس‌های خصوصی در اینترنت قابل‌مسیریابی نیستند؛ NAT آنها را به آدرس عمومی ترجمه می‌کند. انتخاب نوع NAT و اندازه‌ی Pool بر ظرفیت و ردیابی اثر مستقیم دارد.
-
-#### انواع
-
-| نوع | شرح |
-|---|---|
-| Interface NAT | استفاده از IP خروجی (ساده‌ترین) |
-| IP Pool Overload | چند IP، PAT |
-| IP Pool One-to-One | یک‌به‌یک، بدون PAT |
-| Fixed Port Range / PBA | ردیابی ساده‌تر |
-| Central NAT | ترجمه‌ی جدا از Policy |
-
-#### مثال ساده — ظرفیت
-
-``` text
-Users = 1200 ; sessions per user = 60
-Total sessions = 1200 x 60 = 72000
-Ports per public IP ~ 64500
-Min IPs (worst case, one destination) = 72000 / 64500 = 1.12 -> 2
-With headroom 50% -> 3 IPs
-```
-
-PAT برای هر مقصد (IP:Port) جدا شمرده می‌شود؛ مقاصد متنوع فشار را کم می‌کند.
-
-#### مثال متوسط — Pool
+### IP Pool
 
 ``` text
 config firewall ippool
@@ -795,39 +310,114 @@ config firewall policy
 end
 ```
 
-#### مثال سخت — Central NAT
+IP Poolها باید توسط ISP به فایروال Route شوند؛ و برای `one-to-one` تعداد IP ≥ تعداد کاربران هم‌زمان.
 
-با فعال‌شدن Central NAT، `nat enable` روی Policy کافی نیست و باید `central-snat-map` تعریف شود؛ یکی از اشتباهات رایج پس از تغییر حالت.
+### Central NAT
 
-#### آزمون
+وقتی فعال شود (`set central-nat enable` در `config system settings`)، `nat enable` در Policy اثر ندارد و ترجمه با `central-snat-map` انجام می‌شود:
 
 ``` text
-diagnose sys session filter src 10.10.0.5
-diagnose sys session list    # check snat IP
+config firewall central-snat-map
+ edit 1
+  set srcintf "port2"
+  set dstintf "port1"
+  set orig-addr "NET-USERS"
+  set dst-addr "all"
+  set nat-ippool "POOL-INET"
+ next
+end
 ```
 
-#### Lab
+مزیت: ترجمه از Policy جدا و یک‌جا. اشتباه رایج: پس از فعال‌سازی، «NAT ناگهان کار نمی‌کند» چون map ندارید.
 
-Pool با دو IP بسازید و تغییر IP خروجی را ببینید.
+### مشاهده
 
-#### عیب‌یابی
+``` text
+diagnose sys session list     (snat field)
+diagnose sys session filter src 10.10.0.5
+diagnose firewall ippool-all list
+diagnose firewall ippool-all stats   (exhaustion)
+```
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Interface NAT
+
+Policy `set nat enable` بدون Pool: Src IP با آدرس port1 ترجمه می‌شود. Session: `snat 10.10.0.5:40000->203.0.113.2:40000`.
+
+#### مثال متوسط — محاسبه‌ی Pool
+
+۱۲۰۰ کاربر؛ هر کدام ۶۰ Session؛ مقصدها متنوع (۵۰۰۰ مقصد متفاوت). کل 72000؛ با مقصد متنوع هر IP عملاً ظرفیت بسیار بیشتر دارد. ولی برای بدترین حالت ۳ IP. شاهد: `ippool-all stats` برای عدد واقعی.
+
+#### مثال متوسط — Central NAT
+
+پس از فعال‌سازی Central NAT کاربران اینترنت ندارند. علت: map ندارد. رفع: `central-snat-map` برای NET-USERS. Lookup و Session تأیید.
+
+#### مثال سخت — «پاسخ نمی‌آید»
+
+Session SNAT به 203.0.113.21 ساخته می‌شود ولی پاسخی نیست. Sniffer WAN: فقط خروج. علت: ISP آن IP را Route نکرده. رفع: هماهنگی ISP/IP Interface. آزمون: `curl --interface` و Session.
+
+#### مثال سخت — Pool Exhaustion
+
+Log: «IP pool exhausted». `ippool-all stats`: Pool پر. علل: Pool کوچک، مقصد واحد، اتصال‌های بی‌پایان (UDP)، DoS. رفع: افزایش IP، PBA، کاهش Timeout، بررسی مبدأ پرمصرف. شاهد: کاهش `exhausted`.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Interface NAT و مشاهده‌ی snat.
+2. Pool با دو IP و مشاهده‌ی چرخش.
+3. Central NAT و خطای «بدون map».
+4. محاسبه‌ی ظرفیت و آزمون بار.
+
+### عیب‌یابی سریع
 
 | علامت | علت | رفع |
 |---|---|---|
-| پاسخ نمی‌آید | IP Pool Route نشده | ISP |
-| Pool پر | کم | افزایش |
-| NAT اعمال نمی‌شود | Central NAT | Map |
+| پاسخ نمی‌آید | Pool Route نشده | ISP |
+| NAT اعمال نمی‌شود | Central NAT/Policy | map/enable |
+| Pool پر | ظرفیت | افزایش/PBA |
+| IP ثابت لازم | overload | one-to-one |
 
-#### پرسش‌ها با پاسخ
+### جمع‌بندی
 
-**۱. PAT چه می‌کند؟** پورت را عوض می‌کند.
-**۲. One-to-One؟** بدون PAT.
-**۳. Central NAT؟** جدول جدا.
+NAT انواع دارد؛ Pool با Overload، One-to-One یا PBA. ظرفیت = Session/پورت به‌ازای مقصد. Central NAT جدول جدا دارد. ISP باید Pool را Route کند.
 
-#### English Corner
+### تمرین و ارزیابی
 
-- *Size the NAT pool by sessions per destination and add headroom.*
-- Q: What changes when Central NAT is enabled?
+**ت1.** (ساده) PAT چیست؟ *(پاسخ: 13-2-ت1)*
+
+**ت2.** (ساده) تفاوت Overload و One-to-One؟ *(پاسخ: 13-2-ت2)*
+
+**ت3.** (متوسط) برآورد ظرفیت یک IP؟ *(پاسخ: 13-2-ت3)*
+
+**ت4.** (متوسط) چرا پس از Central NAT اینترنت قطع شد؟ *(پاسخ: 13-2-ت4)*
+
+**ت5.** (سخت) ۱۰۰۰ کاربر، ۸۰ Session هر نفر. *(پاسخ: 13-2-ت5)*
+
+**ت6.** (سخت، طراحی) NAT برای سه Zone با Poolهای متفاوت. *(پاسخ: 13-2-ت6)*
+
+**Q1.** Quick quiz (English): What happens to the NAT option in policies after Central NAT is enabled? *(پاسخ: 13-2-Q1)*
+
+### اصطلاحات و English Corner
+
+| مخفف | شکل کامل | معنی |
+|---|---|---|
+| PAT | Port Address Translation | ترجمه‌ی پورت |
+| PBA | Port Block Allocation | تخصیص بلوک پورت |
+| CGN | Carrier-Grade NAT | NAT مقیاس اپراتور |
+
+- *The pool must be routed to you by the ISP.* ← ISP باید Pool را به شما Route کند.
+
+### کارت Lab
+
+**کارت Lab:** NAT و Pool (اجرا نشده). **Evidence:** `02-design/fgt-nat.md`.
+
+### منابع
+
+- Fortinet FortiOS 7.0 Administration Guide: NAT
+- FortiOS 7.0: IP pools
+- FortiOS 7.0: Central NAT
+
+<a id="l-13-3"></a>
 
 ## درس 13-3 — VIP، Port-Forward و Hairpin NAT: انتشار امن سرویس داخلی
 
@@ -835,102 +425,24 @@ Pool با دو IP بسازید و تغییر IP خروجی را ببینید.
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. VIP را (Static NAT/Port Forward) بسازد و تفاوتشان را بگوید.
-2. Policy مربوط به VIP را با مقصد صحیح بنویسد.
-3. Hairpin NAT و Split DNS را مقایسه و انتخاب کند.
-4. آزمون‌های مثبت/منفی و Security را اجرا کند.
-5. خطاهای رایج (Policy نبود، Route، ARP) را عیب‌یابی کند.
+1. VIP و DNAT را توضیح دهید و فرق One-to-One و Port-forward را بگویید.
+2. VIP و Policy ورودی را بسازید.
+3. آزمون مثبت و منفی انتشار سرویس را اجرا کنید.
+4. مشکل Hairpin و راه‌حل‌های آن را بدانید.
+5. نیازمندی‌های Route/ARP برای IP عمومی را بشناسید.
+6. امنیت سرویس منتشرشده (WAF/IPS/DoS) را اعمال کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا VIP؟** برای انتشار سرویس داخلی (مثلاً وب‌سرور DMZ) به اینترنت، ترافیکی که به **آدرس عمومی** می‌رسد باید به آدرس داخلی ترجمه شود (DNAT). VIP (Virtual IP) همین کار را می‌کند. مثل منشی‌ای که تماس را به داخلی مناسب وصل می‌کند.
+برای انتشار سرویس داخلی (وب‌سرور DMZ) به اینترنت، ترافیکی که به **آدرس عمومی** می‌رسد باید به آدرس داخلی ترجمه شود (DNAT). VIP (Virtual IP) این کار را می‌کند: مثل منشی‌ای که تماس را به داخلی مناسب وصل می‌کند. اشتباه در VIP یا Policy یا Route یک سرویس را از دسترس خارج یا بیش‌ازحد در معرض می‌گذارد.
 
-**Port-forward در برابر One-to-One:** با Port-forward فقط یک پورت (مثلاً 443) منتشر می‌شود؛ سطح حمله کوچک‌تر است.
-
-**مشکل Hairpin:** کاربر داخلی با نام/آدرس عمومی سایت می‌رود؛ ترافیک باید از داخل به همان سرور داخلی برسد. راه ترجیحی **Split DNS** (نام داخلی به IP داخلی). راه جایگزین: VIP با Interface any و Policy از Interface داخلی.
-
-**جمع‌بندی اصلی درس:** سازمان می‌خواهد وب‌سرور داخلی از اینترنت در دسترس باشد. مثل این است که روی تابلوی ساختمان یک شماره‌ی اینترنتی بنویسید و پشت صحنه به داخلی 214 وصل شود. این کار VIP (Virtual IP) است. اما اگر کارمند داخل ساختمان هم از همان شماره‌ی عمومی استفاده کند، مسیر بسته به خود فایروال برمی‌گردد (Hairpin) و اگر درست طراحی نشود قطع می‌شود.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) VIP
-
-``` text
-config firewall vip
- edit "VIP-WEB-443"
-  set extintf "port1"
-  set extip 203.0.113.10
-  set mappedip "10.20.0.10"
-  set portforward enable
-  set protocol tcp
-  set extport 443
-  set mappedport 443
- next
-end
-```
-
-بدون `portforward`، یک‌به‌یک (Static NAT) برای همه‌ی پورت‌ها؛ خطرناک‌تر. Port Forward حداقل سطح در معرض.
-
-#### ۲) Policy
-
-``` text
-config firewall policy
- edit 20
-  set name "INET-to-WEB"
-  set srcintf "port1"
-  set dstintf "ZN-DMZ"
-  set srcaddr "all"
-  set dstaddr "VIP-WEB-443"
-  set action accept
-  set schedule "always"
-  set service "HTTPS"
-  set logtraffic all
- next
-end
-```
-
-مقصد = **اسم VIP** (نه IP داخلی). بدون این Policy ترافیک رد می‌شود.
-
-#### ۳) ARP/Route
-
-IP عمومی باید به FortiGate برسد: IP روی Interface WAN یا Route ISP؛ برای IP اضافی Proxy-ARP خودکار با VIP.
-
-#### ۴) Hairpin
-
-کاربر داخلی به 203.0.113.10: بسته به فایروال می‌رسد، DNAT می‌شود و به سرور در همان LAN/Zone می‌رود؛ سرور پاسخ مستقیم به کاربر می‌دهد (چون هم‌شبکه‌اند) و فایروال را دور می‌زند ⇒ Session ناقص. راه‌حل‌ها:
-
-| روش | توضیح |
-|---|---|
-| Split DNS | DNS داخلی نام را به IP داخلی می‌دهد (توصیه) |
-| Policy مخصوص Hairpin | VIP با `extintf any` یا Policy با Incoming Interface = Interface داخلی و Destination = VIP (بدون NAT طبق مستند قدیمی؛ نسخه‌ها فرق دارند) |
-
-نکته: `set nat-source-vip enable` تنظیم Hairpin نیست؛ طبق مستند Fortinet باعث می‌شود ترافیک خروجی سرور نگاشت‌شده با IP خارجی VIP ترجمه (SNAT) شود.
-
-#### ۵) آزمون
-
-``` text
-curl -vk https://203.0.113.10 (from Internet)
-diagnose sys session filter dst 203.0.113.10
-diagnose sys session list
-```
-
-آزمون منفی: پورت دیگر (22) رد شود.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Port Forward یا Static | Port Forward |
-| Hairpin یا Split DNS | Split DNS |
-| Zone سرور | DMZ جدا |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — VIP
+### VIP
 
 ``` text
 config firewall vip
@@ -945,81 +457,100 @@ config firewall vip
 end
 ```
 
-Policy: `INET -> DMZ`، dst=VIP، service HTTPS.
+- **One-to-One (بدون portforward):** همه‌ی پورت‌ها به سرور داخلی؛ سطح حمله بزرگ.
+- **Port-forward:** فقط پورت مشخص؛ توصیه‌شده.
 
-#### مثال متوسط — آزمون مثبت/منفی
-
-``` text
-curl -vk https://203.0.113.10        -> 200
-nmap -p 22,80,3389 203.0.113.10      -> filtered
-```
-
-#### مثال سخت — VIP بدون پاسخ
-
-1. Policy با dst=VIP است نه IP داخلی؟
-2. Default Gateway سرور به فایروال اشاره می‌کند؟
-3. ISP آدرس عمومی را به فایروال Route می‌کند؟
-4. Debug Flow: «DNAT» دیده می‌شود؟
-
-#### مثال سخت — Hairpin
-
-کاربر LAN به https://203.0.113.10 می‌رود: Split DNS؛ اگر ممکن نبود VIP با extintf any و Policy داخلی→DMZ. `nat-source-vip` تنظیم Hairpin نیست.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** VIP-WEB-443 + Policy؛ از اینترنت HTTPS باز می‌شود؛ Session با DNAT.
-
-**متوسط (تحلیل):** VIP ساخته شد ولی سایت باز نمی‌شود: Policy نیست یا مقصد IP داخلی نوشته شده؛ رفع: Policy با dstaddr=VIP.
-
-**سخت (Hairpin):** کاربران داخلی به نام عمومی نمی‌رسند ولی از اینترنت باز است. مراحل: ۱) DNS عمومی IP Public می‌دهد. ۲) Hairpin. رفع پیشنهادی: Split DNS؛ جایگزین: Policy داخلی با VIP و NAT. آزمون: از LAN و اینترنت.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Policy & Objects → Virtual IPs → Create New.
-2. Firewall Policy → Destination = VIP.
-3. Service را روی پورت لازم محدود کنید.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### Policy ورودی
 
 ``` text
-config firewall vip
- edit "VIP-WEB-443"
-  set extintf "port1"
-  set extip 203.0.113.10
-  set mappedip "10.20.0.10"
-  set portforward enable
-  set extport 443
-  set mappedport 443
+config firewall policy
+ edit 40
+  set name "INET-to-WEB"
+  set srcintf "port1"
+  set dstintf "port3"
+  set srcaddr "all"
+  set dstaddr "VIP-WEB-443"
+  set service "HTTPS"
+  set action accept
+  set logtraffic all
  next
 end
 ```
 
-### ۸) Verification (اثبات صحت)
+`dstaddr` باید خود VIP باشد، نه IP داخلی. VIP بدون Policy ترافیکی را عبور نمی‌دهد.
 
-- آزمون از بیرون موفق.
-- پورت‌های دیگر رد.
-- Hairpin طبق طرح.
+### پیش‌نیازهای شبکه
 
-### ۹) Troubleshooting
+- IP عمومی VIP باید به فایروال برسد: ISP آن را Route کند یا (در یک زیرشبکه‌ی مشترک) فایروال به ARP پاسخ دهد (Proxy ARP خودکار برای VIP).
+- سرور داخلی Default Gateway را فایروال داشته باشد (برگشت از فایروال).
+- DNS خارجی نام را به IP عمومی ببرد.
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+### Hairpin
+
+کاربر LAN با آدرس/نام عمومی سایت (https://203.0.113.10) می‌رود. ترافیک از Interface داخلی وارد و باید به DMZ برود؛ پاسخ ممکن است مستقیم به کاربر برگردد و Session ناقص بماند.
+
+راه‌ها (ترجیحی ⇒ جایگزین):
+
+1. **Split DNS:** نام داخلی به IP داخلی (ساده‌ترین و کم‌ریسک‌ترین).
+2. VIP با `extintf any` و Policy از Interface داخلی + (در صورت لزوم) SNAT.
+3. توجه: `nat-source-vip` تنظیم Hairpin نیست و برای SNAT ترافیک خروجی سرور است.
+
+### امنیت
+
+فقط پورت لازم؛ UTM (IPS، AV، WAF، درس 16-8)؛ DoS Policy برای VIP؛ Log کامل؛ Rate Limit؛ Patch سرور.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — انتشار وب
+
+VIP-WEB-443 + Policy 40. آزمون: `curl -vk https://203.0.113.10` ⇒ 200. Session: DNAT به 10.30.0.10:443.
+
+#### مثال متوسط — آزمون مثبت/منفی
+
+``` text
+curl -vk https://203.0.113.10        -> 200 (policy 40)
+nmap -p 22,80,3389 203.0.113.10      -> filtered (only 443 exposed)
+diagnose sys session list            -> dnat 203.0.113.10:443 -> 10.30.0.10:443
+```
+
+#### مثال متوسط — VIP One-to-One در برابر Port-forward
+
+با One-to-One تمام پورت‌های سرور (مثلاً 3389) به اینترنت باز می‌شود (اگر Policy اجازه دهد). با Port-forward فقط 443. محاسبه‌ی سطح حمله: 65535 پورت در برابر 1.
+
+#### مثال سخت — VIP بدون پاسخ
+
+1. Policy با dst=VIP؟ (نه IP داخلی)
+2. Default Gateway سرور؟
+3. IP عمومی به فایروال Route می‌شود؟ (`diagnose sniffer packet port1 'host 203.0.113.10'`)
+4. Debug Flow: «DNAT» دیده می‌شود؟
+5. فایروال سرور (Host) 443 را می‌پذیرد؟
+6. ISP/ACL بالادست؟
+
+#### مثال سخت — Hairpin
+
+کاربر داخلی به https://203.0.113.10 می‌رود و کار نمی‌کند. روش: Split DNS (ترجیح). اگر ممکن نبود: VIP با extintf any، Policy `ZN-USERS -> ZN-DMZ` و در صورت نیاز SNAT تا پاسخ از فایروال برگردد. آزمون: curl از LAN.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. VIP و Policy بسازید.
+2. آزمون مثبت/منفی با curl/nmap.
+3. Policy با IP داخلی بنویسید و خطا را ببینید.
+4. Hairpin و Split DNS.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| باز نمی‌شود | Policy dst=VIP؟ | Policy |
-| برگشت نیست | Route سرور | Default سرور به FW |
-| داخلی نمی‌رسد | Hairpin | Split DNS |
+| VIP کار نمی‌کند | Policy dst | VIP |
+| پاسخ برنمی‌گردد | GW سرور | تنظیم |
+| IP عمومی نمی‌رسد | Route ISP | هماهنگی |
+| Hairpin | هم‌شبکه | Split DNS |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- فقط پورت لازم.
-- IPS/WAF قبل از VIP (Needs-License).
+VIP آدرس عمومی را DNAT می‌کند؛ Port-forward امن‌تر از One-to-One است. Policy باید به VIP اشاره کند؛ Route/GW برگشت لازم است. Hairpin با Split DNS حل می‌شود.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- VIP=DNAT.
-- Policy با نام VIP.
-- Hairpin مشکل مسیر است نه NAT.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) VIP چیست؟ *(پاسخ: 13-3-ت1)*
 
@@ -1035,7 +566,7 @@ end
 
 **Q1.** Quick quiz (English): Why must the policy destination reference the VIP object? *(پاسخ: 13-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1044,129 +575,15 @@ end
 
 - *Publish only the required port.* ← فقط پورت لازم را منتشر کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** VIP (اجرا نشده). **Evidence:** `02-design/fgt-vip.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Virtual IPs
 
 <a id="l-13-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: انتشار وب با VIP، آزمون کامل و حل Hairpin
-
-**سناریو.** وب‌سرور 10.30.0.10 در DMZ؛ IP عمومی 203.0.113.10.
-
-**گام ۱ — VIP.**
-
-``` text
-config firewall vip
- edit "VIP-WEB-443"
-  set extintf "port1"
-  set extip 203.0.113.10
-  set mappedip "10.30.0.10"
-  set portforward enable
-  set extport 443
-  set mappedport 443
- next
-end
-```
-
-**گام ۲ — Policy.** `INET -> DMZ`, dstaddr = `VIP-WEB-443`, service HTTPS, Log All، (UTM در صورت لایسنس).
-
-**گام ۳ — آزمون مثبت/منفی**
-
-``` text
-curl -vk https://203.0.113.10          -> 200 (Policy hit)
-nmap -p 22,80,3389 203.0.113.10        -> filtered/closed (only 443 open)
-diagnose sys session filter dst 203.0.113.10
-diagnose sys session list              -> DNAT 203.0.113.10:443 -> 10.30.0.10:443
-```
-
-**گام ۴ — Hairpin.** کاربر LAN با نام عمومی وصل می‌شود و Session ناقص می‌ماند؛ راه ترجیحی Split DNS؛ طبق مستند Fortinet راه جایگزین VIP با extintf any و Policy از Interface داخلی؛ `nat-source-vip` تنظیم Hairpin نیست و برای SNAT ترافیک خروجی سرور است.
-
-**گام ۵ — Security.** فقط 443؛ WAF/IPS (Needs-License)؛ Rate limit با DoS Policy؛ Log متمرکز.
-
-**اشتباهات رایج**
-- Policy با IP داخلی.
-- سرور Default Gateway ندارد/به فایروال نمی‌رود.
-- Static NAT همه‌ی پورت‌ها.
-
-**پرسش‌های مصاحبه**
-1. *DNAT قبل یا بعد Policy؟* قبل.
-2. *Port-forward چه فایده؟* سطح حمله‌ی کمتر.
-3. *VIP و ARP؟* IP عمومی باید روی فایروال یا Route ISP باشد.
-
-### تکمیل عمیق: VIP، Port-forward و Hairpin
-
-#### چرا؟
-
-برای انتشار سرویس داخلی به اینترنت باید ترافیک ورودی به IP عمومی را به سرور داخلی ترجمه (DNAT) کنیم؛ و مشکل «کاربر داخلی با نام عمومی» (Hairpin) را حل کنیم.
-
-#### مثال ساده — VIP
-
-``` text
-config firewall vip
- edit "VIP-WEB-443"
-  set extintf "port1"
-  set extip 203.0.113.10
-  set mappedip "10.30.0.10"
-  set portforward enable
-  set extport 443
-  set mappedport 443
- next
-end
-```
-
-سپس Policy: `INET -> DMZ`، dst = VIP، service HTTPS.
-
-#### آزمون
-
-``` text
-curl -vk https://203.0.113.10
-nmap -p 22,80,3389 203.0.113.10        # expect filtered
-diagnose sys session list              # DNAT 203.0.113.10:443 -> 10.30.0.10:443
-```
-
-#### مثال متوسط — IP عمومی روی فایروال
-
-IP VIP باید برای ISP به فایروال Route یا ARP شود؛ در Interface Secondary IP یا Proxy ARP (طبق نسخه).
-
-#### مثال سخت — Hairpin
-
-کاربر LAN به https://203.0.113.10 می‌رود؛ ترافیک از Interface داخلی وارد و باید به DMZ برود. راه ترجیحی: Split DNS (نام داخلی را به IP داخلی حل کن). راه جایگزین: VIP با extintf any و Policy از Interface داخلی. توجه: `nat-source-vip` تنظیم Hairpin نیست.
-
-#### امنیت
-
-فقط پورت لازم؛ WAF/IPS (Needs-License)؛ DoS Policy.
-
-#### Lab
-
-VIP بسازید و آزمون مثبت/منفی بزنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| VIP کار نمی‌کند | Policy | افزودن |
-| پاسخ برنمی‌گردد | Default GW سرور | بررسی |
-| Hairpin | Split DNS | DNS |
-
-#### پرسش‌ها با پاسخ
-
-**۱. DNAT قبل از Policy؟** بله.
-**۲. Port-forward؟** سطح حمله کمتر.
-**۳. Split DNS؟** نام داخلی به IP داخلی.
-
-#### English Corner
-
-- *Prefer split DNS over hairpin NAT for internal users.*
-- Q: Why is port forwarding safer than a full one-to-one VIP?
 
 ## درس 13-4 — Session Table: ساختار، Timeout، فیلتر و پاک‌سازی
 
@@ -1174,179 +591,137 @@ VIP بسازید و آزمون مثبت/منفی بزنید.
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. فیلدهای مهم یک Session را بخواند (proto، state، timeout، policy، NAT، offload).
-2. Session را با فیلتر مناسب پیدا و تحلیل کند.
-3. Timeout پیش‌فرض و Session-TTL را بشناسد و تنظیم کند.
-4. تغییر Policy/Route را با Session قدیمی هماهنگ کند (clear).
-5. پاک‌سازی Session را امن (فیلترشده) انجام دهد.
-6. Session پر یا Leak را شناسایی کند.
+1. ساختار Session Table و فیلدهای مهم `session list` را بخوانید.
+2. Timeout و expire را تفسیر کنید.
+3. با `session filter` Sessionهای خاص را پیدا و پاک کنید.
+4. علت «Policy را حذف کردم ولی کار می‌کند» را توضیح دهید.
+5. تعداد Session و نشت را پایش کنید.
+6. Offload و Session را مرتبط بفهمید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Session Table؟** Session نشان می‌دهد «در این لحظه چه چیزی باز است». بسیاری از رفتارهای عجیب (Policy را حذف کردم ولی هنوز کار می‌کند) با دیدن Session روشن می‌شود.
+Session نشان می‌دهد «در این لحظه چه چیزی باز است». بسیاری از رفتارهای عجیب (تغییر Policy اثر نمی‌کند، مسیر قدیمی می‌ماند، اتصال بعد از ساعت‌ها قطع می‌شود) با دیدن Session روشن می‌شود. Session Table مثل دفتر نگهبان است: هر ورودی یک اتصال فعال.
 
-**چه چیزهایی در Session هست؟** پروتکل، حالت، آدرس‌ها و پورت‌های قبل/بعد NAT، Policy مجاز‌کننده، Timeout، شمارنده‌ها و (در سخت‌افزار) وضعیت NPU.
-
-**اصل:** Session موجود با تغییر Policy/Route خودبه‌خود تغییر نمی‌کند؛ تا انقضا یا پاک‌سازی همان می‌ماند.
-
-**جمع‌بندی اصلی درس:** می‌گویید «Policy را عوض کردم ولی اثر نکرد». اغلب Session قدیمی هنوز در جدول است و FortiGate برای بسته‌های ادامه‌دار Policy را دوباره نمی‌پرسد. Session Table حافظه‌ی فایروال است؛ بدون خواندن آن تفسیر رفتار فایروال حدس است.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) خواندن یک Session
+### خواندن Session
 
 ``` text
 session info: proto=6 proto_state=01 duration=35 expire=3565 timeout=3600 flags=00000000
-origin-shaper= reply-shaper= per_ip_shaper=
-class_id=0 ha_id=0 policy_dir=0 tunnel=/ vlan_cos=0/255
-state=may_dirty npu
 statistic(bytes/packets/allow_err): org=5320/42/1 reply=48200/55/1 tuples=2
 orgin->sink: org pre->post, reply pre->post dev=5->3/3->5 gwy=198.51.100.1/10.10.0.5
 hook=post dir=org act=snat 10.10.0.5:40000->203.0.113.10:443(198.51.100.2:40000)
-hook=pre dir=reply act=dnat 203.0.113.10:443->198.51.100.2:40000(10.10.0.5:40000)
-policy_id=2 auth_info=0 chk_client_info=0 vd=0
+hook=pre  dir=reply act=dnat 203.0.113.10:443->198.51.100.2:40000(10.10.0.5:40000)
+policy_id=10 auth_info=0 chk_client_info=0 vd=0
 ```
 
 | فیلد | معنی |
 |---|---|
-| proto | 6=TCP، 17=UDP، 1=ICMP |
-| proto_state | وضعیت (TCP: 01=Established) |
-| expire/timeout | زمان باقی‌مانده/کل |
-| policy_id | Policy که اجازه داد |
-| hook/act | SNAT/DNAT انجام‌شده |
-| npu | Offload شده |
+| proto=6 | TCP (17=UDP، 1=ICMP) |
+| proto_state=01 | حالت (01 = Established) |
+| duration | عمر (ثانیه) |
+| expire / timeout | زمان باقی‌مانده / Timeout کل |
+| org / reply | بایت/بسته رفت و برگشت |
+| act=snat/dnat | ترجمه‌ها (قبل و بعد) |
+| policy_id | Policy مجازکننده |
+| dev | Interface ورودی/خروجی |
 
-#### ۲) فیلتر
+### فیلتر و پاک‌سازی
 
 ``` text
 diagnose sys session filter clear
 diagnose sys session filter src 10.10.0.5
 diagnose sys session filter dport 443
 diagnose sys session list
+diagnose sys session clear
 diagnose sys session filter clear
+diagnose sys session stat
+diagnose sys session full-stat
 ```
 
-همیشه فیلتر را قبل از `clear` تنظیم کنید؛ `diagnose sys session clear` بدون فیلتر **همه‌ی** Sessionها را می‌بندد (قطع سراسری).
+**هشدار:** `clear` بدون فیلتر همه‌ی Sessionها را می‌بندد.
 
-#### ۳) Timeout
+### Timeout
 
-| نوع | پیش‌فرض تقریبی |
-|---|---|
-| TCP Established | 3600 s |
-| TCP Half-open | ثانیه‌ها |
-| UDP | چند ده ثانیه تا حدود ۱۸۰ ثانیه (بسته به نسخه/Service) |
-| ICMP | ثانیه‌ها |
+مقدار سراسری TCP ۳۶۰۰ ثانیه (پیش‌فرض)؛ UDP حدود ۶۰ ثانیه. Timeout هر Service/Policy می‌تواند آن را بازنویسی کند؛ برای SSH طولانی یا برنامه‌ی ویژه:
 
 ``` text
 config system session-ttl
- set default 3600
  config port
-  edit 5000
+  edit 22
    set protocol 6
-   set timeout 7200
-   set end-port 5000
+   set timeout 14400
   next
  end
 end
 ```
 
-مقادیر پیش‌فرض `Unverified` برای نسخه‌ی شما؛ با `get system session-ttl` ببینید.
+### Session و تغییر Policy
 
-#### ۴) Policy تغییر کرد؛ Session چه می‌شود؟
+Session موجود با تغییر Policy/Route خودبه‌خود تغییر نمی‌کند؛ تا انقضا یا پاک‌سازی همان می‌ماند. پس پس از تغییر، آزمون را با اتصال **جدید** انجام دهید، یا Session‌های مربوط را با فیلتر پاک کنید.
 
-FortiGate Sessionهای موجود را معمولاً تا انقضا نگه می‌دارد؛ برای اعمال فوری Policy جدید، Session مشخص را پاک کنید (با فیلتر). تنظیم `set auth-timeout` یا «session re-validate» در 7.0 تغییر Policy را بازبینی می‌کند (`Unverified`).
+### نشت و پایش
 
-#### ۵) Session Leak
+`diagnose sys session stat` تعداد کل/جدید/رد‌شده. روند افزایش بی‌انقطاع ⇒ نشت (DoS، Timeout طولانی، UDP بی‌پایان). بررسی Top مبدأ: `diagnose sys session list | grep ...` یا Log.
 
-تعداد Session رو به افزایش: `get system performance status` و `diagnose sys session full-stat`. علل: Timeout طولانی، DoS، UDP بی‌پایان.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Timeout | Per-port برای سرویس‌های طولانی |
-| Clear | فقط با فیلتر |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### مثال‌های حل‌شده
 
 #### مثال ساده — خواندن
 
-``` text
-proto=6 proto_state=01 duration=35 expire=3565 timeout=3600
-hook=post dir=org act=snat 10.10.0.5:40000->203.0.113.10:443(198.51.100.2:40000)
-policy_id=10
-```
-
-TCP، Established، ۳۵ ثانیه عمر، Policy 10، SNAT به 198.51.100.2.
+از Session بالا: TCP، Established، ۳۵ ثانیه عمر، Policy 10، SNAT به 198.51.100.2:40000، ۴۲ بسته رفت و ۵۵ بسته برگشت.
 
 #### مثال متوسط — حذف Policy ولی کار می‌کند
 
+FTP (Policy 5) را حذف کردید ولی کاربری هنوز FTP دارد.
+
 ``` text
 diagnose sys session filter dport 21
-diagnose sys session list
+diagnose sys session list     -> policy_id=5, expire=3200
 diagnose sys session clear
 diagnose sys session filter clear
 ```
 
-پس از پاک‌سازی، اتصال جدید رد و Log `policyid=90` می‌دهد.
+پس از پاک‌سازی اتصال جدید رد و Log `policyid=90`.
 
-#### مثال سخت — Session زیاد
-
-`diagnose sys session stat` روند تعداد: DoS یا Timeout طولانی یا UDP بی‌پایان. بررسی Top مبدأ و محدود با DoS Policy. هشدار: Clear بدون فیلتر همه‌ی اتصال‌ها را قطع می‌کند.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Session بالا: `proto=6`، `policy_id=2`، `act=snat`؛ یعنی TCP، Policy 2، SNAT شده. پاسخ: همان انتظار.
-
-**متوسط (Session قدیمی):** Policy 5 (اجازه‌ی FTP) حذف شد ولی FTP کار می‌کند. مراحل: ۱) Session با dport 21 هنوز هست و policy_id=5. ۲) فیلتر dport 21 و `diagnose sys session clear`. ۳) FTP جدید رد می‌شود. درس: بعد از تغییر Policy حساس Session مربوطه را پاک کنید.
-
-**سخت (Timeout و SSH):** SSH ادمین هر ۵ دقیقه قطع می‌شود. مراحل: ۱) Session expire را با `session list` ببینید. ۲) timeout 300 برای port 22 در `session-ttl`. ۳) افزایش ۸۶۴۰۰ برای پورت 22 یا Keepalive سمت کلاینت. ۴) آزمون ۳۰ دقیقه بیکار. معیار: Session نمی‌میرد. ریسک: Sessionهای بیکار منابع می‌گیرند.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Dashboard → FortiView Sessions (یا Monitor → Firewall User/Session).
-2. فیلتر و Kill Session در GUI.
-
-### ۷) پیاده‌سازی از مسیر CLI
+#### مثال متوسط — محاسبه‌ی Timeout
 
 ``` text
-diagnose sys session filter clear
-diagnose sys session filter src 10.10.0.5
-diagnose sys session list
-diagnose sys session clear
-get system session-ttl
-diagnose sys session full-stat
+expire 3565 s of timeout 3600 -> 35 s since last packet
 ```
 
-### ۸) Verification (اثبات صحت)
+#### مثال سخت — نشت Session
 
-- Session با policy درست.
-- پس از clear، Session جدید.
-- Timeout اعمال‌شده.
+`session stat` تعداد 120,000 (ظرفیت 200,000) و رو به رشد. بررسی: ۱) Top مبدأ ۲) UDP DNS به 8.8.8.8 از یک کلاینت (۳۰ هزار Session؛ DoS ناخواسته/بدافزار) ۳) Timeout UDP ۴) DoS Policy `udp_flood`. اقدام: مهار کلاینت، Policy، و پایش. شاهد: کاهش Session.
 
-### ۹) Troubleshooting
+#### مثال سخت — SSH قطع می‌شود
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+SSH بعد از ۱ ساعت بی‌کاری قطع می‌شود: Timeout ۳۶۰۰. راه: Keepalive یا `session-ttl` برای پورت 22 (۴ ساعت) با CHG. شاهد: expire جدید.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. یک اتصال بسازید و Session را بخوانید.
+2. Policy را حذف و Session را مشاهده؛ سپس Clear با فیلتر.
+3. `session-ttl` سفارشی.
+4. نشت آزمایشی UDP و `stat`.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Policy تازه اثر ندارد | Session قدیمی | clear فیلترشده |
-| قطع بعد ۵ دقیقه | expire | session-ttl |
-| Session زیاد | full-stat | DoS/Timeout |
+| تغییر بی‌اثر | Session قدیم | Clear با فیلتر |
+| قطع بعد از ساعت | Timeout | Keepalive/ttl |
+| Session زیاد | DoS/UDP | بررسی/Policy |
+| clear همه | بی‌فیلتر | فیلتر |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- clear بدون فیلتر ممنوع.
+Session رکورد اتصال است: حالت، Timeout، NAT، Policy و شمارنده. تغییر Policy Session موجود را عوض نمی‌کند؛ با فیلتر پاک کنید. Timeout و نشت را پایش کنید.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- Session = حافظه.
-- فیلتر قبل clear.
-- Timeout.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) proto=6 یعنی؟ *(پاسخ: 13-4-ت1)*
 
@@ -1362,7 +737,7 @@ diagnose sys session full-stat
 
 **Q1.** Quick quiz (English): Why should a session filter be set before running clear? *(پاسخ: 13-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1371,122 +746,16 @@ diagnose sys session full-stat
 
 - *Never clear all sessions in production.* ← هرگز همه‌ی Sessionها را در Production پاک نکنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Session (اجرا نشده). **Evidence:** `03-ops/session-notes.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Session table
 - FortiOS 7.0 CLI: diagnose sys session
 
 <a id="l-13-5"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: خواندن Session خط‌به‌خط و پرونده‌ی «Policy را حذف کردم ولی کار می‌کند»
-
-**نمونه Session**
-
-``` text
-session info: proto=6 proto_state=01 duration=35 expire=3565 timeout=3600 ...
-statistic(bytes/packets/allow_err): org=5320/42/1 reply=48200/55/1 tuples=2
-hook=post dir=org act=snat 10.10.0.5:40000->203.0.113.10:443(198.51.100.2:40000)
-hook=pre  dir=reply act=dnat 203.0.113.10:443->198.51.100.2:40000(10.10.0.5:40000)
-policy_id=10 ...
-```
-
-**تفسیر.** proto=6 TCP؛ proto_state=01 Established؛ expire/timeout ۳۵۶۵/۳۶۰۰ ⇒ ۳۵ ثانیه از عمر گذشته؛ پاسخ ۵۵ بسته و ۴۸ KB؛ policy_id=10 مجوز را داده؛ SNAT به 198.51.100.2.
-
-**پرونده.** Policy 5 (FTP) حذف شد ولی FTP هنوز کار می‌کند.
-
-``` text
-diagnose sys session filter dport 21
-diagnose sys session list     -> policy_id=5, expire=3200
-diagnose sys session clear     ! only for this filter
-diagnose sys session filter clear
-```
-
-پس از پاک‌سازی، اتصال جدید به 21 باید رد شود و Log `policyid=90`.
-
-**Timeoutها.** مقدار سراسری TCP ۳۶۰۰؛ Timeout هر Service می‌تواند آن را بازنویسی کند؛ برای SSH طولانی `config system session-ttl` یا Service سفارشی.
-
-**هشدار.** `diagnose sys session clear` بدون فیلتر همه‌ی Sessionها را می‌بندد.
-
-**نشت Session:** `diagnose sys session full-stat` و روند تعداد؛ علل: DoS، Timeout طولانی، UDP بی‌پایان.
-
-**پرسش‌های مصاحبه**
-1. *چرا پس از تغییر Policy Session قدیمی می‌ماند؟* Session موجود تا انقضا یا پاک‌سازی باقی است.
-2. *proto_state؟* وضعیت TCP؛ ۰۱ Established.
-3. *npu در Session؟* Session Offload شده؛ Debug flow آن را نمی‌بیند.
-
-### تکمیل عمیق: Session Table — خواندن و پاک‌سازی
-
-#### چرا؟
-
-Session نشان می‌دهد در این لحظه چه چیزی باز است؛ بسیاری از رفتارهای «عجیب» (تغییر Policy اثر نمی‌کند) با دیدن Session روشن می‌شود.
-
-#### مثال ساده — خواندن
-
-``` text
-session info: proto=6 proto_state=01 duration=35 expire=3565 timeout=3600
-statistic(bytes/packets/allow_err): org=5320/42/1 reply=48200/55/1
-hook=post dir=org act=snat 10.10.0.5:40000->203.0.113.10:443(198.51.100.2:40000)
-policy_id=10
-```
-
-تفسیر: TCP (proto 6)، Established (01)، ۳۵ ثانیه عمر، ۳۵۶۵ ثانیه تا انقضا، Policy 10، SNAT.
-
-#### مثال متوسط — Policy حذف شد ولی کار می‌کند
-
-Session موجود تا انقضا یا پاک‌سازی باقی می‌ماند.
-
-``` text
-diagnose sys session filter dport 21
-diagnose sys session clear
-diagnose sys session filter clear
-```
-
-#### مثال سخت — Timeout
-
-مقدار سراسری TCP ۳۶۰۰ ثانیه است؛ Timeout هر Service/Policy می‌تواند آن را بازنویسی کند؛ برای SSH طولانی `session-ttl` یا Service سفارشی.
-
-#### هشدار
-
-`clear` بدون فیلتر همه‌ی Sessionها را می‌بندد.
-
-#### نشت Session
-
-``` text
-diagnose sys session stat
-```
-
-روند تعداد را ببینید؛ علل: DoS، Timeout طولانی، UDP بی‌پایان.
-
-#### Lab
-
-یک اتصال بسازید، Session را بخوانید و فیلتر/Clear را تمرین کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| تغییر بی‌اثر | Session قدیم | Clear |
-| Session زیاد | DoS/Timeout | بررسی |
-| clear همه | بی‌فیلتر | فیلتر |
-
-#### پرسش‌ها با پاسخ
-
-**۱. proto_state؟** وضعیت TCP.
-**۲. چرا Session می‌ماند؟** انقضا.
-**۳. npu؟** Offload.
-
-#### English Corner
-
-- *Existing sessions survive policy changes until they expire or are cleared.*
-- Q: What does the expire field show?
 
 ## درس 13-5 — مدیریت Policy در طول زمان: Shadow، Overlap، Hit Count، Schedule و بازبینی فصلی
 
@@ -1494,180 +763,122 @@ diagnose sys session stat
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Shadow، Overlap و Redundant را تعریف کند و هرکدام را با مثال تشخیص دهد.
-2. Hit Count و Last Used را برای تصمیم حذف/غیرفعال‌سازی به‌کار ببرد.
-3. Schedule (Recurring و One-time) و اثر آن بر Session را بفهمد.
-4. Policy گشاد (ALL) را با Log و داده تنگ کند.
-5. فرایند بازبینی فصلی با Backup، Window و Rollback را طراحی کند.
-6. گزارش بازبینی برای ممیز بنویسد.
+1. Shadow، Overlap، تکراری و Policy بی‌استفاده را تشخیص دهید.
+2. Hit Count را درست تفسیر کنید و محدودیت‌های آن را بدانید.
+3. Policy را به‌صورت ایمن (Disable، مشاهده، حذف) پاک‌سازی کنید.
+4. Policy بیش‌ازحد باز (ALL) را تدریجی تنگ کنید.
+5. گزارش ممیز بنویسید و بازبینی فصلی برنامه‌ریزی کنید.
+6. Comment و مالک را الزامی کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا مدیریت Policy در طول زمان؟** Policy مثل لباس‌های کمد جمع می‌شود: ۸۰ تا ۸۰۰ Policy که کسی نمی‌داند چرا هستند. هر Policy اضافه یعنی سطح حمله و پیچیدگی. بازبینی دوره‌ای لازم است.
+Policy مثل لباس‌های کمد جمع می‌شود: ۸۰ تا ۸۰۰ Policy که کسی نمی‌داند چرا هستند. هر Policy اضافه یعنی سطح حمله، پیچیدگی عیب‌یابی و ریسک تغییر. ممیزان (Audit) دقیقاً همین را می‌پرسند: «چه کسی مالک این Policy است؟ چرا باز است؟ آخرین استفاده چه زمانی بود؟». بازبینی دوره‌ای مثل مرتب‌کردن کمد است: لازم، ولی باید با احتیاط انجام شود تا لباس مهمی دور ریخته نشود.
 
-**ابزارها:** Hit Count، Shadow/Overlap، Schedule، Comment/مالک، گزارش ممیز. **قانون ایمن:** ابتدا Disable، مشاهده، سپس حذف (Rollback ساده).
+### مشکلات رایج
 
-**جمع‌بندی اصلی درس:** شرکتی ۸ سال است فایروال دارد. هر سال چند «Policy موقتی» اضافه شده، مدیران عوض شده‌اند و کسی نمی‌داند Policy شماره‌ی ۴۷ برای چیست. ممیز می‌پرسد «چرا همه‌ی کاربران به DB دسترسی دارند؟» و جواب این است: «یک پروژه بود که تمام شد، ولی Policy ماند.»
-
-Policy فایروال بدهی فنی تولید می‌کند. هر قاعده‌ی اضافه یک سطح حمله، یک احتمال خطا و یک مانع برای عیب‌یابی است. این درس نشان می‌دهد چطور با داده (نه حدس) سیاست‌ها را پاک‌سازی و دائماً سالم نگه دارید.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) سه بیماری Policy
-
-| نام | تعریف | اثر |
+| مشکل | معنی | خطر |
 |---|---|---|
-| Shadowed | هرگز اجرا نمی‌شود چون Policy بالاتر همه‌ی ترافیکش را می‌گیرد | قاعده بی‌اثر؛ فریب مدیر |
-| Overlap | بخشی از ترافیک را دو Policy می‌پوشانند | رفتار وابسته به ترتیب |
-| Redundant | دو Policy یکسان | شلوغی |
+| Shadow | Policy هرگز اجرا نمی‌شود چون بالاتر همه را می‌گیرد | بی‌فایده، گمراه‌کننده |
+| Overlap | دو Policy ترافیک مشترک دارند | رفتار غیرمنتظره |
+| تکراری | دو Policy یکسان | نگهداری |
+| بی‌استفاده | Hit=0 | سطح حمله |
+| بیش‌ازحد باز | ALL/ALL | ریسک امنیتی |
+| بی‌Log | `logtraffic disable` | کوری در حادثه |
+| بی‌مالک | بدون comment | ممیزی |
 
-مثال:
+### Hit Count
 
-``` text
-10  ZN-USERS -> port1  NET-USERS  all  ALL           ACCEPT
-20  ZN-USERS -> port1  NET-USERS  all  HTTPS         ACCEPT  log all
-```
+`Hit Count` تعداد دفعات تطبیق و «آخرین استفاده». ابزار تشخیص بی‌استفاده. محدودیت‌ها:
 
-Policy 20 Shadowed است: همه‌ی HTTPS قبلاً توسط 10 پذیرفته می‌شود و Log همیشه‌ی 20 هرگز تولید نمی‌شود؛ مدیر خیال می‌کند Log فعال است.
-
-#### ۲) Hit Count و Last Used
-
-GUI ستون Hit Count، Bytes و Last Used دارد. قاعده‌ی عملی:
-
-``` text
-Hit Count = 0 and age > 90 days  -> candidate: disable, then delete
-Hit Count huge and service ALL   -> candidate: narrow
-Last Used older than 180 days    -> candidate: review with owner
-```
-
-Hit Count با Reboot یا Reset ممکن است صفر شود؛ پس قبل از تصمیم تاریخچه‌ی Log/FortiAnalyzer را هم ببینید.
-
-#### ۳) Schedule
+- با Reset شمارنده یا Reboot (در بعضی نسخه‌ها) صفر می‌شود.
+- استفاده‌ی **فصلی** (پایان سال مالی) را در بازه‌ی کوتاه نمی‌بیند.
+- پس Log ۱۲ ماهه را هم بررسی کنید.
 
 ``` text
-config firewall schedule recurring
- edit "WORKHOURS"
-  set day monday tuesday wednesday thursday friday
-  set start 08:00
-  set end 18:00
- next
-end
-config firewall schedule onetime
- edit "VENDOR-MAINT-2026-12"
-  set start 22:00 2026/12/05
-  set end 02:00 2026/12/06
- next
-end
+diagnose firewall iprope show 100004 <policyid>   (model/version dependent)
 ```
 
-وقتی Schedule تمام می‌شود، Sessionهای جدید رد می‌شوند و Sessionهای موجود تا انقضا یا پاک‌سازی می‌مانند. برای دسترسی پیمانکار از Policy One-time به‌جای «فعال می‌کنیم و یادمان می‌ماند خاموش کنیم» استفاده کنید.
-
-#### ۴) تنگ‌سازی Policy ALL (روش گام‌به‌گام)
-
-1. Backup بگیرید.
-2. در Policy ALL، Log همه‌ی Sessionها را روشن کنید.
-3. ۱۴ تا ۳۰ روز Log جمع کنید (چرخه‌ی ماهانه را هم شامل شود).
-4. مقصدها و سرویس‌های واقعی را استخراج کنید.
-5. Policyهای خاص بسازید و **بالاتر** از ALL بگذارید.
-6. ALL را غیرفعال کنید (نه حذف)؛ ۲ هفته مشاهده.
-7. در صورت بی‌شکایتی حذف و مستند کنید.
-
-#### ۵) فرایند بازبینی فصلی
+### روش ایمن پاک‌سازی
 
 ``` text
-Week 1: export policies + hit counts + logs, mark candidates
-Week 2: owner confirmation (email/ticket)
-Week 3: change window: disable candidates, backup before/after
-Week 4: monitor, delete or rollback, update documentation
+1 Backup + Hash
+2 Classify (A: hit 0 & old, B: ALL, C: no log, D: duplicate/shadow)
+3 Ask owners (ticket/email) for class A
+4 Disable (not delete) approved ones
+5 Observe 2 weeks (deny logs, user complaints)
+6 Delete after sign-off
+7 Report
 ```
 
-#### ۶) گزارش ممیزی
+### تنگ‌کردن Policy بیش‌ازحد باز
 
-برای هر Policy: ID، نام، مالک، دلیل کسب‌وکاری، تاریخ ایجاد/آخرین بازبینی، Hit Count، ریسک (ALL؟ بدون Log؟)، تصمیم.
+1. Log ۳۰ روزه روی Policy ALL (`logtraffic all`).
+2. فهرست مقصد/سرویس‌های واقعی.
+3. Policy خاص برای هر جریان بالاتر از ALL.
+4. ALL را Disable.
+5. مشاهده؛ سپس حذف.
 
-### ۴) طراحی و تصمیم‌گیری
+### گزارش ممیز
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| دوره‌ی بازبینی | فصلی؛ مهم‌ها ماهانه |
-| حذف یا غیرفعال | اول غیرفعال و مشاهده |
-| Policyهای فصلی | Comment+Schedule یا نگه‌داری |
+| ID | نام | مالک | دلیل | Hit | ریسک | تصمیم |
+|---|---|---|---|---|---|---|
+| 47 | LEGACY-FTP | NOC | پروژه‌ی تمام‌شده | 0 | متوسط | حذف |
+| 55 | USERS-ALL | IT | تنگ‌سازی | 1.2M | بالا | جایگزینی |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### مثال‌های حل‌شده
 
 #### مثال ساده — طبقه‌بندی
 
-Hit=0 و عمر بیش از ۹۰ روز ⇒ کاندید؛ service ALL/dst all ⇒ تنگ‌کردن؛ Log خاموش ⇒ فعال‌سازی؛ تکراری/Shadow ⇒ ادغام.
+Export: ۸۰ Policy؛ ۱۲ با Hit=0؛ ۳ ALL؛ ۵ بی‌Log؛ ۴ تکراری. فهرست کار: A=12، B=3، C=5، D=4.
 
 #### مثال متوسط — اجرای ایمن
 
-Backup ← Disable ۹ Policy ← ۲ هفته مشاهده‌ی Deny Log ← حذف. مالکان را برای مواردی که فصلی‌اند (مثل پایان سال مالی) جدا بپرسید.
+مالکان: ۹ مورد حذف تأیید؛ ۳ مورد (فصلی) باقی. Disable ۹ مورد ⇒ دو هفته مشاهده‌ی Deny Log؛ هیچ شکایتی ⇒ حذف. ثبت: CHG-120.
+
+#### مثال متوسط — شناسایی Shadow
+
+``` text
+Policy 20: USERS -> any ALL accept (Hit 1.2M)
+Policy 30: USERS -> SRV HTTPS accept (Hit 0)
+```
+
+30 Shadow است. رفع: جابه‌جایی 30 قبل از 20 یا حذف 30.
 
 #### مثال سخت — تنگ‌کردن ALL
 
-Log ۳۰ روزه ⇒ مقاصد و سرویس‌های واقعی ⇒ Policy خاص بالای ALL ⇒ ALL غیرفعال ⇒ مشاهده ⇒ حذف. Hit Count با Reset/Reboot صفر می‌شود؛ Log ۱۲ ماهه را هم ببینید.
+Policy `USERS-ALL` همه‌ی ترافیک را مجاز می‌کند. Log ۳۰ روزه: مقصدها: ۱۴ سرور داخلی، اینترنت (443/80/53)، یک سرویس ناشناخته (tcp/8080 به 10.60.0.5). اقدام: ۱) Policyهای خاص ۲) تماس با مالک 10.60.0.5 ۳) ALL غیرفعال ۴) مشاهده ۱ هفته ۵) حذف. اگر برنامه‌ی فصلی شکست خورد، Rollback (Enable).
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال سخت — Hit Count گمراه‌کننده
 
-**ساده (حل‌شده):** Policy 20 با Hit Count صفر زیر Policy 10 (ALL) قرار دارد. مراحل: ۱) Lookup برای 10.10.0.5→HTTPS ID 10 را می‌دهد. ۲) 20 هرگز نمی‌رسد. ۳) نتیجه: Shadow. رفع: Policy 20 را بالاتر ببرید یا 10 را تنگ کنید. پاسخ: ترتیب اصلاح و Hit Count 20 افزایش می‌یابد.
+Policy «YEAR-END-REPORT» Hit=0 در ۶ ماه؛ حذف شد؛ پایان سال گزارش مالی قطع. درس: Log ۱۲ ماهه و پرسش از مالک؛ برچسب «فصلی» در comment.
 
-**متوسط (تنگ‌سازی ALL):** USERS→SERVERS ALL است. ورودی: Log ۱۴ روز. مراحل: ۱) خروجی Log: مقصد 10.20.0.10 پورت 443 و 445؛ 10.20.0.20 پورت 1433. ۲) سه Policy خاص ساخته‌می‌شود. ۳) ALL غیرفعال. ۴) دو هفته بعد هیچ شکایتی. پاسخ: حذف ALL، ثبت تغییر. اگر شکایت می‌آمد از Log Deny سرویس جاافتاده را اضافه می‌کردید.
+### Lab هدایت‌شده (اجرا نشده)
 
-**سخت (برنامه‌ی کامل):** ۸۰ Policy، ۱۲ با Hit صفر، ۳ ALL، ۵ بدون Log. برنامه: هفته۱ Export و طبقه‌بندی؛ هفته۲ تأیید مالکان (۱۲ مورد صفر: ۹ تأیید حذف، ۳ نگه‌داشتن موقت با Comment)؛ هفته۳ Backup و غیرفعال‌سازی ۹ مورد و روشن‌کردن Log پنج Policy بدون Log؛ هفته۴ بدون Ticket ⇒ حذف ۹ مورد. ریسک: مصرف فصلی (حسابداری پایان سال) که Hit Count آن را نشان نمی‌دهد؛ راه: بررسی Log ۱۲ ماهه یا نگه‌داشتن Policyهای فصلی با Comment. معیار پذیرش: صفر Ticket، تعداد Policy ALL = 0، همه‌ی Policyها دارای Owner/Comment.
+1. Export Policy و طبقه‌بندی.
+2. Shadow عمدی و تشخیص.
+3. Disable/مشاهده/حذف.
+4. گزارش ممیز.
 
-### ۶) پیاده‌سازی از مسیر GUI
+### عیب‌یابی سریع
 
-1. Policy & Objects → Firewall Policy؛ ستون‌ها: Hit Count، Last Used، Bytes را فعال کنید.
-2. روی Policy راست‌کلیک → Show Matching Logs.
-3. Disable با Status toggle.
-4. Schedules: Policy & Objects → Schedules.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-config firewall policy
- edit 47
-  set status disable
-  set comments "disabled 2026-11-26 review Q4; owner NOC; rollback: enable"
- next
-end
-show firewall policy | grep -f "set name"
-diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 443 tcp port2
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Policy Lookup ID مورد انتظار.
-- Hit Count Policy جدید افزایش.
-- پس از غیرفعال‌سازی هیچ Ticket.
-- Backup قبل/بعد موجود.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| Policy جدید هیچ Hit ندارد | Shadow | ترتیب |
-| کاربر بعد از حذف شکایت دارد | Log Deny | Policy خاص اضافه |
-| Hit Count صفر مشکوک | Reboot/Reset | Log تاریخی |
-| Schedule قطع شد ولی Session باقی است | Session | clear فیلترشده |
+| حذف و قطع | استفاده‌ی فصلی | Disable اول |
+| Policy بی‌مالک | comment نیست | ثبت |
+| Shadow | ترتیب | مرتب |
+| Hit عجیب | Reset | Log |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- ALL/ALL فقط موقت با تاریخ پایان.
-- هر تغییر با Ticket و Backup.
+بازبینی دوره‌ای: Shadow، Overlap، بی‌استفاده، ALL، بی‌Log. Disable قبل از حذف، مالک و comment، Log ۱۲ ماهه. گزارش ممیز شفاف.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- Policy بدهی فنی تولید می‌کند.
-- Shadow/Overlap/Redundant.
-- داده (Hit/Log) تصمیم می‌دهد.
-- ابتدا غیرفعال، بعد حذف.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Shadowed Policy چیست؟ *(پاسخ: 13-5-ت1)*
 
@@ -1683,7 +894,7 @@ diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 443 tcp port2
 
 **Q1.** Quick quiz (English): Why is it safer to disable a policy before deleting it? *(پاسخ: 13-5-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1692,117 +903,16 @@ diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 443 tcp port2
 
 - *Review policies quarterly with the business owner.* ← Policyها را فصلی با مالک کسب‌وکار بازبینی کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** بازبینی Policy (اجرا نشده). **Evidence:** `03-ops/policy-review.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Firewall policies; Schedules
 - NIST SP 800-41 Rev.1 §4.4
 
 <a id="l-13-6"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: پروژه‌ی پاک‌سازی ۸۰ Policy با گزارش ممیزی
-
-**ورودی.** Export: ۸۰ Policy؛ ۱۲ با Hit صفر؛ ۳ ALL؛ ۵ بدون Log.
-
-**گام ۱ — طبقه‌بندی.**
-
-``` text
-A: Hit=0 and age>90d             -> 12  (candidates)
-B: service ALL or dst all         -> 3   (narrow)
-C: log disabled                   -> 5   (enable log, review)
-D: duplicates/shadowed            -> 4   (reorder/delete)
-```
-
-**گام ۲ — تأیید مالک.** برای هر ردیف A ایمیل/Ticket؛ پاسخ‌ها: ۹ حذف، ۳ نگه‌داشتن (فصلی).
-
-**گام ۳ — اجرای کنترل‌شده.** Backup؛ Disable ۹ Policy؛ ۲ هفته مشاهده Log Deny؛ حذف.
-
-**گام ۴ — تنگ‌سازی ALL.** Log ۳۰ روزه ⇒ مقاصد واقعی ⇒ Policy خاص بالای ALL ⇒ ALL غیرفعال ⇒ حذف.
-
-**گام ۵ — گزارش ممیز.**
-
-| ID | نام | مالک | دلیل | Hit | ریسک | تصمیم |
-|---|---|---|---|---|---|---|
-| 47 | LEGACY-FTP | NOC | پروژه‌ی تمام‌شده | 0 | متوسط | حذف |
-| 55 | USERS-ALL | IT | تنگ‌سازی | 1.2M | بالا | جایگزینی |
-
-**نکته.** Hit Count با Reset/Reboot صفر می‌شود و استفاده‌ی فصلی را نمی‌بیند؛ Log ۱۲ ماهه را هم ببینید.
-
-**اشتباهات رایج:** حذف بی‌پشتوانه، فراموشی Backup، ثبت‌نکردن مالک.
-
-**پرسش‌های مصاحبه**
-1. *Shadow؟* Policy که هرگز اجرا نمی‌شود چون بالاتر همه‌ی ترافیکش را می‌گیرد.
-2. *Schedule پایان‌یافته؟* Sessionهای موجود تا انقضا می‌مانند.
-3. *چرا ابتدا Disable؟* Rollback سریع.
-
-### تکمیل عمیق: مدیریت Policy در طول زمان
-
-#### چرا؟
-
-Policy مثل لباس‌های کمد جمع می‌شود؛ ۸۰ تا ۸۰۰ Policy که کسی نمی‌داند چرا وجود دارند. بازبینی دوره‌ای لازم است.
-
-#### طبقه‌بندی
-
-``` text
-A: Hit=0 and age>90d       -> candidates
-B: service ALL / dst all   -> narrow
-C: log disabled            -> enable
-D: duplicates/shadowed     -> reorder/delete
-```
-
-#### مثال ساده — پروژه‌ی ۸۰ Policy
-
-12 مورد Hit=0؛ 3 مورد ALL؛ 5 بدون Log. تأیید مالک: ۹ حذف، ۳ نگه‌داشتن (فصلی).
-
-#### مثال متوسط — اجرای ایمن
-
-``` text
-Backup -> Disable 9 policies -> observe 2 weeks (deny logs) -> delete
-```
-
-#### مثال سخت — تنگ‌کردن ALL
-
-Log ۳۰ روزه ⇒ مقاصد و سرویس‌های واقعی ⇒ Policy خاص بالای ALL ⇒ ALL غیرفعال ⇒ مشاهده ⇒ حذف.
-
-#### گزارش ممیز
-
-| ID | مالک | دلیل | Hit | ریسک | تصمیم |
-|---|---|---|---|---|---|
-| 47 | NOC | پروژه‌ی تمام‌شده | 0 | متوسط | حذف |
-
-#### نکته
-
-Hit Count با Reset/Reboot صفر می‌شود و استفاده‌ی فصلی را نمی‌بیند؛ Log ۱۲ ماهه را هم ببینید.
-
-#### Lab
-
-یک Export نمونه را طبقه‌بندی کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| حذف و قطع | استفاده‌ی فصلی | Disable اول |
-| Policy بی‌مالک | ثبت نشده | Comment |
-| Shadow | ترتیب | مرتب |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Shadow؟** هرگز اجرا نمی‌شود.
-**۲. چرا Disable اول؟** Rollback.
-**۳. Hit Count محدودیت؟** Reset.
-
-#### English Corner
-
-- *Disable before deleting so that rollback is trivial.*
-- Q: What does a shadowed policy mean?
 
 ## درس 13-6 — سناریوهای خرابی Policy/NAT/Route، روش ۱۰ گامی و آزمون G5
 
@@ -1810,142 +920,111 @@ Hit Count با Reset/Reboot صفر می‌شود و استفاده‌ی فصلی
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. علائم رایج خرابی را به لایه‌ی علت (Route، Policy، NAT، Session) نگاشت کند.
-2. با Debug flow و Session علت را اثبات کند.
-3. سه پرونده‌ی کامل را با RCA حل کند.
-4. آزمون عملی G5 را با Evidence و Rubric تحویل دهد.
-5. گزارش حادثه‌ی کوتاه (Timeline، علت، رفع، پیشگیری) بنویسد.
+1. سه خانواده‌ی خرابی (Policy، NAT، Route/RPF) را تمایز دهید.
+2. روش ده‌گامی عیب‌یابی را اجرا کنید.
+3. هر خانواده را با Lookup، Session و Debug Flow اثبات کنید.
+4. RCA بنویسید.
+5. آزمون G5 را با Rubric بشناسید.
+6. دو خرابی هم‌زمان را یکی‌یکی رفع کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا سناریوهای خرابی؟** بیشتر خرابی‌ها در سه خانواده‌اند: Policy، NAT، Route. روش ده‌گامی آنها را از هم جدا می‌کند و از حدس‌زدن جلوگیری می‌کند. G5 این مهارت را می‌سنجد.
+بیشتر خرابی‌های فایروال در سه خانواده‌اند: Policy (مجوز)، NAT (ترجمه)، Route (مسیر). تشخیص «کدام خانواده» نصف کار است. مثل پزشکی که ابتدا می‌پرسد «قلب؟ ریه؟ معده؟» و سپس آزمایش مناسب را درخواست می‌کند. G5 این مهارت را با سه خرابی تزریقی می‌سنجد.
 
-**ده گام:** علامت، Scope، Route، Policy، NAT، Session، DNS، MTU، Log/Sniffer/Debug، تأیید.
+### روش ده‌گامی
 
-**جمع‌بندی اصلی درس:** پشتیبانی تماس می‌گیرد: «کاربران نمی‌توانند سایت داخلی را باز کنند». ۱۰ دقیقه‌ی اول تعیین‌کننده است: یا با روش، علت را سریع می‌یابید، یا حدس می‌زنید و Policy را آن‌قدر عوض می‌کنید که خودتان مشکل دوم می‌سازید. این درس یک روش ثابت می‌دهد و با سه پرونده تمرینش می‌کند.
+1. **علامت:** دقیق (چه، کی، برای چه کسی).
+2. **Scope:** یک نفر یا همه؟
+3. **Route:** `get router info routing-table details <dst>`.
+4. **Policy:** `diagnose firewall iprope lookup ...`.
+5. **NAT:** Session (snat/dnat)؛ Pool.
+6. **Session:** `diagnose sys session filter ...`.
+7. **DNS:** نام درست حل می‌شود؟
+8. **MTU:** ping با DF.
+9. **Wire:** Sniffer + Debug Flow.
+10. **تأیید:** آزمون مثبت و منفی.
 
-### ۳) توضیح عمیق فنی
+### نشانه‌های هر خانواده
 
-#### ۱) روش ۱۰ گامی
-
-``` text
-1 Define symptom precisely (who, what, when, from where, to where)
-2 Route: does the FW have a route to dst and back?
-3 Policy: does a policy match (lookup / debug flow)?
-4 NAT: SNAT/DNAT as expected (session list)?
-5 Session: exists? state? stale?
-6 DNS: name resolves to expected IP?
-7 MTU/MSS: large packets fail?
-8 Logs: deny logs, policy id
-9 Sniffer + debug flow: packet seen? decision?
-10 Verify fix + negative test + document
-```
-
-#### ۲) نگاشت علامت به علت
-
-| علامت | علت محتمل |
+| نشانه | خانواده |
 |---|---|
-| Debug flow: `no matching policy` | Policy/Interface/Zone |
-| Session فقط org بدون reply | SNAT یا Route برگشت یا سرور |
-| Debug flow: `reverse path check fail` | RPF/Route نامتقارن |
-| TCP برقرار، بسته‌ی بزرگ نه | MTU |
-| فقط با نام کار نمی‌کند | DNS |
+| `policy 0` در Lookup/Debug | Policy |
+| Session SNAT ولی SYN بی‌پاسخ | NAT/بالادست |
+| `reverse path check fail` | Route/RPF |
+| `no route to host` | Route |
+| فقط بعضی کاربران | Policy منبع/Address |
 
-#### ۳) سه پرونده
+### سه پرونده‌ی کامل
 
-**پرونده ۱ (Policy):** کاربران به وب داخلی نمی‌رسند. Lookup: ID 3 (Deny). Policy مجاز ID 15 پایین‌تر است. رفع: جابه‌جایی. 
+**پرونده ۱ — Policy:** «کاربران به پورتال داخلی نمی‌رسند». Lookup: `10.10.0.5 → 10.20.0.30:443` ⇒ policy 0. بررسی: Policy 15 با srcintf=port5 (پس از Migration عوض شده). رفع: srcintf=ZN-USERS. تأیید: Lookup ⇒ policy 15؛ `curl -vk https://10.20.0.30` ⇒ 200.
 
-**پرونده ۲ (NAT/Route):** اینترنت کار می‌کند ولی یک سرویس خاص نه؛ Session `reply` ندارد؛ Sniffer: SYN خارج می‌شود. علت: IP Pool Overload ولی آن IP در لیست مجاز سرویس نیست؛ یا SNAT به IP غلط. رفع: IP Pool مجاز.
+**پرونده ۲ — NAT:** «نیمی از سایت‌ها باز نمی‌شود». Session: SNAT به 203.0.113.21؛ پاسخ نمی‌آید. علت: IP Pool که ISP Route نکرده. رفع: IP درست یا Interface Address. تأیید: Sniffer پاسخ برمی‌گردد.
 
-**پرونده ۳ (RPF):** بعد از افزودن لینک دوم برخی Sessionها Drop. Debug flow: reverse path check fail. علت: Route برگشت از Interface دیگر. رفع: اصلاح Route/Distance.
+**پرونده ۳ — Route/RPF:** «پس از افزودن لینک دوم Sessionها قطع می‌شوند». Debug: `reverse path check fail, drop`. Route به مبدأ از port3 در حالی که بسته از port4 آمده. رفع: Route برگشت/Policy Route. تأیید: Debug Flow Allowed.
 
-#### ۴) آزمون G5
-
-سه عیب تزریق‌شده توسط مربی/خود شما؛ برای هرکدام Evidence (Lookup/Flow/Session)، علت، رفع، آزمون منفی. Rubric: کشف ۳۰، رفع ۳۰، شواهد ۲۰، آزمون منفی ۱۰، صداقت (بیان Unverified) ۱۰.
-
-#### ۵) گزارش حادثه
+### قالب RCA
 
 ``` text
-Time: 10:05 first report; 10:12 root cause; 10:20 fixed
-Impact: 120 users, service X
-Cause: policy order
-Fix: moved policy 15 above 3
-Prevention: policy review checklist
+Title   : Users cannot reach portal 2026-11-27
+Impact  : 60 users, 12 min
+Cause   : policy 15 srcintf wrong after migration
+Fix     : srcintf corrected
+Prevent : pre/post-change lookup test list, review of migrated policies
 ```
 
-### ۴) طراحی و تصمیم‌گیری
+### مثال‌های حل‌شده
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| ابزار اول | Lookup/Flow |
-| ثبت | Evidence هر گام |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — Policy
-
-Lookup ⇒ policy 0؛ Policy 15 با srcintf اشتباه ⇒ اصلاح.
-
-#### مثال متوسط — NAT
-
-SNAT به IP Pool بدون Route ISP؛ Sniffer فقط خروجی؛ رفع.
-
-#### مثال سخت — RPF
-
-`reverse path check fail` ⇒ Route برگشت از Interface دیگر؛ `get router info routing-table details <src>`؛ اصلاح Route.
-
-**Rubric G5:** کشف ۳۰، رفع ۳۰، Evidence ۲۰، آزمون ۱۰، صداقت ۱۰.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Lookup=ID 3 Deny؛ Policy 15 پایین‌تر؛ رفع: جابه‌جایی؛ آزمون: Lookup=15 و دسترسی موفق.
-
-**متوسط (No reply):** Session org دارد و reply ندارد. مراحل: ۱) Sniffer خارج: SYN رفته. ۲) Sniffer ورودی: SYN-ACK نیامد. ۳) SNAT IP اشتباه. ۴) اصلاح Pool. پاسخ: reply آمد و Session ESTABLISHED.
-
-**سخت (دو عیب):** دو عیب هم‌زمان: Policy ترتیب + NAT. ابتدا Policy را رفع کنید؛ سپس علائم NAT ظاهر می‌شود؛ اگر هر دو را هم‌زمان تغییر دهید نمی‌دانید کدام اثر کرد. درس: یک تغییر، یک آزمون.
-
-### ۷) پیاده‌سازی از مسیر CLI
+#### مثال ساده — Lookup
 
 ``` text
-diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 443 tcp port2
-diagnose debug flow filter addr 10.20.0.10
-diagnose debug flow trace start 20
-diagnose debug enable
-diagnose debug disable
-diagnose sys session filter dst 10.20.0.10
-diagnose sys session list
+diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.30 443 tcp port2
+ -> policy 0 (deny)
 ```
 
-### ۸) Verification (اثبات صحت)
+Policy نیست/Interface نامنطبق. با بررسی GUI: Policy 15 با port5.
 
-- Evidence هر گام.
-- آزمون منفی.
-- گزارش حادثه.
+#### مثال متوسط — جدا کردن NAT از Route
 
-### ۹) Troubleshooting
+Sniffer port1: SYN با Src SNAT خروجی؛ SYN-ACK نمی‌آید. نتیجه: Route و Policy و NAT درست؛ مشکل بالادست (Pool/ISP). تأیید: ping از IP Pool به 8.8.8.8 (`execute ping-options source`).
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+#### مثال متوسط — RPF
+
+Debug `reverse path check fail`. `get router info routing-table details 10.10.0.5` ⇒ via port3؛ بسته از port4. رفع: Route یا Interface صحیح.
+
+#### مثال سخت — دو خرابی هم‌زمان
+
+Policy اشتباه + Route ناقص. اگر هر دو را هم‌زمان تغییر دهید، نمی‌دانید کدام اثر داشت. روش: ۱) ابتدا Route؛ آزمون ۲) سپس Policy؛ آزمون ۳) ثبت. بعد از هر رفع Lookup/Session تازه.
+
+#### مثال سخت — آزمون G5
+
+سه خرابی تزریقی؛ برای هرکدام: Evidence (Lookup/Debug/Session)، علت، رفع، آزمون منفی. **Rubric:** کشف ۳۰، رفع ۳۰، Evidence ۲۰، آزمون ۱۰، صداقت ۱۰.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. سه خرابی را بسازید.
+2. ده‌گامی را اجرا و Evidence جمع کنید.
+3. RCA بنویسید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| no matching policy | Lookup | ترتیب |
-| no reply | Sniffer | SNAT/Route |
-| RPF fail | Flow | Route برگشت |
+| policy 0 | Policy | Interface/Address |
+| SYN بی‌پاسخ | NAT/بالادست | Pool/ISP |
+| RPF fail | Route | تصحیح |
+| چند خطا | هم‌زمان | یکی‌یکی |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- Debug را خاموش کنید.
-- Evidence بدون اطلاعات حساس.
+سه خانواده: Policy، NAT، Route. ده‌گامی علامت تا تأیید. هر خرابی Evidence و RCA می‌خواهد؛ یک رفع در هر زمان.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- روش ثابت.
-- یک تغییر/یک آزمون.
-- Evidence و RCA.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) اولین گام عیب‌یابی؟ *(پاسخ: 13-6-ت1)*
 
@@ -1961,7 +1040,7 @@ diagnose sys session list
 
 **Q1.** Quick quiz (English): Which tool shows the policy that would match a given flow? *(پاسخ: 13-6-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1969,131 +1048,13 @@ diagnose sys session list
 
 - *Change one variable at a time.* ← هر بار فقط یک متغیر را تغییر دهید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** G5 (اجرا نشده). **Evidence:** `03-ops/rca-fgt-1.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Troubleshooting
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: سه پرونده‌ی کامل با Timeline و RCA
-
-**پرونده ۱ — «کاربران به پورتال داخلی نمی‌رسند» (Policy)**
-
-``` text
-09:05 report ; 09:08 lookup: 10.10.0.5 -> 10.20.0.30:443 => policy 0 (deny)
-09:12 policy 15 exists but srcintf=port5 (wrong); fix srcintf to ZN-USERS
-09:15 lookup => policy 15 ; curl -vk https://10.20.0.30 => 200
-```
-
-**پرونده ۲ — «نصف سایت‌ها باز نمی‌شود» (NAT/Pool)**
-
-``` text
-session list: SNAT 10.10.0.x -> 203.0.113.21 ; reply never arrives for dst 198.18.0.0/15
-```
-
-علت: IP Pool که ISP Route نکرده؛ پاسخ برنمی‌گردد. رفع: IP درست یا Interface Address.
-
-**پرونده ۳ — «پس از لینک دوم Sessionها قطع می‌شوند» (RPF)**
-
-``` text
-id=20085 ... reverse path check fail, drop
-get router info routing-table details 10.30.0.5 -> via port3 (not port4)
-```
-
-رفع: Route برگشت/Policy Route.
-
-**گزارش RCA نمونه**
-
-``` text
-Title   : Users cannot reach portal 2026-11-27
-Impact  : 60 users, 12 min
-Cause   : policy 15 source interface wrong after migration
-Fix     : srcintf corrected
-Prevent : pre-change lookup test list
-```
-
-**روش ده‌گامی:** علامت، Route، Policy، NAT، Session، DNS، MTU، Log، Sniffer+Debug، Verify.
-
-**آزمون G5.** سه عیب تزریق‌شده؛ Evidence هر کدام (Lookup/Flow/Session)، علت، رفع، آزمون منفی؛ Rubric: کشف ۳۰، رفع ۳۰، Evidence ۲۰، آزمون ۱۰، صداقت ۱۰.
-
-**پرسش‌های مصاحبه**
-1. *no reply یعنی؟* SNAT/Route/سرور.
-2. *دو عیب هم‌زمان؟* یکی‌یکی.
-3. *RCA چه دارد؟* علت، اثر، رفع، پیشگیری.
-
-### تکمیل عمیق: سناریوهای خرابی Policy/NAT/Route و آزمون G5
-
-#### چرا؟
-
-بیشتر خرابی‌ها از سه خانواده می‌آیند: Policy، NAT، Route. روش ده‌گامی آنها را از هم جدا می‌کند.
-
-#### سه پرونده
-
-1. **Policy**: `iprope lookup` ⇒ policy 0؛ Policy 15 با srcintf اشتباه ⇒ اصلاح.
-2. **NAT**: Session SNAT به IP Pool که ISP Route نکرده ⇒ پاسخ نمی‌آید.
-3. **Route/RPF**: `reverse path check fail` ⇒ Route برگشت.
-
-#### مثال ساده — Lookup
-
-``` text
-diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.30 443 tcp port2
-```
-
-#### مثال متوسط — نشانه‌ها
-
-| نشانه | علت محتمل |
-|---|---|
-| Deny policy 0 | Policy/Interface |
-| SYN بی‌پاسخ | NAT/Upstream |
-| RPF fail | Route |
-
-#### مثال سخت — دو خرابی هم‌زمان
-
-یکی‌یکی رفع و آزمون؛ در پایان Backup و RCA.
-
-#### RCA
-
-``` text
-Title   : Users cannot reach portal
-Cause   : policy srcintf wrong after migration
-Fix     : srcintf corrected
-Prevent : pre-change lookup test list
-```
-
-#### Rubric G5
-
-``` text
-Discovery 30 | Fix 30 | Evidence 20 | Negative test 10 | Honesty 10
-```
-
-#### Lab
-
-سه خرابی را بسازید و رفع کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| چند خطا | هم‌زمان | یکی |
-| Evidence نیست | ثبت | الگو |
-| NAT/Route گیج | ترتیب | روش ده‌گامی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. no reply؟** NAT/Route/سرور.
-**۲. RPF؟** مسیر معکوس.
-**۳. RCA؟** علت و پیشگیری.
-
-#### English Corner
-
-- *Separate policy, NAT and route problems before changing anything.*
-- Q: What does a reverse path check failure indicate?
 
 ## درس 13-7 — Session، تغییر Policy/Route و NAT در برابر Routing: چرا «تنظیم را عوض کردم ولی اثر نکرد»؟
 
@@ -2101,157 +1062,100 @@ Discovery 30 | Fix 30 | Evidence 20 | Negative test 10 | Honesty 10
 
 > **وضعیت (FortiOS 7.0.3، `Unverified` روی Image):** رفتارها از مستند Fortinet و دانش عملیاتی است؛ نام دقیق پارامترها با CLI Reference 7.0 تطبیق داده شود. Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
 
-دانشجو در پایان می‌تواند:
+### هدف آموزشی
 
-1. توضیح دهد چرا تغییر Policy/Route روی Sessionهای **موجود** فوراً اثر نمی‌کند.
-2. Sessionها را ببیند، فیلتر کند و (با احتیاط) پاک کند.
-3. Timeout Session را بشناسد و برای سرویس خاص تنظیم کند.
-4. **NAT را از Routing** جدا بفهمد و بگوید هرکدام چه می‌کنند.
-5. رفتار Session در مسیرهای نامتقارن و Failover را تحلیل کند.
-6. «سناریوی تغییر» را درست اجرا کند: تغییر → Clear Session مرتبط → تست.
+در پایان این درس باید بتوانید:
 
-### ۲) پیش‌نیازها
+1. شش علت «تنظیم را عوض کردم ولی اثر نکرد» را بشناسید.
+2. فرق نقش Route و NAT (Interface در برابر IP) را بدانید.
+3. اثر Session، Offload، DNS/ARP Cache را بفهمید.
+4. روش آزمون صحیح پس از تغییر را اجرا کنید.
+5. Distance/Priority و `routing-table database` را بخوانید.
+6. Central NAT را در این زمینه بشناسید.
 
-Packet Flow (۱۲-۰)، Stateful (۱۱-۷)، Policy/NAT/VIP (۱۳-۱ تا ۱۳-۶).
+### چرا باید یاد بگیریم؟
 
-### ۳) مفهوم پایه
+«تنظیم را عوض کردم ولی اثر نکرد» پرتکرارترین شکایت است. علت‌ها محدودند و قابل‌فهرست‌اند؛ اگر بدانید، به‌جای تغییر بیشتر (و خراب‌تر) علت را پیدا می‌کنید. مثل کلید که می‌چرخانید و ماشین روشن نمی‌شود: اول چک می‌کنید باتری یا دنده، نه اینکه موتور را باز کنید.
 
-در FortiGate، Policy و Route برای **بسته‌ی اول** Session بررسی می‌شوند؛ نتیجه در Session ذخیره می‌شود. بسته‌های بعدی فقط Session را می‌بینند. پس اگر Session برقرار است و شما Policy را به deny تغییر دهید، آن Session ممکن است تا انقضا یا پاک‌شدن ادامه یابد (بسته به نسخه/تنظیمات Session re-evaluation؛ رفتار دقیق `Unverified`). به همین دلیل:
+### شش علت
 
-> **«سرویس را بستم ولی هنوز کار می‌کند»** = Session قدیمی هنوز زنده است.
-> **«Route را عوض کردم ولی ترافیک هنوز از مسیر قبلی می‌رود»** = Session روی مسیر قبلی است.
+1. **Session قدیمی** مسیر/Policy قبلی را نگه داشته.
+2. **Shadow:** Policy بالاتر ترافیک را می‌گیرد.
+3. **Route بهتر** هنوز فعال است (Distance/Priority).
+4. **Central NAT** فعال و تنظیم NAT Policy بی‌اثر.
+5. **Offload (NPU):** Sessionهای شتاب‌داده.
+6. **Cache:** DNS/ARP/مرورگر.
 
-### ۴) توضیح عمیق فنی
+### نقش Route و NAT
 
-#### ۴-۱) کدام تغییرات بر Session موجود اثر می‌گذارند؟
+Route **Interface/Next-hop** را تعیین می‌کند؛ NAT فقط **آدرس** را عوض می‌کند. اگر Pool B تنظیم شد ولی خروج هنوز از Interface A است، باید Route/Policy Route عوض شود. بالعکس، تغییر Route بدون NAT متناسب پاسخ را برنمی‌گرداند.
 
-| تغییر | اثر بر Session موجود | اقدام |
+### روش آزمون صحیح پس از تغییر
+
+1. اتصال **جدید** (نه Session قدیمی).
+2. `iprope lookup` برای پیش‌بینی.
+3. `session list` برای تأیید Policy/NAT.
+4. Log.
+5. اگر لازم، Clear با فیلتر.
+
+### بررسی Route
+
+``` text
+get router info routing-table all
+get router info routing-table database
+get router info routing-table details 198.51.100.8
+```
+
+`all` فعال‌ها؛ `database` همه‌ی Routeها با Distance/Priority. Route جدید با Distance بیشتر فعال نمی‌شود چون قدیمی بهتر است.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Session
+
+Policy FTP حذف شد ولی کار می‌کند ⇒ `session list` (policy_id=5) ⇒ Clear با فیلتر.
+
+#### مثال متوسط — Route
+
+Default جدید (Distance 20) اضافه شد ولی خروج هنوز ISP قدیمی (Distance 10). `routing-table database` هر دو؛ `all` فقط قدیمی. رفع: Distance جدید کمتر یا قدیمی حذف/Priority.
+
+#### مثال متوسط — Central NAT
+
+Policy NAT را به Pool B تغییر دادید و بی‌اثر. `config system settings` ⇒ `central-nat enable`. رفع: `central-snat-map`.
+
+#### مثال سخت — NAT در برابر Route
+
+Policy NAT به Pool B (IP ISP-B) ولی ترافیک از Interface ISP-A خارج می‌شود (Route). ISP-A بسته با IP ISP-B را (Spoofed) رد می‌کند. باید Route/Policy Route هم به ISP-B بروند. اثبات: Sniffer port1 (ISP-A) بسته با Src اشتباه.
+
+#### مثال سخت — Offload
+
+پس از تغییر Policy بسته‌ها هنوز از Session شتاب‌داده می‌روند. `session list` ⇒ npu info؛ Clear Session برای اعمال Policy جدید.
+
+#### مثال سخت — Cache
+
+DNS قدیمی (TTL بالا) ⇒ کاربر هنوز IP قدیمی. `ipconfig /flushdns` و بررسی TTL؛ ARP قدیمی پس از تغییر IP/MAC ⇒ `arp -d`.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. شش سناریو را بسازید و ببینید.
+2. روش آزمون صحیح را تمرین کنید.
+3. جدول «تغییر ← انتظار ← مشاهده».
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Policy جدید/تغییر Action | معمولاً خیر (تا پایان Session) | پاک‌کردن Session مرتبط |
-| تغییر Route | ممکن است نه؛ بستگی به `session-route-check`/تنظیمات (`Unverified`) | پاک‌کردن Session یا تنظیم مناسب |
-| تغییر Profile (AV/Web) | ممکن است برای Sessionهای جدید | Clear یا انتظار |
-| تغییر NAT/IP Pool | Session قدیمی ترجمه‌ی قبلی را حفظ می‌کند | Clear |
-| قطع لینک | Session روی لینک مرده می‌ماند تا Timeout | Clear/Health-check (فصل ۲۱) |
+| بی‌اثر | Session | Clear |
+| بی‌اثر | Route بهتر | Priority/Distance |
+| بی‌اثر | Central NAT | map |
+| NAT درست ولی خروج اشتباه | Route | Policy Route |
 
-#### ۴-۲) مشاهده و فیلتر Session
+### جمع‌بندی
 
-``` text
-diagnose sys session filter clear
-diagnose sys session filter src 192.168.10.5
-diagnose sys session filter dst 8.8.8.8
-diagnose sys session filter dport 443
-diagnose sys session list
-diagnose sys session clear
-```
+شش علت: Session، Shadow، Route بهتر، Central NAT، Offload، Cache. Route Interface را تعیین می‌کند و NAT آدرس را. آزمون با اتصال جدید و Lookup/Session.
 
-نکات:
-
-- **همیشه Filter را بگذارید** قبل از `clear`؛ `diagnose sys session clear` بدون Filter **همه‌ی Sessionها** را پاک می‌کند و ارتباط همه‌ی کاربران را قطع می‌کند.
-- خروجی `session list` شامل: Protocol، State، Timeout (expire)، Policy ID، NAT (`hook=pre/post` و آدرس‌های ترجمه‌شده)، Interface ورودی/خروجی، شمارنده‌ها.
-
-``` text
-session info: proto=6 proto_state=01 duration=45 expire=3555 timeout=3600 ...
-orgin->sink: org pre->post, reply pre->post dev=4->3/3->4 gwy=203.0.113.1/192.168.10.5
-hook=post dir=org act=snat 192.168.10.5:51200->8.8.8.8:443(203.0.113.10:51200)
-hook=pre dir=reply act=dnat 8.8.8.8:443->203.0.113.10:51200(192.168.10.5:51200)
-policy_id=10
-```
-
-(نمونه‌ی ساده‌شده؛ فرمت واقعی را در Lab بخوانید.)
-
-خواندن: `act=snat` ترجمه‌ی مبدأ؛ `dir=reply` جهت برگشت؛ `policy_id` همان Policy؛ `expire` زمان باقی‌مانده.
-
-#### ۴-۳) Timeout
-
-- Session TCP Established: پیش‌فرض طولانی (مثلاً ۳۶۰۰ ثانیه)؛ Half-open کوتاه.
-- UDP/ICMP کوتاه‌تر.
-- قابل تنظیم در سطح Global (`config system session-ttl`) یا Per-Policy (`set session-ttl`)؛ نام‌ها `Unverified`.
-- Timeout کوتاه ← کاربران بی‌فعالیت قطع؛ Timeout بلند ← جدول Session بزرگ.
-
-#### ۴-۴) NAT در برابر Routing (تکرار هدفمند)
-
-| | Routing | NAT |
-|---|---|---|
-| وظیفه | انتخاب مسیر/Interface خروجی | تغییر آدرس (و پورت) در هدر |
-| چه چیزی را عوض می‌کند | Next-hop/Interface | IP/پورت مبدأ (SNAT) یا مقصد (DNAT) |
-| زمان | بعد از DNAT، قبل از Policy | DNAT قبل از Route؛ SNAT بعد از Policy |
-| بدون آن چه می‌شود | بسته مسیر ندارد | آدرس خصوصی در اینترنت قابل برگشت نیست |
-| خطای رایج | Route ناقص | Policy مقصد قبل از DNAT |
-
-**مثال تمایز:** سرور داخلی 10.1.1.10 با VIP 203.0.113.50 منتشر شده. Routing فقط می‌گوید 10.1.1.10 پشت port3 است؛ NAT (VIP) است که مقصد 203.0.113.50 را به 10.1.1.10 تبدیل می‌کند. اگر Route 10.1.1.0/24 نبود، DNAT انجام می‌شود ولی بسته مسیر ندارد؛ اگر VIP نبود، مسیر هست ولی مقصد (آدرس عمومی) روی فایروال مسیر مناسبی ندارد.
-
-#### ۴-۵) Session و Asymmetric/Failover
-
-- Asymmetric: برگشت از Interface/فایروال دیگر ← Session نیست یا RPF ← Drop.
-- HA بدون Session Pickup: Sessionها قطع (درس ۲۲-۰). با Pickup: TCP همگام می‌شود (UDP/ICMP نیاز به تنظیم جدا، طبق مستند 7.x).
-
-### ۵) مثال حل‌شده
-
-**مسئله:** تا ساعت ۱۰ کاربران به یک سایت دسترسی دارند. مدیر Policy deny می‌نویسد ولی کاربر به دانلود ادامه می‌دهد.
-
-``` text
-FGT # diagnose sys session filter clear
-FGT # diagnose sys session filter src 192.168.10.5
-FGT # diagnose sys session filter dst 198.51.100.7
-FGT # diagnose sys session list
-FGT # diagnose sys session clear
-FGT # diagnose sys session filter clear
-```
-
-**تحلیل:** Session دانلود قبل از Policy جدید ساخته شده؛ با Clear فقط Sessionهای همان کاربر/مقصد پاک شده و بقیه‌ی کاربران دست نخورده‌اند. پس از Clear، بسته‌ی بعدی دوباره Policy می‌سنجد و deny می‌شود.
-
-**مثال متوسط:** تغییر IP Pool: Session قدیمی هنوز IP قدیمی را دارد. بعد از Clear Sessionهای مرتبط، IP جدید دیده می‌شود.
-
-**مثال سخت (Failover ISP):** پس از قطع WAN1، ترافیک جدید از WAN2 می‌رود ولی دانلودهای قبلی قفل شده‌اند. Session روی WAN1 مانده با SNAT قدیمی. راه‌حل: Clear Sessionهای مرتبط با WAN1 هنگام Failover (در SD-WAN با تنظیمات `Unverified` در فصل ۲۱) و Timeout مناسب.
-
-### ۶) طراحی و تصمیم‌گیری
-
-| تصمیم | معیار |
-|---|---|
-| Clear کامل یا Filter شده | Filter شده؛ Clear کامل فقط با Change Window |
-| Timeout Per-Policy | سرویس‌های طولانی (DB/SSH) |
-| بعد از هر تغییر Policy | چک‌لیست: Policy → Session → Test |
-
-### ۷) پیاده‌سازی: GUI و CLI
-
-**GUI:** Dashboard → Add Widget → «Sessions»؛ Log & Report → Forward Traffic؛ در FortiView → Sessions (7.0) امکان مشاهده/Kill Session (نام و محل `Unverified`).
-
-**CLI:**
-
-``` text
-diagnose sys session filter clear
-diagnose sys session filter dst 198.51.100.7
-diagnose sys session list
-diagnose sys session clear
-get system session-info statistics
-```
-
-### ۸) Troubleshooting
-
-| علامت | علت | شاهد |
-|---|---|---|
-| Policy جدید اثر ندارد | Session قدیمی | `session list` (قبل از تغییر) |
-| IP NAT قدیمی باقی است | Session | `hook=post` |
-| Failover ترافیک را نبرد | Session قفل | `session list` به WAN قبلی |
-| Session زیاد | Timeout بلند/حمله | `get system session-info statistics` |
-
-### ۹) نکات امنیتی
-
-- `diagnose sys session clear` بدون Filter ممنوع در تولید.
-- Timeout بسیار بلند + حمله = Exhaustion.
-- بعد از Policy deny برای حادثه، Sessionهای فعال مهاجم را حتماً Clear کنید.
-
-### ۱۰) جمع‌بندی مفهومی
-
-- Policy/Route برای بسته‌ی اول؛ تغییر روی Session موجود فوراً نیست.
-- قبل از Clear Filter بگذارید.
-- NAT آدرس را عوض می‌کند؛ Routing مسیر را.
-- Timeout تعادل است.
-- همیشه پس از تغییر: Clear مرتبط + تست.
-
-### ۱۱) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا تغییر Policy روی Session موجود فوراً اثر نمی‌کند؟ *(پاسخ: 13-7-ت1)*
 
@@ -2269,7 +1173,7 @@ get system session-info statistics
 
 **Q1.** Quick quiz (English): Why must you apply a filter before clearing sessions? *(پاسخ: 13-7-Q1)*
 
-### ۱۲) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2281,73 +1185,10 @@ get system session-info statistics
 - *Changing a policy does not affect established sessions until they expire or are cleared.* ← تغییر Policy تا پایان یا پاک‌شدن Session روی Sessionهای برقرار اثر ندارد.
 - *Never clear all sessions in production without a change window.* ← هرگز در تولید بدون Change Window همه‌ی Sessionها را پاک نکنید.
 
-### ۱۳) منابع
+### منابع
 
 - Fortinet Docs: FortiOS 7.0 Administration Guide — Session table، NAT؛ CLI Reference `diagnose sys session`.
 - Fortinet Community: «Troubleshooting Tip: Central NAT Packet processing» (غیررسمی؛ `Unverified`).
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تکمیل عمیق: چرا «تنظیم را عوض کردم ولی اثر نکرد»؟
-
-#### چرا؟
-
-این جمله پرتکرارترین شکایت است. علت‌ها محدودند و قابل‌فهرست‌اند.
-
-#### فهرست علت‌ها
-
-1. Session قدیمی مسیر/Policy قبلی را نگه داشته.
-2. Policy پایین‌تر مطابق است ولی بالاتر Shadow می‌کند.
-3. Route با Distance/Priority بهتر هنوز فعال است.
-4. NAT Central فعال و تنظیم Policy اثری ندارد.
-5. Offload (NPU) و Sessionهای شتاب‌داده.
-6. Cache DNS/ARP.
-
-#### مثال ساده — Session
-
-Policy حذف شد ولی FTP کار می‌کند ⇒ `session list` ⇒ `clear` با فیلتر.
-
-#### مثال متوسط — Route
-
-Default Route جدید با Distance بیشتر ⇒ فعال نمی‌شود چون قدیمی هنوز بهتر است.
-
-``` text
-get router info routing-table all
-get router info routing-table database
-```
-
-#### مثال سخت — NAT در برابر Route
-
-Policy NAT به Pool B تنظیم شد ولی خروج هنوز از Interface A: Route تعیین‌کننده‌ی Interface است؛ NAT فقط IP را عوض می‌کند. باید Route/Policy Route هم تغییر کند.
-
-#### روش
-
-همیشه پس از تغییر: Lookup + Session جدید + Log؛ نه Session قدیمی.
-
-#### Lab
-
-سه سناریو را بسازید و ببینید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| بی‌اثر | Session | Clear |
-| بی‌اثر | Route بهتر | Priority |
-| بی‌اثر | Central NAT | Map |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Route یا NAT؟** Route Interface را تعیین می‌کند.
-**۲. Session؟** قدیمی می‌ماند.
-**۳. بعد از تغییر؟** آزمون با Session جدید.
-
-#### English Corner
-
-- *Test changes with a new session, not an old one.*
-- Q: Which setting decides the outgoing interface, route or NAT?
 
 ## پاسخ‌های فصل 13
 
