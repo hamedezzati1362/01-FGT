@@ -4227,6 +4227,67 @@ diagnose sniffer packet any "host 8.8.8.8 and port 443" 4 20 l
 - Fortinet Community: «Central NAT: Packet processing, troubleshooting steps and traffic flow» و «FortiGate Debug Flow Functions» (غیررسمی؛ `Unverified` تا تأیید روی Lab).
 - Fortinet Docs: FortiOS 7.0 CLI Reference (`diagnose debug flow`).
 
+### تکمیل عمیق: Packet Flow در FortiGate — مسیر یک بسته از ورود تا خروج
+
+#### چرا باید یاد بگیریم؟
+
+بدون نقشه‌ی ذهنی از مسیر بسته، هر عیب‌یابی حدس است. اگر بدانید بسته ابتدا Anti-spoofing (RPF) می‌شود، سپس DNAT، سپس Routing، سپس Policy و بعد SNAT، هر خطایی را می‌توانید به یکی از این ایستگاه‌ها نسبت دهید.
+
+#### ایستگاه‌ها (مسیر Transit)
+
+``` text
+1 Ingress interface        (link, VLAN)
+2 Session lookup           (existing session? -> fast path)
+3 DoS policy / anomaly
+4 RPF (reverse path check)
+5 DNAT (VIP) / pre-routing
+6 Routing decision (route lookup, PBR first)
+7 Firewall policy lookup
+8 UTM / inspection
+9 SNAT (policy NAT / IP pool)
+10 Egress interface
+```
+
+#### مثال ساده — دنبال‌کردن SYN
+
+Users (10.10.0.5) به 198.51.100.8:443: ورودی port2 ⇒ Session جدید ⇒ RPF موفق ⇒ Route به port1 ⇒ Policy 30 ⇒ SNAT ⇒ خروج.
+
+#### مثال متوسط — جای هر خطا
+
+| علامت Debug | ایستگاه |
+|---|---|
+| reverse path check fail | RPF |
+| no route to host | Routing |
+| Denied by forward policy check | Policy |
+| no session matched | Session/نامتقارن |
+
+#### مثال سخت — VIP و Policy
+
+با VIP، DNAT قبل از Routing و Policy انجام می‌شود؛ پس Policy باید به **IP عمومی (VIP)** اشاره کند نه IP داخلی؛ Route باید به IP ترجمه‌شده نگاه کند.
+
+#### Lab
+
+برای ۳ جریان (Users→Internet، Internet→VIP، Users→Mgmt) ایستگاه‌ها را فهرست کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| RPF | Route | تصحیح |
+| Policy 0 | Interface/Address | تصحیح |
+| نامتقارن | مسیر | طراحی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. DNAT قبل یا بعد Route؟** قبل.
+**۲. SNAT؟** بعد از Policy.
+**۳. PBR؟** پیش از Routing عادی.
+
+#### English Corner
+
+- *Destination NAT happens before the routing decision; source NAT happens after policy.*
+- Q: At which stage does the reverse path check occur?
+
 ## درس 12-1 — معماری FortiGate، اولین بوت و تأیید نسخه
 
 **فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۰، ۱۱-۳ · ≈ 9 ساعت**
@@ -4442,6 +4503,69 @@ end
 1. *اولین کار روی دستگاه جدید؟* تأیید نسخه/لایسنس/سریال و Backup.
 2. *Operation Mode NAT در برابر Transparent؟* NAT مسیریابی L3 می‌کند؛ Transparent مثل Bridge.
 3. *VDOM چیست و کی فعال می‌شود؟* جداسازی مجازی؛ فقط در صورت نیاز و لایسنس.
+
+### تکمیل عمیق: معماری FortiGate و اولین بوت
+
+#### چرا؟
+
+قبل از پیکربندی باید بدانید با چه چیزی کار می‌کنید: FortiOS، VM یا سخت‌افزار، NPU/CPU و روش‌های دسترسی.
+
+#### اجزا
+
+| جزء | نقش |
+|---|---|
+| FortiOS | سیستم‌عامل |
+| CPU | پردازش عمومی/UTM |
+| NPU (SPU) | Offload ترافیک |
+| Management plane | CLI/GUI/API |
+| Data plane | عبور ترافیک |
+
+#### مثال ساده — تأیید نسخه
+
+``` text
+get system status
+```
+
+نسخه، Serial، HA، Virtual Domain، License Status را می‌خوانید. در این دوره FortiOS 7.0.3 «نامی» است و بوت نشده.
+
+#### مثال متوسط — اولین دسترسی
+
+کنسول یا HTTPS مدیریتی روی Interface مدیریتی؛ پیش‌فرض ادمین بدون رمز در بعضی مدل‌هاست و باید بلافاصله تغییر کند.
+
+``` text
+config system admin
+ edit admin
+  set password ***
+ next
+end
+```
+
+#### مثال سخت — لایسنس VM
+
+FortiGate VM بدون لایسنس معتبر عملاً محدود (Trial) است؛ بسیاری از قابلیت‌ها Needs-License هستند و اجرا نشده.
+
+#### Lab
+
+نسخه و ظرفیت مدل را از دیتاشیت رسمی بخوانید و جدول بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| GUI باز نمی‌شود | allowaccess | CLI |
+| ویژگی نیست | لایسنس/مدل | دیتاشیت |
+| نسخه ناهمخوان | Release Notes | بررسی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. NPU؟** شتاب سخت‌افزاری.
+**۲. چرا رمز اول؟** امنیت.
+**۳. Needs-License؟** نیاز به اشتراک.
+
+#### English Corner
+
+- *Change the default administrator credentials during the first boot.*
+- Q: What are the management plane and data plane?
 
 ## درس 12-2 — Interface، VLAN، Role، Administrative Access و سخت‌سازی پورت‌های FortiGate
 
@@ -4710,6 +4834,70 @@ diagnose ip arp list                  ! no entry for 10.10.0.x -> L2 issue
 2. *Zone چه فایده؟* گروه‌کردن Interfaceها در Policy.
 3. *LACP چه می‌کند؟* تجمیع لینک برای پهنای باند و افزونگی.
 
+### تکمیل عمیق: Interface، VLAN، Role و دسترسی مدیریتی
+
+#### چرا؟
+
+Interface نقطه‌ی ورود ترافیک و مدیریت است؛ تنظیم اشتباه `allowaccess` مدیریت را به اینترنت می‌دهد.
+
+#### مثال ساده — VLAN Interface
+
+``` text
+config system interface
+ edit "vlan10"
+  set vdom "root"
+  set interface "port2"
+  set vlanid 10
+  set ip 10.10.0.1 255.255.255.0
+  set allowaccess ping
+  set role lan
+ next
+end
+```
+
+#### مثال متوسط — حداقل مدیریت
+
+روی WAN فقط `ping` یا هیچ؛ روی Mgmt: `https ssh ping`. هرگز `http`/`telnet`.
+
+#### مثال سخت — Trusted Host
+
+``` text
+config system admin
+ edit "netadmin"
+  set trusthost1 10.50.0.0 255.255.255.0
+ next
+end
+```
+
+حتی با رمز لورفته، ورود فقط از Mgmt ممکن است.
+
+#### Role
+
+Roleها (lan/wan/dmz/undefined) رفتار GUI و پیش‌فرض‌ها را تغییر می‌دهند؛ برای WAN Role wan.
+
+#### Lab
+
+یک VLAN و حداقل دسترسی بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ping نمی‌آید | allowaccess | افزودن |
+| ورود از اینترنت | allowaccess | حذف |
+| VLAN کار نمی‌کند | Trunk | سوئیچ |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Trusted Host؟** مبدأ مجاز ادمین.
+**۲. چرا WAN بی‌مدیریت؟** سطح حمله.
+**۳. VLAN ID؟** برچسب 802.1Q.
+
+#### English Corner
+
+- *Management access on the WAN interface should be disabled.*
+- Q: What does a trusted host restrict?
+
 ## درس 12-3 — Zone و Objectها: Address، Service، Group، Schedule و استاندارد نام‌گذاری
 
 **فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۲، ۱۱-۲ · ≈ 10 ساعت**
@@ -4964,6 +5152,87 @@ end
 1. *چرا Group؟* خوانایی و یک نقطه‌ی تغییر.
 2. *ریسک FQDN؟* وابستگی به DNS و تغییر ناگهانی IP.
 3. *Zone چه کاری می‌کند؟* Policy کوتاه‌تر و مدیریت ساده‌تر.
+
+### تکمیل عمیق: Zone و Objectها — استاندارد نام‌گذاری
+
+#### چرا؟
+
+Objectهای شلوغ و بی‌نام ممیزی را غیرممکن می‌کنند. نام‌گذاری استاندارد زمان عیب‌یابی را نصف می‌کند.
+
+#### قرارداد نام
+
+``` text
+Address : NET-USERS, SRV-ERP, HOST-DC1
+Group   : GRP-SERVERS
+Service : SVC-APP-8443
+Zone    : ZN-DMZ
+```
+
+#### مثال ساده
+
+``` text
+config firewall address
+ edit "NET-USERS"
+  set subnet 10.10.0.0 255.255.255.0
+  set comment "VLAN10 users, owner NOC"
+ next
+end
+config firewall service custom
+ edit "SVC-APP-8443"
+  set tcp-portrange 8443
+ next
+end
+```
+
+#### مثال متوسط — Zone
+
+``` text
+config system zone
+ edit "ZN-DMZ"
+  set interface "port2" "port5"
+  set intrazone deny
+ next
+end
+```
+
+`intrazone deny` ترافیک بین Interfaceهای همان Zone را پیش‌فرض می‌بندد.
+
+#### مثال سخت — Schedule
+
+``` text
+config firewall schedule recurring
+ edit "WORK-HOURS"
+  set day monday tuesday wednesday thursday friday
+  set start 08:00
+  set end 18:00
+ next
+end
+```
+
+Session موجود پس از پایان Schedule تا انقضا می‌ماند.
+
+#### Lab
+
+ده Object با قرارداد نام بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Object تکراری | بی‌قرارداد | ادغام |
+| intrazone باز | پیش‌فرض | deny |
+| Schedule | Session | Clear |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا comment؟** مالک و دلیل.
+**۲. intrazone؟** داخل Zone.
+**۳. Schedule و Session؟** قدیمی می‌ماند.
+
+#### English Corner
+
+- *Use consistent object naming and always record an owner in the comment.*
+- Q: What does intrazone deny do?
 
 ## درس 12-4 — Static Route، Default Route، Policy Route، Distance/Priority و Failover
 
@@ -5244,6 +5513,88 @@ lost 38 packets x 0.2 s = 7.6 s  (target < 10 s: PASS)
 2. *RPF چیست؟* بررسی Route معکوس مبدأ از Interface ورودی.
 3. *Blackhole Route؟* برای Summary و جلوگیری از حلقه.
 
+### تکمیل عمیق: Static Route، Policy Route و Failover با Link Monitor
+
+#### چرا؟
+
+Routing تعیین می‌کند ترافیک از کدام Interface خارج شود؛ هر خطا در Route، Policy درست را بی‌اثر می‌کند.
+
+#### مثال ساده — دو Default
+
+``` text
+config router static
+ edit 1
+  set gateway 203.0.113.1
+  set device "port1"
+  set distance 10
+ next
+ edit 2
+  set gateway 198.51.100.1
+  set device "port2"
+  set distance 20
+ next
+end
+```
+
+Distance کمتر ترجیح دارد؛ در تساوی Priority.
+
+#### مثال متوسط — Link Monitor
+
+``` text
+config system link-monitor
+ edit "ISP1"
+  set srcintf "port1"
+  set server "8.8.8.8"
+  set interval 1000
+  set failtime 5
+ next
+end
+```
+
+``` text
+Detection time = interval x failtime = 1000 ms x 5 = 5 s
+Lost packets x ping interval: 38 x 0.2 s = 7.6 s outage
+```
+
+#### مثال سخت — Policy Route
+
+PBR قبل از جدول Routing ارزیابی می‌شود؛ مطابقت ⇒ Gateway PBR؛ عدم مطابقت ⇒ Routing عادی.
+
+``` text
+config router policy
+ edit 1
+  set input-device "port2"
+  set src "10.10.1.0/24"
+  set dst "0.0.0.0/0"
+  set gateway 198.51.100.1
+  set output-device "port2"
+ next
+end
+```
+
+#### Lab
+
+Failover را اجرا و زمان قطع را اندازه بگیرید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Failover نمی‌شود | Monitor | افزودن |
+| PBR اثر ندارد | ترتیب | بررسی |
+| Session قدیم | Clear | فیلتر |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Distance/Priority؟** انتخاب و شکست تساوی.
+**۲. PBR کجا؟** قبل از Routing.
+**۳. زمان تشخیص؟** interval×failtime.
+
+#### English Corner
+
+- *Policy routes are evaluated before the normal routing table.*
+- Q: How is the failure detection time calculated?
+
 ## درس 12-5 — Admin، RBAC، MFA و سخت‌سازی مدیریت FortiGate
 
 **فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۲، ۱۲-۱ · ≈ 10 ساعت**
@@ -5515,6 +5866,67 @@ end
 2. *MFA چرا؟* رمز لورفته بدون عامل دوم کافی نیست.
 3. *Alert چه باشد؟* Admin login failed و Config changed.
 
+### تکمیل عمیق: Admin، RBAC و MFA
+
+#### چرا؟
+
+ادمین کامل بودن همه، یعنی خطای هر کس خطای کل است. RBAC دسترسی را به نقش می‌دهد.
+
+#### مثال ساده — Profile
+
+``` text
+config system accprofile
+ edit "noc-ro"
+  set netgrp read
+  set fwgrp read
+  set loggrp read
+ next
+end
+config system admin
+ edit "noc1"
+  set accprofile "noc-ro"
+  set trusthost1 10.50.0.0 255.255.255.0
+ next
+end
+```
+
+#### مثال متوسط — MFA
+
+FortiToken یا RADIUS+MFA برای ادمین (`two-factor fortitoken`). حساب Break-glass (اضطراری) جدا و در Vault.
+
+#### مثال سخت — ممیزی
+
+``` text
+config log eventfilter
+ set system enable
+end
+```
+
+هر ورود/تغییر ادمین ثبت شود؛ هفتگی با CHGها تطبیق دهید.
+
+#### Lab
+
+سه نقش بسازید و رفتار را آزمون کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| همه super_admin | سهل‌انگاری | Profile |
+| قفل شدن | MFA زمان | NTP |
+| تغییر بی‌ردپا | Log غیرفعال | فعال |
+
+#### پرسش‌ها با پاسخ
+
+**۱. RBAC؟** نقش‌محور.
+**۲. Break-glass؟** حساب اضطراری.
+**۳. چرا Trusted Host؟** مبدأ.
+
+#### English Corner
+
+- *Keep a sealed break-glass account for emergencies.*
+- Q: Why enable MFA for administrators?
+
 ## درس 12-6 — Backup/Restore، Firmware Upgrade، Rollback و Lifecycle
 
 **فصل 12 · بازنویسی عمیق · پیش‌نیاز: ۱۲-۱، ۱۲-۵ · ≈ 10 ساعت**
@@ -5724,6 +6136,69 @@ diagnose sys session stat
 1. *چرا Secondary اول؟* با Failover سرویس حفظ می‌شود.
 2. *EoS/EoL؟* پایان پشتیبانی؛ برنامه‌ی جایگزینی.
 3. *چه چیزی بعد از Upgrade مقایسه می‌کنید؟* Session، Route، IPsec، Policy hit، Log.
+
+### تکمیل عمیق: Backup/Restore، ارتقا و Lifecycle
+
+#### چرا؟
+
+بدون Backup تست‌شده و مسیر ارتقا درست، یک اشتباه ساده می‌تواند ساعت‌ها قطعی بسازد.
+
+#### مثال ساده — Backup
+
+``` text
+execute backup config tftp cfg-2026-11-27.conf 10.50.0.30
+sha256sum cfg-2026-11-27.conf
+```
+
+#### مثال متوسط — ارتقا
+
+1. Release Notes و Upgrade Path.
+2. Backup + Image قبلی.
+3. Lab.
+4. Window.
+5. Verify.
+6. Rollback.
+
+``` text
+Pre : get system status ; backup
+Post: get system status ; policy/route counts ; tunnels
+```
+
+#### مثال سخت — Rollback
+
+``` text
+execute restore image tftp old.out 10.50.0.30
+execute restore config tftp cfg-before.conf 10.50.0.30
+```
+
+معیار Rollback از قبل: «اگر ۳۰ دقیقه سرویس حیاتی برنگشت».
+
+#### Lifecycle
+
+EoS/EoL نسخه‌ها را از سایت رسمی پیگیری کنید؛ ارتقای برنامه‌ریزی‌شده.
+
+#### Lab
+
+Backup و Restore را در Lab اجرا کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Restore شکست | نسخه | همان |
+| بوت نمی‌شود | Image | Console |
+| Config ناقص | مسیر ارتقا | Backup |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Hash؟** سلامت.
+**۲. چرا Lab اول؟** کشف مشکل.
+**۳. EoS؟** پایان پشتیبانی.
+
+#### English Corner
+
+- *Define rollback criteria before the upgrade window.*
+- Q: Why verify the backup file with a hash?
 
 ## درس 12-8 — Transit، Local-in و Local-out: سه نوع ترافیک و سه مسیر پردازش
 
@@ -5938,6 +6413,65 @@ execute ping-options source <ip>
 - Fortinet Docs: FortiOS 7.0 Administration Guide — Interface settings (Administrative access)، Local-in policy؛ CLI Reference `config firewall local-in-policy`، `config system interface`.
 - Fortinet: «Hardening your FortiOS» (مقاله‌ی رسمی؛ نسخه‌ی 7.0 را بررسی کنید).
 
+### تکمیل عمیق: Transit، Local-in و Local-out
+
+#### چرا؟
+
+سه نوع ترافیک سه مسیر دارند؛ بسیاری تصور می‌کنند Policy عادی ترافیک به فایروال را هم کنترل می‌کند، در حالی که نمی‌کند.
+
+#### سه نوع
+
+| نوع | مبدأ → مقصد | کنترل |
+|---|---|---|
+| Transit | از میان فایروال | Firewall Policy |
+| Local-in | به خود فایروال | Local-in Policy / allowaccess |
+| Local-out | از خود فایروال | تنظیمات سرویس/Route |
+
+#### مثال ساده
+
+ping از Users به IP خود فایروال: Local-in (allowaccess). ping از Users به سرور: Transit (Policy).
+
+#### مثال متوسط — Local-in Policy
+
+``` text
+config firewall local-in-policy
+ edit 1
+  set intf "port1"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "HTTPS" "SSH"
+  set action deny
+  set schedule "always"
+ next
+end
+```
+
+#### مثال سخت — Local-out
+
+فایروال برای DNS/NTP/FortiGuard خروجی دارد؛ Source Interface و Route آنها را تنظیم کنید (`set source-ip`)؛ مشکل Log/Update اغلب از Route Local-out است.
+
+#### Lab
+
+سه نوع ترافیک را با Debug Flow مقایسه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ping به FW نه | allowaccess | افزودن |
+| Update نمی‌رسد | Route Local-out | تنظیم |
+| Policy بی‌اثر روی FW | Local-in | local-in-policy |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Local-in چیست؟** ترافیک به خود FW.
+**۲. Policy عادی آن را کنترل می‌کند؟** خیر.
+**۳. Local-out؟** از خود FW.
+
+#### English Corner
+
+- *Local-in policies protect the firewall itself, not the networks behind it.*
+- Q: Which policy type controls traffic destined to the firewall?
 
 ## درس 12-9 — Hardware Acceleration (NPU/SPU) و Session Offload: اثر بر عملکرد و عیب‌یابی
 
@@ -6099,6 +6633,64 @@ diagnose npu fastpath status
 - Fortinet: FortiGate datasheet مدل مورد استفاده.
 
 <a id="l-12-7"></a>
+
+### تکمیل عمیق: NPU/SPU و Session Offload
+
+#### چرا؟
+
+Session Offload کارایی را چند برابر می‌کند ولی عیب‌یابی را سخت‌تر (Sniffer/Debug ناقص). باید بدانید چه زمانی فعال است و چطور موقتاً خاموش شود.
+
+#### مفهوم
+
+بسته‌ی اول Session توسط CPU بررسی می‌شود؛ اگر شرایط برقرار باشد Session به NPU «Offload» می‌شود و بقیه‌ی بسته‌ها سخت‌افزاری عبور می‌کنند.
+
+#### مثال ساده — دیدن
+
+``` text
+diagnose sys session list
+ ... npu info: flag=0x81/0x81 ...
+```
+
+وجود اطلاعات npu یعنی Offload شده.
+
+#### مثال متوسط — کنترل
+
+``` text
+config firewall policy
+ edit 30
+  set auto-asic-offload disable
+ next
+end
+```
+
+برای عیب‌یابی موقت؛ پس از آزمون برگردانید. `auto-asic-offload` به‌ازای Policy است.
+
+#### مثال سخت — UTM و Offload
+
+فعال‌بودن Proxy-based UTM معمولاً Offload را غیرفعال می‌کند؛ ظرفیت با CPU محدود می‌شود. پس مدل را بر اساس Throughput با UTM انتخاب کنید.
+
+#### Lab
+
+مفهوم را با خروجی Session نمونه توضیح دهید (VM بدون NPU: اجرا نشده).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Sniffer ناقص | Offload | موقتاً خاموش |
+| CPU بالا | UTM | مدل/Profile |
+| Debug flow بی‌خروجی | Offload | بسته‌ی اول |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Offload چیست؟** عبور سخت‌افزاری.
+**۲. چرا عیب‌یابی سخت؟** بسته‌ها CPU نمی‌بینند.
+**۳. کنترل؟** auto-asic-offload.
+
+#### English Corner
+
+- *Offloaded sessions bypass the CPU, so packet captures may be incomplete.*
+- Q: How can you temporarily disable offload for troubleshooting?
 
 ## درس 12-7 — آزمون پایان فصل ۱۲ و تحلیل خطا: مدیریت قفل‌شده، Route اشتباه و Interface
 
@@ -6273,6 +6865,64 @@ get system status              ! on console
 1. *چرا cfg-save revert؟* شبکه‌ی ایمنی برای تغییر مدیریتی.
 2. *چرا `set allowaccess` خطرناک است؟* فهرست قبلی را جایگزین می‌کند.
 3. *چه چیزی در RCA می‌نویسید؟* علت، اثر، زمان، پیشگیری.
+
+### تکمیل عمیق: آزمون پایان فصل ۱۲ — مدیریت قفل‌شده و روش Revert
+
+#### چرا؟
+
+بسیاری از قطعی‌ها وقتی رخ می‌دهد که ادمین با تغییر `allowaccess` یا Route خودش را از مدیریت قفل می‌کند. روش ایمن: تغییر با بازگشت خودکار.
+
+#### روش cfg-save revert
+
+``` text
+config system global
+ set cfg-save revert
+ set cfg-revert-timeout 600
+end
+```
+
+تغییرات تا زمان تأیید ذخیره نمی‌شوند؛ اگر ظرف ۶۰۰ ثانیه تأیید نشود، دستگاه به Config قبل برمی‌گردد (طبق مستند Fortinet).
+
+#### مثال ساده
+
+تغییر Interface مدیریتی؛ اگر قفل شدید، پس از Timeout Config قبلی برمی‌گردد.
+
+#### مثال متوسط — آزمون
+
+تغییر عمدی allowaccess و بازگشت پس از Timeout (Lab).
+
+#### مثال سخت — تحلیل خطا
+
+کارآموز Default Route را حذف کرد و GUI قطع شد؛ راه: کنسول، Route را بازگردانی، سپس درس: Revert و CHG.
+
+#### Rubric
+
+``` text
+Planning 20 | Execution 30 | Rollback 25 | Evidence 15 | Report 10
+```
+
+#### Lab
+
+آزمون را اجرا و بازگشت را ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| قفل مدیریت | allowaccess/Route | Console/Revert |
+| Revert نشد | Timeout زیاد | کم |
+| ذخیره‌ی ناخواسته | تأیید | دقت |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Console؟** مسیر آخر.
+**۲. Revert؟** بازگشت خودکار.
+**۳. ثبت؟** ضروری.
+
+#### English Corner
+
+- *Use configuration revert so that a lockout rolls back automatically.*
+- Q: What should you do if you lock yourself out of the GUI?
 
 ## پاسخ‌های فصل 12
 
