@@ -333,35 +333,45 @@ lost = 3 packets x 1 s = 3 s  -> PASS if target < 5 s
 
 > **وضعیت:** پروژه‌ی Capstone (HQ + ۳ شعبه)؛ FortiOS 7.0.3 و Cisco (بوت‌نشده)؛ بدون شاهد واقعی «اجرا نشده»؛ دستورها `Unverified`.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. نیازمندی عملکردی/غیرعملکردی SMART بنویسد و ابهام را با پرسش‌های شفاف‌ساز رفع کند.
-2. HLD کامل (دامنه، معماری، IP/VLAN/Zone، Routing/VPN/Firewall/HA، تصمیم‌ها، ریسک، پذیرش) تولید کند.
-3. ADR برای تصمیم‌های کلیدی بنویسد.
-4. معیار پذیرش و برنامه‌ی آزمون سطح بالا را تعریف کند.
-5. طرح را با Rubric ارزیابی و بازبینی کند.
+1. نیازمندی عملکردی و غیرعملکردی SMART بنویسید و ابهام را با پرسش‌های شفاف‌ساز رفع کنید.
+2. HLD (High-Level Design) کامل تولید کنید.
+3. ADR (Architecture Decision Record) برای تصمیم‌های کلیدی بنویسید.
+4. معیار پذیرش و برنامه‌ی آزمون سطح بالا را تعریف کنید.
+5. ریسک را با احتمال×اثر رتبه‌بندی و کنترل کنید.
+6. طرح را با Rubric ارزیابی و بازبینی کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا HLD؟** HLD نقشه‌ی شهر است نه سیم‌کشی خانه: مدیر و همکار باید در ۱۰ دقیقه بفهمند «چه می‌سازیم و چرا». اجزا: زمینه، نیازمندی و فرضیات، معماری منطقی، جریان‌های اصلی، ریسک‌ها و خارج از محدوده.
+مهندس معمار پیش از آنکه آجر بچیند، نقشه‌ی شهر می‌کشد: چه کسی در شهر زندگی می‌کند، چه مسیرهایی لازم است، چه خطراتی (سیل، زلزله) هست. HLD این نقشه برای شبکه است. اگر نیازمندی را مبهم بنویسید («یک شبکه‌ی چندشعبه بساز»)، پروژه با «ولی من فکر می‌کردم...» تمام می‌شود. Capstone اثبات تسلط است؛ و اولین نشانه‌ی تسلط، تبدیل خواسته‌ی مبهم به نیازمندی قابل‌آزمون است.
 
-**جمع‌بندی اصلی درس:**
+### پروژه‌ی مرجع
 
-Capstone اثبات تسلط است. اولین قدم: نیازمندی‌ها. «شبکه‌ی چندشعبه بساز» نیازمندی نیست؛ «شعبه‌ی A باید ERP را با Latency زیر ۴۰ms و دسترس‌پذیری ۹۹٫۹٪ ببیند» نیازمندی است.
+شرکت «لب»: HQ (دیتاسنتر و کاربران)، سه شعبه‌ی A/B/C. ISPهای دوگانه، Hub دوگانه، SaaS (Microsoft 365)، دسترسی راه‌دور، انطباق Log ۱۸۰ روز.
 
-### ۳) توضیح عمیق فنی
+### از خواسته‌ی مبهم به نیازمندی
 
-#### ۱) پروژه‌ی مرجع
+خواسته‌ی مدیر: «شبکه‌ی شعبه‌ها خوب و امن باشد.»
 
-شرکت «لب»: HQ (دیتاسنتر و کاربران)، سه شعبه A/B/C. ISPهای دوگانه، Hub دوگانه، SaaS، دسترسی راه‌دور، انطباق Log ۱۸۰ روز.
+پرسش‌های شفاف‌ساز:
 
-#### ۲) نیازمندی‌ها (نمونه)
+1. «خوب» یعنی چه Latency/پهنای باند؟ برای کدام برنامه؟
+2. دسترس‌پذیری هدف؟ ساعات کاری یا ۲۴×۷؟
+3. «امن» یعنی چه تهدیدی؟ الزام قانونی (Log، رمزنگاری)؟
+4. بودجه و زمان؟
+5. تیم نگهداری چند نفر و چه مهارتی؟
+6. سیستم‌های موجود (AD، ERP، IP Plan)؟
+
+### نیازمندی‌ها (SMART)
 
 | ID | نوع | نیازمندی | معیار پذیرش |
 |---|---|---|---|
-| R1 | عملکردی | ERP از همه‌ی شعب | ping/TCP 443 موفق؛ Latency < 40 ms |
+| R1 | عملکردی | ERP از همه‌ی شعب | TCP 443 موفق؛ Latency < 40 ms |
 | R2 | غیرعملکردی | دسترس‌پذیری ۹۹٫۹٪ | Failover < 10 s؛ ≤ 8.76 h/سال |
 | R3 | امنیتی | Guest ایزوله | nmap منفی: Guest→Internal filtered |
 | R4 | امنیتی | دسترسی راه‌دور با MFA | ورود بدون OTP رد می‌شود |
@@ -372,11 +382,46 @@ Capstone اثبات تسلط است. اولین قدم: نیازمندی‌ها.
 Availability 99.9% -> downtime budget = 0.001 x 8760 h = 8.76 h/year
 ```
 
-#### ۳) ساختار HLD
+### ساختار HLD
 
-1) هدف/دامنه/فرض‌ها 2) نیازمندی‌ها 3) نمودار معماری 4) IP/VLAN/Zone 5) Routing/Overlay 6) Firewall/UTM/Auth 7) HA/SD-WAN 8) مانیتورینگ/Log/Backup 9) تصمیم‌ها (ADR) 10) ریسک‌ها 11) برنامه‌ی آزمون 12) پذیرش.
+1. هدف/دامنه/فرض‌ها/خارج از دامنه
+2. نیازمندی‌ها و معیار پذیرش
+3. نمودار معماری
+4. IP/VLAN/Zone
+5. Routing/Overlay
+6. Firewall/UTM/Auth
+7. HA/SD-WAN/Dual-ISP
+8. مانیتورینگ/Log/Backup
+9. تصمیم‌ها (ADR)
+10. ریسک‌ها
+11. برنامه‌ی آزمون و پذیرش
+12. زمان‌بندی و هزینه (در سطح بالا)
 
-#### ۴) ADR (نمونه)
+### نمودار معماری (مفهومی)
+
+``` text
+            Internet (ISP1, ISP2)
+                  |
+        +---------+----------+
+        |  HQ: Hub1  Hub2 (HA/BGP RR)  + DC + Users + Mgmt + DMZ
+        +----+---------+-----+
+             | IPsec IKEv2 overlay (iBGP, ADVPN)
+   +---------+---------+---------+
+   Branch A  Branch B  Branch C  (dual ISP, SD-WAN, local breakout for SaaS)
+```
+
+### جریان‌ها
+
+| جریان | مسیر |
+|---|---|
+| F1 Users→Internet | شعبه Breakout (SaaS) یا Hub |
+| F2 Internet→DMZ | Hub VIP |
+| F3 Mgmt→دستگاه‌ها | Mgmt VLAN، Bastion |
+| F4 Branch→ERP | Overlay |
+| F5 Remote→ERP | IPsec Dial-up + MFA |
+| F6 Log/Monitoring | Syslog TLS، SNMPv3 |
+
+### ADR (نمونه)
 
 ``` text
 ADR-03: Local breakout for trusted SaaS only
@@ -386,66 +431,63 @@ Decision: C; SaaS via ISDB/FQDN breakout with Web/DNS/File filter; rest via Hub
 Consequences: need UTM at branch; central logging required; review quarterly
 ```
 
-#### ۵) ریسک (نمونه)
+ADRهای دیگر: ADR-01 IPsec Route-based + BGP؛ ADR-02 دسترسی راه‌دور با IPsec Dial-up (نه SSL VPN) به‌دلیل ریسک CVE؛ ADR-04 Syslog/Git به‌جای FMG/FAZ (هزینه)؛ ADR-05 HA A-P در Hub.
 
-| ریسک | احتمال | اثر | کنترل |
-|---|---|---|---|
-| CVE روی Hub | متوسط | بالا | Patch، Source Restriction |
-| ISP تک‌شعبه | بالا | متوسط | Dual-ISP |
-| Config خراب Sync | کم | بالا | Canary/Rollback |
+### ریسک
 
-### ۴) طراحی و تصمیم‌گیری
+``` text
+Risk score = Likelihood (1-5) x Impact (1-5)
+```
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| SMART | هر نیاز معیار دارد |
-| ADR | تصمیم‌های بزرگ |
-| ریسک | احتمال×اثر |
+| ریسک | L | I | امتیاز | کنترل |
+|---|---|---|---|---|
+| CVE روی Hub | 3 | 5 | 15 | Patch SLA، Source Restriction |
+| ISP تک‌شعبه | 4 | 3 | 12 | Dual-ISP + SD-WAN |
+| Config خراب Sync | 2 | 5 | 10 | Canary/Rollback |
+| فرضیه‌ی غلط | 3 | 4 | 12 | تأیید فرضیه‌ها در Discovery |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### مثال‌های حل‌شده
 
 #### مثال ساده — جریان‌ها
 
-F1 Users→Internet، F2 Internet→DMZ، F3 Mgmt→دستگاه‌ها.
+سه جریان F1، F2، F3 را بنویسید؛ هر جریان یک Policy و یک آزمون دارد.
+
+#### مثال متوسط — SMART کردن
+
+«شبکه سریع باشد» ⇒ «RTT شعبه به ERP کمتر از ۴۰ms در ۹۵٪ زمان‌ها در ساعات کاری، اندازه‌گیری با Health-check ۱ ماه». قابل‌آزمون.
 
 #### مثال متوسط — ریسک
 
-``` text
-Risk = Likelihood x Impact : ISP outage 3x5 = 15 -> Dual-ISP
-```
+ISP outage: 4×3=12 ⇒ Dual-ISP. هزینه‌ی کنترل در برابر ریسک مقایسه می‌شود.
 
 #### مثال سخت — فرضیه‌ی غلط
 
-«ISP IP ثابت می‌دهد» ولی DHCP بود و VIP/VPN شکست خورد؛ هر فرضیه تا تأیید یک ریسک است.
+«ISP IP ثابت می‌دهد» ولی DHCP بود؛ VPN با Peer ثابت شکست خورد. هر فرضیه تا تأیید یک ریسک است؛ در Discovery لیست فرضیه‌ها با تأییدکننده و تاریخ.
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال سخت — تعارض نیازمندی
 
-**ساده (حل‌شده):** نیازمندی R1 تبدیل به معیار قابل‌آزمایش؛ جدول.
+R2 (۹۹٫۹٪) و محدودیت بودجه (یک ISP). تعارض را مستند و تصمیم مدیریتی بگیرید: ۹۹٫۹٪ فقط با Dual-ISP قابل‌دستیابی؛ یا هدف را ۹۹٪ کنید و پذیرش ریسک را امضا کنید. بدون این، پروژه شکست می‌خورد.
 
-**متوسط (تحلیل):** تضاد بودجه/دسترس‌پذیری: ۹۹٫۹۹٪ نیاز به HA همه‌ی سایت‌ها؛ هزینه ×۲. تصمیم: ۹۹٫۹٪ شعب، ۹۹٫۹۹٪ HQ؛ ثبت در ADR و پذیرش ریسک.
+### Lab هدایت‌شده (اجرا نشده)
 
-**سخت (طراحی):** HLD کامل ۱۲ بخشی برای پروژه‌ی مرجع با نمودار و ADR؛ بازبینی با Rubric؛ ردیابی هر R به عنصر طراحی.
+1. شش نیازمندی SMART برای پروژه‌ی خودتان.
+2. نمودار و جدول جریان‌ها.
+3. سه ADR و ماتریس ریسک.
 
-### ۸) Verification (اثبات صحت)
+### عیب‌یابی سریع
 
-- HLD امضا‌شده.
-- ماتریس ردیابی ابتدایی.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| نیاز مبهم | بازبینی | SMART |
+| نیازمندی مبهم | بی‌پرسش | شفاف‌ساز |
+| بدون معیار | غیر SMART | معیار پذیرش |
+| ریسک نادیده | فرضیه | ثبت/تأیید |
+| تصمیم بی‌دلیل | ADR نیست | ADR |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- ریسک امنیتی در HLD.
+نیازمندی SMART با معیار پذیرش؛ HLD ساختاریافته؛ ADR برای تصمیم‌ها؛ ریسک با امتیاز؛ تعارض‌ها را صریح مستند کنید.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- HLD = نیاز + معماری + تصمیم + ریسک + پذیرش.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) یک نیازمندی SMART مثال بزنید. *(پاسخ: 31-1-ت1)*
 
@@ -461,7 +503,7 @@ Risk = Likelihood x Impact : ISP outage 3x5 = 15 -> Dual-ISP
 
 **Q1.** Quick quiz (English): Why define acceptance criteria during requirements gathering? *(پاسخ: 31-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -471,103 +513,16 @@ Risk = Likelihood x Impact : ISP outage 3x5 = 15 -> Dual-ISP
 
 - *Define acceptance criteria first.* ← ابتدا معیار پذیرش را تعریف کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** HLD. **Evidence:** `02-design/capstone-hld.md`.
 
-### ۱۵) منابع
+### منابع
 
 - ISO/IEC/IEEE 29148
 - M. Nygard — ADR
 
 <a id="l-31-2"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: HLD
-
-سند: نیازها، فرضیات، معماری، ریسک. نمودار منطقی + جدول جریان.
-
-**پرسش‌های مصاحبه**
-1. *HLD در برابر LLD؟* سطح جزئیات.
-2. *ریسک؟* فهرست و کاهش.
-3. *فرضیات؟* ثبت.
-
-### مثال حل‌شده: بخش ریسک HLD
-
-| ریسک | احتمال | اثر | کاهش |
-|---|---|---|---|
-| قطع ISP | متوسط | زیاد | Dual-ISP |
-| خطای Policy | زیاد | متوسط | Review+Lookup |
-
-### تکمیل عمیق: نوشتن HLD از نیازمندی تا نمودار و ریسک
-
-#### چرا؟
-
-HLD نقشه‌ی شهر است، نه نقشه‌ی سیم‌کشی خانه. مدیر و همکار باید در ۱۰ دقیقه بفهمند «چه می‌سازیم و چرا». اگر جزئیات (IP، Policy) را زود وارد کنید، تصویر کلی گم می‌شود.
-
-#### اجزای HLD
-
-| بخش | پرسش که پاسخ می‌دهد |
-|---|---|
-| زمینه و هدف | چرا این پروژه؟ |
-| نیازمندی‌ها و فرضیات | چه می‌خواهیم و چه فرض کرده‌ایم؟ |
-| معماری منطقی | اجزا و ارتباطشان |
-| جریان‌های اصلی | Users→Internet، Internet→DMZ و ... |
-| ریسک‌ها | چه چیزی خراب می‌شود؟ |
-| خارج از محدوده | چه چیزی را نمی‌سازیم؟ |
-
-#### مثال ساده — جریان‌ها
-
-``` text
-F1 Users   -> Internet   : via Internal FW then Edge FW (SNAT at Edge)
-F2 Internet-> DMZ web     : via Edge FW VIP 443
-F3 Mgmt    -> all devices : only from MGMT VLAN, SSH/HTTPS
-```
-
-#### مثال متوسط — ماتریس ریسک
-
-``` text
-Risk score = Likelihood x Impact
-ISP outage : 3 x 5 = 15  -> mitigate: Dual-ISP
-Policy error: 4 x 3 = 12 -> mitigate: review + pre/post lookup
-Cert expiry : 3 x 3 = 9  -> mitigate: calendar alert 30d
-```
-
-مراحل: ۱) فهرست ریسک ۲) امتیاز ۳) مرتب‌سازی ۴) اقدام برای بالاترین‌ها.
-
-#### مثال سخت — فرضیه‌ی غلط
-
-فرض: «ISP یک IP عمومی ثابت می‌دهد». در عمل DHCP بود و VIP/VPN شکست خورد. درس: هر فرضیه را در سند بنویسید و پیش از ساخت تأیید کنید؛ فرضیه‌ی تأییدنشده یک ریسک است.
-
-#### نمودار پیشنهادی
-
-نمودار منطقی ساده با پنج جعبه: Internet، Edge FW، DMZ، Internal FW، Users/Servers/Mgmt. حتماً جهت جریان و نقطه‌ی NAT را مشخص کنید.
-
-#### Lab
-
-HLD یک صفحه‌ای بنویسید و از یک همکار بخواهید فقط با آن، جریان F2 را توضیح دهد؛ اگر نتوانست، HLD مبهم است.
-
-#### عیب‌یابی سند
-
-| علامت | علت | رفع |
-|---|---|---|
-| سؤال زیاد از همکار | جریان‌ها ناقص | افزودن جریان |
-| HLD شلوغ | جزئیات LLD | انتقال به LLD |
-| ریسک ثبت نشده | بی‌توجهی | جلسه‌ی ریسک |
-
-#### پرسش‌ها با پاسخ
-
-**۱. HLD و LLD چه فرقی دارند؟** سطح جزئیات: چه/چرا در برابر چطور/دقیقاً چه مقداری.
-**۲. چرا فرضیات؟** هر فرضیه ریسک بالقوه است.
-**۳. «خارج از محدوده» چه فایده‌ای دارد؟** جلوگیری از انتظار اضافی.
-
-#### English Corner
-
-- *The HLD describes what and why; the LLD describes how.*
-- Q: Which assumptions could break your design?
 
 ## درس 31-2 — Capstone I: طراحی تفصیلی (LLD) — جدول Interface/Route/Policy/VPN و ماتریس ردیابی
 
@@ -575,153 +530,194 @@ HLD یک صفحه‌ای بنویسید و از یک همکار بخواهید �
 
 > **وضعیت:** پروژه‌ی Capstone روی Lab نظری (اجرا نشده)؛ FortiOS 7.0.3 نامی؛ همه‌ی دستورها `Unverified`؛ هیچ تجهیز واقعی تغییر نمی‌کند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. LLD کامل (آدرس‌دهی، Interface، Route، Policy، VPN، SD-WAN، Logging) را در جداول بنویسد.
-2. هر ردیف را به نیازمندی وصل کند.
-3. Configهای نمونه را بدون رمز تولید کند.
-4. LLD را برای بازبینی همکار آماده کند.
-5. ناسازگاری‌ها (Overlap، Asymmetric) را بیابد.
+1. LLD (Low-Level Design) کامل بنویسید: Interface، IP، VLAN، Route، Policy، VPN، BGP، SD-WAN، HA، Log.
+2. جدول‌های قابل‌اجرا بسازید که مهندس دیگر بتواند بدون پرسش پیاده کند.
+3. هماهنگی HLD↔LLD (Traceability) را حفظ کنید.
+4. پارامترهای VPN/BGP/HA را دقیق و یکسان دو سمت ثبت کنید.
+5. ماتریس Policy حداقلی را کامل کنید.
+6. LLD را با چک‌لیست بازبینی کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا LLD؟** LLD دستورالعمل ساختن است؛ دو نفر با آن باید یک شبکه‌ی یکسان بسازند. هر IP یک بار، هر Route یک دلیل، هر Policy یک نیازمندی (ستون Requirement).
+HLD نقشه‌ی شهر است؛ LLD نقشه‌ی سیم‌کشی هر ساختمان. بیشتر خطاهای اجرا از LLD مبهم می‌آید: «IP را بعداً می‌گذاریم»، «پارامتر VPN را هماهنگ می‌کنیم». LLD خوب آن‌قدر دقیق است که اگر مهندس دیگری (یا خودتان ۶ ماه بعد) بخواند، بدون حدس بسازد.
 
-**جمع‌بندی اصلی درس:**
+### اصول LLD
 
-HLD می‌گوید «چه»؛ LLD می‌گوید «دقیقاً چطور»: کدام IP روی کدام Interface، کدام Policy با کدام Service. اگر LLD دقیق باشد، Build مکانیکی است و اگر مبهم باشد، هر مهندس چیزی متفاوت می‌سازد. این درس LLD نمونه‌ی Capstone را کامل می‌چیند.
+1. هر مقدار قابل‌اجرا: IP، Mask، Gateway، VLAN، نام Interface.
+2. هر Policy: Src/Dst/Service/Action/NAT/Log/Profile/Owner.
+3. هر پارامتر هماهنگ‌شونده با Peer: در یک جدول دوطرفه.
+4. ردیابی: هر ردیف به R# و ADR# اشاره کند.
+5. سازگاری: Subnetها هم‌پوشانی ندارند.
 
-### ۳) توضیح عمیق فنی
+### جدول Interface و IP
 
-#### ۱) آدرس‌دهی
+| دستگاه | Interface | Zone | IP | VLAN | R# |
+|---|---|---|---|---|---|
+| HUB1 | port1 | WAN1 | 198.51.100.2/29 | - | R2 |
+| HUB1 | port2 | WAN2 | 203.0.113.2/29 | - | R2 |
+| HUB1 | port3 | LINK-INT | 10.99.0.1/30 | - | R2 |
+| HUB1 | port4 | DMZ | 10.30.0.1/24 | 30 | F2 |
+| HUB1 | port5 | HA-HB | - | - | R2 |
+| HUB1 | Loopback0 | LOOP | 10.254.0.1/32 | - | BGP |
+| BR-A | port1 | WAN1 | DHCP/Static ISP | - | R2 |
+| BR-A | port2 | WAN2 | ISP2 | - | R2 |
+| BR-A | port3 | LAN | 10.1.1.1/24 | 10 | R1 |
+| BR-A | port4 | GUEST | 10.1.101.1/24 | 20 | R3 |
+| BR-A | Loopback0 | LOOP | 10.254.1.1/32 | - | BGP |
 
-| شبکه | آدرس | استفاده |
-|---|---|---|
-| WAN-A | 198.51.100.0/30 | ISP-A |
-| WAN-B | 203.0.113.0/30 | ISP-B |
-| Transit Edge–Int | 10.255.0.0/30 | .1 Edge، .2 Internal |
-| DMZ | 10.30.0.0/24 | وب |
-| Users | 10.10.0.0/24 | کاربران |
-| Servers | 10.20.0.0/24 | App/DB |
-| Mgmt | 10.99.0.0/24 | مدیریت |
-| VPN pool | 10.212.134.0/24 | دورکاری |
+برای B: 10.1.2.0/24 و C: 10.1.3.0/24، Loopback 10.254.2.1/32 و 10.254.3.1/32.
 
-#### ۲) Interfaceها (Edge)
-
-| Interface | IP | Role | allowaccess |
-|---|---|---|---|
-| port1 | 198.51.100.2/30 | wan | - |
-| port4 | 203.0.113.2/30 | wan | - |
-| port2 | 10.255.0.1/30 | lan | ping |
-| port3 | 10.30.0.1/24 | dmz | ping |
-| mgmt | 10.99.0.1/24 | lan | https ssh |
-
-#### ۳) Route
-
-| مقصد | Next-hop | Interface | توضیح |
-|---|---|---|---|
-| 0.0.0.0/0 | SD-WAN | virtual-wan-link | ISP-A/B |
-| 10.10.0.0/24 | 10.255.0.2 | port2 | Users |
-| 10.20.0.0/24 | 10.255.0.2 | port2 | Servers |
-
-#### ۴) Policy (Edge)
-
-| ID | از | به | Src | Dst | Service | NAT | Log | نیازمندی |
-|---|---|---|---|---|---|---|---|---|
-| 1 | port2 | SD-WAN | NET-INTERNAL | all | HTTP/S/DNS | بله | Sec | R-01 |
-| 2 | SD-WAN | DMZ | all | VIP-WEB | HTTPS | DNAT | All | R-05 |
-| 3 | DMZ | port2 | SRV-WEB | SRV-APP | TCP-8443 | - | All | R-02 |
-| 99 | any | any | all | all | ALL | - | All | R-02 |
-
-#### ۵) VPN
-
-Site-to-Site IKEv2 AES256-SHA256 DH14 PFS؛ Dial-up با MFA (R-03).
-
-#### ۶) Logging
-
-Syslog 10.99.0.20؛ Retention ۹۰ روز؛ Alert: Deny WEB→DB.
-
-#### ۷) بازبینی LLD
-
-چک‌لیست: Overlap نیست؛ هر Interface Role و allowaccess دارد؛ هر Policy نیازمندی دارد؛ NAT فقط Edge؛ هیچ رمزی در سند.
-
-#### ۸) Config نمونه
+### برنامه‌ی IP
 
 ``` text
-config system interface
- edit "port3"
-  set ip 10.30.0.1 255.255.255.0
-  set allowaccess ping
-  set role dmz
- next
-end
+10.0.0.0/16     HQ (Users 10.0.10.0/24, Servers 10.0.20.0/24, Mgmt 10.0.50.0/24, DMZ 10.30.0.0/24)
+10.1.0.0/16     Branches (A=10.1.1.0/24, B=10.1.2.0/24, C=10.1.3.0/24; Guest 10.1.10X.0/24)
+10.250.0.0/16   Tunnel p2p /30
+10.254.0.0/24   Loopbacks /32
+10.212.135.0/24 Remote-access pool
 ```
 
-### ۴) طراحی و تصمیم‌گیری
+### پارامترهای VPN (دوطرفه)
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| پارامتر | HUB | BR-A |
+|---|---|---|
+| IKE | v2 | v2 |
+| P1 | aes256-sha256, DH14, 86400 | همان |
+| P2 | aes256-sha256, PFS DH14, 43200 | همان |
+| Selector | 0.0.0.0/0 | 0.0.0.0/0 |
+| ADVPN | sender | receiver |
+| DPD | on-idle 10/3 | همان |
+| PSK | Vault: `vpn/hub-bra` | همان |
+
+### BGP
+
+| پارامتر | مقدار |
 |---|---|
-| NAT | فقط Edge |
-| VPN pool | بدون Overlap |
+| AS | 65000 (iBGP) |
+| Hub1/Hub2 | RR، Router-ID 10.254.0.1/.2 |
+| Peering | Loopback↔Loopback، `update-source` |
+| Prefix اعلام‌شده Hub | 10.0.0.0/16، Summary 10.1.0.0/16 |
+| Prefix هر شعبه | شبکه‌ی LAN خودش |
+| Local-Pref | Hub1=200، Hub2=100 |
+| BFD | 300 ms × 3 |
+| Prefix-list ورودی | فقط Prefixهای مجاز هر Spoke |
+| Null Route | 10.1.0.0/16 distance 254 |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### SD-WAN شعبه
 
-#### مثال ساده
+| پارامتر | مقدار |
+|---|---|
+| Members | port1 (ISP1)، port2 (ISP2) + تونل‌های Overlay |
+| Health-check | 8.8.8.8 و 1.1.1.1، ping، interval 500 ms، failtime 5، recoverytime 60 |
+| SLA | latency 100 ms، jitter 30 ms، loss 2% |
+| Rule Teams | mode sla → ISP محلی |
+| Rule ERP | Overlay (Hub) |
+| Rule Default | priority ISP1 |
+
+### HA Hub
+
+| پارامتر | مقدار |
+|---|---|
+| mode | a-p |
+| group-name | HUB-HA |
+| hbdev | port5 (100)، port6 (50) مستقیم |
+| priority | A=200، B=100، override disable |
+| monitor | port1، port2، port3 |
+| session-pickup | enable |
+| ha-mgmt | port8 در Mgmt |
+
+### ماتریس Policy (خلاصه)
+
+| # | از | به | سرویس | Profile | R# |
+|---|---|---|---|---|---|
+| 10 | Users | ERP (Overlay/HQ) | HTTPS | IPS | R1 |
+| 11 | Users | Internet | HTTP/S/DNS | Web+DNS+AV | R1 |
+| 12 | Guest | Internet | HTTP/S/DNS | Web+DNS | R3 |
+| 13 | Guest | Internal | هیچ | Deny+Log | R3 |
+| 20 | Internet | DMZ VIP | HTTPS | IPS/WAF(Needs-License) | F2 |
+| 30 | Remote(VPN) | ERP | HTTPS | MFA group | R4 |
+| 40 | Mgmt | Devices | SSH/HTTPS | - | F3 |
+| 99 | any | any | - | Deny+Log | همه |
+
+### Log/Monitoring/Backup
+
+| مورد | مقدار |
+|---|---|
+| Syslog | rsyslog TLS 6514، ۱۸۰ روز (R5) |
+| SNMP | v3 auth-priv، Zabbix |
+| Backup | روزانه، Git + Full رمزگذاری‌شده، Restore RTO ≤ 30 min (R6) |
+| NTP | 10.0.50.10 |
+
+### Traceability
+
+| R# | LLD |
+|---|---|
+| R1 | جدول Interface، Policy 10/11، Rule ERP |
+| R2 | HA، Dual-ISP، BFD، Failover |
+| R3 | VLAN Guest، Policy 12/13 |
+| R4 | Dial-up + MFA، Policy 30 |
+| R5 | Syslog، Retention |
+| R6 | Backup/Restore |
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — بررسی Overlap
 
 ``` text
-Edge port1 203.0.113.2/29 WAN ; port2 10.30.0.1/24 DMZ ; Int port2 10.10.0.1/24 USERS
+python3 -c "import ipaddress as i; print(i.ip_network('10.1.1.0/24').overlaps(i.ip_network('10.1.101.0/24')))"
 ```
 
-#### مثال متوسط — Summary
+False ⇒ OK.
 
-Summary فقط وقتی بلوک پیوسته و رزرو شده است.
+#### مثال متوسط — ردیابی
 
-#### مثال سخت — NAT
+R3 (Guest ایزوله) ⇒ VLAN 20، Zone Guest، Policy 12 و 13، آزمون nmap. هر R# بدون LLD و هر LLD بدون R# یعنی خطا.
 
-در LLD نقطه‌ی NAT مشخص نبود و در هر دو فایروال NAT شد؛ ردیابی Log سخت شد.
+#### مثال متوسط — پارامتر یکسان
 
-#### مثال‌های اصلی درس (مرور)
+جدول دوطرفه نشان داد P2 Lifetime سمت Hub 43200 و Branch 3600؛ رفع قبل از ساخت.
 
-**ساده (حل‌شده):** ردیف Policy 3: DMZ→Internal فقط TCP 8443؛ نیازمندی R-02؛ Log All؛ آزمون T-10.
+#### مثال سخت — ظرفیت
 
-**متوسط (Overlap):** VPN pool 10.20.0.0/24 با Servers هم‌پوشانی دارد. شاهد: ماتریس آدرس. رفع: Pool 10.212.134.0/24. درس: LLD را با جدول آدرس بازبینی کنید.
-
-**سخت (ناسازگاری Asymmetric):** طراحی دو مسیر Default بدون SD-WAN باعث Asymmetric. مراحل: ۱) ماتریس Route را با Policy تطبیق. ۲) Failover با SD-WAN Zone. ۳) آزمون Capture. معیار: Symmetric و Failover<10s.
-
-### ۷) پیاده‌سازی از مسیر CLI
+Hub باید ۳ شعبه + ۵۰ کاربر راه‌دور را تحمل کند. IPsec Throughput لازم:
 
 ``` text
-config system interface
- edit "port3"
-  set ip 10.30.0.1 255.255.255.0
- next
-end
+Needed = 3 branches x 100 Mbps + 50 users x 5 Mbps = 300 + 250 = 550 Mbps
+Choose model with IPsec throughput >= 2 x 550 = 1100 Mbps (headroom)
 ```
 
-### ۸) Verification (اثبات صحت)
+مدل از Datasheet.
 
-- بازبینی همکار.
-- هر ردیف نیازمندی دارد.
+#### مثال سخت — LLD ناقص
 
-### ۹) Troubleshooting
+LLD بدون Policy برای Mgmt؛ در ساخت، تیم به‌صورت موقت ALL باز کرد و فراموش شد. چک‌لیست بازبینی LLD باید «هر Zone Pair Policy یا Deny صریح دارد» را بپرسد.
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+### Lab هدایت‌شده (اجرا نشده)
+
+1. جدول Interface و IP کامل.
+2. پارامترهای VPN/BGP/HA.
+3. ماتریس Policy و Traceability.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Overlap | جدول آدرس | تغییر Pool |
+| Overlap | IP Plan | بررسی |
+| VPN ناسازگار | جدول یک‌طرفه | دوطرفه |
+| R# بی‌پوشش | Traceability | افزودن |
+| Policy ناقص | Zone Pair | بازبینی |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- بدون رمز در LLD.
+LLD قابل‌اجرا: Interface/IP/VLAN، VPN/BGP/SD-WAN/HA، ماتریس Policy، Log/Backup؛ Traceability با R#؛ بازبینی با چک‌لیست.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- LLD دقیق.
-- ردیابی.
-- بازبینی همکار.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) LLD چه تفاوتی با HLD؟ *(پاسخ: 31-2-ت1)*
 
@@ -737,7 +733,7 @@ end
 
 **Q1.** Quick quiz (English): Why should every policy row reference a requirement? *(پاسخ: 31-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -745,127 +741,15 @@ end
 
 - *The LLD must contain exact values.* ← LLD باید مقادیر دقیق داشته باشد.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** LLD (اجرا نشده). **Evidence:** `02-design/capstone-lld.md`.
 
-### ۱۵) منابع
+### منابع
 
 - درس‌های ۱۵-۱ تا ۱۵-۶، ۲۱-۱
 
 <a id="l-31-3"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: LLD
-
-جدول Interface/Route/Policy با مقادیر دقیق؛ هر IP یک بار.
-
-**پرسش‌های مصاحبه**
-1. *Overlap؟* بازبینی.
-2. *Naming؟* قرارداد.
-3. *Review؟* همتا.
-
-### مثال حل‌شده: جدول Interface
-
-``` text
-Edge port1 203.0.113.2/29 WAN
-Edge port2 10.30.0.1/24 DMZ
-Int  port2 10.10.0.1/24 USERS
-```
-
-بازبینی: هیچ دو Interface هم‌پوشان نباشند؛ Gateway داخل همان Subnet.
-
-### تکمیل عمیق: LLD دقیق — هر IP یک‌بار، هر Policy یک دلیل
-
-#### چرا؟
-
-LLD دستورالعمل ساختن است. اگر دو نفر با آن بسازند باید دقیقاً یک شبکه به دست آید. اگر در LLD «تقریباً» بنویسید، در Lab «حدس» خواهید زد.
-
-#### جدول Interface
-
-``` text
-Device  Port   Zone   IP              Notes
-Edge    port1  WAN    203.0.113.2/29  GW 203.0.113.1
-Edge    port2  DMZ    10.30.0.1/24
-Edge    port3  LINK   10.99.0.1/30
-Int     port1  LINK   10.99.0.2/30
-Int     port2  USERS  10.10.0.1/24
-Int     port3  SRV    10.20.0.1/24
-Int     port4  MGMT   10.50.0.1/24
-```
-
-#### بررسی هم‌پوشانی
-
-هر Subnet را با بقیه مقایسه کنید. روش: ابتدا آدرس شبکه و آدرس پخش (Broadcast) هر بلوک را بنویسید.
-
-``` text
-10.10.0.0/24 -> 10.10.0.0 - 10.10.0.255
-10.20.0.0/24 -> 10.20.0.0 - 10.20.0.255
-No overlap
-```
-
-#### جدول Route
-
-``` text
-Int : 0.0.0.0/0 via 10.99.0.1 (port1)
-Edge: 10.10.0.0/24 via 10.99.0.2 ; 10.20.0.0/24 via 10.99.0.2 ; 10.50.0.0/24 via 10.99.0.2
-```
-
-#### جدول Policy با دلیل
-
-| ID | مسیر | سرویس | دلیل (نیازمندی) |
-|---|---|---|---|
-| 10 | USERS→SRV | HTTPS,SMB | R4 |
-| 20 | USERS→LINK | HTTP,HTTPS,DNS | R1 |
-| 30 | WAN→DMZ (VIP) | HTTPS | R2 |
-| 90 | any→any | ALL deny log | پیش‌فرض امن |
-
-#### مثال ساده — پیدا کردن خطا در LLD
-
-دو بار 10.20.0.1 به دو Interface داده شده؛ شناسایی با جستجوی IP در جدول. رفع: یکی از آن‌ها را تغییر دهید.
-
-#### مثال متوسط — Route خلاصه
-
-``` text
-10.10.0.0/24, 10.20.0.0/24 can be summarized to 10.10.0.0/15? NO (covers 10.10-10.11)
-Keep separate routes unless a contiguous reserved block exists
-```
-
-خلاصه‌سازی فقط وقتی مجاز است که بلوک پیوسته و رزرو شده باشد.
-
-#### مثال سخت — تناقض NAT
-
-در LLD ننوشته‌اید NAT در کدام فایروال است. در ساخت هر دو NAT زدند؛ ردیابی Log سخت شد. قاعده: هر جریان باید یک «نقطه‌ی NAT» مشخص داشته باشد.
-
-#### Lab
-
-جدول‌های بالا را در یک فایل بنویسید و با اسکریپت ساده هم‌پوشانی را بررسی کنید (مثلاً با پایتون `ipaddress`).
-
-``` text
-python3 -c "import ipaddress as i; print(i.ip_network('10.10.0.0/24').overlaps(i.ip_network('10.20.0.0/24')))"
-```
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| IP تکراری | LLD بی‌کنترل | اسکریپت بررسی |
-| Route برگشت گم | جدول ناقص | افزودن Route |
-| Policy بی‌دلیل | نبود Traceability | ستون Requirement |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا ستون «دلیل» برای Policy؟** حذف یا بازبینی بعدی.
-**۲. هم‌پوشانی IP چه می‌کند؟** مسیر و NAT خراب.
-**۳. نقطه‌ی NAT؟** یکی برای هر جریان.
-
-#### English Corner
-
-- *Each IP address is assigned exactly once.*
-- Q: How do you detect overlapping subnets?
 
 ## درس 31-3 — Capstone II: ساخت مرحله‌ای (S1–S6) با Checkpoint، دستورهای واقعی، آزمون هر مرحله و Rollback
 
@@ -873,143 +757,132 @@ python3 -c "import ipaddress as i; print(i.ip_network('10.10.0.0/24').overlaps(i
 
 > **وضعیت:** پروژه‌ی Capstone (HQ + ۳ شعبه)؛ FortiOS 7.0.3 و Cisco (بوت‌نشده)؛ بدون شاهد واقعی «اجرا نشده»؛ مثال‌ها آموزشی‌اند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Build را در شش مرحله با Checkpoint، Backup و Tag انجام دهد.
-2. برای هر مرحله دستورهای پیاده‌سازی، آزمون‌های مثبت/منفی و معیار Go/No-Go را بنویسد و اجرا کند.
-3. Rollback یک مرحله را اثبات و زمان آن را ثبت کند.
-4. تغییرات را با Git و CHG ثبت کند.
-5. خطاهای رایج هر مرحله را بشناسد.
+1. ساخت را به مراحل S1–S6 با Checkpoint و Rollback بشکنید.
+2. در هر مرحله آزمون ورود/خروج (Entry/Exit Criteria) تعریف کنید.
+3. ترتیب منطقی (پایه ⇒ HA ⇒ Overlay ⇒ SD-WAN ⇒ هویت/UTM ⇒ عملیات) را رعایت کنید.
+4. Evidence هر مرحله را جمع کنید.
+5. Backup پیش از هر مرحله بگیرید و تغییرات را ثبت کنید.
+6. خطاهای رایج هر مرحله را بشناسید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا ساخت مرحله‌ای؟** ساختن همه‌چیز یک‌جا مثل ساختمان بدون بازرسی طبقه‌ای است؛ اگر پایه خراب باشد بعد از طبقه‌ی ششم می‌فهمید. هر مرحله (S1 تا S6) ساخته، آزمون و ثبت می‌شود؛ Backup قبل از هر مرحله برای Rollback.
+ساختمان را از سقف شروع نمی‌کنند. ساخت مرحله‌ای (S1–S6) هر لایه را قبل از لایه‌ی بعد ثابت می‌کند؛ اگر در S4 مشکل پیدا شود، می‌دانید S1–S3 سالم‌اند و سطح عیب‌یابی کوچک است. ساخت یک‌جا (Big Bang) یعنی ۲۰ مجهول هم‌زمان.
 
-**جمع‌بندی اصلی درس:**
+### مراحل
 
-ساخت یک‌جا یعنی وقتی خرابی دیده شد نمی‌دانید از کدام لایه است. ساخت مرحله‌ای (از پایین به بالا) و آزمون پس از هر مرحله علت را محلی نگه می‌دارد. اصل: **هیچ لایه‌ای بالا ساخته نمی‌شود تا لایه‌ی پایین‌تر آزمون نشده باشد.**
-
-### ۳) توضیح عمیق فنی
-
-#### جدول مراحل
-
-| مرحله | کار | آزمون مثبت | آزمون منفی | Go/No-Go |
-|---|---|---|---|---|
-| S1 | L2/L3: VLAN، IP، SVI، DHCP/DNS/NTP | ping محلی، DHCP، NTP sync | VLAN Guest به LAN دسترسی ندارد | همه‌ی ping/DHCP OK |
-| S2 | Routing: OSPF/BGP، Default | Route بین سایت‌ها | Prefix غیرمجاز رد | Route Count مطابق |
-| S3 | Firewall: Zone، Policy، NAT، UTM پایه | Matrix مثبت | Guest→Internal block | همه‌ی T مثبت/منفی |
-| S4 | IPsec/SD-WAN/Breakout | Tunnel Up، ERP OK | بدون Policy ⇒ block | Failover ≤ هدف |
-| S5 | HA | Cluster، Failover | Split-brain کنترل‌شده Lab | Sync/Checksum |
-| S6 | Monitoring، Log، Backup، Hardening | Alert، Restore | دسترسی غیرمجاز مدیریتی | Restore زمان‌سنجی |
-
-#### دستورهای نمونه (S2 — روی Cisco و FortiGate)
-
-``` text
-! Cisco
-router ospf 1
- router-id 1.1.1.1
- network 10.255.0.0 0.0.255.255 area 0
- passive-interface default
- no passive-interface GigabitEthernet0/1
-show ip ospf neighbor ; show ip route ospf
-```
-
-``` text
-# FortiGate
-config router bgp
-    set as 65000
-    config neighbor-range
-        edit 1
-            set prefix 10.250.0.0 255.255.0.0
-            set neighbor-group "SPOKES"
-        next
-    end
-end
-get router info bgp summary
-```
-
-#### Checkpoint
-
-``` text
-backup config -> git add/commit -m "S2 done" -> git tag s2 -> run tests T-S2 -> save evidence E-S2 -> record time
-```
-
-#### Rollback
-
-``` text
-restore config from tag s1 -> verify S1 tests -> record rollback duration (target <= 15 min)
-```
-
-#### خطاهای رایج
-
-S1: Native/VLAN غایب؛ S2: MTU/Timer/Passive؛ S3: Policy any، Implicit rules؛ S4: Selector/MTU/Next-hop؛ S5: Heartbeat/Firmware؛ S6: Secret در Backup.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| ترتیب | پایین به بالا |
-| Checkpoint | Tag+Backup |
-| Rollback | ≤ ۱۵ دقیقه |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — Checkpoint
-
-S1: ping هم‌سایه‌ها؛ S2: Route؛ S3: Lookup+curl؛ S4: nmap؛ S5: Tunnel؛ S6: Log+Backup.
-
-#### مثال متوسط — S3 با آزمون منفی
-
-``` text
-diagnose firewall iprope lookup 10.10.0.5 40000 8.8.8.8 53 udp port2      # policy 20
-diagnose firewall iprope lookup 10.10.0.5 40000 10.50.0.20 22 tcp port2   # deny
-```
-
-#### مثال سخت — شکست S5
-
-Tunnel Up ولی ping نه: شمارنده، Route، Policy دوطرفه، MTU.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** S1: VLAN 10/20/30، SVI، DHCP؛ ping محلی؛ tag s1.
-
-**متوسط (تحلیل):** S3 شکست: Policy Guest→Servers باز بود. آزمون منفی T2 شکست؛ Rollback به s2؛ اصلاح Source؛ تکرار S3؛ زمان Rollback ۹ دقیقه.
-
-**سخت (RCA چندمرحله‌ای):** S4: Tunnel Up ولی ERP کند. شواهد: ping DF 1372 شکست؛ Retransmission. علت: MTU. رفع: MSS Clamp/MTU؛ همچنین Failover 14 s (>10 s) ⇒ BFD؛ دو علت جدا با دو شاهد؛ هر کدام رفع و اندازه‌گیری؛ Evidence E-S4a/b.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-execute backup config sftp stage-s3.conf 192.168.90.10 backup-user <PASSWORD>
-git add -A && git commit -m "S3 firewall done" && git tag s3
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Evidence هر مرحله.
-- زمان Rollback ثبت.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| مرحله | محتوا | Checkpoint |
 |---|---|---|
-| مرحله خراب | Test | Rollback به Tag قبلی |
-| Evidence ناقص | Index | تکمیل |
+| S1 پایه | Interface، IP، Zone، Route، NTP، DNS، Hardening Mgmt | ping، `allowaccess`، Mgmt فقط از Mgmt |
+| S2 HA | Cluster Hub، ha-mgmt، Failover | `get system ha status`، Reboot Test |
+| S3 Overlay | IPsec، BGP، ADVPN | `ike gateway`، `bgp summary`، Failover Hub |
+| S4 SD-WAN/Breakout | Health-check، Rule، SaaS | `sdwan health-check`، Brownout |
+| S5 هویت/UTM/Remote | LDAP/RADIUS/MFA، Profiles، Dial-up | آزمون ورود/رد، EICAR/Web |
+| S6 عملیات | Syslog، SNMP، Backup، Runbook | Log می‌رسد، Alert، Restore |
 
-### ۱۰) نکات امنیتی
+### قاعده‌ی هر مرحله
 
-- Secret پاک.
-- CHG برای هر مرحله.
+``` text
+Entry : previous checkpoint passed + backup taken + change approved
+Do    : implement only this stage
+Test  : checkpoint tests (positive and negative)
+Exit  : evidence stored; backup after; go/no-go for next
+Rollback: restore backup of this stage entry
+```
 
-### ۱۱) جمع‌بندی مفهومی
+### S1 — پایه
 
-- مرحله‌ای + Checkpoint.
-- آزمون مثبت/منفی.
-- Rollback اثبات‌شده.
+``` text
+config system interface ... config router static ... config system ntp ... config system dns ...
+```
 
-### ۱۲) تمرین و ارزیابی
+Checkpoint:
+
+1. هر Interface IP صحیح (`get system interface physical`).
+2. Default Route و DNS (`execute ping 8.8.8.8` و `execute ping google.com`).
+3. مدیریت فقط از Mgmt (آزمون منفی از WAN/Users).
+4. NTP sync (`diagnose sys ntp status`).
+
+### S2 — HA
+
+Checkpoint: دو عضو، checksum برابر، Reboot Primary ⇒ Failover < 10 ثانیه (R2)، Session Pickup.
+
+### S3 — Overlay
+
+Checkpoint: تونل Hub↔شعبه A/B/C (`diagnose vpn ike gateway list`)، BGP Established (`get router info bgp summary`)، Prefix شعب در Hub، ERP قابل‌دسترس، قطع Hub1 ⇒ Hub2 (BFD) در زمان هدف.
+
+### S4 — SD-WAN و Breakout
+
+Checkpoint: `diagnose sys sdwan health-check` alive، Rule Teams به ISP محلی، قطع ISP1 ⇒ Failover < 5s، Brownout (Loss 5٪) ⇒ مسیر عوض.
+
+### S5 — هویت، UTM، دسترسی راه‌دور
+
+Checkpoint: LDAP Test، گروه‌ها، MFA Dial-up (ورود بدون OTP رد)، Web Filter بلاک، آزمون ایمن AV (EICAR با لایسنس؛ بدون آن File Filter)، Guest→Internal filtered (nmap).
+
+### S6 — عملیات
+
+Checkpoint: Log TLS به rsyslog، Retention ۱۸۰ روز (محاسبه)، SNMPv3 + Alert، Backup خودکار + Restore Lab زمان‌سنجی (R6).
+
+### Backup/Rollback هر مرحله
+
+``` text
+execute backup config tftp <name>-S<N>-pre.conf <server> <password>
+# after exit
+execute backup config tftp <name>-S<N>-post.conf <server> <password>
+```
+
+Rollback = Restore فایل «pre» همان مرحله.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Checkpoint S1
+
+ping GW، DNS، NTP OK؛ آزمون منفی: SSH از WAN Timeout. Exit؛ Backup post.
+
+#### مثال متوسط — S3 شکست
+
+BGP Active. بررسی: Loopback Reachability ندارد (Static نبود). اضافه کردن Route Loopback روی تونل؛ BGP Established. علت در S3 است؛ S1/S2 سالم؛ سطح عیب‌یابی کوچک.
+
+#### مثال متوسط — Rollback
+
+در S4 SD-WAN Policy قدیمی را حذف کرد و اینترنت قطع شد. Rollback به S4-pre ۵ دقیقه؛ سپس انتقال صحیح Policy به Zone.
+
+#### مثال سخت — وابستگی بین مراحل
+
+S5 Policy گروهی (LDAP) کار نمی‌کرد چون DNS در S1 به DC اشاره نداشت؛ خطا در S5 دیده شد ولی ریشه در S1. درس: Checkpoint S1 باید «DNS داخلی حل می‌شود» را شامل شود؛ در بازبینی Checkpointها وابستگی‌های پنهان را اضافه کنید.
+
+#### مثال سخت — Big Bang
+
+تیم همه‌چیز را یک شب ساخت؛ ۱۴ خطا هم‌زمان؛ ۳ روز عیب‌یابی. مقایسه: S1–S6 ۶ روز ولی هر روز Checkpoint و خطای محدود. زمان کل مشابه، ریسک کمتر، Evidence بیشتر.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. S1 و S2 را اجرا و Checkpoint.
+2. S3 با Failover.
+3. Rollback یک مرحله.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| خطا در مرحله‌ی بالاتر | وابستگی پایین | Checkpoint |
+| Rollback شکست | Backup نیست | قبل از هر مرحله |
+| زمان طولانی | Big Bang | مرحله‌ای |
+
+### نکات امنیتی
+
+هر مرحله با Hardening؛ Secret در Vault؛ Backup رمزگذاری‌شده؛ ثبت تغییر.
+
+### جمع‌بندی
+
+ساخت S1–S6 با Entry/Exit، Checkpoint (مثبت/منفی)، Backup/Rollback هر مرحله؛ وابستگی‌ها را در Checkpoint بیاورید.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا ترتیب پایین به بالا؟ *(پاسخ: 31-3-ت1)*
 
@@ -1025,7 +898,7 @@ git add -A && git commit -m "S3 firewall done" && git tag s3
 
 **Q1.** Quick quiz (English): Why build and test in stages from the bottom layer upward? *(پاسخ: 31-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1033,108 +906,16 @@ git add -A && git commit -m "S3 firewall done" && git tag s3
 
 - *Do not build the next layer until the current one is verified.* ← تا لایه‌ی فعلی تأیید نشده لایه‌ی بعد را نسازید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Build S1–S6. **Evidence:** `03-ops/capstone-build.md`.
 
-### ۱۵) منابع
+### منابع
 
 - درس ۳۱-۲
 - Google SRE Book (Release engineering)
 
 <a id="l-31-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: ساخت مرحله‌ای
-
-S1–S6 با Checkpoint؛ هر مرحله Verify قبل از بعدی.
-
-**پرسش‌های مصاحبه**
-1. *Checkpoint؟* آزمون سریع.
-2. *Rollback؟* هر مرحله.
-3. *Evidence؟* ثبت.
-
-### مثال حل‌شده: Checkpoint S2
-
-پس از ساخت Edge: ping به GW، Lookup Policy، `get router info routing-table all`؛ فقط در صورت موفقیت به S3.
-
-### تکمیل عمیق: ساخت مرحله‌ای S1–S6 با Checkpoint و Rollback
-
-#### چرا؟
-
-ساختن همه‌چیز یک‌جا مثل چیدن یک ساختمان بدون بازرسی طبقه‌ای است؛ اگر پایه خراب باشد، بعد از طبقه‌ی ششم می‌فهمید. روش درست: هر مرحله ساخته، آزمون و ثبت می‌شود، سپس مرحله‌ی بعد.
-
-#### مراحل
-
-| مرحله | کار | Checkpoint |
-|---|---|---|
-| S1 | Interface و آدرس‌دهی | ping هم‌سایه‌ها |
-| S2 | Routing | `get router info routing-table all` |
-| S3 | Policy پایه و NAT | Lookup + curl |
-| S4 | DMZ و VIP | nmap از اینترنت |
-| S5 | VPN/SD-WAN | Tunnel Up + ping |
-| S6 | Log/Monitoring/Backup | Log رسیده + Backup |
-
-#### مثال ساده — S1
-
-``` text
-config system interface
- edit port2
-  set ip 10.10.0.1 255.255.255.0
-  set allowaccess ping
- next
-end
-execute ping 10.10.0.5
-```
-
-Checkpoint: پاسخ ping. Rollback: `unset ip` یا بازگرداندن Config.
-
-#### مثال متوسط — S3 با بررسی منفی
-
-``` text
-diagnose firewall iprope lookup 10.10.0.5 40000 8.8.8.8 53 udp port2   # expect policy 20
-diagnose firewall iprope lookup 10.10.0.5 40000 10.50.0.20 22 tcp port2 # expect deny
-```
-
-هر دو باید جواب مورد انتظار را بدهند؛ آزمون منفی نشان می‌دهد مرز امنیتی کار می‌کند.
-
-#### مثال سخت — شکست Checkpoint S5
-
-Tunnel Up ولی ping نمی‌رود. روش: ۱) شمارنده‌ی enc/dec ۲) Route ۳) Policy دوطرفه ۴) MTU. فرض: Policy یک‌طرفه. رفع: Policy جهت مقابل؛ تکرار Checkpoint.
-
-#### Rollback مرحله‌ای
-
-``` text
-execute backup config tftp S3-ok.conf 10.50.0.30   # before S4
-# if S4 fails:
-execute restore config tftp S3-ok.conf 10.50.0.30
-```
-
-#### Lab
-
-هر مرحله را با Snapshot ماشین مجازی قبل از شروع ثبت کنید؛ شکست عمدی در S4 و بازگشت.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| S2 درست ولی S3 ping ندارد | Policy/RPF | Lookup/Debug Flow |
-| S4 از اینترنت نمی‌رسد | VIP/Route ISP | بررسی VIP و Policy |
-| S5 Tunnel Down | Proposal/PSK | Debug IKE |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا مرحله‌ای؟** کوتاه‌کردن حلقه‌ی خطا.
-**۲. چرا Backup قبل از مرحله؟** Rollback سریع.
-**۳. آزمون منفی چرا؟** اثبات امنیت.
-
-#### English Corner
-
-- *Build in small steps and verify each one.*
-- Q: What is the purpose of a checkpoint?
 
 ## درس 31-4 — Capstone II: آزمون کامل، Evidence Index نمونه‌ی پر، تحلیل سه خرابی و Sign-off
 
