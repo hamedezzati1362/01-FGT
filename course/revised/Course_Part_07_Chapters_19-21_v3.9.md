@@ -245,6 +245,22 @@ diagnose vpn ike gateway list
 
 - Fortinet Docs: [ADVPN and shortcut paths](https://docs.fortinet.com/document/fortigate/7.0.9/administration-guide/985659/advpn-and-shortcut-paths)، [ADVPN with BGP](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/820072/advpn-with-bgp-as-the-routing-protocol)، [Enhanced BGP next hop updates and ADVPN shortcut override 7.0.4](https://docs.fortinet.com/document/fortigate/7.0.0/new-features/245878/enhanced-bgp-next-hop-updates-and-advpn-shortcut-override-7-0-4).
 
+### تعمیق: انتخاب Topology با عدد
+
+**۱۰ شعبه:** Full-mesh = N(N-1)/2 = 45 Tunnel؛ Hub-and-Spoke = 10 Tunnel.
+
+``` text
+Full mesh tunnels = N*(N-1)/2 = 10*9/2 = 45
+Hub&Spoke tunnels = N = 10
+```
+
+ADVPN: Spoke به Spoke فقط در صورت نیاز Shortcut می‌سازد؛ ترکیب ارزان Hub-Spoke و کارایی Mesh.
+
+**پرسش‌های مصاحبه**
+1. *Hub نقطه‌ی شکست؟* دو Hub.
+2. *Routing پویا چرا؟* Failover و مقیاس.
+3. *ADVPN نیازها؟* IKEv2، Routing، تنظیم Hub.
+
 ## درس 19-1 — طراحی آدرس‌دهی چندشعبه: IP Plan، Summarization با محاسبه‌ی باینری، Tunnel IP و ظرفیت Hub
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۲-۲ (VLSM)، ۹-۰ · ≈ 8 ساعت**
@@ -431,6 +447,21 @@ Overlap در موارد: شرکت ادغام‌شده با همان 192.168.1.0/
 - Fortinet Docs: Static routes (blackhole)؛ FortiOS 7.0 Administration Guide
 
 <a id="l-19-2"></a>
+
+### تعمیق: IP Plan و Summarization
+
+``` text
+HQ      10.0.0.0/16
+Branch1 10.1.0.0/24 ... Branch50 10.50.0.0/24
+Summary at hub: 10.0.0.0/10 would cover 10.0-63 (only if reserved)
+```
+
+قاعده: هر شعبه یک /24 رزرو + فضای رشد؛ Summary فقط اگر بلوک پیوسته و رزرو شده باشد؛ وگرنه Blackhole.
+
+**پرسش‌های مصاحبه**
+1. *Overlap؟* مشکل IPsec/NAT.
+2. *Summary خطر؟* مسیر ناموجود.
+3. *Loopback ID؟* ثبات Router-ID.
 
 ## درس 19-2 — Tunnelهای Hub–Spoke و OSPF روی Tunnel: طراحی، Network Type، Cost، Convergence و عیب‌یابی
 
@@ -623,6 +654,35 @@ diagnose sniffer packet TO-SPOKE1 "proto 89" 4 20 l
 - Fortinet Docs: OSPF؛ IPsec VPN with dynamic routing (7.0)
 
 <a id="l-19-3"></a>
+
+### تعمیق: OSPF روی Tunnel
+
+``` text
+config router ospf
+ set router-id 1.1.1.1
+ config area
+  edit 0.0.0.0
+  end
+ config network
+  edit 1
+   set prefix 10.99.0.0 255.255.255.0
+  next
+ end
+ config ospf-interface
+  edit TO-SPOKE
+   set interface TO-SPOKE
+   set network-type point-to-multipoint
+  next
+ end
+end
+```
+
+Point-to-multipoint برای Hub بدون انتخاب DR؛ Cost را برای ترجیح Hub اصلی تنظیم کنید. **اثبات:** `get router info ospf neighbor` (Full).
+
+**پرسش‌های مصاحبه**
+1. *MTU mismatch؟* گیر در ExStart.
+2. *Hello/Dead؟* 10/40 پیش‌فرض.
+3. *چرا P2MP؟* بدون DR.
 
 ## درس 19-3 — BGP روی FortiGate برای Overlay: iBGP، Route Reflector، Next-hop، Local-pref، Failover و Filtering
 
@@ -819,6 +879,29 @@ get router info bgp neighbors 10.250.1.2 received-routes
 - RFC 4271، RFC 4456 (Route Reflection)، RFC 7454
 
 <a id="l-19-4"></a>
+
+### تعمیق: BGP Overlay
+
+``` text
+config router bgp
+ set as 65000
+ set router-id 1.1.1.1
+ config neighbor
+  edit 10.99.0.2
+   set remote-as 65000
+   set route-reflector-client enable
+   set next-hop-self enable
+  next
+ end
+end
+```
+
+Metric: Local-pref بالاتر ⇒ ترجیح خروج. **اثبات:** `get router info bgp summary` (State/PfxRcd عدد).
+
+**پرسش‌های مصاحبه**
+1. *iBGP Full mesh؟* RR حل می‌کند.
+2. *next-hop-self؟* برای Peerهای پشت Tunnel.
+3. *Local-pref در برابر MED؟* داخل AS در برابر بین AS.
 
 ## درس 19-4 — Local Breakout و Policy اینترنت شعبه: Backhaul در برابر Breakout، Split مسیر، SaaS، UTM و Failover
 
@@ -1021,6 +1104,21 @@ get router info routing-table details 10.0.5.20
 
 <a id="l-19-5"></a>
 
+### تعمیق: Backhaul در برابر Breakout
+
+| معیار | Backhaul به HQ | Local Breakout |
+|---|---|---|
+| تأخیر SaaS | بیشتر | کمتر |
+| کنترل امنیتی | متمرکز | هر شعبه UTM |
+| هزینه‌ی WAN HQ | بالا | پایین |
+
+راه میانی: SaaS Breakout محلی، بقیه Backhaul (SD-WAN Rule).
+
+**پرسش‌های مصاحبه**
+1. *Split Tunnel خطر؟* دور زدن امنیت.
+2. *Policy شعبه؟* حداقل UTM.
+3. *DNS؟* منطبق با مسیر.
+
 ## درس 19-5 — ADVPN در عمل: ساخت، فرایند Shortcut، BGP/OSPF، Policy، محدودیت‌ها و عیب‌یابی
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰، ۱۹-۳، ۱۸-۰ · ≈ 8 ساعت**
@@ -1197,6 +1295,22 @@ get router info bgp network
 
 <a id="l-19-6"></a>
 
+### تعمیق: فرایند Shortcut
+
+۱) Spoke A→B ترافیک از Hub ⇒ ۲) Hub به A و B Shortcut Offer ⇒ ۳) A و B Tunnel مستقیم ⇒ ۴) Routing به Shortcut.
+
+``` text
+diagnose vpn ike gateway list
+get router info routing-table all
+```
+
+محدودیت: NAT دوگانه می‌تواند مانع شود؛ UDP/4500 و پشتیبانی NAT-T.
+
+**پرسش‌های مصاحبه**
+1. *ADVPN مقیاس؟* کاهش بار Hub.
+2. *Shortcut زمان؟* چند ثانیه.
+3. *Policy؟* Spoke↔Spoke باید مجاز باشد.
+
 ## درس 19-6 — آزمون معماری ۴: چندشعبه با Failover — صورت مسئله، کلید پاسخ و Rubric
 
 **فصل 19 · بازنویسی عمیق · پیش‌نیاز: ۱۹-۰ تا ۱۹-۵ · ≈ 8 ساعت**
@@ -1319,6 +1433,15 @@ diagnose debug flow trace start 10
 
 - درس‌های ۱۹-۱ تا ۱۹-۵
 - RFC 4271، RFC 2328
+
+### تعمیق: Rubric آزمون چندشعبه
+
+خرابی‌های تزریقی: قطع Hub اصلی، Route ناقص، MTU. شاخص: Failover < مقدار هدف، Evidence با `get router info`، گزارش RCA.
+
+**پرسش‌های مصاحبه**
+1. *Failover زمان؟* BFD/Dead timer.
+2. *چگونه اثبات؟* قطع کنترل‌شده و ping مداوم.
+3. *ثبت؟* Timeline.
 
 ## پاسخ‌های فصل 19
 

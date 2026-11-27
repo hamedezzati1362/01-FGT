@@ -291,6 +291,25 @@ get firewall ssl-ssh-profile
 - Fortinet Docs: [Inspection modes](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/721410/inspection-modes)، [Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison)، [SSL & SSH Inspection](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/929997/ssl-ssh-inspection)، [Inspection mode per policy](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/366651/inspection-mode-per-policy).
 - RFC 8446 — TLS 1.3؛ RFC 6066 (SNI)؛ RFC 5280 (X.509 PKI).
 
+### تعمیق: انتخاب Flow یا Proxy با معیار واقعی
+
+**سناریو.** شعبه با ۱ Gbps و نیاز به Web Filter با Category + Antivirus.
+
+| نیاز | Flow | Proxy |
+|---|---|---|
+| حداکثر سرعت | بهتر | کندتر |
+| قابلیت‌های عمیق (مثلاً بعضی اسکن‌ها) | محدودتر | کامل‌تر |
+| NPU Offload | امکان | معمولاً خیر |
+
+قانون عملی: پیش‌فرض Flow؛ Proxy فقط اگر قابلیت لازم آن را بخواهد (طبق جدول قابلیت‌های مستند Fortinet برای نسخه).
+
+**زنجیره‌ی اعتماد TLS:** مرورگر باید CA فایروال را بپذیرد؛ بدون نصب CA هشدار «Not Secure». استثنا برای بانکداری/پزشکی (Exemption) از نظر حریم خصوصی.
+
+**پرسش‌های مصاحبه**
+1. *چرا SSL Inspection بدون CA خطا می‌دهد؟* گواهی ساختگی اعتماد ندارد.
+2. *Certificate Pinning؟* برنامه گواهی را قفل می‌کند؛ Exemption لازم.
+3. *هزینه CPU؟* رمزگشایی/رمزگذاری دوباره.
+
 ## درس 16-1 — نقشه‌ی UTM: Security Profileها، لایسنس FortiGuard و ماتریس قابلیت
 
 **فصل 16 · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰، ۱۲-۰، ۱۳-۱ · ≈ 6 ساعت**
@@ -438,6 +457,27 @@ show webfilter profile
 - [Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison).
 
 <a id="l-16-2"></a>
+
+### تعمیق: ماتریس لایسنس قبل از وعده‌دادن به مدیر
+
+**قاعده:** هیچ قابلیت UTM قبل از تأیید لایسنس FortiGuard «فعال» اعلام نمی‌شود.
+
+| قابلیت | به لایسنس نیاز دارد؟ |
+|---|---|
+| Web Filter Category | بله (FortiGuard Web Filtering) |
+| Static URL Filter | خیر |
+| Antivirus | بله (AV) |
+| IPS Signature به‌روز | بله |
+| Application Control | بله |
+
+**بررسی:** `diagnose debug rating` وضعیت سرور رتبه‌بندی؛ در GUI صفحه FortiGuard.
+
+**نسخه‌ی Lab:** FortiGate VM بدون لایسنس ⇒ فقط Static URL و بخش‌های محلی؛ بقیه Needs-License.
+
+**پرسش‌های مصاحبه**
+1. *تفاوت Static و Category؟* دستی در برابر پایگاه داده‌ی ابری.
+2. *لایسنس منقضی چه می‌شود؟* به‌روزرسانی متوقف؛ تنظیم فعلی ممکن است کار کند ولی Category جدید نه.
+3. *چرا Evidence لایسنس؟* ادعای ظرفیت بدون آن خطاست.
 
 ## درس 16-2 — Web Filter و DNS Filter: Static URL، Category، FQDN و عیب‌یابی HTTPS
 
@@ -611,6 +651,33 @@ end
 
 <a id="l-16-3"></a>
 
+### تعمیق: Web Filter برای HTTPS بدون Inspection
+
+**مسئله:** URL کامل در HTTPS رمز است؛ بدون SSL Inspection فقط **SNI/Domain** دیده می‌شود.
+
+``` text
+config webfilter urlfilter
+ edit 1
+  config entries
+   edit 1
+    set url "*.example-bad.com"
+    set type wildcard
+    set action block
+   next
+  end
+ next
+end
+```
+
+**آزمون:** مرورگر به https://www.example-bad.com ⇒ صفحه‌ی Block (Replacement Message)؛ Log `utmaction=blocked`.
+
+**DNS Filter** مستقل از TLS: پاسخ DNS را بر اساس Category تغییر/مسدود می‌کند؛ برای HTTPS بدون Inspection روش مناسب.
+
+**پرسش‌های مصاحبه**
+1. *چرا مسیر کامل دیده نمی‌شود؟* رمزگذاری TLS.
+2. *DoH مشکل؟* DNS Filter دور می‌خورد؛ بلاک DoH Resolverها.
+3. *Block Page روی HTTPS؟* نیازمند Inspection یا ارسال Reset.
+
 ## درس 16-3 — Antivirus و File Filter: سازوکار، حالت‌ها و تست امن
 
 **فصل ۱۶ · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰، ۱۶-۲ · ≈ ۶ ساعت**
@@ -759,6 +826,23 @@ end
 - Fortinet Docs: [Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison)؛ EICAR (eicar.org).
 
 <a id="l-16-4"></a>
+
+### تعمیق: تست امن AV با EICAR و تفسیر
+
+``` text
+curl -O https://secure.eicar.org/eicar.com.txt
+```
+
+فایل EICAR بی‌خطر است و همه‌ی AVها آن را می‌شناسند. نتیجه‌ی مورد انتظار: Block + Log `virus=EICAR_TEST_FILE`.
+
+**حالت‌ها:** Flow-based (سریع‌تر، امضای پایه) در برابر Proxy-based (بافر کامل فایل). **File Filter** بر اساس نوع/پسوند مستقل از امضا است؛ مثلاً مسدودسازی exe از اینترنت.
+
+**محدودیت:** فایل رمزگذاری‌شده/بزرگ‌تر از Oversize Limit اسکن نمی‌شود؛ Policy برای Oversize را مشخص کنید.
+
+**پرسش‌های مصاحبه**
+1. *چرا EICAR؟* تست بی‌خطر.
+2. *فایل zip رمزدار؟* قابل اسکن نیست؛ Policy جدا.
+3. *AV در HTTPS؟* فقط با SSL Inspection.
 
 ## درس 16-4 — IPS، DoS Policy و Application Control: سازوکار، تنظیم و FP
 
@@ -916,6 +1000,34 @@ end
 
 <a id="l-16-5"></a>
 
+### تعمیق: تنظیم IPS با کاهش False Positive
+
+**روش:** ابتدا Monitor (Pass + Log)، دو هفته مشاهده، سپس Block برای امضاهای ایمن.
+
+``` text
+config ips sensor
+ edit "IPS-SRV"
+  config entries
+   edit 1
+    set severity high critical
+    set action block
+   next
+  end
+ next
+end
+```
+
+**DoS Policy:** `tcp_syn_flood threshold 2000 action block` برای محافظت VIP؛ آستانه را از Baseline ترافیک واقعی بگیرید (مثلاً Peak × 3).
+
+**Application Control:** مسدودسازی Category (مثل P2P) و محدودیت Shaper.
+
+**FP:** هر Block ناخواسته ⇒ Exemption مستند با مالک و تاریخ.
+
+**پرسش‌های مصاحبه**
+1. *چرا ابتدا Monitor؟* جلوگیری از قطع سرویس.
+2. *DoS بر چه چیزی؟* نرخ بسته/اتصال.
+3. *IPS روی ترافیک رمزی؟* فقط با Inspection.
+
 ## درس 16-5 — SSL Inspection عملی: ساخت CA، نصب، Exemption و آزمون
 
 **فصل ۱۶ · بازنویسی عمیق · پیش‌نیاز: ۱۶-۰ (مفاهیم TLS/CA)، ۱۶-۲ · ≈ ۶ ساعت**
@@ -1048,6 +1160,30 @@ end
 - Fortinet Docs: [SSL & SSH Inspection](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/929997/ssl-ssh-inspection)؛ OpenSSL s_client manual.
 
 <a id="l-16-6"></a>
+
+### تعمیق: ساخت CA و توزیع به کلاینت‌ها
+
+**گام‌ها**
+
+1. ساخت/ورود CA سازمانی (ترجیحاً Sub-CA از CA داخلی، نه Self-Signed پیش‌فرض).
+2. تنظیم Profile `deep-inspection` با همان CA.
+3. توزیع CA با GPO در Active Directory (Trusted Root Certification Authorities).
+4. Exemption برای دسته‌های حساس (Health, Finance).
+
+``` text
+certutil -dspublish -f corp-ca.cer RootCA
+gpupdate /force
+certutil -store Root | findstr Corp
+```
+
+**آزمون:** مرورگر به https://example.org ⇒ زنجیره باید به CA سازمان برسد؛ در Wireshark SNI قابل‌رؤیت.
+
+**اشتباه رایج:** نصب نکردن CA روی Android/Linux و Java Keystore؛ نتیجه خطای SSL در برنامه‌ها.
+
+**پرسش‌های مصاحبه**
+1. *چرا Sub-CA؟* ابطال و کنترل.
+2. *Pinning؟* Exemption.
+3. *مسائل حقوقی؟* اطلاع‌رسانی و سیاست حریم خصوصی.
 
 ## درس 16-6 — Performance UTM، اندازه‌گیری، عیب‌یابی و آزمون عملی فصل ۱۶
 
@@ -1187,6 +1323,32 @@ diagnose sys session stat
 ### ۱۵) منابع
 
 - Fortinet Docs: FortiOS 7.0 — Performance، Inspection modes؛ iperf3 documentation.
+
+### تعمیق: اندازه‌گیری هزینه‌ی UTM
+
+**روش:** Baseline بدون UTM ⇒ فعال‌سازی هر Profile به‌تنهایی ⇒ ثبت CPU و Throughput.
+
+``` text
+diagnose sys top 2 20
+get system performance status
+iperf3 -c 10.20.0.10 -P 8 -t 30
+```
+
+| حالت | Throughput | CPU |
+|---|---|---|
+| Baseline | مرجع | مرجع |
+| +AV | کمتر | بیشتر |
+| +IPS | کمتر | بیشتر |
+| +SSL Inspection | کمترین | بیشترین |
+
+(اعداد را از Lab خودتان ثبت کنید؛ هیچ عددی ثابت نیست.)
+
+**قاعده‌ی ظرفیت:** مقدار SSL Inspection را بر درصد ترافیک رمزشده (امروز ~۹۰٪) حساب کنید.
+
+**پرسش‌های مصاحبه**
+1. *چرا یکی‌یکی؟* تأثیر هر Profile جدا.
+2. *Offload NPU با UTM؟* کاهش می‌یابد.
+3. *بهینه‌سازی؟* Profile فقط روی Policyهای لازم.
 
 ## درس 16-7 — کارت قابلیت هر Security Profile: چه می‌بیند، چه نمی‌بیند، هزینه و راستی‌آزمایی
 
@@ -1398,6 +1560,28 @@ diagnose debug flow filter addr 192.168.10.5
 
 - Fortinet Docs: [Inspection mode feature comparison](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/922096/inspection-mode-feature-comparison)، FortiOS 7.0 Administration Guide — Security Profiles.
 - EICAR: www.eicar.org (فایل تست).
+
+### تعمیق: کارت ۱۰ پرسشی برای Web Filter (نمونه‌ی پر)
+
+| # | پرسش | پاسخ |
+|---|---|---|
+| 1 | چه می‌بیند؟ | URL/Category HTTP، SNI در HTTPS |
+| 2 | چه نمی‌بیند؟ | مسیر کامل HTTPS بدون Inspection |
+| 3 | لایسنس؟ | Category: بله؛ Static: خیر |
+| 4 | Inspection لازم؟ | برای URL کامل بله |
+| 5 | هزینه؟ | کم تا متوسط |
+| 6 | Bypass؟ | DoH، VPN، IP مستقیم |
+| 7 | Log؟ | utmaction، catdesc |
+| 8 | آزمون مثبت؟ | سایت Category مسدود |
+| 9 | آزمون منفی؟ | سایت مجاز باز می‌شود |
+| 10 | وضعیت | تأیید مستندی؛ اجرا نشده |
+
+همین قالب برای هر Profile تکمیل شود.
+
+**پرسش‌های مصاحبه**
+1. *چرا ستون «چه نمی‌بیند»؟* جلوگیری از اعتماد کاذب.
+2. *Bypass چرا؟* طراحی دفاع چندلایه.
+3. *وضعیت اجرا؟* صادقانه ثبت.
 
 ## پاسخ‌های فصل 16
 
@@ -1790,6 +1974,23 @@ diagnose debug disable
 - Fortinet Docs: [FSSO polling connector agent installation](https://docs.fortinet.com/document/fortigate/7.0.0/administration-guide/503764/fsso-polling-connector-agent-installation)، [FSSO](https://docs.fortinet.com/document/fortigate/7.0.8/administration-guide/450337)، [config user fsso-polling](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/516620/config-user-fsso-polling).
 - RFC 4511 (LDAP)، RFC 4120 (Kerberos)، RFC 2865 (RADIUS).
 
+### تعمیق: ردیابی یک ورود کاربر از پایه تا Policy
+
+**جریان LDAP + Group:** کاربر → FortiGate (Captive/VPN) → Bind با حساب سرویس → Search کاربر در Base DN → خواندن memberOf → تطبیق با User Group → Policy.
+
+``` text
+Base DN : DC=corp,DC=local
+Filter  : (sAMAccountName=ali)
+Group   : CN=VPN-Users,OU=Groups,DC=corp,DC=local
+```
+
+**Kerberos در FSSO:** DC رویداد 4768/4769 را ثبت می‌کند؛ Collector آن را می‌خواند و IP↔User را به FortiGate می‌دهد.
+
+**پرسش‌های مصاحبه**
+1. *چرا حساب سرویس؟* Bind بدون کاربر انسانی.
+2. *RADIUS یا LDAP؟* RADIUS برای VPN/Wi-Fi/MFA؛ LDAP برای جستجوی دایرکتوری.
+3. *نقطه‌ی شکست؟* DNS، ساعت (Kerberos ±5 دقیقه)، پورت 389/636.
+
 ## درس 17-1 — آماده‌سازی Lab هویت: Active Directory، DNS، OU، گروه و حساب سرویس روی Windows Server
 
 **فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، Golden_W2025_Runbook · ≈ 6 ساعت**
@@ -1928,6 +2129,26 @@ Get-ADUser svc-fgt | Select DistinguishedName
 - `phase0a/Golden_W2025_Runbook.md`.
 
 <a id="l-17-2"></a>
+
+### تعمیق: چک‌لیست Lab و آزمون سلامت AD
+
+``` text
+dcdiag /v
+repadmin /replsummary
+nslookup -type=SRV _ldap._tcp.corp.local
+w32tm /query /status
+```
+
+نتیجه‌ی مورد انتظار: همه‌ی تست‌های dcdiag `passed`، SRV ریکورد برگردد، ساعت با تفاوت کمتر از ۵ دقیقه.
+
+**ساخت OU/گروه:** `OU=Groups`، گروه `VPN-Users`، حساب `svc-fgt-ldap` با کمترین مجوز (فقط خواندن).
+
+**اشتباهات رایج:** حساب سرویس Domain Admin، DNS داخلی ناقص، ساعت خارج از تلورانس.
+
+**پرسش‌های مصاحبه**
+1. *چرا کمترین مجوز؟* حمله به حساب Bind.
+2. *LDAPS؟* 636 با گواهی.
+3. *مشکل ساعت؟* Kerberos شکست.
 
 ## درس 17-2 — LDAP در FortiGate و Policy بر اساس گروه: Bind، Search، User Group و آزمون
 
@@ -2083,6 +2304,31 @@ diagnose test authserver ldap LDAP-AD u.fin1 <PASSWORD>
 
 <a id="l-17-3"></a>
 
+### تعمیق: عیب‌یابی Bind و Group
+
+``` text
+config user ldap
+ edit "AD"
+  set server "10.20.0.5"
+  set cnid "sAMAccountName"
+  set dn "DC=corp,DC=local"
+  set type regular
+  set username "CN=svc-fgt-ldap,OU=Service,DC=corp,DC=local"
+  set secure ldaps
+ next
+end
+diagnose test authserver ldap AD ali Pass123
+```
+
+نتایج: `authenticate 'ali' against 'AD' succeeded` یا خطا. علل رایج خطا: DN اشتباه، گواهی LDAPS نامعتبر، گروه تو در تو (از `memberOf` مستقیم نمی‌آید؛ از Recursive/Group Match استفاده).
+
+**Policy:** `set groups "G-VPN"`؛ آزمون منفی کاربر خارج از گروه ⇒ رد.
+
+**پرسش‌های مصاحبه**
+1. *cnid؟* ویژگی نام کاربری.
+2. *گروه تو در تو؟* حالت Recursive.
+3. *رمز در Log؟* هرگز.
+
 ## درس 17-3 — RADIUS و NPS، احراز هویت چندعاملی (MFA) و Attributeها
 
 **فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، ۱۷-۲ · ≈ 6 ساعت**
@@ -2220,6 +2466,29 @@ diagnose test authserver radius RADIUS-NPS pap u.fin1 <PASSWORD>
 - RFC 2865 (RADIUS)؛ Microsoft Learn: NPS.
 
 <a id="l-17-4"></a>
+
+### تعمیق: RADIUS و NPS با MFA
+
+**جریان:** FortiGate (NAS) → NPS (Shared Secret، پورت 1812) → AD → پاسخ Access-Accept + Attribute (Fortinet-Group-Name).
+
+``` text
+config user radius
+ edit "NPS"
+  set server "10.20.0.6"
+  set secret ENC ***
+  set timeout 10
+ next
+end
+```
+
+MFA: NPS Extension یا FortiAuthenticator/FortiToken (Needs-License). **خطاهای رایج:** Secret ناهمخوان (Log NPS: Event 6273 reason 16)، NAS IP ثبت‌نشده.
+
+**آزمون:** `diagnose test authserver radius NPS pap ali pass`.
+
+**پرسش‌های مصاحبه**
+1. *Access-Challenge؟* درخواست OTP.
+2. *چرا Timeout بیشتر با MFA؟* زمان واکنش کاربر.
+3. *Accounting؟* پورت 1813.
 
 ## درس 17-4 — FSSO عملی: انتخاب حالت، پیکربندی، Group Filter و عیب‌یابی
 
@@ -2359,6 +2628,28 @@ diagnose debug authd fsso list
 
 <a id="l-17-5"></a>
 
+### تعمیق: FSSO — انتخاب حالت با مثال
+
+| حالت | شرح | کاربرد |
+|---|---|---|
+| Agent-based DC Agent | روی هر DC نصب | سازمان‌های بزرگ |
+| Collector Agent polling | خواندن Event Log | ساده |
+| Agentless (Polling) | FortiGate خودش DC را می‌خواند | Lab/کوچک |
+
+**Group Filter:** فقط گروه‌های لازم؛ در غیر این صورت Collector سنگین می‌شود.
+
+``` text
+diagnose debug authd fsso list
+diagnose debug authd fsso server-status
+```
+
+**عیب‌یابی:** IP در جدول نیست ⇒ Event 4768 نمی‌آید یا ساعت/DNS مشکل؛ کاربران NAT‌شده Terminal Server نیاز به TS Agent دارند.
+
+**پرسش‌های مصاحبه**
+1. *FSSO چه مشکلی را حل می‌کند؟* Policy بر اساس کاربر بدون Login جدا.
+2. *محدودیت؟* IP-مبنا؛ Multi-user در یک IP.
+3. *Workstation Check؟* اعتبارسنجی ورود.
+
 ## درس 17-5 — Captive Portal، مهمان و Firewall Authentication: طراحی ایمن Guest
 
 **فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰، ۱۱-۰ · ≈ 6 ساعت**
@@ -2493,6 +2784,22 @@ end
 
 <a id="l-17-6"></a>
 
+### تعمیق: طراحی Guest امن
+
+**اصول:** VLAN/Zone جدا، فقط اینترنت، بدون دسترسی داخلی، محدودیت پهنای باند، انقضای حساب.
+
+``` text
+Policy GUEST->INTERNET  svc HTTP,HTTPS,DNS  nat  utm  schedule always  captive-portal enable
+Policy GUEST->INTERNAL  deny log
+```
+
+**آزمون:** Guest به 10.20.0.10 ⇒ Timeout؛ به اینترنت ⇒ پس از Portal باز. **حریم/قانون:** ثبت Log هویت طبق قوانین محلی.
+
+**پرسش‌های مصاحبه**
+1. *چرا Portal HTTPS؟* حفاظت رمز.
+2. *Client Isolation؟* مهمان‌ها همدیگر را نبینند.
+3. *انقضا؟* حساب موقت خودکار.
+
 ## درس 17-6 — آزمون عملی هویت و عیب‌یابی Authentication: سه پرونده‌ی واقعی با شواهد، کلید و Rubric
 
 **فصل 17 · بازنویسی عمیق · پیش‌نیاز: ۱۷-۰ تا ۱۷-۵، ۱۷-۷، ۱۴-۷ · ≈ 8 ساعت**
@@ -2619,6 +2926,22 @@ diagnose debug reset
 
 - درس‌های ۱۷-۰ تا ۱۷-۷
 - RFC 4511، RFC 2865
+
+### تعمیق: پرونده‌ی «کاربر LDAP وارد می‌شود ولی Policy مچ نمی‌شود»
+
+``` text
+diagnose test authserver ldap AD ali pass -> succeeded
+diagnose firewall auth list              -> user ali, group (empty)
+```
+
+علت: Group Matching غلط (Base DN گروه‌ها یا Group تو در تو). رفع: Group Object صحیح در `config user group` با `match` و Base DN درست؛ آزمون با کاربر دوم.
+
+**Rubric:** تشخیص ۳۰، Evidence ۳۰، رفع ۲۰، آزمون منفی ۱۰، صداقت ۱۰.
+
+**پرسش‌های مصاحبه**
+1. *چرا Auth موفق ولی Policy نه؟* Group Mapping.
+2. *firewall auth list؟* کاربران فعال.
+3. *Timeout Auth؟* `auth-timeout`.
 
 ## درس 17-7 — عیب‌یابی Authentication بر اساس شواهد: از Bind تا Policy (LDAP، RADIUS، FSSO)
 
@@ -2781,6 +3104,24 @@ diagnose debug reset
 ### ۱۵) منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Authentication; LDAP; RADIUS; FSSO
+
+### تعمیق: درخت تصمیم Authentication
+
+``` text
+User cannot login
+ -> Server reachable? (ping/port 389|1812)   no -> network/firewall
+ -> Bind ok? (diagnose test authserver)       no -> DN/secret/cert
+ -> User found?                               no -> Base DN/filter
+ -> Group matched? (firewall auth list)       no -> group mapping
+ -> Policy hit? (iprope lookup/log)           no -> policy order
+```
+
+هر شاخه یک Evidence مشخص دارد؛ ثبت زمان و خروجی.
+
+**پرسش‌های مصاحبه**
+1. *اول چه؟* دسترسی شبکه به سرور.
+2. *چرا Log سرور مقابل؟* دلیل رد (NPS 6273، AD 4625).
+3. *Lockout؟* آزمون با حساب تست.
 
 ## پاسخ‌های فصل 17
 
@@ -3246,6 +3587,25 @@ diagnose sniffer packet wan1 "host 203.0.113.2 and (udp port 500 or udp port 450
 - Fortinet Docs: [config vpn ipsec phase1-interface](https://docs.fortinet.com/document/fortigate/7.0.5/cli-reference/371620/config-vpn-ipsec-phase1-interface)، [phase2-interface](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/371620/config-vpn-ipsec-phase2-interface)، [Phase 1 configuration](https://docs.fortinet.com/document/fortigate/7.0.2/administration-guide/790613/phase-1-configuration).
 - RFC 7296 — IKEv2؛ RFC 4303 — ESP؛ RFC 3947/3948 — NAT-T؛ RFC 3706 — DPD؛ RFC 8247 — Algorithm Requirements for IKEv2.
 
+### تعمیق: ردیابی لایه‌ای یک Tunnel که بالا نمی‌آید
+
+**لایه‌ها:** ۱) UDP/500 می‌رسد؟ ۲) Phase1 (IKE_SA) ۳) Phase2 (Child SA/Selector) ۴) Route و Policy ۵) داده.
+
+``` text
+diagnose vpn ike gateway list
+diagnose vpn tunnel list
+get vpn ipsec tunnel summary
+```
+
+تفسیر: Gateway بالا ولی Tunnel پایین ⇒ مشکل Selector یا Proposal Phase2؛ هیچ Gateway ⇒ Reachability/PSK/IKE Version.
+
+**قاعده‌ی عددی Rekey:** اگر `keylife` = 43200 ثانیه، Rekey کمی قبل از انقضا آغاز می‌شود؛ ناهمخوانی دو سر معمولاً با کمترین مقدار حل می‌شود.
+
+**پرسش‌های مصاحبه**
+1. *Selector ناهمخوان چه نشانه‌ای؟* `no matching selector` / TS_UNACCEPTABLE.
+2. *NAT-T چه موقع؟* دستگاه پشت NAT؛ UDP/4500.
+3. *PFS؟* کلید جدید برای Phase2.
+
 ## درس 18-1 — IPsec در عمل: از نیاز تا طراحی — Proposal، شبکه‌ها و برگه‌ی پارامتر
 
 **فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۵-۰ · ≈ 5 ساعت**
@@ -3377,6 +3737,24 @@ diagnose vpn ike gateway list
 - RFC 7296
 
 <a id="l-18-2"></a>
+
+### تعمیق: برگه‌ی پارامتر برای دو سر
+
+| پارامتر | سایت A | سایت B |
+|---|---|---|
+| IKE | v2 | v2 |
+| Encryption | AES256 | AES256 |
+| Integrity | SHA256 | SHA256 |
+| DH Group | 14 | 14 |
+| Local Subnet | 10.1.0.0/24 | 10.2.0.0/24 |
+| Keylife P1 | 28800 | 28800 |
+
+هر ناهمخوانی در این جدول قبل از کانفیگ پیدا می‌شود. **PSK:** ≥۳۲ نویسه تصادفی، در Vault نه ریپو.
+
+**پرسش‌های مصاحبه**
+1. *چرا برگه؟* جلوگیری از Mismatch.
+2. *DH 14 چرا؟* حداقل ایمن قابل قبول (۲۰۴۸ بیت).
+3. *IKEv1 یا v2؟* v2 ترجیح.
 
 ## درس 18-2 — ساخت Tunnel Site-to-Site بین دو FortiGate: طراحی، GUI، CLI و Verification
 
@@ -3556,6 +3934,38 @@ diagnose debug flow filter addr 192.168.20.5
 
 <a id="l-18-3"></a>
 
+### تعمیق: ساخت و اثبات Tunnel
+
+``` text
+config vpn ipsec phase1-interface
+ edit "TO-B"
+  set interface port1
+  set ike-version 2
+  set remote-gw 198.51.100.2
+  set proposal aes256-sha256
+  set dhgrp 14
+  set psk ENC ***
+ next
+end
+config vpn ipsec phase2-interface
+ edit "TO-B-P2"
+  set phase1name TO-B
+  set proposal aes256-sha256
+  set src-subnet 10.1.0.0 255.255.255.0
+  set dst-subnet 10.2.0.0 255.255.255.0
+ next
+end
+```
+
+سپس Route `10.2.0.0/24 dev TO-B` و Policy دوطرفه (LAN↔TO-B).
+
+**اثبات:** `ping 10.2.0.1 -S 10.1.0.1`؛ `diagnose vpn tunnel list` با شمارنده‌ی `enc/dec pkts` افزایشی.
+
+**پرسش‌های مصاحبه**
+1. *چرا Policy دوطرفه؟* Stateful فقط جهت آغاز را می‌شناسد.
+2. *Route ناقص؟* ترافیک از Tunnel نمی‌رود.
+3. *کانتر صفر؟* ترافیک اصلاً وارد نمی‌شود.
+
 ## درس 18-3 — عیب‌یابی IPsec با Debug IKE: خواندن پیام‌ها و تصمیم‌گیری لایه‌ای
 
 **فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۱، ۱۸-۲ · ≈ 11 ساعت**
@@ -3704,6 +4114,26 @@ diagnose vpn ike gateway list
 - RFC 7296
 
 <a id="l-18-4"></a>
+
+### تعمیق: خواندن Debug IKE
+
+``` text
+diagnose vpn ike log filter name TO-B
+diagnose debug application ike -1
+diagnose debug enable
+```
+
+پیام‌های کلیدی:
+- `negotiation failure` + `no proposal chosen` ⇒ Proposal ناهمخوان.
+- `received notify type AUTHENTICATION_FAILED` ⇒ PSK.
+- `TS_UNACCEPTABLE` ⇒ Selector.
+
+پایان: `diagnose debug disable`.
+
+**پرسش‌های مصاحبه**
+1. *Debug چه خطری؟* بار CPU و Log زیاد.
+2. *فیلتر چرا؟* فقط Peer هدف.
+3. *AUTH_FAILED؟* PSK/Identity.
 
 ## درس 18-4 — MTU/MSS و Fragmentation در Tunnel IPsec: محاسبه‌ی سربار، آزمون DF، PMTUD و تنظیم
 
@@ -3884,6 +4314,22 @@ end
 
 <a id="l-18-5"></a>
 
+### تعمیق: محاسبه‌ی MTU Tunnel
+
+``` text
+Link MTU           = 1500
+ESP overhead (AES+SHA, tunnel mode) ~ 58-73 bytes
+Inner MTU          ~ 1427
+TCP MSS            = 1427 - 40 = 1387  (use 1360 for margin)
+```
+
+تست: `ping -f -l 1400 10.2.0.1`. رفع: `set tcp-mss` روی Policy یا کاهش MTU Tunnel Interface.
+
+**پرسش‌های مصاحبه**
+1. *Fragmentation چرا بد؟* کارایی و Drop.
+2. *DF bit؟* ممنوعیت Fragment.
+3. *PMTUD Blackhole؟* ICMP مسدود.
+
 ## درس 18-5 — Interop FGT–CSR: IPsec IKEv2 route-based، نگاشت، Debug دوطرفه و آزمون Rekey
 
 **فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۲۵-۰، ۲۵-۳ · ≈ 8 ساعت**
@@ -4050,6 +4496,28 @@ diagnose vpn tunnel list
 - RFC 7296
 
 <a id="l-18-6"></a>
+
+### تعمیق: Interop FortiGate–Cisco IKEv2
+
+``` text
+crypto ikev2 proposal P1
+ encryption aes-cbc-256
+ integrity sha256
+ group 14
+crypto ikev2 keyring KR
+ peer FGT
+  address 203.0.113.2
+  pre-shared-key local ***
+```
+
+نقاط ناهمخوانی رایج: Lifetime، شناسه‌ی Local/Remote، Selector (Cisco با ACL، FortiGate با Selector). برای Route-based در Cisco از Tunnel/VTI با `tunnel mode ipsec ipv4`.
+
+**اثبات:** `show crypto ikev2 sa` و `diagnose vpn ike gateway list`.
+
+**پرسش‌های مصاحبه**
+1. *چرا Route-based؟* Routing پویا.
+2. *Selector 0.0.0.0/0؟* با VTI رایج.
+3. *Debug دوطرفه؟* دو سر هم‌زمان.
 
 ## درس 18-6 — Gate G7: آزمون عملی IPsec — صورت مسئله، کلید پاسخ کامل و Rubric
 
@@ -4298,6 +4766,17 @@ diagnose debug reset
 
 - Fortinet FortiOS 7.0 Administration Guide: IPsec VPN
 - FortiOS 7.0 IPsec troubleshooting
+
+### تعمیق: کلید ارزیابی G7
+
+**Rubric:** Tunnel برقرار ۲۰، Routing ۱۵، Policy ۱۵، MTU ۱۵، عیب‌یابی خرابی تزریقی ۲۵، گزارش ۱۰.
+
+**خرابی‌های نمونه:** PSK متفاوت، Selector اشتباه، Route ناقص؛ برای هرکدام پیام Debug، علت و رفع.
+
+**پرسش‌های مصاحبه**
+1. *تفاوت Route-based و Policy-based؟* Interface مجازی در برابر Policy.
+2. *Dead Peer Detection؟* تشخیص قطع.
+3. *شاهد برقراری؟* شمارنده‌ها و ping.
 
 ## پاسخ‌های فصل 18
 
