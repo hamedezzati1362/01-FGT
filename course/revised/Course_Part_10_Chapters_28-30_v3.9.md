@@ -1570,137 +1570,139 @@ Beacon interval ~ 60 s +- jitter ; low volume ; same dst
 
 > **وضعیت:** مفهومی؛ فقط Lab ایزوله و مجاز؛ FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. از Log فایروال Detectionهای Scan، Brute-force، Exfiltration، حرکت جانبی و DNS مشکوک بسازد.
-2. Baseline و آستانه (آماری و قاعده‌محور) را با FP/FN بسنجد.
-3. Correlation چندمنبعی (Traffic+Event+DNS) را انجام دهد.
-4. Alert را با Severity، Owner و Runbook مستند کند.
-5. Detection را با سناریوی مجاز در Lab آزمایش و تنظیم کند.
-6. Coverage را با ATT&CK مفهومی نگاشت کند.
+1. از Log فایروال به IOC (Indicator of Compromise) و TTP (Tactics, Techniques, Procedures) برسید.
+2. Baseline رفتار عادی بسازید و Anomaly را تشخیص دهید.
+3. آستانه (Threshold) و Correlation Rule را طراحی کنید.
+4. Alert معنادار (کم‌نویز) با اولویت و Owner تعریف کنید.
+5. Technique‌ها را به MITRE ATT&CK نگاشت کنید.
+6. کیفیت Detection را با آزمون (Purple Team) بسنجید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Detection؟** Log بدون قاعده‌ی تشخیص مثل دوربین بدون نگهبان است. سه الگوی پایه: Port Scan (تعداد پورت‌های متمایز)، Brute-force (شکست‌های ورود)، Beaconing (اتصال دوره‌ای). هر قاعده را با Baseline بسنجید و FP را با Allowlist مستند کم کنید، نه با خاموش‌کردن قاعده.
+دزد حرفه‌ای زنگ‌خطر را در یک لحظه بی‌اثر نمی‌کند؛ او چند کار کوچک و مشکوک می‌کند: چند بار در را امتحان می‌کند، شب‌ها وارد می‌شود، قفسه‌ها را بررسی می‌کند. هر کدام جدا بی‌اهمیت است، ولی در کنار هم الگو می‌سازد. Detection یعنی دیدن این الگو در Logهای فایروال قبل از آنکه خسارت بزرگ شود. شاخص مهم: MTTD (Mean Time To Detect). صنعت می‌گوید مهاجم در شبکه روزها یا هفته‌ها می‌ماند (Dwell Time)؛ هر ساعت کوتاه‌کردنِ آن خسارت را کم می‌کند.
 
-**جمع‌بندی اصلی درس:**
+### IOC و TTP
 
-Detection بدون Baseline پر از نویز است و بدون Correlation کور. هدف: Alertهای کم، دقیق و قابل‌اقدام. IOC (آدرس/Hash) زودگذر است؛ **رفتار (TTP)** پایدارتر است: اسکن، Brute-force، حرکت جانبی، خروج داده.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) Detection از Log
-
-| رفتار | داده | منطق | آستانه‌ی اولیه |
-|---|---|---|---|
-| Port scan | Traffic: deny | یک srcip به N پورت/مقصد | > 100 پورت در ۲ دقیقه |
-| Brute-force | Event: login failed | تعداد ناموفق | > 10 در ۵ دقیقه |
-| ورود موفق پس از ناموفق | Event | ترکیب | ≥ 5 ناموفق سپس موفق |
-| Exfiltration | Traffic: sentbyte | حجم خروجی | > Baseline + 3σ/روز |
-| حرکت جانبی | Traffic: deny/allow بین Zone | دسترسی غیرعادی داخلی | هر Deny DMZ→DB |
-| DNS مشکوک | DNS Log | دامنه‌ی نویزی/طول بلند/Rate بالا | Rate/entropy |
-
-#### ۲) Baseline و آماری
-
-``` text
-Alert if x > mean + 3 x stddev   (per host or per hour of day)
-FP rate = false alarms / alerts ; Precision = TP/(TP+FP)
-```
-
-الگوی زمانی (ساعت/روز کاری) را در Baseline لحاظ کنید.
-
-#### ۳) Correlation
-
-یک Alert قوی‌تر: «Deny مکرر از IP X» + «ورود موفق همان IP» + «حجم خروجی بالا». Join بر پایه‌ی `srcip`، `user`، زمان.
-
-#### ۴) Alert حرفه‌ای
-
-``` text
-Name / Severity / Data source / Logic / Threshold / Owner / Runbook link / FP notes / Tuning date
-```
-
-#### ۵) آزمون در Lab
-
-سناریوی مجاز: nmap محدود از Attacker-Lab؛ ۲۰ ورود ناموفق؛ انتقال فایل بزرگ؛ بررسی Alert و FP.
-
-#### ۶) نگاشت ATT&CK
-
-Scan→Discovery (TA0007)، Brute force→Credential Access (TA0006)، Lateral→Lateral Movement (TA0008)، Exfil→Exfiltration (TA0010).
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| آستانه | Baseline |
-| Correlation | چندمنبعی |
-| Exclusion | مستند+زمان‌دار |
-| Runbook | برای هر Alert |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-``` text
-count distinct dstport per 1 min = 37 -> alert (Port Scan)
-```
-
-#### مثال متوسط — نسبت به Baseline
-
-``` text
-Baseline 5 failures/day ; observed 43 in 5 min
-Ratio ~ 43 / (5/288) ~ 2476x
-```
-
-#### مثال سخت — FP
-
-اسکنر آسیب‌پذیری داخلی هر شب Port Scan می‌دهد؛ IP او در Allowlist با مالک و تاریخ، نه حذف قاعده.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Alert Scan: `srcip=198.51.100.7` Deny روی ۴۰۰ پورت در ۲ دقیقه؛ Block؛ بررسی Allow موفق (هیچ).
-
-**متوسط (تحلیل):** Scanner داخلی مجاز FP می‌دهد: Exclusion بر پایه‌ی srcip و زمان؛ ثبت تاریخ بازبینی؛ نسبت FP از ۴۰٪ به ۵٪.
-
-**سخت (Correlation):** ورود موفق VPN پس از ۱۲۰ ناموفق، سپس ۴۰۰ MB خروجی به IP ناشناس در ۱۰ دقیقه. Correlation سه رویداد ⇒ Severity بحرانی. اقدام: Contain، Scope، RCA. معیار: بدون Correlation سه Alert مجزا با اولویت پایین می‌ماند.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-execute log filter category 0
-execute log filter field action deny
-execute log filter field srcip 198.51.100.7
-execute log display
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Alert آزمایشی (سناریوی مجاز).
-- FP rate اندازه‌گیری.
-- ماتریس ATT&CK.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| مفهوم | معنی | مثال |
 |---|---|---|
-| FP زیاد | Log | Exclusion/آستانه |
-| FN | Coverage | Detection جدید |
-| Alert نمی‌رسد | Syslog | مسیر |
+| IOC | نشانه‌ی ایستا | IP/دامنه/Hash مخرب |
+| TTP | رفتار/روش مهاجم | Brute-force، Scan داخلی |
+| Anomaly | انحراف از Baseline | ساعت/حجم غیرعادی |
 
-### ۱۰) نکات امنیتی
+IOC سریع ولی زودگذر (مهاجم IP عوض می‌کند)؛ TTP ماندگارتر و ارزشمندتر.
 
-- آزمون فقط Lab مجاز.
-- Exclusion مستند.
+### نگاشت ATT&CK (نمونه)
 
-### ۱۱) جمع‌بندی مفهومی
+| رفتار در Log | Technique |
+|---|---|
+| ۴۰ ورود SSH ناموفق | T1110 Brute Force |
+| ورود موفق با حساب معتبر | T1078 Valid Accounts |
+| ساخت حساب جدید | T1136 Create Account |
+| Scan پورت داخلی | T1046 Network Service Discovery |
+| بهره‌برداری از سرویس عمومی | T1190 Exploit Public-Facing Application |
+| حرکت جانبی با SMB/RDP | T1021 Remote Services |
+| ارتباط با C2 | T1071 Application Layer Protocol |
 
-- رفتار بر IOC ارجحیت دارد.
-- Baseline و آماری.
-- Correlation.
-- Alert با Owner/Runbook.
+### Baseline
 
-### ۱۲) تمرین و ارزیابی
+``` text
+Baseline for admin login: 2-5 per day, 08:00-18:00, from 10.50.0.0/24
+Alert if: login outside window OR from other source OR > 3 failures/5 min
+```
+
+Baseline از ۲–۴ هفته‌ی داده؛ بر اساس ساعت‌روز و روز هفته.
+
+### Detection Ruleهای نمونه (روی Log)
+
+| Rule | منطق | Severity |
+|---|---|---|
+| SSH Brute-force | ≥10 `login failed` از یک Src در ۵ دقیقه | High |
+| Admin Success after fails | موفقیت پس از ≥5 ناموفق | Critical |
+| Config change off-hours | `cfgpath` تغییر خارج از Window | High |
+| Internal scan | یک Src به ≥20 Dst/Port در ۱ دقیقه | High |
+| New admin created | `Add system.admin` | Critical |
+| DNS tunneling | حجم Query/طول نام غیرعادی | Medium |
+| Data exfil | Upload > baseline×N | Medium/High |
+
+مثال Query (شبه‌کد):
+
+``` text
+event.subtype = "system" AND logdesc = "Admin login failed"
+GROUP BY srcip, 5m
+HAVING count >= 10
+```
+
+### Correlation
+
+ترکیب رویدادها:
+
+``` text
+(Brute-force from X)  followed by  (Admin login success from X within 10 min)
+  => Critical: probable compromise
+```
+
+یک رویداد ضعیف + رویداد دوم = سیگنال قوی.
+
+### کاهش نویز
+
+1. Whitelist ابزارهای مجاز (Scanner آسیب‌پذیری با IP مشخص).
+2. Severity و Owner برای هر Alert.
+3. Threshold بر پایه‌ی Baseline.
+4. Review ماهانه: چند Alert «عملی» بود؟
+5. Suppression زمان‌دار در Maintenance.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — IOC
+
+Feed: IP 192.0.2.77 بدخواه. Rule: هر Session به/از آن ⇒ Alert. محدودیت: اگر مهاجم IP عوض کند؛ پس TTP هم لازم است.
+
+#### مثال متوسط — Baseline و Alert
+
+Baseline: ۳ ورود Admin در روز. امشب ۲ ورود ساعت ۳:۰۰ از IP خارجی ⇒ Alert (ساعت و Source). بررسی: ادمین در سفر بود (Whitelist زمان‌دار). نتیجه: False Positive ولی فرایند صحیح؛ بهبود: ثبت سفر.
+
+#### مثال متوسط — Correlation
+
+۴۰ ورود ناموفق SSH از 192.0.2.77، سپس یک موفق ⇒ Critical. زمان تشخیص ۲ دقیقه با Correlation در برابر ۵۵ دقیقه با بررسی دستی.
+
+#### مثال سخت — Scan داخلی
+
+Src 10.30.0.10 (Web) به ۳۰۰ Dst/Port در ۱ دقیقه. با Segmentation (فصل ۲۴) بیشتر Deny و Log؛ Rule «Deny Spike از یک Src» ⇒ Alert. ATT&CK T1046. Response: ایزوله‌سازی Host.
+
+#### مثال سخت — کیفیت Detection
+
+Rule نوشته‌اید ولی آیا کار می‌کند؟ Purple Team: شبیه‌سازی Brute-force کنترل‌شده (Lab) و تأیید Alert در ≤ ۵ دقیقه. بدون آزمون «Detection موهوم». ثبت در ماتریس پوشش ATT&CK.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. سه Rule و Baseline.
+2. Correlation Brute-force→Success.
+3. آزمون Purple Team.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| Alert زیاد | آستانه | Baseline |
+| Alert نیامد | Log ناقص | منبع |
+| FP | Whitelist | بهبود |
+| دیر | Polling | Real-time |
+
+### نکات امنیتی
+
+Log Integrity؛ دسترسی SIEM؛ آزمون Detection فقط با مجوز؛ حریم.
+
+### جمع‌بندی
+
+IOC/TTP و نگاشت ATT&CK؛ Baseline و آستانه؛ Correlation ترکیبی؛ کاهش نویز؛ آزمون Detection (Purple Team) و اندازه‌گیری MTTD.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) IOC و TTP چه فرقی دارند؟ *(پاسخ: 29-1-ت1)*
 
@@ -1716,7 +1718,7 @@ execute log display
 
 **Q1.** Quick quiz (English): Why are behavior-based detections more durable than indicator-based ones? *(پاسخ: 29-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1726,11 +1728,11 @@ execute log display
 
 - *Know your baseline.* ← وضعیت عادی را بشناسید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Detection. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/detect.md`.
 
-### ۱۵) منابع
+### منابع
 
 - NIST SP 800-61
 - MITRE ATT&CK
@@ -1738,242 +1740,156 @@ execute log display
 
 <a id="l-29-2"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Detection از Log
-
-قاعده‌ی نمونه: ≥۲۰ Deny به پورت‌های متفاوت از یک IP در ۱ دقیقه ⇒ Port Scan.
-
-``` text
-srcip=203.0.113.50 action=deny dstport in {22,23,80,443,3389,...}
-```
-
-**پرسش‌های مصاحبه**
-1. *FP؟* اسکنر داخلی.
-2. *Baseline؟* نرمال.
-3. *Enrichment؟* GeoIP.
-
-### مثال حل‌شده: Baseline و قاعده
-
-Baseline: شکست VPN روزانه ≈ 5. قاعده: >20 در 5 دقیقه یا >5 کاربر مختلف از یک IP.
-
-``` text
-events/5min = 43 ; baseline = 5/day -> ratio ~ 200x
-```
-
-FP: کاربر با رمز فراموش‌شده (یک حساب، منبع داخلی).
-
-### تکمیل عمیق: ساخت Detection از Log فایروال
-
-#### چرا؟
-
-Log بدون قاعده‌ی تشخیص مثل دوربین بدون نگهبان است. این درس تبدیل Log خام به «هشدار قابل‌اتکا» را نشان می‌دهد.
-
-#### سه الگوی پایه
-
-| الگو | قاعده | معنی |
-|---|---|---|
-| Port Scan | ≥ 20 پورت مختلف از یک IP در 1 دقیقه | شناسایی |
-| Brute-force | ≥ 10 شکست ورود در 5 دقیقه | حدس رمز |
-| Beaconing | اتصال دوره‌ای به یک مقصد | C2 |
-
-#### مثال ساده — Port Scan
-
-``` text
-srcip=203.0.113.50 dstip=203.0.113.3 dstport in {21,22,23,25,80,110,443,3389,...} action=deny
-count distinct dstport per 1 min = 37  -> alert
-```
-
-#### مثال متوسط — Baseline و نسبت
-
-``` text
-Baseline failed logins = 5 / day
-Observed = 43 / 5 min
-Ratio ~ 43 / (5/288) ~ 2476x   (288 five-minute windows per day)
-```
-
-نتیجه: بسیار غیرعادی ⇒ هشدار.
-
-#### مثال سخت — کاهش False Positive
-
-اسکنر آسیب‌پذیری داخلی (Nessus) هر شب اسکن می‌کند و هشدار Port Scan می‌دهد. راه‌حل: IP اسکنر در Allowlist مستند با مالک و تاریخ؛ نه خاموش‌کردن قاعده.
-
-#### غنی‌سازی (Enrichment)
-
-GeoIP، Reputation، مالک IP. هر هشدار با این‌ها تصمیم را سریع‌تر می‌کند.
-
-#### Lab
-
-با یک فایل Log نمونه و `awk/grep` تعداد پورت‌های متمایز را بشمارید.
-
-``` text
-awk '/action=deny/ {print $1}' fw.log | sort | uniq -c | sort -nr | head
-```
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| هشدار زیاد | قاعده عمومی | Allowlist مستند |
-| هشدار نیامد | Log ناقص | فعال‌سازی Log |
-| ساعت ناهماهنگ | NTP | همگام‌سازی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Enrichment چیست؟** افزودن زمینه.
-**۲. چرا Allowlist مستند؟** ممیزی.
-**۳. چرا NTP؟** ترتیب رویدادها.
-
-#### English Corner
-
-- *Tune detections; do not just silence them.*
-- Q: How would you detect a port scan from firewall logs?
-
 ## درس 29-2 — Response و Playbook: مهار، Evidence، ریشه‌کنی، بازیابی و ارتباطات با مثال‌های اجرایی
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰، ۲۹-۱، ۱۳-۷ · ≈ 8 ساعت**
 
 > **وضعیت:** مفهومی؛ فقط Lab ایزوله و مجاز؛ FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Playbook برای سه سناریو (Scan، Compromise سرور، حساب VPN لو رفته) بنویسد.
-2. مهار با فایروال (Block، Quarantine، Session) را بدون تخریب Evidence اجرا کند.
-3. ریشه‌کنی و بازیابی را با آزمون تأیید کند.
-4. ارتباطات و Escalation را مستند کند.
-5. تفاوت مهار کوتاه‌مدت/بلندمدت را بگوید.
+1. چرخه‌ی پاسخ به حادثه (آمادگی، تشخیص، مهار، ریشه‌کنی، بازیابی، درس‌آموخته) را بگویید.
+2. Playbook گام‌به‌گام برای سناریوهای رایج بنویسید.
+3. Containment را بدون نابودی Evidence اجرا کنید.
+4. Evidence را با زنجیره‌ی نگهداری (Chain of Custody) جمع کنید.
+5. Eradication و Recovery را با تأیید پاکی انجام دهید.
+6. ارتباطات (داخلی/مدیریتی/قانونی) را برنامه‌ریزی کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Playbook؟** در حادثه وقت فکر نیست. ترتیب: تأیید ← مهار ← **Evidence** ← ریشه‌کنی ← بازیابی ← گزارش. اگر ماشین را قبل از Evidence Reimage کنید، شواهد از بین می‌رود. Chain of Custody ثبت می‌کند شواهد کی، توسط چه کسی و چگونه جمع شد.
+وقتی آلارم آتش‌سوزی به صدا درمی‌آید، آتش‌نشان‌ها بدون برنامه نمی‌دوند؛ نقش‌ها، مسیر و ابزار از قبل مشخص است. در حادثه‌ی امنیتی هم همین: ساعت ۳ شب با فشار روانی بالا، اگر Playbook نداشته باشید، تصمیم‌های عجولانه می‌گیرید (مثلاً خاموش‌کردن سرور و نابودی Evidence، یا پاک‌کردن Log). Playbook از قبل «چه، که، کی، چگونه» را می‌گوید.
 
-**جمع‌بندی اصلی درس:**
-
-در حادثه فشار زیاد است؛ Playbook یعنی از قبل تصمیم‌گیری. اشتباه رایج: مهار فوری که شواهد را پاک می‌کند، یا مهار ناقص که مهاجم را آگاه می‌کند.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) قالب Playbook
+### چرخه‌ی پاسخ (الهام از NIST SP 800-61)
 
 ``` text
-Trigger / Severity / Owner / Approvals
-1 Triage: scope? asset? success? data?
-2 Evidence preservation (what/where/how)
-3 Containment: short-term, long-term
-4 Eradication  5 Recovery + verification  6 Communication  7 Lessons learned
+Preparation -> Detection & Analysis -> Containment -> Eradication -> Recovery -> Post-Incident
 ```
 
-#### ۲) مهار با فایروال
+### Playbook: ورود غیرمجاز Admin FortiGate
 
-- **Block IP:** Address + Deny Policy بالاتر از همه (Policy ID/موقت با تاریخ انقضا).
-- **Quarantine:** قرنطینه‌ی میزبان (Policy/VLAN/Quarantine).
-- **قطع Session:** `diagnose sys session clear` با Filter (۱۳-۷).
-- **قطع VPN User:** غیرفعال کاربر + پایان Session.
-- **Evidence پیش از مهار:** ذخیره‌ی Log/Session/Capture (مهار ممکن است Session را از بین ببرد).
+| گام | اقدام | ابزار |
+|---|---|---|
+| 1 تأیید | Alert واقعی است؟ | Log Admin |
+| 2 Scope | چه کسی/چه کاری/چه زمانی | Log، Diff Config |
+| 3 Contain | Block IP، غیرفعال حساب، قطع نشست | Local-in، `execute ...` |
+| 4 Evidence | Snapshot Config، Log، PCAP | ذخیره با Hash |
+| 5 Eradicate | حذف حساب/Policy/ پشتی، تغییر رمز/کلید | Config |
+| 6 Recover | بازگردانی از Backup پاک، آزمون | Restore |
+| 7 Monitor | افزایش پایش ۳۰ روز | SIEM |
+| 8 Review | PIR | قالب |
 
-#### ۳) سناریوها
+### Containment — اصول
 
-**۱) Scan خارجی:** Block IP؛ بررسی Allowهای موفق؛ Hardening Local-in.
-**۲) سرور DMZ Compromise:** ایزوله (Quarantine)، Evidence، بررسی مسیرها (Log DMZ→Internal)، بازسازی از Image، چرخش Credential.
-**۳) حساب VPN لو رفته:** قفل حساب، پایان Session، بررسی دسترسی‌های کاربر، Reset+MFA، Detection تکراری.
-
-#### ۴) بازیابی و تأیید
-
-بازگشت به سرویس با Monitoring تشدیدشده، آزمون مثبت/منفی، حذف Ruleهای موقت، بازبینی Log ۷ روز.
-
-#### ۵) ارتباطات
-
-Timeline، اثر، وضعیت، اقدام بعدی، مسئول؛ ارتباط به مدیریت/حقوقی (در صورت نیاز)؛ ثبت.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Block موقت | با انقضا و Owner |
-| Evidence | قبل از مهار |
-| Escalation | سطوح |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — Quarantine
+1. **مهار قبل از پاک‌سازی:** ابتدا گسترش را متوقف کنید.
+2. **حفظ Evidence:** قبل از Reboot/Wipe، Snapshot/Config/Log.
+3. **کم‌ترین اثر کسب‌وکار:** بلاک دقیق (IP/Host) نه قطع کل.
+4. **ثبت هر اقدام:** زمان، کس، دستور.
 
 ``` text
-config firewall policy
- edit 999
-  set name "QUARANTINE-PC"
-  set srcaddr "PC-INFECTED"
-  set dstaddr "all"
-  set action deny
-  set logtraffic all
- next
-end
-```
-
-Policy را بالاتر قرار دهید.
-
-#### مثال متوسط — Evidence
-
-``` text
-sha256sum suspicious.exe
-diagnose sys session filter src 10.10.0.77
-diagnose sys session list
-```
-
-#### مثال سخت — حرکت جانبی
-
-PC آلوده چند سرور را با SMB اسکن کرده: بستن PC، تغییر رمز حساب‌های در معرض، بررسی Persistence روی سرورها.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Block IP اسکنر: Address `BLOCK-198.51.100.7` و Policy Deny بالا؛ تست: ping/nc از IP مسدود (Lab) رد؛ Log.
-
-**متوسط (تحلیل):** Block اعمال شد ولی Session قبلی مهاجم فعال است: `session list` با Filter؛ Clear؛ تأیید قطع؛ درس: Block+Clear.
-
-**سخت (Compromise سرور):** سرور DMZ با Webshell. Playbook: Evidence (Disk image/Log/Capture)، Quarantine، Scope (Traffic Log DMZ→Internal)، تعیین Credentialهای لمس‌شده، بازسازی، چرخش، Hardening (WAF/IPS)، PIR. اگر مهار قبل از Evidence انجام شود تحلیل ریشه ناقص می‌شود.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
+# block attacker IP on WAN (example, local-in)
 config firewall address
-    edit "BLOCK-198.51.100.7"
-        set subnet 198.51.100.7 255.255.255.255
+    edit "ATTACKER-192.0.2.77"
+        set subnet 192.0.2.77 255.255.255.255
     next
 end
-diagnose sys session filter src 198.51.100.7
-diagnose sys session list
-diagnose sys session clear
-diagnose sys session filter clear
+config firewall local-in-policy
+    edit 10
+        set intf "port1"
+        set srcaddr "ATTACKER-192.0.2.77"
+        set dstaddr "all"
+        set service "ALL"
+        set schedule "always"
+        set action deny
+    next
+end
 ```
 
-### ۸) Verification (اثبات صحت)
+### Evidence و Chain of Custody
 
-- آزمون Block (Lab).
-- Evidence ذخیره‌شده.
-- PIR.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| مورد | نحوه | نگهداری |
 |---|---|---|
-| Block بی‌اثر | ترتیب Policy | بالا ببرید |
-| مهاجم برگشت | Credential | چرخش |
+| Config | `show full-configuration` | فایل + SHA256 |
+| Log | Export | فقط‌خواندنی |
+| PCAP | Sniffer/GUI | رمزنگاری |
+| Memory/Disk (سرور) | Image | ابزار Forensics |
 
-### ۱۰) نکات امنیتی
+``` text
+sha256sum fgt-a-config-2026-11-27.conf > fgt-a-config.sha256
+```
 
-- Evidence اول؛ Rule موقت حذف شود.
+Chain of Custody: چه کسی، چه زمانی، چه چیزی را گرفت/منتقل کرد؛ امضا. ارزش حقوقی.
 
-### ۱۱) جمع‌بندی مفهومی
+### Eradication و Recovery
 
-- Playbook قالب‌مند.
-- Evidence پیش از مهار.
-- Block+Clear.
-- بازیابی با تأیید.
+- حذف مسیرهای دسترسی مهاجم (حساب‌ها، Policyها، Cron، کلید SSH، SNMP Community).
+- تغییر **همه** Secretهای در معرض (Admin، PSK، LDAP Bind، API Token، گواهی).
+- Restore از Backup پیش از نفوذ (اگر Config مشکوک) و تطبیق Diff.
+- Patch آسیب‌پذیری ورودی.
+- پایش تشدیدشده.
 
-### ۱۲) تمرین و ارزیابی
+اصل: پاکی را **اثبات** کنید (Diff با Baseline، اسکن IOC، Log دو هفته).
+
+### ارتباطات
+
+| مخاطب | پیام | زمان |
+|---|---|---|
+| تیم فنی | جزئیات | لحظه‌ای |
+| مدیریت | تأثیر کسب‌وکار، اقدام | هر ساعت |
+| حقوقی/Compliance | داده‌ی شخصی؟ الزام اعلام | طبق قانون |
+| مشتری/عموم | طبق تصمیم | تأییدشده |
+
+یک سخنگو؛ پیام حقیقی و ساده؛ بدون حدس.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — بلاک IP
+
+Brute-force از 192.0.2.77: Local-in Deny. زمان ۲ دقیقه. ثبت: ساعت ۰۲:۱۲، اقدام، کس.
+
+#### مثال متوسط — حفظ Evidence
+
+حساب `svc-tmp` ساخته شده. قبل از حذف: `show system admin` را ذخیره + Hash؛ سپس حذف. اگر اول حذف می‌کردید، Evidence رفته بود.
+
+#### مثال متوسط — تغییر Secretها
+
+پس از نفوذ به FortiGate: تغییر رمز Admin، PSK همه‌ی VPNها، Bind LDAP، API Token، گواهی HTTPS (اگر کلید خصوصی در دستگاه بود). فهرست Secret Inventory مهم است؛ بدون آن چیزی جا می‌ماند.
+
+#### مثال سخت — تصمیم Shutdown
+
+سرور آلوده؛ مدیر می‌گوید «خاموش کن». مخاطره: Memory (کلیدها/Malware) از بین می‌رود. تصمیم: ایزوله‌سازی شبکه‌ای (VLAN Quarantine) نه خاموشی، تا Image Memory/Disk گرفته شود. سپس خاموشی.
+
+#### مثال سخت — ارتباطات
+
+داده‌ی شخصی مشتریان در معرض؛ الزام قانونی اعلام. بدون همکاری حقوقی پیام ارسال نشود؛ زمان‌بندی طبق قانون. نکته‌ی مدیریتی: پیام اولیه نباید «هیچ داده‌ای نشت نکرده» بگوید قبل از تأیید.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Playbook ورود غیرمجاز.
+2. Local-in Block و ثبت.
+3. Evidence + Hash و فهرست Secret.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| Evidence از بین رفت | پاک‌سازی زود | Snapshot اول |
+| تکرار نفوذ | Secret جا ماند | Inventory |
+| قطع کل | Containment وسیع | دقیق |
+| پیام اشتباه | بی‌سخنگو | یک سخنگو |
+
+### نکات امنیتی
+
+دسترسی Evidence محدود؛ ارتباط حادثه روی کانال ایمن/بیرونی (اگر ایمیل آلوده)؛ Playbook را تمرین کنید.
+
+### جمع‌بندی
+
+چرخه‌ی پاسخ؛ Playbook؛ مهار با حفظ Evidence و Chain of Custody؛ Eradication با تغییر همه‌ی Secretها و اثبات پاکی؛ ارتباطات منظم.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا Evidence قبل از مهار؟ *(پاسخ: 29-2-ت1)*
 
@@ -1989,7 +1905,7 @@ diagnose sys session filter clear
 
 **Q1.** Quick quiz (English): Why combine blocking an IP with clearing its existing sessions? *(پاسخ: 29-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -1998,118 +1914,16 @@ diagnose sys session filter clear
 
 - *Preserve evidence before containment.* ← پیش از مهار Evidence را حفظ کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Response. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/response.md`.
 
-### ۱۵) منابع
+### منابع
 
 - NIST SP 800-61 Rev.2 (در ۲۰۲۵ با Rev.3 جایگزین شده؛ مدل ۵ فاز کلاسیک مرجع آموزشی)
 - SANS Incident Handler Handbook
 
 <a id="l-29-3"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Playbook
-
-گام‌ها: ۱) تأیید ۲) مهار (Block IP/Quarantine) ۳) Evidence (Log/pcap/Hash) ۴) ریشه‌کنی ۵) بازیابی ۶) گزارش. ثبت Chain of Custody.
-
-**پرسش‌های مصاحبه**
-1. *Evidence ناپایا؟* ابتدا RAM/Session.
-2. *Quarantine؟* ایزوله.
-3. *ارتباطات؟* ذی‌نفعان.
-
-### مثال حل‌شده: Playbook تروجان روی یک PC
-
-``` text
-1 Isolate : disable port / quarantine VLAN
-2 Evidence: Log, pcap, hash of file (sha256sum)
-3 Scope   : search same IOC in logs
-4 Eradicate: reimage
-5 Recover : monitor 72h
-6 Report  : PIR
-```
-
-قبل از Reimage Evidence جمع شود.
-
-### تکمیل عمیق: Response — Playbook مهار، Evidence و بازیابی
-
-#### چرا؟
-
-وقتی حادثه رخ می‌دهد، وقت فکر کردن نیست. Playbook همان «دستورالعمل آتش‌نشانی» است: از پیش نوشته و تمرین‌شده.
-
-#### ترتیب مهم در پاسخ
-
-1. **تأیید** (آیا واقعاً حادثه است؟)
-2. **مهار** (جلوگیری از گسترش)
-3. **Evidence** (حفظ شواهد)
-4. **ریشه‌کنی**
-5. **بازیابی**
-6. **گزارش**
-
-نکته‌ی مهم: Evidence قبل از ریشه‌کنی. اگر ماشین را Reimage کنید، شواهد از بین می‌رود.
-
-#### مثال ساده — مهار شبکه‌ای
-
-``` text
-config firewall policy
- edit 999
-  set name "QUARANTINE-PC"
-  set srcintf "port2"
-  set dstintf "any"
-  set srcaddr "PC-INFECTED"
-  set dstaddr "all"
-  set action deny
-  set logtraffic all
- next
-end
-```
-
-Policy را بالاتر از بقیه قرار دهید (move).
-
-#### مثال متوسط — جمع‌آوری Evidence
-
-``` text
-sha256sum suspicious.exe
-execute log filter dev fortios ; execute log display
-diagnose sys session filter src 10.10.0.77 ; diagnose sys session list
-```
-
-Hash، Log و Session را قبل از Reimage ذخیره کنید.
-
-#### مثال سخت — حرکت جانبی
-
-PC آلوده چند سرور را اسکن کرده. تحلیل: Log SMB (445) از آن PC. مهار: بستن PC + تغییر رمز حساب‌های در معرض + بررسی سرورهای لمس‌شده برای Persistence.
-
-#### Chain of Custody
-
-ثبت اینکه شواهد کی، توسط چه کسی، چگونه جمع و کجا نگهداری شد.
-
-#### Lab
-
-یک Playbook یک‌صفحه‌ای برای «PC آلوده» بنویسید و در Lab اجرا کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| شواهد از دست رفت | Reimage زود | رعایت ترتیب |
-| مهار ناقص | Policy پایین | move بالا |
-| تکرار | علت ریشه‌ای | RCA |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Evidence قبل از ریشه‌کنی؟** پاک‌شدن.
-**۲. Quarantine چیست؟** ایزوله‌سازی.
-**۳. Chain of Custody؟** مسیر نگهداری شواهد.
-
-#### English Corner
-
-- *Contain first, but preserve evidence.*
-- Q: What is chain of custody?
 
 ## درس 29-3 — Lifecycle، Patch و Vulnerability Management: Inventory، EoL، PSIRT/CVE، اولویت‌بندی و Rollback
 
@@ -2117,125 +1931,152 @@ PC آلوده چند سرور را اسکن کرده. تحلیل: Log SMB (445) 
 
 > **وضعیت:** مفهومی؛ فقط Lab ایزوله و مجاز؛ FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Inventory دارایی (مدل، نسخه، لایسنس، EoL) را نگه دارد.
-2. CVE را با Exposure/Exploitability/Impact اولویت‌بندی کند.
-3. Plan Patch با Lab، Window، Rollback و Verification بنویسد.
-4. Compensating Controls را وقتی Patch ممکن نیست طراحی کند.
-5. Metrics (Time-to-patch، Coverage) را اندازه بگیرد.
+1. Inventory دارایی (دستگاه، نسخه، لایسنس، EoL) را بسازید.
+2. EoL/EoS و چرخه‌ی پشتیبانی را درک کنید.
+3. PSIRT، CVE و اولویت‌بندی (CVSS، EPSS، KEV، Exposure) را به‌کار ببرید.
+4. Patch را با Test، Window، Rollback اجرا کنید.
+5. SLA Patch (Critical/High/Medium) تعیین کنید.
+6. گزارش وضعیت آسیب‌پذیری و Exception Management بسازید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Patch و EoL؟** بسیاری از نفوذها با آسیب‌پذیری قدیمی وصله‌دار انجام می‌شود. فرایند: Inventory ← دریافت اعلان (PSIRT/Advisory) ← تطبیق ← ارزیابی (Exposure، Exploit فعال) ← تصمیم (Patch/Workaround/پذیرش ریسک) ← Lab ← Window ← Verify. CVSS تنها معیار نیست.
+بیشتر نفوذهای بزرگ از آسیب‌پذیری‌های «شناخته‌شده و Patch‌شده» می‌آیند که کسی به‌موقع Patch نکرد. فایروال در لبه است؛ آسیب‌پذیری آن مستقیم از اینترنت قابل‌بهره‌برداری است (نمونه‌ی واقعی: CVE-2018-13379 و CVE-2022-42475 در FortiOS SSL-VPN). مدیریت Lifecycle یعنی بدانید چه دارید، چه نسخه‌ای، تا کی پشتیبانی می‌شود و کی باید Patch شود.
 
-**جمع‌بندی اصلی درس:**
+### Inventory
 
-نسخه‌ی 7.0.3 قدیمی است و CVEهای شناخته‌شده دارد (مثل CVE-2022-40684، CVE-2022-42475، CVE-2023-27997 که در مستند پروژه ذکر شده‌اند). مدیریت آسیب‌پذیری یعنی «بدانید چه دارید، چه آسیب‌پذیر است، چه زمانی و چگونه امن می‌شود».
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) Inventory
-
-``` text
-Device | Model | Serial | FortiOS | Role | Exposure(internet?) | License end | EoL/EoS | Owner
-```
-
-#### ۲) اولویت‌بندی
-
-``` text
-Priority ~= Severity(CVSS) x Exposure x Exploit availability x Asset criticality
-```
-
-مثال: CVE بحرانی روی SSL VPN اینترنتی با Exploit فعال ⇒ فوری (۲۴ تا ۷۲ ساعت). CVE روی سرویس داخلی غیرقابل‌دسترس ⇒ برنامه‌ریزی‌شده.
-
-#### ۳) چرخه
-
-PSIRT/CVE Feed → ارزیابی تأثیر روی نسخه/ویژگی → تصمیم (Patch/Workaround/Accept) → Lab → Window → Rollback آماده → Verification → ثبت.
-
-#### ۴) Compensating Controls
-
-وقتی Patch فوراً ممکن نیست: محدودسازی Source، غیرفعال‌کردن ویژگی (SSL VPN)، IPS Signature، Segmentation، پایش اضافه، WAF/Reverse proxy.
-
-#### ۵) EoL/EoS
-
-برنامه‌ی ارتقا قبل از پایان پشتیبانی؛ نسخه‌ی هدف و مسیر ارتقا (Upgrade Path) را از مستند Fortinet بگیرید.
-
-#### ۶) Metrics
-
-``` text
-Time-to-patch (critical) = patch date - advisory date
-Coverage = patched devices / total devices
-```
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| فیلد | مثال |
 |---|---|
-| اولویت | Exposure×Exploit×Criticality |
-| Compensating | وقتی Patch نیست |
-| Canary | برای ناوگان بزرگ |
+| Hostname/Serial | FGT-A / FG...A |
+| مدل | FortiGate-60F |
+| FortiOS | 7.0.3 |
+| نقش | Edge شعبه تبریز |
+| لایسنس FortiGuard | تا 2027-03-01 |
+| پشتیبانی (FortiCare) | تا ... |
+| EoS مدل | تاریخ |
+| Exposure | اینترنتی (SSL-VPN فعال) |
+| مالک | NetOps |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+بدون Inventory، «همه‌ی FortiGateها را Patch کردیم» غیرقابل‌اثبات است. منبع: CMDB، FMG، Export API.
 
-#### مثال ساده
+### EoL و چرخه‌ی پشتیبانی
 
-| آسیب‌پذیری | در اینترنت | Exploit فعال | اولویت |
-|---|---|---|---|
-| A | بله | بله | فوری |
-| B | بله | خیر | بالا |
-| C | خیر | خیر | عادی |
+| اصطلاح | معنی |
+|---|---|
+| EoO | End of Order |
+| EoS (End of Support) | پایان پشتیبانی/Patch امنیتی |
+| EoL | پایان عمر |
 
-#### مثال متوسط
+نسخه‌ی FortiOS هم پشتیبانی محدود دارد (Release Notes و Product Life Cycle). هدف: در نسخه‌ی پشتیبانی‌شده‌ی «Mature/Recommended».
 
-Workaround: Local-in برای محدودکردن مدیریت/SSL-VPN تا Patch.
+### منبع آسیب‌پذیری
 
-#### مثال سخت — EoL
+- **FortiGuard PSIRT Advisories:** Fortinet Product Security Incident Response Team.
+- **CVE/NVD:** شناسه‌ی عمومی.
+- **CISA KEV (Known Exploited Vulnerabilities):** آسیب‌پذیری‌های در حال بهره‌برداری.
+- **Mailing/RSS** برای اعلان فوری.
 
-دستگاه بدون پشتیبانی و بدون بودجه‌ی جایگزین: ثبت ریسک، محدودیت دسترسی، پایش شدید و برنامه‌ی جایگزینی با تاریخ.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** جدول Inventory ۳ دستگاه؛ نسخه‌ها؛ فهرست CVE مرتبط؛ اولویت.
-
-**متوسط (تحلیل):** CVE بحرانی SSL VPN و دستگاه اینترنتی: فوری. اقدام: Lab Patch، Window، Backup، Rollback؛ اگر ۷۲ ساعت ممکن نبود: غیرفعال SSL VPN/Source Restriction موقت.
-
-**سخت (طراحی):** ۲۰ دستگاه، ۲ شب Window در ماه، Upgrade Path چندمرحله‌ای. طرح: دسته‌بندی بر اساس Exposure؛ اینترنتی‌ها اول؛ Canary؛ HA یکی‌یکی؛ Verification و Rollback؛ Time-to-patch هدف ۷ روز برای بحرانی.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### اولویت‌بندی
 
 ``` text
-get system status
-execute backup config sftp pre-patch.conf 192.168.90.10 backup-user <PASSWORD>
+Priority = f(CVSS severity, Exploited in the wild (KEV/EPSS), Exposure, Asset criticality, Compensating controls)
 ```
 
-### ۸) Verification (اثبات صحت)
+| عامل | سؤال |
+|---|---|
+| CVSS | شدت |
+| EPSS/KEV | بهره‌برداری فعال؟ |
+| Exposure | از اینترنت قابل‌دسترس؟ |
+| Asset | مهم؟ |
+| Control جایگزین | WAF/غیرفعال‌سازی ویژگی؟ |
 
-- Inventory کامل.
-- Plan Patch.
-- Metrics ثبت.
+قاعده: KEV + Exposure اینترنتی = فوری (۲۴–۷۲ ساعت)، حتی اگر CVSS متوسط.
 
-### ۹) Troubleshooting
+### SLA پیشنهادی
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| شدت/شرایط | زمان |
+|---|---|
+| KEV + اینترنتی | ≤ ۷۲ ساعت (یا کنترل جایگزین فوری) |
+| Critical | ≤ ۷ روز |
+| High | ≤ ۳۰ روز |
+| Medium | ≤ ۹۰ روز |
+| Low | دوره‌ی بعدی |
+
+### فرایند Patch
+
+``` text
+1 Advisory received -> impact analysis (affected? feature enabled?)
+2 Mitigation if no patch (disable feature, restrict source)
+3 Test in lab/staging
+4 Change request (window, rollback)
+5 Backup + Upgrade path check
+6 Upgrade (HA: secondary first)
+7 Verify (traffic, VPN, UTM, HA)
+8 Update inventory/report
+```
+
+نکته: Upgrade Path Tool فورتی‌نت؛ پرش از نسخه‌ی خیلی قدیمی ممکن است مسیرهای میانی نیاز داشته باشد.
+
+### Exception
+
+اگر Patch ممکن نیست: Exception با مالک، دلیل، کنترل جایگزین، تاریخ انقضا و تأیید ریسک مدیریتی.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Inventory
+
+۱۲ FortiGate؛ ۳ دستگاه روی 7.0.3. فهرست با Exposure: دو مورد SSL-VPN فعال. اولویت Patch/غیرفعال‌سازی.
+
+#### مثال متوسط — اولویت
+
+دو CVE: A (CVSS 9.8، بدون Exploit، ویژگی خاموش)، B (CVSS 7.5، KEV، SSL-VPN روی اینترنت فعال). اولویت B.
+
+``` text
+B: exploited + exposed  => 72 h
+A: feature disabled     => normal window (verify feature is really off)
+```
+
+#### مثال متوسط — Mitigation
+
+Patch فوری ممکن نیست؛ غیرفعال‌کردن SSL-VPN یا محدود به Source مدیریتی تا Patch؛ ثبت Exception ۷ روزه.
+
+#### مثال سخت — Rollback
+
+Upgrade مشکل ایجاد کرد (VPN Phase2 شکست). Rollback: Boot Partition قبلی/Restore Config؛ Evidence؛ تحقیق در Release Notes (تغییر Default). درس: Staging با Config واقعی، Test Matrix.
+
+#### مثال سخت — EoS
+
+مدل FortiGate-60E پایان Support؛ نسخه‌ی نهایی قابل نصب دارد، Patch امنیتی نیست. تصمیم: برنامه‌ی جایگزینی مدل با Timeline، Exception موقت، کنترل جایگزین (دسترسی مدیریتی محدود، غیرفعال SSL-VPN).
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Inventory.
+2. اولویت‌بندی دو CVE.
+3. Playbook Patch و Rollback.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Patch شکست | Pre/Post-check | Rollback |
-| ناسازگاری ویژگی | Release notes | برنامه |
+| ندانستن نسخه | Inventory | API/FMG |
+| Patch دیر | بی‌SLA | سیاست |
+| Upgrade شکست | بی‌Staging | Test |
+| EoS | بی‌برنامه | جایگزینی |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Patch سریع برای اینترنتی؛ Backup قبل.
+Advisory را منبع رسمی بخوانید؛ Image با Hash؛ Backup؛ Window؛ ثبت Exception.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- Inventory→ارزیابی→Patch→Rollback.
-- اولویت ریسک‌محور.
-- Compensating Controls.
-- Metrics.
+Inventory، EoL، PSIRT/CVE/KEV، اولویت با Exposure و بهره‌برداری فعال، SLA، فرایند Patch با Staging و Rollback، و Exception مدیریت‌شده.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) EoL یعنی چه؟ *(پاسخ: 29-3-ت1)*
 
@@ -2251,7 +2092,7 @@ execute backup config sftp pre-patch.conf 192.168.90.10 backup-user <PASSWORD>
 
 **Q1.** Quick quiz (English): Which factors raise the urgency of patching a vulnerability? *(پاسخ: 29-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2261,11 +2102,11 @@ execute backup config sftp pre-patch.conf 192.168.90.10 backup-user <PASSWORD>
 
 - *Track end-of-life dates and plan upgrades early.* ← تاریخ پایان عمر را پیگیری و ارتقا را زود برنامه‌ریزی کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Patch. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/patch.md`.
 
-### ۱۵) منابع
+### منابع
 
 - FortiGuard PSIRT
 - NIST SP 800-40 Rev.4
@@ -2273,217 +2114,144 @@ execute backup config sftp pre-patch.conf 192.168.90.10 backup-user <PASSWORD>
 
 <a id="l-29-4"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Patch و آسیب‌پذیری
-
-Inventory نسخه‌ها، پایش PSIRT، پنجره‌ی Patch، آزمون Lab. EoL: برنامه‌ی جایگزینی.
-
-**پرسش‌های مصاحبه**
-1. *اولویت؟* قابل‌بهره‌برداری از اینترنت.
-2. *Rollback؟* آماده.
-3. *CVSS؟* تنها معیار نیست.
-
-### مثال حل‌شده: تصمیم Patch
-
-PSIRT جدید برای SSL-VPN با Exploit فعال: ۱) Inventory نسخه ۲) اگر آسیب‌پذیر و در اینترنت ⇒ اضطراری ۳) Workaround موقت (غیرفعال‌سازی/Local-in) ۴) Patch در Lab ۵) پنجره‌ی تغییر ۶) تأیید `get system status`.
-
-### تکمیل عمیق: مدیریت چرخه‌ی عمر و آسیب‌پذیری
-
-#### چرا؟
-
-بسیاری از نفوذها با آسیب‌پذیری‌های «ماه‌ها قدیمی» انجام می‌شوند که وصله‌اش موجود بود. مدیریت Patch و EoL (End of Life، یعنی «پایان پشتیبانی») بخش جدانشدنی امنیت است.
-
-#### Inventory
-
-``` text
-Device  Model  Version  EoS date  Owner  Exposure
-FGT-1   VM64   7.0.3    ?         NOC    internet
-```
-
-بدون Inventory دقیق نمی‌دانید چه چیزی در معرض خطر است.
-
-#### فرایند آسیب‌پذیری
-
-1. دریافت اعلان (PSIRT Fortinet، Cisco Security Advisories).
-2. تطبیق با Inventory.
-3. ارزیابی: در اینترنت؟ Exploit فعال؟ CVSS؟
-4. تصمیم: Patch / Workaround / پذیرش ریسک.
-5. آزمون در Lab.
-6. اجرا در Window.
-7. Verify.
-
-#### مثال ساده — اولویت‌بندی
-
-| آسیب‌پذیری | در اینترنت | Exploit فعال | اولویت |
-|---|---|---|---|
-| A | بله | بله | فوری |
-| B | بله | خیر | بالا |
-| C | خیر | خیر | عادی |
-
-#### مثال متوسط — Workaround
-
-اگر Patch هنوز آماده نیست، Local-in Policy برای محدودکردن دسترسی مدیریتی/SSL VPN به IPهای مجاز یا غیرفعال‌کردن موقت قابلیت (طبق Advisory رسمی).
-
-#### مثال سخت — EoL
-
-دستگاهی که پشتیبانی ندارد ولی جایگزین بودجه ندارد. راه: ثبت ریسک، محدودسازی دسترسی، پایش شدید و برنامه‌ی جایگزینی با تاریخ.
-
-``` text
-Residual risk = Likelihood x Impact (after controls)
-```
-
-#### Lab
-
-یک Advisory واقعی (از سایت رسمی) را با Inventory فرضی تطبیق دهید و تصمیم را بنویسید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Patch عقب‌افتاده | بدون Window | زمان‌بندی ماهانه |
-| ارتقا شکست | بدون Lab | آزمون |
-| CVSS گمراه‌کننده | بافت نادیده | بافت سازمانی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا CVSS کافی نیست؟** Exposure و Exploit فعال هم مهم‌اند.
-**۲. EoL چیست؟** پایان پشتیبانی.
-**۳. Workaround چه موقع؟** وقتی Patch آماده نیست.
-
-#### English Corner
-
-- *Prioritize vulnerabilities that are exposed and actively exploited.*
-- Q: What is a compensating control?
-
 ## درس 29-4 — گزارش حادثه (PIR) و آزمون عملی Blue Team: سناریوی چندمرحله‌ای با کلید و Rubric
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۱ تا ۲۹-۳ · ≈ 12 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. یک حادثه‌ی چندمرحله‌ای (Brute-force → دسترسی → حرکت جانبی) را از Log بازسازی کند.
-2. Timeline، Containment، Eradication و Recovery را بنویسد.
-3. MTTD/MTTR را محاسبه کند.
-4. PIR بی‌ملامت (Blameless) با اقدام پیشگیرانه بنویسد.
-5. آزمون را با Rubric تحویل دهد.
+1. حادثه‌ی چندمرحله‌ای را از چند هشدار پراکنده به Timeline تبدیل کنید.
+2. MTTD و MTTR را محاسبه کنید.
+3. Containment، Eradication، Recovery را برای سناریو بنویسید.
+4. ریشه‌ی علت (Root Cause) و اقدام پیشگیرانه را تعیین کنید.
+5. PIR (Post-Incident Review) بدون سرزنش بنویسید.
+6. Rubric را اجرا و صداقت را ثبت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا PIR؟** Post-Incident Review حادثه‌ی بد را به یادگیری تبدیل می‌کند. Blameless یعنی «چه سیستمی اجازه داد؟» نه «چه کسی خطا کرد؟». خروجی: Timeline، علت ریشه‌ای و اقدام اصلاحی با مالک و تاریخ.
+حادثه‌ی واقعی با برچسب «حمله‌ی چندمرحله‌ای» نمی‌آید. چند هشدار پراکنده می‌آید و مهندس باید آن‌ها را به یک داستان تبدیل کند. بعد از پایان حادثه، ارزش واقعی در PIR است: اگر درس نگیرید، همان حادثه تکرار می‌شود. PIR خوب «چه کسی مقصر بود» نمی‌پرسد؛ «کدام سازوکار شکست خورد» را می‌پرسد.
 
-**جمع‌بندی اصلی درس:**
+### سناریو
 
-حادثه‌ی واقعی هیچ‌وقت با برچسب «حمله‌ی چندمرحله‌ای» نمی‌آید. چند هشدار پراکنده می‌آید و مهندس باید آن‌ها را به یک داستان وصل کند. PIR (Post-Incident Review) آموختن از آن داستان است، نه تقصیر.
+ساعت 02:10: Alert، ۴۰ ورود ناموفق SSH به FGT از IP `192.0.2.77`. 02:14: ورود موفق `admin`. 02:20: تغییر Policy و ایجاد حساب `svc-tmp`. 02:35: اتصال از FGT به شبکه‌ی داخلی (Scan). 03:05: کشف توسط SOC.
 
-### ۳) توضیح عمیق فنی
+### Timeline
 
-#### ۱) سناریو
+| ساعت | رویداد | منبع | ATT&CK |
+|---|---|---|---|
+| 02:10 | Brute-force SSH | Event Log | T1110 |
+| 02:14 | ورود موفق | Event Log | T1078 |
+| 02:20 | ساخت `svc-tmp` + تغییر Policy | Config Change Log | T1136 |
+| 02:35 | Scan داخلی | Forward Traffic | T1046 |
+| 03:05 | کشف | SOC | - |
 
-ساعت 02:10 Alert: ۴۰ ورود ناموفق SSH به FGT از IP 192.0.2.77. 02:14 ورود موفق admin. 02:20 تغییر Policy و ایجاد حساب `svc-tmp`. 02:35 اتصال از FGT به 10.20.0.10:445 (Scan). 03:05 SOC متوجه می‌شود.
+``` text
+MTTD = 03:05 - 02:10 = 55 minutes
+```
 
-#### ۲) Timeline
+### پاسخ
 
-| ساعت | رویداد | منبع |
+**Containment (03:10–03:25):**
+
+1. Block IP با Local-in.
+2. غیرفعال `admin` و `svc-tmp`، قطع نشست‌ها.
+3. جداسازی Mgmt (Console دسترسی).
+
+**Evidence:** Snapshot Config، Export Logها، Hash، فهرست Session (`diagnose sys session list`).
+
+**Eradication:** حذف `svc-tmp` و Policy اضافه، تغییر رمزها/کلیدها (SSH، API Token، PSK، LDAP Bind)، بررسی Backdoor (SNMP، SSH key، Script).
+
+**Recovery:** Restore Config پاک (قبل از 02:10)، Diff با Baseline، آزمون سرویس‌ها، پایش ۳۰ روزه.
+
+``` text
+MTTR (contain) = 03:25 - 03:05 = 20 minutes
+Total exposure = 03:25 - 02:10 = 75 minutes
+```
+
+### ریشه‌ی علت
+
+1. SSH روی WAN باز.
+2. بدون MFA و Trusted Host.
+3. رمز ضعیف.
+4. Alert Brute-force بود ولی هشدار صبح دیده شد (Triage ضعیف / بدون On-call).
+
+### اقدام پیشگیرانه (با Owner/Due)
+
+| اقدام | Owner | موعد |
 |---|---|---|
-| 02:10 | Brute-force SSH | Event log |
-| 02:14 | ورود موفق | Event log |
-| 02:20 | ساخت `svc-tmp` | Config change log |
-| 02:35 | Scan داخلی | Forward traffic |
-| 03:05 | کشف | SOC |
+| حذف SSH از WAN، Local-in | NetOps | ۲۴ ساعت |
+| MFA + Trusted Host | SecOps | ۷ روز |
+| Alert Critical با Page | SOC | ۷ روز |
+| Diff روزانه‌ی Config | NetOps | ۳۰ روز |
+| Playbook + Drill | SOC | ۳۰ روز |
 
-MTTD = 03:05 − 02:10 = 55 دقیقه.
-
-#### ۳) پاسخ
-
-**Containment:** Block IP با Local-in، غیرفعال کردن admin و `svc-tmp`، جدا کردن Mgmt، کنسول. **Eradication:** حذف حساب‌ها، تغییر رمزها/کلیدها، بررسی Config Diff با Backup، پچ. **Recovery:** Restore Config پاک، Monitoring تشدید.
-
-#### ۴) ریشه
-
-SSH روی WAN باز و بدون MFA/Trusted host؛ رمز ضعیف.
-
-#### ۵) اقدام پیشگیرانه
-
-حذف SSH از WAN، MFA، Trusted host، Alert بر Brute-force، بازبینی Config روزانه (Diff)، آموزش.
-
-#### ۶) PIR (قالب)
+### قالب PIR
 
 ``` text
 Summary / Impact / Timeline / Root cause / What went well / What failed / Actions (owner, due) / Lessons
 ```
 
-#### ۷) Rubric
+اصل: Blameless؛ سازوکار را اصلاح کنید نه فرد.
 
-Timeline ۲۰، Containment/Eradication ۲۰، ریشه ۲۰، اقدام ۲۰، PIR و MTTD/MTTR ۱۵، صداقت ۵. قبولی ۷۵.
+### Rubric (۱۰۰)
 
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| معیار | امتیاز |
 |---|---|
-| Containment | اول جلوگیری |
-| PIR | Blameless |
+| Timeline و ATT&CK | 20 |
+| Containment/Eradication/Recovery | 25 |
+| Root Cause | 15 |
+| Actions با Owner/Due | 15 |
+| PIR بدون سرزنش | 15 |
+| صداقت | 10 |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### مثال‌های حل‌شده
 
-#### مثال ساده — Timeline
+#### مثال ساده — MTTD
 
-``` text
-02:14 alert ; 02:18 triage ; 02:35 contain ; 04:00 eradicate ; 06:00 recover ; D+1 PIR
-```
+۵۵ دقیقه. هدف سازمان: ≤ ۱۵ دقیقه برای Critical. فاصله‌ی ۴۰ دقیقه ⇒ اقدام: Correlation (Brute→Success) و Page.
 
-#### مثال متوسط — شاخص
+#### مثال متوسط — What went well
 
-``` text
-MTTD = detection - start = 02:14 - 01:50 = 24 min
-```
+Backup پاک در دسترس بود، Console کار کرد، Playbook (جزئی) وجود داشت، Local-in سریع انجام شد. ثبت نقاط قوت برای تکرار.
 
-#### مثال سخت — فشار برای Reimage فوری
+#### مثال متوسط — اقدام بد/خوب
 
-حداقل Hash، Log و Session ظرف ۳۰ دقیقه، سپس Reimage؛ ریسک را به مدیر بگویید. Rubric: Triage ۲۰، Containment ۲۰، Evidence ۲۰، Scope ۲۰، Report ۲۰.
+بد: «آموزش کاربران» (مبهم). خوب: «MFA برای همه‌ی Adminها تا ۷ روز، Owner: SecOps، معیار: ورود بدون MFA ممکن نباشد (آزمون)».
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال سخت — Root Cause عمیق (5 Why)
 
-**ساده (حل‌شده):** MTTD = 03:05 − 02:10 = ۵۵ دقیقه؛ MTTR (تا Containment 03:25) = ۷۵ دقیقه از شروع.
+چرا نفوذ؟ SSH روی WAN. چرا باز؟ پس از Commissioning بسته نشد. چرا؟ Checklist نبود. چرا؟ فرایند تحویل بدون Review امنیتی. ریشه: فرایند، نه یک نفر. اقدام: Checklist اجباری قبل از Production.
 
-**متوسط (Containment):** اول IP مهاجم را Block و Admin/svc-tmp را غیرفعال؛ سپس Config را با Backup مقایسه؛ برای جلوگیری از حذف شواهد Log را ذخیره.
+#### مثال سخت — صداقت
 
-**سخت (PIR):** نوشتن PIR کامل: خلاصه، اثر (دسترسی به Config، Scan داخلی بدون نفوذ به سرور)، Timeline، ریشه (SSH WAN + رمز ضعیف)، موفق (Alert دریافت شد)، شکست (۵۵ دقیقه تأخیر)، اقدام‌ها با مالک و تاریخ.
+Lab اجرا نشده؛ سناریو نمونه است؛ PIR واقعی نیست. ثبت «آموزشی/Unverified».
 
-### ۷) پیاده‌سازی از مسیر CLI
+### Lab هدایت‌شده (اجرا نشده)
 
-``` text
-execute log filter category 1
-execute log display
-```
+1. Timeline بسازید.
+2. MTTD/MTTR حساب کنید.
+3. PIR بنویسید.
 
-### ۸) Verification (اثبات صحت)
+### عیب‌یابی سریع
 
-- Timeline با Log.
-- اقدام‌ها مالک دارند.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| Timeline ناقص | Log | NTP/Log متمرکز |
+| کشف دیر | Triage | Page |
+| تکرار | ریشه نادیده | 5 Why |
+| PIR سرزنش | فرهنگ | Blameless |
+| اقدام مبهم | Owner/Due | SMART |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- شواهد را حفظ کنید.
+سناریوی چندمرحله‌ای ⇒ Timeline و ATT&CK؛ MTTD/MTTR؛ پاسخ کامل؛ Root Cause با 5 Why؛ PIR بدون سرزنش با اقدام‌های SMART؛ صداقت.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- از Alert به داستان.
-- Containment.
-- Blameless PIR.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) MTTD چیست؟ *(پاسخ: 29-4-ت1)*
 
@@ -2499,7 +2267,7 @@ execute log display
 
 **Q1.** Quick quiz (English): What does MTTD measure? *(پاسخ: 29-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2508,110 +2276,13 @@ execute log display
 
 - *A blameless review focuses on process, not people.* ← بازبینی بی‌ملامت روی فرایند است نه افراد.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** آزمون Blue Team (اجرا نشده). **Evidence:** `03-ops/pir-29.md`.
 
-### ۱۵) منابع
+### منابع
 
 - NIST SP 800-61 Rev.2 (در ۲۰۲۵ با Rev.3 جایگزین شده؛ مدل ۵ فاز کلاسیک مرجع آموزشی)
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: PIR
-
-گزارش: Timeline، اثر، علت ریشه، اقدام، درس‌ها، اقدام پیشگیرانه (Blameless).
-
-**پرسش‌های مصاحبه**
-1. *Blameless؟* تمرکز بر سیستم.
-2. *Metrics؟* MTTD/MTTR.
-3. *پیگیری؟* Action Owner.
-
-### مثال حل‌شده: PIR
-
-``` text
-Impact : VPN unavailable 22 min
-Cause  : brute force + lockout policy
-Fix    : IP block + MFA enforced
-Action : geo-restrict (owner NOC, due 7 days)
-MTTD 5 min ; MTTR 22 min
-```
-
-### تکمیل عمیق: PIR و آزمون عملی — سناریوی کامل با Rubric
-
-#### چرا؟
-
-PIR (Post-Incident Review) همان لحظه‌ای است که حادثه‌ی بد را به یادگیری تبدیل می‌کنید. بدون PIR، حادثه‌ی بعدی همان خواهد بود.
-
-#### سناریو
-
-ساعت ۰۲:۱۴ هشدار: Beaconing از PC-HR-07 به 198.51.100.77. شما On-call هستید.
-
-#### گام‌های پاسخ
-
-``` text
-02:14 alert received
-02:18 triage : periodic 60s connections, low volume -> suspected C2
-02:25 verify : DNS/Proxy logs for domain ; check file hashes (EDR)
-02:35 contain: quarantine policy for PC-HR-07
-02:45 evidence: hash, logs, session, memory snapshot request
-03:30 scope  : search other hosts for same dst
-04:00 eradicate: reimage after evidence
-06:00 recover: monitor 72h
-D+1   PIR
-```
-
-#### مثال: شاخص‌ها
-
-``` text
-MTTD = detection time - start time
-MTTR = recovery time - detection time
-If compromise started 01:50, detected 02:14 -> MTTD = 24 min
-```
-
-#### Rubric
-
-``` text
-Triage 20 | Containment 20 | Evidence 20 | Scope/RCA 20 | Report 20
-```
-
-#### مثال متوسط — بخش‌های PIR
-
-1. خلاصه‌ی اجرایی
-2. Timeline
-3. علت ریشه‌ای
-4. اثر
-5. اقدامات اصلاحی با مالک و تاریخ
-6. درس‌ها
-
-#### مثال سخت — اختلاف نظر
-
-مدیر می‌خواهد سریع ماشین Reimage شود. شما Evidence می‌خواهید. راه: حداقل Hash، Log و تصویر دیسک (در صورت امکان) ظرف ۳۰ دقیقه، سپس Reimage؛ بیان ریسک حقوقی/تحلیلی.
-
-#### Lab
-
-با Log ساختگی، سناریو را بازی کنید و PIR بنویسید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| PIR مبهم | Timeline ناقص | Scribe |
-| اقدام بی‌مالک | سهل‌انگاری | مالک و تاریخ |
-| تکرار | علت ریشه‌ای رفع نشد | بازبینی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Blameless؟** تشویق گزارش‌دهی.
-**۲. MTTD؟** زمان تشخیص.
-**۳. چرا مالک برای اقدام؟** پیگیری.
-
-#### English Corner
-
-- *A good post-incident review leads to owned action items.*
-- Q: How would you handle pressure to reimage immediately?
 
 ## پاسخ‌های فصل 29
 
