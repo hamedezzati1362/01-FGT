@@ -1360,6 +1360,67 @@ end
 
 ثبت Timeline از همان لحظه.
 
+### تکمیل عمیق: Blue Team از صفر — چرخه‌ی پاسخ و منطق تصمیم
+
+#### چرا باید یاد بگیریم؟
+
+فایروال بهترین قفل است، ولی هیچ قفلی صددرصد نیست. پرسش درست این نیست که «آیا نفوذ می‌شود؟» بلکه «چقدر زود می‌فهمیم و چقدر سریع جلویش را می‌گیریم؟». Blue Team یعنی تیم دفاعی که **تشخیص** و **پاسخ** را مدیریت می‌کند.
+
+#### مدل شش‌مرحله‌ای NIST
+
+NIST = National Institute of Standards and Technology، یعنی «مؤسسه‌ی ملی استانداردها و فناوری» (آمریکا). سند SP 800-61 چرخه‌ی پاسخ به حادثه را تعریف می‌کند:
+
+1. Preparation (آمادگی)
+2. Detection & Analysis (تشخیص و تحلیل)
+3. Containment (مهار)
+4. Eradication (ریشه‌کنی)
+5. Recovery (بازیابی)
+6. Post-Incident Activity (درس‌آموخته)
+
+#### مثال ساده — Triage
+
+Triage یعنی دسته‌بندی هشدار بر اساس اولویت. هشدار: «۴۳ ورود ناموفق VPN». پرسش‌های ۳۰ ثانیه‌ای:
+
+1. منبع داخلی است یا اینترنتی؟ اینترنتی.
+2. حساب‌ها واقعی‌اند؟ بله.
+3. ورود موفقی هم بوده؟ بررسی می‌کنیم.
+
+#### مثال متوسط — IOC و TTP
+
+IOC = Indicator of Compromise (نشانه‌ی آلودگی): مثلاً IP 203.0.113.50 یا Hash فایل. TTP = Tactics, Techniques, Procedures (تاکتیک‌ها و تکنیک‌ها): مثلاً «Credential Stuffing». IOC زود کهنه می‌شود (IP عوض می‌شود)؛ TTP ماندگارتر است و با MITRE ATT&CK نام‌گذاری می‌شود.
+
+#### مثال سخت — اولویت‌بندی هم‌زمان
+
+دو هشدار: (الف) اسکن پورت از اینترنت به VIP، (ب) یک PC داخلی به یک IP مشکوک ترافیک ثابت هر ۶۰ ثانیه می‌فرستد (Beaconing). اولویت (ب) است چون نشانه‌ی آلودگی داخلی است، در حالی که (الف) نویز اینترنتی است.
+
+``` text
+Beacon interval ~ 60 s +- jitter ; low volume ; same dst
+=> suspected C2 communication
+```
+
+#### Lab
+
+یک Log ساختگی با ۵ هشدار بسازید و Triage کنید: اولویت، دلیل، اقدام.
+
+#### عیب‌یابی فرایند
+
+| علامت | علت | رفع |
+|---|---|---|
+| هشدار زیاد، تصمیم کم | آستانه ضعیف | Tuning |
+| دیر فهمیدن | Log ناقص | افزایش Log |
+| پاسخ بی‌نظم | Playbook نیست | نوشتن |
+
+#### پرسش‌ها با پاسخ
+
+**۱. IOC و TTP؟** نشانه در برابر رفتار.
+**۲. Triage چیست؟** اولویت‌بندی.
+**۳. چرا Beaconing خطرناک است؟** ارتباط پنهان با فرماندهی مهاجم.
+
+#### English Corner
+
+- *Triage first, then contain, then investigate.*
+- Q: What is the difference between IOC and TTP?
+
 ## درس 29-1 — Detection عملی: از Log فایروال به IOC/TTP، Baseline، آستانه، Correlation و Alert
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰، ۲۷-۰، ۲۷-۱، ۲۸-۲ · ≈ 8 ساعت**
@@ -1534,6 +1595,72 @@ events/5min = 43 ; baseline = 5/day -> ratio ~ 200x
 
 FP: کاربر با رمز فراموش‌شده (یک حساب، منبع داخلی).
 
+### تکمیل عمیق: ساخت Detection از Log فایروال
+
+#### چرا؟
+
+Log بدون قاعده‌ی تشخیص مثل دوربین بدون نگهبان است. این درس تبدیل Log خام به «هشدار قابل‌اتکا» را نشان می‌دهد.
+
+#### سه الگوی پایه
+
+| الگو | قاعده | معنی |
+|---|---|---|
+| Port Scan | ≥ 20 پورت مختلف از یک IP در 1 دقیقه | شناسایی |
+| Brute-force | ≥ 10 شکست ورود در 5 دقیقه | حدس رمز |
+| Beaconing | اتصال دوره‌ای به یک مقصد | C2 |
+
+#### مثال ساده — Port Scan
+
+``` text
+srcip=203.0.113.50 dstip=203.0.113.3 dstport in {21,22,23,25,80,110,443,3389,...} action=deny
+count distinct dstport per 1 min = 37  -> alert
+```
+
+#### مثال متوسط — Baseline و نسبت
+
+``` text
+Baseline failed logins = 5 / day
+Observed = 43 / 5 min
+Ratio ~ 43 / (5/288) ~ 2476x   (288 five-minute windows per day)
+```
+
+نتیجه: بسیار غیرعادی ⇒ هشدار.
+
+#### مثال سخت — کاهش False Positive
+
+اسکنر آسیب‌پذیری داخلی (Nessus) هر شب اسکن می‌کند و هشدار Port Scan می‌دهد. راه‌حل: IP اسکنر در Allowlist مستند با مالک و تاریخ؛ نه خاموش‌کردن قاعده.
+
+#### غنی‌سازی (Enrichment)
+
+GeoIP، Reputation، مالک IP. هر هشدار با این‌ها تصمیم را سریع‌تر می‌کند.
+
+#### Lab
+
+با یک فایل Log نمونه و `awk/grep` تعداد پورت‌های متمایز را بشمارید.
+
+``` text
+awk '/action=deny/ {print $1}' fw.log | sort | uniq -c | sort -nr | head
+```
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| هشدار زیاد | قاعده عمومی | Allowlist مستند |
+| هشدار نیامد | Log ناقص | فعال‌سازی Log |
+| ساعت ناهماهنگ | NTP | همگام‌سازی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Enrichment چیست؟** افزودن زمینه.
+**۲. چرا Allowlist مستند؟** ممیزی.
+**۳. چرا NTP؟** ترتیب رویدادها.
+
+#### English Corner
+
+- *Tune detections; do not just silence them.*
+- Q: How would you detect a port scan from firewall logs?
+
 ## درس 29-2 — Response و Playbook: مهار، Evidence، ریشه‌کنی، بازیابی و ارتباطات با مثال‌های اجرایی
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰، ۲۹-۱، ۱۳-۷ · ≈ 8 ساعت**
@@ -1700,6 +1827,82 @@ diagnose sys session filter clear
 
 قبل از Reimage Evidence جمع شود.
 
+### تکمیل عمیق: Response — Playbook مهار، Evidence و بازیابی
+
+#### چرا؟
+
+وقتی حادثه رخ می‌دهد، وقت فکر کردن نیست. Playbook همان «دستورالعمل آتش‌نشانی» است: از پیش نوشته و تمرین‌شده.
+
+#### ترتیب مهم در پاسخ
+
+1. **تأیید** (آیا واقعاً حادثه است؟)
+2. **مهار** (جلوگیری از گسترش)
+3. **Evidence** (حفظ شواهد)
+4. **ریشه‌کنی**
+5. **بازیابی**
+6. **گزارش**
+
+نکته‌ی مهم: Evidence قبل از ریشه‌کنی. اگر ماشین را Reimage کنید، شواهد از بین می‌رود.
+
+#### مثال ساده — مهار شبکه‌ای
+
+``` text
+config firewall policy
+ edit 999
+  set name "QUARANTINE-PC"
+  set srcintf "port2"
+  set dstintf "any"
+  set srcaddr "PC-INFECTED"
+  set dstaddr "all"
+  set action deny
+  set logtraffic all
+ next
+end
+```
+
+Policy را بالاتر از بقیه قرار دهید (move).
+
+#### مثال متوسط — جمع‌آوری Evidence
+
+``` text
+sha256sum suspicious.exe
+execute log filter dev fortios ; execute log display
+diagnose sys session filter src 10.10.0.77 ; diagnose sys session list
+```
+
+Hash، Log و Session را قبل از Reimage ذخیره کنید.
+
+#### مثال سخت — حرکت جانبی
+
+PC آلوده چند سرور را اسکن کرده. تحلیل: Log SMB (445) از آن PC. مهار: بستن PC + تغییر رمز حساب‌های در معرض + بررسی سرورهای لمس‌شده برای Persistence.
+
+#### Chain of Custody
+
+ثبت اینکه شواهد کی، توسط چه کسی، چگونه جمع و کجا نگهداری شد.
+
+#### Lab
+
+یک Playbook یک‌صفحه‌ای برای «PC آلوده» بنویسید و در Lab اجرا کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| شواهد از دست رفت | Reimage زود | رعایت ترتیب |
+| مهار ناقص | Policy پایین | move بالا |
+| تکرار | علت ریشه‌ای | RCA |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Evidence قبل از ریشه‌کنی؟** پاک‌شدن.
+**۲. Quarantine چیست؟** ایزوله‌سازی.
+**۳. Chain of Custody؟** مسیر نگهداری شواهد.
+
+#### English Corner
+
+- *Contain first, but preserve evidence.*
+- Q: What is chain of custody?
+
 ## درس 29-3 — Lifecycle، Patch و Vulnerability Management: Inventory، EoL، PSIRT/CVE، اولویت‌بندی و Rollback
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۴، ۲۹-۰ · ≈ 8 ساعت**
@@ -1852,6 +2055,74 @@ Inventory نسخه‌ها، پایش PSIRT، پنجره‌ی Patch، آزمون 
 ### مثال حل‌شده: تصمیم Patch
 
 PSIRT جدید برای SSL-VPN با Exploit فعال: ۱) Inventory نسخه ۲) اگر آسیب‌پذیر و در اینترنت ⇒ اضطراری ۳) Workaround موقت (غیرفعال‌سازی/Local-in) ۴) Patch در Lab ۵) پنجره‌ی تغییر ۶) تأیید `get system status`.
+
+### تکمیل عمیق: مدیریت چرخه‌ی عمر و آسیب‌پذیری
+
+#### چرا؟
+
+بسیاری از نفوذها با آسیب‌پذیری‌های «ماه‌ها قدیمی» انجام می‌شوند که وصله‌اش موجود بود. مدیریت Patch و EoL (End of Life، یعنی «پایان پشتیبانی») بخش جدانشدنی امنیت است.
+
+#### Inventory
+
+``` text
+Device  Model  Version  EoS date  Owner  Exposure
+FGT-1   VM64   7.0.3    ?         NOC    internet
+```
+
+بدون Inventory دقیق نمی‌دانید چه چیزی در معرض خطر است.
+
+#### فرایند آسیب‌پذیری
+
+1. دریافت اعلان (PSIRT Fortinet، Cisco Security Advisories).
+2. تطبیق با Inventory.
+3. ارزیابی: در اینترنت؟ Exploit فعال؟ CVSS؟
+4. تصمیم: Patch / Workaround / پذیرش ریسک.
+5. آزمون در Lab.
+6. اجرا در Window.
+7. Verify.
+
+#### مثال ساده — اولویت‌بندی
+
+| آسیب‌پذیری | در اینترنت | Exploit فعال | اولویت |
+|---|---|---|---|
+| A | بله | بله | فوری |
+| B | بله | خیر | بالا |
+| C | خیر | خیر | عادی |
+
+#### مثال متوسط — Workaround
+
+اگر Patch هنوز آماده نیست، Local-in Policy برای محدودکردن دسترسی مدیریتی/SSL VPN به IPهای مجاز یا غیرفعال‌کردن موقت قابلیت (طبق Advisory رسمی).
+
+#### مثال سخت — EoL
+
+دستگاهی که پشتیبانی ندارد ولی جایگزین بودجه ندارد. راه: ثبت ریسک، محدودسازی دسترسی، پایش شدید و برنامه‌ی جایگزینی با تاریخ.
+
+``` text
+Residual risk = Likelihood x Impact (after controls)
+```
+
+#### Lab
+
+یک Advisory واقعی (از سایت رسمی) را با Inventory فرضی تطبیق دهید و تصمیم را بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Patch عقب‌افتاده | بدون Window | زمان‌بندی ماهانه |
+| ارتقا شکست | بدون Lab | آزمون |
+| CVSS گمراه‌کننده | بافت نادیده | بافت سازمانی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا CVSS کافی نیست؟** Exposure و Exploit فعال هم مهم‌اند.
+**۲. EoL چیست؟** پایان پشتیبانی.
+**۳. Workaround چه موقع؟** وقتی Patch آماده نیست.
+
+#### English Corner
+
+- *Prioritize vulnerabilities that are exposed and actively exploited.*
+- Q: What is a compensating control?
 
 ## درس 29-4 — گزارش حادثه (PIR) و آزمون عملی Blue Team: سناریوی چندمرحله‌ای با کلید و Rubric
 
@@ -2007,6 +2278,80 @@ Fix    : IP block + MFA enforced
 Action : geo-restrict (owner NOC, due 7 days)
 MTTD 5 min ; MTTR 22 min
 ```
+
+### تکمیل عمیق: PIR و آزمون عملی — سناریوی کامل با Rubric
+
+#### چرا؟
+
+PIR (Post-Incident Review) همان لحظه‌ای است که حادثه‌ی بد را به یادگیری تبدیل می‌کنید. بدون PIR، حادثه‌ی بعدی همان خواهد بود.
+
+#### سناریو
+
+ساعت ۰۲:۱۴ هشدار: Beaconing از PC-HR-07 به 198.51.100.77. شما On-call هستید.
+
+#### گام‌های پاسخ
+
+``` text
+02:14 alert received
+02:18 triage : periodic 60s connections, low volume -> suspected C2
+02:25 verify : DNS/Proxy logs for domain ; check file hashes (EDR)
+02:35 contain: quarantine policy for PC-HR-07
+02:45 evidence: hash, logs, session, memory snapshot request
+03:30 scope  : search other hosts for same dst
+04:00 eradicate: reimage after evidence
+06:00 recover: monitor 72h
+D+1   PIR
+```
+
+#### مثال: شاخص‌ها
+
+``` text
+MTTD = detection time - start time
+MTTR = recovery time - detection time
+If compromise started 01:50, detected 02:14 -> MTTD = 24 min
+```
+
+#### Rubric
+
+``` text
+Triage 20 | Containment 20 | Evidence 20 | Scope/RCA 20 | Report 20
+```
+
+#### مثال متوسط — بخش‌های PIR
+
+1. خلاصه‌ی اجرایی
+2. Timeline
+3. علت ریشه‌ای
+4. اثر
+5. اقدامات اصلاحی با مالک و تاریخ
+6. درس‌ها
+
+#### مثال سخت — اختلاف نظر
+
+مدیر می‌خواهد سریع ماشین Reimage شود. شما Evidence می‌خواهید. راه: حداقل Hash، Log و تصویر دیسک (در صورت امکان) ظرف ۳۰ دقیقه، سپس Reimage؛ بیان ریسک حقوقی/تحلیلی.
+
+#### Lab
+
+با Log ساختگی، سناریو را بازی کنید و PIR بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| PIR مبهم | Timeline ناقص | Scribe |
+| اقدام بی‌مالک | سهل‌انگاری | مالک و تاریخ |
+| تکرار | علت ریشه‌ای رفع نشد | بازبینی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Blameless؟** تشویق گزارش‌دهی.
+**۲. MTTD؟** زمان تشخیص.
+**۳. چرا مالک برای اقدام؟** پیگیری.
+
+#### English Corner
+
+- *A good post-incident review leads to owned action items.*
+- Q: How would you handle pressure to reimage immediately?
 
 ## پاسخ‌های فصل 29
 
@@ -2269,6 +2614,71 @@ Objects merge -> ~400 policies
 
 پیش از انتقال، Hygiene را با مالکان تأیید کنید.
 
+### تکمیل عمیق: چرا Migration فقط «کپی Config» نیست؟
+
+#### چرا باید یاد بگیریم؟
+
+نقل‌مکان به خانه‌ی جدید را تصور کنید. اگر همه‌چیز را بدون مرتب‌کردن بردارید، خانه‌ی جدید هم پر از آشغال می‌شود. Migration فایروال هم همین است: ۱۲۰۰ قاعده‌ی قدیمی که ۴۸۰ تای آنها ۱۲ ماه است استفاده نشده‌اند. اگر همه را منتقل کنید، «بدهی فنی» را به سیستم جدید می‌برید. Migration فرصتی برای **پاک‌سازی** و **ثبت مستندات** است.
+
+#### توضیح ساده
+
+یک Migration خوب شش مرحله دارد:
+
+1. **Inventory**: چه چیزی داریم؟ (Policy، NAT، VPN، Route، کاربران)
+2. **Hygiene**: چه چیزی را نباید ببریم؟
+3. **Mapping**: هر مفهوم قدیمی در دستگاه جدید چیست؟
+4. **Build & Test in Lab**: ساخت و آزمون.
+5. **Cutover**: لحظه‌ی سوییچ.
+6. **Rollback / Stabilize**: بازگشت یا تثبیت.
+
+#### مثال ساده — برآورد حجم
+
+``` text
+Total rules              = 1200
+Never hit (12 months)    = 480
+Duplicates / shadowed    = 120
+Candidates to migrate    = 1200 - 480 - 120 = 600
+```
+
+مراحل: ۱) شمارش ۲) تفکیک ۳) تأیید مالک ۴) انتقال.
+
+#### مثال متوسط — روش‌های Cutover
+
+| روش | شرح | ریسک | زمان قطع |
+|---|---|---|---|
+| Big Bang | همه یکباره | بالا | کوتاه |
+| Phased | شعبه‌به‌شعبه | کم | طولانی |
+| Parallel Run | دو دستگاه هم‌زمان با مقایسه | کم | صفر |
+
+انتخاب: اگر سرویس حیاتی دارید و تحمل قطع نیست ⇒ Parallel/Phased.
+
+#### مثال سخت — وابستگی پنهان
+
+پس از Cutover یک برنامه‌ی قدیمی کار نمی‌کند. علت: ACL قدیمی یک مسیر UDP/10050 را (با `permit udp any any`) باز می‌گذاشت و کسی ننوشته بود. راه کشف: Log دستگاه قدیمی ۳۰ روزه با Hit Count و مقایسه با Matrix قبل/بعد. درس: Log قبل از خاموش‌کردن دستگاه قدیمی را نگه دارید.
+
+#### Lab
+
+یک Config نمونه‌ی ACL با ۵۰ خط بسازید؛ Hit Count فرضی بگذارید؛ فهرست «حذف/نگه‌داشتن/بازبینی» بنویسید.
+
+#### عیب‌یابی Migration
+
+| علامت | علت | رفع |
+|---|---|---|
+| سرویس بعد Cutover نمی‌آید | Rule حذف‌شده‌ی ضروری | Log قدیمی + Matrix |
+| Performance افت | UTM جدید فعال | Baseline |
+| Session قطع | NAT متفاوت | آزمون NAT |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Hygiene قبل از انتقال؟** تا زباله منتقل نشود.
+**۲. Parallel Run چه مزیتی دارد؟** مقایسه بی‌قطعی.
+**۳. Log قدیمی چرا؟** کشف وابستگی پنهان.
+
+#### English Corner
+
+- *Clean up rules before migrating them.*
+- Q: Why keep the old device's logs after cutover?
+
 ## درس 30-1 — Migration: Inventory، Rule Hygiene و نگاشت دقیق Object/NAT/Policy/VPN به FortiGate
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰، ۲۵-۱، ۱۳-۱ · ≈ 8 ساعت**
@@ -2434,6 +2844,83 @@ Object/NAT/Policy: هر مورد Cisco به معادل Fortinet با تفاوت 
 
 Cisco: `ip nat inside source static 10.30.0.10 203.0.113.10` ⇒ FortiGate: VIP (`extip 203.0.113.10`, `mappedip 10.30.0.10`) + Policy به VIP. تفاوت: در FortiGate بدون Policy ترافیک رد می‌شود.
 
+### تکمیل عمیق: نگاشت دقیق Object، NAT و Policy از Cisco به FortiGate
+
+#### چرا؟
+
+ترجمه‌ی تحت‌اللفظی غلط است. مثل ترجمه‌ی ضرب‌المثل‌ها: ظاهر کلمات یکی است ولی معنا فرق می‌کند. مثلاً ACL سیسکو Stateless است و ترتیب Wildcard دارد؛ Policy فورتی‌گیت Stateful است و بر اساس Interface/Zone.
+
+#### جدول نگاشت
+
+| مفهوم | Cisco | FortiGate |
+|---|---|---|
+| Host/Network Object | `object network` | `firewall address` |
+| Service Object | `object service` | `firewall service custom` |
+| ACL | `access-list` | `firewall policy` |
+| Static NAT | `ip nat inside source static` | VIP + Policy |
+| PAT | `ip nat inside source list ... overload` | Policy NAT (Interface/IP Pool) |
+
+#### مثال ساده — Wildcard به Mask
+
+``` text
+wildcard 0.0.0.255  -> mask 255.255.255.0 (/24)
+wildcard 0.0.3.255  -> mask 255.255.252.0 (/22)
+```
+
+قاعده: Mask = 255.255.255.255 منهای Wildcard (در هر بایت).
+
+#### مثال متوسط — Static NAT
+
+سیسکو:
+
+``` text
+ip nat inside source static tcp 10.30.0.10 443 203.0.113.10 443
+```
+
+FortiGate:
+
+``` text
+config firewall vip
+ edit "VIP-WEB"
+  set extintf "port1"
+  set extip 203.0.113.10
+  set mappedip "10.30.0.10"
+  set portforward enable
+  set extport 443
+  set mappedport 443
+ next
+end
+```
+
+بعد یک Policy با dstaddr = VIP. فراموشی Policy یعنی ترافیک رد می‌شود.
+
+#### مثال سخت — ترتیب ACL و Overlap
+
+در ACL سیسکو یک `deny` خاص قبل از `permit` عمومی است. وقتی هر خط به Policy تبدیل می‌شود، ترتیب را عیناً نگه دارید و Shadow را با iprope lookup بررسی کنید.
+
+#### Lab
+
+سه ACL نمونه را دستی به Policy تبدیل کنید و با Lookup بررسی کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ترافیک برگشت رد | فرض Stateless | Stateful بودن |
+| NAT کار نمی‌کند | Policy بدون nat | `set nat enable` |
+| VIP جواب نمی‌دهد | Policy ناقص | افزودن Policy |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Wildcard 0.0.0.63 یعنی؟** Mask 255.255.255.192 (/26).
+**۲. چرا VIP Policy می‌خواهد؟** DNAT جدا از مجوز.
+**۳. تفاوت Stateless/Stateful؟** برگشت خودکار.
+
+#### English Corner
+
+- *A wildcard mask is the inverse of a subnet mask.*
+- Q: Why does a VIP still need a policy?
+
 ## درس 30-2 — Plan، Cutover و Rollback: برنامه‌ی تغییر، معیار Go/No-Go، Trigger و ارتباطات
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰، ۳۰-۱، ۳۲-۰ · ≈ 8 ساعت**
@@ -2596,6 +3083,70 @@ If any critical app fails and no fix in 30m -> ROLLBACK
 ```
 
 Rollback: بازگرداندن کابل/Route به دستگاه قدیم و Config قبلی.
+
+### تکمیل عمیق: برنامه‌ی Cutover، معیار Go/No-Go و Rollback
+
+#### چرا؟
+
+شب Cutover، تصمیم‌ها زیر فشار گرفته می‌شود. اگر معیار را از قبل ننوشته باشید، همه‌چیز احساسی می‌شود. «Go/No-Go» یعنی شرط‌های از پیش‌نوشته برای ادامه یا بازگشت.
+
+#### خط زمانی نمونه
+
+``` text
+T-7d   freeze changes on old device
+T-3d   rehearsal in Lab ; communicate to users
+T-1h   backup old + new, verify access, console ready
+T0     switch (routes/cables/DNS)
+T+15m  verify (checklist)
+T+30m  Go/No-Go decision
+T+24h  monitor, then close
+```
+
+#### Checklist پس از سوییچ
+
+1. DNS درست؟ (`nslookup`)
+2. ۵ کاربر نمونه اینترنت دارند؟
+3. برنامه‌ی حیاتی (ERP) باز می‌شود؟
+4. VPN شعب Up؟
+5. Log جدید دریافت می‌شود؟
+
+#### مثال ساده
+
+همه‌ی ۵ مورد OK ⇒ GO.
+
+#### مثال متوسط — معیار No-Go
+
+``` text
+If critical app down AND no fix within 30 min -> ROLLBACK
+If >10% of tunnels down -> ROLLBACK
+```
+
+#### مثال سخت — Rollback ناقص
+
+در Rollback IP دستگاه قدیم به ARP Cache سوییچ‌ها گیر کرده و ۵ دقیقه طول کشید. درس: در تمرین Rollback زمان بگیرید و Gratuitous ARP یا پاک‌سازی ARP را در Runbook بنویسید.
+
+#### Lab
+
+Cutover را در Lab اجرا و Rollback را زمان بگیرید؛ هدف < ۱۰ دقیقه.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| بعضی کاربران قطع | ARP قدیمی | پاک‌سازی ARP |
+| DNS قدیمی | TTL بالا | کاهش TTL قبل از Cutover |
+| VPN بالا نمی‌آید | IP عمومی تغییر | هماهنگی با Peer |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا TTL قبل از Cutover کم می‌شود؟** تغییر DNS سریع اعمال شود.
+**۲. چرا Rehearsal؟** کشف مشکلات.
+**۳. Go/No-Go چیست؟** معیار از پیش‌تعریف‌شده.
+
+#### English Corner
+
+- *Define rollback criteria before the window starts.*
+- Q: What do you verify after the switch?
 
 ## درس 30-3 — تست پیش/پس Migration و Evidence: Test Matrix، مقایسه‌ی Session/Log، RCA اختلاف‌ها
 
@@ -2774,6 +3325,77 @@ Matrix: مبدأ، مقصد، سرویس، نتیجه‌ی قبل/بعد. تفا
 
 ردیف ۳ تفاوت است و باید قبل از Cutover حل شود.
 
+### تکمیل عمیق: تست پیش/پس Migration با Matrix و Evidence
+
+#### چرا؟
+
+بعد از Cutover «به نظر خوب است» کافی نیست. باید بدانید دقیقاً چه چیزی قبل از Cutover کار می‌کرد و بعد هم کار می‌کند. Matrix قبل/بعد این کار را ساده می‌کند.
+
+#### ساخت Matrix
+
+ستون‌ها: شماره، از، به، سرویس، نتیجه‌ی قبل، نتیجه‌ی بعد، وضعیت.
+
+| # | از | به | سرویس | قبل | بعد | وضعیت |
+|---|---|---|---|---|---|---|
+| 1 | Users | ERP | 443 | OK | OK | هم‌خوان |
+| 2 | Guest | Servers | any | Block | Block | هم‌خوان |
+| 3 | Users | DB | 1433 | Block | OPEN | **بررسی** |
+
+ردیف ۳ نقض است: چیزی که قبلاً بسته بود، حالا باز است؛ این خطر امنیتی است.
+
+#### مثال ساده — اسکریپت آزمون
+
+``` text
+for t in "10.20.0.10 443" "10.30.3.10 1433"; do
+  set -- $t
+  nc -z -w2 $1 $2 && echo "$1:$2 OPEN" || echo "$1:$2 CLOSED"
+done
+```
+
+یک بار قبل و یک بار بعد اجرا و خروجی‌ها را با `diff` مقایسه کنید.
+
+#### مثال متوسط — مقایسه با diff
+
+``` text
+diff before.txt after.txt
+< 10.30.3.10:1433 CLOSED
+> 10.30.3.10:1433 OPEN
+```
+
+تفسیر: یک پورت جدید باز شده؛ علت را در Policy پیدا کنید (احتمالاً Policy عمومی).
+
+#### مثال سخت — تفاوت قابل‌قبول
+
+پس از Migration، تأخیر ۱۲ms به ۱۸ms رسید. آیا خطاست؟ معیار پذیرش: «تأخیر حداکثر +۲۰٪». ۱۸/۱۲ = ۱.۵ ⇒ ۵۰٪ افزایش ⇒ غیرقابل‌قبول؛ بررسی UTM/Offload.
+
+``` text
+Increase % = (new - old) / old x 100
+(18 - 12) / 12 x 100 = 50 %
+```
+
+#### Lab
+
+Matrix با ۲۰ ردیف بسازید، دو بار اجرا کنید و تفاوت‌ها را تحلیل کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| تفاوت ناگهانی | Policy گسترده | تنگ‌سازی |
+| آزمون ناپایدار | زمان‌بندی | تکرار ۳ بار |
+| افت کارایی | UTM | بهینه‌سازی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا آزمون منفی؟** چیزی که باید بسته باشد، باز نشده باشد.
+**۲. diff چرا؟** تفاوت خودکار.
+**۳. معیار تأخیر؟** از قبل تعیین.
+
+#### English Corner
+
+- *Compare before and after with the same test set.*
+- Q: What does a new OPEN result in the matrix mean?
+
 ## درس 30-4 — Gate G11: آزمون عملی Migration — صورت مسئله، کلید پاسخ کامل و Rubric
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۱ تا ۳۰-۳ · ≈ 12 ساعت**
@@ -2930,6 +3552,71 @@ Inventory ۲۰، نگاشت ۲۵، Cutover ۲۵، تست ۲۰، گزارش ۱۰.
 ### مثال حل‌شده: نمره‌ی G11
 
 اگر Inventory و نگاشت کامل ولی Cutover بدون Rollback آزمون‌شده: 20+25+10+20+10 = 85 از 100؛ نمره‌ی Cutover کامل فقط با آزمون Rollback.
+
+### تکمیل عمیق: ارزیابی G11 — حل کامل یک پروژه‌ی Migration نمونه
+
+#### چرا؟
+
+Gate یعنی ایست بازرسی. فقط وقتی از G11 عبور می‌کنید که ثابت کنید یک Migration را از ابتدا تا انتها درست می‌توانید انجام دهید.
+
+#### صورت مسئله‌ی نمونه
+
+یک ASA با ۳۰۰ ACL و ۲۰ NAT باید به FortiGate منتقل شود. ۸ شعبه VPN دارند. پنجره‌ی تغییر: ۴ ساعت.
+
+#### کلید پاسخ مرحله‌ای
+
+1. **Inventory**: شمارش، Hit Count، تماس مالکان.
+2. **Hygiene**: ۳۰٪ بی‌استفاده؛ تأیید حذف.
+3. **نگاشت**: Objectها، NAT (VIP/IP Pool)، VPN.
+4. **Lab**: ساخت و Matrix.
+5. **Plan**: Cutover T0، Go/No-Go، Rollback.
+6. **اجرا و Verify**.
+7. **Closure**: گزارش و درس‌ها.
+
+#### مثال متوسط — زمان‌بندی ۴ ساعته
+
+``` text
+00:00-00:30 backup + verify
+00:30-01:30 switch + routing
+01:30-02:30 VPN peers (8 x ~7 min)
+02:30-03:15 test matrix
+03:15-03:45 decision + comms
+03:45-04:00 buffer
+```
+
+#### مثال سخت — دو Peer VPN هماهنگ نشدند
+
+شعبه ۳ و ۶ Tunnel ندارند. بررسی: IP عمومی جدید در Peer هنوز تغییر نکرده. تصمیم: پیش از ساعت ۰۲:۳۰ هماهنگی تلفنی؛ در غیر این صورت این دو شعبه را «Deferred» کنید و گزارش دهید.
+
+#### Rubric
+
+``` text
+Inventory 20 | Mapping 25 | Cutover plan 25 | Testing 20 | Report 10
+Example: 18 + 22 + 20 + 18 + 9 = 87
+```
+
+#### Lab
+
+یک صورت مسئله‌ی خودتان بنویسید و با Rubric نمره‌گذاری کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ناتمام ماندن زمان | برنامه‌ریزی ضعیف | Buffer |
+| Peer ناهماهنگ | ارتباط | تماس زودتر |
+| Rollback ناکافی | آزمون‌نشده | تمرین |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Deferred چیست؟** کار موکول‌شده با ثبت.
+**۲. Buffer چرا؟** غافلگیری.
+**۳. G11 چه می‌سنجد؟** کل چرخه.
+
+#### English Corner
+
+- *Not everything must succeed on cutover night, but everything must be recorded.*
+- Q: How do you schedule a four-hour window?
 
 ## پاسخ‌های فصل 30
 
