@@ -2671,126 +2671,156 @@ AAA = Authentication (چه کسی هستی؟)، Authorization (چه اجازه�
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده»؛ وابستگی لایسنس هر قابلیت صریح ذکر شده است. دستورهای Windows را شما اجرا می‌کنید؛ رمزها نمونه‌اند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. زیرساخت AD را برای Lab بسازد (Forest/Domain، DNS، OU، گروه، کاربر تست، حساب سرویس).
-2. وابستگی‌های FortiGate (DNS، زمان، پورت‌ها) را بشناسد.
-3. ساختار OU/گروه را برای Policy هویتی طراحی کند.
-4. Snapshot و Rollback را اجرا کند.
+1. زیرساخت Active Directory (AD) را برای Lab بسازید: Forest/Domain، DNS، OU، گروه، کاربر تست و حساب سرویس.
+2. وابستگی‌های FortiGate به AD (DNS، زمان، پورت‌ها) را بشناسید.
+3. ساختار OU و گروه را برای Policy هویتی طراحی کنید.
+4. اصل حداقل دسترسی را برای حساب سرویس رعایت کنید.
+5. سلامت AD را با dcdiag و آزمون‌های ساده بسنجید.
+6. Snapshot و Rollback را قبل از تغییر اجرا کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا قبل از FortiGate سلامت AD را بسنجیم؟** اگر AD ناسالم باشد (DNS خراب، ساعت اشتباه)، هر آزمون هویت شکست می‌خورد و علت را در FortiGate می‌گردید. این درس Lab هویت را آماده می‌کند: AD، DNS، OU، گروه‌ها و حساب سرویس با کمترین مجوز.
+اگر بخواهید به یک مهمان در هتل اتاق بدهید، به لیست رزرو (دفتر هتل) نیاز دارید؛ فایروال هم برای Policy مبتنی بر «چه کسی» به یک «دفتر هویت» نیاز دارد: Active Directory. ولی اگر دفتر هتل نامرتب باشد (DNS خراب، ساعت اشتباه، گروه‌های شلوغ)، هیچ Policy درستی ساخته نمی‌شود. بیشتر شکست‌های «LDAP کار نمی‌کند» واقعاً مشکل AD/DNS/زمان است نه FortiGate. پس قبل از FortiGate، AD را تمیز می‌سازیم.
 
-**جمع‌بندی اصلی درس:** FortiGate برای Policy مبتنی بر هویت به یک Directory نیاز دارد. بدون AD تمیز و DNS/ساعت درست، همه‌ی مراحل بعد (LDAP، FSSO، RADIUS) شکست می‌خورند و مشکل در جای اشتباه جست‌وجو می‌شود.
+### نقش AD در این Lab
 
-### ۳) توضیح عمیق فنی
+| مؤلفه | نقش | مثال |
+|---|---|---|
+| Domain Controller (DC) | مرجع هویت | DC01.corp.example |
+| DNS | پیدا کردن DC (SRV) | corp.example |
+| OU | سازمان‌دهی | OU=Users,OU=Corp |
+| Group | اساس Policy | GG-Internet-Users |
+| Service Account | حساب خواندن LDAP | svc-fgt-ldap |
 
-#### ۱) طراحی دامنه‌ی Lab
+### آدرس‌دهی Lab (نمونه)
 
 ``` text
-Domain  : lab.local       DC: DC1 192.168.90.40   DNS: DC1
-OU      : Corp -> Users, Groups, ServiceAccounts
-Groups  : GRP-FINANCE, GRP-IT, GRP-GUEST
-Users   : u.fin1 (Finance), u.it1 (IT), svc-fgt (read-only bind)
-Time    : DC is time source (NTP upstream); FortiGate uses same NTP
+DC01        10.20.0.10   corp.example
+Users net   10.10.0.0/24
+FortiGate   10.20.0.1    (LDAP client)
+DNS         10.20.0.10
 ```
 
-#### ۲) چرا این طراحی؟
+### گام‌ها
 
-- **OU جدا برای ServiceAccounts:** حساب Bind حداقل دسترسی و قابل‌ممیزی.
-- **گروه‌ها برای نقش:** Policy روی گروه نوشته می‌شود، نه کاربر.
-- **DNS روی DC:** AD بدون DNS درست کار نمی‌کند (SRV records).
-- **زمان:** Kerberos به اختلاف زمان حساس است (۱۷-۰).
+1. نصب Windows Server و نقش AD DS + DNS.
+2. ساخت Forest `corp.example`.
+3. OUها: Corp، Users، Groups، Service.
+4. گروه‌ها: `GG-Internet-Users`، `GG-Admins`.
+5. کاربر تست: `alice`، `bob`.
+6. حساب سرویس: `svc-fgt-ldap` (فقط عضو Domain Users، بدون ادمین).
+7. DNS: DC خودش را به‌عنوان DNS و Forwarder به بیرون.
+8. زمان: DC با منبع زمان معتبر؛ کلاینت‌ها و FortiGate با همان NTP.
 
-#### ۳) پورت‌های مورد نیاز (مرور)
+### دستورهای PowerShell (اجرا نشده)
 
-LDAP 389/TCP، LDAPS 636/TCP، Kerberos 88/TCP+UDP، DNS 53، RADIUS 1812/UDP (NPS)، FSSO Collector 8000/TCP (۱۷-۰).
+``` text
+Install-WindowsFeature AD-Domain-Services -IncludeManagementTools
+Install-ADDSForest -DomainName "corp.example" -DomainNetbiosName "CORP"
+New-ADOrganizationalUnit -Name "Corp" -Path "DC=corp,DC=example"
+New-ADOrganizationalUnit -Name "Users" -Path "OU=Corp,DC=corp,DC=example"
+New-ADGroup -Name "GG-Internet-Users" -GroupScope Global -Path "OU=Groups,OU=Corp,DC=corp,DC=example"
+New-ADUser -Name "alice" -SamAccountName alice -Path "OU=Users,OU=Corp,DC=corp,DC=example" -AccountPassword (Read-Host -AsSecureString) -Enabled $true
+Add-ADGroupMember -Identity "GG-Internet-Users" -Members alice
+```
 
-### ۴) طراحی و تصمیم‌گیری
+رمزها در ریپو ذخیره نمی‌شوند؛ از Read-Host/Vault.
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| OU/گروه | ساختار نقش‌محور؛ نام‌گذاری استاندارد |
-| حساب سرویس | Read-only، رمز قوی، بدون Interactive logon |
-| زمان | یک منبع NTP برای DC و FGT |
+### وابستگی‌های FortiGate
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+| نیاز | چرا | آزمون |
+|---|---|---|
+| DNS | یافتن DC | `execute ping dc01.corp.example` |
+| زمان | Kerberos (حداکثر ۵ دقیقه اختلاف) | `diagnose sys ntp status` |
+| پورت 389/636 | LDAP/LDAPS | `execute telnet 10.20.0.10 636` (در دسترسی) |
+| پورت 88/445 | Kerberos/SMB (FSSO) | Policy بین Zone‌ها |
 
-#### مثال ساده — سلامت
+### سلامت AD
 
 ``` text
 dcdiag /v
 repadmin /replsummary
-nslookup -type=SRV _ldap._tcp.corp.local
-w32tm /query /status
+nltest /dsgetdc:corp.example
+nslookup -type=SRV _ldap._tcp.dc._msdcs.corp.example
 ```
 
-#### مثال متوسط — ساختار
+اگر SRV پاسخ ندهد، DNS مشکل دارد. اگر `dcdiag` شکست بخورد، قبل از FortiGate رفع کنید.
 
-OU=Groups، گروه VPN-Users، حساب `svc-fgt-ldap` فقط‌خواندنی.
-
-#### مثال سخت — LDAPS
-
-گواهی DC باید به CA مورد اعتماد FortiGate برسد؛ `openssl s_client -connect dc1.corp.local:636`.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده:** PowerShell: ساخت Forest و گروه‌ها؛ تست `Get-ADDomain` و `nslookup lab.local`.
-
-**متوسط:** FortiGate نمی‌تواند DC را resolve کند: DNS فایروال را روی DC1 بگذارید یا Conditional Forward؛ آزمون `execute nslookup`.
-
-**سخت:** LDAP Bind از FGT شکست می‌خورد با پیام invalid credentials: حساب svc-fgt با UPN اشتباه (DN صحیح لازم). اثبات: `ldp.exe` یا `Get-ADUser svc-fgt` برای DN دقیق؛ سپس تست از FGT. درس: DN را از خود AD بخوانید، حدس نزنید.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Server Manager → Add Roles → Active Directory Domain Services و DNS.
-2. Active Directory Users and Computers → ساخت OU/Group/User.
-3. DNS Manager → بررسی Zone lab.local.
-4. FortiGate: Network → DNS = 192.168.90.40.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### طراحی OU و گروه
 
 ``` text
-# Windows PowerShell on DC1 (lab only; run by the user)
-Install-WindowsFeature AD-DS -IncludeManagementTools
-Install-ADDSForest -DomainName lab.local -InstallDns
-New-ADOrganizationalUnit -Name Corp -Path "DC=lab,DC=local"
-New-ADGroup -Name GRP-FINANCE -GroupScope Global -Path "OU=Corp,DC=lab,DC=local"
-New-ADUser -Name svc-fgt -SamAccountName svc-fgt -AccountPassword (Read-Host -AsSecureString) -Enabled $true
-Get-ADDomain
-Get-ADUser svc-fgt | Select DistinguishedName
+corp.example
+ OU=Corp
+  OU=Users      (alice, bob)
+  OU=Groups     (GG-Internet-Users, GG-Admins)
+  OU=Service    (svc-fgt-ldap)
 ```
 
-### ۸) Verification (اثبات صحت)
+اصل AGDLP: Account ⇒ Global group ⇒ Domain Local ⇒ Permission. برای Policy فایروال گروه‌های Global کافی است. نام‌گذاری ثابت (`GG-<Purpose>`).
 
-- `nslookup lab.local` از FortiGate و کلاینت.
-- `Get-ADUser` DN حساب سرویس.
-- Snapshot VM گرفته شده.
+### مثال‌های حل‌شده
 
-### ۹) Troubleshooting
+#### مثال ساده — کاربر و گروه
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+alice در `OU=Users` و عضو `GG-Internet-Users`. DN کامل:
+
+``` text
+CN=GG-Internet-Users,OU=Groups,OU=Corp,DC=corp,DC=example
+```
+
+این DN را در FortiGate به‌عنوان Remote Group می‌دهید (درس ۱۷-۲).
+
+#### مثال متوسط — حساب سرویس
+
+`svc-fgt-ldap` فقط خواندن؛ رمز طولانی و بدون انقضا؛ «Deny interactive logon». هیچ عضویتی در Domain Admins. اگر FortiGate افشا شود، خسارت محدود.
+
+#### مثال متوسط — تست DNS
+
+``` text
+nslookup dc01.corp.example 10.20.0.10
+nslookup -type=SRV _ldap._tcp.corp.example
+```
+
+اگر SRV خالی است، Zone DNS با AD یکپارچه نیست.
+
+#### مثال سخت — اختلاف زمان
+
+Kerberos/LDAPS با اختلاف ۱۰ دقیقه خطا می‌دهد. علامت: `KRB_AP_ERR_SKEW`. رفع: NTP یکسان. آزمون: `w32tm /query /status`.
+
+#### مثال سخت — Snapshot و Rollback
+
+قبل از تغییر Schema/GPO: Snapshot VM. اگر اشتباه شد Rollback. توجه: Rollback DC در محیط چند DC خطرناک (USN Rollback)؛ در Lab تک‌DC مجاز؛ در Production از بازیابی رسمی AD استفاده کنید.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. AD بسازید و dcdiag بزنید.
+2. OU/گروه/کاربر و حساب سرویس.
+3. DNS SRV و NTP را تست کنید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| FGT نام DC را نمی‌یابد | `execute nslookup` | DNS فایروال |
-| Kerberos خطا | اختلاف زمان | NTP/زمان DC |
-| Bind شکست | DN/رمز | DN دقیق از AD |
+| SRV نیست | DNS | یکپارچه |
+| Kerberos خطا | زمان | NTP |
+| Bind شکست | رمز/DN | بررسی |
+| گروه خالی | عضویت | Add-ADGroupMember |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- رمزها نمونه و غیر ذخیره‌ای در ریپو.
-- حساب سرویس read-only.
-- DC را از اینترنت ایزوله نگه دارید.
+حساب سرویس حداقل دسترسی؛ LDAPS (نه LDAP ساده)؛ گروه‌ها با مالک؛ رمز در Vault.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- AD تمیز + DNS + زمان = پیش‌نیاز هویت.
-- DN را از AD بخوانید.
-- Snapshot قبل از تغییر.
+AD سالم (DNS، زمان، OU/گروه) پیش‌نیاز هویت FortiGate است؛ حساب سرویس حداقل‌دسترسی؛ Snapshot قبل از تغییر؛ اعتبارسنجی با dcdiag و SRV.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا DNS روی DC لازم است؟ *(پاسخ: 17-1-ت1)*
 
@@ -2804,7 +2834,7 @@ Get-ADUser svc-fgt | Select DistinguishedName
 
 **Q1.** Quick quiz (English): Why must DNS be correct before AD authentication works? *(پاسخ: 17-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2814,100 +2844,16 @@ Get-ADUser svc-fgt | Select DistinguishedName
 
 - *Use a least-privilege service account for LDAP binds.* ← برای Bind از حساب سرویس با حداقل دسترسی استفاده کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **Lab:** DC و کاربران. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ad-lab.md`. **Rollback:** Snapshot.
 
-### ۱۵) منابع
+### منابع
 
 - Microsoft Learn: Active Directory Domain Services Overview.
 - `phase0a/Golden_W2025_Runbook.md`.
 
 <a id="l-17-2"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: چک‌لیست Lab و آزمون سلامت AD
-
-``` text
-dcdiag /v
-repadmin /replsummary
-nslookup -type=SRV _ldap._tcp.corp.local
-w32tm /query /status
-```
-
-نتیجه‌ی مورد انتظار: همه‌ی تست‌های dcdiag `passed`، SRV ریکورد برگردد، ساعت با تفاوت کمتر از ۵ دقیقه.
-
-**ساخت OU/گروه:** `OU=Groups`، گروه `VPN-Users`، حساب `svc-fgt-ldap` با کمترین مجوز (فقط خواندن).
-
-**اشتباهات رایج:** حساب سرویس Domain Admin، DNS داخلی ناقص، ساعت خارج از تلورانس.
-
-**پرسش‌های مصاحبه**
-1. *چرا کمترین مجوز؟* حمله به حساب Bind.
-2. *LDAPS؟* 636 با گواهی.
-3. *مشکل ساعت؟* Kerberos شکست.
-
-### تکمیل عمیق: آماده‌سازی Lab هویت با AD — چک‌لیست سلامت
-
-#### چرا؟
-
-اگر AD ناسالم باشد (DNS خراب، ساعت اشتباه)، هر آزمون هویت شکست می‌خورد و علت را در FortiGate می‌گردید. اول سلامت پایه را بسنجید.
-
-#### آزمون‌های سلامت
-
-``` text
-dcdiag /v
-repadmin /replsummary
-nslookup -type=SRV _ldap._tcp.corp.local
-w32tm /query /status
-```
-
-انتظار: dcdiag همه Passed، رکورد SRV برگردد، ساعت درست.
-
-#### ساخت ساختار
-
-``` text
-OU=Groups ; OU=Service ; OU=Users
-Group VPN-Users ; Group FIN-ERP
-User svc-fgt-ldap (read-only, password never expires, no interactive logon)
-```
-
-#### مثال متوسط — اعطای حداقل دسترسی
-
-حساب `svc-fgt-ldap` را فقط عضو Domain Users نگه دارید؛ خواندن Directory به‌صورت پیش‌فرض برای کاربران معتبر مجاز است.
-
-#### مثال سخت — LDAPS
-
-``` text
-openssl s_client -connect dc1.corp.local:636 -showcerts </dev/null
-```
-
-گواهی باید با CA مورد اعتماد FortiGate امضا شده باشد؛ وگرنه Bind شکست می‌خورد.
-
-#### Lab
-
-یک AD Lab با دو کاربر و دو گروه بسازید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| SRV نیست | DNS | رفع |
-| Kerberos خطا | ساعت | NTP |
-| LDAPS شکست | گواهی | CA |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا SRV؟** کشف DC.
-**۲. چرا NTP؟** Kerberos.
-**۳. چرا LDAPS؟** رمزنگاری.
-
-#### English Corner
-
-- *Verify DNS and time before troubleshooting authentication.*
-- Q: Why create a dedicated read-only service account?
 
 ## درس 17-2 — LDAP در FortiGate و Policy بر اساس گروه: Bind، Search، User Group و آزمون
 
@@ -2915,139 +2861,168 @@ openssl s_client -connect dc1.corp.local:636 -showcerts </dev/null
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده»؛ وابستگی لایسنس هر قابلیت صریح ذکر شده است.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. سرور LDAP را در FortiGate بسازد (cnid، dn، Bind، LDAPS).
-2. User Group با Remote Group (DN کامل) بسازد.
-3. Policy گروهی بنویسد و رفتار نگاشت IP→User را بداند.
-4. با ابزار تست و Debug مشکل را عیب‌یابی کند.
+1. سرور LDAP را در FortiGate بسازید (cnid، dn، Bind، LDAPS).
+2. User Group با Remote Group (DN کامل) بسازید.
+3. Policy گروهی بنویسید و محدودیت IP→User را بشناسید.
+4. با ابزار تست و Debug مشکل را عیب‌یابی کنید.
+5. تفاوت Regular و Simple Bind را بدانید.
+6. LDAP را امن (LDAPS/StartTLS) تنظیم کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا LDAP و Policy گروهی؟** Policy بر اساس «گروه» به‌جای IP یعنی دسترسی دنبال انسان است نه دستگاه. چند تنظیم کوچک (Base DN، cnid، گروه Nested) باعث می‌شود Auth موفق شود ولی Policy مچ نکند.
+Policy بر اساس «گروه» به‌جای IP یعنی دسترسی دنبال انسان است نه دستگاه: وقتی alice لپ‌تاپ عوض کند، دسترسی‌اش عوض نمی‌شود. LDAP (Lightweight Directory Access Protocol، یعنی «پروتکل سبک دسترسی به دایرکتوری») به FortiGate می‌گوید «این کاربر کیست و عضو کدام گروه است». ولی دقت کنید: LDAP تنها **کاربر و رمز را اعتبارسنجی** می‌کند؛ نگاشت «IP ⇒ کاربر» برای ترافیک کاربران عادی را FSSO یا Captive Portal انجام می‌دهد (۱۷-۴، ۱۷-۵).
 
-**جمع‌بندی اصلی درس:** LDAP به FortiGate می‌گوید «کاربر کیست و عضو کدام گروه است». اما Policy مبتنی بر هویت فقط وقتی کار می‌کند که کاربر **احراز هویت** شده باشد (Captive/FSSO/VPN)؛ خود LDAP فقط منبع تأیید و عضویت است.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) اجزای تنظیم LDAP
-
-- **Server/Port/Secure:** `ldaps`/636 یا StartTLS.
-- **cnid:** ویژگی نام ورود (`sAMAccountName`).
-- **dn:** ریشه‌ی جست‌وجو (`dc=lab,dc=local`).
-- **Bind:** `regular` با DN و رمز حساب سرویس.
-- **Group:** Remote Group با DN کامل گروه.
-
-#### ۲) جریان احراز هویت
-
-``` text
-user -> FGT (login)
-FGT -> LDAP: bind with svc-fgt, search cnid=user under dn
-FGT -> LDAP: bind with found user DN + user password
-FGT -> LDAP: read memberOf / match remote group
-FGT: allow policy for group
-```
-
-#### ۳) نکات
-
-- DN گروه باید دقیق باشد؛ فرق Users container و OU.
-- Nested group ممکن است نیاز به تنظیم جداگانه داشته باشد (`Unverified` برای 7.0.3).
-- گواهی LDAPS باید معتبر باشد (CA را به FortiGate معرفی کنید).
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| LDAP یا LDAPS | LDAPS/StartTLS |
-| گروه‌ها | نقش‌محور؛ Nested را آگاهانه |
-| Fallback | Captive Portal برای IP بدون هویت |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-``` text
-diagnose test authserver ldap AD ali Pass123
-```
-
-#### مثال متوسط — گروه
-
-`config user group` با `match` به DN گروه و `set groups` در Policy.
-
-#### مثال سخت — Nested
-
-کاربر عضو گروه B و B عضو A؛ Policy روی A مچ نمی‌کند ⇒ Recursive Match.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده:** Test Connectivity موفق و Test User Credentials برای u.fin1 موفق.
-
-**متوسط:** کاربر یافت نمی‌شود: dn روی OU محدود بود؛ تغییر dn به ریشه‌ی دامنه.
-
-**سخت:** کاربر Login می‌کند ولی Policy گروه Finance مطابق نمی‌شود. فرضیه‌ها: DN گروه اشتباه (CN=Finance در OU دیگر)، کاربر عضو مستقیم نیست (Nested)، نگاشت IP→User نیامده، ترتیب Policy. آزمون: `diagnose test authserver`، Group membership در AD، Debug Flow Policy ID.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. User & Authentication → LDAP Servers → Create New (Server، cnid، dn، Bind).
-2. Test Connectivity و Test User Credentials.
-3. User Groups → Create New → Remote Groups → Add (انتخاب گروه از LDAP).
-4. Policy → Source = گروه.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### پیکربندی LDAP
 
 ``` text
 config user ldap
-    edit "LDAP-AD"
-        set server "192.168.90.40"
+    edit "LDAP-CORP"
+        set server "10.20.0.10"
         set cnid "sAMAccountName"
-        set dn "dc=lab,dc=local"
+        set dn "DC=corp,DC=example"
         set type regular
-        set username "CN=svc-fgt,OU=ServiceAccounts,OU=Corp,DC=lab,DC=local"
-        set password <SERVICE-ACCOUNT-PASSWORD>
+        set username "CN=svc-fgt-ldap,OU=Service,OU=Corp,DC=corp,DC=example"
+        set password <SECRET>
         set secure ldaps
         set port 636
+        set ca-cert "CA_Corp_Root"
     next
 end
+```
+
+| پارامتر | معنی |
+|---|---|
+| cnid | ویژگی نام کاربری (sAMAccountName در AD) |
+| dn | ریشه‌ی جست‌وجو |
+| type regular | Bind با حساب سرویس، سپس Search |
+| secure ldaps | رمزگذاری با TLS روی 636 |
+| ca-cert | CA برای اعتبارسنجی سرور |
+
+رمز فقط در Vault/Prompt؛ در ریپو `<SECRET>`.
+
+### Simple در برابر Regular Bind
+
+- **Simple:** مستقیم `cn=user,dn` + رمز کاربر.
+- **Regular:** ابتدا با حساب سرویس Bind، سپس نام کاربر را جست‌وجو و DN او را پیدا می‌کند و رمز را آزمایش می‌کند. انعطاف بیشتر (sAMAccountName).
+
+### User Group با Remote Group
+
+``` text
 config user group
-    edit "GRP-FINANCE"
+    edit "UG-Internet"
+        set member "LDAP-CORP"
         config match
             edit 1
-                set server-name "LDAP-AD"
-                set group-name "CN=GRP-FINANCE,OU=Groups,OU=Corp,DC=lab,DC=local"
+                set server-name "LDAP-CORP"
+                set group-name "CN=GG-Internet-Users,OU=Groups,OU=Corp,DC=corp,DC=example"
             next
         end
     next
 end
-diagnose test authserver ldap LDAP-AD u.fin1 <PASSWORD>
 ```
 
-### ۸) Verification (اثبات صحت)
+`group-name` باید **DN کامل** باشد (با حروف دقیق).
 
-- Test Connectivity/Credentials در GUI.
-- `diagnose test authserver ldap ...` موفق.
-- آزمون مثبت/منفی Policy.
+### Policy گروهی
 
-### ۹) Troubleshooting
+``` text
+config firewall policy
+    edit 50
+        set name "USERS-GROUP-INTERNET"
+        set srcintf "ZN-USERS"
+        set dstintf "port1"
+        set srcaddr "all"
+        set dstaddr "all"
+        set groups "UG-Internet"
+        set service "HTTP" "HTTPS" "DNS"
+        set action accept
+        set schedule "always"
+        set nat enable
+        set logtraffic all
+    next
+end
+```
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+نکته: با `groups` فایروال **احراز هویت** می‌خواهد (Captive Portal) مگر FSSO قبلاً کاربر را شناخته باشد.
+
+### آزمون LDAP
+
+``` text
+diagnose test authserver ldap LDAP-CORP alice <password>
+diagnose debug application fnbamd -1
+diagnose debug enable
+```
+
+GUI: User & Authentication > LDAP Servers ⇒ Test Connectivity و Test User Credentials.
+
+### LDAPS و گواهی
+
+1. CA سازمان را به FortiGate Import کنید.
+2. DC باید گواهی سرور (Server Auth) داشته باشد.
+3. `secure ldaps` + `ca-cert`.
+4. `set server-identity-check enable` برای تطبیق نام.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — تست کاربر
+
+``` text
+diagnose test authserver ldap LDAP-CORP alice <password>
+authenticate 'alice' against 'LDAP-CORP' succeeded
+```
+
+اتصال، Bind و رمز صحیح است.
+
+#### مثال متوسط — گروه اشتباه
+
+alice احراز می‌شود ولی Policy اعمال نمی‌شود. DN گروه با OU اشتباه (OU=Users به‌جای OU=Groups). رفع: DN دقیق از ADSI Edit/PowerShell:
+
+``` text
+Get-ADGroup GG-Internet-Users | Select DistinguishedName
+```
+
+#### مثال متوسط — LDAPS شکست
+
+خطا `certificate verify failed`. CA Import نشده یا نام سرور با SAN نمی‌خواند. رفع: Import CA یا استفاده از FQDN.
+
+#### مثال سخت — Nested Group
+
+alice عضو `GG-Sub` است و `GG-Sub` عضو `GG-Internet-Users`. Match مستقیم کار نمی‌کند. راه‌حل‌ها: ۱) عضویت مستقیم ۲) `set group-search-base`/گروه تو‌در‌تو (بسته به نسخه) ۳) تعریف گروه‌های Flat در AD. نکته‌ی طراحی: گروه‌های Flat برای Policy.
+
+#### مثال سخت — IP→User
+
+Policy گروهی ولی کاربر بدون Portal/FSSO نمی‌تواند شناخته شود؛ ترافیک Deny. راه: FSSO (۱۷-۴) یا Captive Portal (۱۷-۵). این خطای مفهومی رایج است.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. LDAP و Test.
+2. User Group و Policy.
+3. LDAPS با CA.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Bind شکست | `diagnose debug application fnbamd -1` | DN/رمز/TLS/پورت |
-| User یافت نمی‌شود | Debug | cnid/dn |
-| Policy مطابق نمی‌شود | Debug Flow | گروه/نگاشت |
+| Bind failed | رمز/DN | بررسی |
+| کاربر OK ولی Policy نه | DN گروه | دقیق |
+| TLS خطا | CA | Import |
+| Timeout | Port/Firewall | 636 |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- LDAPS؛ رمز در ریپو نیست؛ حساب Read-only.
+LDAPS الزامی؛ حساب سرویس حداقل؛ رمز در Vault؛ `trusthost` ادمین؛ Log احراز.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- LDAP منبع احراز و عضویت است؛ Policy هویتی به نگاشت نیاز دارد.
-- DN دقیق و TLS.
-- آزمون مثبت/منفی.
+LDAP اعتبارسنجی و عضویت گروه را می‌دهد؛ Regular Bind؛ DN کامل برای Remote Group؛ LDAPS با CA؛ نگاشت IP→User با FSSO/Portal.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) cnid چیست؟ *(پاسخ: 17-2-ت1)*
 
@@ -3061,7 +3036,7 @@ diagnose test authserver ldap LDAP-AD u.fin1 <PASSWORD>
 
 **Q1.** Quick quiz (English): Which information must an LDAP server entry in FortiGate contain to find a user? *(پاسخ: 17-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3071,120 +3046,15 @@ diagnose test authserver ldap LDAP-AD u.fin1 <PASSWORD>
 
 - *Test the LDAP connection before building policies.* ← قبل از Policy اتصال LDAP را تست کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **Lab:** LDAP. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/ldap.md`. **Rollback:** حذف User Group/LDAP.
 
-### ۱۵) منابع
+### منابع
 
 - RFC 4511 (LDAP)؛ Fortinet Docs: FortiOS 7.0 — LDAP servers، User groups.
 
 <a id="l-17-3"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: عیب‌یابی Bind و Group
-
-``` text
-config user ldap
- edit "AD"
-  set server "10.20.0.5"
-  set cnid "sAMAccountName"
-  set dn "DC=corp,DC=local"
-  set type regular
-  set username "CN=svc-fgt-ldap,OU=Service,DC=corp,DC=local"
-  set secure ldaps
- next
-end
-diagnose test authserver ldap AD ali Pass123
-```
-
-نتایج: `authenticate 'ali' against 'AD' succeeded` یا خطا. علل رایج خطا: DN اشتباه، گواهی LDAPS نامعتبر، گروه تو در تو (از `memberOf` مستقیم نمی‌آید؛ از Recursive/Group Match استفاده).
-
-**Policy:** `set groups "G-VPN"`؛ آزمون منفی کاربر خارج از گروه ⇒ رد.
-
-**پرسش‌های مصاحبه**
-1. *cnid؟* ویژگی نام کاربری.
-2. *گروه تو در تو؟* حالت Recursive.
-3. *رمز در Log؟* هرگز.
-
-### تکمیل عمیق: LDAP در FortiGate و Policy گروهی
-
-#### چرا؟
-
-یک تنظیم کوچک اشتباه (Base DN، cnid) باعث می‌شود Auth موفق شود ولی Policy مچ نکند.
-
-#### مثال ساده — تعریف سرور
-
-``` text
-config user ldap
- edit "AD"
-  set server "10.20.0.5"
-  set cnid "sAMAccountName"
-  set dn "DC=corp,DC=local"
-  set type regular
-  set username "CN=svc-fgt-ldap,OU=Service,DC=corp,DC=local"
-  set password ***
-  set secure ldaps
-  set port 636
- next
-end
-```
-
-#### مثال متوسط — گروه و Policy
-
-``` text
-config user group
- edit "G-VPN"
-  set member "AD"
-  config match
-   edit 1
-    set server-name "AD"
-    set group-name "CN=VPN-Users,OU=Groups,DC=corp,DC=local"
-   next
-  end
- next
-end
-```
-
-سپس در Policy: `set groups "G-VPN"`.
-
-#### آزمون
-
-``` text
-diagnose test authserver ldap AD ali Pass123
-```
-
-نتیجه: `authenticate ... succeeded` و گروه‌های کاربر.
-
-#### مثال سخت — گروه تو در تو
-
-کاربر عضو گروه B است و B عضو A. Policy روی A مچ نمی‌کند چون `memberOf` مستقیم است. راه: Recursive Match (`set search-type recursive` یا استفاده از OID `1.2.840.113556.1.4.1941`) در Filter.
-
-#### Lab
-
-یک کاربر را در گروه تو در تو بگذارید و رفتار را مشاهده کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Bind ok، Group نه | DN گروه | تصحیح |
-| Auth شکست | رمز | بررسی |
-| تو در تو | Recursive | فعال |
-
-#### پرسش‌ها با پاسخ
-
-**۱. cnid؟** ویژگی نام کاربری.
-**۲. چرا Recursive؟** گروه تو در تو.
-**۳. test authserver؟** تست مستقل از Policy.
-
-#### English Corner
-
-- *Nested groups need a recursive match to be honored by the policy.*
-- Q: What does the cnid attribute define?
 
 ## درس 17-3 — RADIUS و NPS، احراز هویت چندعاملی (MFA) و Attributeها
 
@@ -3192,123 +3062,148 @@ diagnose test authserver ldap AD ali Pass123
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ دستورها `Unverified`؛ Lab «اجرا نشده»؛ وابستگی لایسنس هر قابلیت صریح ذکر شده است. MFA به FortiToken/OTP وابسته است (Needs-License/سرویس جداگانه).
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. جریان RADIUS (Access-Request/Accept/Reject/Challenge) را شرح دهد.
-2. NPS را به‌عنوان RADIUS Server با Client و Policy پیکربندی کند.
-3. FortiGate را RADIUS Client کند و تست را بخواند.
-4. MFA را با Access-Challenge/OTP مفهومی توضیح دهد.
-5. Attributeها (Group/VLAN) را برای Authorization به‌کار ببرد.
+1. RADIUS و NPS را در Windows Server راه بیندازید.
+2. FortiGate را به‌عنوان RADIUS Client تنظیم کنید (Shared Secret).
+3. Attributeها (Class، Filter-Id، Fortinet-Group-Name) را بشناسید.
+4. MFA/OTP را با RADIUS (FortiToken/Third-party) توضیح دهید.
+5. VPN/Admin را با RADIUS احراز کنید.
+6. خطاهای رایج (Secret، پورت، Timeout) را رفع کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا RADIUS و NPS؟** VPN و Wi-Fi معمولاً RADIUS می‌خواهند. NPS (Network Policy Server) سرور RADIUS ویندوز است؛ با MFA (OTP/Push) امنیت بیشتر می‌شود. پیام Access-Challenge برای عامل دوم است.
+RADIUS (Remote Authentication Dial-In User Service) «مأمور کنترل ورود» شبکه است: وقتی یک کاربر به VPN/Wi-Fi/Admin می‌خواهد وارد شود، دستگاه (RADIUS Client) از سرور مرکزی (NPS) می‌پرسد «اجازه بدهم؟». مزیت: یک مرکز برای همه‌ی دستگاه‌ها، امکان MFA و تحویل Attribute (مثلاً گروه). برای ادمین FortiGate و VPN، RADIUS+MFA استاندارد صنعتی است.
 
-**جمع‌بندی اصلی درس:** RADIUS برای احراز هویت دسترسی راه‌دور/شبکه (VPN، Wi-Fi، Admin) و مدیریت متمرکز است. FortiGate Client است؛ NPS (یا FreeRADIUS) Server. مزیت: سیاست یکجا، Accounting، MFA.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) جریان
+### جریان RADIUS
 
 ``` text
-FGT (client) -> NPS: Access-Request (User-Name, User-Password encrypted with shared secret, NAS-IP)
-NPS: check AD + Network Policy
-NPS -> FGT: Access-Accept (attributes) | Access-Reject | Access-Challenge (OTP)
-FGT: Accounting-Request (1813) optional
+User -> [FortiGate (Client)] -- Access-Request (user, password) --> [NPS]
+[NPS] -- Access-Accept (attributes) or Access-Reject --> [FortiGate]
 ```
 
-#### ۲) NPS
-
-- RADIUS Client: IP فایروال + Shared Secret.
-- Network Policy: شرط (گروه AD) + روش احراز (PAP/MS-CHAPv2/EAP) + Constraints.
-- پورت‌ها 1812/1813 UDP.
-
-#### ۳) امنیت RADIUS
-
-Shared Secret قوی؛ PAP رمز را (با Secret) رمز می‌کند ولی در برابر شنود/جعل ضعیف‌تر از EAP-TLS؛ برای VPN با MFA از Challenge استفاده کنید.
-
-#### ۴) MFA
-
-پس از رمز، سرور OTP می‌خواهد (Access-Challenge)؛ کاربر کد را وارد می‌کند. FortiToken یا OTP خارجی (Needs-License/سرویس).
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| پیام | معنی |
 |---|---|
-| PAP/CHAP/EAP | EAP/MS-CHAPv2 برای VPN؛ PAP فقط با Secret قوی و شبکه‌ی مدیریت |
-| Accounting | برای حسابرسی ورود |
-| MFA | OTP/Token برای Admin و VPN |
+| Access-Request | درخواست احراز |
+| Access-Challenge | سؤال بیشتر (OTP) |
+| Access-Accept | موفق + Attribute |
+| Access-Reject | رد |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+UDP 1812 (Auth) و 1813 (Accounting)؛ رمز کاربر با Shared Secret مبهم می‌شود؛ بقیه‌ی بسته رمز نیست.
 
-#### مثال ساده
+### NPS (Windows)
 
-``` text
-diagnose test authserver radius NPS pap ali pass
-```
+1. نصب Network Policy Server.
+2. ثبت در AD.
+3. RADIUS Client: IP FortiGate، Shared Secret قوی.
+4. Network Policy: شرط «Windows Groups = GG-VPN»، روش احراز PAP/MS-CHAPv2 (بسته به نیاز)، Attribute برگشتی.
 
-#### مثال متوسط — خطا
-
-NPS Event 6273 Reason 16 ⇒ Secret/Credential.
-
-#### مثال سخت — MFA
-
-Timeout RADIUS را برای واکنش کاربر بیشتر کنید؛ ساعت (NTP) برای TOTP.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده:** `diagnose test authserver radius RADIUS-NPS pap u.fin1 <PASSWORD>` ← success.
-
-**متوسط:** Access-Reject: NPS Event Viewer: «policy not matched» چون کاربر در گروه مجاز نیست.
-
-**سخت:** VPN با MFA: کاربر بعد از رمز OTP می‌خواهد ولی GUI FortiClient خطا می‌دهد. بررسی: RADIUS timeout (کوتاه)، Challenge پشتیبانی کلاینت، Secret. اثبات با Sniffer 1812 و NPS Log.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. User & Authentication → RADIUS Servers → Create New (Name، Primary Server، Secret).
-2. Test Connectivity/Credentials.
-3. NPS: RADIUS Clients → New (IP فایروال، Secret).
-4. NPS: Network Policies → شرط Group.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### FortiGate
 
 ``` text
 config user radius
     edit "RADIUS-NPS"
-        set server "192.168.90.41"
-        set secret <RADIUS-SECRET>
-        set timeout 10
+        set server "10.20.0.11"
+        set secret <SECRET>
+        set auth-type auto
+        set timeout 5
+        set nas-ip 10.20.0.1
     next
 end
-diagnose test authserver radius RADIUS-NPS pap u.fin1 <PASSWORD>
+config user group
+    edit "UG-VPN"
+        set member "RADIUS-NPS"
+    next
+end
 ```
 
-### ۸) Verification (اثبات صحت)
+`nas-ip` همان IP که در NPS Client ثبت شده است.
 
-- Test موفق؛ NPS Event "granted".
-- Sniffer: Access-Request/Accept.
+### Attributeها
 
-### ۹) Troubleshooting
+| Attribute | کاربرد |
+|---|---|
+| Filter-Id / Class | نام گروه |
+| Fortinet-Group-Name (VSA) | گروه به FortiGate |
+| Session-Timeout | مدت اتصال |
+| Framed-IP-Address | IP اختصاصی |
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+در Policy می‌توان با `Fortinet-Group-Name` گروه را مطابقت داد.
+
+### MFA/OTP
+
+- **FortiToken** (Needs-License برای تعداد بیشتر): OTP روی FortiGate.
+- **Third-party/Azure MFA NPS Extension:** NPS بعد از رمز OTP می‌گیرد؛ ⇒ `Access-Challenge`.
+- نکته: زمان ساعت‌ها هماهنگ؛ Timeout بلندتر برای تأیید Push (مثلاً 30–60 ثانیه).
+
+### Admin با RADIUS
+
+``` text
+config system admin
+    edit "radius-admin"
+        set remote-auth enable
+        set accprofile "super_admin"
+        set wildcard enable
+        set remote-group "UG-ADMIN"
+    next
+end
+```
+
+اصل: دسترسی ادمین با MFA؛ یک حساب Break-glass محلی با رمز قوی نگه‌دارید (برای قطعی RADIUS).
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — تست
+
+``` text
+diagnose test authserver radius RADIUS-NPS pap alice <password>
+authenticate 'alice' against 'pap' succeeded
+```
+
+#### مثال متوسط — Secret اشتباه
+
+NPS Log: «Access Request discarded: shared secret mismatch» (Event 6274). FortiGate Timeout. رفع: Secret یکسان دو طرف.
+
+#### مثال متوسط — Attribute گروه
+
+NPS با `Class`/VSA گروه را برمی‌گرداند؛ FortiGate در Policy `groups UG-VPN` تطبیق می‌دهد. آزمون: Debug `fnbamd` Attribute را نشان می‌دهد.
+
+#### مثال سخت — MFA Timeout
+
+Push Notification ۳۰ ثانیه می‌خواهد ولی `timeout 5` است ⇒ شکست. رفع: افزایش `timeout` به 60 ثانیه در FortiGate و هماهنگی با تنظیم Timeout سمت NPS/MFA. آزمون: Push را تأیید کنید و Accept.
+
+#### مثال سخت — قطعی RADIUS
+
+NPS Down؛ VPN/Admin قفل. راه: دو NPS (Primary/Secondary: `set secondary-server`)، Break-glass محلی، پایش.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. NPS و Client.
+2. RADIUS در FortiGate و Test.
+3. Policy گروهی VPN.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Access-Reject | NPS Event | Secret/Policy/گروه |
-| بدون پاسخ | Sniffer 1812 | Client تعریف نشده/Firewall |
-| Challenge خطا | Log | Timeout/کلاینت |
+| Timeout | Secret/پورت/IP | بررسی |
+| Reject | Network Policy | شرط |
+| MFA Timeout | timeout کم | افزایش |
+| گروه نمی‌آید | Attribute | VSA |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Secret قوی و یکتا؛ RADIUS را از اینترنت ببندید.
+Secret طولانی و منحصر به‌فرد برای هر Client؛ RADIUS روی شبکه‌ی مدیریت؛ MFA برای Admin/VPN؛ Break-glass.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- RADIUS: Request/Accept/Reject/Challenge.
-- NPS Client+Policy.
-- MFA با Challenge.
+RADIUS/NPS احراز مرکزی با MFA؛ Secret و NAS-IP هماهنگ؛ Attribute برای گروه؛ Timeout متناسب MFA؛ افزونگی و Break-glass.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) پورت‌های RADIUS؟ *(پاسخ: 17-3-ت1)*
 
@@ -3322,7 +3217,7 @@ diagnose test authserver radius RADIUS-NPS pap u.fin1 <PASSWORD>
 
 **Q1.** Quick quiz (English): What does Access-Challenge enable? *(پاسخ: 17-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3332,109 +3227,15 @@ diagnose test authserver radius RADIUS-NPS pap u.fin1 <PASSWORD>
 
 - *The shared secret must match on both sides.* ← Secret باید دو سر یکی باشد.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **Lab:** RADIUS. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/radius.md`. **Rollback:** حذف RADIUS.
 
-### ۱۵) منابع
+### منابع
 
 - RFC 2865 (RADIUS)؛ Microsoft Learn: NPS.
 
 <a id="l-17-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: RADIUS و NPS با MFA
-
-**جریان:** FortiGate (NAS) → NPS (Shared Secret، پورت 1812) → AD → پاسخ Access-Accept + Attribute (Fortinet-Group-Name).
-
-``` text
-config user radius
- edit "NPS"
-  set server "10.20.0.6"
-  set secret ENC ***
-  set timeout 10
- next
-end
-```
-
-MFA: NPS Extension یا FortiAuthenticator/FortiToken (Needs-License). **خطاهای رایج:** Secret ناهمخوان (Log NPS: Event 6273 reason 16)، NAS IP ثبت‌نشده.
-
-**آزمون:** `diagnose test authserver radius NPS pap ali pass`.
-
-**پرسش‌های مصاحبه**
-1. *Access-Challenge؟* درخواست OTP.
-2. *چرا Timeout بیشتر با MFA؟* زمان واکنش کاربر.
-3. *Accounting؟* پورت 1813.
-
-### تکمیل عمیق: RADIUS، NPS و MFA
-
-#### چرا؟
-
-VPN و Wi-Fi معمولاً RADIUS می‌خواهند؛ با NPS (Network Policy Server در ویندوز) و MFA امن‌تر می‌شود.
-
-#### جریان
-
-``` text
-FortiGate (NAS) -> Access-Request (UDP 1812) -> NPS -> AD check
-NPS -> Access-Accept (+attributes) or Access-Reject
-```
-
-نقش‌ها: NAS = Network Access Server (فایروال)، Shared Secret بین NAS و NPS.
-
-#### مثال ساده
-
-``` text
-config user radius
- edit "NPS"
-  set server "10.20.0.6"
-  set secret ***
-  set timeout 10
-  set nas-ip 10.50.0.1
- next
-end
-```
-
-#### مثال متوسط — آزمون
-
-``` text
-diagnose test authserver radius NPS pap ali pass
-```
-
-در NPS لاگ ویندوز Event 6272 (موفق) / 6273 (رد) با Reason Code بخوانید.
-
-#### مثال سخت — MFA
-
-با NPS Extension یا FortiAuthenticator/FortiToken: پس از رمز، RADIUS **Access-Challenge** با درخواست OTP می‌فرستد. Timeout را بیشتر کنید (کاربر وقت می‌خواهد).
-
-#### Attribute
-
-با Attribute می‌توان گروه را برگرداند (مثلاً `Fortinet-Group-Name`) و در Policy استفاده کرد.
-
-#### Lab
-
-NPS را با یک Client و یک Policy بسازید؛ اجرا نشده تا اطلاع بعدی.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Reject (reason 16) | Secret/Credential | یکسان |
-| Timeout | پورت/Firewall | 1812 |
-| OTP شکست | زمان | NTP |
-
-#### پرسش‌ها با پاسخ
-
-**۱. NAS چیست؟** سرور دسترسی شبکه.
-**۲. Access-Challenge؟** درخواست مرحله‌ی بعد.
-**۳. Event 6273؟** رد شدن.
-
-#### English Corner
-
-- *RADIUS Access-Challenge carries the second authentication factor.*
-- Q: Where do you find the reason a user was rejected on NPS?
 
 ## درس 17-4 — FSSO عملی: انتخاب حالت، پیکربندی، Group Filter و عیب‌یابی
 
