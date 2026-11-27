@@ -1434,6 +1434,66 @@ FW2 sees SYN-ACK without SYN -> drop (no session)
 2. *Stateless؟* ACL مشکل ندارد.
 3. *RPF؟* می‌تواند رد کند.
 
+### تکمیل عمیق: چرا مسیر نامتقارن فایروال Stateful را زمین می‌زند؟
+
+#### چرا باید یاد بگیریم؟
+
+فایروال Stateful مثل نگهبانی است که دفتر ثبت دارد: وقتی کسی وارد می‌شود ثبت می‌کند و موقع خروج، اسمش را تطبیق می‌دهد. اگر فرد از در دیگری خارج شود که نگهبان دیگری دارد و دفترش خالی است، می‌گوید «من این آدم را ندیدم» و جلویش را می‌گیرد. مسیر نامتقارن (Asymmetric Routing) یعنی رفت از یک مسیر و برگشت از مسیر دیگر؛ در شبکه‌های دو ISP یا دو فایروال بسیار رایج است و علت بسیاری از «گاهی کار می‌کند، گاهی نه» است.
+
+#### توضیح ساده
+
+فایروال Stateful برای هر اتصال یک Session می‌سازد (با بسته‌ی SYN). بسته‌ی بعدی را فقط اگر با Session مطابقت داشته باشد می‌پذیرد.
+
+``` text
+Client -> FW1 -> Server       (SYN, session created on FW1)
+Server -> FW2 -> Client       (SYN-ACK arrives at FW2, no session)
+FW2: drop (no session / reverse path)
+```
+
+#### مثال ساده — نشانه در Debug Flow
+
+``` text
+msg="no session matched"
+msg="Denied by forward policy check (policy 0)"
+```
+
+برای بسته‌ی SYN-ACK بدون SYN؛ و در Sniffer هر دو فایروال می‌بینید که هر کدام فقط یک جهت را دیده است.
+
+#### مثال متوسط — دو ISP
+
+کاربر از طریق ISP-A خارج می‌شود (SNAT به IP-A)؛ ولی اگر SNAT نباشد و سرور مقصد پاسخ را به IP داخلی از طریق ISP-B بفرستد ⇒ مسیر برگشت متفاوت. SNAT پاسخ را به IP همان ISP برمی‌گرداند و مسئله را حل می‌کند.
+
+#### مثال سخت — ECMP
+
+دو لینک با ECMP (Equal-Cost Multi-Path، یعنی «چندمسیره با هزینه‌ی برابر»): بسته‌های رفت و برگشت با Hash متفاوت ممکن است از لینک‌های مختلف بروند. اگر دو فایروال جدا پشت دو لینک باشند، Session یک‌جانبه می‌شود. راه: Hash بر اساس 5-tuple متقارن، یا Session Sync.
+
+#### RPF
+
+Reverse Path Forwarding: فایروال بررسی می‌کند بسته‌ی ورودی از همان Interface‌ای که برای رسیدن به آن منبع استفاده می‌کند آمده باشد؛ اگر نه، رد می‌کند (Anti-spoofing). با مسیر نامتقارن RPF شکست می‌خورد.
+
+#### Lab
+
+دو مسیر بین دو دستگاه بسازید و Sniffer هر دو را مقایسه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| SYN-ACK Drop | مسیر نامتقارن | متقارن‌سازی |
+| RPF fail | Route | تصحیح |
+| گاهی کار می‌کند | ECMP | Hash متقارن |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Stateful مشکل دارد؟** Session یک‌جانبه.
+**۲. RPF چیست؟** بررسی مسیر معکوس.
+**۳. ECMP چرا؟** توزیع بار.
+
+#### English Corner
+
+- *A stateful firewall must see both directions of a flow.*
+- Q: How does SNAT help with asymmetric return paths?
+
 ## درس 23-1 — Asymmetric Routing برای Stateful: تعریف دقیق، علت‌ها، تحلیل بسته‌به‌بسته و تفکیک RPF از No-session
 
 **فصل 23 · بازنویسی عمیق · پیش‌نیاز: ۲۳-۰، ۱۰-۶، ۱۱-۷، ۱۲-۰ · ≈ 8 ساعت**
@@ -1598,6 +1658,80 @@ get router info routing-table details 10.1.4.10
 1. *ECMP و Session؟* Hash 5-tuple.
 2. *Asymmetric در VPN؟* Selector/Route.
 3. *تشخیص؟* Sniffer دوطرفه.
+
+### تکمیل عمیق: علت‌های مسیر نامتقارن — شناسایی با شاهد
+
+#### چرا؟
+
+قبل از رفع باید علت را بدانید. پنج علت رایج دارد و هر کدام آزمون مشخص دارد.
+
+#### فهرست علت‌ها و آزمون
+
+| علت | آزمون |
+|---|---|
+| دو ISP بدون SNAT | `get router info routing-table details <src>` |
+| Policy Route یک‌طرفه | `diagnose firewall proute list` |
+| ECMP | `get router info routing-table all` (چندمسیره) |
+| دو فایروال موازی | Sniffer دوطرفه |
+| سرور چند‌کارت (Multi-homed) | `route -n` روی سرور |
+
+#### مثال ساده — سرور Multi-homed
+
+سرور دو کارت شبکه دارد (LAN و DMZ). پاسخ را از کارتی می‌فرستد که Default Gateway دارد، نه کارتی که درخواست از آن آمد. رفع: Policy-based routing روی سرور (ip rule) یا یک Default Gateway.
+
+``` text
+ip rule add from 10.30.0.10 table 100
+ip route add default via 10.30.0.1 dev eth1 table 100
+```
+
+#### مثال متوسط — Policy Route
+
+``` text
+config router policy
+ edit 1
+  set input-device "port2"
+  set src "10.10.0.0/24"
+  set output-device "port3"
+  set gateway 198.51.100.1
+ next
+end
+```
+
+اگر برگشت از Policy Route نداشته باشد، از مسیر پیش‌فرض می‌آید ⇒ نامتقارن.
+
+#### مثال سخت — Sniffer هم‌زمان
+
+روی FW1 و FW2 هم‌زمان:
+
+``` text
+FW1: SYN seen, ACK seen (after), SYN-ACK NOT seen
+FW2: SYN-ACK seen, SYN NOT seen
+```
+
+تفسیر: رفت از FW1 و برگشت از FW2. راه: Route/Policy Route یا Session Sync.
+
+#### Lab
+
+سرور دو کارته بسازید و Asymmetric را تولید و رفع کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| فقط بعضی کاربران | Policy Route | همه‌ی منابع |
+| فقط یک سرور | Multi-homed | ip rule |
+| متناوب | ECMP | Hash |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Multi-homed چه مشکلی؟** برگشت از کارت دیگر.
+**۲. proute list؟** مشاهده‌ی Policy Route.
+**۳. Sniffer دوطرفه چرا؟** مرز را نشان می‌دهد.
+
+#### English Corner
+
+- *Capture on both paths at once to see the asymmetry.*
+- Q: Why can a multi-homed server cause asymmetric routing?
 
 ## درس 23-2 — رفع Asymmetric: طراحی متقارن، Policy Route، SNAT، Session Sync و ریسک هر راه‌حل
 
@@ -1789,6 +1923,75 @@ end
 2. *Policy Route؟* بر اساس منبع.
 3. *ریسک؟* Bypass بررسی.
 
+### تکمیل عمیق: رفع Asymmetric — طراحی متقارن، SNAT و گزینه‌ی آخر
+
+#### چرا؟
+
+رفع مسیر نامتقارن یک ترتیب اولویت دارد: ابتدا طراحی متقارن، سپس NAT، و در آخر سست‌کردن بازرسی.
+
+#### ترتیب راه‌حل‌ها
+
+1. **طراحی متقارن**: برگشت از همان فایروال رفت.
+2. **Policy Route / SD-WAN Rule**: خروج بر اساس منبع و برگشت هماهنگ.
+3. **SNAT**: برگشت به IP همان فایروال.
+4. **Session Sync / HA**: دو فایروال Session مشترک.
+5. **`asymroute`**: آخرین راه.
+
+#### مثال ساده — SNAT
+
+اگر کاربر از ISP-A خارج می‌شود، SNAT به IP-A باعث می‌شود سرور مقصد پاسخ را به IP-A بفرستد؛ پس از همان لینک برمی‌گردد.
+
+``` text
+config firewall policy
+ edit 20
+  set nat enable
+  set ippool enable
+  set poolname "POOL-ISP-A"
+ next
+end
+```
+
+#### مثال متوسط — SD-WAN
+
+قاعده‌ی SD-WAN با `mode manual` و عضو A برای 10.10.0.0/24؛ برگشت از همان Interface چون SNAT به IP عضو A.
+
+#### مثال سخت — دو فایروال موازی
+
+با Session Sync (HA Active-Active) هر دو فایروال Sessionها را می‌دانند و مسیر نامتقارن مجاز می‌شود. هشدار: Sync ظرفیت و تأخیر می‌خواهد؛ برای ترافیک سنگین ممکن است گران باشد.
+
+#### `asymroute` — هشدار
+
+``` text
+config system settings
+ set asymroute enable
+end
+```
+
+بازرسی Stateful را برای بسته‌های بدون Session سست می‌کند و Evidence امنیتی کم می‌شود؛ فقط موقت و با ثبت ریسک.
+
+#### Lab
+
+یک Asymmetric ساخته‌شده را با SNAT رفع و Sniffer قبل/بعد را مقایسه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| پس از SNAT هنوز Drop | Pool اشتباه | بررسی |
+| Sync کند | لینک ضعیف | لینک اختصاصی |
+| asymroute خطر | سست شدن | حذف پس از اصلاح |
+
+#### پرسش‌ها با پاسخ
+
+**۱. اولویت راه‌حل؟** متقارن‌سازی.
+**۲. چرا asymroute آخر؟** کاهش امنیت.
+**۳. SNAT چه می‌کند؟** برگشت را هدایت.
+
+#### English Corner
+
+- *Prefer symmetric design; use asymroute only as a last resort.*
+- Q: How does SNAT force a symmetric return path?
+
 ## درس 23-3 — چند فایروال سری و موازی: الگوها، NAT، Session، Failure Domain و مانیتورینگ
 
 **فصل 23 · بازنویسی عمیق · پیش‌نیاز: ۲۳-۰، ۱۵-۰، ۲۲-۰ · ≈ 8 ساعت**
@@ -1925,6 +2128,68 @@ Policy drift check: diff(config firewall policy FW1, FW2) after each change wind
 1. *الگوی ساده‌تر؟* سری.
 2. *Load-balance؟* Hash منبع.
 3. *Sync؟* HA یا دستی.
+
+### تکمیل عمیق: چند فایروال سری و موازی — الگوها و NAT
+
+#### چرا؟
+
+در سازمان‌ها گاهی لازم است بیش از یک فایروال از مسیر ترافیک عبور کند؛ برای تفکیک نقش (Edge/Internal) یا ظرفیت. هر الگو مزایا و دام دارد.
+
+#### الگوی سری (Serial)
+
+``` text
+Users -> Internal FW -> Edge FW -> Internet
+```
+
+هر بسته از هر دو می‌گذرد؛ مسیر متقارن طبیعی است. NAT فقط در Edge. مزیت: ساده؛ عیب: دو نقطه‌ی شکست.
+
+#### الگوی موازی (Parallel)
+
+``` text
+Users -> {FW-A | FW-B} -> Internet
+```
+
+بار تقسیم می‌شود؛ خطر نامتقارن. راه: Hash منبع، یا HA Active-Active با Session Sync.
+
+#### مثال ساده — محاسبه‌ی ظرفیت
+
+``` text
+Peak traffic = 6 Gbps ; FW capacity (with UTM) = 4 Gbps each
+Need >= 6 / 4 = 1.5 -> 2 firewalls (parallel) + headroom for failure (N+1) -> 3
+```
+
+N+1: اگر یکی بیفتد دو دستگاه باقیمانده 8 Gbps دارند.
+
+#### مثال متوسط — NAT در سری
+
+اگر NAT هم در Internal و هم Edge باشد، Log دو IP دارد و ردیابی سخت است. قاعده: یک نقطه‌ی NAT.
+
+#### مثال سخت — خرابی یک‌جانبه
+
+در الگوی موازی با Hash منبع، یک FW می‌افتد؛ Hash دوباره توزیع می‌شود و Sessionهای موجود قطع می‌شوند (چون Session Sync نیست). با Sync فقط Failover سریع.
+
+#### Lab
+
+یک الگوی سری دو FW را بسازید و Session هر دو را مقایسه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| دو IP در Log | دو NAT | یکی |
+| قطع در خرابی | Sync ندارد | Session Sync |
+| ظرفیت کم | UTM | N+1 |
+
+#### پرسش‌ها با پاسخ
+
+**۱. N+1 چیست؟** یک دستگاه اضافه.
+**۲. چرا یک NAT؟** ردیابی.
+**۳. موازی چه خطری؟** نامتقارن.
+
+#### English Corner
+
+- *Size for N+1 so a single failure does not cause overload.*
+- Q: Why should NAT happen at only one point?
 
 ## درس 23-4 — آزمون معماری ۵: چندفایروالی و مسیر نامتقارن — صورت مسئله، کلید پاسخ و Rubric
 
@@ -2072,6 +2337,76 @@ diagnose firewall proute list
 1. *Evidence؟* Sniffer + Debug.
 2. *ریسک راه‌حل؟* پیچیدگی.
 3. *آزمون منفی؟* قطع یک مسیر.
+
+### تکمیل عمیق: ارزیابی معماری ۵ — حل یک سناریوی نامتقارن کامل
+
+#### چرا؟
+
+این آزمون یک سناریوی واقعی را از تشخیص تا رفع و اثبات دنبال می‌کند.
+
+#### صورت مسئله
+
+شعبه با دو ISP و دو فایروال موازی؛ کاربران گاهی به برنامه‌ی مرکزی نمی‌رسند.
+
+#### گام ۱ — شواهد
+
+``` text
+FW1 sniffer: SYN, ACK seen ; no SYN-ACK
+FW2 sniffer: SYN-ACK seen ; no SYN
+```
+
+#### گام ۲ — علت
+
+رفت از ISP-A/FW1 و برگشت از ISP-B/FW2.
+
+#### گام ۳ — راه‌حل‌ها
+
+1. SNAT به IP-A روی FW1 (برگشت از ISP-A).
+2. در صورت نیاز Policy Route برای منابع.
+3. اگر Active-Active لازم است ⇒ Session Sync.
+
+#### گام ۴ — اثبات
+
+Sniffer نشان دهد هر دو جهت از یک FW؛ `curl` ۱۰۰ بار بدون خطا.
+
+``` text
+for i in $(seq 1 100); do curl -s -o /dev/null -w "%{http_code}\n" https://app.example.com; done | sort | uniq -c
+```
+
+انتظار: 100 × 200.
+
+#### Rubric
+
+``` text
+Diagnosis 30 | Symmetric solution 30 | Evidence 20 | Negative/regression test 10 | Risks 10
+```
+
+#### مثال سخت — ریسک راه‌حل
+
+SNAT پنهان می‌کند IP واقعی کاربر در Log سرور مقصد (همه‌ی کاربران یک IP). ریسک ردیابی؛ جبران: Log فایروال با Session و ثبت NAT.
+
+#### Lab
+
+سناریو را شبیه‌سازی کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| درصدی خطا | مسیر دوم | بررسی Route |
+| IP کاربر دیده نمی‌شود | SNAT | Log فایروال |
+| Sync کند | لینک | ارتقا |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا ۱۰۰ بار؟** خطای متناوب.
+**۲. ریسک SNAT؟** ردیابی.
+**۳. شاهد اصلی؟** Sniffer دوطرفه.
+
+#### English Corner
+
+- *Run repeated tests when the failure is intermittent.*
+- Q: What is the trade-off of using SNAT to fix asymmetry?
 
 ## پاسخ‌های فصل 23
 
@@ -2384,6 +2719,92 @@ end
 2. *ایزوله کامل؟* جداول Route/Policy جدا.
 3. *محدودیت منابع؟* resource-limit.
 
+### تکمیل عمیق: VDOM — یک فایروال، چند فایروال مجازی
+
+#### چرا باید یاد بگیریم؟
+
+یک ساختمان اداری را تصور کنید که چند شرکت مستأجر دارد. همه از یک ورودی و آسانسور مشترک استفاده می‌کنند، ولی هر شرکت قفل، کلید و فضای خودش را دارد. VDOM (Virtual Domain، یعنی «دامنه‌ی مجازی») همین کار را با یک FortiGate می‌کند: هر VDOM جدول مسیر، Policy، Interface و ادمین جدا دارد. مشتریان MSSP، دیتاسنترهای چندمستأجره و جداسازی بخش‌های حساس همین نیاز را دارند.
+
+#### توضیح ساده
+
+دو سطح وجود دارد:
+
+- **Global**: منابع مشترک (سخت‌افزار، نسخه، HA، Log سراسری).
+- **VDOM**: هر مستأجر (Interface، Route، Policy، VPN).
+
+یک VDOM ویژه به نام `root` معمولاً برای مدیریت استفاده می‌شود. ترافیک بین دو VDOM باید از **Inter-VDOM Link** عبور کند و Policy بخواهد؛ چیزی به‌صورت خودکار بین آنها جاری نمی‌شود.
+
+#### مثال ساده — ساخت دو VDOM
+
+``` text
+config system settings
+ set vdom-mode multi-vdom
+end
+config vdom
+ edit TENANT-A
+ next
+ edit TENANT-B
+ next
+end
+```
+
+هشدار: تغییر به Multi-VDOM ساختار Config را تغییر می‌دهد؛ در Lab و پس از Backup انجام دهید. لایسنس: مدل‌ها تعداد VDOM پیش‌فرض دارند (معمولاً ۱۰)؛ بیش از آن Needs-License.
+
+#### مثال متوسط — Inter-VDOM Link
+
+``` text
+config global
+ config system vdom-link
+  edit "A-B"
+  next
+ end
+end
+```
+
+در هر VDOM یک Interface به نام `A-B0` و `A-B1` ساخته می‌شود؛ هرکدام را IP بدهید و Policy بنویسید.
+
+#### مثال سخت — مدیریت منابع
+
+``` text
+config global
+ config system vdom-property
+  edit TENANT-A
+   set session 50000
+   set policy 500
+  next
+ end
+end
+```
+
+محدودکردن Session باعث می‌شود یک مستأجر پرترافیک، منابع بقیه را نخورد. محاسبه: اگر ظرفیت ۲۰۰,۰۰۰ Session و ۴ مستأجر، سقف ۵۰,۰۰۰ برای هرکدام.
+
+``` text
+Per-tenant cap = capacity / tenants = 200000 / 4 = 50000
+```
+
+#### Lab
+
+دو VDOM با Interface جدا بسازید، یک Inter-VDOM Link و یک Policy، و آزمون کنید که بدون Policy ارتباط برقرار نمی‌شود.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| ارتباط بین VDOM نیست | Policy/Route | Policy دو سر |
+| ادمین Tenant همه را می‌بیند | Profile | `vdom` محدود |
+| Session پر می‌شود | سقف نیست | vdom-property |
+
+#### پرسش‌ها با پاسخ
+
+**۱. VDOM چه چیزی را جدا می‌کند؟** Route، Policy، Interface، ادمین.
+**۲. چرا Inter-VDOM Policy؟** ایزوله‌سازی پیش‌فرض.
+**۳. محدودیت منابع چرا؟** جلوگیری از اثر همسایه‌ی پرمصرف.
+
+#### English Corner
+
+- *Each VDOM has its own routing table and policy set.*
+- Q: What prevents one tenant from exhausting the device's sessions?
+
 ## درس 24-1 — East-West و Segmentation: Zone، Trust Level، Flow Discovery و Policy Matrix
 
 **فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۲، ۱۵-۴ · ≈ 11 ساعت**
@@ -2539,6 +2960,75 @@ Flow Discovery: Log ۲ هفته برای شناخت جریان‌ها؛ سپس P
 1. *چرا East-West؟* حرکت جانبی.
 2. *Zone؟* گروه Interface.
 3. *Intra-zone؟* پیش‌فرض رد/مجاز طبق تنظیم.
+
+### تکمیل عمیق: East-West، Segmentation و کشف جریان‌ها
+
+#### چرا؟
+
+بیشتر حملات واقعی پس از نفوذ اولیه با **حرکت جانبی** (Lateral Movement) ادامه می‌یابند: مهاجم از یک سرور وب به بقیه‌ی سرورها می‌رود. فایروال لبه فقط ترافیک شمال–جنوب را می‌بیند. East-West یعنی ترافیک بین سرورها/ Zoneهای داخلی؛ باید آن را هم کنترل کرد.
+
+#### توضیح ساده
+
+Segmentation یعنی شبکه را به بخش‌هایی با «سطح اعتماد» متفاوت تقسیم کنیم و ترافیک بین آنها فقط با Policy حداقلی عبور کند.
+
+| Zone | سطح اعتماد |
+|---|---|
+| Mgmt | بالاترین |
+| DB | بالا |
+| App | متوسط |
+| Web | پایین |
+| Guest | کمترین |
+
+قاعده: ارتباط از اعتماد پایین به بالا فقط در صورت نیاز و از مسیر مشخص.
+
+#### مثال ساده — ماتریس نیاز
+
+| از | به | سرویس |
+|---|---|---|
+| Web | App | tcp/8443 |
+| App | DB | tcp/5432 |
+| Mgmt | همه | SSH/HTTPS |
+
+هرچه در ماتریس نیست ⇒ Deny.
+
+#### مثال متوسط — کشف جریان (Flow Discovery)
+
+پیش از نوشتن Policy، ۲ هفته Log را در حالت «Allow همه + Log» (در Lab/مرحله‌ی یادگیری) جمع کنید و جریان‌های واقعی را فهرست کنید.
+
+``` text
+execute log filter category 0
+execute log filter field srcintf "port-app"
+execute log display | summarize by dstip,dstport
+```
+
+بعد از مشاهده، Policyهای دقیق را بنویسید و در پایان Deny.
+
+#### مثال سخت — جریان‌های فراموش‌شده
+
+پس از Segmentation، گزارش ماهانه‌ی پایان ماه قطع می‌شود؛ علت: Job فصلی که در ۲ هفته‌ی مشاهده دیده نشد. راه: مشاهده‌ی چرخه‌ی کامل (۱ ماه)، تماس با مالکان سرویس‌ها، و دوره‌ی «Monitor» با Log قبل از Deny.
+
+#### Lab
+
+سه Zone بسازید، Policy حداقلی بنویسید و آزمون منفی Web→DB را انجام دهید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| قطع برنامه | جریان فراموش‌شده | Log + افزودن |
+| Policy زیاد | رشد کنترل‌نشده | مالک و بازبینی |
+| Intra-zone باز | تنظیم Zone | `intrazone deny` |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Lateral Movement چیست؟** حرکت جانبی مهاجم.
+**۲. چرا کشف جریان؟** Policy بر اساس واقعیت.
+**۳. Intrazone؟** ترافیک داخل یک Zone.
+
+#### English Corner
+
+- *East-west traffic needs the same scrutiny as north-south.*
+- Q: How do you discover legitimate flows before enforcing deny?
 
 ## درس 24-2 — Policy حداقلی Web/App/DB: ماتریس، پیاده‌سازی و آزمون Isolation
 
@@ -2748,6 +3238,89 @@ diagnose firewall iprope lookup 10.30.1.10 40000 10.30.3.10 1433 tcp ZN-WEB
 1. *Policy تعداد؟* به‌اندازه‌ی نیاز.
 2. *Log؟* All.
 3. *Hit Count؟* بازبینی.
+
+### تکمیل عمیق: Policy حداقلی Web/App/DB — پیاده‌سازی و آزمون منفی
+
+#### چرا؟
+
+«حداقل دسترسی» (Least Privilege) تنها در عمل ثابت می‌شود: Policyهایی که فقط همان جریان‌های لازم را باز می‌کنند و آزمونی که نشان می‌دهد بقیه بسته است.
+
+#### پیاده‌سازی
+
+``` text
+config firewall policy
+ edit 100
+  set name "WEB-to-APP"
+  set srcintf "ZN-WEB"
+  set dstintf "ZN-APP"
+  set srcaddr "GRP-WEB"
+  set dstaddr "GRP-APP"
+  set service "APP-8443"
+  set action accept
+  set logtraffic all
+ next
+ edit 110
+  set name "APP-to-DB"
+  set srcintf "ZN-APP"
+  set dstintf "ZN-DB"
+  set srcaddr "GRP-APP"
+  set dstaddr "GRP-DB"
+  set service "PGSQL"
+  set action accept
+  set logtraffic all
+ next
+ edit 190
+  set name "DENY-ALL"
+  set srcintf "any"
+  set dstintf "any"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "ALL"
+  set action deny
+  set logtraffic all
+ next
+end
+```
+
+#### آزمون مثبت و منفی
+
+``` text
+from WEB: nc -zv 10.30.2.10 8443      # expect open
+from WEB: nc -zv 10.30.3.10 5432      # expect timeout (negative test)
+from APP: nc -zv 10.30.3.10 5432      # expect open
+diagnose firewall iprope lookup 10.30.1.5 40000 10.30.3.10 5432 tcp ZN-WEB   # expect deny policy 190
+```
+
+#### مثال متوسط — Address Group
+
+به‌جای IP تکی از Group استفاده کنید تا افزودن سرور جدید فقط عضوشدن در Group باشد (Standard Change).
+
+#### مثال سخت — دور زدن از مسیر دوم
+
+مهاجم از Web به DB مستقیم نمی‌رسد ولی از طریق App (که Policy دارد) می‌تواند Query بزند. جلوگیری کامل غیرممکن است؛ کاهش: Application-level (WAF/IPS)، حساب DB با کمترین مجوز، Log برای Query غیرعادی. توجه: Policy شبکه فقط یکی از لایه‌هاست.
+
+#### Lab
+
+سه Zone و ۳ Policy بالا را بسازید و چهار آزمون بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Web به DB وصل می‌شود | Policy گسترده | تنگ‌سازی |
+| App به DB نمی‌رسد | Service/Route | Lookup |
+| Log زیاد | all روی همه | تنظیم |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا آزمون منفی؟** اثبات بسته‌بودن.
+**۲. Group چرا؟** مدیریت ساده.
+**۳. محدودیت Policy شبکه؟** لایه‌ی کاربرد را نمی‌بیند.
+
+#### English Corner
+
+- *Prove that what should be blocked is actually blocked.*
+- Q: Why use address groups in segmentation policies?
 
 ## درس 24-3 — Lab عملی VDOM: ساخت، Inter-VDOM Link، Policy و محدودیت منابع
 
@@ -2962,6 +3535,101 @@ end
 2. *Admin Profile؟* محدوده.
 3. *Backup؟* Global.
 
+### تکمیل عمیق: Lab عملی VDOM — مرحله‌به‌مرحله
+
+#### چرا؟
+
+VDOM را تا وقتی خودتان نسازید، درک نمی‌کنید که ایزولاسیون یعنی چه. این Lab با Checkpoint نوشته شده تا در هر گام بدانید درست است.
+
+#### توپولوژی
+
+``` text
+TENANT-A: port2 10.60.1.1/24  <->  A-B0 10.99.60.1/30
+TENANT-B: port3 10.60.2.1/24  <->  A-B1 10.99.60.2/30
+```
+
+#### گام ۱ — ساخت VDOM و اختصاص Interface
+
+``` text
+config vdom
+ edit TENANT-A
+ next
+ edit TENANT-B
+ next
+end
+config global
+ config system interface
+  edit port2
+   set vdom TENANT-A
+  next
+  edit port3
+   set vdom TENANT-B
+  next
+ end
+end
+```
+
+Checkpoint: `get system interface` در هر VDOM فقط Interface خودش را نشان دهد.
+
+#### گام ۲ — Inter-VDOM Link
+
+``` text
+config global
+ config system vdom-link
+  edit "A-B"
+  next
+ end
+ config system interface
+  edit "A-B0"
+   set vdom TENANT-A
+   set ip 10.99.60.1 255.255.255.252
+  next
+  edit "A-B1"
+   set vdom TENANT-B
+   set ip 10.99.60.2 255.255.255.252
+  next
+ end
+end
+```
+
+#### گام ۳ — Route و Policy
+
+در TENANT-A: Route به 10.60.2.0/24 از طریق 10.99.60.2؛ در TENANT-B: مسیر برگشت. Policy فقط برای یک سرویس (مثلاً tcp/443).
+
+#### گام ۴ — آزمون
+
+``` text
+from A: curl -m 3 https://10.60.2.10   # expect OK
+from A: ping 10.60.2.10                # expect fail (not allowed)
+```
+
+#### مثال سخت — محدودیت‌ها
+
+VDOM‌ها یک سخت‌افزار و یک نسخه‌ی مشترک دارند؛ ارتقا همه را هم‌زمان درگیر می‌کند. Config هر VDOM جدا Backup می‌شود (Backup VDOM-مبنا). نقش ادمین: `Prof-admin` با `vdom` مشخص.
+
+#### Lab
+
+Lab را کامل کنید و سه شاهد (Interface، Route، Log) ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Link Down | VDOM اشتباه | بررسی |
+| ping جواب می‌دهد | Policy بیش‌ازحد | تنگ‌سازی |
+| Route نیست | VDOM اشتباه | اضافه‌کردن |
+
+#### پرسش‌ها با پاسخ
+
+**۱. هر VDOM Route جدا؟** بله.
+**۲. ارتقا؟** هم‌زمان.
+**۳. ادمین محدود؟** با Profile.
+
+#### English Corner
+
+- *Inter-VDOM traffic requires explicit policy on both sides.*
+- Q: What is shared between VDOMs?
+
 ## درس 24-4 — Logging Data Center و Gate G9: اثبات Isolation، آزمون منفی، Alert و مستندسازی
 
 **فصل 24 · بازنویسی عمیق · پیش‌نیاز: ۲۴-۱ تا ۲۴-۳ · ≈ 12 ساعت**
@@ -3117,6 +3785,67 @@ Isolation اثبات: آزمون منفی TENANT-A→TENANT-B ⇒ Timeout؛ Log 
 1. *Log هر VDOM؟* ارسال جدا.
 2. *Evidence ایزولاسیون؟* Lookup + Log.
 3. *منابع؟* محدودیت تنظیم‌شده.
+
+### تکمیل عمیق: Logging دیتاسنتر و Gate G9 — اثبات Isolation
+
+#### چرا؟
+
+ایزولاسیون بدون اثبات فقط ادعاست. G9 از شما می‌خواهد با آزمون منفی و Log ثابت کنید دو مستأجر/Zone از هم جدا هستند.
+
+#### مثال ساده — آزمون Isolation
+
+``` text
+from TENANT-A host: nc -zv 10.60.2.10 22   # to TENANT-B, expect timeout
+diagnose firewall iprope lookup 10.60.1.5 40000 10.60.2.10 22 tcp port2   # expect deny
+```
+
+شاهد: Log Deny با `policyid=0` یا Deny صریح.
+
+#### مثال متوسط — Log هر VDOM
+
+در هر VDOM تنظیم Log جدا:
+
+``` text
+config log syslogd setting
+ set status enable
+ set server 10.50.0.20
+end
+```
+
+در Syslog سرور فیلد `vd=` را برای جداسازی نگه دارید.
+
+#### مثال سخت — نقض Isolation
+
+Log نشان می‌دهد ترافیک TENANT-A→TENANT-B با Policy 5 (قدیمی `all`) عبور کرده. اقدام: گزارش، Disable Policy، بازبینی همه‌ی Policyهای Inter-VDOM، Evidence، PIR.
+
+#### Rubric G9
+
+``` text
+Isolation proof 30 | Least-privilege policy 25 | Logging 20 | Resource limits 15 | Report 10
+```
+
+#### Lab
+
+آزمون منفی و Log را برای دو VDOM ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| Log مخلوط | بدون vd | فیلتر |
+| نقض | Policy قدیمی | حذف |
+| منابع | سقف نیست | تعیین |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Evidence ایزولاسیون؟** آزمون منفی + Log.
+**۲. چرا vd؟** تفکیک.
+**۳. بازبینی چرا؟** Policy قدیمی.
+
+#### English Corner
+
+- *Isolation is proven by negative tests and logs.*
+- Q: How do you separate logs per tenant?
 
 ## پاسخ‌های فصل 24
 
