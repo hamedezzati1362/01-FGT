@@ -646,6 +646,13 @@ B نسخه‌ی 7.0.2 و A 7.0.3. Cluster اولیه ممکن است تشکیل 
 
 hbdev روی port1 (که ترافیک کاربر هم دارد). در ازدحام Heartbeat Loss ⇒ Failover اشتباه (Flapping). رفع: لینک اختصاصی و Redundant. نمونه‌ی هشدار: `HA heartbeat lost`.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. System → HA را باز کنید.
+2. Mode و Priority را تنظیم کنید.
+3. Heartbeat و Monitor Interfaces را انتخاب کنید.
+4. Apply و بررسی Cluster Members.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. برگه‌ی طراحی را کامل کنید.
@@ -1184,6 +1191,12 @@ Reboot Primary: ۴ ping قطع (۴ ثانیه) و SSH باقی ماند ⇒ زی
 #### مثال سخت — صداقت
 
 Lab اجرا نشده؛ زمان‌ها مدل‌اند؛ گزارش باید «Unverified» بنویسد.
+
+### مسیر GUI (مستندی، Unverified)
+
+1. System → HA: Mode، Group name، Password، Heartbeat Interfaces، Priority.
+2. Monitor Interfaces را انتخاب کنید.
+3. System → Firmware برای Upgrade.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
@@ -2123,6 +2136,13 @@ Policy ISP1 با Pool مخصوص IP ISP1؛ پاسخ به همان لینک. آز
 #### مثال سخت — دام asymroute
 
 مدیر `asymroute enable` کرد و مشکل «حل شد». سه ماه بعد حادثه: Spoofing از شبکه‌ی مهمان کنترل نشد (RPF خاموش). RCA: راه‌حل موقت دائمی شد. درس: ثبت تاریخ بازبینی و طرح جایگزین.
+
+### مسیر GUI (مستندی، Unverified)
+
+1. Network → Policy Routes → Create New.
+2. Policy & Objects → IP Pools / NAT در Policy.
+3. System → HA (Session pickup).
+4. Log & Report → Forward Traffic.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
@@ -3494,6 +3514,12 @@ Admin Tenant A دسترسی Global داشت ⇒ می‌تواند Config B را 
 #### مثال سخت — لایسنس و HA
 
 تعداد VDOM بیش از Default (۱۰) نیاز دارد؛ Needs-License؛ در HA هر دو عضو باید VDOM یکسان؛ Failover برای VDOMهای جداگانه (VCluster) پیچیده‌تر. تصمیم: طراحی با حداقل VDOM و ثبت.
+
+### مسیر GUI (مستندی، Unverified)
+
+1. System → Settings: Virtual Domains Enable.
+2. Global → Virtual Domains → Create New.
+3. Network → Interfaces → Inter-VDOM Link.
 
 ### Lab هدایت‌شده (اجرا نشده)
 

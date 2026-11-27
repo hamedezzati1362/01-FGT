@@ -681,6 +681,14 @@ Spoke به Hub1 و Hub2 تونل دارد؛ OSPF cost: Hub1=10، Hub2=100 ⇒ Pr
 
 Hub `redistribute static` همه‌ی Staticها را اعلام می‌کند، شامل Default به ISP ⇒ Spokeها به اینترنت از Hub می‌روند ناخواسته. راه: Route-map/Prefix-list برای redistribute و Default فقط عمدی.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. VPN → IPsec Tunnels: Tunnel Hub–Spoke با Selector 0.0.0.0/0 (طبق ۱۸-۲).
+2. Network → Interfaces → Tunnel Interface: IP/Remote IP (یا /32).
+3. Network → OSPF: Router ID، Areas، Networks (10.250.0.0/16)، Interfaces (Network Type=Point-to-Point، Hello/Dead، Cost، Authentication).
+4. Policy & Objects: Policy Tunnel↔LAN دوطرفه.
+5. Monitor → Routing Monitor و Network → OSPF Neighbors.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. دو Spoke و Hub؛ OSPF.
@@ -890,6 +898,14 @@ Hub1 با LP=200، Hub2 با LP=100 برای 10.0.0.0/16 (HQ). Spoke Hub1 را �
 
 Spoke به‌اشتباه Prefix مشتری را اعلام می‌کند و Hub به همه‌ی Spokeها RR می‌کند. راه: Prefix-list ورودی روی Hub (فقط Prefixهای مجاز هر Spoke) و `maximum-prefix`.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. Network → BGP: AS، Router ID.
+2. Neighbor Groups/Neighbors (بعضی گزینه‌ها مثل neighbor-group فقط CLI).
+3. Networks: Prefixهای قابل‌اعلام.
+4. Network → Routing Objects → Prefix Lists/Route Maps.
+5. Monitor → Routing Monitor.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. iBGP Hub/Spoke با Loopback.
@@ -1081,6 +1097,14 @@ ERP 10.0.0.0/16 ⇒ Tunnel (Route خاص). Default ⇒ ISP محلی. `get router
 
 ISP محلی قطع شد؛ Sessionهای اینترنت قطع می‌شوند (NAT منبع عوض شد). توضیح به کاربر: یک بار اتصال دوباره؛ Session Pickup فقط در HA. اندازه‌گیری: Failover زیر ۱۰ ثانیه با Link Monitor.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. Network → Static Routes (Default محلی) و (Tunnel Route).
+2. Policy & Objects → Addresses → FQDN/Internet Service.
+3. Policy & Objects → Firewall Policy: LAN→WAN (NAT ✓) با Security Profiles.
+4. Network → SD-WAN → SD-WAN Rules (در صورت استفاده).
+5. Log & Report → Forward Traffic.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. Split: ERP تونل، اینترنت محلی.
@@ -1251,6 +1275,13 @@ Spoke1→Spoke2 مستقیم، Spoke2→Spoke1 هنوز از Hub (Shortcut یک�
 #### مثال سخت — مقیاس
 
 ۵۰ Spoke با Shortcutهای پویا؛ هر Spoke تا ۴۹ Tunnel پویا ممکن است. محدودیت Tunnel در مدل FortiGate (Datasheet). راه: Idle-timeout Shortcut، یا فقط ترافیک مشخص. پایش تعداد Tunnel.
+
+### مسیر GUI (مستندی، Unverified)
+
+1. VPN → IPsec Tunnels: Tunnel Hub/Spoke (گزینه‌های ADVPN فقط CLI).
+2. Network → BGP: Neighbor/Neighbor Group.
+3. Policy & Objects: Policy Spoke→Spoke.
+4. Monitor → IPsec Monitor: Shortcutها.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
@@ -1953,6 +1984,15 @@ Split: فقط 10.20.0.0/24 از تونل. DNS داخلی 10.20.0.10 برای `co
 
 Fortinet Advisory جدید. اقدام: ۱) اگر Patch ندارید، `config vpn ssl settings` را غیرفعال/محدود به Source مدیریتی ۲) بررسی Log برای IoC ۳) Patch ۴) تغییر همه‌ی رمزها و گواهی‌ها در صورت مشکوک بودن نفوذ.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. VPN → SSL-VPN Settings: Listen Interface/Port، Server Certificate، Tunnel IP Pool، DNS، Restrict Access.
+2. VPN → SSL-VPN Portals: Tunnel Mode، Split Tunneling، Bookmarks.
+3. User & Authentication → User Groups.
+4. VPN → SSL-VPN Settings → Authentication/Portal Mapping.
+5. Policy & Objects → Firewall Policy: Incoming `ssl.root` → LAN.
+6. Monitor → SSL-VPN Monitor.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. Portal Tunnel با Split.
@@ -2149,6 +2189,13 @@ NPS با Azure MFA Extension؛ Timeout FortiGate کم ⇒ شکست. افزایش
 #### مثال سخت — پشت NAT و Fragmentation
 
 کاربر در هتل: UDP 500 بسته. راه‌ها: NAT-T روی UDP 4500؛ بعضی نسخه‌ها/کلاینت‌ها حالت انتقال TCP برای IKE/ESP دارند (در مستند FortiOS 7.0 و FortiClient بررسی شود؛ Unverified). کلاینت‌های بومی ممکن است شکست بخورند و باید گزینه‌ی جایگزین (مثلاً FortiClient) آزمون شود. سیاست: آزمون در شبکه‌های محدود قبل از Rollout.
+
+### مسیر GUI (مستندی، Unverified)
+
+1. VPN → IPsec Wizard → Remote Access (Dial-up) → Custom.
+2. Authentication: Peer Options / Mode Config (IP range، DNS، Split).
+3. User Groups و Policy (Incoming `dialup`).
+4. Monitor → IPsec Monitor.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
@@ -2540,6 +2587,13 @@ DNS و Policy هر دو. ابتدا Policy (قطع دسترسی)، آزمون؛ 
 #### مثال سخت — صداقت
 
 Lab اجرا نشده؛ خروجی‌ها آموزشی/Unverified؛ هرگز Evidence جعلی ثبت نشود.
+
+### مسیر GUI (مستندی، Unverified)
+
+1. VPN → SSL-VPN Settings: Port، Cert، Tunnel pool، DNS.
+2. VPN → SSL-VPN Portals: Split Tunneling و Routing Address.
+3. User & Device: LDAP و FortiToken و گروه.
+4. Policy: Source ssl.root و Group.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
@@ -3305,6 +3359,11 @@ Monitor با یک مقصد (8.8.8.8). اگر آن مقصد موقتاً بلاک
 #### مثال سخت — معیار مهاجرت
 
 تماس ویدیویی با Jitter زیاد روی ISP1 ولی Up؛ Link Monitor تغییر نمی‌دهد. نیاز: Health-check با SLA (Latency/Jitter/Loss) ⇒ SD-WAN (۲۱-۲).
+
+### مسیر GUI (مستندی، Unverified)
+
+1. Network → Static Routes.
+2. System → Link Monitor.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
@@ -4089,6 +4148,13 @@ A هر ۳۰ ثانیه قطع/وصل؛ `recoverytime 60` مانع Flapping می�
 #### مثال سخت — صداقت
 
 Lab اجرا نشده؛ زمان‌های ۵ ثانیه و ۲٫۵ ثانیه محاسبه‌ی مدل است نه اندازه‌گیری؛ در گزارش «Unverified» ثبت.
+
+### مسیر GUI (مستندی، Unverified)
+
+1. Network → SD-WAN → Interface Members: افزودن port1 و port4.
+2. Performance SLA: ساخت HC-GLOBAL.
+3. SD-WAN Rules: Teams و Default.
+4. Policy & Objects: خروجی Zone SD-WAN.
 
 ### Lab هدایت‌شده (اجرا نشده)
 

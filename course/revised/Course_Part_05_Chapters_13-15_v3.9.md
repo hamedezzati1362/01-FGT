@@ -188,6 +188,14 @@ Policy 10 هرگز اجرا نمی‌شود (Hit Count صفر). رفع: `move 10
 
 افزودن Policy جدید: ۱) Backup ۲) Lookup قبل ۳) ایجاد با Disable ۴) Lookup بعد (باید مطابق شود) ۵) Enable ۶) آزمون واقعی و Log ۷) Hit Count افزایش ۸) CHG بسته. اگر Lookup بعد policy 0 دهد، Interface/Address/Service را بازبینی.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. Policy & Objects → Firewall Policy → Create New.
+2. Name، Incoming/Outgoing Interface، Source، Destination، Schedule، Service را پر کنید.
+3. Action = ACCEPT؛ NAT را بر اساس نیاز؛ Log = All Sessions.
+4. Comments را بنویسید؛ OK.
+5. با کشیدن (Drag) ترتیب را اصلاح کنید؛ ستون ID و Hit Count را فعال کنید.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. چهار Policy بالا را بسازید.
@@ -361,6 +369,12 @@ Session SNAT به 203.0.113.21 ساخته می‌شود ولی پاسخی نیس
 
 Log: «IP pool exhausted». `ippool-all stats`: Pool پر. علل: Pool کوچک، مقصد واحد، اتصال‌های بی‌پایان (UDP)، DoS. رفع: افزایش IP، PBA، کاهش Timeout، بررسی مبدأ پرمصرف. شاهد: کاهش `exhausted`.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. Policy & Objects → IP Pools → Create New (Type Overload، Start/End IP).
+2. Firewall Policy → NAT = Enable → Dynamic IP Pool → انتخاب Pool.
+3. برای Central NAT: System → Feature Visibility → Central SNAT را روشن؛ Policy & Objects → Central SNAT → Create New.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. Interface NAT و مشاهده‌ی snat.
@@ -529,6 +543,12 @@ diagnose sys session list            -> dnat 203.0.113.10:443 -> 10.30.0.10:443
 #### مثال سخت — Hairpin
 
 کاربر داخلی به https://203.0.113.10 می‌رود و کار نمی‌کند. روش: Split DNS (ترجیح). اگر ممکن نبود: VIP با extintf any، Policy `ZN-USERS -> ZN-DMZ` و در صورت نیاز SNAT تا پاسخ از فایروال برگردد. آزمون: curl از LAN.
+
+### مسیر GUI (مستندی، Unverified)
+
+1. Policy & Objects → Virtual IPs → Create New.
+2. Firewall Policy → Destination = VIP.
+3. Service را روی پورت لازم محدود کنید.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
@@ -701,6 +721,11 @@ expire 3565 s of timeout 3600 -> 35 s since last packet
 
 SSH بعد از ۱ ساعت بی‌کاری قطع می‌شود: Timeout ۳۶۰۰. راه: Keepalive یا `session-ttl` برای پورت 22 (۴ ساعت) با CHG. شاهد: expire جدید.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. Dashboard → FortiView Sessions (یا Monitor → Firewall User/Session).
+2. فیلتر و Kill Session در GUI.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. یک اتصال بسازید و Session را بخوانید.
@@ -857,6 +882,13 @@ Policy `USERS-ALL` همه‌ی ترافیک را مجاز می‌کند. Log ۳�
 #### مثال سخت — Hit Count گمراه‌کننده
 
 Policy «YEAR-END-REPORT» Hit=0 در ۶ ماه؛ حذف شد؛ پایان سال گزارش مالی قطع. درس: Log ۱۲ ماهه و پرسش از مالک؛ برچسب «فصلی» در comment.
+
+### مسیر GUI (مستندی، Unverified)
+
+1. Policy & Objects → Firewall Policy؛ ستون‌ها: Hit Count، Last Used، Bytes را فعال کنید.
+2. روی Policy راست‌کلیک → Show Matching Logs.
+3. Disable با Status toggle.
+4. Schedules: Policy & Objects → Schedules.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
@@ -1491,6 +1523,12 @@ Debug Flow لازم نشد؛ sniffer کافی بود.
 
 پس از رفع NAT (Pool اشتباه)، سایت باز می‌شود ولی بارگذاری فایل بزرگ قطع می‌شود. Q10 آزمون کامل شکست خورد ⇒ علت دوم MTU (PMTUD بلاک). درس: بعد از هر رفع، **آزمون کامل** (نه فقط ping)، و هر علت جدا ثبت شود.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. Network → Diagnostics → Packet Capture.
+2. Dashboard → FortiView.
+3. Log & Report → Forward Traffic.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. یک خرابی NAT و یک خرابی Policy بسازید.
@@ -1672,6 +1710,11 @@ port1 in  198.51.100.8 > 203.0.113.2: icmp: 198.51.100.8 unreachable - need to f
 #### مثال سخت — مقایسه‌ی دو Interface
 
 برای NAT: ورودی بسته با Src داخلی، خروجی با Src Pool. اگر خروجی هنوز Src داخلی است، NAT اعمال نشده (Policy بدون NAT یا Central NAT).
+
+### مسیر GUI (مستندی، Unverified)
+
+1. Network → Diagnostics → Packet Capture → Create New.
+2. Interface، Filter، Count را بنویسید؛ Start؛ Download.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
@@ -2016,6 +2059,11 @@ Policy عوض شد ولی کاربر هنوز با قانون قدیمی کار 
 #### مثال سخت — Offload
 
 `npu` در Session: ترافیک شتاب‌داده؛ Sniffer ممکن است همه‌ی بسته‌ها را نشان ندهد. برای آزمون: Session را پاک و موقت Offload را محدود کنید (آزمایشی).
+
+### مسیر GUI (مستندی، Unverified)
+
+1. Monitor → Routing Monitor.
+2. Network → Policy Routes.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
@@ -3218,6 +3266,12 @@ Summary 10.0.0.0/16 would also cover DMZ 10.30.0.0/24 -> WRONG
 
 Users به اینترنت می‌روند؛ پاسخ به Edge می‌رسد؛ Edge Route به 10.10.0.0/24 ندارد و از Default به ISP می‌فرستد ⇒ گم. علامت: کاربر Timeout؛ Sniffer روی port1 Edge پاسخ ورودی را می‌بیند ولی SYN-ACK به داخل نمی‌رسد؛ `get router info routing-table details 10.10.0.5` (Edge) ⇒ Default. رفع: Route برگشت. تأیید: همان دستور ⇒ via 10.99.0.2.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. هر فایروال: Network → Interfaces برای Transit و Zoneها.
+2. Network → Static Routes.
+3. Policy & Objects برای ماتریس.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. جدول Interface و Route را بنویسید.
@@ -3442,6 +3496,13 @@ Web (10.30.0.10) پاسخ را به Edge می‌دهد (Gateway Edge). برای 
 
 Users داخلی با IP عمومی 203.0.113.3 به سایت می‌روند: ترافیک از Internal به Edge و برگشت به DMZ. نیاز به Policy LINK→DMZ و گاهی NAT؛ ساده‌تر: DNS داخلی نام را به 10.30.0.10 حل کند (Split DNS).
 
+### مسیر GUI (مستندی، Unverified)
+
+1. Network → Interfaces.
+2. Static Routes.
+3. Virtual IPs.
+4. Firewall Policy.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. Interface/Route/Policy را اعمال کنید.
@@ -3651,6 +3712,13 @@ diagnose sys session filter src 10.10.0.5
 diagnose sys session list
 ```
 
+### مسیر GUI (مستندی، Unverified)
+
+1. Network → Interfaces برای هر پورت.
+2. Network → Static Routes → Default به 10.255.0.1.
+3. Policy & Objects → Firewall Policy با ماتریس.
+4. Log & Report → Forward Traffic برای آزمون منفی.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. Zoneها و Policyها را بسازید.
@@ -3813,6 +3881,11 @@ Web به DB مستقیم ممنوع؛ Log deny. اگر Policy 0 نبود و مج
 #### مثال سخت — DB با اینترنت
 
 برای به‌روزرسانی DB، تیم موقتاً DB→Internet را باز کرد و فراموش شد. ممیزی: Policy بدون Owner/Expiry، Hit Count فعال ⇒ DB به C2 وصل شد (در سناریو). درس: Policy موقت با Comment و تاریخ انقضا، بازبینی فصلی (۱۳-۵).
+
+### مسیر GUI (مستندی، Unverified)
+
+1. Policy & Objects → Firewall Policy → ترتیب Policyها.
+2. Log & Report → Forward Traffic → Filter policyid=61.
 
 ### Lab هدایت‌شده (اجرا نشده)
 

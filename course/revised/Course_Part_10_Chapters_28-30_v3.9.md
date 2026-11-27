@@ -426,6 +426,11 @@ Capture فقط ۵ بسته‌ی اول Session را نشان می‌دهد. عل
 
 `diagnose sniffer packet any` هر بسته را چند بار (روی Interface‌ها و VLAN) نشان می‌دهد و Wireshark Retransmission کاذب می‌بیند. راه: Interface مشخص یا فیلتر `-i`/Interface نام.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. Network → Diagnostics → Packet Capture: Interface، Filter، Packet count → Start → Download PCAP.
+2. Wireshark: File → Open.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. سه‌نقطه‌ای با فیلتر.
@@ -612,6 +617,12 @@ t=3.000 SYN (retransmit)
 
 اتصال پس از ۱۵ ثانیه RST می‌خورد. RST با TTL متفاوت (مثلاً TTL 64 در برابر TTL سرور 128) ⇒ RST تزریق‌شده توسط میانی (IPS/Firewall). مقایسه‌ی TTL و `ip.id`. سپس Log IPS/Policy فایروال.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. Wireshark: Statistics → TCP Stream Graphs (Time-Sequence، Throughput، RTT).
+2. Statistics → Conversations/IO Graph.
+3. Analyze → Expert Information.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. PCAP نمونه: Handshake و RTT.
@@ -774,6 +785,10 @@ Client TLS 1.0 فقط؛ سرور حداقل 1.2. Alert 40 یا 70 ⇒ رفع: ب
 #### مثال سخت — MTU و ClientHello
 
 ClientHello بزرگ (Post-Quantum Key Share در مرورگرهای جدید، ~1.5KB+) در Fragment گم می‌شود (MTU/MSS)؛ سایت باز نمی‌شود ولی بقیه باز می‌شود. Capture: ClientHello Retransmission بدون ServerHello. رفع: MSS Clamp/PMTUD، بررسی IPS/Inspection که Fragment را درست نمی‌بیند. (الگوی واقعی در مرورگرهای جدید.)
+
+### مسیر GUI (مستندی، Unverified)
+
+1. Wireshark: Filter tls؛ Statistics → Protocol Hierarchy.
 
 ### Lab هدایت‌شده (اجرا نشده)
 

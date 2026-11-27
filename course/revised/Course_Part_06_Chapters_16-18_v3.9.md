@@ -513,6 +513,13 @@ execute update-now
 
 تیم IPS Sensor ساخت ولی Policy اینترنت را تغییر نداد. آزمون: فایل EICAR دانلود شد و Log UTM خالی بود ⇒ Profile متصل نیست. رفع: Policy ⇒ Security Profiles. اثبات: Log ⇒ `Security Events`.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. Security Profiles → هر Profile: وضعیت و گزینه‌ها.
+2. Policy & Objects → Firewall Policy → Security Profiles: فعال‌سازی و انتخاب.
+3. System → FortiGuard: وضعیت لایسنس/DB.
+4. Log & Report → Security Events.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. Profile ساده بسازید و به Policy وصل کنید.
@@ -1460,6 +1467,13 @@ Backup شبانه 5Gbps ⇒ AV/IPS Exempt (Policy جدا از مبدأ سرور 
 #### مثال سخت — Deep SSL و CPU
 
 Deep Inspection روی همه‌ی ترافیک: Throughput از 800 به 250. راه: Exempt دسته‌های سنگین (Video)، Certificate Inspection برای آن‌ها، و بررسی NPU (پشتیبانی SSL Offload در برخی مدل‌ها).
+
+### مسیر GUI (مستندی، Unverified)
+
+1. Dashboard → Performance (CPU/Memory/Sessions).
+2. FortiView → Sources/Destinations.
+3. Log & Report → Security Events.
+4. Policy → ستون Security Profiles برای مقایسه.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
@@ -2797,6 +2811,13 @@ Kerberos/LDAPS با اختلاف ۱۰ دقیقه خطا می‌دهد. علام�
 
 قبل از تغییر Schema/GPO: Snapshot VM. اگر اشتباه شد Rollback. توجه: Rollback DC در محیط چند DC خطرناک (USN Rollback)؛ در Lab تک‌DC مجاز؛ در Production از بازیابی رسمی AD استفاده کنید.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. Server Manager → Add Roles → Active Directory Domain Services و DNS.
+2. Active Directory Users and Computers → ساخت OU/Group/User.
+3. DNS Manager → بررسی Zone lab.local.
+4. FortiGate: Network → DNS = 192.168.90.40.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. AD بسازید و dcdiag بزنید.
@@ -2999,6 +3020,13 @@ alice عضو `GG-Sub` است و `GG-Sub` عضو `GG-Internet-Users`. Match مس�
 
 Policy گروهی ولی کاربر بدون Portal/FSSO نمی‌تواند شناخته شود؛ ترافیک Deny. راه: FSSO (۱۷-۴) یا Captive Portal (۱۷-۵). این خطای مفهومی رایج است.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. User & Authentication → LDAP Servers → Create New (Server، cnid، dn، Bind).
+2. Test Connectivity و Test User Credentials.
+3. User Groups → Create New → Remote Groups → Add (انتخاب گروه از LDAP).
+4. Policy → Source = گروه.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. LDAP و Test.
@@ -3179,6 +3207,13 @@ Push Notification ۳۰ ثانیه می‌خواهد ولی `timeout 5` است �
 #### مثال سخت — قطعی RADIUS
 
 NPS Down؛ VPN/Admin قفل. راه: دو NPS (Primary/Secondary: `set secondary-server`)، Break-glass محلی، پایش.
+
+### مسیر GUI (مستندی، Unverified)
+
+1. User & Authentication → RADIUS Servers → Create New (Name، Primary Server، Secret).
+2. Test Connectivity/Credentials.
+3. NPS: RADIUS Clients → New (IP فایروال، Secret).
+4. NPS: Network Policies → شرط Group.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
@@ -3370,6 +3405,14 @@ alice در گروه ⇒ اینترنت؛ bob خارج از گروه ⇒ Deny (Lo
 
 اگر کاربران پشت NAT دیگری باشند، IP ثابت می‌شود و FSSO نگاشت را اشتباه دارد. راه: FortiGate را قبل از NAT قرار دهید یا از Agent/Portal استفاده کنید.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. User & Authentication → LDAP (از ۱۷-۲).
+2. Security Fabric → External Connectors → Create New → FSSO.
+3. Poll Active Directory Server: IP، User، Password، LDAP Server.
+4. User Groups → FSSO → Members.
+5. Policy: Source = گروه FSSO.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. Collector و اتصال.
@@ -3540,6 +3583,13 @@ Policy عمومی `all` بالاتر از Portal؛ ترافیک مهمان بد�
 #### مثال سخت — DNS
 
 کاربر Portal را نمی‌بیند چون DNS (UDP 53) قبل از احراز بسته است. رفع: Policy DNS بدون گروه در بالا.
+
+### مسیر GUI (مستندی، Unverified)
+
+1. Network → Interfaces → VLAN Guest → Security Mode: Captive Portal.
+2. User & Authentication → User Definition → Local User موقت.
+3. Policy: Guest→WAN با Web Filter.
+4. Log & Report.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
@@ -3829,6 +3879,11 @@ LDAPS ناگهان شکست؛ علت: گواهی DC منقضی. علامت: `cer
 #### مثال سخت — قفل ادمین
 
 LDAP Down؛ ادمین‌ها نمی‌توانند وارد شوند. Break-glass نجات داد. ثبت و بازبینی: افزونگی LDAP (دو DC)، پایش.
+
+### مسیر GUI (مستندی، Unverified)
+
+1. User & Authentication → LDAP Servers → Test Connectivity / Test User Credentials.
+2. User Groups → Remote Groups.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
@@ -4685,6 +4740,10 @@ Phase1: `aes256-sha256` و `dhgrp 14`؛ Phase2 با PFS 14. لیست کوتاه 
 
 ۱۰ شعبه به مرکز: Hub-and-Spoke؛ Subnetها یکتا؛ OSPF/BGP روی تونل‌ها؛ ADVPN برای Spoke-to-Spoke (۱۸-۸). در طراحی اول Subnet Plan.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. VPN → IPsec Wizard یا Custom: گام‌ها مطابق ۱۸-۲.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. برگه‌ی پارامتر را کامل کنید.
@@ -5230,6 +5289,11 @@ Clamp نیست و Policy ICMP Type 3 را نمی‌دهد ⇒ PMTUD شکست ⇒
 #### مثال سخت — دو تونل تودرتو
 
 IPsec داخل GRE یا دو لایه ⇒ Overhead دو برابر؛ MTU ≈ ۱۳۵۰ و MSS ≈ ۱۳۱۰. محاسبه‌ی دقیق برای هر لایه؛ تست ping DF.
+
+### مسیر GUI (مستندی، Unverified)
+
+1. Network → Interfaces → Tunnel → MTU.
+2. Policy → CLI برای MSS.
 
 ### Lab هدایت‌شده (اجرا نشده)
 

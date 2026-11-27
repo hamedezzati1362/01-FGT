@@ -1604,6 +1604,13 @@ FMG هک می‌شود ⇒ مهاجم Config ۵۰ دستگاه را تغییر �
 
 FMG تک ⇒ SPOF مدیریتی (ترافیک اثر ندارد ولی مدیریت قطع). راه: FMG HA، Backup دوره‌ای، دسترسی مستقیم اضطراری (Break-glass) به فایروال‌ها. FAZ: Log Forward/HA برای عدم از دست‌رفتن Log.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. FMG: Device Manager → Add Device/Group.
+2. FMG: Policy & Objects → Policy Package → Install Wizard (Preview).
+3. FMG: System Settings → Administrators/ADOMs.
+4. FGT: Security Fabric → Fabric Connectors / System → Central Management.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. معماری FMG/FAZ را رسم کنید.
@@ -1807,6 +1814,11 @@ Collector ۲ ساعت Down؛ FortiGate Log را فقط تا ظرفیت بافر 
 #### مثال سخت — محدودیت جایگزین
 
 FAZ تحلیل آماده (FortiView، IOC، Compliance) می‌دهد؛ rsyslog فقط ذخیره. برای تحلیل: Graylog/ELK و Dashboard. هزینه‌ی مهندسی را حساب کنید. همچنین Time-sync و Parse نسخه‌ها.
+
+### مسیر GUI (مستندی، Unverified)
+
+1. Log & Report → Log Settings → Remote Logging and Archiving → Send Logs to Syslog.
+2. Log & Report → Forward Traffic/Events برای بررسی.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
@@ -2777,6 +2789,13 @@ dstport=443 policyid=30 action="close" sentbyte=1200 rcvdbyte=9800 duration=35
 
 ممیز Log ۶ ماه پیش می‌خواهد؛ شما ۹۰ روز دارید. Retention باید از الزام قانونی/Dwell Time تعیین شود؛ آرشیو سرد ارزان.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. Log & Report → Log Settings: Local logging، Disk، Remote.
+2. Policy & Objects → Firewall Policy → Logging Options (Log Allowed Traffic: All/Security Events).
+3. Log & Report → Forward Traffic / Events / AntiVirus / Web Filter.
+4. Dashboard → Log widgets.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. Policy با سطوح مختلف.
@@ -2981,6 +3000,12 @@ SYN Flood سریع Session را پر می‌کند؛ همراه DoS Policy.
 
 Community `public` در اینترنت باز بود؛ مهاجم اطلاعات گرفت. راه: v3، Local-in محدود، حذف v2c، تغییر Community. Alert روی SNMP از IP ناشناخته.
 
+### مسیر GUI (مستندی، Unverified)
+
+1. System → SNMP: SNMPv3 users/Communities (Source Hosts).
+2. Network → Interfaces → Administrative Access: SNMP روی Interface مدیریت.
+3. Zabbix: Configuration → Hosts → Templates → Triggers.
+
 ### Lab هدایت‌شده (اجرا نشده)
 
 1. SNMPv3 و snmpwalk.
@@ -3169,6 +3194,11 @@ Token در Git عمومی افتاد. اقدام: ۱) Revoke (`execute api-user 
 #### مثال سخت — Automation بی‌کنترل
 
 Pipeline با Write Profile Policy را تغییر داد و اشتباه Deny All شد. اصلاح: Dry-run/Preview، Approval، Canary (یک دستگاه)، Rollback خودکار با Verify، Rate-limit.
+
+### مسیر GUI (مستندی، Unverified)
+
+1. System → Administrators → Create New → REST API Admin (Profile، Trusted Hosts، توکن).
+2. Log & Report → Events → System برای Audit.
 
 ### Lab هدایت‌شده (اجرا نشده)
 
