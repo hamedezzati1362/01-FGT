@@ -193,6 +193,84 @@ Throughput bound = Window / RTT = 65535 B / 0.082 s ~ 0.8 MB/s ~ 6.4 Mbps
 
 نتیجه: با Window کوچک حتی لینک 100 Mbps حدود 6.4 Mbps می‌دهد؛ علت: گیرنده کند یا Window Scaling خاموش. ابزار: فیلتر `tcp.window_size_value` و `tcp.options.wscale`.
 
+### تکمیل عمیق: چرا تحلیل بسته، «چشم‌های» مهندس شبکه است؟
+
+#### چرا باید یاد بگیریم؟
+
+Log می‌گوید «چه چیزی رخ داد»؛ Capture نشان می‌دهد «واقعاً چه چیزی روی سیم رفت». وقتی کاربر می‌گوید «کند است»، Log معمولاً چیزی ندارد، ولی بسته‌ها دارند: Retransmission، Window صفر، RST، DNS کند. تحلیل بسته مثل آزمایش خون است؛ علامت را به علت وصل می‌کند.
+
+#### توضیح ساده
+
+یک ارتباط TCP سه مرحله دارد: **Handshake**، **انتقال داده**، **بستن**. هر مرحله الگوی طبیعی و الگوی خراب دارد.
+
+``` text
+Normal  : SYN -> SYN,ACK -> ACK -> data/ACK ... -> FIN/ACK
+Broken 1: SYN -> SYN -> SYN (no reply)         => unreachable / dropped
+Broken 2: SYN -> RST                            => port closed / policy reset
+Broken 3: data -> data (retransmission)        => loss on path
+Broken 4: Window = 0                            => receiver overloaded
+```
+
+#### مثال ساده — محاسبه‌ی RTT
+
+SYN در زمان 0.000 و SYN-ACK در 0.082 دیده شد.
+
+``` text
+RTT = 0.082 - 0.000 = 82 ms
+```
+
+RTT = Round Trip Time، یعنی زمان رفت‌وبرگشت.
+
+#### مثال متوسط — سقف سرعت از روی Window
+
+TCP نمی‌تواند سریع‌تر از Window/RTT برود.
+
+``` text
+Throughput max = Window / RTT
+65535 bytes / 0.082 s = ~799,000 bytes/s = ~6.4 Mbps
+```
+
+یعنی حتی روی لینک 100 Mbps، با این Window و RTT بیش از ~6.4 Mbps نمی‌گیرید، مگر Window Scaling فعال باشد. این پاسخ کلاسیک «چرا لینک ۱۰۰ مگ است ولی سرعت ۶ مگ؟» است.
+
+#### مثال سخت — دو علت هم‌زمان
+
+کاربر از شعبه به سرور مرکزی کند است. Capture: RTT=80ms، Retransmission ۳٪، Window Scaling خاموش. دو علت: (۱) Window Scaling توسط یک Middlebox حذف شده؛ (۲) Loss ۳٪ روی لینک. رفع: بررسی Option در SYN، و بررسی کیفیت لینک؛ اندازه‌گیری مجدد پس از هر رفع (تغییر یکی‌یکی).
+
+#### ابزارها
+
+``` text
+wireshark display filters:
+ tcp.analysis.retransmission
+ tcp.analysis.zero_window
+ tcp.flags.reset == 1
+ dns
+ tls.handshake
+```
+
+#### Lab
+
+یک pcap نمونه‌ی عمومی (مثلاً از نمونه‌های Wireshark Wiki) را باز و RTT و Retransmission را ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | شاهد | علت محتمل |
+|---|---|---|
+| SYN بی‌پاسخ | تکرار SYN | Drop/Route |
+| RST بلافاصله | RST پس از SYN | پورت بسته/Policy |
+| کندی با Loss | Retrans | کیفیت لینک |
+| سرعت پایین با Loss صفر | Window کوچک | Window Scaling |
+
+#### پرسش‌ها با پاسخ
+
+**۱. RTT را از کجا بخوانیم؟** فاصله‌ی SYN تا SYN-ACK.
+**۲. چرا Window Scaling مهم است؟** سقف سرعت.
+**۳. RST یعنی؟** قطع ناگهانی توسط یکی از طرفین یا Middlebox.
+
+#### English Corner
+
+- *Round-trip time is measured between SYN and SYN-ACK.*
+- Q: Why can a 100 Mbps link give only 6 Mbps for one TCP flow?
+
 ## درس 28-1 — Capture درست: انتخاب نقطه، Filter، Sniffer FortiGate، PCAP، Offload و ملاحظات امنیت/قانون
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۰، ۱۴-۷، ۱۲-۹ · ≈ 8 ساعت**
@@ -379,6 +457,68 @@ tcpdump -ni eth0 -w c.pcap host 198.51.100.8 and port 443
 diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 10 l
 diagnose sniffer packet port1 'host 198.51.100.8 and tcp port 443' 4 10 l
 ```
+
+### تکمیل عمیق: Capture درست — کجا، چگونه و با چه فیلتری؟
+
+#### چرا؟
+
+Capture بد بدتر از نبودن است: حجم زیاد، فیلتر غلط، یا نقطه‌ای که چیزی نمی‌بیند. قاعده: **سه نقطه، فیلتر دقیق، مدت کوتاه**.
+
+#### سه نقطه‌ی Capture
+
+1. **کلاینت**: بسته‌ای که کاربر می‌فرستد/می‌گیرد.
+2. **فایروال ورودی**: آیا رسید؟
+3. **فایروال خروجی**: آیا خارج شد (بعد از NAT)؟
+
+مقایسه‌ی سه نقطه مرز مشکل را نشان می‌دهد.
+
+#### مثال ساده — دستور tcpdump
+
+``` text
+tcpdump -ni eth0 -w c.pcap host 198.51.100.8 and tcp port 443 -c 200
+```
+
+پارامترها: `-n` بدون تبدیل نام، `-i` Interface، `-w` ذخیره، `-c` تعداد.
+
+#### مثال متوسط — Sniffer فورتی‌گیت
+
+``` text
+diagnose sniffer packet port2 'host 10.10.0.5 and tcp port 443' 4 20 l
+diagnose sniffer packet port1 'host 198.51.100.8 and tcp port 443' 4 20 l
+```
+
+سطح 4: هدر و نام Interface. دو دستور را هم‌زمان در دو پنجره اجرا کنید و زمان‌ها را بخوانید.
+
+#### مثال سخت — ترجمه‌ی NAT در مقایسه
+
+در Port2 مبدأ 10.10.0.5 و در Port1 مبدأ 203.0.113.2 دیده می‌شود. Source Port معمولاً حفظ می‌شود یا تغییر می‌کند؛ برای تطبیق جریان‌ها از Sequence Number و زمان استفاده کنید نه IP.
+
+#### قواعد حریم و حجم
+
+Payload ممکن است داده‌ی حساس داشته باشد؛ فقط هدر (Snaplen کوچک) یا فیلتر دقیق؛ فایل را رمزنگاری کنید و پس از تحلیل حذف کنید.
+
+#### Lab
+
+یک ارتباط curl را در دو Interface Capture و جدول تطبیق زمان بسازید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| بسته‌ای نیست | فیلتر غلط | ساده‌کردن |
+| بسته ناقص | Offload | بررسی Offload |
+| حجم زیاد | فیلتر کلی | محدودکردن |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا سه نقطه؟** مرز مشکل.
+**۲. Snaplen چیست؟** طول ذخیره‌ی هر بسته.
+**۳. چرا حریم؟** Payload.
+
+#### English Corner
+
+- *Capture at multiple points to localize the problem.*
+- Q: Why filter captures tightly?
 
 ## درس 28-2 — تحلیل TCP و DNS در Capture: Handshake، Window، Retransmission، RTT، RST و الگوهای خرابی
 
@@ -568,6 +708,74 @@ Retransmission با فاصله‌ی نمایی (1,2,4 s). DNS: Query/Response ب
 
 فواصل 0.2 و 0.4 ⇒ Backoff نمایی؛ ACK نرسیده؛ مسیر برگشت یا Drop. اگر Dup ACK دیده شود Fast Retransmit است نه Timeout. DNS: Query بدون Response بعد از 2 s و تکرار ⇒ سرور DNS/Policy UDP/53.
 
+### تکمیل عمیق: TCP و DNS در Capture — خواندن هر خط
+
+#### چرا؟
+
+بیشتر مشکلات «نیمه‌کارکرده» یا TCP‌اند یا DNS. خواندن Handshake و DNS باید برایتان مثل خواندن یک جمله‌ی ساده باشد.
+
+#### TCP: خواندن یک Handshake
+
+``` text
+1  0.000  10.10.0.5.50000 > 198.51.100.8.443 [SYN] seq=0 win=64240 mss=1460 ws=7
+2  0.082  198.51.100.8.443 > 10.10.0.5.50000 [SYN,ACK] seq=0 ack=1 win=65535 mss=1380 ws=9
+3  0.083  10.10.0.5.50000 > 198.51.100.8.443 [ACK] seq=1 ack=1
+```
+
+تفسیر: RTT=82ms؛ MSS سرور 1380 (کوچک‌تر از 1460) یعنی در مسیر چیزی MSS را کاهش داده (احتمالاً IPsec/Clamping)؛ هر دو سمت WS دارند.
+
+#### Retransmission و Backoff
+
+``` text
+t=1.000 seq=1000 ; t=1.200 retrans ; t=1.600 retrans ; t=2.400 retrans
+```
+
+فواصل 0.2، 0.4، 0.8: دو برابر شدن (Exponential Backoff). علت: ACK نمی‌رسد.
+
+#### Dup ACK و Fast Retransmit
+
+سه Dup ACK متوالی یعنی گیرنده بسته‌ی بعدی را دیده ولی قبلی گم شده؛ فرستنده بدون انتظار Timeout دوباره می‌فرستد. این Loss خفیف است، نه قطع.
+
+#### DNS: خواندن Query و Response
+
+``` text
+0.000 10.10.0.5 > 10.20.0.5 DNS A? app.example.com (id 0x1a2b)
+0.012 10.20.0.5 > 10.10.0.5 DNS A 198.51.100.8 (id 0x1a2b) TTL 300
+```
+
+زمان پاسخ 12ms نرمال. اگر پاسخ پس از 2s بیاید یا Query تکرار شود، مشکل DNS/UDP53/Policy است.
+
+#### مثال متوسط — DNS بزرگ و TCP/53
+
+پاسخ بزرگ (DNSSEC) با فلگ TC (Truncated) ⇒ کلاینت با TCP تکرار می‌کند. اگر TCP/53 بسته باشد، نیمی از پرس‌وجوها شکست می‌خورند.
+
+#### مثال سخت — سایت باز می‌شود ولی کند
+
+Capture نشان می‌دهد: Query AAAA بی‌پاسخ ۵ ثانیه، سپس A موفق. علت: DNS Server به AAAA پاسخ نمی‌دهد. رفع: رفع سرور یا غیرفعال‌سازی IPv6 در کلاینت (در صورت سیاست).
+
+#### Lab
+
+با `dig` و Capture یک پرس‌وجوی AAAA و A را مقایسه کنید.
+
+#### عیب‌یابی
+
+| علامت | شاهد | رفع |
+|---|---|---|
+| MSS کوچک | MSS در SYN-ACK | بررسی Tunnel/Clamp |
+| DNS کند | فاصله Query/Response | سرور/Policy |
+| TC flag | پاسخ truncated | باز کردن TCP/53 |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Backoff چیست؟** دو برابر شدن فاصله‌ی تلاش.
+**۲. Dup ACK؟** نشانه‌ی گم‌شدن یک بسته.
+**۳. TC flag؟** پاسخ بریده؛ TCP لازم.
+
+#### English Corner
+
+- *Three duplicate ACKs trigger a fast retransmit.*
+- Q: What does the TC flag in a DNS response mean?
+
 ## درس 28-3 — TLS در Capture: Handshake، SNI، Certificate، Alert، TLS 1.3 و اثر Inspection
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۰، ۱۶-۰، ۱۶-۵ · ≈ 8 ساعت**
@@ -741,6 +949,73 @@ wireshark filter: tls.handshake.type == 1
 
 تفسیر: کلاینت گواهی ارائه‌شده را به CA معتبر وصل نکرد؛ علت رایج: SSL Inspection بدون نصب CA سازمانی. رفع: توزیع CA یا Exemption. فیلتر: `tls.alert_message`.
 
+### تکمیل عمیق: TLS در Capture — Handshake، SNI، گواهی و Alert
+
+#### چرا؟
+
+امروز بیشتر ترافیک رمز است. بدون دانستن اینکه کدام بخش TLS هنوز دیده می‌شود، تحلیل ممکن نیست.
+
+#### آنچه دیده می‌شود
+
+| مرحله | TLS 1.2 | TLS 1.3 |
+|---|---|---|
+| ClientHello (SNI) | دیده می‌شود | دیده می‌شود (مگر ECH) |
+| ServerHello | دیده می‌شود | دیده می‌شود |
+| Certificate | دیده می‌شود | رمز |
+| Application Data | رمز | رمز |
+
+SNI = Server Name Indication، یعنی «نام سرور مقصد»؛ فایروال بدون Inspection هم می‌تواند آن را ببیند و Web Filter بر اساس آن عمل می‌کند.
+
+#### مثال ساده — ClientHello
+
+``` text
+wireshark filter: tls.handshake.type == 1
+fields: SNI=app.example.com ; supported_versions=TLS1.3,1.2 ; ALPN=h2,http/1.1
+```
+
+#### مثال متوسط — Alert
+
+``` text
+TLS Alert (Level: Fatal, Description: Unknown CA)  [from client]
+```
+
+یعنی کلاینت گواهی را به CA معتبر وصل نکرد. علت رایج: SSL Inspection بدون نصب CA سازمانی.
+
+#### مثال سخت — Handshake Failure
+
+ClientHello فقط TLS1.0/1.1 پیشنهاد می‌دهد؛ سرور حداقل TLS1.2 می‌خواهد ⇒ `handshake_failure`. رفع: ارتقای کلاینت/Policy.
+
+#### بررسی گواهی
+
+``` text
+openssl s_client -connect app.example.com:443 -servername app.example.com </dev/null | openssl x509 -noout -subject -issuer -dates
+```
+
+Issuer باید CA مورد انتظار باشد؛ اگر نام CA فایروال است، Inspection فعال است.
+
+#### Lab
+
+یک اتصال را با و بدون Inspection مقایسه کنید و Issuer را ثبت کنید.
+
+#### عیب‌یابی
+
+| علامت | Alert/شاهد | رفع |
+|---|---|---|
+| unknown_ca | Alert 48 | توزیع CA |
+| handshake_failure | Alert 40 | هماهنگی نسخه/Cipher |
+| certificate_expired | Alert 45 | تمدید |
+
+#### پرسش‌ها با پاسخ
+
+**۱. SNI چرا دیده می‌شود؟** قبل از رمز.
+**۲. TLS1.3 چه چیزی را پنهان می‌کند؟** گواهی.
+**۳. Issuer فایروال یعنی؟** Inspection.
+
+#### English Corner
+
+- *SNI reveals the destination hostname in the clear.*
+- Q: What does an unknown_ca alert mean?
+
 ## درس 28-4 — ده‌پرسش عیب‌یابی و بلوک‌های TS: چارچوب، سه پرونده‌ی کامل و کتابخانه‌ی TS
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۷، ۲۸-۱ تا ۲۸-۳ · ≈ 9 ساعت**
@@ -904,6 +1179,69 @@ Fix       : MSS clamp 1360
 Verify    : curl OK, no retrans
 ```
 
+### تکمیل عمیق: ده پرسش عیب‌یابی و بلوک TS در عمل
+
+#### چرا؟
+
+عیب‌یاب خوب حدس نمی‌زند؛ سؤال می‌پرسد. ده پرسش، مسیر را کوتاه و قابل‌تکرار می‌کند.
+
+#### ده پرسش
+
+1. چه کسی تحت تأثیر است؟
+2. از چه زمانی؟
+3. چه چیزی تغییر کرده؟
+4. DNS درست است؟
+5. Route درست است؟
+6. Policy مجاز است؟
+7. NAT/Session درست است؟
+8. بسته روی سیم دیده می‌شود؟
+9. لایه‌ی کاربرد (TLS/برنامه) چه می‌گوید؟
+10. رفع را چگونه تأیید می‌کنیم؟
+
+#### مثال ساده — بلوک TS
+
+``` text
+Symptom   : HTTPS to app times out for one user
+Q1 scope  : only user A
+Q3 change : none
+Q4 DNS    : ok
+Q8 wire   : SYN seen, no SYN-ACK
+Cause     : upstream blocks user A source NAT IP
+Fix       : change pool IP
+Verify    : curl 200
+```
+
+#### مثال متوسط — اولویت پرسش‌ها
+
+اگر پاسخ Q1 «همه‌ی کاربران» باشد، مستقیماً سراغ Route/لینک بروید؛ اگر «یک نفر»، سراغ کلاینت/Policy/NAT منبع.
+
+#### مثال سخت — پرونده‌ی چندلایه
+
+سایت گاهی باز می‌شود. Capture: برخی اتصال‌ها با MSS 1380 و برخی با MSS 1460؛ مسیر ECMP با دو لینک که یکی Tunnel دارد. نتیجه: MTU متفاوت؛ رفع: MSS Clamp روی Policy.
+
+#### Lab
+
+سه پرونده‌ی نوشته‌شده را با بلوک TS تمرین کنید.
+
+#### عیب‌یابی روش
+
+| علامت | علت | رفع |
+|---|---|---|
+| دور باطل | حدس | ده پرسش |
+| تغییر هم‌زمان | بی‌انضباطی | یک تغییر در هر زمان |
+| شاهد ناقص | ثبت نشد | ثبت خروجی |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا پرسش «چه چیزی تغییر کرد؟»** اغلب علت همان است.
+**۲. چرا Scope اول؟** مسیر تحقیق را کوتاه می‌کند.
+**۳. بلوک TS چیست؟** قالب ثبت.
+
+#### English Corner
+
+- *Ask what changed first.*
+- Q: How does scope narrow the search?
+
 ## درس 28-5 — آزمون عملی فصل ۲۸: تحلیل سه PCAP و RCA — صورت مسئله، کلید پاسخ و Rubric
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۱ تا ۲۸-۴، ۱۴-۲ · ≈ 12 ساعت**
@@ -1053,6 +1391,76 @@ tls.alert_message
 ### مثال حل‌شده: نمره‌ی یک PCAP
 
 PCAP دارای RST بعد از ClientHello: الگو ۲۵ (RST ناگهانی) + Evidence ۲۵ (شماره‌ی بسته) + علت ۲۵ (IPS/Policy بسته) + رفع ۲۵؛ نمره‌ی کامل فقط با ذکر منبع RST (کلاینت/سرور/Middlebox) بر پایه‌ی TTL/زمان‌بندی.
+
+### تکمیل عمیق: آزمون عملی — تحلیل سه PCAP و RCA
+
+#### چرا؟
+
+این آزمون نشان می‌دهد تحلیل‌گر هستید یا فقط می‌توانید Wireshark را باز کنید.
+
+#### PCAP-A: «سایت بالا نمی‌آید»
+
+مشاهده: SYN تکراری با فواصل 1، 2، 4 ثانیه، بدون پاسخ.
+
+``` text
+Pattern : SYN retransmission with exponential backoff
+Meaning : packet dropped before reaching server or reply lost
+Next    : sniff at firewall in/out, check route and policy
+```
+
+#### PCAP-B: «اتصال قطع می‌شود»
+
+مشاهده: RST از IP سرور (TTL مشاهده‌شده 63 در حالی که سرور TTL 64 می‌فرستد؟). تحلیل TTL: اگر RST با TTL متفاوت از بسته‌های قبلی سرور بیاید، احتمال تزریق توسط Middlebox (IPS/فایروال) است.
+
+#### PCAP-C: «کند است»
+
+مشاهده: Window=0 تکراری. علت: گیرنده کند (برنامه). رفع در سمت سرور/کلاینت، نه شبکه.
+
+#### قالب RCA
+
+``` text
+PCAP    : B
+Pattern : RST from middlebox (TTL mismatch)
+Evidence: packet #214 TTL 62 vs data TTL 54
+Cause   : IPS signature reset the session
+Fix     : tune signature / exemption with owner
+Verify  : new capture without RST
+```
+
+#### Rubric
+
+``` text
+Pattern 25 | Evidence 25 | Cause 25 | Fix & verify 25
+```
+
+نمره‌ی کامل فقط با ذکر شماره‌ی بسته و منطق است.
+
+#### مثال متوسط — اشتباه رایج
+
+تحلیل‌گر RST را به «سرور خراب» نسبت داد بدون بررسی TTL؛ پس از آزمون، IPS علت بود. درس: شاهد دوم لازم است.
+
+#### Lab
+
+سه pcap عمومی انتخاب و برای هر یک بلوک RCA بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| نتیجه‌گیری عجولانه | شاهد واحد | شاهد دوم |
+| بسته‌ی ناقص | Offload | Capture در نقطه‌ی دیگر |
+| حجم زیاد | بی‌فیلتر | فیلتر |
+
+#### پرسش‌ها با پاسخ
+
+**۱. TTL چه می‌گوید؟** تعداد Hop و تشخیص تزریق.
+**۲. Window=0 مشکل کجاست؟** گیرنده.
+**۳. SYN بی‌پاسخ؟** Drop در مسیر.
+
+#### English Corner
+
+- *A RST with a different TTL may be injected by a middlebox.*
+- Q: How do you prove where a packet was dropped?
 
 ## پاسخ‌های فصل 28
 
