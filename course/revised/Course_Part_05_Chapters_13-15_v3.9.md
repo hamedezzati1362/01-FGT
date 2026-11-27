@@ -2004,6 +2004,81 @@ Q10 Verify     curl -vk works; session established
 2. *چرا ترتیب مهم است؟* هر گام فرضیه‌ای را حذف می‌کند.
 3. *Evidence خوب چیست؟* خروجی دستور با زمان و فیلتر مشخص.
 
+### تکمیل عمیق: چارچوب ۱۰ پرسش — پرونده‌ی کامل از علامت تا اثبات
+
+#### چرا باید یاد بگیریم؟
+
+پزشک خوب قبل از نسخه‌نوشتن می‌پرسد: «کجا درد دارد؟ از کی؟ چه کرده‌اید؟». عیب‌یاب خوب هم همین‌طور. چارچوب ده پرسش جلوی «حدس‌زدن» را می‌گیرد و هر پاسخ یک ابزار مشخص دارد.
+
+#### ده پرسش و ابزارها
+
+| # | پرسش | ابزار |
+|---|---|---|
+| 1 | چه کسی/چه چیزی تحت تأثیر است؟ | گزارش/Log |
+| 2 | از چه زمانی؟ | Log/Change |
+| 3 | چه چیزی تغییر کرده؟ | CHG/Config diff |
+| 4 | DNS درست است؟ | nslookup |
+| 5 | Route درست است؟ | routing-table |
+| 6 | Policy مجاز است؟ | iprope lookup |
+| 7 | NAT/Session؟ | session list |
+| 8 | بسته روی سیم؟ | sniffer |
+| 9 | لایه‌ی کاربرد؟ | curl/Log برنامه |
+| 10 | رفع تأیید شد؟ | آزمون مثبت/منفی |
+
+#### مثال ساده — پرونده
+
+علامت: کاربر 10.10.0.5 به https://app.example.com نمی‌رسد.
+
+``` text
+Q1 scope  : only this user
+Q4 DNS    : nslookup -> 198.51.100.8 (ok)
+Q5 route  : get router info routing-table details 198.51.100.8 -> via port1
+Q6 policy : diagnose firewall iprope lookup 10.10.0.5 50000 198.51.100.8 443 tcp port2 -> policy 30
+Q7 session: state SYN_SENT only
+Q8 wire   : SYN out port1, no SYN-ACK
+Cause     : upstream blocks source NAT IP
+Fix       : alternate pool IP / ticket to ISP
+Q10 verify: curl OK
+```
+
+نتیجه: مشکل خارج از فایروال؛ اثبات با Sniffer.
+
+#### مثال متوسط — انتخاب ابزار بر اساس علامت
+
+| علامت | ابزار اول |
+|---|---|
+| Timeout | Route/Sniffer |
+| Refused | سرویس/Policy |
+| کند | MTU/CPU/Session |
+| فقط بعضی کاربران | Policy/NAT/Scope |
+
+#### مثال سخت — دو علت
+
+پس از رفع NAT، هنوز کند: دومین علت MTU. درس: بعد از هر رفع، آزمون کامل دوباره.
+
+#### Lab
+
+یک پرونده بسازید و ده پرسش را پر کنید.
+
+#### عیب‌یابی روش
+
+| علامت | علت | رفع |
+|---|---|---|
+| حدس | بی‌چارچوب | ده پرسش |
+| تغییر چندتایی | بی‌انضباط | یکی |
+| بی‌Evidence | ثبت نشد | الگو |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا Scope اول؟** مسیر را کوتاه می‌کند.
+**۲. چرا ثبت؟** ردیابی.
+**۳. بعد از رفع؟** آزمون مثبت و منفی.
+
+#### English Corner
+
+- *Define scope first, then work down the stack with evidence.*
+- Q: Which tool do you use first for a timeout?
+
 ## درس 14-2 — Packet Sniffer در CLI و GUI و تحلیل pcap با Wireshark: از فیلتر تا نتیجه‌گیری
 
 **فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۱ · ≈ 10 ساعت**
@@ -2204,6 +2279,65 @@ diagnose sniffer packet any 'host 10.10.0.5 and host 198.51.100.8 and tcp port 4
 1. *Sniffer بسته Offload شده را می‌بیند؟* ممکن است ببیند ناقص؛ برای Debug Offload را موقتاً بررسی کنید.
 2. *چرا دو سمت؟* مقایسه in و out.
 3. *Verbosity 6؟* Payload هم.
+
+### تکمیل عمیق: Packet Sniffer — فیلتر تا Wireshark
+
+#### چرا؟
+
+Log می‌گوید «چه تصمیمی گرفته شد»؛ Sniffer می‌گوید «چه چیزی روی سیم رفت». برای «بسته رسید ولی پاسخ نیامد» تنها Sniffer جواب می‌دهد.
+
+#### دستور
+
+``` text
+diagnose sniffer packet any 'host 10.10.0.5 and host 198.51.100.8 and tcp port 443' 4 20 l
+```
+
+پارامترها: Interface، فیلتر BPF، Verbosity (4 = هدر+Interface، 6 = هدر+Payload)، تعداد بسته، زمان Local.
+
+#### مثال ساده — خواندن خروجی
+
+``` text
+12:01:01.100 port2 in  10.10.0.5.50000 -> 198.51.100.8.443: syn 123
+12:01:01.101 port1 out 203.0.113.2.50000 -> 198.51.100.8.443: syn 123
+12:01:02.101 port1 out 203.0.113.2.50000 -> 198.51.100.8.443: syn 123
+```
+
+تفسیر: ورودی دیده شد؛ خروجی با SNAT خارج شد؛ Retransmit بدون SYN-ACK ⇒ مشکل بعد از فایروال.
+
+#### مثال متوسط — ذخیره‌ی pcap
+
+خروجی Verbosity 6 را با اسکریپت `fgt2eth.pl` به pcap تبدیل و در Wireshark با `tcp.analysis.retransmission` ببینید.
+
+#### مثال سخت — Offload
+
+بسته‌های Offload‌شده (NPU) ممکن است در Sniffer کامل دیده نشوند. برای عیب‌یابی می‌توان Offload را موقتاً برای آن Policy غیرفعال کرد (`set auto-asic-offload disable`) و پس از آزمون برگرداند.
+
+#### قواعد ایمنی
+
+فیلتر دقیق، تعداد بسته محدود، Interface مشخص؛ Payload حساس را ذخیره نکنید.
+
+#### Lab
+
+یک curl را با Sniffer دو Interface ببینید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| چیزی نمی‌بینم | فیلتر | ساده‌سازی |
+| بسته‌های ناقص | Offload | غیرفعال موقت |
+| CPU بالا | any بی‌فیلتر | محدود |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Verbosity 4؟** هدر و Interface.
+**۲. چرا دو Interface؟** قبل/بعد NAT.
+**۳. Offload؟** Sniffer را ناقص می‌کند.
+
+#### English Corner
+
+- *Capture on both interfaces to see the packet before and after NAT.*
+- Q: What does a SYN retransmission with no SYN-ACK suggest?
 
 ## درس 14-3 — Debug Flow: خواندن تصمیم فایروال خط‌به‌خط با مثال‌های Allowed، Denied و RPF
 
@@ -2430,6 +2564,76 @@ msg="reverse path check fail, drop"
 2. *چرا Trace محدود (20)؟* حفاظت CPU.
 3. *تفاوت Sniffer و Debug Flow؟* بسته در سیم در برابر تصمیم فایروال.
 
+### تکمیل عمیق: Debug Flow — سه نتیجه‌ی متفاوت
+
+#### چرا؟
+
+Sniffer بسته را نشان می‌دهد؛ Debug Flow «تصمیم فایروال» را: کدام Policy، کدام Route، NAT.
+
+#### راه‌اندازی ایمن
+
+``` text
+diagnose debug reset
+diagnose debug flow filter addr 198.51.100.8
+diagnose debug flow filter dport 443
+diagnose debug flow show function-name enable
+diagnose debug flow trace start 20
+diagnose debug enable
+```
+
+پایان: `diagnose debug disable` و `diagnose debug reset`.
+
+#### نتیجه‌ی A — Allowed
+
+``` text
+msg="allocate a new session-0003f1"
+msg="find a route: gw-203.0.113.1 via port1"
+msg="Allowed by Policy-30: SNAT"
+```
+
+#### نتیجه‌ی B — Denied
+
+``` text
+msg="Denied by forward policy check (policy 0)"
+```
+
+Policy مطابق نیست؛ با `iprope lookup` علت را ببینید (Interface، Address، Service).
+
+#### نتیجه‌ی C — RPF
+
+``` text
+msg="reverse path check fail, drop"
+```
+
+Route برگشت از Interface دیگر؛ `get router info routing-table details <src>`.
+
+#### مثال سخت — هیچ خروجی
+
+Debug Flow چیزی نشان نمی‌دهد: ترافیک به فایروال نمی‌رسد (Sniffer ثابت می‌کند) یا Session Offload‌شده است (فقط بسته‌ی اول دیده می‌شود).
+
+#### Lab
+
+سه نتیجه را عمداً تولید کنید (Policy حذف، Route غلط).
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| CPU بالا | Trace بی‌سقف | start 20 |
+| بی‌خروجی | ترافیک نیامده | Sniffer |
+| Policy 0 | Deny ضمنی | Lookup |
+
+#### پرسش‌ها با پاسخ
+
+**۱. Policy 0؟** Implicit Deny.
+**۲. چرا سقف Trace؟** حفاظت CPU.
+**۳. Sniffer در برابر Debug Flow؟** بسته در برابر تصمیم.
+
+#### English Corner
+
+- *Always disable debug and reset filters when you finish.*
+- Q: What does policy 0 mean in a debug flow trace?
+
 ## درس 14-4 — Session، Routing و iprope: ابزارهای تکمیلی برای اثبات تصمیم‌ها
 
 **فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۱ تا ۱۴-۳ · ≈ 10 ساعت**
@@ -2619,6 +2823,62 @@ diagnose firewall iprope lookup 10.10.0.5 40000 8.8.8.8 53 udp port2
 1. *چرا Session قدیم مسیر قدیم را دارد؟* Session Route را در لحظه‌ی ساخت ثبت می‌کند.
 2. *iprope چه می‌گوید؟* Policy مطابق بدون ترافیک.
 3. *Policy Route کجا؟* قبل از جدول مسیر عادی.
+
+### تکمیل عمیق: Session، Routing و iprope
+
+#### چرا؟
+
+سه ابزار هر کدام یک سؤال را جواب می‌دهند: Route می‌گوید «کجا»، iprope می‌گوید «مجاز؟»، Session می‌گوید «چه چیزی الان باز است».
+
+#### مثال ساده
+
+``` text
+get router info routing-table details 198.51.100.8
+diagnose firewall iprope lookup 10.10.0.5 40000 198.51.100.8 443 tcp port2
+diagnose sys session filter dst 198.51.100.8
+diagnose sys session list
+```
+
+#### مثال متوسط — Session مسیر قدیم
+
+پس از تغییر Default Route، بعضی کاربران هنوز از ISP قدیم می‌روند: Session مسیر را در لحظه‌ی ساخت دارد. رفع: پاک‌سازی با فیلتر یا `snat-route-change`.
+
+``` text
+diagnose sys session filter src 10.10.0.5
+diagnose sys session clear
+diagnose sys session filter clear
+```
+
+#### مثال سخت — Policy Route
+
+Policy Route قبل از Routing عادی ارزیابی می‌شود؛ اگر مطابق باشد و Gateway ناتمام باشد، ترافیک مسیر دیگر می‌رود. مشاهده: `diagnose firewall proute list`.
+
+#### نکته
+
+`routing-table all` بهترین مسیرهای فعال؛ `database` همه‌ی مسیرها (Distance/Priority).
+
+#### Lab
+
+یک Route را تغییر دهید و رفتار Session را مشاهده کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| مسیر قدیم | Session | Clear |
+| Policy Route | proute | بررسی |
+| Clear همه‌چیز | بی‌فیلتر | فیلتر |
+
+#### پرسش‌ها با پاسخ
+
+**۱. iprope؟** Policy مطابق.
+**۲. چرا Session مسیر قدیم؟** لحظه‌ی ساخت.
+**۳. proute؟** Policy Route.
+
+#### English Corner
+
+- *Existing sessions keep their original route until they expire or are cleared.*
+- Q: What does the iprope lookup command tell you?
 
 ## درس 14-5 — MTU/MSS، DNS و مشکلات TCP/UDP: عیب‌یابی «نیمه‌کارکرده» با محاسبه و آزمون پایدار
 
@@ -2815,6 +3075,75 @@ end
 2. *MSS Clamp کجا؟* روی TCP SYN.
 3. *چرا ICMP را کامل نبندیم؟* PMTUD.
 
+### تکمیل عمیق: MTU/MSS، DNS و مشکلات نیمه‌کارکرده
+
+#### چرا؟
+
+بدترین مشکلات «گاهی کار می‌کند» هستند؛ MTU و DNS دو علت اصلی‌اند.
+
+#### MTU و MSS
+
+``` text
+Path MTU = 1400 (found with ping -f)
+MSS = MTU - IP(20) - TCP(20) = 1360
+```
+
+``` text
+ping -f -l 1372 198.51.100.8   -> reply
+ping -f -l 1373 198.51.100.8   -> fragmentation needed
+```
+
+رفع با MSS Clamp:
+
+``` text
+config firewall policy
+ edit 30
+  set tcp-mss-sender 1360
+  set tcp-mss-receiver 1360
+ next
+end
+```
+
+#### مثال سخت — PMTUD Blackhole
+
+ICMP Type 3 Code 4 فیلتر شده؛ فرستنده نمی‌فهمد؛ HTTPS قطع می‌شود در حالی که ping کار می‌کند. Clamp روی SYN مستقل از ICMP عمل می‌کند.
+
+#### DNS
+
+``` text
+diagnose test application dnsproxy 3
+nslookup app.example.com 10.20.0.5
+```
+
+پاسخ بزرگ (EDNS/DNSSEC) و TCP/53؛ Truncation.
+
+#### مثال متوسط — کندی
+
+AAAA بی‌پاسخ ۵ ثانیه؛ سپس A. علت: DNS Server؛ رفع روی سرور.
+
+#### Lab
+
+Path MTU را اندازه و MSS را محاسبه کنید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| HTTPS قطع | MTU | Clamp |
+| DNS کند | AAAA | سرور |
+| TC | TCP/53 | باز |
+
+#### پرسش‌ها با پاسخ
+
+**۱. MSS چگونه؟** MTU منهای ۴۰.
+**۲. چرا Clamp؟** مستقل از ICMP.
+**۳. TC flag؟** پاسخ بریده.
+
+#### English Corner
+
+- *If small packets work and large ones fail, suspect an MTU problem.*
+- Q: How do you compute the TCP MSS from the MTU?
+
 ## درس 14-6 — تحلیل Log، Packet Walk و آزمون عملی فصل ۱۴: سه پرونده‌ی کامل
 
 **فصل 14 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۱ تا ۱۴-۵ · ≈ 12 ساعت**
@@ -3006,6 +3335,69 @@ sentbyte=60 rcvdbyte=0 duration=60
 1. *action=close و timeout؟* close پایان عادی؛ timeout انقضا.
 2. *چرا sentbyte مهم است؟* ترافیک واقعی را نشان می‌دهد.
 3. *Log کجا ناقص؟* Offload و Sampling.
+
+### تکمیل عمیق: تحلیل Log و Packet Walk — سه پرونده
+
+#### چرا؟
+
+Log اولین جایی است که نگاه می‌کنیم؛ باید بتوانیم هر فیلد را بخوانیم و به Packet Walk وصل کنیم.
+
+#### مثال ساده — خواندن Log
+
+``` text
+date=2026-11-27 time=10:12:01 type=traffic subtype=forward srcip=10.10.0.5 dstip=198.51.100.8 dstport=443 action=timeout policyid=30 sentbyte=60 rcvdbyte=0 duration=60
+```
+
+تفسیر: Session باز شد (policy 30)؛ ۶۰ بایت فرستاد و صفر دریافت کرد؛ ۶۰ ثانیه ⇒ پاسخ نیامد؛ مشکل بعد از فایروال.
+
+#### Packet Walk
+
+``` text
+User -> port2 (RPF ok) -> Policy 30 -> SNAT -> Route port1 -> ISP -> (no reply)
+```
+
+#### جدول Evidence
+
+| گام | ابزار | نتیجه |
+|---|---|---|
+| Route | routing-table | OK |
+| Policy | iprope | 30 |
+| Wire | sniffer | SYN out فقط |
+
+#### مثال سخت — سه پرونده
+
+1. `action=deny policyid=0` ⇒ Policy نیست.
+2. `action=timeout rcvdbyte=0` ⇒ بعد از فایروال.
+3. `action=close` با `rcvdbyte` کم و زمان کوتاه ⇒ اتصال سریع بسته (RST/برنامه).
+
+#### Rubric
+
+``` text
+Steps 30 | Evidence 30 | Cause 20 | Fix 10 | Honesty 10
+```
+
+#### Lab
+
+سه Log نمونه را تحلیل و Packet Walk بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| فیلد نامفهوم | نداشتن مرجع | مستند |
+| Log ناقص | Offload/Sampling | Sniffer |
+| زمان اشتباه | NTP | همگام |
+
+#### پرسش‌ها با پاسخ
+
+**۱. timeout با rcvdbyte=0؟** پاسخ نیامد.
+**۲. close چه؟** پایان عادی/ناگهانی.
+**۳. چرا Packet Walk؟** ترتیب تصمیم‌ها.
+
+#### English Corner
+
+- *A session with zero received bytes means the reply never arrived.*
+- Q: How do you read the action field in a traffic log?
 
 ## درس 14-7 — روش نظام‌مند عیب‌یابی: از علامت تا علت و رفع (با پرونده‌های واقعی)
 
@@ -3219,6 +3611,57 @@ H3: Upstream drop     -> test: sniffer SYN without ACK -> accepted
 1. *چرا یک تغییر در هر زمان؟* ردیابی علت.
 2. *Evidence بد؟* «به نظرم».
 3. *Rollback؟* همیشه آماده.
+
+### تکمیل عمیق: روش نظام‌مند — فرضیه‌محور در برابر حدس‌محور
+
+#### چرا؟
+
+عیب‌یاب حدس‌محور فقط زمانی موفق است که شانس بیاورد. فرضیه‌محور هر بار یک احتمال را با شاهد رد یا تأیید می‌کند.
+
+#### الگو
+
+``` text
+H1 Route wrong       -> test: routing-table details  -> rejected
+H2 Policy missing    -> test: iprope lookup          -> rejected
+H3 Upstream drop     -> test: sniffer SYN no ACK     -> accepted
+```
+
+#### پرونده‌های واقعی
+
+1. سرور بیرونی فقط IP قبلی را اجازه می‌داد ⇒ پس از Pool جدید قطع.
+2. Policy درست ولی Schedule منقضی.
+3. DNS داخلی پاسخ قدیمی (TTL).
+
+#### مثال سخت — Rollback
+
+در هر رفع، Rollback را آماده نگه دارید؛ اگر تغییر بدتر کرد، برگردید.
+
+#### گزارش
+
+علامت، اثر، Timeline، فرضیه‌ها، Evidence، علت ریشه، رفع، پیشگیری.
+
+#### Lab
+
+یک پرونده را با سه فرضیه بنویسید.
+
+#### عیب‌یابی
+
+| علامت | علت | رفع |
+|---|---|---|
+| رفع بدون Evidence | عجله | فرضیه |
+| چند تغییر | بی‌انضباط | یکی |
+| ثبت نشد | غفلت | قالب |
+
+#### پرسش‌ها با پاسخ
+
+**۱. چرا یک تغییر؟** ردیابی.
+**۲. Evidence بد؟** «به نظرم».
+**۳. Rollback؟** آماده.
+
+#### English Corner
+
+- *Form a hypothesis, design a test, and accept or reject it with evidence.*
+- Q: Why change only one thing at a time?
 
 ## پاسخ‌های فصل 14
 
