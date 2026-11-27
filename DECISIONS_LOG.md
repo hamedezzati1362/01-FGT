@@ -160,3 +160,7 @@ Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خ�
 - طبق درخواست کاربر («منتظر تأیید نباش تا انتهای ممیزی»): دورهای ۴ تا ۷ اجرا شد (Cisco فصل ۲ تا ۱۰، FortiGate فصل ۱۱ تا ۲۴).
 - اصلاحات: RR Cluster-ID، VRF syntax، SD-WAN strategy، VDOM link، لایسنس Application Control، TACACS+ obfuscation، RoAS native.
 - محاسبات Subnetting با Python تأیید شد.
+
+## D-346 — پایان ممیزی منابع رسمی دورهای ۱ تا ۸ (۲۰۲۶-۱۱-۲۷)
+- ≈۸۰ ادعا بررسی، ۲۱ اصلاح اعمال شد. گزارش کامل: `Docs_Verification_Report_v3.9.md`.
+- موارد تأییدنشده در همان گزارش فهرست شده‌اند؛ هیچ دستور «اجراشده با شاهد» نیست.

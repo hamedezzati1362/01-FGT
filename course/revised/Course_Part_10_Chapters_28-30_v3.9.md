@@ -1210,7 +1210,7 @@ end
 
 ### ۱۰) منابع
 
-- NIST SP 800-61 Rev.2 — Computer Security Incident Handling Guide؛ MITRE ATT&CK.
+- NIST SP 800-61 Rev.2 — Computer Security Incident Handling Guide (مدل کلاسیک ۵ فاز؛ **توجه:** Rev.2 در ۲۰۲۵ با Rev.3 مبتنی بر CSF 2.0 جایگزین/Withdrawn شده؛ برای کار جدید Rev.3 را ببینید)؛ MITRE ATT&CK.
 
 ## درس 29-1 — Detection عملی: از Log فایروال به IOC/TTP، Baseline، آستانه، Correlation و Alert
 
@@ -1502,7 +1502,7 @@ diagnose sys session filter clear
 
 ### ۱۵) منابع
 
-- NIST SP 800-61 Rev.2
+- NIST SP 800-61 Rev.2 (در ۲۰۲۵ با Rev.3 جایگزین شده؛ مدل ۵ فاز کلاسیک مرجع آموزشی)
 - SANS Incident Handler Handbook
 
 <a id="l-29-3"></a>
@@ -1781,7 +1781,7 @@ execute log display
 
 ### ۱۵) منابع
 
-- NIST SP 800-61 Rev.2
+- NIST SP 800-61 Rev.2 (در ۲۰۲۵ با Rev.3 جایگزین شده؛ مدل ۵ فاز کلاسیک مرجع آموزشی)
 
 ## پاسخ‌های فصل 29
 

@@ -36847,7 +36847,7 @@ execute ha manage 1 admin
 
 **متوسط (Mismatch):** B Join نمی‌شود. مراحل: ۱) `get system status` نسخه‌ی B 7.0.2 و A 7.0.3. ۲) هم‌نسخه‌سازی. ۳) Join. پاسخ: نسخه‌ی یکسان لازم است.
 
-**سخت (Out-of-sync):** `diagnose sys ha checksum cluster` تفاوت در بخش Policy. مراحل: ۱) `diagnose sys ha checksum show` بخش متفاوت. ۲) Primary را مرجع کنید؛ در B `execute ha synchronize start`(Unverified) یا Reboot. ۳) Verify. علت: تغییر مستقیم روی Secondary. درس: همیشه روی Primary تغییر دهید.
+**سخت (Out-of-sync):** `diagnose sys ha checksum cluster` تفاوت در بخش Policy. مراحل: ۱) `diagnose sys ha checksum show` بخش متفاوت. ۲) Primary را مرجع کنید؛ در B Reboot یا `diagnose sys ha checksum recalculate` (فرمان `execute ha synchronize` در مستند تأیید نشد). ۳) Verify. علت: تغییر مستقیم روی Secondary. درس: همیشه روی Primary تغییر دهید.
 
 ### ۶) پیاده‌سازی از مسیر GUI
 
@@ -36974,11 +36974,10 @@ ping -t -w 200 8.8.8.8   (interval ~ 200 ms)
 config system ha
  set session-pickup enable
  set session-pickup-connectionless enable
- set session-pickup-nat enable
 end
 ```
 
-(`Unverified`.) TCP ماندگار می‌شود؛ بعضی Sessionهای UTM/Proxy-based یا SSL Inspection پس از Failover ممکن است ریست شوند؛ NAT با گزینه‌ی مربوط. اندازه‌گیری با SSH باز و دانلود جاری.
+طبق مستند Fortinet: `session-pickup` Sessionهای TCP را همگام می‌کند؛ `session-pickup-connectionless` برای UDP/ICMP است و فقط وقتی session-pickup فعال باشد در دسترس است (پیش‌فرض خاموش)؛ `session-pickup-nat` و `session-pickup-expectation` مخصوص **FGSP** هستند نه FGCP. (نحو `Unverified` تا اجرای Lab.) بعضی Sessionهای UTM/Proxy-based یا SSL Inspection پس از Failover ممکن است ریست شوند. اندازه‌گیری با SSH باز و دانلود جاری.
 
 #### ۴) Failback
 
@@ -43874,7 +43873,7 @@ end
 
 ### ۱۰) منابع
 
-- NIST SP 800-61 Rev.2 — Computer Security Incident Handling Guide؛ MITRE ATT&CK.
+- NIST SP 800-61 Rev.2 — Computer Security Incident Handling Guide (مدل کلاسیک ۵ فاز؛ **توجه:** Rev.2 در ۲۰۲۵ با Rev.3 مبتنی بر CSF 2.0 جایگزین/Withdrawn شده؛ برای کار جدید Rev.3 را ببینید)؛ MITRE ATT&CK.
 
 ## درس 29-1 — Detection عملی: از Log فایروال به IOC/TTP، Baseline، آستانه، Correlation و Alert
 
@@ -44166,7 +44165,7 @@ diagnose sys session filter clear
 
 ### ۱۵) منابع
 
-- NIST SP 800-61 Rev.2
+- NIST SP 800-61 Rev.2 (در ۲۰۲۵ با Rev.3 جایگزین شده؛ مدل ۵ فاز کلاسیک مرجع آموزشی)
 - SANS Incident Handler Handbook
 
 <a id="l-29-3"></a>
@@ -44445,7 +44444,7 @@ execute log display
 
 ### ۱۵) منابع
 
-- NIST SP 800-61 Rev.2
+- NIST SP 800-61 Rev.2 (در ۲۰۲۵ با Rev.3 جایگزین شده؛ مدل ۵ فاز کلاسیک مرجع آموزشی)
 
 ## پاسخ‌های فصل 29
 
@@ -46839,6 +46838,8 @@ Rubric خودارزیابی: معیار، امتیاز، شاهد.
 | Normal | بررسی و تأیید | Policy جدید |
 | Emergency | فوری، با ثبت بعدی | رفع قطعی |
 
+در ITIL 4 این رویه **Change Enablement** نام دارد و تصمیم‌گیرنده **Change Authority** است که می‌تواند فرد، تیم (CAB) یا قاعده‌ی خودکار باشد؛ اختیار تأیید بر اساس ریسک تقسیم می‌شود نه همه‌چیز از یک هیئت مرکزی (منبع: خلاصه‌های ITIL 4؛ مرجع رسمی PeopleCert را بررسی کنید).
+
 #### ۳) شاخص‌ها
 
 ``` text
@@ -47239,7 +47240,7 @@ diagnose sys sdwan health-check
 
 ### ۱۵) منابع
 
-- NIST SP 800-61 Rev.2
+- NIST SP 800-61 Rev.2 (در ۲۰۲۵ با Rev.3 جایگزین شده؛ مدل ۵ فاز کلاسیک مرجع آموزشی)
 - Google SRE: Incident response
 
 <a id="l-32-3"></a>

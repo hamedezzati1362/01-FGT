@@ -154,3 +154,28 @@
 
 ### هنوز بررسی نشده
 نحو دقیق `config log syslogd setting`، `execute ha synchronize start`، `session-pickup-connectionless`، جزئیات DNS Filter و DoS Policy (آستانه‌ها در درس‌ها «نمونه» هستند؛ مرجع: [Fortinet DoS policy](https://docs.fortinet.com/document/fortigate/7.0.14/administration-guide/771644/dos-policy)).
+
+
+## دور هشتم — لاگ، HA، NIST، ITIL، DNS Filter (۲۰۲۶-۱۱-۲۷)
+
+### تأییدشده
+| موضوع | نتیجه | مرجع |
+|---|---|---|
+| `config log syslogd setting`: پیش‌فرض udp، پورت ۵۱۴، facility=local7؛ `mode reliable` = TCP (RFC 6587) | تأیید | [Fortinet syslogd setting](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/456620/config-log-syslogd-setting) |
+| فازهای کلاسیک NIST SP 800-61 Rev.2 (آماده‌سازی، تشخیص/تحلیل، مهار/ریشه‌کنی/بازیابی، پس از حادثه) | تأیید؛ Rev.2 منسوخ و Rev.3 جایگزین (۲۰۲۵) | [NIST SP 800-61r2](https://nvlpubs.nist.gov/nistpubs/specialpublications/nist.sp.800-61r2.pdf)، [r3](https://nvlpubs.nist.gov/nistpubs/specialpublications/nist.sp.800-61r3.pdf) |
+| ITIL 4: Change Enablement؛ Standard/Normal/Emergency؛ Change Authority | تأیید (منابع ثانویه) | [ITIL change enablement](https://itsm.tools/change-enablement/) |
+| فیلترهای Wireshark `tcp.analysis.retransmission`، `tcp.flags.syn==1`؛ هشدار: Wireshark گاهی Retransmission را out_of_order علامت می‌زند | تأیید | [Wireshark filters](https://wiki.wireshark.org/TCP_Retransmissions_ColorFilter) |
+| DNS Filter با Category نیاز به لایسنس FortiGuard Web Filter دارد؛ DoH نیازمند مستند جدا | تأیید جزئی | [Fortinet DNS filter](https://docs.fortinet.com/document/fortigate/7.0.1/administration-guide/567703/fortiguard-category-based-dns-domain-filtering) |
+
+### اصلاح
+| درس | تغییر | مرجع |
+|---|---|---|
+| ۲۲-۳ (HA) | `session-pickup-nat` و `session-pickup-expectation` مخصوص FGSP‌اند نه FGCP؛ `connectionless` فقط با session-pickup فعال و پیش‌فرض خاموش | [Fortinet system ha](https://docs.fortinet.com/document/fortigate/7.0.5/cli-reference/23620/config-system-ha) |
+| ۲۲-۲ (HA) | `execute ha synchronize start` در مستند تأیید نشد؛ حذف شد | همان |
+| ۲۸ تا ۳۲ (مراجع) | NIST SP 800-61 Rev.2 با Rev.3 جایگزین شده | [NIST](https://csrc.nist.gov/projects/incident-response) |
+| ۳۲-۰ | افزودن نام ITIL 4 Change Enablement/Change Authority | [ITIL](https://itsm.tools/change-enablement/) |
+
+### جمع‌بندی ممیزی (دور ۱ تا ۸)
+- ≈ ۸۰ ادعای مفهومی/دستوری با منبع رسمی بررسی شد؛ ۲۱ اصلاح یا دقیق‌سازی در متن درس‌ها اعمال شد؛ بقیه تأیید شدند.
+- هنوز تأیید نشده: `execute ha synchronize`، DoH در DNS Filter، نحو دقیق چند فرمان Debug، IKEv2 سمت IOS-XE 17.03، آستانه‌های پیش‌فرض DoS Policy، TLS 1.3/ECH/QUIC در Wireshark.
+- هیچ دستور هنوز «اجراشده با شاهد» نیست.

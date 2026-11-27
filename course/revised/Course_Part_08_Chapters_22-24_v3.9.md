@@ -491,7 +491,7 @@ execute ha manage 1 admin
 
 **متوسط (Mismatch):** B Join نمی‌شود. مراحل: ۱) `get system status` نسخه‌ی B 7.0.2 و A 7.0.3. ۲) هم‌نسخه‌سازی. ۳) Join. پاسخ: نسخه‌ی یکسان لازم است.
 
-**سخت (Out-of-sync):** `diagnose sys ha checksum cluster` تفاوت در بخش Policy. مراحل: ۱) `diagnose sys ha checksum show` بخش متفاوت. ۲) Primary را مرجع کنید؛ در B `execute ha synchronize start`(Unverified) یا Reboot. ۳) Verify. علت: تغییر مستقیم روی Secondary. درس: همیشه روی Primary تغییر دهید.
+**سخت (Out-of-sync):** `diagnose sys ha checksum cluster` تفاوت در بخش Policy. مراحل: ۱) `diagnose sys ha checksum show` بخش متفاوت. ۲) Primary را مرجع کنید؛ در B Reboot یا `diagnose sys ha checksum recalculate` (فرمان `execute ha synchronize` در مستند تأیید نشد). ۳) Verify. علت: تغییر مستقیم روی Secondary. درس: همیشه روی Primary تغییر دهید.
 
 ### ۶) پیاده‌سازی از مسیر GUI
 
@@ -618,11 +618,10 @@ ping -t -w 200 8.8.8.8   (interval ~ 200 ms)
 config system ha
  set session-pickup enable
  set session-pickup-connectionless enable
- set session-pickup-nat enable
 end
 ```
 
-(`Unverified`.) TCP ماندگار می‌شود؛ بعضی Sessionهای UTM/Proxy-based یا SSL Inspection پس از Failover ممکن است ریست شوند؛ NAT با گزینه‌ی مربوط. اندازه‌گیری با SSH باز و دانلود جاری.
+طبق مستند Fortinet: `session-pickup` Sessionهای TCP را همگام می‌کند؛ `session-pickup-connectionless` برای UDP/ICMP است و فقط وقتی session-pickup فعال باشد در دسترس است (پیش‌فرض خاموش)؛ `session-pickup-nat` و `session-pickup-expectation` مخصوص **FGSP** هستند نه FGCP. (نحو `Unverified` تا اجرای Lab.) بعضی Sessionهای UTM/Proxy-based یا SSL Inspection پس از Failover ممکن است ریست شوند. اندازه‌گیری با SSH باز و دانلود جاری.
 
 #### ۴) Failback
 
