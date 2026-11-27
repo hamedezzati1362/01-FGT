@@ -5048,6 +5048,236 @@ S  10.20.0.0/24 [1/0] via 10.99.0.2
 
 ---
 
+<a id="l-5-10"></a>
+
+## درس 5-10 — OSPF تک‌ناحیه‌ای (OSPFv2 و OSPFv3): Router ID، همسایگی، DR/BDR، Point-to-Point و عیب‌یابی
+
+**فصل 5 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 3.3: Configure single area OSPFv2 for IPv4 and OSPFv3 for IPv6 — neighbor adjacencies, point-to-point, broadcast DR/BDR selection, router ID) · پیش‌نیاز: ۵-۱ تا ۵-۳، ۲-۷**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** OSPF چطور همسایه پیدا می‌کند، Router ID چگونه انتخاب می‌شود، چرا روی اترنت DR/BDR داریم و روی لینک نقطه‌به‌نقطه نه، و چرا همسایگی «گیر» می‌کند.
+
+**چرا لازم است؟** Static Route برای ۳ روتر خوب است؛ برای ۳۰ روتر، هر تغییر یعنی ۳۰ ویرایش دستی. OSPF Link-State است: هر روتر نقشه‌ی کامل شبکه را می‌سازد و خودکار کوتاه‌ترین مسیر را می‌یابد. مثل GPS که هر بار ترافیک تغییر کند، مسیر را دوباره حساب می‌کند. و چون OSPF هسته‌ی سؤال‌های آزمون است، باید همسایگی و انتخاب DR را از روی عدد حل کنید.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) مراحل کار
+
+1. Hello بفرست و همسایه پیدا کن.
+2. Adjacency (همسایگی کامل) بساز.
+3. LSAها (Link-State Advertisement) را رد و بدل کن تا همه LSDB (پایگاه‌داده‌ی وضعیت لینک) یکسان داشته باشند.
+4. SPF (الگوریتم Dijkstra) را اجرا کن و بهترین مسیر را در جدول مسیر بگذار.
+
+#### ۲-۲) Router ID
+
+یک عدد ۳۲ بیتی مثل IPv4 که هر روتر را یکتا می‌کند. ترتیب انتخاب:
+
+1. دستور `router-id` (اولویت اول).
+2. بالاترین آدرس IPv4 در Interfaceهای **Loopback** فعال.
+3. بالاترین آدرس IPv4 در Interfaceهای فیزیکی فعال.
+
+``` text
+router ospf 1
+ router-id 1.1.1.1
+```
+
+تغییر Router ID پس از راه‌اندازی تا `clear ip ospf process` (یا Reload) اعمال نمی‌شود. دو روتر با Router ID یکسان ⇒ همسایگی ناپایدار/مسیرهای اشتباه.
+
+#### ۲-۳) نوع شبکه (Network Type)
+
+| نوع | DR/BDR | Hello/Dead پیش‌فرض | مثال |
+|---|---|---|---|
+| Broadcast | دارد | 10 / 40 | اترنت (پیش‌فرض) |
+| Point-to-Point | ندارد | 10 / 40 | سریال، Tunnel، اترنت با تنظیم |
+| NBMA / Non-broadcast | دارد | 30 / 120 | Frame Relay (قدیمی) |
+
+روی اترنت پیش‌فرض Broadcast است. برای لینک دو روتر که فقط دو نفرند، DR/BDR بی‌فایده است:
+
+``` text
+interface GigabitEthernet0/1
+ ip ospf network point-to-point
+```
+
+(باید هر دو سر یکسان باشند؛ وگرنه Timerها/رفتار ناهمخوان می‌شود.)
+
+#### ۲-۴) DR و BDR
+
+در یک Segment چندروتری، اگر هر روتر با همه Adjacency بسازد، تعداد Adjacencyها N(N-1)/2 می‌شود. **DR** (Designated Router) نقطه‌ی مرکزی است: همه‌ی روترها فقط با DR و BDR (Backup DR) Adjacency Full می‌سازند. روترهای دیگر (**DROTHER**) با هم فقط تا حالت **2-Way** می‌روند (این طبیعی است).
+
+- Multicast: همه‌ی روترهای OSPF 224.0.0.5؛ فقط DR/BDR 224.0.0.6.
+- **انتخاب:** بالاترین **Priority** (0 تا 255، پیش‌فرض 1)؛ تساوی ⇒ بالاترین **Router ID**. Priority 0 یعنی هرگز DR/BDR نمی‌شود.
+- **Non-preemptive:** اگر DR از قبل وجود دارد، روتر با Priority بالاتر که بعداً بیاید DR نمی‌شود؛ تنها وقتی DR از کار بیفتد BDR جایگزین می‌شود و BDR جدید انتخاب می‌شود. برای اعمال Priority جدید باید فرایند OSPF پاک شود.
+
+``` text
+interface GigabitEthernet0/0
+ ip ospf priority 100
+```
+
+#### ۲-۵) حالت‌های همسایگی
+
+``` text
+Down -> Init -> 2-Way -> ExStart -> Exchange -> Loading -> Full
+```
+
+| حالت | معنی |
+|---|---|
+| Init | Hello همسایه دیده شد ولی روتر خودمان در Hello او نیست |
+| 2-Way | دوطرفه؛ در Broadcast انتخاب DR/BDR اینجاست؛ DROTHERها اینجا می‌مانند |
+| ExStart | تعیین Master/Slave برای تبادل DBD (اینجا MTU مهم است) |
+| Exchange | تبادل خلاصه‌ی LSDB |
+| Loading | درخواست LSAهای ناقص |
+| Full | LSDB همگام |
+
+#### ۲-۶) شرط‌های تشکیل همسایگی
+
+باید یکسان: Area ID، **Subnet و Mask**، Hello/Dead، Authentication، Stub flag؛ و **Router ID یکتا**؛ MTU در ExStart.
+
+#### ۲-۷) هزینه (Cost)
+
+``` text
+Cost = Reference Bandwidth / Interface Bandwidth
+Default reference = 100 Mbps
+FastEthernet 100M: 100/100 = 1
+GigabitEthernet 1G: 100/1000 = 0.1 -> 1 (minimum)
+10G: 1
+```
+
+مشکل: 100M و 1G و 10G همگی Cost=1. راه: `auto-cost reference-bandwidth 10000` (به Mbps) روی **همه‌ی روترها** یکسان.
+
+### ۳) دستورها (Unverified)
+
+**OSPFv2**
+
+``` text
+router ospf 1
+ router-id 1.1.1.1
+ network 10.10.0.0 0.0.0.255 area 0
+ network 10.99.0.0 0.0.0.3 area 0
+ passive-interface GigabitEthernet0/0
+ auto-cost reference-bandwidth 10000
+```
+
+`network` با Wildcard مشخص می‌کند کدام Interfaceها وارد OSPF شوند. `passive-interface` روی پورت کاربران: شبکه اعلام می‌شود ولی Hello ارسال نمی‌شود (امنیت و کاهش بار). روش جایگزین: `ip ospf 1 area 0` روی Interface.
+
+**OSPFv3 (IPv6)**
+
+``` text
+ipv6 unicast-routing
+ipv6 router ospf 1
+ router-id 1.1.1.1
+interface GigabitEthernet0/1
+ ipv6 address 2001:db8:12::1/64
+ ipv6 ospf 1 area 0
+```
+
+تفاوت‌ها: فعال‌سازی روی Interface (نه `network`)؛ Adjacency با آدرس **Link-local**؛ Multicast FF02::5 و FF02::6؛ Router ID هنوز ۳۲ بیتی است و اگر روتر IPv4 ندارد **باید دستی** تنظیم شود.
+
+**بررسی**
+
+``` text
+show ip ospf neighbor
+show ip ospf interface brief
+show ip ospf interface GigabitEthernet0/0
+show ip protocols
+show ip route ospf
+show ipv6 ospf neighbor
+show ipv6 route ospf
+```
+
+خروجی نمونه:
+
+``` text
+R1# show ip ospf neighbor
+Neighbor ID   Pri State      Dead Time  Address      Interface
+2.2.2.2       100 FULL/DR    00:00:34   10.10.0.2    GigabitEthernet0/0
+3.3.3.3       1   2WAY/DROTHER 00:00:37 10.10.0.3    GigabitEthernet0/0
+```
+
+تفسیر: همسایه 2.2.2.2 با Priority 100 حالت `FULL/DR`؛ یعنی DR است. 3.3.3.3 `2WAY/DROTHER` ⇒ DROTHER و بین دو DROTHER طبیعی است.
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — Router ID.** روتر با Loopback0 = 1.1.1.1، Gi0/0 = 10.10.0.2، Gi0/1 = 192.168.5.1 و بدون `router-id`. Loopback بر فیزیکی ترجیح دارد ⇒ RID = 1.1.1.1. اگر Loopback نداشت: بالاترین فیزیکی = 192.168.5.1.
+
+**متوسط — انتخاب DR.** سه روتر روی یک اترنت (هم‌زمان بالا آمدند):
+
+``` text
+R1: Priority 1,  RID 3.3.3.3
+R2: Priority 1,  RID 2.2.2.2
+R3: Priority 50, RID 1.1.1.1
+```
+
+مراحل: ۱) بالاترین Priority: R3 (50) ⇒ DR ۲) بین R1 و R2 (Priority برابر) بالاترین RID: R1 (3.3.3.3) ⇒ BDR ۳) R2 = DROTHER.
+
+**متوسط — Non-preemptive.** R2 اول بالا آمد و DR شد؛ سپس R3 با Priority 200 اضافه شد. R3 DR نمی‌شود؛ تا R2 خراب شود. اگر R2 خراب شد، BDR (مثلاً R1) DR می‌شود و برای BDR جدید انتخاب انجام می‌شود (R3 به‌خاطر Priority بالا BDR می‌شود).
+
+**متوسط — ظرفیت.**
+
+``` text
+Full mesh adjacencies for 5 routers = 5 x 4 / 2 = 10
+With DR/BDR: each DROTHER has 2 adjacencies (DR, BDR) ; total ~ 7
+```
+
+**متوسط — Point-to-Point.** لینک /30 بین دو روتر: `ip ospf network point-to-point` ⇒ DR انتخاب نمی‌شود و همگرایی سریع‌تر (بدون انتظار Wait Timer 40 ثانیه).
+
+**سخت — همسایگی بالا نمی‌آید. چک‌لیست.**
+
+1. `show ip ospf interface brief`: Interface در OSPF هست؟ (State: DR/BDR/DROTHER/P2P)
+2. `show ip ospf neighbor`: خالی ⇒ Hello نمی‌رسد؛ بررسی `passive-interface` اشتباه.
+3. `show ip ospf interface Gi0/0`: **Hello/Dead** دو سر یکسان؟ (مثلاً 10/40 در برابر 30/120)
+4. Area، Subnet/Mask، Authentication.
+5. `debug ip ospf adj` (محدود و کوتاه) پیام‌های `mismatched hello parameters` یا `mismatched area`.
+6. ACL مانع 89 (OSPF IP Protocol 89).
+7. اگر گیر در **ExStart**: MTU متفاوت ⇒ برابر کنید یا `ip ospf mtu-ignore`.
+8. اگر `2WAY` برای دو DROTHER: طبیعی است، خطا نیست.
+
+**سخت — `Router ID duplicate`.** Log: `%OSPF-4-DUP_RTRID_NBR`. دو روتر RID یکسان دارند (کپی Config). رفع: `router-id` یکتا و `clear ip ospf process`.
+
+**سخت — مسیر زیرین به‌خاطر Cost.** لینک 1G و 100M هر دو Cost=1، OSPF ECMP می‌کند و بخشی از ترافیک را روی لینک کند می‌فرستد. رفع: `auto-cost reference-bandwidth 10000` یکسان در همه‌ی روترها:
+
+``` text
+Cost 1G  = 10000 / 1000  = 10
+Cost 100M = 10000 / 100  = 100
+```
+
+### ۵) Lab (اجرا نشده)
+
+سه روتر روی یک سوییچ؛ Priority/Router ID را تغییر دهید و DR را پیش‌بینی/تأیید کنید؛ سپس لینک P2P و OSPFv3.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| OSPF | Open Shortest Path First | پروتکل Link-State |
+| LSA | Link-State Advertisement | اعلان وضعیت لینک |
+| LSDB | Link-State Database | پایگاه‌داده‌ی وضعیت لینک |
+| SPF | Shortest Path First | الگوریتم کوتاه‌ترین مسیر |
+| DR / BDR | Designated / Backup Designated Router | روتر مرکزی Segment |
+| DBD | Database Description | پیام توصیف پایگاه‌داده |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) ترتیب انتخاب Router ID؟ *(پاسخ: 5-10-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Hello/Dead پیش‌فرض Broadcast؟ *(پاسخ: 5-10-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) Priority/RID: A (1، 9.9.9.9)، B (1، 4.4.4.4)، C (0، 8.8.8.8)؛ DR و BDR؟ *(پاسخ: 5-10-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (متوسط) Cost لینک 1 Gbps با Reference پیش‌فرض و با 10000؟ *(پاسخ: 5-10-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت5.** (سخت) همسایگی در ExStart گیر می‌کند؛ علت و رفع. *(پاسخ: 5-10-ت5 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *OSPF elects the designated router by highest priority, then by highest router ID.*
+- *Two DROTHER routers on the same segment stay in the 2-Way state.*
+- **Q1.** Which IP protocol number does OSPF use? *(پاسخ: 5-10-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 5
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -5483,6 +5713,20 @@ An MTU mismatch between the two interfaces.
 **5-9-ت5** — چون FE80::2 فقط روی همان لینک معتبر است و روتر نمی‌داند از کدام Interface؛ باید Interface هم نوشته شود: `ipv6 route <prefix> GigabitEthernet0/1 FE80::2`.
 
 **5-9-Q1** — Because the same link-local address can exist on every interface, so the router needs the interface to know on which link to send.
+
+### پاسخ‌های درس افزوده‌ی 5-10 (فصل 5)
+
+**5-10-ت1** — ۱) `router-id` دستی ۲) بالاترین IPv4 Loopback فعال ۳) بالاترین IPv4 Interface فیزیکی فعال.
+
+**5-10-ت2** — Hello 10 ثانیه و Dead 40 ثانیه.
+
+**5-10-ت3** — C با Priority 0 کنار می‌رود. بین A و B Priority برابر است؛ بالاترین RID: A (9.9.9.9) ⇒ DR و B (4.4.4.4) ⇒ BDR.
+
+**5-10-ت4** — پیش‌فرض: 100/1000 = 0.1 که به حداقل 1 گرد می‌شود؛ با Reference 10000: 10000/1000 = 10.
+
+**5-10-ت5** — MTU Interface دو سر متفاوت است (DBD بزرگ‌تر از MTU همسایه)؛ رفع: یکسان‌سازی MTU یا موقت `ip ospf mtu-ignore`.
+
+**5-10-Q1** — IP protocol 89.
 
 ---
 

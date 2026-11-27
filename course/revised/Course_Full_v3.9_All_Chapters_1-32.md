@@ -9057,6 +9057,402 @@ Po1(SD)   Gi0/1(s)   Gi0/2(P)
 
 ---
 
+<a id="l-4-10"></a>
+
+## درس 4-10 — Rapid PVST+ به‌صورت محاسباتی: انتخاب Root، هزینه، Tie-break، نقش‌ها، حالت‌ها و خواندن show spanning-tree
+
+**فصل 4 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 2.5: Configure operations of Rapid PVST+ — root port, root bridge primary/secondary, port names, port states and roles, PortFast, root guard, loop guard, BPDU guard) · پیش‌نیاز: ۴-۱، ۴-۲، ۴-۷**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** STP را مثل یک «مسابقه‌ی عددی» حل کنیم: چه کسی Root می‌شود، هر سوییچ کدام پورتش را Root Port می‌کند، روی هر لینک چه کسی Designated است و کدام پورت Alternate (مسدود) می‌ماند. و بتوانیم خروجی `show spanning-tree` را درست بخوانیم.
+
+**چرا لازم است؟** سؤال آزمون CCNA تقریباً همیشه یک توپولوژی سه‌سوییچی با MAC و هزینه می‌دهد و می‌پرسد «کدام پورت Block می‌شود؟». اگر روش را ندانید، حدس می‌زنید. در عمل هم وقتی ترافیک از مسیر بد (مثلاً لینک 100 Mbps به‌جای 1 Gbps) می‌رود، علت معمولاً Root اشتباه است. مثل مسابقه‌ی ورزشی است: قاعده‌ی امتیازدهی ثابت است و اگر بدانید، نتیجه را از قبل می‌دانید.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) Bridge ID
+
+``` text
+Bridge ID = Bridge Priority (16 bits) + MAC address (48 bits)
+Priority  = Priority value (4 bits, multiples of 4096) + Extended System ID = VLAN number (12 bits)
+Default   = 32768 + VLAN
+VLAN 10   -> 32768 + 10 = 32778
+VLAN 1    -> 32769
+```
+
+**کمترین Bridge ID Root می‌شود.** اگر Priority برابر باشد، کمترین MAC برنده است. نتیجه‌ی خطرناک: سوییچ قدیمی با MAC کوچک بدون تنظیم، Root می‌شود. پس Root را دستی تعیین کنید:
+
+``` text
+spanning-tree vlan 10 root primary      ! priority becomes 24576 (or 4096 below current root)
+spanning-tree vlan 10 root secondary    ! priority becomes 28672
+spanning-tree vlan 10 priority 4096     ! explicit
+```
+
+مقادیر Priority فقط مضرب 4096 هستند: 0، 4096، 8192، ...، 61440.
+
+#### ۲-۲) هزینه‌ی مسیر (Path Cost)
+
+| سرعت | روش کوتاه (Short، پیش‌فرض قدیمی) | روش بلند (Long) |
+|---|---|---|
+| 10 Mbps | 100 | 2,000,000 |
+| 100 Mbps | 19 | 200,000 |
+| 1 Gbps | 4 | 20,000 |
+| 10 Gbps | 2 | 2,000 |
+
+``` text
+spanning-tree pathcost method long
+```
+
+نکته: دو سر یک لینک و کل شبکه باید از یک روش استفاده کنند؛ وگرنه مقایسه‌ی هزینه‌ها بی‌معنی می‌شود.
+
+**Root Path Cost** = مجموع هزینه‌ی پورت‌های **ورودی** (پورت‌هایی که BPDU را از سمت Root دریافت می‌کنند) در مسیر تا Root؛ یعنی هر سوییچ هزینه‌ی پورت دریافت‌کننده‌ی خودش را به عددی که از همسایه گرفته اضافه می‌کند.
+
+#### ۲-۳) سه تصمیم برای هر سوییچ غیر Root
+
+**۱) Root Port (یکی در هر سوییچ):** پورتی که کمترین Root Path Cost تا Root دارد. اگر مساوی بود به ترتیب:
+
+1. کمترین **Sender Bridge ID** (سوییچ مقابل).
+2. کمترین **Sender Port ID** (Port Priority پیش‌فرض 128 + شماره‌ی پورت).
+3. (در آخر) کمترین Port ID محلی.
+
+**۲) Designated Port (یکی در هر Segment/لینک):** پورتی که کمترین Root Path Cost را به آن Segment اعلام می‌کند. تساوی: کمترین Bridge ID، سپس کمترین Port ID. همه‌ی پورت‌های Root همیشه Designated هستند.
+
+**۳) Alternate (RSTP):** پورت غیرRoot و غیرDesignated که BPDU بهتری از سوییچ دیگری دریافت می‌کند؛ مسیر پشتیبان Root Port. **Backup:** پشتیبان یک Designated Port روی همان سوییچ (وقتی دو پورت به یک Hub/Segment مشترک وصل‌اند).
+
+#### ۲-۴) نقش‌ها و حالت‌ها
+
+| نقش RSTP | حالت معمول |
+|---|---|
+| Root | Forwarding |
+| Designated | Forwarding |
+| Alternate | **Discarding** |
+| Backup | **Discarding** |
+| Disabled | — |
+
+حالت‌های RSTP فقط سه تا هستند: **Discarding، Learning، Forwarding**. (در 802.1D قدیمی: Blocking، Listening، Learning، Forwarding، Disabled.) در Discarding بسته‌ی داده عبور نمی‌کند و MAC یاد گرفته نمی‌شود؛ BPDU می‌پذیرد.
+
+**چرا Rapid سریع است؟** به‌جای انتظار برای تایمرها (Max Age 20 s + Forward Delay 2×15 s = تا 50 s)، سوییچ‌ها روی لینک‌های **Point-to-Point (Full-duplex)** با **Proposal/Agreement** در چند ثانیه‌ی کمتر همگرا می‌شوند. پورت Edge (PortFast) بلافاصله Forward می‌کند.
+
+#### ۲-۵) PortFast و محافظ‌ها
+
+| قابلیت | کار | دستور |
+|---|---|---|
+| PortFast | پورت Edge (به PC/سرور) بدون تأخیر Forward شود | `spanning-tree portfast` |
+| PortFast Trunk | پورت Trunk به سرور/Hypervisor (Edge) | `spanning-tree portfast trunk` |
+| BPDU Guard | اگر BPDU رسید پورت err-disabled | `spanning-tree bpduguard enable` |
+| BPDU Filter | BPDU ارسال/دریافت نشود (خطرناک) | `spanning-tree bpdufilter enable` |
+| Root Guard | پورت نتواند Root را عوض کند (BPDU برتر ⇒ root-inconsistent) | `spanning-tree guard root` |
+| Loop Guard | اگر BPDU قطع شود پورت Non-designated به Forwarding نرود | `spanning-tree guard loop` |
+
+``` text
+spanning-tree mode rapid-pvst
+spanning-tree portfast default
+spanning-tree portfast bpduguard default
+```
+
+قاعده‌ی عملی: PortFast + BPDU Guard روی همه‌ی پورت‌های کاربر؛ Root Guard روی پورت‌هایی که به سوییچ‌های بیرون از کنترل شما می‌روند؛ Loop Guard روی لینک‌های Non-designated بین سوییچ‌ها (مخصوصاً در برابر لینک یک‌طرفه).
+
+#### ۲-۶) تغییر توپولوژی (TCN)
+
+وقتی پورت غیر Edge به Forwarding می‌رود یا از آن خارج می‌شود، سوییچ **Topology Change** اعلام می‌کند و جدول MAC سایر سوییچ‌ها (برای آن VLAN) سریع پاک می‌شود تا مسیرهای قدیمی نمانند. پورت‌های PortFast باعث TCN نمی‌شوند؛ پس نبود PortFast علت Flood و کندی‌های مقطعی هنگام روشن‌شدن PCها است.
+
+### ۳) دستورهای بررسی
+
+``` text
+show spanning-tree vlan 10
+show spanning-tree summary
+show spanning-tree interface Gi0/1 detail
+show spanning-tree inconsistentports
+```
+
+خروجی نمونه:
+
+``` text
+VLAN0010
+  Spanning tree enabled protocol rstp
+  Root ID    Priority    24586
+             Address     0000.0000.0001
+             Cost        4
+             Port        1 (GigabitEthernet0/1)
+  Bridge ID  Priority    32778
+             Address     0000.0000.0002
+
+Interface    Role Sts Cost    Prio.Nbr Type
+Gi0/1        Root FWD 4       128.1    P2p
+Gi0/2        Desg FWD 4       128.2    P2p
+Gi0/3        Altn BLK 4       128.3    P2p
+```
+
+تفسیر: Root ID با Bridge ID محلی فرق دارد ⇒ این سوییچ Root نیست. Root Port = Gi0/1 با Cost 4 (لینک 1 Gbps). Gi0/3 `Altn` (Alternate) است. `P2p` یعنی لینک Full-duplex Point-to-Point. در خروجی IOS گاهی حالت Alternate را `BLK` (معادل Discarding) می‌نویسد.
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — Root کیست؟** سه سوییچ همه Priority 32778 در VLAN 10: MACها `0000.0000.0001`، `...0002`، `...0003`. کمترین MAC ⇒ SW1 Root.
+
+**متوسط — توپولوژی مثلثی با هزینه.**
+
+``` text
+SW1 -- SW2 : 1 Gbps  (cost 4)
+SW1 -- SW3 : 100 Mbps (cost 19)
+SW2 -- SW3 : 1 Gbps  (cost 4)
+```
+
+SW1 Root (MAC کمتر). گام‌ها:
+
+1. SW2: مسیر مستقیم به SW1 = 4؛ از طریق SW3 = 19 + 4 = 23. ⇒ Root Port به SW1 با Root Path Cost = 4.
+2. SW3: مسیر مستقیم به SW1 = 19؛ از طریق SW2 = 4 (هزینه‌ی SW2 تا Root) + 4 (لینک SW2–SW3) = 8. ⇒ Root Port به سمت SW2، Root Path Cost = 8.
+3. Segment SW1–SW3: Designated = SW1 (Root Path Cost صفر). پورت SW3 به SW1 Root Port نیست و Designated هم نیست ⇒ **Alternate (Discarding)**.
+4. Segment SW2–SW3: SW2 Cost 4 و SW3 Cost 8 ⇒ Designated = SW2؛ پورت SW3 همان Root Port است.
+
+``` text
+Root path cost via direct link SW3->SW1 = 19
+Root path cost via SW2                 = 4 + 4 = 8     <- chosen
+```
+
+نتیجه: لینک 100 Mbps مستقیم SW1–SW3 Block می‌شود و ترافیک SW3 از SW2 می‌رود؛ اگر این لینک 10 Gbps بود، تصمیم عوض می‌شد.
+
+**متوسط — Tie-break.** SW3 دو لینک موازی به SW2 دارد (هر دو 1 Gbps، Root Path Cost برابر). Sender Bridge ID هر دو SW2 است ⇒ مقایسه‌ی Sender Port ID: SW2 Gi0/1 (128.1) در برابر Gi0/2 (128.2) ⇒ پورت SW3 که به Gi0/1 سوییچ SW2 وصل است Root Port می‌شود و دیگری Alternate. برای تغییر: `spanning-tree port-priority` روی **پورت‌های SW2** (Sender).
+
+**متوسط — جابه‌جایی Root.** سوییچ دسترسی به‌اشتباه Root شده. رفع: `spanning-tree vlan 10 root primary` روی هسته و `secondary` روی هسته‌ی دوم؛ Root Guard روی پورت‌های دسترسی. پس از تنظیم `show spanning-tree vlan 10` در هسته نشان دهد «This bridge is the root».
+
+**سخت — «لینک بین دو سوییچ بالا نمی‌آید: root-inconsistent».**
+
+``` text
+%SPANTREE-2-ROOTGUARD_BLOCK: Root guard blocking port Gi0/5 on VLAN0010.
+```
+
+علت: از Gi0/5 BPDU برتر (Priority کمتر) رسیده؛ Root Guard اجازه نمی‌دهد. بررسی: `show spanning-tree inconsistentports` و `show spanning-tree vlan 10` در سوییچ مقابل. رفع: Priority سوییچ مقابل را (اگر باید پایین‌دست باشد) بالاتر کنید یا Root Guard را روی پورت نادرست حذف کنید. وقتی BPDU برتر قطع شد پورت خودکار بازیابی می‌شود.
+
+**سخت — Loop Guard در برابر لینک یک‌طرفه.** فیبر Tx یک‌طرفه: BPDU از سمت Designated نمی‌رسد؛ Alternate پورت، فکر می‌کند Designated مرده و Forward می‌کند ⇒ حلقه. Loop Guard این پورت را `loop-inconsistent` نگه می‌دارد (Discarding). علامت: `%SPANTREE-2-LOOPGUARD_BLOCK`. رفع: لینک فیبر (Tx/Rx) را بررسی و UDLD را فعال کنید.
+
+**سخت — PC روشن می‌شود و شبکه برای ۳۰ ثانیه می‌پرد.** پورت بدون PortFast: هر بار روشن‌شدن PC پورت از Discarding به Forwarding می‌رود و TCN ایجاد می‌شود. راه: `spanning-tree portfast` روی پورت‌های کاربر و BPDU Guard.
+
+### ۵) Lab (اجرا نشده)
+
+سه سوییچ در مثلث؛ Priority/MAC را تنظیم و پیش‌بینی خود را با `show spanning-tree` مقایسه کنید؛ سپس Root Guard و BPDU Guard را آزمایش کنید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| STP | Spanning Tree Protocol | جلوگیری از حلقه‌ی L2 |
+| RSTP | Rapid Spanning Tree Protocol | نسخه‌ی سریع STP (802.1w) |
+| PVST+ | Per-VLAN Spanning Tree Plus | یک STP برای هر VLAN |
+| BPDU | Bridge Protocol Data Unit | پیام STP |
+| TCN | Topology Change Notification | اعلان تغییر توپولوژی |
+| BID | Bridge ID | شناسه‌ی سوییچ |
+| P2P | Point-to-Point | لینک نقطه‌به‌نقطه |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) Bridge ID برای VLAN 20 با Priority پیش‌فرض چیست؟ *(پاسخ: 4-10-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) سه حالت پورت در RSTP؟ *(پاسخ: 4-10-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) سوییچ A (Priority 28672، MAC ...0009) و سوییچ B (Priority 28672، MAC ...0002)؛ Root کدام است؟ *(پاسخ: 4-10-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (متوسط) در مثلث با لینک SW1–SW2 برابر 10 Gbps (هزینه 2)، SW1–SW3 برابر 1 Gbps (هزینه 4) و SW2–SW3 برابر 1 Gbps (هزینه 4) و SW1 Root: Root Port SW3 کدام است؟ *(پاسخ: 4-10-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت5.** (سخت) `root-inconsistent` روی پورت دسترسی دیده می‌شود؛ علت و رفع. *(پاسخ: 4-10-ت5 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *The switch with the lowest bridge ID becomes the root bridge.*
+- *Root guard prevents a port from becoming a root port by blocking superior BPDUs.*
+- **Q1.** What are the three RSTP port states? *(پاسخ: 4-10-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
+<a id="l-4-11"></a>
+
+## درس 4-11 — Port Security، DHCP Snooping، DAI و IP Source Guard در جزئیات: Trust، Rate Limit، Binding و Violation
+
+**فصل 4 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 4.7: Configure Layer 2 security features — DHCP snooping, dynamic ARP inspection, port security) · پیش‌نیاز: ۴-۴، ۴-۵**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** سه سپر لایه‌ی ۲ که به هم وابسته‌اند: Port Security (چه MACهایی)، DHCP Snooping (چه DHCP Serverی) و DAI (چه ARP‌هایی)، و IP Source Guard (چه IPهایی). و اینکه Trust، Rate Limit و Binding Table هرکدام چه نقشی دارند.
+
+**چرا لازم است؟** شبکه‌ی داخلی «قابل‌اعتماد» نیست؛ یک کاربر با لپ‌تاپ می‌تواند DHCP Server جعلی راه بیندازد (مهاجم Gateway می‌شود)، یا با ARP Spoofing خود را Gateway معرفی کند (Man-in-the-Middle). این سه ویژگی مثل نگهبانی هستند که از هر پورت می‌پرسد: «آیا تو حق داری این پیام را بفرستی؟».
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) Port Security
+
+``` text
+interface GigabitEthernet0/5
+ switchport mode access
+ switchport access vlan 10
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+ switchport port-security aging time 10
+ switchport port-security aging type inactivity
+```
+
+- پورت باید **Access یا Trunk ایستا** باشد (نه dynamic).
+- `maximum`: بیشترین MAC مجاز (پیش‌فرض 1).
+- **Sticky:** MACهای یادگرفته‌شده در Running-config ذخیره می‌شود (باید `write memory`).
+- **Violation:**
+
+| حالت | رفتار |
+|---|---|
+| protect | بسته‌ی MAC غیرمجاز حذف؛ بدون Log و بدون شمارنده |
+| restrict | حذف + Log + شمارنده |
+| shutdown (پیش‌فرض) | پورت `err-disabled` |
+
+- بازیابی: `shutdown` و `no shutdown` یا `errdisable recovery cause psecure-violation`.
+
+``` text
+show port-security
+show port-security interface Gi0/5
+show port-security address
+```
+
+**تلفن IP + PC:** هر دو MAC از یک پورت دیده می‌شوند؛ بنابراین `maximum` باید برای آن‌ها کافی باشد (معمولاً 2؛ برخی تلفن‌ها نیاز به 3 دارند). با `show port-security address` تعداد واقعی را ببینید و Voice VLAN را هم در نظر بگیرید.
+
+#### ۲-۲) DHCP Snooping
+
+DHCP Snooping پیام‌های DHCP را بررسی می‌کند. پورت‌ها دو نوع‌اند:
+
+- **Trusted:** پورتی که سمت DHCP Server یا Uplink مجاز است؛ پیام Offer/Ack از آن پذیرفته می‌شود.
+- **Untrusted (پیش‌فرض):** پورت کاربر؛ پیام‌های سرور (Offer/Ack/NAK) از آن حذف می‌شود.
+
+``` text
+ip dhcp snooping
+ip dhcp snooping vlan 10,20
+ip dhcp snooping database flash:dhcp-snoop.db
+interface GigabitEthernet0/24
+ ip dhcp snooping trust
+interface GigabitEthernet0/5
+ ip dhcp snooping limit rate 15
+```
+
+- **Rate Limit:** تعداد بسته‌ی DHCP در ثانیه؛ بیش از آن ⇒ err-disabled (دفاع در برابر DHCP Starvation).
+- **Binding Table:** برای هر لیز صحیح: MAC، IP، VLAN، Interface، Lease.
+
+``` text
+show ip dhcp snooping
+show ip dhcp snooping binding
+MacAddress          IpAddress    Lease(sec)  Type           VLAN  Interface
+00:1A:2B:3C:4D:5E   10.10.0.15   86392       dhcp-snooping  10    GigabitEthernet0/5
+```
+
+- **Option 82:** سوییچ به‌طور پیش‌فرض اطلاعات Option 82 را به درخواست اضافه می‌کند. اگر سوییچ **پشت یک Relay** است (Relay خودش Option 82 می‌گذارد)، ممکن است پیام حذف شود. راه: `no ip dhcp snooping information option` یا Trust مناسب.
+
+#### ۲-۳) DAI (Dynamic ARP Inspection)
+
+ARP بی‌احراز هویت است: هر کس می‌تواند بگوید «IP 10.10.0.1 مال MAC من است». DAI هر ARP را با **Binding Table** DHCP Snooping تطبیق می‌دهد.
+
+``` text
+ip arp inspection vlan 10,20
+interface GigabitEthernet0/24
+ ip arp inspection trust
+interface GigabitEthernet0/5
+ ip arp inspection limit rate 15
+ip arp inspection validate src-mac dst-mac ip
+```
+
+- Trust روی Uplinkها و پورت‌های روتر/سوییچ.
+- **Rate Limit** پیش‌فرض روی پورت Untrusted: 15 بسته در ثانیه (پس از آن err-disabled).
+- `validate`: بررسی‌های اضافه: src-mac (MAC فرستنده در هدر Ethernet برابر MAC در ARP)، dst-mac، ip (IPهای غیرمعتبر مثل 0.0.0.0).
+- **میزبان با IP ثابت (بدون DHCP)** در Binding نیست و ARP او رد می‌شود. راه: ورودی ایستا:
+
+``` text
+arp access-list STATIC-HOSTS
+ permit ip host 10.10.0.50 mac host 0011.2233.4455
+ip arp inspection filter STATIC-HOSTS vlan 10
+```
+
+``` text
+show ip arp inspection
+show ip arp inspection interfaces
+show ip arp inspection statistics vlan 10
+```
+
+#### ۲-۴) IP Source Guard
+
+با Binding Table، ترافیک IP پورت را فقط از IP/MAC مجاز عبور می‌دهد.
+
+``` text
+interface GigabitEthernet0/5
+ ip verify source port-security
+```
+
+### ۳) ترتیب راه‌اندازی صحیح
+
+1. DHCP Snooping را فعال و **Trust** را روی Uplink/Server بگذارید.
+2. Binding Table را بسازید (صبر برای Lease یا `renew` کلاینت‌ها).
+3. سپس DAI (چون DAI به Binding وابسته است).
+4. IP Source Guard (در صورت نیاز).
+5. Port Security.
+
+اگر DAI را قبل از Binding فعال کنید، ARP همه‌ی کلاینت‌های موجود رد می‌شود.
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — Port Security.** `maximum 1` و یک PC؛ PC دوم (یا Hub) وصل شود ⇒ Violation. با `shutdown` پورت err-disabled می‌شود؛ `show interfaces status err-disabled` نشان می‌دهد. رفع: PC اضافه برداشته و `shutdown/no shutdown`.
+
+**متوسط — DHCP Server جعلی.** کاربر با روتر کوچک خانگی، Offer می‌دهد.
+
+1. پورت کاربر Untrusted ⇒ Offer حذف.
+2. Log: `%DHCP_SNOOPING-5-DHCP_SNOOPING_UNTRUSTED_PORT: DHCP_SNOOPING drop message on untrusted port, message type: DHCPOFFER`.
+3. بدون Snooping کلاینت‌ها Gateway اشتباه می‌گرفتند.
+
+**متوسط — محاسبه‌ی Rate.** پورت با Limit 15 pps و کلاینتی که 100 Discover در ثانیه می‌فرستد (Starvation): پس از 15 در ثانیه پورت err-disabled و تلاش خنثی می‌شود.
+
+**سخت — «بعد از فعال‌کردن DAI چاپگر (IP ثابت) قطع شد».**
+
+1. `show ip arp inspection statistics vlan 10`: Drop‌ها.
+2. Log: `%SW_DAI-4-DHCP_SNOOPING_DENY: ... ARP ... Invalid ARPs`.
+3. چاپگر در Binding Table نیست.
+4. راه: `arp access-list` ایستا با MAC/IP چاپگر (بالا) یا Static Binding.
+5. تأیید: Drop شمارنده‌اش افزایش نیابد.
+
+**سخت — Snooping و Relay.** سوییچ دسترسی پشت یک Relay (SVI روی سوییچ هسته)؛ کلاینت‌ها IP نمی‌گیرند. Log: `DHCP_SNOOPING ... Option 82 ... dropped`. رفع: `no ip dhcp snooping information option` روی سوییچ دسترسی (یا `ip dhcp relay information trust-all` روی Relay)، سپس آزمون Renew.
+
+**سخت — ترکیب سه کنترل.** کاربر با MAC جعلی، IP جعلی و ARP جعلی: Port Security MAC را می‌بندد؛ DHCP Snooping IP نامجاز را بدون Binding رد می‌کند؛ DAI ARP نامعتبر را رد می‌کند. هیچ‌کدام تنها کافی نیستند؛ دفاع در عمق.
+
+### ۵) Lab (اجرا نشده)
+
+یک سوییچ، یک DHCP Server و دو کلاینت (یکی مهاجم آزمایشی)؛ Snooping + DAI + Port Security را به همین ترتیب فعال و Violationها را مشاهده کنید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| DAI | Dynamic ARP Inspection | بررسی پویا‌ی ARP |
+| ARP | Address Resolution Protocol | نگاشت IP به MAC |
+| MITM | Man-in-the-Middle | مهاجم میانی |
+| IPSG | IP Source Guard | تأیید IP مبدأ |
+| pps | packets per second | بسته در ثانیه |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) تفاوت پورت Trusted و Untrusted در DHCP Snooping؟ *(پاسخ: 4-11-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) سه حالت Violation در Port Security؟ *(پاسخ: 4-11-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) چرا DAI به DHCP Snooping وابسته است؟ *(پاسخ: 4-11-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (متوسط) سرور با IP ثابت بعد از DAI قطع شد؛ راه‌حل. *(پاسخ: 4-11-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت5.** (سخت) کلاینت‌ها پشت Relay IP نمی‌گیرند و Snooping فعال است؛ علت و رفع. *(پاسخ: 4-11-ت5 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *DHCP snooping builds a binding table that dynamic ARP inspection relies on.*
+- *Untrusted ports drop DHCP server messages such as offers and acknowledgements.*
+- **Q1.** Which violation mode shuts the port down? *(پاسخ: 4-11-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 4
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -9478,6 +9874,34 @@ Because all traffic would flow through a low-capacity edge device instead of the
 **4-9-ت4** — ۱) `show etherchannel 1 detail` برای دلیل ۲) یکسان‌سازی Speed/Duplex/Mode/VLAN/Native Memberها ۳) shutdown/no shutdown روی Member ۴) تأیید `Po1(SU)` و `Gi0/1(P)`.
 
 **4-9-Q1** — Suspended: the port's configuration does not match the channel, so it is not bundled.
+
+### پاسخ‌های درس افزوده‌ی 4-10 (فصل 4)
+
+**4-10-ت1** — 32768 + 20 = 32788.
+
+**4-10-ت2** — Discarding، Learning، Forwarding.
+
+**4-10-ت3** — Priority برابر است، پس کمترین MAC برنده است: سوییچ B (...0002) Root می‌شود.
+
+**4-10-ت4** — مسیر مستقیم SW3→SW1 = 4؛ از طریق SW2 = 4 (SW3–SW2) + 2 (SW2–SW1) = 6. چون 4 < 6، Root Port SW3 همان لینک مستقیم به SW1 با Cost 4 است. روی Segment SW2–SW3: SW2 با Root Path Cost برابر 2 در برابر SW3 با 4 Designated می‌شود؛ پس پورت SW3 به سمت SW2 Alternate (Discarding) است.
+
+**4-10-ت5** — از آن پورت BPDU برتر (Priority کمتر) از یک سوییچ ناخواسته رسیده و Root Guard آن را Block کرده است؛ رفع: سوییچ مقابل را از Root شدن بازدارید (Priority بالاتر/حذف) یا پورت را بررسی؛ پس از قطع BPDU برتر خودکار بازیابی می‌شود.
+
+**4-10-Q1** — Discarding, learning and forwarding.
+
+### پاسخ‌های درس افزوده‌ی 4-11 (فصل 4)
+
+**4-11-ت1** — Trusted: پیام‌های DHCP Server (Offer/Ack) پذیرفته می‌شود (Uplink/سمت سرور)؛ Untrusted: این پیام‌ها حذف می‌شود (پورت کاربر).
+
+**4-11-ت2** — protect (حذف بی‌صدا)، restrict (حذف + Log + شمارنده)، shutdown (err-disabled).
+
+**4-11-ت3** — DAI ARP را با Binding Table که DHCP Snooping می‌سازد (MAC، IP، Interface) مقایسه می‌کند؛ بدون Binding همه‌ی ARPها رد می‌شود.
+
+**4-11-ت4** — میزبان ایستا در Binding نیست؛ باید ورودی ایستا (`arp access-list` + `ip arp inspection filter` یا Static Binding) اضافه شود.
+
+**4-11-ت5** — Option 82 اضافه‌شده توسط Snooping/Relay باعث حذف می‌شود؛ رفع: `no ip dhcp snooping information option` روی سوییچ یا Trust مناسب روی Relay.
+
+**4-11-Q1** — shutdown.
 
 ---
 
@@ -11580,6 +12004,236 @@ S  10.20.0.0/24 [1/0] via 10.99.0.2
 
 ---
 
+<a id="l-5-10"></a>
+
+## درس 5-10 — OSPF تک‌ناحیه‌ای (OSPFv2 و OSPFv3): Router ID، همسایگی، DR/BDR، Point-to-Point و عیب‌یابی
+
+**فصل 5 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 3.3: Configure single area OSPFv2 for IPv4 and OSPFv3 for IPv6 — neighbor adjacencies, point-to-point, broadcast DR/BDR selection, router ID) · پیش‌نیاز: ۵-۱ تا ۵-۳، ۲-۷**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** OSPF چطور همسایه پیدا می‌کند، Router ID چگونه انتخاب می‌شود، چرا روی اترنت DR/BDR داریم و روی لینک نقطه‌به‌نقطه نه، و چرا همسایگی «گیر» می‌کند.
+
+**چرا لازم است؟** Static Route برای ۳ روتر خوب است؛ برای ۳۰ روتر، هر تغییر یعنی ۳۰ ویرایش دستی. OSPF Link-State است: هر روتر نقشه‌ی کامل شبکه را می‌سازد و خودکار کوتاه‌ترین مسیر را می‌یابد. مثل GPS که هر بار ترافیک تغییر کند، مسیر را دوباره حساب می‌کند. و چون OSPF هسته‌ی سؤال‌های آزمون است، باید همسایگی و انتخاب DR را از روی عدد حل کنید.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) مراحل کار
+
+1. Hello بفرست و همسایه پیدا کن.
+2. Adjacency (همسایگی کامل) بساز.
+3. LSAها (Link-State Advertisement) را رد و بدل کن تا همه LSDB (پایگاه‌داده‌ی وضعیت لینک) یکسان داشته باشند.
+4. SPF (الگوریتم Dijkstra) را اجرا کن و بهترین مسیر را در جدول مسیر بگذار.
+
+#### ۲-۲) Router ID
+
+یک عدد ۳۲ بیتی مثل IPv4 که هر روتر را یکتا می‌کند. ترتیب انتخاب:
+
+1. دستور `router-id` (اولویت اول).
+2. بالاترین آدرس IPv4 در Interfaceهای **Loopback** فعال.
+3. بالاترین آدرس IPv4 در Interfaceهای فیزیکی فعال.
+
+``` text
+router ospf 1
+ router-id 1.1.1.1
+```
+
+تغییر Router ID پس از راه‌اندازی تا `clear ip ospf process` (یا Reload) اعمال نمی‌شود. دو روتر با Router ID یکسان ⇒ همسایگی ناپایدار/مسیرهای اشتباه.
+
+#### ۲-۳) نوع شبکه (Network Type)
+
+| نوع | DR/BDR | Hello/Dead پیش‌فرض | مثال |
+|---|---|---|---|
+| Broadcast | دارد | 10 / 40 | اترنت (پیش‌فرض) |
+| Point-to-Point | ندارد | 10 / 40 | سریال، Tunnel، اترنت با تنظیم |
+| NBMA / Non-broadcast | دارد | 30 / 120 | Frame Relay (قدیمی) |
+
+روی اترنت پیش‌فرض Broadcast است. برای لینک دو روتر که فقط دو نفرند، DR/BDR بی‌فایده است:
+
+``` text
+interface GigabitEthernet0/1
+ ip ospf network point-to-point
+```
+
+(باید هر دو سر یکسان باشند؛ وگرنه Timerها/رفتار ناهمخوان می‌شود.)
+
+#### ۲-۴) DR و BDR
+
+در یک Segment چندروتری، اگر هر روتر با همه Adjacency بسازد، تعداد Adjacencyها N(N-1)/2 می‌شود. **DR** (Designated Router) نقطه‌ی مرکزی است: همه‌ی روترها فقط با DR و BDR (Backup DR) Adjacency Full می‌سازند. روترهای دیگر (**DROTHER**) با هم فقط تا حالت **2-Way** می‌روند (این طبیعی است).
+
+- Multicast: همه‌ی روترهای OSPF 224.0.0.5؛ فقط DR/BDR 224.0.0.6.
+- **انتخاب:** بالاترین **Priority** (0 تا 255، پیش‌فرض 1)؛ تساوی ⇒ بالاترین **Router ID**. Priority 0 یعنی هرگز DR/BDR نمی‌شود.
+- **Non-preemptive:** اگر DR از قبل وجود دارد، روتر با Priority بالاتر که بعداً بیاید DR نمی‌شود؛ تنها وقتی DR از کار بیفتد BDR جایگزین می‌شود و BDR جدید انتخاب می‌شود. برای اعمال Priority جدید باید فرایند OSPF پاک شود.
+
+``` text
+interface GigabitEthernet0/0
+ ip ospf priority 100
+```
+
+#### ۲-۵) حالت‌های همسایگی
+
+``` text
+Down -> Init -> 2-Way -> ExStart -> Exchange -> Loading -> Full
+```
+
+| حالت | معنی |
+|---|---|
+| Init | Hello همسایه دیده شد ولی روتر خودمان در Hello او نیست |
+| 2-Way | دوطرفه؛ در Broadcast انتخاب DR/BDR اینجاست؛ DROTHERها اینجا می‌مانند |
+| ExStart | تعیین Master/Slave برای تبادل DBD (اینجا MTU مهم است) |
+| Exchange | تبادل خلاصه‌ی LSDB |
+| Loading | درخواست LSAهای ناقص |
+| Full | LSDB همگام |
+
+#### ۲-۶) شرط‌های تشکیل همسایگی
+
+باید یکسان: Area ID، **Subnet و Mask**، Hello/Dead، Authentication، Stub flag؛ و **Router ID یکتا**؛ MTU در ExStart.
+
+#### ۲-۷) هزینه (Cost)
+
+``` text
+Cost = Reference Bandwidth / Interface Bandwidth
+Default reference = 100 Mbps
+FastEthernet 100M: 100/100 = 1
+GigabitEthernet 1G: 100/1000 = 0.1 -> 1 (minimum)
+10G: 1
+```
+
+مشکل: 100M و 1G و 10G همگی Cost=1. راه: `auto-cost reference-bandwidth 10000` (به Mbps) روی **همه‌ی روترها** یکسان.
+
+### ۳) دستورها (Unverified)
+
+**OSPFv2**
+
+``` text
+router ospf 1
+ router-id 1.1.1.1
+ network 10.10.0.0 0.0.0.255 area 0
+ network 10.99.0.0 0.0.0.3 area 0
+ passive-interface GigabitEthernet0/0
+ auto-cost reference-bandwidth 10000
+```
+
+`network` با Wildcard مشخص می‌کند کدام Interfaceها وارد OSPF شوند. `passive-interface` روی پورت کاربران: شبکه اعلام می‌شود ولی Hello ارسال نمی‌شود (امنیت و کاهش بار). روش جایگزین: `ip ospf 1 area 0` روی Interface.
+
+**OSPFv3 (IPv6)**
+
+``` text
+ipv6 unicast-routing
+ipv6 router ospf 1
+ router-id 1.1.1.1
+interface GigabitEthernet0/1
+ ipv6 address 2001:db8:12::1/64
+ ipv6 ospf 1 area 0
+```
+
+تفاوت‌ها: فعال‌سازی روی Interface (نه `network`)؛ Adjacency با آدرس **Link-local**؛ Multicast FF02::5 و FF02::6؛ Router ID هنوز ۳۲ بیتی است و اگر روتر IPv4 ندارد **باید دستی** تنظیم شود.
+
+**بررسی**
+
+``` text
+show ip ospf neighbor
+show ip ospf interface brief
+show ip ospf interface GigabitEthernet0/0
+show ip protocols
+show ip route ospf
+show ipv6 ospf neighbor
+show ipv6 route ospf
+```
+
+خروجی نمونه:
+
+``` text
+R1# show ip ospf neighbor
+Neighbor ID   Pri State      Dead Time  Address      Interface
+2.2.2.2       100 FULL/DR    00:00:34   10.10.0.2    GigabitEthernet0/0
+3.3.3.3       1   2WAY/DROTHER 00:00:37 10.10.0.3    GigabitEthernet0/0
+```
+
+تفسیر: همسایه 2.2.2.2 با Priority 100 حالت `FULL/DR`؛ یعنی DR است. 3.3.3.3 `2WAY/DROTHER` ⇒ DROTHER و بین دو DROTHER طبیعی است.
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — Router ID.** روتر با Loopback0 = 1.1.1.1، Gi0/0 = 10.10.0.2، Gi0/1 = 192.168.5.1 و بدون `router-id`. Loopback بر فیزیکی ترجیح دارد ⇒ RID = 1.1.1.1. اگر Loopback نداشت: بالاترین فیزیکی = 192.168.5.1.
+
+**متوسط — انتخاب DR.** سه روتر روی یک اترنت (هم‌زمان بالا آمدند):
+
+``` text
+R1: Priority 1,  RID 3.3.3.3
+R2: Priority 1,  RID 2.2.2.2
+R3: Priority 50, RID 1.1.1.1
+```
+
+مراحل: ۱) بالاترین Priority: R3 (50) ⇒ DR ۲) بین R1 و R2 (Priority برابر) بالاترین RID: R1 (3.3.3.3) ⇒ BDR ۳) R2 = DROTHER.
+
+**متوسط — Non-preemptive.** R2 اول بالا آمد و DR شد؛ سپس R3 با Priority 200 اضافه شد. R3 DR نمی‌شود؛ تا R2 خراب شود. اگر R2 خراب شد، BDR (مثلاً R1) DR می‌شود و برای BDR جدید انتخاب انجام می‌شود (R3 به‌خاطر Priority بالا BDR می‌شود).
+
+**متوسط — ظرفیت.**
+
+``` text
+Full mesh adjacencies for 5 routers = 5 x 4 / 2 = 10
+With DR/BDR: each DROTHER has 2 adjacencies (DR, BDR) ; total ~ 7
+```
+
+**متوسط — Point-to-Point.** لینک /30 بین دو روتر: `ip ospf network point-to-point` ⇒ DR انتخاب نمی‌شود و همگرایی سریع‌تر (بدون انتظار Wait Timer 40 ثانیه).
+
+**سخت — همسایگی بالا نمی‌آید. چک‌لیست.**
+
+1. `show ip ospf interface brief`: Interface در OSPF هست؟ (State: DR/BDR/DROTHER/P2P)
+2. `show ip ospf neighbor`: خالی ⇒ Hello نمی‌رسد؛ بررسی `passive-interface` اشتباه.
+3. `show ip ospf interface Gi0/0`: **Hello/Dead** دو سر یکسان؟ (مثلاً 10/40 در برابر 30/120)
+4. Area، Subnet/Mask، Authentication.
+5. `debug ip ospf adj` (محدود و کوتاه) پیام‌های `mismatched hello parameters` یا `mismatched area`.
+6. ACL مانع 89 (OSPF IP Protocol 89).
+7. اگر گیر در **ExStart**: MTU متفاوت ⇒ برابر کنید یا `ip ospf mtu-ignore`.
+8. اگر `2WAY` برای دو DROTHER: طبیعی است، خطا نیست.
+
+**سخت — `Router ID duplicate`.** Log: `%OSPF-4-DUP_RTRID_NBR`. دو روتر RID یکسان دارند (کپی Config). رفع: `router-id` یکتا و `clear ip ospf process`.
+
+**سخت — مسیر زیرین به‌خاطر Cost.** لینک 1G و 100M هر دو Cost=1، OSPF ECMP می‌کند و بخشی از ترافیک را روی لینک کند می‌فرستد. رفع: `auto-cost reference-bandwidth 10000` یکسان در همه‌ی روترها:
+
+``` text
+Cost 1G  = 10000 / 1000  = 10
+Cost 100M = 10000 / 100  = 100
+```
+
+### ۵) Lab (اجرا نشده)
+
+سه روتر روی یک سوییچ؛ Priority/Router ID را تغییر دهید و DR را پیش‌بینی/تأیید کنید؛ سپس لینک P2P و OSPFv3.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| OSPF | Open Shortest Path First | پروتکل Link-State |
+| LSA | Link-State Advertisement | اعلان وضعیت لینک |
+| LSDB | Link-State Database | پایگاه‌داده‌ی وضعیت لینک |
+| SPF | Shortest Path First | الگوریتم کوتاه‌ترین مسیر |
+| DR / BDR | Designated / Backup Designated Router | روتر مرکزی Segment |
+| DBD | Database Description | پیام توصیف پایگاه‌داده |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) ترتیب انتخاب Router ID؟ *(پاسخ: 5-10-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Hello/Dead پیش‌فرض Broadcast؟ *(پاسخ: 5-10-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) Priority/RID: A (1، 9.9.9.9)، B (1، 4.4.4.4)، C (0، 8.8.8.8)؛ DR و BDR؟ *(پاسخ: 5-10-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (متوسط) Cost لینک 1 Gbps با Reference پیش‌فرض و با 10000؟ *(پاسخ: 5-10-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت5.** (سخت) همسایگی در ExStart گیر می‌کند؛ علت و رفع. *(پاسخ: 5-10-ت5 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *OSPF elects the designated router by highest priority, then by highest router ID.*
+- *Two DROTHER routers on the same segment stay in the 2-Way state.*
+- **Q1.** Which IP protocol number does OSPF use? *(پاسخ: 5-10-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 5
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -12015,6 +12669,20 @@ An MTU mismatch between the two interfaces.
 **5-9-ت5** — چون FE80::2 فقط روی همان لینک معتبر است و روتر نمی‌داند از کدام Interface؛ باید Interface هم نوشته شود: `ipv6 route <prefix> GigabitEthernet0/1 FE80::2`.
 
 **5-9-Q1** — Because the same link-local address can exist on every interface, so the router needs the interface to know on which link to send.
+
+### پاسخ‌های درس افزوده‌ی 5-10 (فصل 5)
+
+**5-10-ت1** — ۱) `router-id` دستی ۲) بالاترین IPv4 Loopback فعال ۳) بالاترین IPv4 Interface فیزیکی فعال.
+
+**5-10-ت2** — Hello 10 ثانیه و Dead 40 ثانیه.
+
+**5-10-ت3** — C با Priority 0 کنار می‌رود. بین A و B Priority برابر است؛ بالاترین RID: A (9.9.9.9) ⇒ DR و B (4.4.4.4) ⇒ BDR.
+
+**5-10-ت4** — پیش‌فرض: 100/1000 = 0.1 که به حداقل 1 گرد می‌شود؛ با Reference 10000: 10000/1000 = 10.
+
+**5-10-ت5** — MTU Interface دو سر متفاوت است (DBD بزرگ‌تر از MTU همسایه)؛ رفع: یکسان‌سازی MTU یا موقت `ip ospf mtu-ignore`.
+
+**5-10-Q1** — IP protocol 89.
 
 ---
 
@@ -16472,6 +17140,198 @@ Needed IPs = ceil(100000 / 64000) = 2
 
 ---
 
+<a id="l-7-11"></a>
+
+## درس 7-11 — ACL کامل: Standard، Extended، Numbered، Named، Wildcard، جای‌گذاری و ویرایش
+
+**فصل 7 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 4.6: Configure IPv4 access control lists — standard, extended, numbered, and named) · پیش‌نیاز: ۷-۴**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** ACL را از پایه بنویسیم: Wildcard را حساب کنیم، Standard و Extended را بشناسیم، Numbered و Named را بنویسیم، محل و جهت اعمال را درست انتخاب کنیم و ACL را بدون پاک‌کردن کامل ویرایش کنیم.
+
+**چرا لازم است؟** ACL مثل فهرست مهمانان یک مهمانی است: نگهبان از بالا به پایین فهرست را می‌خواند و اولین سطر مطابق را اجرا می‌کند؛ اگر نامی نبود، رد می‌شود. اشتباه در ترتیب یا جهت یعنی یا همه رد می‌شوند یا همه رد نمی‌شوند. ACL پایه‌ی فیلتر روی روتر، NAT، VTY و QoS است.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) قواعد حاکم
+
+1. **از بالا به پایین**، اولین مطابقت اعمال می‌شود (First Match) و ارزیابی تمام می‌شود.
+2. **Implicit Deny:** در انتهای هر ACL یک `deny any` نامرئی هست.
+3. هر Interface، **در هر جهت** (in/out) و **برای هر پروتکل**، فقط **یک** ACL دارد.
+4. ACL ترافیکی که **خود روتر** می‌فرستد را فیلتر نمی‌کند.
+5. ACL خالی (ایجادشده بدون خط) ⇒ همه‌چیز Permit (چون چیزی برای Deny نیست)؛ ولی یک ACL با حتی یک خط، Implicit Deny دارد.
+
+#### ۲-۲) انواع
+
+| نوع | شماره | چه چیزی را می‌سنجد |
+|---|---|---|
+| Standard | 1–99 و 1300–1999 | فقط **آدرس مبدأ** |
+| Extended | 100–199 و 2000–2699 | مبدأ، مقصد، پروتکل، پورت |
+| Named Standard/Extended | نام | همان قابلیت با نام و ویرایش آسان‌تر |
+
+#### ۲-۳) Wildcard Mask
+
+Wildcard «معکوس Subnet Mask» است: بیت **0** یعنی «باید مطابق باشد»، بیت **1** یعنی «مهم نیست».
+
+``` text
+Wildcard = 255.255.255.255 - Subnet Mask
+/24 : mask 255.255.255.0   -> wildcard 0.0.0.255
+/26 : mask 255.255.255.192 -> wildcard 0.0.0.63
+/22 : mask 255.255.252.0   -> wildcard 0.0.3.255
+host: 0.0.0.0   (keyword: host x.x.x.x)
+any : 255.255.255.255 (keyword: any)
+```
+
+مثال: `192.168.10.0 0.0.0.63` ⇒ آدرس‌های 192.168.10.0 تا 192.168.10.63.
+
+مثال بازه‌ی چندشبکه‌ای: 172.16.32.0/20 ⇒ mask 255.255.240.0 ⇒ wildcard `0.0.15.255` ⇒ 172.16.32.0 تا 172.16.47.255.
+
+#### ۲-۳-۱) سنتکس Extended
+
+``` text
+access-list 110 permit tcp 10.10.0.0 0.0.0.255 host 10.20.0.10 eq 443
+access-list 110 deny   tcp 10.10.0.0 0.0.0.255 any eq 23
+access-list 110 permit ip any any
+```
+
+عملگرهای پورت: `eq`، `neq`، `gt`، `lt`، `range 8000 8100`. TCP با `established` (بسته‌هایی با ACK/RST). ICMP با نوع: `permit icmp any any echo-reply`. کلمه‌ی `log` برای ثبت هر تطبیق.
+
+#### ۲-۴) جای‌گذاری (Placement)
+
+- **Standard** فقط مبدأ را می‌بیند؛ پس **نزدیک مقصد** (تا ترافیک مجاز دیگر مبدأ مسدود نشود).
+- **Extended** دقیق است؛ پس **نزدیک مبدأ** (تا ترافیک بی‌فایده در شبکه نچرخد).
+
+#### ۲-۵) جهت
+
+- **in:** بسته‌ی ورودی به Interface، قبل از Routing.
+- **out:** بسته‌ی خروجی از Interface، پس از Routing.
+
+``` text
+interface GigabitEthernet0/0
+ ip access-group 110 in
+interface GigabitEthernet0/1
+ ip access-group BLOCK-TELNET out
+```
+
+### ۳) ACL نام‌دار و ویرایش
+
+``` text
+ip access-list extended BLOCK-TELNET
+ 10 deny tcp 10.10.0.0 0.0.0.255 any eq 23
+ 20 permit ip any any
+```
+
+- هر خط **Sequence Number** دارد (پیش‌فرض گام 10).
+- درج خط میانی: `15 permit tcp host 10.10.0.5 any eq 22`.
+- حذف: `no 20`.
+- مرتب‌سازی شماره‌ها: `ip access-list resequence BLOCK-TELNET 10 10`.
+- ویرایش ACL شماره‌دار هم با `ip access-list extended 110` ممکن است (در IOS مدرن).
+
+**ACL برای مدیریت راه‌دور (VTY):**
+
+``` text
+access-list 10 permit 10.50.0.0 0.0.0.255
+line vty 0 4
+ access-class 10 in
+```
+
+### ۴) بررسی
+
+``` text
+show access-lists
+show ip access-lists BLOCK-TELNET
+show ip interface GigabitEthernet0/0 | include access list
+```
+
+خروجی نمونه با شمارنده:
+
+``` text
+Extended IP access list BLOCK-TELNET
+    10 deny tcp 10.10.0.0 0.0.0.255 any eq telnet (15 matches)
+    20 permit ip any any (1204 matches)
+```
+
+### ۵) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — Standard.** فقط شبکه‌ی 10.10.0.0/24 به سرور وب دسترسی داشته باشد: Standard روی Interface نزدیک سرور:
+
+``` text
+access-list 10 permit 10.10.0.0 0.0.0.255
+interface GigabitEthernet0/2
+ ip access-group 10 out
+```
+
+**متوسط — Extended.** VLAN کاربران فقط HTTPS و DNS به سرورها؛ همه‌ی دیگر رد، ICMP مجاز:
+
+``` text
+ip access-list extended USERS-IN
+ 10 permit tcp 10.10.0.0 0.0.0.255 10.20.0.0 0.0.0.255 eq 443
+ 20 permit udp 10.10.0.0 0.0.0.255 host 10.20.0.5 eq 53
+ 30 permit icmp 10.10.0.0 0.0.0.255 any
+ 40 deny   ip any any log
+interface GigabitEthernet0/0
+ ip access-group USERS-IN in
+```
+
+**متوسط — محاسبه‌ی Wildcard.** بخواهید 192.168.8.0 تا 192.168.11.255 را بپوشانید: 4 شبکه‌ی /24 پیاپی ⇒ /22 ⇒ mask 255.255.252.0 ⇒ wildcard 0.0.3.255.
+
+``` text
+permit ip 192.168.8.0 0.0.3.255 any
+```
+
+**سخت — «ACL گذاشتم و همه‌ی ترافیک قطع شد».**
+
+1. آخر ACL `permit ip any any` نبود و Implicit Deny همه‌چیز را رد کرد.
+2. DHCP: کلاینت Discover را از 0.0.0.0 به 255.255.255.255 UDP 67 می‌فرستد؛ اگر ACL ورودی آن را اجازه ندهد، DHCP قطع می‌شود: `permit udp any eq 68 any eq 67`.
+3. پروتکل‌های مسیریابی (OSPF=89، EIGRP=88) روی Interface اگر ACL بسته باشد از بین می‌روند.
+4. `show access-lists` شمارنده‌ی `deny` در حال افزایش است ⇒ علت.
+
+**سخت — ACL درست ولی بی‌اثر.**
+
+1. جهت اشتباه: ACL `in` روی Interface خروجی گذاشته‌شده.
+2. ترتیب: خط عمومی بالاتر از خط خاص (`permit ip any any` قبل از `deny`).
+3. ACL روی Interface نیست: `show ip interface | include access list`.
+4. ترافیک خود روتر (مثلاً ping از روتر) فیلتر نمی‌شود.
+
+**سخت — Established.** `permit tcp any any established` فقط TCP را (با پرچم ACK/RST) می‌گذارد؛ یک حمله‌ی ACK Scan را مسدود نمی‌کند و ACL بدون وضعیت است (Stateless). برای وضعیت واقعی: فایروال Stateful (فصل ۱۱).
+
+### ۶) Lab (اجرا نشده)
+
+دو شبکه و یک روتر؛ ACL Extended با `log`؛ جهت in/out را عوض کنید و `show access-lists` را ببینید.
+
+### ۷) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| ACL | Access Control List | فهرست کنترل دسترسی |
+| ACE | Access Control Entry | یک خط ACL |
+| Wildcard | — | ماسک معکوس |
+| VTY | Virtual Teletype | خطوط ورود راه‌دور |
+| Stateless | — | بدون حافظه‌ی Session |
+
+### ۸) تمرین‌ها
+
+**ت1.** (ساده) Wildcard برای /27 چیست؟ *(پاسخ: 7-11-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Standard و Extended کجا قرار می‌گیرند؟ *(پاسخ: 7-11-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) `172.16.64.0 0.0.15.255` چه بازه‌ای را می‌پوشاند؟ *(پاسخ: 7-11-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (متوسط) چگونه خط 20 را از ACL نام‌دار حذف و خط 15 را درج می‌کنید؟ *(پاسخ: 7-11-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت5.** (سخت) پس از اعمال ACL، DHCP قطع شد؛ علت و رفع. *(پاسخ: 7-11-ت5 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۹) English Corner
+
+- *Place standard ACLs close to the destination and extended ACLs close to the source.*
+- *Every ACL ends with an implicit deny.*
+- **Q1.** Which ACL numbers are used for extended access lists? *(پاسخ: 7-11-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 7
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -16889,6 +17749,20 @@ Only when there is congestion on a link.
 **7-10-ت5** — ۱) ISP آدرس Inside Global را Route نکرده ۲) ACL Outside آن را می‌بندد ۳) Route برگشت/Default ناقص ۴) تعارض Pool با Interface یا آدرس تکراری.
 
 **7-10-Q1** — The inside global address.
+
+### پاسخ‌های درس افزوده‌ی 7-11 (فصل 7)
+
+**7-11-ت1** — /27 ⇒ mask 255.255.255.224 ⇒ wildcard 0.0.0.31.
+
+**7-11-ت2** — Standard نزدیک مقصد؛ Extended نزدیک مبدأ.
+
+**7-11-ت3** — Wildcard 0.0.15.255 ⇒ بازه‌ی 172.16.64.0 تا 172.16.79.255 (معادل 172.16.64.0/20).
+
+**7-11-ت4** — `ip access-list extended NAME` سپس `no 20` و `15 permit ...`.
+
+**7-11-ت5** — Implicit Deny یا نبود `permit udp any eq 68 any eq 67`، چون Discover از 0.0.0.0 به 255.255.255.255 UDP 67 می‌رود؛ رفع: اجازه‌ی DHCP قبل از خط Deny و بررسی شمارنده‌ها.
+
+**7-11-Q1** — 100–199 and 2000–2699.
 
 ---
 

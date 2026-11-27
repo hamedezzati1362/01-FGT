@@ -195,3 +195,7 @@ Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خ�
 
 ## D-354 — تکمیل NSE4: HA Active-Active/Virtual Cluster، Firewall Authentication، Web Filter، Log
 - درس‌های جدید: 22-6، 17-8، 16-9، 27-8. شماره‌ی Category در مثال Web Filter صرفاً نمونه است و باید از مستند/GUI خوانده شود.
+
+## D-355 — تکمیل CCNA 2.5، 3.3، 4.6، 4.7
+- درس‌های جدید: 4-10 (Rapid PVST+ محاسباتی)، 4-11 (Port Security/DHCP Snooping/DAI/IPSG در جزئیات)، 5-10 (OSPFv2/v3 تک‌ناحیه: RID، DR/BDR، P2P، عیب‌یابی)، 7-11 (ACL کامل).
+- با این مرحله همه‌ی دامنه‌های 1.x تا 5.x سرفصل CCNA v2.0 درس تخصصی دارند؛ ممیزی کیفیت با کتاب رسمی هنوز انجام نشده.

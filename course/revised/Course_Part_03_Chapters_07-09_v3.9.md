@@ -2157,6 +2157,198 @@ Needed IPs = ceil(100000 / 64000) = 2
 
 ---
 
+<a id="l-7-11"></a>
+
+## درس 7-11 — ACL کامل: Standard، Extended، Numbered، Named، Wildcard، جای‌گذاری و ویرایش
+
+**فصل 7 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 4.6: Configure IPv4 access control lists — standard, extended, numbered, and named) · پیش‌نیاز: ۷-۴**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** ACL را از پایه بنویسیم: Wildcard را حساب کنیم، Standard و Extended را بشناسیم، Numbered و Named را بنویسیم، محل و جهت اعمال را درست انتخاب کنیم و ACL را بدون پاک‌کردن کامل ویرایش کنیم.
+
+**چرا لازم است؟** ACL مثل فهرست مهمانان یک مهمانی است: نگهبان از بالا به پایین فهرست را می‌خواند و اولین سطر مطابق را اجرا می‌کند؛ اگر نامی نبود، رد می‌شود. اشتباه در ترتیب یا جهت یعنی یا همه رد می‌شوند یا همه رد نمی‌شوند. ACL پایه‌ی فیلتر روی روتر، NAT، VTY و QoS است.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) قواعد حاکم
+
+1. **از بالا به پایین**، اولین مطابقت اعمال می‌شود (First Match) و ارزیابی تمام می‌شود.
+2. **Implicit Deny:** در انتهای هر ACL یک `deny any` نامرئی هست.
+3. هر Interface، **در هر جهت** (in/out) و **برای هر پروتکل**، فقط **یک** ACL دارد.
+4. ACL ترافیکی که **خود روتر** می‌فرستد را فیلتر نمی‌کند.
+5. ACL خالی (ایجادشده بدون خط) ⇒ همه‌چیز Permit (چون چیزی برای Deny نیست)؛ ولی یک ACL با حتی یک خط، Implicit Deny دارد.
+
+#### ۲-۲) انواع
+
+| نوع | شماره | چه چیزی را می‌سنجد |
+|---|---|---|
+| Standard | 1–99 و 1300–1999 | فقط **آدرس مبدأ** |
+| Extended | 100–199 و 2000–2699 | مبدأ، مقصد، پروتکل، پورت |
+| Named Standard/Extended | نام | همان قابلیت با نام و ویرایش آسان‌تر |
+
+#### ۲-۳) Wildcard Mask
+
+Wildcard «معکوس Subnet Mask» است: بیت **0** یعنی «باید مطابق باشد»، بیت **1** یعنی «مهم نیست».
+
+``` text
+Wildcard = 255.255.255.255 - Subnet Mask
+/24 : mask 255.255.255.0   -> wildcard 0.0.0.255
+/26 : mask 255.255.255.192 -> wildcard 0.0.0.63
+/22 : mask 255.255.252.0   -> wildcard 0.0.3.255
+host: 0.0.0.0   (keyword: host x.x.x.x)
+any : 255.255.255.255 (keyword: any)
+```
+
+مثال: `192.168.10.0 0.0.0.63` ⇒ آدرس‌های 192.168.10.0 تا 192.168.10.63.
+
+مثال بازه‌ی چندشبکه‌ای: 172.16.32.0/20 ⇒ mask 255.255.240.0 ⇒ wildcard `0.0.15.255` ⇒ 172.16.32.0 تا 172.16.47.255.
+
+#### ۲-۳-۱) سنتکس Extended
+
+``` text
+access-list 110 permit tcp 10.10.0.0 0.0.0.255 host 10.20.0.10 eq 443
+access-list 110 deny   tcp 10.10.0.0 0.0.0.255 any eq 23
+access-list 110 permit ip any any
+```
+
+عملگرهای پورت: `eq`، `neq`، `gt`، `lt`، `range 8000 8100`. TCP با `established` (بسته‌هایی با ACK/RST). ICMP با نوع: `permit icmp any any echo-reply`. کلمه‌ی `log` برای ثبت هر تطبیق.
+
+#### ۲-۴) جای‌گذاری (Placement)
+
+- **Standard** فقط مبدأ را می‌بیند؛ پس **نزدیک مقصد** (تا ترافیک مجاز دیگر مبدأ مسدود نشود).
+- **Extended** دقیق است؛ پس **نزدیک مبدأ** (تا ترافیک بی‌فایده در شبکه نچرخد).
+
+#### ۲-۵) جهت
+
+- **in:** بسته‌ی ورودی به Interface، قبل از Routing.
+- **out:** بسته‌ی خروجی از Interface، پس از Routing.
+
+``` text
+interface GigabitEthernet0/0
+ ip access-group 110 in
+interface GigabitEthernet0/1
+ ip access-group BLOCK-TELNET out
+```
+
+### ۳) ACL نام‌دار و ویرایش
+
+``` text
+ip access-list extended BLOCK-TELNET
+ 10 deny tcp 10.10.0.0 0.0.0.255 any eq 23
+ 20 permit ip any any
+```
+
+- هر خط **Sequence Number** دارد (پیش‌فرض گام 10).
+- درج خط میانی: `15 permit tcp host 10.10.0.5 any eq 22`.
+- حذف: `no 20`.
+- مرتب‌سازی شماره‌ها: `ip access-list resequence BLOCK-TELNET 10 10`.
+- ویرایش ACL شماره‌دار هم با `ip access-list extended 110` ممکن است (در IOS مدرن).
+
+**ACL برای مدیریت راه‌دور (VTY):**
+
+``` text
+access-list 10 permit 10.50.0.0 0.0.0.255
+line vty 0 4
+ access-class 10 in
+```
+
+### ۴) بررسی
+
+``` text
+show access-lists
+show ip access-lists BLOCK-TELNET
+show ip interface GigabitEthernet0/0 | include access list
+```
+
+خروجی نمونه با شمارنده:
+
+``` text
+Extended IP access list BLOCK-TELNET
+    10 deny tcp 10.10.0.0 0.0.0.255 any eq telnet (15 matches)
+    20 permit ip any any (1204 matches)
+```
+
+### ۵) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — Standard.** فقط شبکه‌ی 10.10.0.0/24 به سرور وب دسترسی داشته باشد: Standard روی Interface نزدیک سرور:
+
+``` text
+access-list 10 permit 10.10.0.0 0.0.0.255
+interface GigabitEthernet0/2
+ ip access-group 10 out
+```
+
+**متوسط — Extended.** VLAN کاربران فقط HTTPS و DNS به سرورها؛ همه‌ی دیگر رد، ICMP مجاز:
+
+``` text
+ip access-list extended USERS-IN
+ 10 permit tcp 10.10.0.0 0.0.0.255 10.20.0.0 0.0.0.255 eq 443
+ 20 permit udp 10.10.0.0 0.0.0.255 host 10.20.0.5 eq 53
+ 30 permit icmp 10.10.0.0 0.0.0.255 any
+ 40 deny   ip any any log
+interface GigabitEthernet0/0
+ ip access-group USERS-IN in
+```
+
+**متوسط — محاسبه‌ی Wildcard.** بخواهید 192.168.8.0 تا 192.168.11.255 را بپوشانید: 4 شبکه‌ی /24 پیاپی ⇒ /22 ⇒ mask 255.255.252.0 ⇒ wildcard 0.0.3.255.
+
+``` text
+permit ip 192.168.8.0 0.0.3.255 any
+```
+
+**سخت — «ACL گذاشتم و همه‌ی ترافیک قطع شد».**
+
+1. آخر ACL `permit ip any any` نبود و Implicit Deny همه‌چیز را رد کرد.
+2. DHCP: کلاینت Discover را از 0.0.0.0 به 255.255.255.255 UDP 67 می‌فرستد؛ اگر ACL ورودی آن را اجازه ندهد، DHCP قطع می‌شود: `permit udp any eq 68 any eq 67`.
+3. پروتکل‌های مسیریابی (OSPF=89، EIGRP=88) روی Interface اگر ACL بسته باشد از بین می‌روند.
+4. `show access-lists` شمارنده‌ی `deny` در حال افزایش است ⇒ علت.
+
+**سخت — ACL درست ولی بی‌اثر.**
+
+1. جهت اشتباه: ACL `in` روی Interface خروجی گذاشته‌شده.
+2. ترتیب: خط عمومی بالاتر از خط خاص (`permit ip any any` قبل از `deny`).
+3. ACL روی Interface نیست: `show ip interface | include access list`.
+4. ترافیک خود روتر (مثلاً ping از روتر) فیلتر نمی‌شود.
+
+**سخت — Established.** `permit tcp any any established` فقط TCP را (با پرچم ACK/RST) می‌گذارد؛ یک حمله‌ی ACK Scan را مسدود نمی‌کند و ACL بدون وضعیت است (Stateless). برای وضعیت واقعی: فایروال Stateful (فصل ۱۱).
+
+### ۶) Lab (اجرا نشده)
+
+دو شبکه و یک روتر؛ ACL Extended با `log`؛ جهت in/out را عوض کنید و `show access-lists` را ببینید.
+
+### ۷) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| ACL | Access Control List | فهرست کنترل دسترسی |
+| ACE | Access Control Entry | یک خط ACL |
+| Wildcard | — | ماسک معکوس |
+| VTY | Virtual Teletype | خطوط ورود راه‌دور |
+| Stateless | — | بدون حافظه‌ی Session |
+
+### ۸) تمرین‌ها
+
+**ت1.** (ساده) Wildcard برای /27 چیست؟ *(پاسخ: 7-11-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Standard و Extended کجا قرار می‌گیرند؟ *(پاسخ: 7-11-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) `172.16.64.0 0.0.15.255` چه بازه‌ای را می‌پوشاند؟ *(پاسخ: 7-11-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (متوسط) چگونه خط 20 را از ACL نام‌دار حذف و خط 15 را درج می‌کنید؟ *(پاسخ: 7-11-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت5.** (سخت) پس از اعمال ACL، DHCP قطع شد؛ علت و رفع. *(پاسخ: 7-11-ت5 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۹) English Corner
+
+- *Place standard ACLs close to the destination and extended ACLs close to the source.*
+- *Every ACL ends with an implicit deny.*
+- **Q1.** Which ACL numbers are used for extended access lists? *(پاسخ: 7-11-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 7
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -2574,6 +2766,20 @@ Only when there is congestion on a link.
 **7-10-ت5** — ۱) ISP آدرس Inside Global را Route نکرده ۲) ACL Outside آن را می‌بندد ۳) Route برگشت/Default ناقص ۴) تعارض Pool با Interface یا آدرس تکراری.
 
 **7-10-Q1** — The inside global address.
+
+### پاسخ‌های درس افزوده‌ی 7-11 (فصل 7)
+
+**7-11-ت1** — /27 ⇒ mask 255.255.255.224 ⇒ wildcard 0.0.0.31.
+
+**7-11-ت2** — Standard نزدیک مقصد؛ Extended نزدیک مبدأ.
+
+**7-11-ت3** — Wildcard 0.0.15.255 ⇒ بازه‌ی 172.16.64.0 تا 172.16.79.255 (معادل 172.16.64.0/20).
+
+**7-11-ت4** — `ip access-list extended NAME` سپس `no 20` و `15 permit ...`.
+
+**7-11-ت5** — Implicit Deny یا نبود `permit udp any eq 68 any eq 67`، چون Discover از 0.0.0.0 به 255.255.255.255 UDP 67 می‌رود؛ رفع: اجازه‌ی DHCP قبل از خط Deny و بررسی شمارنده‌ها.
+
+**7-11-Q1** — 100–199 and 2000–2699.
 
 ---
 
