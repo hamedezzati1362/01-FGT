@@ -168,6 +168,20 @@ tls.alert_message
 
 - Wireshark User's Guide (TCP analysis)؛ RFC 1191 (PMTUD)، RFC 9293 (TCP)، RFC 792 (ICMP).
 
+### تعمیق: الگوهای خرابی در Capture
+
+| الگو | نشانه در Wireshark |
+|---|---|
+| بسته‌ی گم‌شده | `tcp.analysis.retransmission` |
+| Window کوچک | `tcp.analysis.zero_window` |
+| RST ناگهانی | `tcp.flags.reset==1` |
+| DNS کند | فاصله‌ی Query/Response > 1 s |
+
+**پرسش‌های مصاحبه**
+1. *Retransmission یعنی؟* ACK نرسیده.
+2. *Zero Window؟* گیرنده پر.
+3. *RST از کجا؟* سرور/فایروال.
+
 ## درس 28-1 — Capture درست: انتخاب نقطه، Filter، Sniffer FortiGate، PCAP، Offload و ملاحظات امنیت/قانون
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۰، ۱۴-۷، ۱۲-۹ · ≈ 8 ساعت**
@@ -330,6 +344,21 @@ diagnose sniffer packet any "host 10.1.4.10 and port 53" 4 50 l
 - tcpdump/pcap-filter manual
 
 <a id="l-28-2"></a>
+
+### تعمیق: نقطه‌ی Capture
+
+Sniff در سه نقطه: کلاینت، فایروال in، فایروال out. مقایسه نشان می‌دهد بسته کجا گم شد.
+
+``` text
+tcpdump -ni eth0 -w c.pcap host 198.51.100.8 and port 443
+```
+
+فیلتر دقیق، زمان کوتاه، حجم کم.
+
+**پرسش‌های مصاحبه**
+1. *چرا سه نقطه؟* مرز مسئله.
+2. *Snaplen؟* هدر کافی.
+3. *حریم؟* Payload حساس.
 
 ## درس 28-2 — تحلیل TCP و DNS در Capture: Handshake، Window، Retransmission، RTT، RST و الگوهای خرابی
 
@@ -495,6 +524,20 @@ diagnose sniffer packet any "host 10.1.4.10 and tcp" 4 300 l
 
 <a id="l-28-3"></a>
 
+### تعمیق: Handshake
+
+``` text
+SYN -> SYN,ACK -> ACK    (RTT = time between SYN and SYN,ACK)
+RTT 80 ms; window 64240
+```
+
+Retransmission با فاصله‌ی نمایی (1,2,4 s). DNS: Query/Response با TXID.
+
+**پرسش‌های مصاحبه**
+1. *RTT از کجا؟* SYN→SYN,ACK.
+2. *Retrans Backoff؟* دو برابر.
+3. *DNS TCP؟* پاسخ بزرگ.
+
 ## درس 28-3 — TLS در Capture: Handshake، SNI، Certificate، Alert، TLS 1.3 و اثر Inspection
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۰، ۱۶-۰، ۱۶-۵ · ≈ 8 ساعت**
@@ -649,6 +692,19 @@ diagnose sniffer packet any "host 10.1.4.10 and tcp port 443" 4 100 l
 
 <a id="l-28-4"></a>
 
+### تعمیق: TLS
+
+ClientHello (SNI) → ServerHello → Certificate (TLS1.2؛ در 1.3 رمز) → Finished. Alert نمونه: `handshake_failure`، `unknown_ca`.
+
+``` text
+wireshark filter: tls.handshake.type == 1
+```
+
+**پرسش‌های مصاحبه**
+1. *SNI چرا دیده می‌شود؟* قبل از رمز (ECH استثنا).
+2. *unknown_ca؟* CA نامعتبر.
+3. *TLS1.3 تفاوت؟* Certificate رمز.
+
 ## درس 28-4 — ده‌پرسش عیب‌یابی و بلوک‌های TS: چارچوب، سه پرونده‌ی کامل و کتابخانه‌ی TS
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۱۴-۷، ۲۸-۱ تا ۲۸-۳ · ≈ 9 ساعت**
@@ -791,6 +847,15 @@ get system performance status
 
 <a id="l-28-5"></a>
 
+### تعمیق: بلوک TS
+
+هر پرونده: علامت، فرضیه، آزمون، Evidence، نتیجه.
+
+**پرسش‌های مصاحبه**
+1. *ده پرسش؟* چارچوب 14-1.
+2. *Evidence؟* pcap/Log.
+3. *نتیجه؟* علت ریشه.
+
 ## درس 28-5 — آزمون عملی فصل ۲۸: تحلیل سه PCAP و RCA — صورت مسئله، کلید پاسخ و Rubric
 
 **فصل 28 · بازنویسی عمیق · پیش‌نیاز: ۲۸-۱ تا ۲۸-۴، ۱۴-۲ · ≈ 12 ساعت**
@@ -927,6 +992,15 @@ tls.alert_message
 
 - Wireshark User Guide
 - RFC 1191
+
+### تعمیق: Rubric
+
+تحلیل هر PCAP ۲۵: الگو، Evidence، علت، رفع؛ ۲۵ گزارش.
+
+**پرسش‌های مصاحبه**
+1. *RCA؟* علت ریشه.
+2. *PCAP حساس؟* حذف Payload.
+3. *ثبت؟* شماره‌ی بسته.
 
 ## پاسخ‌های فصل 28
 
@@ -1214,6 +1288,15 @@ end
 
 - NIST SP 800-61 Rev.2 — Computer Security Incident Handling Guide (مدل کلاسیک ۵ فاز؛ **توجه:** Rev.2 در ۲۰۲۵ با Rev.3 مبتنی بر CSF 2.0 جایگزین/Withdrawn شده؛ برای کار جدید Rev.3 را ببینید)؛ MITRE ATT&CK.
 
+### تعمیق: چرخه‌ی پاسخ به حادثه
+
+آماده‌سازی ← شناسایی ← مهار ← ریشه‌کنی ← بازیابی ← درس‌آموخته (NIST SP 800-61). مثال: Brute-force VPN ⇒ شناسایی با Log ⇒ مهار با Local-in Policy ⇒ ریشه‌کنی با MFA.
+
+**پرسش‌های مصاحبه**
+1. *Triage؟* اولویت‌بندی.
+2. *IOC/TTP؟* نشانه/تکنیک.
+3. *مهار قبل از رفع؟* بله.
+
 ## درس 29-1 — Detection عملی: از Log فایروال به IOC/TTP، Baseline، آستانه، Correlation و Alert
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰، ۲۷-۰، ۲۷-۱، ۲۸-۲ · ≈ 8 ساعت**
@@ -1365,6 +1448,19 @@ execute log display
 
 <a id="l-29-2"></a>
 
+### تعمیق: Detection از Log
+
+قاعده‌ی نمونه: ≥۲۰ Deny به پورت‌های متفاوت از یک IP در ۱ دقیقه ⇒ Port Scan.
+
+``` text
+srcip=203.0.113.50 action=deny dstport in {22,23,80,443,3389,...}
+```
+
+**پرسش‌های مصاحبه**
+1. *FP؟* اسکنر داخلی.
+2. *Baseline؟* نرمال.
+3. *Enrichment؟* GeoIP.
+
 ## درس 29-2 — Response و Playbook: مهار، Evidence، ریشه‌کنی، بازیابی و ارتباطات با مثال‌های اجرایی
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۰، ۲۹-۱، ۱۳-۷ · ≈ 8 ساعت**
@@ -1509,6 +1605,15 @@ diagnose sys session filter clear
 
 <a id="l-29-3"></a>
 
+### تعمیق: Playbook
+
+گام‌ها: ۱) تأیید ۲) مهار (Block IP/Quarantine) ۳) Evidence (Log/pcap/Hash) ۴) ریشه‌کنی ۵) بازیابی ۶) گزارش. ثبت Chain of Custody.
+
+**پرسش‌های مصاحبه**
+1. *Evidence ناپایا؟* ابتدا RAM/Session.
+2. *Quarantine؟* ایزوله.
+3. *ارتباطات؟* ذی‌نفعان.
+
 ## درس 29-3 — Lifecycle، Patch و Vulnerability Management: Inventory، EoL، PSIRT/CVE، اولویت‌بندی و Rollback
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۴، ۲۹-۰ · ≈ 8 ساعت**
@@ -1649,6 +1754,15 @@ execute backup config sftp pre-patch.conf 192.168.90.10 backup-user <PASSWORD>
 
 <a id="l-29-4"></a>
 
+### تعمیق: Patch و آسیب‌پذیری
+
+Inventory نسخه‌ها، پایش PSIRT، پنجره‌ی Patch، آزمون Lab. EoL: برنامه‌ی جایگزینی.
+
+**پرسش‌های مصاحبه**
+1. *اولویت؟* قابل‌بهره‌برداری از اینترنت.
+2. *Rollback؟* آماده.
+3. *CVSS؟* تنها معیار نیست.
+
 ## درس 29-4 — گزارش حادثه (PIR) و آزمون عملی Blue Team: سناریوی چندمرحله‌ای با کلید و Rubric
 
 **فصل 29 · بازنویسی عمیق · پیش‌نیاز: ۲۹-۱ تا ۲۹-۳ · ≈ 12 ساعت**
@@ -1784,6 +1898,15 @@ execute log display
 ### ۱۵) منابع
 
 - NIST SP 800-61 Rev.2 (در ۲۰۲۵ با Rev.3 جایگزین شده؛ مدل ۵ فاز کلاسیک مرجع آموزشی)
+
+### تعمیق: PIR
+
+گزارش: Timeline، اثر، علت ریشه، اقدام، درس‌ها، اقدام پیشگیرانه (Blameless).
+
+**پرسش‌های مصاحبه**
+1. *Blameless؟* تمرکز بر سیستم.
+2. *Metrics؟* MTTD/MTTR.
+3. *پیگیری؟* Action Owner.
 
 ## پاسخ‌های فصل 29
 
@@ -2027,6 +2150,15 @@ PIR با قالب: Summary، Impact، Timeline، Root cause، Actions.
 
 - NIST SP 800-41 Rev.1؛ ITIL 4 (Change Enablement)؛ Fortinet FortiConverter (مرجع رسمی؛ لایسنس/نسخه را بررسی کنید).
 
+### تعمیق: روش Migration
+
+مراحل: Inventory ← Hygiene ← نگاشت ← Lab ← Cutover ← Rollback. مثال: ۱۲۰۰ ACL ⇒ پس از Hygiene ۴۰۰ Policy.
+
+**پرسش‌های مصاحبه**
+1. *چرا Hygiene؟* انتقال زباله.
+2. *Big Bang؟* ریسک بالا.
+3. *Parallel Run؟* مقایسه.
+
 ## درس 30-1 — Migration: Inventory، Rule Hygiene و نگاشت دقیق Object/NAT/Policy/VPN به FortiGate
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰، ۲۵-۱، ۱۳-۱ · ≈ 8 ساعت**
@@ -2179,6 +2311,15 @@ FortiConverter (لایسنس/سرویس) Config را تبدیل می‌کند و
 
 <a id="l-30-2"></a>
 
+### تعمیق: نگاشت
+
+Object/NAT/Policy: هر مورد Cisco به معادل Fortinet با تفاوت Stateful. Hit Count قدیمی برای حذف.
+
+**پرسش‌های مصاحبه**
+1. *NAT Order؟* تفاوت.
+2. *Service Object؟* پورت.
+3. *Implicit Deny؟* مقایسه.
+
 ## درس 30-2 — Plan، Cutover و Rollback: برنامه‌ی تغییر، معیار Go/No-Go، Trigger و ارتباطات
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۰، ۳۰-۱، ۳۲-۰ · ≈ 8 ساعت**
@@ -2319,6 +2460,19 @@ get system status
 - Google SRE Book (Release engineering)
 
 <a id="l-30-3"></a>
+
+### تعمیق: Cutover
+
+پنجره، Checklist، معیار Go/No-Go، Rollback < ۳۰ دقیقه.
+
+``` text
+T-7d freeze ; T-1h backup ; T0 switch ; T+15m verify ; T+30m decide
+```
+
+**پرسش‌های مصاحبه**
+1. *No-Go؟* معیار قبلی.
+2. *Rollback؟* ساده.
+3. *ارتباط؟* اطلاع‌رسانی.
 
 ## درس 30-3 — تست پیش/پس Migration و Evidence: Test Matrix، مقایسه‌ی Session/Log، RCA اختلاف‌ها
 
@@ -2478,6 +2632,15 @@ get vpn ipsec tunnel summary
 Evidence: E-31..E-38 (baseline, post-check, diffs, decision, timestamp, operator)
 ```
 
+### تعمیق: تست پیش/پس
+
+Matrix: مبدأ، مقصد، سرویس، نتیجه‌ی قبل/بعد. تفاوت = تحقیق.
+
+**پرسش‌های مصاحبه**
+1. *Evidence؟* خروجی دو سمت.
+2. *Automation؟* اسکریپت.
+3. *Negative؟* حتماً.
+
 ## درس 30-4 — Gate G11: آزمون عملی Migration — صورت مسئله، کلید پاسخ کامل و Rubric
 
 **فصل 30 · بازنویسی عمیق · پیش‌نیاز: ۳۰-۱ تا ۳۰-۳ · ≈ 12 ساعت**
@@ -2621,6 +2784,15 @@ get system session-ttl
 ### ۱۵) منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Upgrade and migration
+
+### تعمیق: Rubric G11
+
+Inventory ۲۰، نگاشت ۲۵، Cutover ۲۵، تست ۲۰، گزارش ۱۰.
+
+**پرسش‌های مصاحبه**
+1. *Rollback آزمون؟* در Lab.
+2. *Hit Count؟* حذف.
+3. *ثبت؟* Evidence.
 
 ## پاسخ‌های فصل 30
 

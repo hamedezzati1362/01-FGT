@@ -175,6 +175,23 @@ FortiGate: Network → OSPF/BGP؛ VPN → IPsec Tunnels. CSR: CLI. **Verificatio
 
 - Cisco: IOS XE OSPF/IKEv2 Configuration Guides؛ Fortinet Docs: FortiOS 7.0 CLI Reference (`config router ospf`، `phase1-interface`)؛ RFC 2328، RFC 7296.
 
+### تعمیق: نگاشت مفهوم با یک جدول عملی
+
+| مفهوم | Cisco | FortiGate |
+|---|---|---|
+| Interface مجازی L3 | SVI | VLAN Interface |
+| ACL | access-list | Firewall Policy |
+| NAT | ip nat | Policy NAT/VIP |
+| Route-map | route-map | Route-map/Policy Route |
+| VRF | vrf | VDOM (تقریبی) |
+
+همه‌ی نگاشت‌ها تقریبی‌اند؛ تفاوت Stateful (ACL بدون وضعیت در Cisco) را فراموش نکنید.
+
+**پرسش‌های مصاحبه**
+1. *VRF = VDOM؟* ایده مشابه نه یکسان.
+2. *ACL Stateful؟* نه.
+3. *انتقال Policy؟* بازنویسی نه ترجمه تحت‌اللفظی.
+
 ## درس 25-1 — نگاشت مفاهیم Cisco و Fortinet: برگه‌ی تطبیق دستورها و مدل‌های پردازش
 
 **فصل 25 · بازنویسی عمیق · پیش‌نیاز: فصل ۲ تا ۱۵ · ≈ 11 ساعت**
@@ -328,6 +345,15 @@ diagnose sys session list
 - Fortinet FortiOS 7.0 Administration Guide
 
 <a id="l-25-2"></a>
+
+### تعمیق: برگه‌ی تطبیق
+
+برای هر قابلیت: دستور Cisco، دستور FortiGate، دستور Verify هر دو، تفاوت رفتار. مثال: `show ip route` ↔ `get router info routing-table all`; `show ip ospf neighbor` ↔ `get router info ospf neighbor`.
+
+**پرسش‌های مصاحبه**
+1. *Verify معادل؟* جدول بالا.
+2. *تفاوت Default؟* مثال Admin Distance.
+3. *Syntax؟* config tree.
 
 ## درس 25-2 — OSPF و BGP بین FortiGate و CSR: برگه‌ی پارامتر، پیکربندی دوطرفه، Redistribution و عیب‌یابی مقایسه‌ای
 
@@ -528,6 +554,22 @@ MTU (Exstart)، Network Type (DR/BDR در یک سر)، Auth، Hello/Dead، Timer
 
 <a id="l-25-3"></a>
 
+### تعمیق: OSPF و BGP بین FGT و CSR
+
+نقاط ناهمخوانی OSPF: Area، Network Type، MTU، Hello/Dead، Authentication. BGP: AS، Update-source، Next-hop، Route-map.
+
+``` text
+show ip ospf neighbor
+get router info ospf neighbor
+show ip bgp summary
+get router info bgp summary
+```
+
+**پرسش‌های مصاحبه**
+1. *گیر در ExStart؟* MTU.
+2. *BGP Idle؟* TCP/179.
+3. *Policy؟* Route-map دو سر.
+
 ## درس 25-3 — IPsec چندسازنده: روش مقایسه‌ی Debug، جدول مغایرت و Interop آزمایشی FGT–CSR
 
 **فصل 25 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۳، ۲۵-۱، ۲۵-۲ · ≈ 11 ساعت**
@@ -669,6 +711,15 @@ show crypto ikev2 sa
 - Cisco IOS-XE IKEv2
 
 <a id="l-25-4"></a>
+
+### تعمیق: IPsec چندسازنده
+
+روش: Proposal یکسان، Selector یکسان، Lifetime، Identity؛ Debug دو سر در یک زمان. مقایسه: `diagnose vpn ike` و `debug crypto ikev2`.
+
+**پرسش‌های مصاحبه**
+1. *Lifetime ناهمخوان؟* Rekey ناهماهنگ.
+2. *Identity؟* IP/FQDN.
+3. *Selector؟* VTI در برابر ACL.
 
 ## درس 25-4 — آزمون معماری ۶ (FGT+CSR): IPsec چندسازنده، مقایسه‌ی Debug و جدول مغایرت — کلید پاسخ و Rubric
 
@@ -841,6 +892,15 @@ show crypto ipsec sa
 
 - Cisco IOS-XE IKEv2 guide
 - Fortinet FortiOS 7.0 Administration Guide: IPsec
+
+### تعمیق: Rubric معماری ۶
+
+نگاشت ۲۵، IPsec ۲۵، Routing ۲۵، Evidence ۱۵، گزارش ۱۰.
+
+**پرسش‌های مصاحبه**
+1. *Evidence؟* خروجی دو سر.
+2. *آزمون؟* Ping دوطرفه.
+3. *ثبت؟* تفاوت‌ها.
 
 ## پاسخ‌های فصل 25
 
@@ -1120,6 +1180,17 @@ end
 
 - Fortinet Docs: [Device Manager](https://docs.fortinet.com/document/fortimanager/7.0.0/administration-guide/478145/device-manager)، [Add FortiAnalyzer](https://docs.fortinet.com/document/fortimanager/7.0.0/administration-guide/654379/add-fortianalyzer)، [Installing policy packages](https://docs.fortinet.com/document/fortimanager/7.0.7/administration-guide/153046/installing-policy-packages-and-device-settings)، [config log syslogd setting](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/456620/config-log-syslogd-setting).
 
+### تعمیق: چه زمانی FMG/FAZ؟
+
+معیار: بیش از ~۵ دستگاه، نیاز به Policy Package یکسان (FMG) یا Log متمرکز و گزارش (FAZ). هر دو Needs-License.
+
+**ADOM:** جداسازی دامنه‌ی مدیریتی.
+
+**پرسش‌های مصاحبه**
+1. *بدون FMG؟* Git/Ansible.
+2. *FAZ جایگزین؟* rsyslog/SIEM.
+3. *Install Target؟* انتشار Policy.
+
 ## درس 26-1 — FMG و FAZ: نقش‌ها، معماری، ADOM، لایسنس و تصمیم «ابزار یا جایگزین» با تحلیل هزینه و ریسک
 
 **فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۰، ۲۲-۰، ۲۷-۰ · ≈ 8 ساعت**
@@ -1287,6 +1358,15 @@ get system central-management
 - [Installing policy packages](https://docs.fortinet.com/document/fortimanager/7.0.7/administration-guide/153046/installing-policy-packages-and-device-settings)
 
 <a id="l-26-2"></a>
+
+### تعمیق: نقش‌ها
+
+FMG: Config، Policy Package، Device Manager. FAZ: Log، گزارش، Event Handler. ارتباط FGFM (TCP/541). **لایسنس/ظرفیت** بر اساس تعداد دستگاه و GB/Day.
+
+**پرسش‌های مصاحبه**
+1. *Revision؟* نسخه‌ی تغییرات.
+2. *Script؟* تغییر انبوه.
+3. *HA؟* دو FMG.
 
 ## درس 26-2 — Syslog مرکزی (جایگزین FAZ): FortiGate → rsyslog با TCP/TLS، قالب، Parse، Retention و آزمون
 
@@ -1471,6 +1551,25 @@ execute ping 192.168.90.20
 
 <a id="l-26-3"></a>
 
+### تعمیق: Syslog مرکزی
+
+``` text
+config log syslogd setting
+ set status enable
+ set server 10.50.0.20
+ set mode reliable
+ set port 514
+ set format default
+end
+```
+
+در rsyslog: `module(load="imtcp") input(type="imtcp" port="514")`. تأیید: `logger` و رسیدن Log.
+
+**پرسش‌های مصاحبه**
+1. *UDP/TCP؟* Reliable بهتر.
+2. *TLS؟* حفاظت.
+3. *Retention؟* سیاست.
+
 ## درس 26-3 — Backup خودکار و مدیریت Config با Git: Sanitize، Diff، Audit، Restore و Drift
 
 **فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۰، ۲۷-۷ · ≈ 8 ساعت**
@@ -1625,6 +1724,23 @@ git diff HEAD~1 -- fgt-A.sanitized.conf
 
 <a id="l-26-4"></a>
 
+### تعمیق: Backup با Git
+
+Sanitize: حذف `ENC` و Secret؛ Diff هفتگی.
+
+``` text
+execute backup config ftp cfg.conf 10.50.0.30 user ***
+git add -A && git commit -m "daily"
+git diff HEAD~1 -- cfg.conf
+```
+
+هرگز Secret در ریپو.
+
+**پرسش‌های مصاحبه**
+1. *Sanitize؟* حذف رمز.
+2. *Diff؟* تغییر ناخواسته.
+3. *Restore آزمون؟* دوره‌ای.
+
 ## درس 26-4 — طراحی معماری ۹ (مدیریت مرکزی و عملیات): RBAC، Change، Audit و آزمون با Rubric
 
 **فصل 26 · بازنویسی عمیق · پیش‌نیاز: ۲۶-۱ تا ۲۶-۳، ۳۲-۱ · ≈ 11 ساعت**
@@ -1771,6 +1887,15 @@ Alert: «Config changed» و «Admin login failed» ≥ 5. Retention لاگ ۱ �
 ``` text
 Audit alert: 'Configuration changed' by user net01 at 22:03 -> ticket CHG-0123
 ```
+
+### تعمیق: معماری مدیریت و عملیات
+
+Runbook، Change، Monitoring، Backup، RBAC. شاخص: RPO/RTO مستند.
+
+**پرسش‌های مصاحبه**
+1. *RBAC؟* Profile.
+2. *Out-of-band؟* Mgmt شبکه‌ی جدا.
+3. *Audit؟* Log تغییر.
 
 ## پاسخ‌های فصل 26
 
@@ -2034,6 +2159,15 @@ diagnose sys top 2 20
 
 - Fortinet Docs: [Sample logs by log type](https://docs.fortinet.com/document/fortigate/7.0.5/administration-guide/986892/sample-logs-by-log-type)، [config log syslogd setting](https://docs.fortinet.com/document/fortigate/7.0.0/cli-reference/456620/config-log-syslogd-setting)؛ NIST SP 800-92 — Guide to Log Management.
 
+### تعمیق: Baseline با عدد
+
+Baseline: میانگین CPU 18٪، Session 25k، Throughput Peak 400 Mbps. هشدار: CPU > 70٪ برای ۱۰ دقیقه؛ Session > 80٪ ظرفیت.
+
+**پرسش‌های مصاحبه**
+1. *چرا Baseline؟* تشخیص غیرعادی.
+2. *آستانه؟* درصدی از Peak.
+3. *Alert Fatigue؟* آستانه‌ی دقیق.
+
 ## درس 27-1 — Logging در FortiGate: انواع Log، سطح ثبت، Policy Logging، ذخیره‌ی محلی و طراحی حجم/Retention
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰، ۲۶-۲، ۱۴-۷ · ≈ 8 ساعت**
@@ -2214,6 +2348,22 @@ execute log display
 
 <a id="l-27-2"></a>
 
+### تعمیق: انواع Log
+
+Traffic، Event، UTM، Local. `config log setting; set fwpolicy-implicit-log enable`.
+
+``` text
+config log setting
+ set fwpolicy-implicit-log enable
+ set local-in-allow enable
+end
+```
+
+**پرسش‌های مصاحبه**
+1. *Log دیسک؟* پر شدن.
+2. *Log All در برابر UTM؟* حجم.
+3. *زمان؟* NTP.
+
 ## درس 27-2 — مانیتورینگ با SNMP و Zabbix: معیارها، Template، Trigger، Baseline و کاهش Alert نویزی
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰، ۲۷-۱ · ≈ 8 ساعت**
@@ -2375,6 +2525,29 @@ snmpwalk -v3 -l authPriv -u <USER> -a SHA -A <AUTHPASS> -x AES -X <PRIVPASS> 192
 - NIST SP 800-137 (Continuous monitoring)
 
 <a id="l-27-3"></a>
+
+### تعمیق: SNMP و Zabbix
+
+``` text
+config system snmp sysinfo
+ set status enable
+end
+config system snmp community
+ edit 1
+  set name "ro-comm"
+  config hosts
+   edit 1
+    set ip 10.50.0.20 255.255.255.255
+   next
+  end
+ next
+end
+```
+
+ترجیح SNMPv3. OIDها: CPU، Memory، Session، Interface. **پرسش‌های مصاحبه**
+1. *v2c ریسک؟* رمز متن‌ساده.
+2. *Trigger؟* آستانه.
+3. *Template؟* آماده‌ی Fortinet.
 
 ## درس 27-3 — REST API و Automation امن: احراز هویت، Trusted Host، GET/PUT، Idempotency، Rollback و آزمون
 
@@ -2543,6 +2716,24 @@ curl --cacert fgt-ca.pem -H "Authorization: Bearer $FGT_TOKEN" https://192.168.9
 
 <a id="l-27-4"></a>
 
+### تعمیق: API امن
+
+``` text
+config system api-user
+ edit "zabbix"
+  set accprofile "ro-profile"
+  set trusthost1 10.50.0.20 255.255.255.255
+ next
+end
+```
+
+Trusted Host اجباری؛ فقط GET؛ توکن در Vault.
+
+**پرسش‌های مصاحبه**
+1. *Accprofile؟* حداقل دسترسی.
+2. *Rate limit؟* حفاظت.
+3. *Log API؟* ممیزی.
+
 ## درس 27-4 — Hardening مدیریتی عملی و Backup/Restore: اجرای چک‌لیست، آزمون منفی و اثبات بازیابی
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۷، ۱۲-۸، ۲۶-۳ · ≈ 8 ساعت**
@@ -2693,6 +2884,22 @@ execute backup config sftp hardening-test.conf 192.168.90.10 backup-user <PASSWO
 - Fortinet: Hardening your FortiOS
 
 <a id="l-27-5"></a>
+
+### تعمیق: Hardening
+
+چک‌لیست: Admin Trusted Host، 2FA، غیرفعال HTTP، Timeout، Banner، Backup رمزگذاری‌شده.
+
+``` text
+config system global
+ set admintimeout 10
+ set admin-https-ssl-versions tlsv1-2 tlsv1-3
+end
+```
+
+**پرسش‌های مصاحبه**
+1. *چرا admintimeout؟* Session رها.
+2. *Restore آزمون؟* در Lab.
+3. *Default Admin؟* تغییر نام/غیرفعال.
 
 ## درس 27-5 — Gate G10: آزمون عملی Logging، Monitoring، Hardening و Backup — کلید پاسخ کامل و Rubric
 
@@ -2850,6 +3057,15 @@ execute backup config tftp f.conf 10.99.0.5
 
 - Fortinet FortiOS 7.0 Administration Guide: Logging; SNMP; Backup
 
+### تعمیق: Rubric G10
+
+Log ۲۰، Monitoring ۲۰، API ۱۵، Hardening ۲۵، Backup/Restore ۲۰.
+
+**پرسش‌های مصاحبه**
+1. *Evidence Restore؟* Diff Config.
+2. *Alert نمونه؟* CPU.
+3. *API آزمون؟* GET موفق/رد.
+
 ## درس 27-7 — Hardening، Backup/Restore و API: امن‌سازی مدیریتی و بازیابی قابل‌اثبات
 
 **فصل ۲۷ · درس افزوده (پس از ۲۷-۵) · پیش‌نیاز: ۱۲-۸، ۲۶-۰، ۲۷-۰ · ≈ ۶ ساعت**
@@ -2964,6 +3180,15 @@ execute backup config sftp fgt-daily.conf 192.168.90.10 backup-user <PASSWORD>
 ### ۱۰) منابع
 
 - Fortinet: «Hardening your FortiOS» (مرجع رسمی؛ نسخه‌ی 7.0 را بررسی کنید)؛ CIS Fortinet FortiGate Benchmark؛ NIST SP 800-53 (CM، AU).
+
+### تعمیق: امن‌سازی مدیریتی
+
+Mgmt جدا، Local-in Policy، Syslog، API Trusted Host، رمز Backup. تأیید با اسکنر پورت از Users: پورت‌های مدیریت باید بسته باشند.
+
+**پرسش‌های مصاحبه**
+1. *Out-of-band؟* شبکه‌ی جدا.
+2. *نسخه؟* وصله‌ی PSIRT.
+3. *اسکن؟* nmap از Users.
 
 ## پاسخ‌های فصل 27
 
