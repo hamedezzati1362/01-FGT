@@ -13666,6 +13666,176 @@ show ip route ospf
 - RFC 3101 (NSSA)
 - Cisco OSPF design guide
 
+<a id="l-6-8"></a>
+
+## درس 6-8 — تفسیر وضعیت HSRP و VRRP: نقش‌ها، Priority، Preempt، Track و عیب‌یابی
+
+**فصل 6 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 3.4: Interpret the operational status of First Hop Redundancy Protocols — HSRP and VRRP) · پیش‌نیاز: ۶-FHRP**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** HSRP و VRRP چه می‌کنند، هر وضعیت (Active، Standby، Master، Backup) چه معنایی دارد و چطور از روی خروجی `show` تشخیص دهیم کدام روتر Gateway واقعی است و چرا Failover رخ داده یا نداده است.
+
+**چرا لازم است؟** تمام کامپیوترهای یک VLAN فقط یک Default Gateway می‌شناسند. اگر آن روتر بسوزد، همه بی‌اینترنت می‌مانند. FHRP (First Hop Redundancy Protocol، یعنی «پروتکل افزونگی اولین Hop») دو روتر را پشت یک **آدرس IP مجازی** می‌گذارد؛ Hostها به آدرس مجازی وصل‌اند و نمی‌دانند کدام روتر واقعاً جواب می‌دهد. سؤال آزمون «از روی خروجی show تفسیر کنید» است؛ پس باید خواندن را تمرین کنیم.
+
+### ۲) توضیح از پایه
+
+| ویژگی | HSRP | VRRP |
+|---|---|---|
+| مالک | Cisco | استاندارد باز (RFC 5798) |
+| نقش‌ها | Active / Standby | Master / Backup |
+| آدرس Multicast | 224.0.0.2 (v1) ، 224.0.0.102 (v2) | 224.0.0.18 |
+| پروتکل | UDP 1985 | IP Protocol 112 |
+| MAC مجازی | 0000.0C07.ACxx (v1) ، 0000.0C9F.Fxxx (v2) | 0000.5E00.01xx |
+| Priority پیش‌فرض | 100 | 100 |
+| Preempt پیش‌فرض | **خاموش** | **روشن** |
+| Hello / Hold | 3 s / 10 s | Advertisement 1 s ؛ Master Down ≈ 3 × 1 + Skew |
+
+`xx` در MAC همان شماره‌ی گروه (به هگزا) است: گروه 1 ⇒ `0000.0C07.AC01`.
+
+#### ۲-۱) وضعیت‌های HSRP
+
+``` text
+Initial -> Learn -> Listen -> Speak -> Standby -> Active
+```
+
+- **Active:** روتر اصلی؛ به ARP آدرس مجازی با MAC مجازی جواب می‌دهد و ترافیک را عبور می‌دهد.
+- **Standby:** پشتیبان؛ Hello Active را پایش و آماده‌ی جایگزینی.
+- **Listen:** روتر سوم؛ Hello را می‌شنود ولی نقش ندارد.
+- **Speak/Learn/Initial:** مراحل اولیه‌ی انتخاب.
+
+VRRP فقط Master و Backup (و Init) دارد.
+
+#### ۲-۲) انتخاب
+
+بالاترین **Priority** برنده است؛ اگر برابر بود، بالاترین **IP Interface**. در VRRP روتری که آدرس مجازی را «مالک» آدرس واقعی خود دارد، Priority 255 می‌گیرد و حتماً Master است.
+
+**Preempt:** اگر روتری با Priority بالاتر بعداً برگردد (یا Priority عوض شود)، آیا نقش را پس می‌گیرد؟ در HSRP تا `preempt` نباشد، خیر (Standby فعلی Active می‌ماند).
+
+**Track:** اگر Uplink روتر Active قطع شود ولی Interface داخلی بالا باشد، ترافیک به چاه می‌رود. با Track، Priority کاهش می‌یابد تا Standby برنده شود.
+
+### ۳) دستورها (Unverified)
+
+**HSRP**
+
+``` text
+interface Vlan10
+ ip address 10.10.0.2 255.255.255.0
+ standby version 2
+ standby 1 ip 10.10.0.254
+ standby 1 priority 110
+ standby 1 preempt
+ standby 1 track 1 decrement 20
+```
+
+**VRRP (سینتکس کلاسیک)**
+
+``` text
+interface Vlan10
+ ip address 10.10.0.2 255.255.255.0
+ vrrp 1 ip 10.10.0.254
+ vrrp 1 priority 110
+ vrrp 1 preempt
+```
+
+(روی IOS XE جدید ممکن است قالب `fhrp version vrrp v3` و `vrrp 1 address-family ipv4` لازم باشد.)
+
+**بررسی**
+
+``` text
+show standby brief
+show standby Vlan10
+show vrrp brief
+show vrrp
+```
+
+### ۴) خواندن خروجی
+
+``` text
+R1# show standby brief
+                     P indicates configured to preempt.
+Interface   Grp  Pri P State    Active          Standby         Virtual IP
+Vl10        1    110 P Active   local           10.10.0.3       10.10.0.254
+```
+
+تفسیر: R1 برای گروه 1 در VLAN10 `Active` است (Priority 110 با Preempt). Standby روتر 10.10.0.3 است. آدرس مجازی 10.10.0.254.
+
+``` text
+R2# show vrrp brief
+Interface   Grp Pri Time  Own Pre State   Master addr     Group addr
+Vl10        1   100 3609      Y  Backup  10.10.0.2       10.10.0.254
+```
+
+تفسیر: R2 `Backup` است؛ Master آدرس 10.10.0.2 (R1). `Pre Y` یعنی Preempt فعال.
+
+### ۵) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — Gateway کلاینت.** کلاینت Gateway=10.10.0.254. ARP آن را به `0000.0C07.AC01` حل می‌کند (HSRP v1 گروه 1). با `show standby` روتر Active مشخص است.
+
+**متوسط — محاسبه‌ی Track.** R1: Priority 110، Track Uplink با Decrement 20؛ R2: Priority 100 با Preempt.
+
+``` text
+R1 after Uplink fails = 110 - 20 = 90
+R2 = 100 -> 100 > 90 and preempt enabled -> R2 becomes Active
+```
+
+اگر R2 Preempt نداشته باشد، حتی با 100 > 90 عوض نمی‌شود (خطای رایج).
+
+**متوسط — Failover Time.** HSRP پیش‌فرض: Hold 10 ثانیه؛ پس پس از مرگ Active حدود ۱۰ ثانیه تا Standby جایگزین شود. با Timerهای کوتاه (`standby 1 timers msec 200 msec 750`) به کمتر از ۱ ثانیه می‌رسد (CPU بیشتر).
+
+**سخت — هر دو Active هستند (Split).**
+
+``` text
+R1 show standby brief : Vl10 1 110 P Active  local   unknown   10.10.0.254
+R2 show standby brief : Vl10 1 100   Active  local   unknown   10.10.0.254
+```
+
+تفسیر: هر دو `unknown` برای Standby یعنی Helloها به هم نمی‌رسند.
+
+1. ارتباط L2 بین دو روتر (VLAN، Trunk، `allowed vlan`).
+2. ACL/فایروال که UDP 1985/Multicast را می‌بندد.
+3. شماره‌ی گروه یا نسخه‌ی HSRP متفاوت (v1/v2).
+4. Authentication ناهمخوان.
+5. پس از رفع: `show standby` باید Standby را نشان دهد.
+
+**سخت — Flapping.** Failover هر چند دقیقه رخ می‌دهد: Preempt + Track با Uplink ناپایدار. رفع: `standby 1 preempt delay minimum 60` تا قبل از Preempt صبر کند.
+
+### ۶) Lab (اجرا نشده)
+
+دو سوییچ لایه‌ی ۳ و یک Host؛ HSRP را بسازید، Active را خاموش کنید و ping مداوم را بشمارید؛ سپس VRRP.
+
+### ۷) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| FHRP | First Hop Redundancy Protocol | افزونگی Gateway |
+| HSRP | Hot Standby Router Protocol | FHRP سیسکو |
+| VRRP | Virtual Router Redundancy Protocol | FHRP استاندارد |
+| VIP | Virtual IP | آدرس مجازی |
+| Preempt | — | پس‌گرفتن نقش |
+
+### ۸) تمرین‌ها
+
+**ت1.** (ساده) Active و Standby در HSRP چه می‌کنند؟ *(پاسخ: 6-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Preempt پیش‌فرض در HSRP و VRRP؟ *(پاسخ: 6-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) Priority 120 با Track Decrement 30؛ پس از Fail چند؟ *(پاسخ: 6-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (متوسط) MAC مجازی HSRP v1 گروه 10؟ *(پاسخ: 6-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت5.** (سخت) دو روتر هر دو Active؛ پنج گام. *(پاسخ: 6-8-ت5 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۹) English Corner
+
+- *Without preempt, a recovered higher-priority router does not take back the active role.*
+- *HSRP is Cisco proprietary; VRRP is an open standard.*
+- **Q1.** What does the word unknown in the Standby column indicate? *(پاسخ: 6-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 6
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -14052,7 +14222,21 @@ Area بدون اتصال به Area 0 Virtual Link می‌خواهد که ناپ�
 
 پاسخ انگلیسی در پایین آمده است؛ جمع‌بندی: LSA نوع ۳ توسط ABR تولید می‌شود، در Area مبدأ ساخته و در Areaهای دیگر Flood می‌شود؛ جدول مسیر آن را با O IA نشان می‌دهد.
 
+### پاسخ‌های درس افزوده‌ی 6-8 (فصل 6)
 
+**6-8-ت1** — Active ترافیک گروه را عبور می‌دهد و به ARP آدرس مجازی جواب می‌دهد؛ Standby پایش می‌کند و هنگام خرابی Active جای او را می‌گیرد.
+
+**6-8-ت2** — HSRP: خاموش؛ VRRP: روشن.
+
+**6-8-ت3** — 120 − 30 = 90.
+
+**6-8-ت4** — گروه 10 به هگزا 0A ⇒ `0000.0C07.AC0A`.
+
+**6-8-ت5** — ۱) ارتباط L2/VLAN بین دو روتر ۲) ACL/فایروال روی UDP 1985 ۳) شماره‌ی گروه/نسخه ۴) Authentication ۵) تأیید Standby با `show standby`.
+
+**6-8-Q1** — The router has not heard from any standby neighbor, so hellos are not reaching each other.
+
+---
 
 # پایان بخش ۲ (فصل‌های ۴ تا ۶)
 
@@ -18370,6 +18554,314 @@ sed -E 's/(password|secret|community) .*/\1 REDACTED/' running.cfg > clean.cfg
 
 ---
 
+<a id="l-8-11"></a>
+
+## درس 8-11 — AAA برای مدیریت دستگاه: حساب محلی، TACACS+ و RADIUS
+
+**فصل 8 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 4.1: Configure network devices with local usernames and as an AAA client — TACACS+ and RADIUS — for management) · پیش‌نیاز: ۸-۱ تا ۸-۳**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ هیچ رمز واقعی در ریپو نیست؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** ورود به دستگاه با حساب محلی، سپس انتقال به AAA مرکزی با TACACS+ یا RADIUS، فرق آنها و چطور از قفل‌شدن بیرون از دستگاه جلوگیری کنیم.
+
+**چرا لازم است؟** اگر ۵۰ روتر دارید و ۱۰ مهندس، حساب محلی یعنی ۵۰۰ حساب برای مدیریت؛ هر وقت کسی استعفا دهد باید روی ۵۰ دستگاه حذفش کنید. با AAA مرکزی یک حساب در یک سرور و همه‌چیز: چه کسی وارد شد (Authentication)، چه چیزی اجازه دارد (Authorization)، چه کرد (Accounting).
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) سه A
+
+| بخش | پرسش | مثال |
+|---|---|---|
+| Authentication | تو کی هستی؟ | نام کاربری و رمز |
+| Authorization | چه کاری مجازی؟ | فقط `show`؛ یا سطح 15 |
+| Accounting | چه کردی؟ | ثبت هر دستور و زمان |
+
+#### ۲-۲) حساب محلی
+
+``` text
+username admin privilege 15 secret S3cr3t!Pass
+enable secret EnableP@ss
+line vty 0 4
+ login local
+ transport input ssh
+```
+
+`secret` (Hash) به‌جای `password` (قابل‌بازگردانی). سطح دسترسی 0 تا 15؛ 15 کامل.
+
+#### ۲-۳) TACACS+ در برابر RADIUS
+
+| معیار | TACACS+ | RADIUS |
+|---|---|---|
+| منشأ | Cisco | IETF |
+| انتقال | TCP 49 | UDP 1812 (Auth) / 1813 (Acct) |
+| رمزنگاری | کل Payload | فقط فیلد رمز |
+| AAA | جدا (Authorization مستقل) | Authn و Authz ترکیبی |
+| مجوز دستور (Command Authorization) | دارد | ندارد |
+| کاربرد اصلی | مدیریت دستگاه | دسترسی شبکه (VPN، 802.1X، Wi-Fi) |
+
+قاعده: **مدیریت دستگاه ⇒ TACACS+؛ دسترسی کاربران به شبکه ⇒ RADIUS.**
+
+### ۳) دستورها (Unverified)
+
+``` text
+aaa new-model
+tacacs server TAC1
+ address ipv4 10.50.0.10
+ key TacKey123
+aaa group server tacacs+ TACGRP
+ server name TAC1
+aaa authentication login default group TACGRP local
+aaa authorization exec default group TACGRP local
+aaa accounting commands 15 default start-stop group TACGRP
+line vty 0 4
+ login authentication default
+ transport input ssh
+```
+
+``` text
+radius server RAD1
+ address ipv4 10.50.0.11 auth-port 1812 acct-port 1813
+ key RadKey123
+aaa group server radius RADGRP
+ server name RAD1
+aaa authentication login RADLOGIN group RADGRP local
+```
+
+**منطق `group TACGRP local`:** ابتدا سرور؛ اگر **پاسخ نداد (Timeout/قطع)**، حساب محلی. اگر سرور پاسخ بدهد و رد کند، رد قطعی است (به Local نمی‌رود).
+
+بررسی:
+
+``` text
+show aaa servers
+test aaa group TACGRP user1 Pass new-code
+debug aaa authentication
+debug tacacs
+undebug all
+show users
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — محلی.** `username` با `secret`، `login local` روی vty و `transport input ssh`. تأیید: ssh از PC.
+
+**متوسط — انتقال به TACACS+.** مراحل ایمن:
+
+1. حساب محلی اضطراری بسازید (در بالا).
+2. `aaa new-model` و تعریف سرور.
+3. **ابتدا** در همین Session دیگر (Session اول را باز نگه دارید) ورود را با کاربر سرور آزمایش کنید.
+4. `local` را آخر لیست نگه دارید.
+5. برای کنسول جداگانه: `aaa authentication login CON local` و `line con 0; login authentication CON` تا حتی با خرابی سرور از Console وارد شوید.
+
+**متوسط — Accounting.** `aaa accounting commands 15 default start-stop` هر دستور سطح 15 را با نام کاربر و زمان به سرور می‌فرستد؛ برای ردیابی «چه کسی OSPF را پاک کرد؟».
+
+**سخت — «با TACACS+ نمی‌توانم وارد شوم».**
+
+1. `show aaa servers`: وضعیت سرور (UP/DEAD) و شمارنده‌ی Timeout.
+2. Key ناهمخوان؟ (علامت: سرور پاسخ را Decrypt نمی‌کند؛ Log سرور: «invalid packet»).
+3. منبع ارتباط: `ip tacacs source-interface Loopback0` و سرور آدرس Loopback را می‌شناسد؟
+4. Route/ACL TCP 49؟
+5. ترتیب: اگر `local` اول باشد، سرور اصلاً استفاده نمی‌شود.
+6. `test aaa group TACGRP user1 Pass new-code` پاسخ می‌دهد؟
+
+**سخت — قفل‌شدن.** `aaa authentication login default group TACGRP` بدون `local` و سرور خراب: دیگر هیچ‌کس نمی‌تواند وارد شود. راه نجات: Console با روش جداگانه (Method List بدون سرور) یا Password Recovery فیزیکی. پیشگیری: همیشه `local` آخر و آزمون قبل از `write memory`.
+
+### ۵) Lab (اجرا نشده)
+
+یک روتر و یک سرور TACACS+ (مثلاً `tac_plus`/ISE Lab)؛ کاربر عادی با فقط `show` و کاربر ادمین؛ Accounting را در Log سرور ببینید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| AAA | Authentication, Authorization, Accounting | هویت، مجوز، حسابداری |
+| TACACS+ | Terminal Access Controller Access-Control System Plus | AAA مدیریتی |
+| RADIUS | Remote Authentication Dial-In User Service | AAA دسترسی شبکه |
+| NAS | Network Access Server | دستگاه سرویس‌گیرنده‌ی AAA |
+| VTY | Virtual Teletype | خطوط ورود راه‌دور |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) AAA یعنی چه؟ *(پاسخ: 8-11-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) کدام پروتکل Command Authorization دارد؟ *(پاسخ: 8-11-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) `group TACGRP local` چه رفتاری دارد وقتی سرور رمز را رد کند؟ و وقتی سرور خاموش است؟ *(پاسخ: 8-11-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) بعد از فعال‌سازی AAA قفل شدید؛ دو راه ورود و پیشگیری. *(پاسخ: 8-11-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *TACACS+ separates authentication, authorization and accounting; RADIUS combines authentication and authorization.*
+- *Always keep a local fallback account when you migrate to AAA.*
+- **Q1.** Which transport and port does TACACS+ use? *(پاسخ: 8-11-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
+<a id="l-8-12"></a>
+
+## درس 8-12 — رویکردهای مدیریت شبکه: Device-based، Controller-based، Cloud، Automation و Infrastructure as Code
+
+**فصل 8 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 5.3: Describe network management approaches — device-based, cloud-based, controller-based, automation-based, and infrastructure as code؛ و 5.5: Ansible) · پیش‌نیاز: ۸-۴ تا ۸-۶**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ هیچ API/رمز واقعی در ریپو نیست؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** پنج رویکرد مدیریت شبکه، تفاوت آنها، مفهوم Northbound/Southbound API، REST و فرمت‌های JSON/YAML، و اینکه IaC (Infrastructure as Code) چطور شبکه را مثل نرم‌افزار قابل‌بازبینی می‌کند.
+
+**چرا لازم است؟** اگر باید NTP را روی ۵۰ روتر عوض کنید و هر روتر ۲ دقیقه طول بکشد، ۱۰۰ دقیقه کار تکراری است و ۵۰ فرصت اشتباه. با اتوماسیون یک بار می‌نویسید و ۵۰ بار اجرا می‌کنید؛ و Git ثابت می‌کند «چه چیزی، کی، توسط چه کسی» تغییر کرد.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) پنج رویکرد
+
+| رویکرد | شرح | مثال |
+|---|---|---|
+| Device-based | هر دستگاه جداگانه با CLI/GUI | SSH به هر روتر |
+| Controller-based | کنترلر مرکزی سیاست را به دستگاه‌ها می‌دهد | Cisco Catalyst Center (DNA Center)، SD-WAN Manager |
+| Cloud-based | مدیریت از ابر | Meraki Dashboard |
+| Automation-based | اسکریپت/ابزار تغییر را اجرا می‌کند | Ansible، Python |
+| Infrastructure as Code | وضعیت مطلوب شبکه در فایل متنی و در Git | Ansible + Git، Terraform |
+
+#### ۲-۲) Northbound و Southbound
+
+``` text
+Applications / Scripts
+      ^   Northbound API (REST)
+ [ Controller ]
+      v   Southbound (NETCONF, RESTCONF, CLI/SSH, SNMP)
+ Network devices
+```
+
+- **Northbound:** کنترلر ⇦ برنامه‌ها (معمولاً REST).
+- **Southbound:** کنترلر ⇦ دستگاه‌ها.
+
+#### ۲-۳) REST و فرمت‌ها
+
+REST = Representational State Transfer؛ API روی HTTP. متدها:
+
+| متد | عمل (CRUD) |
+|---|---|
+| GET | خواندن |
+| POST | ایجاد |
+| PUT | جایگزینی کامل |
+| PATCH | تغییر جزئی |
+| DELETE | حذف |
+
+کدهای پاسخ: 200 OK، 201 Created، 204 No Content، 400 Bad Request، 401 Unauthorized، 403 Forbidden، 404 Not Found، 500 Server Error.
+
+``` text
+GET https://r1.example.com/restconf/data/ietf-interfaces:interfaces
+Accept: application/yang-data+json
+```
+
+JSON نمونه:
+
+``` text
+{
+  "interface": {
+    "name": "GigabitEthernet1",
+    "enabled": true,
+    "ipv4": { "address": [ { "ip": "10.10.0.1", "netmask": "255.255.255.0" } ] }
+  }
+}
+```
+
+YAML (خوانا‌تر، برای Ansible): ساختار با Indent. NETCONF/RESTCONF بر پایه‌ی مدل داده‌ی YANG کار می‌کنند.
+
+#### ۲-۴) Ansible
+
+Ansible بدون Agent از طریق SSH/API به دستگاه وصل می‌شود. اجزا: **Inventory** (فهرست دستگاه‌ها)، **Playbook** (مراحل)، **Module** (کار). ویژگی مهم: **Idempotent** یعنی اجرای مکرر همان نتیجه را می‌دهد و اگر شبکه همان‌طور باشد، تغییری ایجاد نمی‌کند.
+
+``` text
+# inventory.ini
+[routers]
+r1 ansible_host=10.50.0.1
+r2 ansible_host=10.50.0.2
+[routers:vars]
+ansible_network_os=cisco.ios.ios
+ansible_connection=network_cli
+```
+
+``` text
+# ntp.yml
+- name: Set NTP
+  hosts: routers
+  gather_facts: false
+  tasks:
+    - name: Configure NTP server
+      cisco.ios.ios_config:
+        lines:
+          - ntp server 10.50.0.20
+```
+
+اجرا: `ansible-playbook -i inventory.ini ntp.yml`.
+
+#### ۲-۵) IaC
+
+وضعیت مطلوب (Desired State) در فایل نوشته و در Git نگه داشته می‌شود؛ ابزار شبکه را با آن هم‌گام می‌کند. مزیت‌ها: تاریخچه‌ی تغییرات، Review قبل از اجرا (Pull Request)، تکرارپذیری، کشف **Drift** (تفاوت واقعیت با فایل). Declarative = «چه می‌خواهم» (Terraform)؛ Imperative = «چه کارهایی بکن» (اسکریپت). 
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — انتخاب رویکرد.** ۳ روتر در یک Lab: Device-based کافی است. ۳۰۰ سوییچ در ۵۰ ساختمان: Controller یا Automation.
+
+**متوسط — محاسبه‌ی صرفه‌جویی.**
+
+``` text
+Manual   = 50 devices x 2 min = 100 min
+Ansible  = 10 min (write) + 3 min (run) = 13 min (first time)
+Next time: 3 min
+```
+
+**متوسط — خواندن Playbook.** `hosts: routers` گروه را مشخص می‌کند؛ `ios_config` خط‌های Config را در حالت Global اعمال می‌کند؛ اجرای دوم هیچ تغییری (`changed=0`) نشان می‌دهد چون Idempotent.
+
+**سخت — Drift.** فایل Git می‌گوید `ntp server 10.50.0.20` ولی روی R2 `10.50.0.99` است (کسی دستی عوض کرده).
+
+1. `ansible-playbook --check --diff` تفاوت را نشان می‌دهد.
+2. اجرای عادی، دستگاه را به وضعیت Git برمی‌گرداند.
+3. ثبت اینکه چه کسی دستی تغییر داد (Log AAA).
+4. فرایند: تغییر فقط از Git (Pull Request).
+
+**سخت — خطای API.** درخواست `POST` پاسخ `401`: رمز/توکن نامعتبر؛ `403`: دسترسی کافی ندارد؛ `404`: مسیر اشتباه؛ `400`: JSON غلط. با این کدها علت را می‌توان سریع محدود کرد.
+
+### ۴) Lab (اجرا نشده)
+
+دو روتر مجازی؛ Playbook NTP را بنویسید، دوبار اجرا کنید و `changed` را ببینید؛ سپس یک تغییر دستی و کشف Drift.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| API | Application Programming Interface | رابط برنامه‌نویسی |
+| REST | Representational State Transfer | معماری API روی HTTP |
+| JSON | JavaScript Object Notation | قالب داده |
+| YAML | YAML Ain't Markup Language | قالب داده‌ی خوانا |
+| YANG | Yet Another Next Generation | زبان مدل داده |
+| IaC | Infrastructure as Code | زیرساخت به‌صورت کد |
+| SDN | Software-Defined Networking | شبکه‌ی نرم‌افزارمحور |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) پنج رویکرد مدیریت شبکه را نام ببرید. *(پاسخ: 8-12-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Northbound و Southbound؟ *(پاسخ: 8-12-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) Idempotent یعنی چه؟ *(پاسخ: 8-12-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (متوسط) پاسخ 401 و 404 چه می‌گویند؟ *(پاسخ: 8-12-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت5.** (سخت) Drift چیست و چگونه کشف می‌شود؟ *(پاسخ: 8-12-ت5 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *A northbound API lets applications talk to the controller.*
+- *Idempotent playbooks can be run repeatedly without causing unintended changes.*
+- **Q1.** Which HTTP method creates a new resource? *(پاسخ: 8-12-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 8
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -18737,6 +19229,32 @@ Rotate the secret immediately, clean the history and enable secret scanning.
 **8-10-ت4** — ۱) مخرب‌بودن دستور ۲) مدرک پشتیبان ۳) جایگزین کم‌ریسک (show سپس تغییر کوچک با CHG/Rollback) ۴) ثبت دلیل رد/پذیرش.
 
 **8-10-Q1** — Persona, data/context, instructions, output format.
+
+### پاسخ‌های درس افزوده‌ی 8-11 (فصل 8)
+
+**8-11-ت1** — Authentication (هویت)، Authorization (مجوز)، Accounting (حسابداری/ثبت).
+
+**8-11-ت2** — TACACS+.
+
+**8-11-ت3** — اگر سرور پاسخ بدهد و رد کند، رد نهایی است و به Local نمی‌رود؛ اگر سرور در دسترس نباشد (Timeout)، روش بعدی یعنی حساب محلی استفاده می‌شود.
+
+**8-11-ت4** — ورود از Console با Method List جداگانه (بدون سرور) یا بازیابی رمز فیزیکی. پیشگیری: `local` آخر لیست، آزمون با Session دوم و Method جدا برای Console قبل از ذخیره.
+
+**8-11-Q1** — TCP port 49.
+
+### پاسخ‌های درس افزوده‌ی 8-12 (فصل 8)
+
+**8-12-ت1** — Device-based، Controller-based، Cloud-based، Automation-based، Infrastructure as Code.
+
+**8-12-ت2** — Northbound: کنترلر به برنامه‌ها (معمولاً REST)؛ Southbound: کنترلر به دستگاه‌ها (NETCONF، RESTCONF، SSH، SNMP).
+
+**8-12-ت3** — اجرای مکرر همان نتیجه را می‌دهد و اگر وضعیت از قبل درست باشد، تغییری نمی‌کند.
+
+**8-12-ت4** — 401: احراز هویت نامعتبر/ناموجود؛ 404: مسیر یا منبع یافت نشد.
+
+**8-12-ت5** — اختلاف وضعیت واقعی دستگاه با وضعیت مطلوب در Git؛ با اجرای Playbook در حالت `--check --diff` یا مقایسه‌ی Config با فایل کشف می‌شود.
+
+**8-12-Q1** — POST.
 
 ---
 

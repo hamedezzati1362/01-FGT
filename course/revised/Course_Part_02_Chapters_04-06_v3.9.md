@@ -6710,6 +6710,176 @@ show ip route ospf
 - RFC 3101 (NSSA)
 - Cisco OSPF design guide
 
+<a id="l-6-8"></a>
+
+## درس 6-8 — تفسیر وضعیت HSRP و VRRP: نقش‌ها، Priority، Preempt، Track و عیب‌یابی
+
+**فصل 6 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 3.4: Interpret the operational status of First Hop Redundancy Protocols — HSRP and VRRP) · پیش‌نیاز: ۶-FHRP**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ خروجی‌ها نمونه‌ی آموزشی‌اند؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** HSRP و VRRP چه می‌کنند، هر وضعیت (Active، Standby، Master، Backup) چه معنایی دارد و چطور از روی خروجی `show` تشخیص دهیم کدام روتر Gateway واقعی است و چرا Failover رخ داده یا نداده است.
+
+**چرا لازم است؟** تمام کامپیوترهای یک VLAN فقط یک Default Gateway می‌شناسند. اگر آن روتر بسوزد، همه بی‌اینترنت می‌مانند. FHRP (First Hop Redundancy Protocol، یعنی «پروتکل افزونگی اولین Hop») دو روتر را پشت یک **آدرس IP مجازی** می‌گذارد؛ Hostها به آدرس مجازی وصل‌اند و نمی‌دانند کدام روتر واقعاً جواب می‌دهد. سؤال آزمون «از روی خروجی show تفسیر کنید» است؛ پس باید خواندن را تمرین کنیم.
+
+### ۲) توضیح از پایه
+
+| ویژگی | HSRP | VRRP |
+|---|---|---|
+| مالک | Cisco | استاندارد باز (RFC 5798) |
+| نقش‌ها | Active / Standby | Master / Backup |
+| آدرس Multicast | 224.0.0.2 (v1) ، 224.0.0.102 (v2) | 224.0.0.18 |
+| پروتکل | UDP 1985 | IP Protocol 112 |
+| MAC مجازی | 0000.0C07.ACxx (v1) ، 0000.0C9F.Fxxx (v2) | 0000.5E00.01xx |
+| Priority پیش‌فرض | 100 | 100 |
+| Preempt پیش‌فرض | **خاموش** | **روشن** |
+| Hello / Hold | 3 s / 10 s | Advertisement 1 s ؛ Master Down ≈ 3 × 1 + Skew |
+
+`xx` در MAC همان شماره‌ی گروه (به هگزا) است: گروه 1 ⇒ `0000.0C07.AC01`.
+
+#### ۲-۱) وضعیت‌های HSRP
+
+``` text
+Initial -> Learn -> Listen -> Speak -> Standby -> Active
+```
+
+- **Active:** روتر اصلی؛ به ARP آدرس مجازی با MAC مجازی جواب می‌دهد و ترافیک را عبور می‌دهد.
+- **Standby:** پشتیبان؛ Hello Active را پایش و آماده‌ی جایگزینی.
+- **Listen:** روتر سوم؛ Hello را می‌شنود ولی نقش ندارد.
+- **Speak/Learn/Initial:** مراحل اولیه‌ی انتخاب.
+
+VRRP فقط Master و Backup (و Init) دارد.
+
+#### ۲-۲) انتخاب
+
+بالاترین **Priority** برنده است؛ اگر برابر بود، بالاترین **IP Interface**. در VRRP روتری که آدرس مجازی را «مالک» آدرس واقعی خود دارد، Priority 255 می‌گیرد و حتماً Master است.
+
+**Preempt:** اگر روتری با Priority بالاتر بعداً برگردد (یا Priority عوض شود)، آیا نقش را پس می‌گیرد؟ در HSRP تا `preempt` نباشد، خیر (Standby فعلی Active می‌ماند).
+
+**Track:** اگر Uplink روتر Active قطع شود ولی Interface داخلی بالا باشد، ترافیک به چاه می‌رود. با Track، Priority کاهش می‌یابد تا Standby برنده شود.
+
+### ۳) دستورها (Unverified)
+
+**HSRP**
+
+``` text
+interface Vlan10
+ ip address 10.10.0.2 255.255.255.0
+ standby version 2
+ standby 1 ip 10.10.0.254
+ standby 1 priority 110
+ standby 1 preempt
+ standby 1 track 1 decrement 20
+```
+
+**VRRP (سینتکس کلاسیک)**
+
+``` text
+interface Vlan10
+ ip address 10.10.0.2 255.255.255.0
+ vrrp 1 ip 10.10.0.254
+ vrrp 1 priority 110
+ vrrp 1 preempt
+```
+
+(روی IOS XE جدید ممکن است قالب `fhrp version vrrp v3` و `vrrp 1 address-family ipv4` لازم باشد.)
+
+**بررسی**
+
+``` text
+show standby brief
+show standby Vlan10
+show vrrp brief
+show vrrp
+```
+
+### ۴) خواندن خروجی
+
+``` text
+R1# show standby brief
+                     P indicates configured to preempt.
+Interface   Grp  Pri P State    Active          Standby         Virtual IP
+Vl10        1    110 P Active   local           10.10.0.3       10.10.0.254
+```
+
+تفسیر: R1 برای گروه 1 در VLAN10 `Active` است (Priority 110 با Preempt). Standby روتر 10.10.0.3 است. آدرس مجازی 10.10.0.254.
+
+``` text
+R2# show vrrp brief
+Interface   Grp Pri Time  Own Pre State   Master addr     Group addr
+Vl10        1   100 3609      Y  Backup  10.10.0.2       10.10.0.254
+```
+
+تفسیر: R2 `Backup` است؛ Master آدرس 10.10.0.2 (R1). `Pre Y` یعنی Preempt فعال.
+
+### ۵) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — Gateway کلاینت.** کلاینت Gateway=10.10.0.254. ARP آن را به `0000.0C07.AC01` حل می‌کند (HSRP v1 گروه 1). با `show standby` روتر Active مشخص است.
+
+**متوسط — محاسبه‌ی Track.** R1: Priority 110، Track Uplink با Decrement 20؛ R2: Priority 100 با Preempt.
+
+``` text
+R1 after Uplink fails = 110 - 20 = 90
+R2 = 100 -> 100 > 90 and preempt enabled -> R2 becomes Active
+```
+
+اگر R2 Preempt نداشته باشد، حتی با 100 > 90 عوض نمی‌شود (خطای رایج).
+
+**متوسط — Failover Time.** HSRP پیش‌فرض: Hold 10 ثانیه؛ پس پس از مرگ Active حدود ۱۰ ثانیه تا Standby جایگزین شود. با Timerهای کوتاه (`standby 1 timers msec 200 msec 750`) به کمتر از ۱ ثانیه می‌رسد (CPU بیشتر).
+
+**سخت — هر دو Active هستند (Split).**
+
+``` text
+R1 show standby brief : Vl10 1 110 P Active  local   unknown   10.10.0.254
+R2 show standby brief : Vl10 1 100   Active  local   unknown   10.10.0.254
+```
+
+تفسیر: هر دو `unknown` برای Standby یعنی Helloها به هم نمی‌رسند.
+
+1. ارتباط L2 بین دو روتر (VLAN، Trunk، `allowed vlan`).
+2. ACL/فایروال که UDP 1985/Multicast را می‌بندد.
+3. شماره‌ی گروه یا نسخه‌ی HSRP متفاوت (v1/v2).
+4. Authentication ناهمخوان.
+5. پس از رفع: `show standby` باید Standby را نشان دهد.
+
+**سخت — Flapping.** Failover هر چند دقیقه رخ می‌دهد: Preempt + Track با Uplink ناپایدار. رفع: `standby 1 preempt delay minimum 60` تا قبل از Preempt صبر کند.
+
+### ۶) Lab (اجرا نشده)
+
+دو سوییچ لایه‌ی ۳ و یک Host؛ HSRP را بسازید، Active را خاموش کنید و ping مداوم را بشمارید؛ سپس VRRP.
+
+### ۷) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| FHRP | First Hop Redundancy Protocol | افزونگی Gateway |
+| HSRP | Hot Standby Router Protocol | FHRP سیسکو |
+| VRRP | Virtual Router Redundancy Protocol | FHRP استاندارد |
+| VIP | Virtual IP | آدرس مجازی |
+| Preempt | — | پس‌گرفتن نقش |
+
+### ۸) تمرین‌ها
+
+**ت1.** (ساده) Active و Standby در HSRP چه می‌کنند؟ *(پاسخ: 6-8-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Preempt پیش‌فرض در HSRP و VRRP؟ *(پاسخ: 6-8-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) Priority 120 با Track Decrement 30؛ پس از Fail چند؟ *(پاسخ: 6-8-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (متوسط) MAC مجازی HSRP v1 گروه 10؟ *(پاسخ: 6-8-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت5.** (سخت) دو روتر هر دو Active؛ پنج گام. *(پاسخ: 6-8-ت5 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۹) English Corner
+
+- *Without preempt, a recovered higher-priority router does not take back the active role.*
+- *HSRP is Cisco proprietary; VRRP is an open standard.*
+- **Q1.** What does the word unknown in the Standby column indicate? *(پاسخ: 6-8-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 6
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -7096,7 +7266,21 @@ Area بدون اتصال به Area 0 Virtual Link می‌خواهد که ناپ�
 
 پاسخ انگلیسی در پایین آمده است؛ جمع‌بندی: LSA نوع ۳ توسط ABR تولید می‌شود، در Area مبدأ ساخته و در Areaهای دیگر Flood می‌شود؛ جدول مسیر آن را با O IA نشان می‌دهد.
 
+### پاسخ‌های درس افزوده‌ی 6-8 (فصل 6)
 
+**6-8-ت1** — Active ترافیک گروه را عبور می‌دهد و به ARP آدرس مجازی جواب می‌دهد؛ Standby پایش می‌کند و هنگام خرابی Active جای او را می‌گیرد.
+
+**6-8-ت2** — HSRP: خاموش؛ VRRP: روشن.
+
+**6-8-ت3** — 120 − 30 = 90.
+
+**6-8-ت4** — گروه 10 به هگزا 0A ⇒ `0000.0C07.AC0A`.
+
+**6-8-ت5** — ۱) ارتباط L2/VLAN بین دو روتر ۲) ACL/فایروال روی UDP 1985 ۳) شماره‌ی گروه/نسخه ۴) Authentication ۵) تأیید Standby با `show standby`.
+
+**6-8-Q1** — The router has not heard from any standby neighbor, so hellos are not reaching each other.
+
+---
 
 # پایان بخش ۲ (فصل‌های ۴ تا ۶)
 

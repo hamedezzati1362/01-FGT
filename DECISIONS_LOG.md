@@ -189,3 +189,6 @@ Port Group حذف‌شده = کارت بدون شبکه؛ Save با لیست خ�
 
 ## D-352 — تکمیل CCNA 3.1/3.2 و 4.3
 - درس‌های جدید: 5-9 (Static Routing کامل IPv4/IPv6: default/network/host/floating، LPM)، 7-10 (NAT: Dynamic با Pool، PAT، چهار آدرس، ترتیب عملیات، عیب‌یابی).
+
+## D-353 — تکمیل CCNA 3.4، 4.1، 5.3/5.5
+- درس‌های جدید: 6-8 (تفسیر HSRP/VRRP)، 8-11 (AAA: Local/TACACS+/RADIUS)، 8-12 (رویکردهای مدیریت، REST، Ansible، IaC).

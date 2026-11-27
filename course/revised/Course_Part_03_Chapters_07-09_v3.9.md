@@ -4239,6 +4239,314 @@ sed -E 's/(password|secret|community) .*/\1 REDACTED/' running.cfg > clean.cfg
 
 ---
 
+<a id="l-8-11"></a>
+
+## درس 8-11 — AAA برای مدیریت دستگاه: حساب محلی، TACACS+ و RADIUS
+
+**فصل 8 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 4.1: Configure network devices with local usernames and as an AAA client — TACACS+ and RADIUS — for management) · پیش‌نیاز: ۸-۱ تا ۸-۳**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ هیچ رمز واقعی در ریپو نیست؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** ورود به دستگاه با حساب محلی، سپس انتقال به AAA مرکزی با TACACS+ یا RADIUS، فرق آنها و چطور از قفل‌شدن بیرون از دستگاه جلوگیری کنیم.
+
+**چرا لازم است؟** اگر ۵۰ روتر دارید و ۱۰ مهندس، حساب محلی یعنی ۵۰۰ حساب برای مدیریت؛ هر وقت کسی استعفا دهد باید روی ۵۰ دستگاه حذفش کنید. با AAA مرکزی یک حساب در یک سرور و همه‌چیز: چه کسی وارد شد (Authentication)، چه چیزی اجازه دارد (Authorization)، چه کرد (Accounting).
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) سه A
+
+| بخش | پرسش | مثال |
+|---|---|---|
+| Authentication | تو کی هستی؟ | نام کاربری و رمز |
+| Authorization | چه کاری مجازی؟ | فقط `show`؛ یا سطح 15 |
+| Accounting | چه کردی؟ | ثبت هر دستور و زمان |
+
+#### ۲-۲) حساب محلی
+
+``` text
+username admin privilege 15 secret S3cr3t!Pass
+enable secret EnableP@ss
+line vty 0 4
+ login local
+ transport input ssh
+```
+
+`secret` (Hash) به‌جای `password` (قابل‌بازگردانی). سطح دسترسی 0 تا 15؛ 15 کامل.
+
+#### ۲-۳) TACACS+ در برابر RADIUS
+
+| معیار | TACACS+ | RADIUS |
+|---|---|---|
+| منشأ | Cisco | IETF |
+| انتقال | TCP 49 | UDP 1812 (Auth) / 1813 (Acct) |
+| رمزنگاری | کل Payload | فقط فیلد رمز |
+| AAA | جدا (Authorization مستقل) | Authn و Authz ترکیبی |
+| مجوز دستور (Command Authorization) | دارد | ندارد |
+| کاربرد اصلی | مدیریت دستگاه | دسترسی شبکه (VPN، 802.1X، Wi-Fi) |
+
+قاعده: **مدیریت دستگاه ⇒ TACACS+؛ دسترسی کاربران به شبکه ⇒ RADIUS.**
+
+### ۳) دستورها (Unverified)
+
+``` text
+aaa new-model
+tacacs server TAC1
+ address ipv4 10.50.0.10
+ key TacKey123
+aaa group server tacacs+ TACGRP
+ server name TAC1
+aaa authentication login default group TACGRP local
+aaa authorization exec default group TACGRP local
+aaa accounting commands 15 default start-stop group TACGRP
+line vty 0 4
+ login authentication default
+ transport input ssh
+```
+
+``` text
+radius server RAD1
+ address ipv4 10.50.0.11 auth-port 1812 acct-port 1813
+ key RadKey123
+aaa group server radius RADGRP
+ server name RAD1
+aaa authentication login RADLOGIN group RADGRP local
+```
+
+**منطق `group TACGRP local`:** ابتدا سرور؛ اگر **پاسخ نداد (Timeout/قطع)**، حساب محلی. اگر سرور پاسخ بدهد و رد کند، رد قطعی است (به Local نمی‌رود).
+
+بررسی:
+
+``` text
+show aaa servers
+test aaa group TACGRP user1 Pass new-code
+debug aaa authentication
+debug tacacs
+undebug all
+show users
+```
+
+### ۴) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — محلی.** `username` با `secret`، `login local` روی vty و `transport input ssh`. تأیید: ssh از PC.
+
+**متوسط — انتقال به TACACS+.** مراحل ایمن:
+
+1. حساب محلی اضطراری بسازید (در بالا).
+2. `aaa new-model` و تعریف سرور.
+3. **ابتدا** در همین Session دیگر (Session اول را باز نگه دارید) ورود را با کاربر سرور آزمایش کنید.
+4. `local` را آخر لیست نگه دارید.
+5. برای کنسول جداگانه: `aaa authentication login CON local` و `line con 0; login authentication CON` تا حتی با خرابی سرور از Console وارد شوید.
+
+**متوسط — Accounting.** `aaa accounting commands 15 default start-stop` هر دستور سطح 15 را با نام کاربر و زمان به سرور می‌فرستد؛ برای ردیابی «چه کسی OSPF را پاک کرد؟».
+
+**سخت — «با TACACS+ نمی‌توانم وارد شوم».**
+
+1. `show aaa servers`: وضعیت سرور (UP/DEAD) و شمارنده‌ی Timeout.
+2. Key ناهمخوان؟ (علامت: سرور پاسخ را Decrypt نمی‌کند؛ Log سرور: «invalid packet»).
+3. منبع ارتباط: `ip tacacs source-interface Loopback0` و سرور آدرس Loopback را می‌شناسد؟
+4. Route/ACL TCP 49؟
+5. ترتیب: اگر `local` اول باشد، سرور اصلاً استفاده نمی‌شود.
+6. `test aaa group TACGRP user1 Pass new-code` پاسخ می‌دهد؟
+
+**سخت — قفل‌شدن.** `aaa authentication login default group TACGRP` بدون `local` و سرور خراب: دیگر هیچ‌کس نمی‌تواند وارد شود. راه نجات: Console با روش جداگانه (Method List بدون سرور) یا Password Recovery فیزیکی. پیشگیری: همیشه `local` آخر و آزمون قبل از `write memory`.
+
+### ۵) Lab (اجرا نشده)
+
+یک روتر و یک سرور TACACS+ (مثلاً `tac_plus`/ISE Lab)؛ کاربر عادی با فقط `show` و کاربر ادمین؛ Accounting را در Log سرور ببینید.
+
+### ۶) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| AAA | Authentication, Authorization, Accounting | هویت، مجوز، حسابداری |
+| TACACS+ | Terminal Access Controller Access-Control System Plus | AAA مدیریتی |
+| RADIUS | Remote Authentication Dial-In User Service | AAA دسترسی شبکه |
+| NAS | Network Access Server | دستگاه سرویس‌گیرنده‌ی AAA |
+| VTY | Virtual Teletype | خطوط ورود راه‌دور |
+
+### ۷) تمرین‌ها
+
+**ت1.** (ساده) AAA یعنی چه؟ *(پاسخ: 8-11-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) کدام پروتکل Command Authorization دارد؟ *(پاسخ: 8-11-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) `group TACGRP local` چه رفتاری دارد وقتی سرور رمز را رد کند؟ و وقتی سرور خاموش است؟ *(پاسخ: 8-11-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (سخت) بعد از فعال‌سازی AAA قفل شدید؛ دو راه ورود و پیشگیری. *(پاسخ: 8-11-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۸) English Corner
+
+- *TACACS+ separates authentication, authorization and accounting; RADIUS combines authentication and authorization.*
+- *Always keep a local fallback account when you migrate to AAA.*
+- **Q1.** Which transport and port does TACACS+ use? *(پاسخ: 8-11-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
+<a id="l-8-12"></a>
+
+## درس 8-12 — رویکردهای مدیریت شبکه: Device-based، Controller-based، Cloud، Automation و Infrastructure as Code
+
+**فصل 8 · درس افزوده برای سرفصل رسمی CCNA 200-301 (مورد 5.3: Describe network management approaches — device-based, cloud-based, controller-based, automation-based, and infrastructure as code؛ و 5.5: Ansible) · پیش‌نیاز: ۸-۴ تا ۸-۶**
+
+> **وضعیت:** نظری/مستندی؛ دستورها `Unverified`؛ هیچ API/رمز واقعی در ریپو نیست؛ Lab اجرا نشده.
+
+### ۱) این درس درباره چیست و چرا باید یاد بگیریم؟
+
+**چه چیزی یاد می‌گیریم:** پنج رویکرد مدیریت شبکه، تفاوت آنها، مفهوم Northbound/Southbound API، REST و فرمت‌های JSON/YAML، و اینکه IaC (Infrastructure as Code) چطور شبکه را مثل نرم‌افزار قابل‌بازبینی می‌کند.
+
+**چرا لازم است؟** اگر باید NTP را روی ۵۰ روتر عوض کنید و هر روتر ۲ دقیقه طول بکشد، ۱۰۰ دقیقه کار تکراری است و ۵۰ فرصت اشتباه. با اتوماسیون یک بار می‌نویسید و ۵۰ بار اجرا می‌کنید؛ و Git ثابت می‌کند «چه چیزی، کی، توسط چه کسی» تغییر کرد.
+
+### ۲) توضیح از پایه
+
+#### ۲-۱) پنج رویکرد
+
+| رویکرد | شرح | مثال |
+|---|---|---|
+| Device-based | هر دستگاه جداگانه با CLI/GUI | SSH به هر روتر |
+| Controller-based | کنترلر مرکزی سیاست را به دستگاه‌ها می‌دهد | Cisco Catalyst Center (DNA Center)، SD-WAN Manager |
+| Cloud-based | مدیریت از ابر | Meraki Dashboard |
+| Automation-based | اسکریپت/ابزار تغییر را اجرا می‌کند | Ansible، Python |
+| Infrastructure as Code | وضعیت مطلوب شبکه در فایل متنی و در Git | Ansible + Git، Terraform |
+
+#### ۲-۲) Northbound و Southbound
+
+``` text
+Applications / Scripts
+      ^   Northbound API (REST)
+ [ Controller ]
+      v   Southbound (NETCONF, RESTCONF, CLI/SSH, SNMP)
+ Network devices
+```
+
+- **Northbound:** کنترلر ⇦ برنامه‌ها (معمولاً REST).
+- **Southbound:** کنترلر ⇦ دستگاه‌ها.
+
+#### ۲-۳) REST و فرمت‌ها
+
+REST = Representational State Transfer؛ API روی HTTP. متدها:
+
+| متد | عمل (CRUD) |
+|---|---|
+| GET | خواندن |
+| POST | ایجاد |
+| PUT | جایگزینی کامل |
+| PATCH | تغییر جزئی |
+| DELETE | حذف |
+
+کدهای پاسخ: 200 OK، 201 Created، 204 No Content، 400 Bad Request، 401 Unauthorized، 403 Forbidden، 404 Not Found، 500 Server Error.
+
+``` text
+GET https://r1.example.com/restconf/data/ietf-interfaces:interfaces
+Accept: application/yang-data+json
+```
+
+JSON نمونه:
+
+``` text
+{
+  "interface": {
+    "name": "GigabitEthernet1",
+    "enabled": true,
+    "ipv4": { "address": [ { "ip": "10.10.0.1", "netmask": "255.255.255.0" } ] }
+  }
+}
+```
+
+YAML (خوانا‌تر، برای Ansible): ساختار با Indent. NETCONF/RESTCONF بر پایه‌ی مدل داده‌ی YANG کار می‌کنند.
+
+#### ۲-۴) Ansible
+
+Ansible بدون Agent از طریق SSH/API به دستگاه وصل می‌شود. اجزا: **Inventory** (فهرست دستگاه‌ها)، **Playbook** (مراحل)، **Module** (کار). ویژگی مهم: **Idempotent** یعنی اجرای مکرر همان نتیجه را می‌دهد و اگر شبکه همان‌طور باشد، تغییری ایجاد نمی‌کند.
+
+``` text
+# inventory.ini
+[routers]
+r1 ansible_host=10.50.0.1
+r2 ansible_host=10.50.0.2
+[routers:vars]
+ansible_network_os=cisco.ios.ios
+ansible_connection=network_cli
+```
+
+``` text
+# ntp.yml
+- name: Set NTP
+  hosts: routers
+  gather_facts: false
+  tasks:
+    - name: Configure NTP server
+      cisco.ios.ios_config:
+        lines:
+          - ntp server 10.50.0.20
+```
+
+اجرا: `ansible-playbook -i inventory.ini ntp.yml`.
+
+#### ۲-۵) IaC
+
+وضعیت مطلوب (Desired State) در فایل نوشته و در Git نگه داشته می‌شود؛ ابزار شبکه را با آن هم‌گام می‌کند. مزیت‌ها: تاریخچه‌ی تغییرات، Review قبل از اجرا (Pull Request)، تکرارپذیری، کشف **Drift** (تفاوت واقعیت با فایل). Declarative = «چه می‌خواهم» (Terraform)؛ Imperative = «چه کارهایی بکن» (اسکریپت). 
+
+### ۳) مثال‌های حل‌شده از ساده به سخت
+
+**ساده — انتخاب رویکرد.** ۳ روتر در یک Lab: Device-based کافی است. ۳۰۰ سوییچ در ۵۰ ساختمان: Controller یا Automation.
+
+**متوسط — محاسبه‌ی صرفه‌جویی.**
+
+``` text
+Manual   = 50 devices x 2 min = 100 min
+Ansible  = 10 min (write) + 3 min (run) = 13 min (first time)
+Next time: 3 min
+```
+
+**متوسط — خواندن Playbook.** `hosts: routers` گروه را مشخص می‌کند؛ `ios_config` خط‌های Config را در حالت Global اعمال می‌کند؛ اجرای دوم هیچ تغییری (`changed=0`) نشان می‌دهد چون Idempotent.
+
+**سخت — Drift.** فایل Git می‌گوید `ntp server 10.50.0.20` ولی روی R2 `10.50.0.99` است (کسی دستی عوض کرده).
+
+1. `ansible-playbook --check --diff` تفاوت را نشان می‌دهد.
+2. اجرای عادی، دستگاه را به وضعیت Git برمی‌گرداند.
+3. ثبت اینکه چه کسی دستی تغییر داد (Log AAA).
+4. فرایند: تغییر فقط از Git (Pull Request).
+
+**سخت — خطای API.** درخواست `POST` پاسخ `401`: رمز/توکن نامعتبر؛ `403`: دسترسی کافی ندارد؛ `404`: مسیر اشتباه؛ `400`: JSON غلط. با این کدها علت را می‌توان سریع محدود کرد.
+
+### ۴) Lab (اجرا نشده)
+
+دو روتر مجازی؛ Playbook NTP را بنویسید، دوبار اجرا کنید و `changed` را ببینید؛ سپس یک تغییر دستی و کشف Drift.
+
+### ۵) اصطلاحات این درس
+
+| اصطلاح | شکل کامل | معنی |
+|---|---|---|
+| API | Application Programming Interface | رابط برنامه‌نویسی |
+| REST | Representational State Transfer | معماری API روی HTTP |
+| JSON | JavaScript Object Notation | قالب داده |
+| YAML | YAML Ain't Markup Language | قالب داده‌ی خوانا |
+| YANG | Yet Another Next Generation | زبان مدل داده |
+| IaC | Infrastructure as Code | زیرساخت به‌صورت کد |
+| SDN | Software-Defined Networking | شبکه‌ی نرم‌افزارمحور |
+
+### ۶) تمرین‌ها
+
+**ت1.** (ساده) پنج رویکرد مدیریت شبکه را نام ببرید. *(پاسخ: 8-12-ت1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت2.** (ساده) Northbound و Southbound؟ *(پاسخ: 8-12-ت2 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت3.** (متوسط) Idempotent یعنی چه؟ *(پاسخ: 8-12-ت3 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت4.** (متوسط) پاسخ 401 و 404 چه می‌گویند؟ *(پاسخ: 8-12-ت4 در بخش «پاسخ‌ها» انتهای فصل)*
+
+**ت5.** (سخت) Drift چیست و چگونه کشف می‌شود؟ *(پاسخ: 8-12-ت5 در بخش «پاسخ‌ها» انتهای فصل)*
+
+### ۷) English Corner
+
+- *A northbound API lets applications talk to the controller.*
+- *Idempotent playbooks can be run repeatedly without causing unintended changes.*
+- **Q1.** Which HTTP method creates a new resource? *(پاسخ: 8-12-Q1 در بخش «پاسخ‌ها» انتهای فصل)*
+
+---
+
 ## پاسخ‌های فصل 8
 
 > ابتدا بدون نگاه حل کنید. شناسه: درس-نوع+شماره (ت = تمرین، م = مرور، Q = Quick quiz).
@@ -4606,6 +4914,32 @@ Rotate the secret immediately, clean the history and enable secret scanning.
 **8-10-ت4** — ۱) مخرب‌بودن دستور ۲) مدرک پشتیبان ۳) جایگزین کم‌ریسک (show سپس تغییر کوچک با CHG/Rollback) ۴) ثبت دلیل رد/پذیرش.
 
 **8-10-Q1** — Persona, data/context, instructions, output format.
+
+### پاسخ‌های درس افزوده‌ی 8-11 (فصل 8)
+
+**8-11-ت1** — Authentication (هویت)، Authorization (مجوز)، Accounting (حسابداری/ثبت).
+
+**8-11-ت2** — TACACS+.
+
+**8-11-ت3** — اگر سرور پاسخ بدهد و رد کند، رد نهایی است و به Local نمی‌رود؛ اگر سرور در دسترس نباشد (Timeout)، روش بعدی یعنی حساب محلی استفاده می‌شود.
+
+**8-11-ت4** — ورود از Console با Method List جداگانه (بدون سرور) یا بازیابی رمز فیزیکی. پیشگیری: `local` آخر لیست، آزمون با Session دوم و Method جدا برای Console قبل از ذخیره.
+
+**8-11-Q1** — TCP port 49.
+
+### پاسخ‌های درس افزوده‌ی 8-12 (فصل 8)
+
+**8-12-ت1** — Device-based، Controller-based، Cloud-based، Automation-based، Infrastructure as Code.
+
+**8-12-ت2** — Northbound: کنترلر به برنامه‌ها (معمولاً REST)؛ Southbound: کنترلر به دستگاه‌ها (NETCONF، RESTCONF، SSH، SNMP).
+
+**8-12-ت3** — اجرای مکرر همان نتیجه را می‌دهد و اگر وضعیت از قبل درست باشد، تغییری نمی‌کند.
+
+**8-12-ت4** — 401: احراز هویت نامعتبر/ناموجود؛ 404: مسیر یا منبع یافت نشد.
+
+**8-12-ت5** — اختلاف وضعیت واقعی دستگاه با وضعیت مطلوب در Git؛ با اجرای Playbook در حالت `--check --diff` یا مقایسه‌ی Config با فایل کشف می‌شود.
+
+**8-12-Q1** — POST.
 
 ---
 
