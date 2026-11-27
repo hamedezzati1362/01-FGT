@@ -4364,6 +4364,56 @@ debug ip bgp events   ! lab only
 
 <a id="l-9-2"></a>
 
+### تعمیق: سناریوی واقعی «Session هر شب ساعت ۲ می‌افتد» و پرسش‌های مصاحبه
+
+**سناریو.** شعبه‌ی تهران با ISP-A (AS 65100) روی لینک 10.0.12.0/30 eBGP دارد. هر شب حدود ساعت ۲ بامداد Log می‌گوید «%BGP-5-ADJCHANGE: neighbor 10.0.12.2 Down - BGP Notification received: hold time expired» و ۴۰ ثانیه بعد دوباره Up می‌شود. تیم می‌پرسد «ISP مشکل دارد یا ما؟».
+
+**گام ۱ — دیدن علامت دقیق.**
+
+``` text
+R1# show ip bgp neighbors 10.0.12.2 | include BGP state|Last reset|Hold|Keepalive|Connections
+  BGP state = Established, up for 00:41:12
+  Last reset 00:41:12, due to BGP Notification received: hold time expired
+  Hold time is 180, keepalive interval is 60 seconds
+```
+
+«Hold time expired» یعنی طی ۱۸۰ ثانیه از آن سو نه Keepalive نه Update دریافت نشده است.
+
+**گام ۲ — کدام سمت مقصر است؟** اگر ما NOTIFICATION «received» دیده‌ایم، همسایه Hold Timer خودش را تمام‌شده دید و Session را بست؛ یعنی بسته‌های ما به او نرسیده یا بسته‌های او نیامده. شمارنده‌ها را بخوانید:
+
+``` text
+R1# show interfaces gi0/1 | include input errors|CRC|drops|rate
+R1# show policy-map interface gi0/1      ! if QoS exists: are BGP packets dropped in a class?
+```
+
+در این پرونده `output drops` ساعت ۲ بالا می‌رود: Backup شبانه‌ی شعبه لینک ۱۰۰ Mbps را اشباع می‌کند و صف خروجی Keepalive BGP (TCP 179) را Drop می‌کند.
+
+**گام ۳ — رفع.** ترافیک کنترلی BGP باید در صف اولویت باشد: BGP با DSCP CS6 مارک می‌شود (Cisco پیش‌فرض Control-plane را CS6 می‌گذارد) و در Policy خروجی کلاس اولویت دارد؛ Backup هم Shape می‌شود.
+
+``` text
+class-map match-any BGP-CTRL
+ match dscp cs6
+policy-map WAN-OUT
+ class BGP-CTRL
+  priority percent 5
+ class class-default
+  fair-queue
+interface GigabitEthernet0/1
+ service-policy output WAN-OUT
+```
+
+**گام ۴ — آزمون.** شب بعد Backup را اجرا کنید و `show policy-map interface` را ببینید: کلاس BGP-CTRL بدون Drop و Session Up بماند. معیار پذیرش: ۷ شب پیاپی بدون Flap.
+
+**اشتباهات رایج این درس**
+- **کاهش Hold Timer برای «تشخیص سریع‌تر» بدون رفع علت:** با Loss واقعی فقط Flap بیشتر می‌شود؛ برای تشخیص سریع از BFD استفاده کنید.
+- **خواندن ستون آخر summary به‌عنوان «تعداد Session»:** عدد، تعداد Prefix دریافتی است؛ حالت‌های Idle/Active اسم‌اند نه عدد.
+- **فراموشی `update-source` در Peering با Loopback:** Session در Active می‌ماند و مدیر تصور می‌کند ISP مشکل دارد.
+
+**پرسش‌های مصاحبه**
+1. *تفاوت Active و Idle؟* Idle یعنی هنوز تلاشی نیست (مثلاً Route به Peer نیست یا Shutdown است)؛ Active یعنی TCP در حال تلاش است و موفق نشده.
+2. *Hold Time چطور بین دو سر تعیین می‌شود؟* در OPEN هر دو سر مقدار پیشنهاد می‌دهند و کوچک‌تر برنده می‌شود؛ Keepalive معمولاً یک‌سوم آن است.
+3. *چرا TCP برقرار است ولی Session Established نمی‌شود؟* OPEN رد شده است (ASN اشتباه، Capability ناسازگار، MD5 متفاوت)؛ NOTIFICATION علت را در Log می‌دهد.
+
 ## درس 9-2 — eBGP عملی: Peering، اعلام Prefix با `network`/Redistribute، AD، Verification و خطاهای رایج
 
 **فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۰، ۹-۱ · ≈ 8 ساعت**
@@ -4537,6 +4587,58 @@ show ip bgp rib-failure
 
 <a id="l-9-3"></a>
 
+### تعمیق: پرونده‌ی کامل «Prefix اعلام می‌شود ولی ISP نمی‌بیند»
+
+**سناریو.** سازمان 203.0.113.0/24 از ISP گرفته است. روی R1 دستور `network 203.0.113.0 mask 255.255.255.0` زده و Session با ISP Established است ولی ISP می‌گوید «Prefix شما را دریافت نکردیم».
+
+**گام ۱ — Prefix در BGP Table هست؟**
+
+``` text
+R1# show ip bgp 203.0.113.0/24
+% Network not in table
+```
+
+یعنی اصلاً Originate نشده؛ پس مشکل قبل از Policy و ISP است.
+
+**گام ۲ — شرط دستور network.** طبق مستند Cisco باید Route دقیقاً با همان Prefix و Mask در RIB باشد:
+
+``` text
+R1# show ip route 203.0.113.0 255.255.255.0
+% Subnet not in table
+R1# show ip route 203.0.113.0
+203.0.113.0/25 is subnetted ... via 10.10.0.2   ! only two /25 specifics exist
+```
+
+سازمان /24 را در داخل به دو /25 شکسته است؛ پس /24 در RIB نیست و BGP آن را اعلام نمی‌کند.
+
+**گام ۳ — رفع طراحی‌شده.** برای اعلام Summary یک Route Anchor با Null0 می‌سازیم تا /24 در RIB باشد و ترافیک ناموجود Black-hole شود نه اینکه از اینترنت برگردد (حلقه‌ی Default):
+
+``` text
+ip route 203.0.113.0 255.255.255.0 Null0
+router bgp 65010
+ network 203.0.113.0 mask 255.255.255.0
+```
+
+/25های واقعی با Distance کمتر (OSPF/Connected) در RIB می‌مانند؛ Longest Prefix Match ترافیک را به مقصد درست می‌برد.
+
+**گام ۴ — Verification سه‌سطحی.**
+
+``` text
+R1# show ip bgp 203.0.113.0/24            ! in table, valid, local
+R1# show ip bgp neighbors 10.0.12.2 advertised-routes   ! visible to ISP
+ISP-LG# show route 203.0.113.0/24         ! at the ISP side (Looking Glass)
+```
+
+**اشتباهات رایج**
+- `redistribute connected` به‌جای `network`: مسیرهای لینک‌های داخلی (RFC1918) به ISP می‌رود؛ Prefix-list خروجی لازم است.
+- eBGP با Loopback بدون `ebgp-multihop`: TTL=1 است و Session بالا نمی‌آید.
+- انتظار اینکه Prefix «در Table هست» یعنی «در RIB هست»: `r` (RIB-failure) را بشناسید.
+
+**پرسش‌های مصاحبه**
+1. *AD در eBGP چند است و چرا اهمیت دارد؟* ۲۰؛ باعث می‌شود BGP از OSPF (110) ترجیح داده شود و گاهی ناخواسته مسیر داخلی را بدزدد.
+2. *تفاوت network و redistribute؟* network فقط Prefix دقیق را و با Origin IGP اعلام می‌کند؛ redistribute همه‌ی مسیرها را با Origin Incomplete.
+3. *Null0 چه می‌کند؟* Summary را در RIB نگه می‌دارد تا BGP اعلام کند و ترافیک بی‌مقصد را دور می‌ریزد.
+
 ## درس 9-3 — iBGP: Full-mesh/RR، Loopback Peering، `next-hop-self`، Synchronization و Split-horizon
 
 **فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۱، ۹-۲، ۶-۱ · ≈ 8 ساعت**
@@ -4690,6 +4792,56 @@ show ip bgp 10.20.0.0
 - RFC 4456
 
 <a id="l-9-4"></a>
+
+### تعمیق: طراحی iBGP برای ۶ روتر و عیب‌یابی «مسیر هست ولی استفاده نمی‌شود»
+
+**سناریو.** AS 65010 شش روتر دارد: دو Edge (E1،E2) به دو ISP و چهار Core/Distribution. تیم می‌خواهد از Full-mesh به Route Reflector برود.
+
+**محاسبه‌ی Session**
+
+``` text
+Full-mesh : 6 x 5 / 2 = 15 sessions
+RR (2 RRs, 4 clients each to both RRs, RRs peer with each other):
+  clients: 4 x 2 = 8 ; RR-RR: 1 ; edges as clients: 2 x 2 = 4 -> 13 in total
+```
+
+برای ۶ روتر صرفه‌ی کمی است؛ مزیت اصلی در ۲۰+ روتر است (۱۹۰ در برابر حدود ۴۲). یعنی RR را برای مقیاس و سادگی عملیات انتخاب می‌کنیم نه صرفاً کم‌کردن Session.
+
+**پیکربندی RR (روی RR1، Cluster-ID یکسان با RR2)**
+
+``` text
+router bgp 65010
+ bgp cluster-id 10.254.0.100
+ neighbor CLIENTS peer-group
+ neighbor CLIENTS remote-as 65010
+ neighbor CLIENTS update-source Loopback0
+ neighbor CLIENTS route-reflector-client
+ neighbor 10.254.0.1 peer-group CLIENTS
+ neighbor 10.254.0.2 peer-group CLIENTS
+```
+
+**عیب‌یابی نمونه.** روی Core3 مسیر 8.8.8.0/24 در Table است ولی `>` ندارد و Next-hop برابر 192.0.2.1 (آدرس ISP) است:
+
+``` text
+Core3# show ip bgp 8.8.8.0/24
+  192.0.2.1 (inaccessible) from 10.254.0.100 ...
+```
+
+علت: E1 مسیر خارجی را بدون تغییر Next-hop به iBGP می‌دهد و لینک ISP در OSPF نیست. دو راه:
+1. `neighbor 10.254.0.100 next-hop-self` روی E1 (ترجیح برای Edgeها).
+2. لینک ISP را Passive در OSPF اعلام کنید (آدرس‌دهی لینک ISP وارد IGP می‌شود).
+
+بعد از تغییر `clear ip bgp * soft in` و آزمون `show ip bgp 8.8.8.0/24` که `>` بگیرد و `show ip route 8.8.8.0` که [200/0] نشان دهد (AD iBGP برابر ۲۰۰).
+
+**نکات طراحی**
+- RR باید روی مسیر داده (Data path) نباشد؛ فقط Control Plane (یا مسیرش مستقل باشد).
+- RRهای یک Cluster: Cluster-ID یکسان؛ در Cluster جدا Router-ID هر RR بود.
+- با RR، Loop را ORIGINATOR_ID و CLUSTER_LIST می‌گیرند.
+
+**پرسش‌های مصاحبه**
+1. *چرا iBGP Full-mesh می‌خواهد؟* چون AS_PATH در iBGP تغییر نمی‌کند و Split-horizon از Loop جلوگیری می‌کند.
+2. *Next-hop-self کجا گذاشته می‌شود؟* روی روتر مرزی که مسیر خارجی را به iBGP می‌دهد.
+3. *Synchronization چیست؟* قدیمی و در IOS جدید پیش‌فرض خاموش است.
 
 ## درس 9-4 — کنترل مسیر BGP: Weight، Local-Pref، AS-Path Prepend، MED، Community — طراحی ورودی/خروجی با مثال
 
@@ -4848,6 +5000,49 @@ show ip bgp
 
 <a id="l-9-5"></a>
 
+### تعمیق: طراحی کامل Policy دو ISP با اعداد و آزمون
+
+**نیازمندی.** AS 65010 با ISP-A (گران، پایدار) و ISP-B (ارزان). هدف: ۱) خروج ترجیحاً از A، ۲) ورود ۷۰٪ از A و ۳۰٪ از B، ۳) Failover خودکار، ۴) جلوگیری از Transit شدن.
+
+**گام ۱ — خروج (Local-Pref).**
+
+``` text
+route-map FROM-A permit 10
+ set local-preference 200
+route-map FROM-B permit 10
+ set local-preference 100
+router bgp 65010
+ neighbor 192.0.2.1 route-map FROM-A in
+ neighbor 192.0.2.5 route-map FROM-B in
+```
+
+**گام ۲ — ورود (تقسیم Prefix).** دو Prefix /24 داریم: 203.0.113.0/24 (ترافیک سنگین‌تر) و 203.0.114.0/24. از A هر دو را با AS_PATH عادی اعلام می‌کنیم؛ از B اولی را با Prepend ۳تایی (کم‌ترجیح) و دومی را عادی:
+
+``` text
+route-map TO-B permit 10
+ match ip address prefix-list HEAVY
+ set as-path prepend 65010 65010 65010
+route-map TO-B permit 20
+```
+
+نتیجه‌ی مورد انتظار: ترافیک ورودی /24 سنگین ترجیحاً از A و سبک‌تر از B می‌آید. چون ISPها Policy خودشان را اعمال می‌کنند، نتیجه تضمینی نیست؛ اندازه‌گیری لازم است.
+
+**گام ۳ — Community برای کنترل دقیق‌تر.** بسیاری از ISPها Communityهای Action منتشر می‌کنند (مثلاً Local-Pref پایین‌تر یا Prepend از طرف ISP). بدون خواندن مستند ISP عدد نزنید.
+
+**گام ۴ — Failover.** Prefix هر دو از هر دو ISP اعلام می‌شود (با Prepend برای پشتیبان)؛ اگر A بیفتد B جایگزین می‌شود؛ آزمون: shutdown Session A و بررسی `show ip bgp` + traceroute.
+
+**گام ۵ — اندازه‌گیری.** `show interfaces` شمارنده‌ی ورودی دو لینک در ۲۴ ساعت: اگر نسبت 55/45 شد، Prefix را بازتقسیم یا Prepend را تنظیم کنید.
+
+**اشتباهات رایج**
+- Prepend خیلی زیاد (۱۰ بار): بعضی ISPها فیلتر می‌کنند یا بی‌اثر می‌شود.
+- MED برای کنترل بین دو ISP مختلف: مقایسه نمی‌شود مگر `always-compare-med`.
+- فراموشی `clear ip bgp soft`: Policy جدید اعمال نمی‌شود.
+
+**پرسش‌های مصاحبه**
+1. *Weight در برابر Local-Pref؟* Weight فقط روی همان روتر (Cisco)، Local-Pref در کل AS.
+2. *چرا ورود کنترل‌پذیر نیست؟* تصمیم دست ISPهای دیگر است؛ فقط «تأثیر» می‌گذاریم.
+3. *Community no-export چه می‌کند؟* مسیر را به eBGP Peerها نمی‌دهد.
+
 ## درس 9-5 — Route Filtering در BGP: Prefix-List، AS-Path ACL، Route-map، Max-prefix و دفاع از Route Leak
 
 **فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۴، ۹-۷، ۱۰-۱ · ≈ 9 ساعت**
@@ -5004,6 +5199,55 @@ show ip bgp neighbors 192.0.2.1 advertised-routes
 
 <a id="l-9-6"></a>
 
+### تعمیق: استاندارد فیلتر ISP و آزمون Leak در Lab
+
+**هدف.** Template فیلتر برای هر eBGP Peer که بتوان بدون تغییر در همه‌ی شعبه‌ها استفاده کرد (الهام‌گرفته از RFC 7454).
+
+**ورودی (Inbound)**
+
+``` text
+ip prefix-list BOGONS seq 5  deny 0.0.0.0/8 le 32
+ip prefix-list BOGONS seq 10 deny 10.0.0.0/8 le 32
+ip prefix-list BOGONS seq 15 deny 127.0.0.0/8 le 32
+ip prefix-list BOGONS seq 20 deny 169.254.0.0/16 le 32
+ip prefix-list BOGONS seq 25 deny 172.16.0.0/12 le 32
+ip prefix-list BOGONS seq 30 deny 192.168.0.0/16 le 32
+ip prefix-list BOGONS seq 35 deny 224.0.0.0/3 le 32
+ip prefix-list BOGONS seq 40 deny 0.0.0.0/0 ge 25
+ip prefix-list BOGONS seq 45 permit 0.0.0.0/0 le 24
+```
+
+ردیف `ge 25` Prefixهای خیلی ریز (/25 تا /32) را که نباید در اینترنت دیده شوند حذف می‌کند.
+
+**خروجی (Outbound)** — فقط Prefix خودمان و فقط مسیرهای با AS_PATH خالی:
+
+``` text
+ip prefix-list OURS seq 5 permit 203.0.113.0/24
+ip as-path access-list 10 permit ^$
+router bgp 65010
+ neighbor 192.0.2.1 prefix-list BOGONS in
+ neighbor 192.0.2.1 prefix-list OURS out
+ neighbor 192.0.2.1 filter-list 10 out
+ neighbor 192.0.2.1 maximum-prefix 1000 80
+```
+
+(حد Max-prefix از ISP پرسیده شود.)
+
+**آزمون Leak در Lab.** سه روتر: R1 (ما)، ISP-A، ISP-B. ISP-A مسیر 198.51.100.0/24 می‌فرستد.
+1. بدون `filter-list` / `prefix-list` خروجی: `show ip bgp neighbors <ISP-B> advertised-routes` مسیر ISP-A را نشان می‌دهد ⇒ Leak (ما Transit شده‌ایم).
+2. با فیلتر: مسیر ISP-A در advertised-routes به ISP-B نیست.
+3. آزمون Max-prefix: ISP-A را وادار به ارسال ۱۲۰۰ Prefix کنید و Warning ۸۰٪ و سپس قطع/هشدار را ببینید.
+
+**اشتباهات رایج**
+- Prefix-list با Mask اشتباه (مثلاً `le 32` روی Prefix سازمان): Prefixهای ریز ناخواسته هم مجاز می‌شود.
+- Max-prefix بدون Alert: Session می‌افتد و کسی نمی‌داند.
+- Default Route را بی‌فیلتر پذیرفتن: ISP ممکن است Default بدهد؛ اگر می‌خواهید فقط 0.0.0.0/0 را بپذیرید صریح بنویسید.
+
+**پرسش‌های مصاحبه**
+1. *چرا فیلتر ورودی هم لازم است؟* ISP اشتباه می‌کند؛ ما نباید Prefix خصوصی یا Prefix خودمان را از بیرون بپذیریم.
+2. *`^$` چیست؟* AS_PATH خالی؛ یعنی فقط Prefixهای خودمان.
+3. *RPKI چه کمکی می‌کند؟* مبدأ Prefix (ASN) را اعتبارسنجی می‌کند و Hijack را کم می‌کند.
+
 ## درس 9-6 — عیب‌یابی BGP و آزمون فصل ۹: روش لایه‌ای، پنج پرونده‌ی کامل، کلید و Rubric
 
 **فصل 9 · بازنویسی عمیق · پیش‌نیاز: ۹-۰ تا ۹-۵، ۹-۷ · ≈ 12 ساعت**
@@ -5142,6 +5386,47 @@ traceroute 10.20.0.1
 
 - درس‌های ۹-۱ تا ۹-۵
 - Cisco BGP troubleshooting guide
+
+### تعمیق: پرونده‌ی عملی از اول تا آخر با Timeline و RCA
+
+**گزارش:** ساعت ۱۴:۰۰ «اینترنت قطع است». Edge R1 با ISP-A و ISP-B BGP دارد.
+
+``` text
+14:02 show ip bgp summary
+  192.0.2.1  AS65100 Established, 612000 PfxRcd
+  192.0.2.5  AS65200 Active, never   <- ISP-B is down
+14:04 ping 192.0.2.5 source gi0/2 -> ok ; telnet 192.0.2.5 179 -> timeout
+14:06 show access-lists -> 'deny tcp any any eq bgp' hit counter growing (new ACL from 13:30 change)
+14:08 remove deny line; Session Established; PfxRcd 611800
+14:10 traceroute 8.8.8.8 -> via ISP-A (Local-pref 200): users were never down, only backup lost
+```
+
+**تحلیل:** کاربران قطع نبودند (A زنده بود)؛ پشتیبان B بی‌خبر افتاده بود. اگر A هم می‌افتاد قطعی واقعی رخ می‌داد؛ پس ریسک پنهان بود.
+
+**RCA کوتاه**
+
+``` text
+Cause     : change at 13:30 added ACL deny tcp any any eq 179 on Gi0/2
+Detection : manual (no alert on BGP neighbor down)
+Fix       : remove ACL line, add permit for peer
+Prevent   : post-change checklist (show ip bgp summary), SNMP/Syslog alert on neighbor down
+```
+
+**نکته‌ی آموزشی:** Alert باید روی «Neighbor Down» باشد نه روی «اینترنت قطع است»؛ چون با Redundancy کاربر قطعی نمی‌بیند ولی سیستم در ریسک است. این همان تفاوت پایش «سلامت» با پایش «تجربه‌ی کاربر» است.
+
+**چک‌لیست تکرارشونده‌ی ۷ گامی**
+1. `show ip bgp summary` (حالت و PfxRcd)
+2. Reachability و TCP 179
+3. `advertised-routes` و `received-routes`
+4. `show ip bgp <prefix>` (Attributeها)
+5. `show ip route <prefix>` و `rib-failure`
+6. traceroute دو جهته
+7. Policy (Route-map/Prefix-list/ACL)
+
+**پرسش‌های مصاحبه**
+1. *Session Established ولی ترافیک نمی‌آید؟* Prefix دریافت نشده/فیلتر شده یا RIB نصب نشده یا Forwarding (CEF/ARP).
+2. *PfxRcd=0 را چطور بررسی می‌کنید؟* `received-routes` (با soft-reconfig) یا Log طرف مقابل؛ فیلتر ورودی را ببینید.
+3. *دو عیب هم‌زمان را چطور جدا می‌کنید؟* لایه‌ی پایین‌تر اول؛ هر رفع یک آزمون.
 
 ## درس 9-7 — انتخاب بهترین مسیر BGP (کامل)، پایداری و امنیت Session
 
