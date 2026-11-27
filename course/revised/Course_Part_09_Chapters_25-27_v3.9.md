@@ -2648,180 +2648,159 @@ CPU warn     = P95 x 1.5      = 41 x 1.5 ~ 61 %
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ Log/Syslog از مستند 7.0؛ SNMPv3 و REST API روی 7.0.3 `Unverified`؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Log انواع Traffic، Event و UTM و فیلدهای مهم هر کدام را بشناسد.
-2. `logtraffic` (all/utm/disable) و Policy Logging را با هدف انتخاب کند.
-3. Log Settings (Disk/Memory/FortiAnalyzer/Syslog) و رفتار هنگام پر شدن را بفهمد.
-4. حجم و Retention را محاسبه و طراحی کند.
-5. Log را برای عیب‌یابی و Detection فیلتر و تفسیر کند.
-6. Log Deny/Implicit deny و Local traffic را مدیریت کند.
+1. انواع Log (Traffic، Event، Security/UTM، Local Traffic) را تفکیک کنید.
+2. سطح ثبت Policy (`logtraffic all/utm/disable`) را درست انتخاب کنید.
+3. ذخیره‌ی محلی (Memory/Disk) و مقصدهای ارسال را بشناسید.
+4. حجم و Retention را محاسبه و طراحی کنید.
+5. Implicit Deny و Local-in Log را فعال کنید.
+6. Log را فیلتر و تفسیر کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Logging درست؟** Log حافظه‌ی شبکه است. ناقص یعنی در حادثه کور؛ بیش‌ازحد یعنی دیسک پر و CPU درگیر.
+Log «جعبه‌ی سیاه» شبکه است. بعد از حادثه، تنها منبع حقیقت است. ولی Log زیاد، دیسک را پر می‌کند و CPU می‌خورد؛ Log کم، شما را کور می‌کند. تعادل: چه چیز با چه سطحی، کجا، تا کی. بدون این طراحی، «Log همه‌چیز» و «هیچ‌چیز پیدا نمی‌شود» هر دو اتفاق می‌افتد.
 
-**انواع:** Traffic (Sessionها)، Event (سیستم/ادمین/VPN/HA)، UTM (AV/IPS/Web)، Local. **سطح در Policy:** `all` (همه‌ی Sessionها)، `utm` (فقط رویداد UTM)، `disable`. Deny ضمنی Log ندارد مگر `fwpolicy-implicit-log` فعال باشد.
+### انواع Log
 
-**جمع‌بندی اصلی درس:**
-
-Log سه کاربرد دارد: **عیب‌یابی** (چرا بسته Drop شد؟)، **امنیت** (چه حمله‌ای دیدیم؟)، **انطباق/Audit** (چه کسی چه کرد؟). «همه چیز را Log کن» هم حجم عظیم و هم نویز می‌سازد؛ «هیچ چیز» هم کورشدن. باید بر اساس هدف تصمیم گرفت.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) انواع Log (طبق مستند 7.0)
-
-| نوع | محتوا | کاربرد |
+| نوع | محتوا | مثال |
 |---|---|---|
-| Traffic (forward/local) | Session: src/dst/port/action/policy | جریان، حادثه |
-| Event | Admin، System، VPN، HA، Router، User | Audit/تغییر |
-| Security (UTM) | virus، webfilter، dns، app-ctrl، ips، DLP | تهدید |
+| Traffic (Forward) | Sessionهای عبوری | accept/deny، بایت |
+| Local Traffic | ترافیک به/از خود FortiGate | SSH به FGT، DNS |
+| Event | رویداد سیستم | ورود Admin، تغییر Config، HA، VPN |
+| Security (UTM) | AV، Web Filter، IPS، App Control | بلاک، شناسایی |
+| Anomaly | DoS Policy | SYN Flood |
 
-طبق مستند نمونه‌ی Log: Log امنیتی نیاز دارد Policy دارای UTM باشد و `logtraffic` روی `utm` یا `all`.
+### سطح ثبت
 
-#### ۲) سطوح `logtraffic`
-
-- `all`: همه‌ی Sessionها (Start/End) — حجم زیاد.
-- `utm`: فقط Sessionهای دارای رویداد UTM.
-- `disable`: هیچ.
-
-تصمیم: Policyهای Allow مهم (سرور حیاتی، مدیریت) `all`؛ Allow عمومی کاربران `utm`؛ Deny: Log فعال؛ Implicit deny (Policy 0) با تنظیم جدا Log (`Unverified`).
-
-#### ۳) فیلدهای کلیدی
-
-``` text
-date time devname type subtype level srcip srcintf dstip dstintf srcport dstport proto service action policyid sentbyte rcvdbyte duration
-```
-
-`action`: accept/deny/close/timeout؛ `policyid`: همبستگی با Policy؛ `sentbyte/rcvdbyte`: Exfiltration.
-
-#### ۴) مقصدها و رفتار پر شدن
-
-Memory (کم، غیرپایدار)، Disk (محدود؛ Overwrite قدیمی‌ها)، FortiAnalyzer/Syslog (مرکزی). **ذخیره‌ی محلی را مرجع نگیرید.** رفتار دیسک پر: Overwrite/توقف؛ هشدار.
-
-#### ۵) حجم و Retention
-
-``` text
-Daily volume = events/day x avg record size
-Retention storage = Daily volume x days x 1.2 (headroom)
-```
-
-مثال: ۵ میلیون Session × ۰٫۵ KB = ۲٫۵ GB/روز؛ ۹۰ روز = ۲۷۰ GB (+۲۰٪ = ۳۲۴ GB).
-
-#### ۶) خواندن Log برای عیب‌یابی
-
-``` text
-execute log filter category 0          (traffic)
-execute log filter field srcip 10.1.4.10
-execute log filter field dstport 443
-execute log display
-```
-
-(نام زیردستورها `Unverified`؛ GUI: Log & Report → Forward Traffic با فیلتر.)
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| تنظیم Policy | معنی |
 |---|---|
-| logtraffic | بر اساس هدف: حیاتی all، عمومی utm، Deny فعال |
-| مقصد | Syslog مرکزی؛ Local کوتاه |
-| Retention | محاسبه و انطباق |
-| NTP | اجباری |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
+| `logtraffic all` | همه‌ی Sessionها (شروع/پایان) |
+| `logtraffic utm` | فقط رویدادهای UTM |
+| `logtraffic disable` | هیچ |
 
 ``` text
 config firewall policy
- edit 30
-  set logtraffic all
- next
-end
-config log setting
- set fwpolicy-implicit-log enable
-end
-```
-
-#### مثال متوسط — مشاهده
-
-``` text
-execute log filter category 0
-execute log filter field srcip 10.10.0.5
-execute log display
-```
-
-#### مثال سخت — دیسک پر
-
-``` text
-Storage = log_per_day x days x devices = 2 GB x 90 x 12 = 2160 GB
-```
-
-Log محلی در ۴۸ ساعت پر می‌شود و حادثه‌ی هفته‌ی قبل از بین رفته ⇒ Syslog/FAZ با نگهداری ۹۰ روز.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** کاربر به `10.20.30.7:1433` نمی‌رسد؛ Log Forward Traffic: `action=deny policyid=0` ⇒ Implicit deny؛ علت: Policy نیست. رفع: Policy؛ تأیید با Log `accept policyid=31`.
-
-**متوسط (محاسبه):** ۱۲ میلیون Session/روز، ۴۵۰ بایت/Session؛ Retention ۱۸۰ روز ⇒ ۵٫۴ GB/روز، ≈ ۹۷۲ GB؛ با فشرده‌سازی ۸:۱ ≈ ۱۲۱ GB؛ تصمیم: Syslog مرکزی و Local فقط ۷ روز.
-
-**سخت (تحلیل):** Log پر از نویز Allow وب است و حادثه‌ی نفوذ کشف نشد. تحلیل: `logtraffic all` روی Policy کاربران؛ تصمیم: `utm` برای Allow عمومی و `all` برای مدیریت/سرور؛ Deny همیشه؛ Correlation: `policyid`/`srcip`/Bytes؛ Alert روی Deny پورت‌های مدیریتی و حجم خروجی غیرعادی. نتیجه: Log کم‌حجم‌تر و معنادارتر.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Log & Report → Log Settings: Local logging، Disk، Remote.
-2. Policy & Objects → Firewall Policy → Logging Options (Log Allowed Traffic: All/Security Events).
-3. Log & Report → Forward Traffic / Events / AntiVirus / Web Filter.
-4. Dashboard → Log widgets.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-config firewall policy
-    edit 31
+    edit 30
         set logtraffic all
+        set logtraffic-start disable
     next
 end
 config log setting
-    set local-in-allow enable
-    set local-in-deny-broadcast enable
+    set fwpolicy-implicit-log enable
+    set local-in-allow disable
+    set local-in-deny-unicast enable
+    set local-in-deny-broadcast disable
 end
-execute log filter category 0
-execute log filter field policyid 31
-execute log display
 ```
 
-### ۸) Verification (اثبات صحت)
+`logtraffic-start`: Log هنگام شروع Session (بار بیشتر)؛ معمولاً فقط پایان کافی.
 
-- Log رویداد آزمایشی Allow/Deny.
-- حجم Log هفتگی اندازه‌گیری.
-- Retention محاسبه‌شده با مقدار واقعی.
+### سطح Severity
 
-### ۹) Troubleshooting
+Emergency، Alert، Critical، Error، Warning، Notification، Information، Debug. برای مقصد: `severity information` مناسب؛ `debug` فقط موقت.
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+### ذخیره‌ی محلی
+
+``` text
+config log disk setting
+    set status enable
+    set ullogd-ram-cache enable
+    set max-log-file-size 100
+    set storage ...
+end
+config log memory setting
+    set status enable
+end
+```
+
+(مدل‌ها بدون دیسک فقط Memory محدود دارند؛ Log را به مرکز بفرستید.)
+
+``` text
+execute log filter category 0
+execute log filter field action deny
+execute log filter start-line 1
+execute log display
+get log disk setting
+```
+
+### محاسبه‌ی حجم
+
+``` text
+Events/day = sessions per second x 86400
+Volume/day = events/day x avg log size
+
+500 sessions/s x 86400 = 43.2 M events/day
+43.2 M x 450 B       = 19.4 GB/day (traffic only)
+```
+
+Retention ۹۰ روز: ≈ ۱٫۷۵TB خام؛ با فشرده‌سازی ≈ ۲۲۰GB (نسبت ۸:۱ تقریبی).
+
+### Log Deny ضمنی
+
+``` text
+config log setting
+    set fwpolicy-implicit-log enable
+end
+```
+
+بدون آن، ترافیک Denied توسط Implicit Deny Log نمی‌شود و در حادثه کور می‌شوید.
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — انتخاب
+
+Policy اینترنت کاربران: `logtraffic all`؛ Policy مرکز داده‌ی داخلی حجیم Backup: `utm` یا Log اختصاصی با نمونه‌برداری.
+
+#### مثال متوسط — خواندن Log
+
+``` text
+date=2026-11-27 time=10:15:01 type="traffic" subtype="forward" srcip=10.10.0.5 dstip=198.51.100.8
+dstport=443 policyid=30 action="close" sentbyte=1200 rcvdbyte=9800 duration=35
+```
+
+`action=close` یعنی Session تمام شد؛ `deny` یعنی مسدود؛ `timeout` یعنی انقضا. `rcvdbyte=0` یعنی پاسخی نبود.
+
+#### مثال متوسط — حجم
+
+۵۰۰ session/s ⇒ ≈ ۱۹٫۴GB/روز. دیسک محلی ۱۲۰GB فقط ۶ روز. راه: ارسال به مرکز (۲۶-۲)، یا کاهش (Backup بدون Log).
+
+#### مثال سخت — Log همه‌چیز و CPU
+
+`logtraffic all` روی ۱۰۰ Policy پرترافیک + Syslog + FAZ ⇒ CPU log daemon بالا، تأخیر. راه: Log فقط Policyهای مهم، `logtraffic-start disable`، Offload Log به مرکز، `log-invalid-packet disable`.
+
+#### مثال سخت — ممیز و Retention
+
+ممیز Log ۶ ماه پیش می‌خواهد؛ شما ۹۰ روز دارید. Retention باید از الزام قانونی/Dwell Time تعیین شود؛ آرشیو سرد ارزان.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. Policy با سطوح مختلف.
+2. فیلتر Log و خواندن.
+3. محاسبه‌ی حجم.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Log امنیتی نیست | Policy: utm-status/logtraffic | فعال‌سازی Profile و logtraffic |
-| Disk پر | Dashboard | Retention/Syslog |
-| Log زیاد | حجم | logtraffic all روی Allow عمومی |
-| زمان اشتباه | Log timestamp | NTP |
+| Log نیست | logtraffic disable | all |
+| Deny دیده نمی‌شود | implicit log | enable |
+| دیسک پر | حجم | Retention/مرکز |
+| CPU بالا | Log زیاد | کاهش |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Log حاوی IP/User است؛ دسترسی و رمزنگاری انتقال.
-- Log را محو/حذف نکنید؛ Immutable.
+Log حاوی IP/User است؛ دسترسی محدود؛ انتقال رمزگذاری‌شده؛ Integrity؛ حذف طبق سیاست.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- سه نوع Log و سه سطح logtraffic.
-- طراحی بر اساس هدف.
-- حجم=رویداد×اندازه×روز.
-- Local مرجع نیست.
-- NTP برای Correlation.
+انواع Log؛ سطح ثبت و Implicit Deny Log؛ محاسبه‌ی حجم و Retention؛ ذخیره‌ی محلی محدود و ارسال مرکزی.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) سه نوع Log در FortiOS؟ *(پاسخ: 27-1-ت1)*
 
@@ -2837,7 +2816,7 @@ execute log display
 
 **Q1.** Quick quiz (English): Why should the local firewall log not be the only copy of the logs? *(پاسخ: 27-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2847,11 +2826,11 @@ execute log display
 
 - *Log denied traffic to detect scans.* ← Deny را برای کشف Scan Log کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Logging. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/log.md`.
 
-### ۱۵) منابع
+### منابع
 
 - [Sample logs by log type](https://docs.fortinet.com/document/fortigate/7.0.5/administration-guide/986892/sample-logs-by-log-type)
 - [Log message fields](https://docs.fortinet.com/document/fortigate/7.0.0/fortios-log-message-reference/357866/log-message-fields)
@@ -2859,274 +2838,173 @@ execute log display
 
 <a id="l-27-2"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: انواع Log
-
-Traffic، Event، UTM، Local. `config log setting; set fwpolicy-implicit-log enable`.
-
-``` text
-config log setting
- set fwpolicy-implicit-log enable
- set local-in-allow enable
-end
-```
-
-**پرسش‌های مصاحبه**
-1. *Log دیسک؟* پر شدن.
-2. *Log All در برابر UTM؟* حجم.
-3. *زمان؟* NTP.
-
-### مثال حل‌شده: چرا Log ترافیک ثبت نمی‌شود؟
-
-1. Policy را باز کنید: `logtraffic` اگر `disable` است ⇒ `utm` یا `all`.
-2. `config log setting` و `fwpolicy-implicit-log`.
-3. مقصد Log: `config log disk setting` یا syslog.
-4. `execute log filter category 0 ; execute log display`.
-
-``` text
-date=2026-11-27 srcip=10.10.0.5 dstip=198.51.100.8 policyid=30 action=accept
-```
-
-اگر Disk Log پر است، به Syslog/FAZ منتقل کنید.
-
-### تکمیل عمیق: Logging در FortiGate — چه چیزی، کجا و با چه هزینه‌ای؟
-
-#### چرا؟
-
-Log‌ها حافظه‌ی شبکه‌اند. Log ناقص یعنی در حادثه کور هستید؛ Log بیش‌ازحد یعنی دیسک پر و CPU درگیر. تعادل لازم است.
-
-#### انواع Log
-
-| نوع | محتوا | مثال |
-|---|---|---|
-| Traffic | Sessionها | accept/deny |
-| Event | سیستم/ادمین/VPN | ورود ادمین |
-| UTM | AV/IPS/Web | virus blocked |
-| Local | ترافیک به خود فایروال | Local-in |
-
-#### مثال ساده — Log در Policy
-
-``` text
-config firewall policy
- edit 30
-  set logtraffic all     # or utm
- next
-end
-```
-
-`all` هر Session؛ `utm` فقط رویدادهای UTM. برای Policy Deny پایانی همیشه `all`.
-
-#### مثال متوسط — Implicit Deny
-
-``` text
-config log setting
- set fwpolicy-implicit-log enable
-end
-```
-
-بدون آن ترافیک رد‌شده‌ی Implicit Deny ثبت نمی‌شود و نشانه‌ای از اسکن نمی‌بینید.
-
-#### مثال سخت — دیسک پر
-
-Log روی دیسک محلی در ۴۸ ساعت پر می‌شود و Rolling فعال است؛ حادثه‌ی هفته‌ی قبل از بین رفته. راه: ارسال به Syslog/FAZ با نگهداری ۹۰ روز و محاسبه‌ی ظرفیت.
-
-``` text
-Storage = log_per_day x days x devices
-2 GB x 90 x 12 = 2160 GB
-```
-
-#### Lab
-
-یک Policy با Log all بسازید، ترافیک تولید و در GUI/CLI Log را فیلتر کنید.
-
-``` text
-execute log filter category 0
-execute log filter field srcip 10.10.0.5
-execute log display
-```
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Log نیست | logtraffic disable | فعال‌سازی |
-| Log ناقص | دیسک/Rate | Syslog |
-| زمان اشتباه | NTP/Timezone | تنظیم |
-
-#### پرسش‌ها با پاسخ
-
-**۱. تفاوت all و utm؟** تمام Session در برابر فقط UTM.
-**۲. چرا Syslog؟** ماندگاری و تحلیل.
-**۳. چرا NTP؟** ترتیب رویدادها.
-
-#### English Corner
-
-- *Enable logging on the final deny policy.*
-- Q: Why send logs off the device?
-
 ## درس 27-2 — مانیتورینگ با SNMP و Zabbix: معیارها، Template، Trigger، Baseline و کاهش Alert نویزی
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۰، ۲۷-۱ · ≈ 8 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ Log/Syslog از مستند 7.0؛ SNMPv3 و REST API روی 7.0.3 `Unverified`؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. SNMPv3 را (در صورت پشتیبانی) ایمن فعال و Source را محدود کند.
-2. Host/Template در Zabbix بسازد و معیارهای کلیدی FortiGate را بگیرد.
-3. Trigger بر پایه‌ی Baseline و Hysteresis بنویسد.
-4. Alert نویزی و Flapping را کاهش دهد.
-5. Dashboard عملیاتی و SLA بسازد.
-6. مانیتورینگ HA/VPN/Interface/Session را پوشش دهد.
+1. SNMP (v2c و v3) را روی FortiGate ایمن تنظیم کنید.
+2. معیارهای کلیدی (CPU، Memory، Session، Interface، HA، VPN) و OIDها را بشناسید.
+3. Zabbix Host/Template/Trigger را بسازید.
+4. Baseline و آستانه‌ی معنادار تعیین کنید.
+5. Alert نویزی را کاهش دهید (Dependency، Hysteresis، Maintenance).
+6. مانیتورینگ را با آزمون Alert تأیید کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا SNMP و Zabbix؟** نمی‌شود هر صبح وارد ۱۰ فایروال شد و CPU را دید. مانیتورینگ عدد را می‌گیرد، ذخیره می‌کند، با آستانه مقایسه می‌کند و خبر می‌دهد. SNMP v2c رمز (Community) را متن ساده می‌فرستد؛ v3 احراز هویت و رمزنگاری دارد و ترجیح داده می‌شود.
+مانیتورینگ مثل چراغ‌های داشبورد ماشین است: قبل از خراب‌شدن موتور هشدار می‌دهد. ولی چراغی که هر لحظه چشمک بزند، دیگر دیده نمی‌شود (Alert Fatigue). مهندس خوب «چه چیزی، با چه آستانه‌ای، به چه کسی» را بر اساس Baseline تعیین می‌کند، نه عدد دلخواه.
 
-**جمع‌بندی اصلی درس:**
+### SNMP ایمن
 
-مانیتورینگ بدون آستانه‌ی معنادار فقط نمودار است. سه خطای رایج: SNMPv2c با Community ضعیف و باز، Triggerهای ثابت بدون Baseline، و Alertهای بی‌شمار که تیم را «کور» می‌کنند (Alert fatigue). هدف: **کم‌تر ولی دقیق‌تر**.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) SNMP
-
-- **v2c:** Community متن آشکار؛ فقط Lab/شبکه‌ی مدیریت؛ Source محدود.
-- **v3:** `authPriv` (احراز + رمزنگاری)؛ کاربر جدا. روش دقیق فیلدها در 7.0.3 `Unverified`.
-- فعال‌سازی روی Interface مدیریتی (`allowaccess snmp`) و محدودسازی Host مجاز.
-
-#### ۲) معیارها (نمونه OID/موضوع)
-
-| معیار | موضوع | کاربرد |
-|---|---|---|
-| CPU/Memory | سلامت | ظرفیت |
-| Session count/CPS | بار | Exhaustion |
-| Interface in/out/error | لینک | کابل/ظرفیت |
-| HA status/Sync | دسترس‌پذیری | Failover |
-| VPN tunnel up/down | سرویس | قطع Tunnel |
-| Disk/Log | Log | از دست‌رفتن Log |
-
-#### ۳) Trigger هوشمند
-
-``` text
-CPU high:     avg(5m) > baseline_p95 x 1.3  for 10m   (not instant spike)
-Interface err: delta(errors,10m) > 100  and  rate rising
-Session:      > 80% of max for 5m
-Tunnel down:  last(status)=down for 2 consecutive checks (avoid flap)
-Hysteresis:   recover when value < 0.9 x threshold
-```
-
-#### ۴) کاهش نویز
-
-Dependency (اگر Tunnel Down، Alert سرویس‌های پشت آن را سرکوب کن)، Maintenance window، گروه‌بندی، شدت (Warning/High)، Escalation. معیار کیفیت Alert: درصد Alertهایی که اقدام لازم داشتند (Actionable rate).
-
-#### ۵) SLA/Dashboard
-
-Availability = uptime/total؛ نمودار روند CPU/Session، وضعیت Tunnelها، HA، Top Interface.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| نسخه | امنیت |
 |---|---|
-| SNMP نسخه | v3 در تولید |
-| Trigger | Baseline + Hysteresis |
-| Dependency | برای کاهش Storm |
-| Escalation | سطوح |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-``` text
-config system snmp community
- edit 1
-  set name "ro-comm"
-  config hosts
-   edit 1
-    set ip 10.50.0.20 255.255.255.255
-   next
-  end
- next
-end
-```
-
-#### مثال متوسط — خواندن
-
-``` text
-snmpwalk -v2c -c ro-comm 10.50.0.1 1.3.6.1.2.1.1.1
-```
-
-#### مثال سخت — Trigger
-
-``` text
-avg(/FGT-1/system.cpu.util,10m) > 70
-```
-
-و Trigger «No data for 5m» برای قطع SNMP. آزمون: بار مصنوعی با iperf.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Host FGT با Template SNMP؛ `snmpwalk` پاسخ؛ نمودار CPU/Interface در Zabbix.
-
-**متوسط (تحلیل):** Trigger CPU>80٪ هر شب ساعت ۲ (Backup/Scan) Alert می‌دهد. تحلیل: الگوی عادی (Baseline)؛ راه: آستانه با ضریب Baseline و Maintenance window؛ نتیجه: Alert کاذب ≈ صفر.
-
-**سخت (طراحی):** ۱۰ فایروال، ۴۰ Tunnel؛ Alert Storm هنگام قطع ISP (۴۰ Alert). طراحی: Dependency (ISP down → سرکوب Tunnel/Session Alerts)، یک Alert مرکزی «ISP down site X» با Escalation، Trigger Flap با ۲ بررسی متوالی، و Dashboard سایت. معیار: ≤ ۳ Alert برای یک قطع.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. System → SNMP: SNMPv3 users/Communities (Source Hosts).
-2. Network → Interfaces → Administrative Access: SNMP روی Interface مدیریت.
-3. Zabbix: Configuration → Hosts → Templates → Triggers.
-
-### ۷) پیاده‌سازی از مسیر CLI
+| v1/v2c | Community متن ساده، ضعیف |
+| v3 | احراز (SHA) + رمزگذاری (AES) |
 
 ``` text
 config system snmp sysinfo
     set status enable
     set description "FGT-A"
+    set location "DC1"
+end
+config system snmp user
+    edit "zbx-monitor"
+        set security-level auth-priv
+        set auth-proto sha
+        set auth-pwd <SECRET>
+        set priv-proto aes
+        set priv-pwd <SECRET>
+        set queries enable
+        set query-port 161
+    next
 end
 config system interface
-    edit "mgmt"
+    edit "port8"
         set allowaccess ping https ssh snmp
     next
 end
-# from monitoring server
-snmpwalk -v3 -l authPriv -u <USER> -a SHA -A <AUTHPASS> -x AES -X <PRIVPASS> 192.168.90.1 1.3.6.1.2.1.1
 ```
 
-### ۸) Verification (اثبات صحت)
+اصل: SNMP فقط روی Interface مدیریتی و با Local-in Policy/Trusted برای IP سرور Zabbix.
 
-- snmpwalk موفق؛ داده در Zabbix.
-- Trigger آزمایشی (افزایش مصنوعی CPU در Lab).
-- Dependency: Alert Storm آزمون‌شده.
+### معیارها و OID (نمونه؛ با MIB بررسی شود)
 
-### ۹) Troubleshooting
+| معیار | OID (FORTINET-FORTIGATE-MIB) |
+|---|---|
+| CPU % | `1.3.6.1.4.1.12356.101.4.1.3.0` |
+| Memory % | `1.3.6.1.4.1.12356.101.4.1.4.0` |
+| Session Count | `1.3.6.1.4.1.12356.101.4.1.8.0` |
+| Interface in/out | IF-MIB `ifHCInOctets` (`1.3.6.1.2.1.31.1.1.1.6`) |
+| Uptime | `1.3.6.1.2.1.1.3.0` |
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+(OIDها از MIB رسمی فورتی‌نت؛ Unverified در این Lab.)
+
+آزمون:
+
+``` text
+snmpwalk -v3 -l authPriv -u zbx-monitor -a SHA -A <SECRET> -x AES -X <SECRET> 10.50.0.1 1.3.6.1.4.1.12356.101.4.1.3
+```
+
+### Zabbix
+
+1. Host: IP مدیریتی، Interface SNMP v3.
+2. Template: «Template Net Fortinet FortiGate SNMP» (از Zabbix Templates، نسخه‌ی مناسب).
+3. Macro: `{$SNMP_USER}` ... (Secret در Vault Macro).
+4. Trigger ها.
+
+### Baseline و آستانه
+
+``` text
+Baseline: 14 days, same hour-of-day
+CPU normal 20-35%, peak 60%
+Warning  > 80% for 10 min
+Critical > 90% for 5 min
+```
+
+شرط «برای N دقیقه» جلوی Spike کوتاه را می‌گیرد (Hysteresis).
+
+### کاهش نویز
+
+| تکنیک | توضیح |
+|---|---|
+| Duration | فقط وقتی مدت ادامه یافت |
+| Dependency | اگر Interface پایین است، Alert سرویس وابسته ارسال نشود |
+| Maintenance | در Window تغییر خاموش |
+| Severity | Warning ⇒ ایمیل؛ Critical ⇒ Page |
+| Deduplicate | گروه‌بندی Alertها |
+| Hysteresis | آستانه‌ی بازیابی کمتر از آستانه‌ی هشدار |
+
+### Triggerهای ضروری
+
+| Trigger | شرط |
+|---|---|
+| CPU High | >90٪ برای 5 دقیقه |
+| Memory High/Conserve | >85٪ |
+| Session Count | >80٪ ظرفیت |
+| Interface Down | ifOperStatus != up |
+| HA Failover | تغییر Primary |
+| VPN Tunnel Down | تونل کلیدی Down |
+| Log Disk | >85٪ |
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — CPU
+
+Baseline ۲۵٪؛ Trigger ۹۰٪ برای ۵ دقیقه. Spike ۳۰ ثانیه ⇒ Alert نمی‌دهد.
+
+#### مثال متوسط — Session Capacity
+
+ظرفیت ۱ میلیون Session؛ Warning در ۸۰۰ هزار.
+
+``` text
+Threshold = capacity x 0.8 = 1,000,000 x 0.8 = 800,000
+```
+
+SYN Flood سریع Session را پر می‌کند؛ همراه DoS Policy.
+
+#### مثال متوسط — Dependency
+
+لینک ISP پایین ⇒ ۲۰ Alert از سرویس‌های پشت آن. Dependency: Trigger اصلی «ISP Down»، بقیه سرکوب. نتیجه‌ی یک Alert معنی‌دار.
+
+#### مثال سخت — Alert Fatigue
+
+۲۰۰ Alert در هفته، ۹۵٪ بی‌اهمیت؛ تیم نادیده می‌گیرد؛ یک Alert واقعی گم شد. اصلاح: بازبینی هر Trigger (چه کسی؟ چه اقدامی؟)، حذف بی‌اقدام‌ها، Duration، Severity. KPI: درصد Alertهای عملی.
+
+#### مثال سخت — SNMP v2c لورفته
+
+Community `public` در اینترنت باز بود؛ مهاجم اطلاعات گرفت. راه: v3، Local-in محدود، حذف v2c، تغییر Community. Alert روی SNMP از IP ناشناخته.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. SNMPv3 و snmpwalk.
+2. Host/Template/Trigger.
+3. آزمون Alert و کاهش نویز.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| SNMP timeout | Firewall/allowaccess/Source | ACL/Interface |
-| Alert نویزی | Trigger | Baseline/Hysteresis |
-| داده ناقص | Template/OID | Template صحیح |
+| Timeout | allowaccess/Local-in | بررسی |
+| Auth خطا | پروتکل/رمز | هماهنگ |
+| Alert زیاد | آستانه | Duration |
+| داده نیست | OID/Template | بررسی |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- v3 با Source محدود؛ v2c Community ساده ممنوع.
-- شبکه‌ی مدیریت.
+SNMPv3 auth+priv؛ Secret در Vault؛ فقط IP سرور؛ بدون v2c؛ Log دسترسی.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- SNMPv3 + Source.
-- Trigger بر Baseline با Hysteresis.
-- Dependency و Maintenance window.
-- Actionable rate.
-- Dashboard/SLA.
+SNMPv3 ایمن؛ معیارها و OID؛ Zabbix؛ آستانه از Baseline با Duration؛ کاهش نویز (Dependency، Hysteresis، Maintenance).
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا v3 بهتر از v2c است؟ *(پاسخ: 27-2-ت1)*
 
@@ -3142,7 +3020,7 @@ snmpwalk -v3 -l authPriv -u <USER> -a SHA -A <AUTHPASS> -x AES -X <PRIVPASS> 192
 
 **Q1.** Quick quiz (English): What is alert fatigue and how can it be reduced? *(پاسخ: 27-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3152,11 +3030,11 @@ snmpwalk -v3 -l authPriv -u <USER> -a SHA -A <AUTHPASS> -x AES -X <PRIVPASS> 192
 
 - *Prefer SNMPv3 and restrict polling sources.* ← SNMPv3 را ترجیح دهید و منابع Poll را محدود کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** SNMP/Zabbix. **وضعیت:** اجرا نشده (`Unverified` برای v3). **Evidence:** `03-ops/snmp.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Zabbix documentation (SNMP templates)
 - Fortinet Docs: SNMP (7.0)
@@ -3164,289 +3042,158 @@ snmpwalk -v3 -l authPriv -u <USER> -a SHA -A <AUTHPASS> -x AES -X <PRIVPASS> 192
 
 <a id="l-27-3"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: SNMP و Zabbix
-
-``` text
-config system snmp sysinfo
- set status enable
-end
-config system snmp community
- edit 1
-  set name "ro-comm"
-  config hosts
-   edit 1
-    set ip 10.50.0.20 255.255.255.255
-   next
-  end
- next
-end
-```
-
-ترجیح SNMPv3. OIDها: CPU، Memory، Session، Interface. **پرسش‌های مصاحبه**
-1. *v2c ریسک؟* رمز متن‌ساده.
-2. *Trigger؟* آستانه.
-3. *Template؟* آماده‌ی Fortinet.
-
-### مثال حل‌شده: پایش CPU با SNMP
-
-``` text
-snmpwalk -v2c -c ro-comm 10.50.0.1 1.3.6.1.4.1.12356.101.4.1.3
-```
-
-OID بالا از MIB فورتی‌نت (fgSysCpuUsage؛ مسیر را از MIB رسمی نسخه تأیید کنید). تفسیر عدد: درصد CPU.
-
-در Zabbix: Item ← Trigger `avg(/FGT/cpu,10m)>70` ← Action ایمیل. آزمون: بار مصنوعی با iperf و دیدن Trigger.
-
-### تکمیل عمیق: SNMP و Zabbix — از نیاز تا هشدار واقعی
-
-#### چرا؟
-
-نمی‌شود صبح‌ها وارد ۱۰ فایروال شد و CPU را دید. مانیتورینگ این کار را خودکار می‌کند: عدد را می‌گیرد، ذخیره می‌کند، با آستانه مقایسه می‌کند و خبر می‌دهد.
-
-#### SNMP
-
-SNMP = Simple Network Management Protocol، یعنی «پروتکل ساده‌ی مدیریت شبکه». نسخه‌ها: v1/v2c (رمز Community به‌صورت متن ساده) و v3 (احراز هویت و رمزنگاری). در محیط واقعی v3 را ترجیح دهید.
-
-#### مثال ساده — فعال‌سازی
-
-``` text
-config system snmp sysinfo
- set status enable
-end
-config system snmp community
- edit 1
-  set name "ro-comm"
-  config hosts
-   edit 1
-    set ip 10.50.0.20 255.255.255.255
-   next
-  end
- next
-end
-```
-
-فقط IP سرور مانیتورینگ مجاز است؛ و Interface مدیریتی باید SNMP را مجاز کند (`allowaccess snmp`).
-
-#### مثال متوسط — خواندن
-
-``` text
-snmpwalk -v2c -c ro-comm 10.50.0.1 1.3.6.1.2.1.1.1
-```
-
-اگر خروجی بیاید، SNMP کار می‌کند. OIDهای اختصاصی Fortinet (CPU، Memory، Session) را از MIB رسمی همان نسخه بگیرید.
-
-#### مثال سخت — Trigger در Zabbix
-
-``` text
-avg(/FGT-1/system.cpu.util,10m) > 70
-```
-
-یعنی میانگین CPU در ۱۰ دقیقه بیش از ۷۰٪. آزمون: بار مصنوعی با iperf و دیدن Trigger. همچنین Trigger «No data for 5m» برای تشخیص قطع SNMP.
-
-#### SNMPv3 (نمونه)
-
-``` text
-config system snmp user
- edit "mon"
-  set security-level auth-priv
-  set auth-proto sha256
-  set priv-proto aes256
- next
-end
-```
-
-رمزها را در Vault نگه دارید.
-
-#### Lab
-
-SNMP را در Lab فعال، با snmpwalk تست و یک Trigger بسازید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Timeout | allowaccess/ACL | بررسی |
-| Community اشتباه | نام | تطبیق |
-| داده‌ی نامعتبر | OID اشتباه | MIB رسمی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا v3؟** رمزنگاری.
-**۲. چرا Host محدود؟** سطح حمله.
-**۳. No data Trigger؟** تشخیص قطع پایش.
-
-#### English Corner
-
-- *Prefer SNMPv3 with authentication and privacy.*
-- Q: Why restrict SNMP to the monitoring host?
-
 ## درس 27-3 — REST API و Automation امن: احراز هویت، Trusted Host، GET/PUT، Idempotency، Rollback و آزمون
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۱، ۲۶-۳، ۲۷-۷ · ≈ 8 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ Log/Syslog از مستند 7.0؛ SNMPv3 و REST API روی 7.0.3 `Unverified`؛ Lab «اجرا نشده». مسیر دقیق Token/Endpoint 7.0.3 `Unverified`.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. اصول API امن (Token، Least Privilege، Trusted Host، TLS) را اجرا کند.
-2. فراخوانی‌های GET برای مانیتورینگ و PUT/POST برای تغییر کنترل‌شده بنویسد.
-3. Idempotency، Dry-run، Backup و Rollback را در Script اعمال کند.
-4. خطاهای HTTP (401/403/404/424) را تفسیر کند.
-5. Log/Audit تماس‌های API را بسازد.
-6. ریسک‌های Automation (تغییر گسترده، Token لو رفته) را مهار کند.
+1. REST API فورتی‌نت (CMDB و Monitor) را بشناسید.
+2. API User با Profile حداقلی و Trusted Host بسازید.
+3. GET/PUT/POST/DELETE را با curl اجرا کنید.
+4. Idempotency و Rollback را در Automation رعایت کنید.
+5. Secret را ایمن نگه دارید و Log API را بررسی کنید.
+6. Automation (Ansible/Python) را امن طراحی کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا API امن؟** اتوماسیون کار تکراری را حذف می‌کند ولی API بدون امنیت در پشتی است. اصول: حداقل دسترسی (Profile فقط‌خواندنی)، Trusted Host، توکن در Vault، Log و ممیزی.
+اگر هر تغییر را با کلیک انجام دهید، تکرارپذیر و قابل‌ممیزی نیست و با رشد شبکه فرسوده می‌شوید. API امکان «زیرساخت به‌صورت کد» می‌دهد: تغییر یک بار تعریف، چندبار اجرا. ولی API یک در دیگر به فایروال است؛ Token لورفته یعنی ادمین لورفته. امنیت API به اندازه‌ی خود Automation اهمیت دارد.
 
-**جمع‌بندی اصلی درس:**
+### دو شاخه‌ی API
 
-Automation سرعت و تکرارپذیری می‌دهد و خطا را هم سریع و گسترده تکثیر می‌کند. اصل: **اول خواندن، بعد تغییر؛ هر تغییر با Backup و Rollback؛ هر Token با حداقل دسترسی و منبع محدود.**
+| شاخه | مسیر | کاربرد |
+|---|---|---|
+| CMDB | `/api/v2/cmdb/...` | پیکربندی (Policy، Address) |
+| Monitor | `/api/v2/monitor/...` | وضعیت/Backup/Session |
 
-### ۳) توضیح عمیق فنی
-
-#### ۱) اصول امنیتی
-
-``` text
-1 Dedicated API admin, minimal accprofile (read-only for monitoring)
-2 Trusted hosts: only the automation server IP
-3 HTTPS with valid cert (verify TLS; avoid -k in production)
-4 Token stored in a secret manager, never in repo/logs
-5 Rotate tokens; revoke on staff change
-6 Log every call (who/what/when)
-```
-
-#### ۲) الگوی فراخوانی (نمونه؛ مسیر دقیق `Unverified`)
+### ساخت API User
 
 ``` text
-GET  https://fgt/api/v2/monitor/system/status
-GET  https://fgt/api/v2/cmdb/firewall/policy
-PUT  https://fgt/api/v2/cmdb/firewall/policy/31     (change)
-Header: Authorization: Bearer <API-TOKEN>
-```
-
-#### ۳) Idempotency و Dry-run
-
-Script باید «وضعیت مطلوب» را بیان کند، نه «دنباله‌ی دستور». قبل از تغییر: بخوان، مقایسه کن، فقط اگر تفاوت بود اعمال کن. Dry-run: فقط Diff چاپ شود.
-
-``` text
-desired = {policy 31: service HTTPS, action accept}
-current = GET policy 31
-if current != desired: backup(current); PUT desired; verify(GET); else: no-op
-```
-
-#### ۴) خطاها
-
-401 (Token/Trusthost)، 403 (Profile کم)، 404 (Object)، 424 (وابستگی/Reference)، 500. هرگز خطا را نادیده نگیرید؛ در Script Stop.
-
-#### ۵) ریسک و کنترل
-
-تغییر گسترده با یک Script اشتباه: Canary (۱ دستگاه)، Review کد، Change، Rollback خودکار، Rate limit، Scope محدود.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Read-only یا Write | Monitoring فقط Read |
-| Canary | یک دستگاه ابتدا |
-| Rollback | Backup+Revert |
-| TLS | تأیید گواهی |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-``` text
-config system api-user
- edit "zabbix"
-  set accprofile "ro-profile"
-  config trusthost
-   edit 1
-    set type ipv4-trusthost
-    set ipv4-trusthost 10.50.0.20 255.255.255.255
-   next
-  end
- next
+config system accprofile
+    edit "prof_api_ro"
+        set secfabgrp read
+        set fwgrp read
+        set netgrp read
+        set sysgrp read
+        set loggrp read
+    next
 end
-```
-
-#### مثال متوسط — GET
-
-``` text
-curl -sk -H "Authorization: Bearer $TOKEN" https://10.50.0.1/api/v2/monitor/system/status
-```
-
-#### مثال سخت — خطا
-
-401 توکن؛ 403 Trusted Host/Profile؛ 404 مسیر. آزمون منفی: Profile فقط‌خواندنی با PUT باید رد شود.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** GET وضعیت سیستم با Token؛ خروجی JSON: version، hostname؛ ثبت در Log.
-
-**متوسط (تحلیل):** 401 با Token درست: Trusthost IP سرور را شامل نمی‌شود؛ رفع: افزودن IP. یا Token لغو شده.
-
-**سخت (Idempotency):** Script هر اجرا یک Address جدید می‌ساخت و ۵۰ Object تکراری شد. تحلیل: عدم بررسی وجود؛ اصلاح: GET نام، مقایسه، PUT یا POST شرطی؛ تست دو بار اجرا ⇒ بدون تغییر؛ Dry-run و Backup قبل از تغییر.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. System → Administrators → Create New → REST API Admin (Profile، Trusted Hosts، توکن).
-2. Log & Report → Events → System برای Audit.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
 config system api-user
-    edit "monitor-api"
-        set accprofile "readonly-api"
+    edit "api-automation"
+        set accprofile "prof_api_ro"
+        set vdom "root"
         config trusthost
             edit 1
-                set ipv4-trusthost 192.168.90.50 255.255.255.255
+                set type ipv4-trusthost
+                set ipv4-trusthost 10.50.0.30 255.255.255.255
             next
         end
     next
 end
-# from automation host (secrets from environment)
-curl --cacert fgt-ca.pem -H "Authorization: Bearer $FGT_TOKEN" https://192.168.90.1/api/v2/monitor/system/status
+execute api-user generate-key api-automation
 ```
 
-### ۸) Verification (اثبات صحت)
+Key فقط یک‌بار نمایش داده می‌شود؛ در Vault. Profile حداقلی (Read-only برای مانیتورینگ؛ Write فقط در Pipeline تأییدشده).
 
-- GET موفق و JSON.
-- آزمون 401 با IP غیرمجاز (منفی).
-- اجرای دو‌بارهٔ Script بدون تغییر (Idempotent).
-- Log تماس‌ها.
+### GET
 
-### ۹) Troubleshooting
+``` text
+curl -sk -H "Authorization: Bearer <API_TOKEN>" \
+  "https://10.50.0.1/api/v2/cmdb/firewall/policy?filter=policyid==30"
+curl -sk -H "Authorization: Bearer <API_TOKEN>" \
+  "https://10.50.0.1/api/v2/monitor/system/status"
+```
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+### PUT / POST / DELETE
+
+``` text
+# update (idempotent): set comments on policy 30
+curl -sk -X PUT -H "Authorization: Bearer <API_TOKEN>" -H "Content-Type: application/json" \
+  -d '{"comments":"owner=NetOps; chg=CHG-701"}' \
+  "https://10.50.0.1/api/v2/cmdb/firewall/policy/30"
+
+# create
+curl -sk -X POST -H "Authorization: Bearer <API_TOKEN>" -H "Content-Type: application/json" \
+  -d '{"name":"HOST-NEW","subnet":"10.20.0.50 255.255.255.255"}' \
+  "https://10.50.0.1/api/v2/cmdb/firewall/address"
+
+# delete
+curl -sk -X DELETE -H "Authorization: Bearer <API_TOKEN>" \
+  "https://10.50.0.1/api/v2/cmdb/firewall/address/HOST-NEW"
+```
+
+`-k` فقط در Lab؛ در Production با CA معتبر (`--cacert`).
+
+### Idempotency
+
+عملیاتی که چندبار اجرا شود همان نتیجه را بدهد. PUT معمولاً Idempotent (مقدار نهایی)، POST ایجاد می‌کند و تکرار آن Duplicate/خطا. الگو: «GET ⇒ اگر وجود ندارد POST ⇒ وگرنه PUT».
+
+### Rollback
+
+1. قبل از تغییر: Backup (GET config).
+2. اجرای تغییر.
+3. Verify (GET + آزمون).
+4. در شکست: بازگرداندن (PUT مقدار قبلی/Restore).
+
+``` text
+before=$(curl -sk -H "Authorization: Bearer $T" ".../firewall/policy/30")
+# change ...
+# verify ...
+# rollback: curl -X PUT -d "$before_json" ...
+```
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — وضعیت
+
+`monitor/system/status` ⇒ نسخه و Hostname. برای Inventory خودکار.
+
+#### مثال متوسط — Comment
+
+PUT روی Policy 30 برای افزودن Owner/Ticket. اجرای دوباره همان نتیجه (Idempotent).
+
+#### مثال متوسط — Trusted Host
+
+Token از IP دیگر: پاسخ 403. ثابت می‌کند Trusted Host کار می‌کند (آزمون منفی).
+
+#### مثال سخت — Token لورفته
+
+Token در Git عمومی افتاد. اقدام: ۱) Revoke (`execute api-user generate-key` جدید یا حذف User) ۲) بررسی Log API (چه دسترسی‌هایی؟) ۳) Scan مخزن (gitleaks) و pre-commit hook ۴) RCA. پیشگیری: Vault، Profile Read-only، Trusted Host.
+
+#### مثال سخت — Automation بی‌کنترل
+
+Pipeline با Write Profile Policy را تغییر داد و اشتباه Deny All شد. اصلاح: Dry-run/Preview، Approval، Canary (یک دستگاه)، Rollback خودکار با Verify، Rate-limit.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. API User و Trusted Host.
+2. GET/PUT و Verify.
+3. آزمون منفی Token.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| 401 | Trusthost/Token | تنظیم |
-| 403 | Profile | accprofile |
-| 424 | Reference | وابستگی |
-| Script تغییر زیاد | Dry-run | Scope/Canary |
+| 401 | Token | بررسی |
+| 403 | Trusted/Profile | بررسی |
+| 424/خطا | وابستگی Object | ترتیب |
+| تغییر دوباره | Idempotency | GET قبل |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- Token در Vault؛ TLS verify.
-- Least privilege؛ Trusthost.
-- Review و Canary.
+Token در Vault؛ Profile حداقلی؛ Trusted Host؛ HTTPS با CA معتبر؛ Log و Alert روی API؛ چرخش Token.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- اول بخوان بعد تغییر.
-- Idempotent + Dry-run + Backup.
-- Least privilege و Trusthost.
-- Canary و Rollback.
-- Audit تماس‌ها.
+CMDB/Monitor؛ API User حداقلی و Trusted Host؛ GET/PUT/POST/DELETE؛ Idempotency و Rollback؛ مدیریت Secret.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا Trusthost برای API؟ *(پاسخ: 27-3-ت1)*
 
@@ -3462,7 +3209,7 @@ curl --cacert fgt-ca.pem -H "Authorization: Bearer $FGT_TOKEN" https://192.168.9
 
 **Q1.** Quick quiz (English): Why should automation scripts support a dry-run mode? *(پاسخ: 27-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3472,120 +3219,16 @@ curl --cacert fgt-ca.pem -H "Authorization: Bearer $FGT_TOKEN" https://192.168.9
 
 - *Never store API tokens in a repository.* ← هرگز توکن API را در مخزن ذخیره نکنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** API. **وضعیت:** اجرا نشده/Unverified. **Evidence:** `03-ops/api.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet Docs: REST API / API user (7.0)
 - OWASP API Security Top 10
 
 <a id="l-27-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: API امن
-
-``` text
-config system api-user
- edit "zabbix"
-  set accprofile "ro-profile"
-  set trusthost1 10.50.0.20 255.255.255.255
- next
-end
-```
-
-Trusted Host اجباری؛ فقط GET؛ توکن در Vault.
-
-**پرسش‌های مصاحبه**
-1. *Accprofile؟* حداقل دسترسی.
-2. *Rate limit؟* حفاظت.
-3. *Log API؟* ممیزی.
-
-### مثال حل‌شده: GET امن به API
-
-``` text
-curl -sk -H "Authorization: Bearer $TOKEN" https://10.50.0.1/api/v2/monitor/system/status
-```
-
-نتیجه‌ی مورد انتظار: JSON با `version`. اگر از IP غیرمجاز زده شود ⇒ خطای دسترسی (Trusted Host). توکن را در متغیر محیطی/Vault نگه دارید نه در Script.
-
-آزمون منفی: Profile فقط‌خواندنی با روش PUT ⇒ رد.
-
-### تکمیل عمیق: REST API و Automation امن
-
-#### چرا؟
-
-کارهای تکراری (Backup، گزارش، افزودن Address) را با دست انجام ندهید؛ ولی API بدون امنیت یک در پشتی است. این درس خودکارسازی را با کمترین ریسک نشان می‌دهد.
-
-#### اصول
-
-1. **حداقل دسترسی**: Profile فقط‌خواندنی برای مانیتورینگ.
-2. **Trusted Host**: فقط IP مجاز.
-3. **توکن در Vault** نه در Script.
-4. **Log و ممیزی** درخواست‌ها.
-
-#### مثال ساده — ساخت کاربر API
-
-``` text
-config system api-user
- edit "zabbix"
-  set accprofile "ro-profile"
-  config trusthost
-   edit 1
-    set type ipv4-trusthost
-    set ipv4-trusthost 10.50.0.20 255.255.255.255
-   next
-  end
- next
-end
-```
-
-#### مثال متوسط — GET
-
-``` text
-curl -sk -H "Authorization: Bearer $TOKEN" https://10.50.0.1/api/v2/monitor/system/status
-```
-
-نتیجه JSON با نسخه. اگر از IP غیرمجاز زده شود ⇒ رد.
-
-#### مثال سخت — تغییر خودکار با Rollback
-
-افزودن Address با POST، سپس آزمون، سپس در صورت شکست حذف؛ و همیشه قبل از تغییر Backup بگیرید.
-
-``` text
-curl -sk -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-  -d '{"name":"SRV-RPT","subnet":"10.30.2.50 255.255.255.255"}' \
-  https://10.50.0.1/api/v2/cmdb/firewall/address
-```
-
-پاسخ باید `status: success` باشد. خطاها را بخوانید و Script را متوقف کنید.
-
-#### Lab
-
-یک Script کوتاه Backup روزانه با API بنویسید؛ توکن را از متغیر محیطی بخوانید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| 403 | Trusted Host/Profile | اصلاح |
-| 401 | توکن | تجدید |
-| 424/خطای وابستگی | ترتیب ساخت | رفع ترتیب |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Trusted Host؟** محدودکردن منبع.
-**۲. چرا Profile فقط‌خواندنی؟** حداقل دسترسی.
-**۳. توکن کجا؟** Vault.
-
-#### English Corner
-
-- *Use least-privilege API users bound to trusted hosts.*
-- Q: Why not hard-code tokens in scripts?
 
 ## درس 27-4 — Hardening مدیریتی عملی و Backup/Restore: اجرای چک‌لیست، آزمون منفی و اثبات بازیابی
 
@@ -3593,143 +3236,181 @@ curl -sk -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده)؛ Log/Syslog از مستند 7.0؛ SNMPv3 و REST API روی 7.0.3 `Unverified`؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. چک‌لیست Hardening را با دستور/GUI اجرا و برای هر مورد شاهد ثبت کند.
-2. آزمون‌های منفی (دسترسی غیرمجاز) را اجرا کند.
-3. Restore را در Lab اثبات و RTO ثبت کند.
-4. Audit/Change را با Hardening هماهنگ کند.
-5. انحراف (Drift) از استاندارد را بسنجد.
+1. چک‌لیست Hardening مدیریتی را اجرا کنید و دلیل هر مورد را بگویید.
+2. آزمون منفی (از IP غیرمجاز، با پروتکل غیرفعال) برای اثبات Hardening بزنید.
+3. Backup/Restore را طوری انجام دهید که «بازیابی‌شدنی بودن» ثابت شود.
+4. Timeoutها، Lockout، Banner و Password Policy را تنظیم کنید.
+5. NTP/Syslog/SNMP را امن و هماهنگ کنید.
+6. گزارش Hardening بنویسید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Hardening و Backup/Restore؟** مدیریت آسیب‌پذیرترین سطح است؛ Backup بدون آزمون Restore فقط امید است. چک‌لیست: Trusted Host، 2FA، غیرفعال HTTP/Telnet، Timeout، قفل پس از شکست، Banner، Backup رمزگذاری‌شده.
+فایروال با پیش‌فرض‌های راحت ایمن نیست. Hardening یعنی بستن همه‌ی درهایی که لازم نیست. ولی کار نیمه‌تمام دو خطر دارد: ادعای «سخت‌سازی شد» بدون آزمون، و قفل شدن خودتان از دستگاه (Lockout). این درس هم اجرا و هم اثبات را (با آزمون منفی) و هم برنامه‌ی بازگشت را آموزش می‌دهد.
 
-**جمع‌بندی اصلی درس:**
+### چک‌لیست
 
-Hardening بدون آزمون «تنظیمات تزئینی» است. هر کنترل باید با یک آزمون منفی ثابت شود: «از IP غیرمجاز ورود نمی‌شود»، «Telnet بسته است»، «بعد از ۳ تلاش قفل می‌شود».
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) چک‌لیست با آزمون
-
-| کنترل | تنظیم | آزمون منفی |
+| حوزه | اقدام | دلیل |
 |---|---|---|
-| Admin حداقلی/Trusthost | `trusthost` | ورود از IP دیگر رد شود |
-| Telnet/HTTP | `allowaccess` بدون telnet/http | `nc` به 23/80 رد |
-| HTTPS/SSH | TLS/Cipher مناسب | اسکن Cipher ضعیف نداشته باشد |
-| MFA | RADIUS/Token | ورود با رمز تنها رد |
-| Lockout | `admin-lockout-*` | ۴ رمز غلط ⇒ قفل |
-| Timeout | `admintimeout` | بعد از 10 دقیقه Logout |
-| Local-in | Policy | پورت مدیریتی از WAN بسته (nmap) |
-| NTP | امن | زمان درست |
-| Patch | نسخه | مقایسه با PSIRT |
-| Log | Event Admin | تغییر تستی ثبت شود |
+| Admin | حساب شخصی، تغییر نام `admin`، MFA، حذف حساب مشترک | Accountability |
+| دسترسی | `allowaccess` حداقل، `trusthost`، Local-in Policy | کاهش سطح حمله |
+| پروتکل | غیرفعال Telnet/HTTP؛ HTTPS/SSH قوی | رمزنگاری |
+| پورت | تغییر پورت پیش‌فرض (اختیاری) + محدودیت Source | کاهش اسکن |
+| Timeout | `admintimeout` کوتاه | نشست رها شده |
+| Lockout | `admin-lockout-threshold/duration` | Brute-force |
+| Password | حداقل طول، پیچیدگی، انقضا | رمز ضعیف |
+| Banner | هشدار حقوقی | حقوقی |
+| زمان | NTP امن | Log و گواهی |
+| سرویس‌ها | غیرفعال بی‌استفاده‌ها | سطح حمله |
+| Log | ارسال مرکزی | شواهد |
+| Backup | رمزگذاری، خودکار | بازیابی |
 
-#### ۲) آزمون‌ها (نمونه)
-
-``` text
-nmap -Pn -p 22,23,80,443,8443 203.0.113.1      # from outside: expect filtered/closed
-ssh admin@192.168.90.1 (from non-trusted IP)    # expect refusal
-```
-
-#### ۳) Restore
-
-``` text
-1 Backup (encrypted) 2 Lab FGT same firmware 3 Restore 4 Compare interfaces/policies/routes
-5 Measure RTO 6 Document gaps (certs/keys/licenses)
-```
-
-نکته: گواهی/کلید خصوصی/لایسنس/FortiGuard معمولاً جداگانه بازیابی می‌شوند.
-
-#### ۴) Drift از استاندارد
-
-اسکریپت مقایسه‌ی Config با «Baseline Hardening» (الگوهای مجاز) و گزارش انحراف ماهانه.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| آزمون منفی | برای هر کنترل |
-| Restore test | فصلی |
-| Baseline Hardening | نسخه‌دار |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده
-
-``` text
-config system global
- set admintimeout 10
- set admin-lockout-threshold 5
- set admin-lockout-duration 300
-end
-```
-
-#### مثال متوسط — اسکن
-
-``` text
-nmap -p 22,23,80,443,8443 10.50.0.1   # from Users
-```
-
-انتظار: همه filtered/closed.
-
-#### مثال سخت — Restore
-
-Backup ← Restore در Lab ← مقایسه‌ی Policy/Route ← ثبت RTO. RTO = زمان بازیابی؛ RPO = زمان از آخرین Backup.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** nmap از بیرون: 443/22 بسته؛ ورود از IP غیرمجاز رد؛ Log رد ثبت شد.
-
-**متوسط (تحلیل):** Lockout کار نمی‌کند: تنظیم روی Global ولی کاربر API/Local متفاوت؛ بررسی `admin-lockout-threshold`؛ آزمون تکرار؛ ثبت.
-
-**سخت (Restore ناقص):** Restore موفق ولی VPN کار نمی‌کند: گواهی/کلید و PSK بازیابی نشد؛ سند Gap: «Secrets جدا»؛ اصلاح Runbook: بازیابی گواهی/لایسنس. RTO واقعی ۴۵ دقیقه (هدف ۳۰) ⇒ اتوماسیون گام‌ها.
-
-### ۷) پیاده‌سازی از مسیر CLI
+### پیکربندی نمونه
 
 ``` text
 config system global
     set admintimeout 10
     set admin-lockout-threshold 3
-    set admin-lockout-duration 300
+    set admin-lockout-duration 600
+    set admin-https-ssl-versions tlsv1-2 tlsv1-3
+    set admin-ssh-v1 disable
+    set strong-crypto enable
+    set pre-login-banner enable
+    set post-login-banner enable
+end
+config system password-policy
+    set status enable
+    set min-lower-case-letter 1
+    set min-upper-case-letter 1
+    set min-number 1
+    set min-non-alphanumeric 1
+    set minimum-length 14
+    set expire-status enable
+    set expire-day 90
 end
 config system interface
     edit "port1"
+        unset allowaccess
         set allowaccess ping
     next
+    edit "port8"
+        set allowaccess https ssh
+    next
 end
-execute backup config sftp hardening-test.conf 192.168.90.10 backup-user <PASSWORD>
+config system admin
+    edit "net-bob"
+        set trusthost1 10.50.0.0 255.255.255.0
+    next
+end
+config system ntp
+    set type custom
+    set ntpsync enable
+    config ntpserver
+        edit 1
+            set server "10.50.0.10"
+        next
+    end
+end
 ```
 
-### ۸) Verification (اثبات صحت)
+(نام و مقدار گزینه‌ها با مستند 7.0 بررسی شود؛ Unverified.)
 
-- جدول کنترل→آزمون→نتیجه.
-- Restore و RTO ثبت.
-- Drift report.
+### Local-in Policy
 
-### ۹) Troubleshooting
+``` text
+config firewall local-in-policy
+    edit 1
+        set intf "port1"
+        set srcaddr "all"
+        set dstaddr "all"
+        set service "ALL"
+        set schedule "always"
+        set action deny
+    next
+end
+```
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+مدیریت از اینترنت ممنوع؛ اجازه فقط از Mgmt (Local-in Allow برای MGMT قبل از Deny).
+
+### آزمون منفی
+
+| آزمون | انتظار |
+|---|---|
+| `ssh` به Interface WAN | Timeout/Refused |
+| HTTP به مدیریت | Redirect/Refused |
+| Login از IP غیر Trusted | رد |
+| سه رمز غلط | Lockout |
+| TLS 1.0 | رد (`openssl s_client -tls1`) |
+
+``` text
+nmap -p 22,80,443,23 <WAN-IP>
+openssl s_client -connect 10.50.0.1:443 -tls1
+```
+
+### Backup/Restore قابل‌اثبات
+
+1. Backup رمزگذاری‌شده (Password):
+
+``` text
+execute backup config tftp fgt-a.conf <server> <backup-password>
+```
+
+2. بررسی Hash فایل و ثبت.
+3. Restore روی دستگاه Lab هم‌نسخه.
+4. آزمون: Route، Policy، VPN، HA، Log.
+5. ثبت زمان Restore (RTO واقعی).
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Lockout
+
+سه رمز غلط ⇒ ۱۰ دقیقه قفل. آزمون ✓. هشدار: Break-glass قبل از اعمال تنظیم Lockout.
+
+#### مثال متوسط — اسکن WAN
+
+`nmap` از اینترنت فقط ICMP/VPN پورت‌ها را نشان می‌دهد؛ 22/443 مدیریت بسته. گزارش Evidence.
+
+#### مثال متوسط — Restore واقعی
+
+Restore روی Lab ۱۲ دقیقه؛ ۲ مورد (گواهی/Secret) دستی. نتیجه: RTO بازیابی ≈ ۱۵ دقیقه؛ Runbook به‌روز.
+
+#### مثال سخت — Lockout خودمان
+
+`trusthost` اشتباه؛ همه‌ی Adminها قفل. راه: Console، `config system admin edit ... unset trusthost1`؛ درس: Change با Console آماده و آزمون با یک حساب قبل از اعمال برای همه.
+
+#### مثال سخت — Restore Secret
+
+Backup بدون رمز، Secret (PSK) ENC به کلید دستگاه وابسته است؛ Restore روی دستگاه دیگر PSK شکسته. راه: Backup رمزگذاری‌شده با `backup-password` (که Secretها را منتقل‌پذیر می‌کند) و ثبت PSK در Vault.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. اجرای چک‌لیست.
+2. آزمون‌های منفی.
+3. Backup/Restore و زمان.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Lockout نه | تنظیم | Global/Per-user |
-| Restore ناقص | VPN/Cert | Secrets جدا |
-| Port باز | nmap | Local-in/allowaccess |
+| قفل شدید | trusthost | Console |
+| اسکن پورت باز | allowaccess | حذف |
+| Restore شکست | نسخه/Secret | هم‌نسخه |
+| TLS قدیمی | ssl-versions | تنظیم |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- آزمون فقط از IP مجاز/Lab.
-- Evidence بدون Secret.
+MFA؛ Break-glass؛ Backup رمزگذاری‌شده؛ تغییرات با Ticket؛ Evidence بعد از هر آزمون.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- هر کنترل = تنظیم + آزمون منفی.
-- Restore شامل Secrets/لایسنس.
-- Drift ماهانه.
+Hardening با چک‌لیست و آزمون منفی؛ Lockout/Trusthost/TLS؛ Backup رمزگذاری‌شده و Restore آزمون‌شده؛ Break-glass و Console برای جلوگیری از قفل.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) آزمون منفی چیست؟ *(پاسخ: 27-4-ت1)*
 
@@ -3745,7 +3426,7 @@ execute backup config sftp hardening-test.conf 192.168.90.10 backup-user <PASSWO
 
 **Q1.** Quick quiz (English): Why must every hardening control be accompanied by a negative test? *(پاسخ: 27-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3754,11 +3435,11 @@ execute backup config sftp hardening-test.conf 192.168.90.10 backup-user <PASSWO
 
 - *Prove each control with a negative test.* ← هر کنترل را با آزمون منفی ثابت کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Hardening. **وضعیت:** اجرا نشده. **Evidence:** `03-ops/hardening.md`.
 
-### ۱۵) منابع
+### منابع
 
 - CIS FortiGate Benchmark
 - NIST SP 800-53
@@ -3766,258 +3447,145 @@ execute backup config sftp hardening-test.conf 192.168.90.10 backup-user <PASSWO
 
 <a id="l-27-5"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Hardening
-
-چک‌لیست: Admin Trusted Host، 2FA، غیرفعال HTTP، Timeout، Banner، Backup رمزگذاری‌شده.
-
-``` text
-config system global
- set admintimeout 10
- set admin-https-ssl-versions tlsv1-2 tlsv1-3
-end
-```
-
-**پرسش‌های مصاحبه**
-1. *چرا admintimeout؟* Session رها.
-2. *Restore آزمون؟* در Lab.
-3. *Default Admin؟* تغییر نام/غیرفعال.
-
-### مثال حل‌شده: چک‌لیست و اسکن
-
-``` text
-nmap -p 22,23,80,443,8443 10.50.0.1   (from Users VLAN)
-```
-
-انتظار: همه filtered/closed. از Mgmt: فقط 443 و 22 (در صورت نیاز). هر مورد باز ⇒ Local-in Policy/allowaccess را اصلاح کنید.
-
-Backup: `execute backup config tftp ...` و آزمون Restore در Lab با Diff.
-
-### تکمیل عمیق: Hardening مدیریتی و Backup/Restore — با آزمون واقعی
-
-#### چرا؟
-
-قوی‌ترین Policy فایروال بی‌فایده است اگر پنل مدیریت از اینترنت با رمز admin/admin باز باشد. Hardening یعنی بستن «در پشتی»‌های مدیریتی.
-
-#### چک‌لیست
-
-1. Admin فقط از Trusted Host و Mgmt VLAN.
-2. غیرفعال HTTP/Telnet؛ فقط HTTPS/SSH.
-3. MFA برای ادمین.
-4. Timeout.
-5. تغییر/غیرفعال Admin پیش‌فرض.
-6. TLS قوی.
-7. Banner قانونی.
-8. Backup رمزگذاری‌شده.
-
-#### مثال ساده — تنظیمات
-
-``` text
-config system global
- set admintimeout 10
- set admin-https-ssl-versions tlsv1-2 tlsv1-3
- set admin-lockout-threshold 5
- set admin-lockout-duration 300
-end
-```
-
-#### مثال متوسط — اسکن پورت
-
-``` text
-nmap -p 22,23,80,443,8443 10.50.0.1   # from Users VLAN
-```
-
-انتظار: همه filtered/closed. از Mgmt فقط 443/22 (در صورت نیاز). مورد باز اضافی ⇒ `allowaccess`/Local-in را اصلاح کنید.
-
-#### مثال سخت — Restore واقعی
-
-Backup بدون آزمون Restore ارزشی ندارد.
-
-``` text
-execute backup config tftp prod.conf 10.50.0.30
-# in Lab:
-execute restore config tftp prod.conf 10.50.0.30
-diff before.txt after.txt    # compare 'show' outputs
-```
-
-مراحل: ۱) Backup ۲) Restore در Lab ۳) مقایسه‌ی Policy/Route ۴) ثبت زمان Restore (RTO) ۵) مستندسازی.
-
-``` text
-RTO = restore time ; RPO = time since last backup
-```
-
-#### Lab
-
-Restore را در Lab اجرا و زمان بگیرید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Lockout ادمین | آستانه | حساب اضطراری Console |
-| Restore شکست | نسخه‌ی ناسازگار | همان نسخه |
-| پورت باز | allowaccess | بستن |
-
-#### پرسش‌ها با پاسخ
-
-**۱. RTO و RPO؟** زمان بازیابی/حداکثر داده‌ی از دست‌رفته.
-**۲. چرا Console اضطراری؟** در Lockout.
-**۳. Backup رمزگذاری؟** Secretها.
-
-#### English Corner
-
-- *A backup that has never been restored is only a hope.*
-- Q: What do RTO and RPO measure?
-
 ## درس 27-5 — Gate G10: آزمون عملی Logging، Monitoring، Hardening و Backup — کلید پاسخ کامل و Rubric
 
 **فصل 27 · بازنویسی عمیق · پیش‌نیاز: ۲۷-۱ تا ۲۷-۴ · ≈ 12 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ سناریو و کلید پاسخ آموزشی‌اند؛ Lab «اجرا نشده»؛ دستورها `Unverified` تا اجرای Lab؛ ویژگی‌های وابسته به لایسنس مشخص شده‌اند.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Syslog/FortiAnalyzer، SNMPv3 و Alert را پیکربندی و Verify کند.
-2. Hardening مدیریتی را چک‌لیست و Evidence کند.
-3. Backup/Restore را اجرا و Hash ثبت کند.
-4. سه خرابی (Log نمی‌رسد، SNMP، Backup) را رفع کند.
-5. گزارش و Rubric تحویل دهد.
+1. Logging، Monitoring، Hardening و Backup را در یک سناریوی Gate پیاده و اثبات کنید.
+2. سه عیب تزریق‌شده را با Evidence رفع کنید.
+3. آزمون‌های منفی و Evidence Index بسازید.
+4. گزارش و Rubric تحویل دهید.
+5. RTO واقعی Restore را اندازه بگیرید.
+6. صداقت (اجرا نشده/Unverified) را رعایت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا G10؟** ثابت می‌کند عملیات را سر پا نگه می‌دارید: Log می‌بینید، مانیتور دارید، API امن است و Backup قابل‌اتکا.
+Gate G10 اثبات می‌کند «عملیات امن» دارید نه فقط «تنظیمات». عملیات امن یعنی: Log می‌رسد، Alert به‌موقع می‌آید، دسترسی بسته است، و Backup واقعاً بازیابی می‌شود. هرکدام را باید با شاهد نشان دهید.
 
-**جمع‌بندی اصلی درس:**
+### صورت مسئله
 
-نظارت بدون Log و Hardening بدون Backup نصفه است. G10 چهار پایه‌ی عملیات را با هم می‌سنجد: دیدن (Log)، شنیدن (Monitoring)، سخت‌کردن (Hardening) و بازگشت (Backup).
+FortiGate شعبه (`FGT-A`، Mgmt: `port8` 10.50.0.1). نیازمندی‌ها:
 
-### ۳) توضیح عمیق فنی
+1. Log Traffic/Event به rsyslog (TCP/TLS) برسد.
+2. Zabbix با SNMPv3 CPU/Memory/Session/Interface را بگیرد؛ Alert CPU>90٪ برای ۵ دقیقه.
+3. Hardening: مدیریت فقط از Mgmt، MFA، Lockout، TLS≥1.2.
+4. Backup خودکار رمزگذاری‌شده و Restore آزمون‌شده (RTO ≤ ۲۰ دقیقه).
 
-#### ۱) صورت مسئله
+عیب‌های تزریق‌شده:
 
-FortiGate Edge باید: Syslog به 10.99.0.20؛ SNMPv3 به NMS؛ Alert روی ورود ناموفق Admin؛ Hardening طبق چک‌لیست؛ Backup روزانه و آزمون Restore.
+1. `allowaccess https ssh` روی `port1` (WAN) فعال.
+2. `fwpolicy-implicit-log` غیرفعال؛ Deny دیده نمی‌شود.
+3. Backup بدون رمز و SNMP v2c با Community `public`.
 
-#### ۲) پیکربندی مرجع
+### کلید پاسخ
 
-``` text
-config log syslogd setting
- set status enable
- set server 10.99.0.20
- set port 514
-end
-config system snmp sysinfo
- set status enable
-end
-config system snmp user
- edit "nms"
-  set security-level auth-priv
-  set auth-proto sha256
-  set priv-proto aes256
-  set auth-pwd <FROM-VAULT>
-  set priv-pwd <FROM-VAULT>
- next
-end
-config system global
- set admintimeout 10
- set admin-lockout-threshold 3
-end
-```
+**عیب ۱ (مدیریت روی WAN):**
 
-(`Unverified`؛ نام پارامترهای SNMPv3 با CLI help تأیید شود.)
+1. Evidence: `nmap -p 22,443 <WAN-IP>` ⇒ open.
+2. رفع: `set allowaccess ping` روی port1؛ Local-in Deny.
+3. تأیید: nmap ⇒ filtered/closed.
 
-#### ۳) خرابی‌ها و کلید
+**عیب ۲ (Implicit Log):**
 
-**A: Log نمی‌رسد.** شاهد: Sniffer روی port مدیریت: UDP 514 خارج می‌شود ولی سرور نمی‌گیرد؛ Firewall سرور یا Route. رفع: Policy/Route و `source-ip`.
+1. Evidence: آزمون Deny بدون Log.
+2. رفع: `set fwpolicy-implicit-log enable`.
+3. تأیید: Log `policyid=0 action=deny`.
 
-**B: SNMP Timeout.** شاهد: `snmpwalk` timeout؛ علت: `allowaccess snmp` روی Interface نیست یا Host مجاز نیست. رفع.
+**عیب ۳ (Backup/SNMP):**
 
-**C: Backup ناقص.** فایل ۰ بایت؛ علت: TFTP سرور/Route. رفع و Hash.
+1. Evidence: فایل Backup متن ساده؛ `snmpwalk -v2c -c public` موفق.
+2. رفع: Backup با `backup-password`؛ حذف v2c؛ SNMPv3 auth-priv؛ Local-in برای 161 فقط Zabbix.
+3. تأیید: `snmpwalk -v2c` Timeout؛ v3 موفق.
 
-#### ۴) چک‌لیست Hardening
+### آزمون Restore
 
-MFA، Trusted host، TLS 1.2+، Telnet/HTTP off، Timeout/Lockout، Backup رمزگذاری، Log خارجی.
-
-#### ۵) آزمون
+1. Backup رمزگذاری‌شده + Hash.
+2. Restore روی Lab هم‌نسخه.
+3. زمان‌سنجی:
 
 ``` text
-execute log filter category 1
-execute log display
-snmpwalk -v3 -l authPriv -u nms <fgt-ip>
-execute backup config tftp f.conf 10.99.0.5
-sha256sum f.conf
+RTO measured = t(device serving traffic) - t(restore start)
+Example: 14 min  (target <= 20 min)
 ```
 
-#### ۶) Rubric
+4. Verify: Route، Policy، VPN، Log، SNMP.
 
-Logging ۲۰، Monitoring ۲۰، Hardening ۲۰، Backup/Restore ۲۰، تشخیص ۳ خرابی و Evidence ۲۰. قبولی ۷۵.
+### Evidence Index
 
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| SNMP | v3 authPriv |
-| Backup | رمزگذاری و Hash |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — شواهد
-
-Logging: فایل Log؛ Monitoring: Trigger؛ API: GET و رد منفی؛ Hardening: nmap؛ Backup: Diff پس از Restore.
-
-#### مثال متوسط — نمره
-
-``` text
-Logging 20 | Monitoring 20 | API 15 | Hardening 25 | Backup/Restore 20
-Example: 20 + 18 + 15 + 22 + 10 = 85
-```
-
-#### مثال سخت — Syslog نمی‌رسد
-
-Source Interface نادرست؛ شاهد tcpdump سرور بدون بسته؛ `set source-ip`.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Syslog: Event ورود Admin در سرور دیده می‌شود با زمان صحیح (NTP).
-
-**متوسط (SNMP):** snmpwalk Timeout. مراحل: ۱) `show system interface mgmt` allowaccess بدون snmp. ۲) افزودن snmp و Host مجاز. ۳) snmpwalk موفق. پاسخ: allowaccess و Host.
-
-**سخت (Restore):** Restore در Lab: Backup گرفته؛ Config عمدی خراب؛ Restore؛ بوت؛ مقایسه Policy count و Hash اولیه. معیار: همه‌ی Policyها و Routeها بازگردانده؛ زمان Restore ثبت. ریسک: Backup حاوی رمز؛ رمزگذاری.
-
-### ۷) پیاده‌سازی از مسیر CLI
-
-``` text
-execute log filter category 1
-execute log display
-execute backup config tftp f.conf 10.99.0.5
-```
-
-### ۸) Verification (اثبات صحت)
-
-- Log در سرور.
-- SNMP پاسخ.
-- Backup و Hash.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| مورد | فایل | دستور |
 |---|---|---|
-| Log نمی‌رسد | Sniffer | Route/Policy |
-| SNMP timeout | allowaccess | snmp |
+| WAN scan before/after | ev1_nmap.txt | nmap |
+| Deny log | ev2_deny.txt | execute log display |
+| SNMPv3 | ev3_snmp.txt | snmpwalk |
+| Restore | ev4_restore.txt | زمان‌ها |
+| Backup hash | ev5_hash.txt | sha256sum |
 
-### ۱۰) نکات امنیتی
+### Rubric (۱۰۰)
 
-- رمزها در Vault.
+| معیار | امتیاز |
+|---|---|
+| Logging مرکزی | 15 |
+| Monitoring/Alert | 15 |
+| Hardening با آزمون منفی | 25 |
+| Backup/Restore و RTO | 20 |
+| رفع سه عیب | 15 |
+| Evidence/صداقت | 10 |
 
-### ۱۱) جمع‌بندی مفهومی
+### مثال‌های حل‌شده
 
-- Log+Monitoring+Hardening+Backup.
+#### مثال ساده — Trigger
 
-### ۱۲) تمرین و ارزیابی
+CPU 95٪ برای ۶ دقیقه ⇒ Alert؛ Spike ۳۰ ثانیه ⇒ ندارد. Evidence: Zabbix event.
+
+#### مثال متوسط — RCA
+
+``` text
+Impact  : management plane reachable from internet 3 weeks (exposure, no breach found)
+Cause   : allowaccess https/ssh on WAN since commissioning
+Fix     : allowaccess ping only + local-in deny; MFA enforced
+Prevent : post-commissioning hardening checklist + external scan monthly
+```
+
+#### مثال متوسط — اندازه‌گیری RTO
+
+۱۴ دقیقه (۸ Restore + ۶ تأیید دستی گواهی/VPN). ثبت و هدف ≤ ۲۰ دقیقه برآورده.
+
+#### مثال سخت — ترتیب رفع
+
+۱) مدیریت روی WAN (فوری امنیتی) ۲) SNMP v2c ۳) Backup رمز ۴) Implicit Log. اولویت بر اساس ریسک نه ترتیب لیست.
+
+#### مثال سخت — صداقت
+
+Lab اجرا نشده؛ زمان RTO و خروجی nmap نمونه‌ی آموزشی؛ گزارش «Unverified».
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. سه عیب را رفع کنید.
+2. Restore و RTO.
+3. گزارش و Evidence Index.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
+|---|---|---|
+| مدیریت باز در WAN | allowaccess | حذف |
+| Deny بدون Log | implicit | enable |
+| SNMP v2c | ضعیف | v3 |
+| Backup متن ساده | بدون رمز | backup-password |
+
+### جمع‌بندی
+
+G10: Log مرکزی، Monitoring با Alert معنادار، Hardening با آزمون منفی، Backup/Restore با RTO، سه عیب، Evidence و صداقت.
+
+### تمرین و ارزیابی
 
 **ت1.** (ساده) چرا SNMPv3؟ *(پاسخ: 27-5-ت1)*
 
@@ -4033,7 +3601,7 @@ execute backup config tftp f.conf 10.99.0.5
 
 **Q1.** Quick quiz (English): Why should backups be encrypted? *(پاسخ: 27-5-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -4041,98 +3609,13 @@ execute backup config tftp f.conf 10.99.0.5
 
 - *Test the restore, not only the backup.* ← Restore را هم آزمون کنید نه فقط Backup.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** G10 (اجرا نشده). **Evidence:** `03-ops/g10.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Logging; SNMP; Backup
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Rubric G10
-
-Log ۲۰، Monitoring ۲۰، API ۱۵، Hardening ۲۵، Backup/Restore ۲۰.
-
-**پرسش‌های مصاحبه**
-1. *Evidence Restore؟* Diff Config.
-2. *Alert نمونه؟* CPU.
-3. *API آزمون؟* GET موفق/رد.
-
-### مثال حل‌شده: نمره‌دهی G10
-
-| بخش | وزن | شاهد |
-|---|---|---|
-| Logging | 20 | Log رسیده به Syslog |
-| Monitoring | 20 | Trigger فعال شد |
-| API | 15 | GET موفق + رد منفی |
-| Hardening | 25 | اسکن پورت |
-| Backup/Restore | 20 | Diff پس از Restore |
-
-مثال: همه موفق جز Restore آزمون‌نشده ⇒ 80 از 100.
-
-### تکمیل عمیق: آزمون G10 — سناریوی کامل با نمره‌گذاری
-
-#### چرا؟
-
-G10 ثابت می‌کند می‌توانید «عملیات» را سر پا نگه دارید: Log می‌بینید، مانیتور دارید، API امن است و Backup قابل‌اتکا.
-
-#### صورت مسئله
-
-برای Lab: ۱) Log به Syslog برسد ۲) Zabbix CPU و Session بخواند و Trigger بسازد ۳) کاربر API فقط‌خواندنی ۴) Hardening چک‌لیست ۵) Backup و Restore آزمایشی.
-
-#### کلید پاسخ
-
-| بخش | شاهد |
-|---|---|
-| Logging | فایل Log روی سرور + زمان |
-| Monitoring | اسکرین‌شات Trigger یا خروجی snmpwalk |
-| API | GET موفق + رد منفی از IP دیگر |
-| Hardening | خروجی nmap و `show system global` |
-| Backup/Restore | Diff پس از Restore |
-
-#### محاسبه‌ی نمره
-
-``` text
-Logging 20 | Monitoring 20 | API 15 | Hardening 25 | Backup/Restore 20
-Example: 20 + 18 + 15 + 22 + 10 = 85
-```
-
-Restore آزمون‌نشده ۱۰ نمره از دست می‌دهد.
-
-#### مثال متوسط — خطای رایج
-
-دانشجو Syslog را فعال کرد ولی Source Interface درست نبود؛ Log نرسید. شاهد: tcpdump روی سرور بدون بسته. رفع: `set source-ip` یا Route.
-
-#### مثال سخت — آزمون منفی API
-
-درخواست با Profile فقط‌خواندنی و متد PUT باید رد شود؛ اگر موفق شد، Profile اشتباه است.
-
-#### Lab
-
-آزمون را کامل انجام دهید و Evidence را در Index ثبت کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Log نمی‌رسد | Route/Source IP | بررسی |
-| SNMP Timeout | ACL | اصلاح |
-| Restore ناموفق | نسخه | هم‌نسخه |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا آزمون منفی API؟** اثبات محدودیت.
-**۲. Evidence Restore؟** Diff.
-**۳. Syslog چه چیزی لازم دارد؟** Route و Source.
-
-#### English Corner
-
-- *Run a negative test to prove the restriction works.*
-- Q: How do you verify a restore?
 
 ## درس 27-7 — Hardening، Backup/Restore و API: امن‌سازی مدیریتی و بازیابی قابل‌اثبات
 
