@@ -2193,148 +2193,140 @@ Internal print server  : 2 x 2 = 4  (low)
 
 > **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. وظیفه‌ی فایروال را در مدل لایه‌ها توضیح دهد.
-2. Packet filter (Stateless)، Stateful و NGFW را مقایسه کند.
-3. جدول State را برای TCP/UDP/ICMP شرح دهد.
-4. یک ACL Stateless و یک Policy Stateful را برای یک سناریو مقایسه و اشکال ACL را پیدا کند.
-5. محدودیت‌های هر نوع را بگوید.
+1. فایروال را تعریف و جایگاه آن را در شبکه توضیح دهید.
+2. فرق Stateless (ACL/Packet Filter) و Stateful را با مثال بگویید.
+3. Session Table و چرخه‌ی عمر یک اتصال را شرح دهید.
+4. فرق Stateful با Application-aware/NGFW را بدانید.
+5. محدودیت‌های Stateful (ظرفیت، نامتقارن، UDP) را فهرست کنید.
+6. حمله‌ی ACK Scan را روی ACL و فایروال مقایسه کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا باید بدانیم فایروال چیست؟** تصور کنید ساختمانی دارید. قفل در ورودی (Router/ACL) فقط می‌پرسد «کارت دارید؟». نگهبان (Firewall) می‌پرسد «شما را قبلاً دیده‌ام؟ کسی شما را دعوت کرده؟ همراه شما کیست؟». فایروال دستگاهی است که ترافیک بین دو یا چند شبکه را بر اساس **سیاست** (Policy) مجاز یا ممنوع می‌کند.
+ساختمانی را تصور کنید. قفل در ورودی فقط می‌پرسد «کارت دارید؟». نگهبان می‌پرسد «شما را قبلاً دیده‌ام؟ کسی شما را دعوت کرده؟ از کدام در رفتید؟». فایروال دستگاهی است که ترافیک بین شبکه‌ها را بر اساس **سیاست** مجاز یا ممنوع می‌کند. نسل اول فقط «کارت» را می‌دید (فیلتر بسته)؛ نسل‌های بعدی «حافظه» (Stateful) و بعد «محتوا» (UTM/NGFW) را اضافه کردند. این درس اساس همه‌ی فصل‌های بعد است: Policy، NAT، Session، عیب‌یابی همه به همین تفاوت برمی‌گردد.
 
-**دو نسل**
+### نسل‌های فایروال
 
-1. **Stateless (بی‌حافظه):** مثل ACL. هر بسته را جداگانه بررسی می‌کند. چون حافظه ندارد، باید برای برگشت ترافیک هم قاعده بنویسید.
-2. **Stateful (با حافظه):** برای هر اتصال یک «پرونده» (Session) می‌سازد. وقتی کاربر به وب می‌رود، فایروال ثبت می‌کند «10.10.0.5 به 198.51.100.8:443 رفت». بسته‌ی برگشت را با پرونده تطبیق می‌دهد و خودکار می‌پذیرد.
-
-**چرا Stateful امن‌تر است؟** مهاجم نمی‌تواند بسته‌ی جعلی «ACK» بفرستد و عبور کند؛ چون پرونده‌ای برایش نیست. همچنین قواعد ساده‌تر می‌شود (فقط جهت آغاز اتصال).
-
-**محدودیت‌های Stateful:** ظرفیت جدول Session، نیاز به مسیر متقارن، و هزینه‌ی CPU/حافظه.
-
-**جمع‌بندی اصلی درس:** نگهبان ساختمان را تصور کنید. نگهبان نوع اول فقط لیست «مجاز/ممنوع» دارد و هر بار برگه را چک می‌کند (Stateless). نگهبان نوع دوم یادش می‌ماند چه کسی بیرون رفت و فقط جواب او را اجازه‌ی ورود می‌دهد (Stateful). نوع سوم داخل کیف هم نگاه می‌کند (NGFW).
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) سه نسل
-
-| نوع | تصمیم بر اساس | حافظه‌ی Session |
+| نسل | ویژگی | مثال |
 |---|---|---|
-| Packet filter | Src/Dst IP، پورت، پروتکل | ندارد |
-| Stateful | همان + وضعیت اتصال | دارد |
-| NGFW | همان + برنامه، کاربر، محتوا | دارد |
+| Packet Filter (Stateless) | هر بسته مستقل با ACL | ACL روتر |
+| Stateful Inspection | Session و وضعیت اتصال | فایروال کلاسیک |
+| Application-aware | تشخیص برنامه (L7) | Application Control |
+| NGFW/UTM | IPS، AV، Web، SSL Inspection | FortiGate |
 
-#### ۲) چرا Stateless مشکل دارد
+### Stateless (ACL)
 
-برای اجازه‌ی وب باید هم خروج به 443 و هم «برگشت از 443 به پورت‌های بالا» را باز کنید؛ یعنی هر کسی از بیرون با Source-port 443 وارد می‌شود.
+هر بسته را فقط با قواعد می‌سنجد؛ حافظه‌ای از بسته‌ی قبل ندارد. پس برای وب باید هم رفت و هم برگشت را بنویسید:
 
 ``` text
-access-list OUT permit tcp 10.0.0.0 0.0.0.255 any eq 443
-access-list IN  permit tcp any eq 443 10.0.0.0 0.0.0.255 gt 1023
-! the IN rule also admits crafted packets with source port 443
+permit tcp 10.10.0.0 0.0.0.255 any eq 443
+permit tcp any eq 443 10.10.0.0 0.0.0.255 established
 ```
 
-#### ۳) Stateful
+`established` یعنی بسته‌ی TCP با پرچم ACK یا RST. ولی ACL نمی‌داند این ACK پاسخ یک درخواست واقعی است یا بسته‌ی جعلی؛ مهاجم می‌تواند بسته‌ی ACK ساختگی بفرستد و از ACL عبور کند (ACK Scan).
 
-اولین بسته (SYN) را با Policy بررسی می‌کند؛ اگر مجاز بود، ورودی در جدول State ساخته می‌شود: Src, Dst, پورت‌ها، پروتکل، وضعیت، Timeout. بسته‌های برگشتی با جدول مطابقت می‌کنند و بدون Policy جدید عبور می‌کنند.
+### Stateful
+
+برای هر اتصال یک **Session** (یک رکورد در Session Table) می‌سازد و بسته‌ها را با آن تطبیق می‌دهد:
 
 ``` text
-Session: tcp 10.0.0.5:51000 -> 203.0.113.10:443  state=ESTABLISHED  timeout=3600
-Return : tcp 203.0.113.10:443 -> 10.0.0.5:51000  matched to the session
+Proto  Src               Dst                 State        Timeout
+tcp    10.10.0.5:49152   198.51.100.8:443    ESTABLISHED  3600
 ```
 
-#### ۴) UDP و ICMP
+وقتی کاربر به وب می‌رود:
 
-UDP اتصال ندارد؛ فایروال «شبه‌Session» با Timeout کوتاه می‌سازد. ICMP Echo Reply فقط در صورتی که Request قبلاً دیده شده باشد.
+1. SYN از Interface داخلی می‌رسد.
+2. Policy بررسی می‌شود؛ مجاز ⇒ Session ساخته می‌شود.
+3. بسته‌ی برگشت (SYN-ACK) با Session تطبیق داده و **خودکار** پذیرفته می‌شود (بدون قاعده‌ی برگشت).
+4. اتصال بسته (FIN/RST) یا Timeout ⇒ Session حذف.
 
-#### ۵) NGFW
+پس فقط «جهت آغاز اتصال» را در Policy می‌نویسید.
 
-بازرسی عمیق (IPS، Application Control، SSL Inspection، AV) نیازمند لایسنس و CPU است (Needs-License)؛ و خطر اشتباه بیشتر.
+### مزیت‌ها
 
-#### ۶) محدودیت
+- امنیت: بسته‌ی بدون Session (ACK/SYN-ACK جعلی) رد می‌شود.
+- سادگی: قاعده‌ی برگشت لازم نیست.
+- ردیابی: Log در سطح اتصال، نه بسته.
+- زیربنای NAT و بازرسی عمیق.
 
-Stateful نمی‌داند داخل 443 چه می‌رود؛ جدول State محدود است (DoS با SYN Flood)؛ مسیر نامتقارن را نمی‌پسندد.
+### محدودیت‌ها
 
-### ۴) طراحی و تصمیم‌گیری
+- **ظرفیت Session Table:** هر دستگاه سقف Session دارد؛ سیل (SYN Flood) آن را پر می‌کند.
+- **نیاز به مسیر متقارن:** بسته‌ی برگشت باید از همان فایروال بگذرد.
+- **UDP/ICMP:** اتصال ندارند؛ فایروال «Session مجازی» با Timeout کوتاه می‌سازد.
+- **پروتکل‌های چندکاناله (FTP، SIP):** باید ALG/Helper باشد.
+- **CPU و حافظه.**
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Stateless/Stateful/NGFW | مرز شبکه: Stateful؛ بازرسی عمیق فقط ترافیک ریسک‌دار |
-| Timeout | طبق سرویس |
+### مثال‌های حل‌شده
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+#### مثال ساده — تفاوت قاعده‌ها
 
-#### مثال ساده — تفاوت در یک نگاه
-
-وب برای کاربر داخلی:
+وب برای شبکه‌ی داخلی:
 
 ``` text
-Stateless (ACL): permit tcp 10.10.0.0/24 any eq 443  AND  permit tcp any eq 443 10.10.0.0/24 established
-Stateful       : allow 10.10.0.0/24 -> any : 443   (return traffic automatic)
+ACL (stateless): 2 rules (out + return established)
+Firewall (stateful): 1 policy (inside -> outside 443), return automatic
 ```
 
 #### مثال متوسط — حمله‌ی ACK
 
-مهاجم بسته‌ی TCP با پرچم ACK به یک سرور داخلی می‌فرستد بدون Handshake. ACL با `established` آن را عبور می‌دهد؛ فایروال Stateful رد می‌کند چون Session ندارد (Log: `no session matched`). این نمونه‌ی ساده‌ی ACK Scan است.
+مهاجم از اینترنت به سرور 10.20.0.10 بسته‌ی TCP با ACK=1 می‌فرستد (بدون Handshake).
 
-#### مثال متوسط — جدول Session
+- ACL با `established`: عبور می‌دهد (چون ACK دارد). اگر سرور پاسخ RST بدهد، مهاجم می‌فهمد پورت باز/بسته است و ساختار شبکه را شناسایی می‌کند.
+- فایروال Stateful: Session ندارد ⇒ Drop. Log: `no session matched`.
+
+#### مثال متوسط — چرخه‌ی عمر Session
 
 ``` text
-Proto  Src                  Dst                  State        Timeout
-tcp    10.10.0.5:49152      198.51.100.8:443     ESTABLISHED  3600
+t=0    SYN        -> session created (SYN_SENT)
+t=0.1  SYN-ACK    -> state ESTABLISHED
+t=0.2  ... data ... 
+t=30   FIN/ACK    -> TIME_WAIT/closing
+t=60   removed
 ```
 
-ورودی تا Timeout یا بسته‌شدن اتصال می‌ماند. پس بسته‌ی برگشت از 198.51.100.8:443 به 10.10.0.5:49152 می‌خورد و پذیرفته می‌شود.
+اگر اتصال بدون FIN رها شود، Timeout (ساعت‌ها برای TCP، ثانیه برای UDP) حذفش می‌کند.
 
 #### مثال سخت — نامتقارن
 
-SYN از فایروال A می‌گذرد و SYN-ACK از B می‌آید. B Session ندارد و Drop می‌کند؛ علامت: «اتصال بعضی وقت‌ها کار می‌کند». اثبات با Sniffer دوطرفه؛ رفع با طراحی متقارن (درس ۲۳).
+SYN از فایروال A و SYN-ACK از B. B Session ندارد و Drop می‌کند. علامت: «اتصال بعضی وقت‌ها کار می‌کند». اثبات: Sniffer دو سمت. رفع: طراحی متقارن/SNAT/Session Sync (درس ۲۳).
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال سخت — ظرفیت
 
-**ساده (حل‌شده):** کاربر 10.0.0.5 به 203.0.113.10:443 می‌رود؛ Session ساخته می‌شود و جواب بدون Policy دوم برمی‌گردد.
-
-**متوسط (تحلیل):** ACL Stateless با `permit tcp any eq 443 ... gt 1023`: مهاجم با Source-port 443 به پورت 3389 داخل بسته می‌فرستد و می‌گذرد (چون dst>1023). راه: Stateful (`established`/Policy).
-
-**سخت (طراحی):** سازمان وب را باز و RDP را بسته می‌خواهد؛ NGFW برای Application Control؛ ولی CPU کم: ابتدا Stateful+IPS روی ترافیک حساس؛ اندازه‌گیری Throughput قبل و بعد؛ معیار: افت < 30٪.
-
-### ۷) پیاده‌سازی از مسیر CLI
+دستگاه با سقف 200,000 Session. در حمله‌ی SYN Flood 50,000 SYN/ثانیه: Table در ۴ ثانیه پر می‌شود:
 
 ``` text
-! FortiGate (Unverified in lab)
-diagnose sys session list
-diagnose sys session filter dst 203.0.113.10
-diagnose sys session list
+200000 / 50000 = 4 seconds to fill
 ```
 
-### ۸) Verification (اثبات صحت)
+دفاع: DoS Policy با آستانه (درس 16-10)، SYN Cookie، Timeout کوتاه برای SYN_RECV.
 
-- Session برای جریان اجازه‌داده‌شده ساخته می‌شود.
-- بسته‌ی برگشت بدون Policy جدید عبور می‌کند.
-- بسته‌ی بدون SYN رد می‌شود.
+### Lab هدایت‌شده (اجرا نشده)
 
-### ۹) Troubleshooting
+1. یک ACL ساده برای وب بنویسید و `established` را حذف کنید؛ اثر را ببینید.
+2. با `hping3` یک ACK Scan (در Lab) بفرستید و تفاوت ACL/فایروال را ثبت کنید.
+3. Session Table را با `diagnose sys session list` ببینید.
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| برگشت رد می‌شود | Session | مسیر/Asymmetric |
-| Session پر | جدول | Timeout/DoS |
+| پاسخ وب رد می‌شود (ACL) | قاعده‌ی برگشت نیست | `established` یا Stateful |
+| اتصال گیر می‌کند | نامتقارن | Sniffer دو سمت |
+| Table پر | سیل | DoS Policy |
+| FTP/SIP مشکل | ALG | فعال‌سازی |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- Stateless به‌تنهایی برای مرز اینترنت کافی نیست.
+Stateless هر بسته را جدا می‌سنجد و قاعده‌ی برگشت می‌خواهد؛ Stateful با Session برگشت را خودکار می‌پذیرد و بسته‌ی بدون Session را رد می‌کند. محدودیت‌ها: ظرفیت، تقارن، UDP/ALG.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- Stateless بی‌حافظه.
-- Stateful جدول State.
-- NGFW عمیق ولی پرهزینه.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) تفاوت Stateless و Stateful؟ *(پاسخ: 11-1-ت1)*
 
@@ -2350,7 +2342,7 @@ diagnose sys session list
 
 **Q1.** Quick quiz (English): What does a stateful firewall store for each allowed connection? *(پاسخ: 11-1-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2359,128 +2351,16 @@ diagnose sys session list
 
 - *A stateful firewall tracks connection state.* ← فایروال حالت‌دار وضعیت اتصال را دنبال می‌کند.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Stateful. **Evidence:** `03-ops/stateful.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Firewall policy
 - RFC 793
 
 <a id="l-11-2"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: مقایسه‌ی عملی Stateless و Stateful با یک سناریو و عدد
-
-**سناریو.** شعبه‌ی کوچک باید فقط وب (443) را برای ۵۰ کاربر مجاز کند. دو طراحی را مقایسه می‌کنیم.
-
-**طراحی ۱: ACL Stateless روی روتر**
-
-``` text
-ip access-list extended OUT-IN
- permit tcp 10.0.0.0 0.0.0.255 any eq 443
-ip access-list extended IN-OUT
- permit tcp any eq 443 10.0.0.0 0.0.0.255 gt 1023
-interface Gi0/0
- ip access-group IN-OUT in    ! from internet
-```
-
-**ایراد:** بسته‌ی مهاجم با Source Port 443 و Destination Port 3389 (> 1023) از ACL ورودی می‌گذرد؛ ACL «پاسخ بودن» را نمی‌فهمد.
-
-**طراحی ۲: Policy Stateful**
-
-``` text
-Policy 10: LAN -> WAN, src NET-USERS, svc HTTPS, ACCEPT, NAT, log
-(implicit) WAN -> LAN: deny
-```
-
-بسته‌ی ورودی فقط وقتی مجاز است که با Session موجود (ساخته‌شده توسط SYN خروجی) مطابق باشد.
-
-**گام‌ها**
-1. کاربر 10.0.0.5:51000 → 203.0.113.10:443 (SYN).
-2. Policy 10 مطابق است ⇒ Session ساخته می‌شود.
-3. پاسخ 203.0.113.10:443 → 198.51.100.2:51000 فقط به همان Session مطابق است.
-4. بسته‌ی مهاجم 203.0.113.10:443 → 10.0.0.9:3389 Session ندارد ⇒ Drop.
-
-**ظرفیت جدول Session.** اگر هر کاربر ۵۰ Session باز داشته باشد، ۵۰ کاربر ⇒ ۲۵۰۰ Session. حافظه‌ی هر Session صد‌ها بایت است؛ پس مشکل ظرفیت معمولاً از DoS (SYN Flood) است نه کاربران عادی.
-
-``` text
-Sessions = users x sessions per user = 50 x 50 = 2500
-```
-
-**اشتباهات رایج**
-- «Stateful یعنی امن»: NGFW و IPS هنوز لازم‌اند.
-- Timeout را نادیده گرفتن: Session بیکار حذف می‌شود.
-- مسیر نامتقارن با Stateful.
-
-**پرسش‌های مصاحبه**
-1. *تفاوت Packet filter و Stateful؟* حافظه‌ی وضعیت اتصال.
-2. *UDP و ICMP چطور؟* شبه‌Session با Timeout.
-3. *NGFW چه اضافه می‌کند؟* برنامه، کاربر، محتوا، IPS (بعضی Needs-License).
-
-### تکمیل عمیق: Stateless در برابر Stateful — با مثال
-
-#### چرا؟
-
-فهمیدن این تفاوت بسیاری از رفتارهای «عجیب» را توضیح می‌دهد: چرا ACL نیاز به قاعده‌ی برگشت دارد و چرا فایروال نیاز ندارد.
-
-#### توضیح ساده
-
-- **Stateless (ACL)**: هر بسته به‌تنهایی بررسی می‌شود؛ حافظه ندارد.
-- **Stateful**: برای هر اتصال یک Session نگه می‌دارد؛ بسته‌ی برگشت را با Session تطبیق می‌دهد.
-
-#### مثال ساده
-
-کاربر به وب (443) می‌رود. با ACL Stateless باید هم «outbound 443» و هم «inbound established/پورت‌های بالا» را بنویسید. با Stateful فقط «outbound 443» کافی است.
-
-``` text
-Stateless:  permit tcp src any eq 443 dst 10.10.0.0/24 established
-Stateful :  (return traffic accepted automatically via session)
-```
-
-#### مثال متوسط — حمله‌ی ACK Scan
-
-ACL ساده با `established` بسته‌ی ACK ساختگی را می‌پذیرد؛ فایروال Stateful بسته‌ی بدون Session را رد می‌کند.
-
-#### مثال سخت — محدودیت Stateful
-
-Stateful ترافیک نامتقارن را نمی‌پسندد (درس 23)، و Session Table ظرفیت دارد (DoS با SYN Flood).
-
-#### جدول مقایسه
-
-| ویژگی | Stateless | Stateful |
-|---|---|---|
-| حافظه | ندارد | Session |
-| سرعت | بالا | کمی کمتر |
-| امنیت | محدود | بیشتر |
-| ترافیک برگشت | قاعده‌ی جدا | خودکار |
-
-#### Lab
-
-یک ACL ساده Stateless را برای وب بنویسید و مشکلات آن را فهرست کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| برگشت رد | بدون قاعده | Stateful |
-| ACK scan | established | Stateful |
-| Session پر | SYN flood | DoS Policy |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا ACL قاعده‌ی برگشت؟** حافظه ندارد.
-**۲. Stateful محدودیت؟** نامتقارن و ظرفیت.
-**۳. ACK scan؟** بسته‌ی بی‌Session.
-
-#### English Corner
-
-- *A stateful firewall allows return traffic by matching it to an existing session.*
-- Q: Why can a stateless ACL be fooled by crafted ACK packets?
 
 ## درس 11-2 — Zone، Trust Boundary، Default Deny و Least Privilege: از ماتریس تا Policy
 
@@ -2488,191 +2368,136 @@ Stateful ترافیک نامتقارن را نمی‌پسندد (درس 23)، و
 
 > **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Zone و سطح اعتماد را تعریف و ماتریس Zone-to-Zone بسازد.
-2. Default Deny و Least Privilege را در Policy واقعی اعمال کند.
-3. Policy را از ماتریس استخراج و ترتیب خاص به عام را رعایت کند.
-4. Policy گشاد (ALL) را با Log شناسایی و تنگ کند.
-5. آزمون مثبت/منفی برای هر خانه‌ی ماتریس بنویسد.
-6. ماتریس را برای ممیزی مستند و نگهداری کند.
+1. Zone، Trust Level و Trust Boundary را تعریف کنید.
+2. اصل Default Deny و Least Privilege را توضیح دهید.
+3. از نیاز کسب‌وکار، ماتریس ارتباط بسازید.
+4. ماتریس را به Policy تبدیل و آزمون مثبت و منفی بنویسید.
+5. intrazone را بفهمید و ریسک آن را کنترل کنید.
+6. Policy را با Lookup اثبات کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Zone و Trust Boundary؟** شبکه‌ی سازمان یکدست نیست: اینترنت، DMZ (سرورهای عمومی)، کاربران، سرورهای داخلی، مدیریت. هرکدام «سطح اعتماد» متفاوتی دارند. **Zone** گروهی از Interfaceها با یک سطح اعتماد است. **Trust Boundary** مرزی است که ترافیک از یک سطح به سطح دیگر می‌رود؛ فایروال باید همان‌جا باشد.
+شبکه‌ی سازمان یکدست نیست. اینترنت، DMZ (سرورهای عمومی)، کاربران، سرورهای داخلی، مدیریت و مهمان هرکدام «سطح اعتماد» متفاوتی دارند. تصور کنید ساختمان اداری: لابی (عمومی)، طبقات کارکنان (متوسط)، اتاق سرور (بسیار محرمانه). ورود از لابی به اتاق سرور از چند در می‌گذرد، هر دری کارت‌خوان جدا. **Zone** و **Trust Boundary** این منطق را به شبکه می‌آورند. بسیاری از نفوذها پس از ورود اولیه با «حرکت جانبی» ادامه می‌یابند؛ Zoneبندی و Policy حداقلی مانع آن است.
 
-**مثال روزمره:** ساختمان اداری: لابی (عمومی)، طبقات کارکنان (متوسط)، اتاق سرور (بسیار محرمانه). ورود از لابی به اتاق سرور از چند در می‌گذرد، هر دری کارت‌خوان جدا.
+### مفاهیم
 
-**سه اصل**
+- **Zone:** گروه Interface/شبکه‌هایی با سطح اعتماد و سیاست یکسان.
+- **Trust Level:** مثلاً Internet=0، DMZ=30، Users=50، Servers=70، Mgmt=90.
+- **Trust Boundary:** مرزی که ترافیک از یک سطح به سطح دیگر می‌رود؛ فایروال باید در آن باشد.
+- **Default Deny:** هرچه مجاز نشده ممنوع است.
+- **Least Privilege:** فقط همان دسترسی لازم، به همان مقصد و همان سرویس.
 
-1. **Default Deny:** هر چه صریحاً مجاز نشده، ممنوع.
-2. **Least Privilege (حداقل دسترسی):** فقط همان که لازم است، نه بیشتر.
-3. **ماتریس قبل از Policy:** ابتدا جدول «از کجا به کجا چه سرویسی» را بکشید؛ سپس هر خانه‌ی پر یک Policy.
+### قاعده‌ی جریان بین Zoneها
 
-**جمع‌بندی اصلی درس:** فرودگاه را در نظر بگیرید: سالن عمومی، گیت امنیتی، سالن پرواز، باند و اتاق کنترل. هر منطقه سطح اعتماد متفاوت و مرز مشخص دارد؛ عبور از هر مرز فقط با مجوز مخصوص. اگر همه‌ی درها باز باشند، دیوار بی‌معناست.
-
-شبکه هم همین است. Zone یعنی «منطقه‌ی هم‌اعتماد»؛ Trust Boundary مرز بین دو سطح اعتماد؛ Default Deny یعنی «هر عبور ثبت‌نشده ممنوع»؛ Least Privilege یعنی «فقط همان‌قدر که لازم است». اگر این چهار را درست بفهمید، طراحی Policy از «حدس» به «استخراج از جدول» تبدیل می‌شود.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) Zoneها و سطح اعتماد
-
-| Zone | سطح اعتماد | مثال |
-|---|---|---|
-| Internet | صفر | WAN |
-| DMZ | کم | وب‌سرور عمومی |
-| Users | متوسط | VLAN کاربران |
-| Servers | متوسط‌بالا | App/DB |
-| Mgmt | بالا | ایستگاه Admin |
-
-قانون: ترافیک از اعتماد کمتر به بیشتر سخت‌گیرانه‌تر است؛ از بیشتر به کمتر هم باید کنترل شود (Exfiltration).
-
-#### ۲) ماتریس
-
-``` text
-from\to   Internet  DMZ     Users  Servers  Mgmt
-Internet  -         443VIP  -      -        -
-DMZ       Updates   -       -      DB-only  -
-Users     HTTP/S    HTTPS   -      App 443  -
-Servers   Updates   -       -      -        -
-Mgmt      -         SSH     SSH    SSH      -
-```
-
-هر خانه‌ی «-» = Deny. هر خانه‌ی پر = یک یا چند Policy با سرویس مشخص.
-
-#### ۳) از ماتریس به Policy
-
-``` text
-ID  from   to       src         dst        service     action
-10  Users  Internet NET-USERS   all        HTTP,HTTPS,DNS ACCEPT
-20  Users  Servers  NET-USERS   SRV-APP    TCP-443     ACCEPT
-30  Mgmt   Servers  HOST-ADMIN  GRP-SERVERS SSH        ACCEPT
-99  any    any      all         all        ALL         DENY + log
-```
-
-ترتیب: خاص بالا، عام پایین، Deny صریح آخر.
-
-#### ۴) Least Privilege در عمل
-
-- به‌جای dst=all فقط مقصد لازم.
-- به‌جای ALL فقط سرویس لازم.
-- به‌جای always فقط Schedule لازم (مثلاً پیمانکار).
-- مدیریت فقط از Mgmt.
-
-#### ۵) تشخیص Policy گشاد
-
-``` text
-Policy 55: Users -> Servers  ALL/ALL ACCEPT  (hit count: 1.2M)
-```
-
-Log ۱۴ روز نشان می‌دهد فقط 443/445/1433 به سه سرور استفاده شده؛ جایگزین: سه Policy خاص.
-
-#### ۶) آزمون ماتریس
-
-برای هر خانه: آزمون مثبت (مجاز کار کند) و منفی (ممنوع رد شود و Log شود). ثبت در جدول Evidence.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
+| از → به | قاعده‌ی کلی |
 |---|---|
-| تعداد Zone | طبق تفاوت اعتماد؛ نه بیش‌ازحد |
-| ترتیب | خاص→عام |
-| Log | Deny همیشه؛ Accept حساس |
+| اطمینان پایین → بالا | بسیار محدود؛ فقط سرویس مشخص |
+| بالا → پایین | معمولاً بیشتر مجاز ولی با Log |
+| هم‌سطح | بر اساس نیاز |
+| Internet → داخل | فقط VIP/سرویس منتشر |
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### روش: از ماتریس به Policy
 
-#### مثال ساده — ماتریس
+**گام ۱ — فهرست Zoneها:** Internet، DMZ، Users، Servers، Mgmt، Guest.
+
+**گام ۲ — ماتریس نیاز:**
 
 | از ↓ / به → | Internet | DMZ | Servers | Mgmt |
 |---|---|---|---|---|
-| Users | HTTP/S, DNS | HTTPS | HTTPS, SMB | — |
-| Guest | HTTP/S, DNS | — | — | — |
+| Users | HTTP/S، DNS | HTTPS | HTTPS، SMB | — |
+| Guest | HTTP/S، DNS | — | — | — |
 | Internet | — | HTTPS (VIP) | — | — |
 | Mgmt | — | SSH | SSH | همه |
 
 خانه‌ی خالی یعنی Deny.
 
-#### مثال متوسط — تبدیل ماتریس به Policy
+**گام ۳ — تبدیل به Policy:**
 
 ``` text
-Policy 10 USERS -> SRV  HTTPS,SMB accept log
-Policy 20 USERS -> INET HTTP,HTTPS,DNS accept nat log
-Policy 30 GUEST -> INET HTTP,HTTPS,DNS accept nat log
-Policy 90 any -> any   deny log
+Policy 10 USERS -> SRV  HTTPS,SMB       accept log
+Policy 20 USERS -> INET HTTP,HTTPS,DNS  accept nat log
+Policy 30 GUEST -> INET HTTP,HTTPS,DNS  accept nat log
+Policy 40 INET  -> DMZ  HTTPS (VIP)     accept log
+Policy 50 MGMT  -> any  SSH,HTTPS,ICMP  accept log
+Policy 90 any   -> any  ALL             deny   log
 ```
 
-برای هر Policy آزمون مثبت و برای هر خانه‌ی خالی نمونه‌ای آزمون منفی (مثلاً Guest → Servers).
+**گام ۴ — آزمون:** برای هر Policy یک آزمون مثبت؛ برای هر خانه‌ی خالی چند آزمون منفی.
 
-#### مثال متوسط — حداقل دسترسی
+### intrazone
 
-به‌جای `Users -> Servers ALL`، بنویسید `Users -> SRV-ERP HTTPS`. اگر یک کاربر آلوده شود، فقط یک سرویس در معرض است.
-
-#### مثال سخت — Zone با intrazone باز
-
-دو Interface در یک Zone با `intrazone allow` آزادانه با هم صحبت می‌کنند و ایزولاسیون از بین می‌رود. راه: `set intrazone deny` و Policy صریح برای هر جریان لازم.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Users→Internet فقط HTTP/HTTPS/DNS. ورودی: کاربر 10.10.0.5 با SSH به اینترنت. مراحل: Policy 10 تطبیق نمی‌کند (Service)؛ Policy 99 Deny. پاسخ: رد و Log با policyid=99.
-
-**متوسط (تنگ‌سازی):** Policy 55 ALL/ALL بین Users و Servers. مراحل: ۱) Log All روشن. ۲) ۱۴ روز جمع‌آوری. ۳) استخراج: 10.20.0.10:443، 10.20.0.11:445، 10.20.0.20:1433. ۴) سه Policy خاص بالای 55. ۵) 55 را Disable و دو هفته مشاهده. ۶) حذف. پاسخ: کاهش سطح حمله از ALL به سه مسیر.
-
-**سخت (طراحی ۵ Zone):** سازمان ۱۵۰ کاربر؛ وب عمومی؛ DB داخلی؛ مدیریت. طراحی: ۱) ۵ Zone. ۲) ماتریس ۲۵ خانه؛ ۹ خانه پر. ۳) ۱۲ Policy. ۴) DMZ→DB ممنوع؛ فقط App→DB. ۵) آزمون ۲۵ خانه (۹ مثبت، ۱۶ منفی). ۶) Evidence. معیار پذیرش: صفر Policy ALL، همه‌ی Deny ها Log دارند.
-
-### ۶) پیاده‌سازی از مسیر GUI
-
-1. Network → Interfaces → Create New → Zone.
-2. Policy & Objects → Firewall Policy → Create New با Zone.
-3. Policy → Drag برای ترتیب.
-4. Hit Count/Log برای ممیزی.
-
-### ۷) پیاده‌سازی از مسیر CLI
+در FortiGate اگر دو Interface در یک Zone باشند، ترافیک بین آنها با `intrazone` کنترل می‌شود: `allow` (آزاد) یا `deny` (ابتدا ممنوع و با Policy صریح). برای ایزولاسیون واقعی `deny` بگذارید.
 
 ``` text
-config firewall policy
- edit 20
-  set name "USERS-to-APP-443"
-  set srcintf "ZN-USERS"
-  set dstintf "ZN-SERVER"
-  set srcaddr "NET-USERS"
-  set dstaddr "SRV-APP"
-  set action accept
-  set schedule "always"
-  set service "HTTPS"
-  set logtraffic all
+config system zone
+ edit "ZN-DMZ"
+  set interface "port2" "port5"
+  set intrazone deny
  next
 end
 ```
 
-### ۸) Verification (اثبات صحت)
+### Verification
 
-- آزمون مثبت/منفی هر خانه.
-- Hit Count Policyها.
-- Log Deny‌ها.
+``` text
+diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 445 tcp port2     # policy 10
+diagnose firewall iprope lookup 10.99.0.5 40000 10.50.0.20 22 tcp port4      # deny (guest -> mgmt)
+```
 
-### ۹) Troubleshooting
+### مثال‌های حل‌شده
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+#### مثال ساده — خواندن ماتریس
+
+Users→Servers: HTTPS و SMB؛ Users→Mgmt: خالی ⇒ Deny. اگر کاربری SSH به Mgmt بزند، `policy 90` و Log Deny.
+
+#### مثال متوسط — حداقل دسترسی
+
+درخواست: «دسترسی Users به Servers». پاسخ ضعیف: `Users -> Servers ALL`. پاسخ درست: `Users -> SRV-ERP HTTPS`. اگر یک کاربر آلوده شود، فقط یک سرویس در معرض است. شمارش: ALL (65535 پورت × همه‌ی سرورها) در برابر یک پورت روی یک سرور.
+
+#### مثال متوسط — آزمون منفی
+
+``` text
+from GUEST: nc -zv 10.20.0.10 443   -> timeout (expected)
+from USERS: nc -zv 10.50.0.20 22    -> timeout (expected)
+```
+
+Log هر دو `action=deny policyid=90`.
+
+#### مثال سخت — Zone با intrazone باز
+
+دو Interface DMZ در یک Zone با `intrazone allow`. وب‌سرور هک‌شده مستقیم به DB در همان Zone می‌رود (بدون Policy). شاهد: Session بدون Policy ID. رفع: `set intrazone deny` و Policy صریح Web→App و App→DB.
+
+#### مثال سخت — ماتریس ناقص
+
+پس از Segmentation، مدیر شکایت دارد «چاپگر کار نمی‌کند». ماتریس سطر «Users→Printers» نداشت. با Log Deny ۳۰ روزه (Flow Discovery) کشف می‌شود؛ Policy `USERS -> PRN tcp/9100` اضافه می‌شود. درس: ماتریس را با مالکان سرویس مرور کنید.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. چهار Zone؛ ماتریس را بکشید.
+2. Policyها را بنویسید و Lookup اجرا کنید.
+3. آزمون منفی و Log.
+4. intrazone deny و مشاهده‌ی اثر.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Policy کار نمی‌کند | ترتیب/Zone | خاص قبل عام |
-| ALL گشاد | Log | تنگ‌سازی |
-| DMZ→DB باز است | Lookup | Policy حذف |
+| Policy ALL | تنبلی | تنگ‌کردن |
+| Zone باز | intrazone allow | deny |
+| قطع برنامه | ماتریس ناقص | Log + افزودن |
+| بی‌آزمون | غفلت | آزمون منفی |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- Default Deny با Log.
-- ALL/ALL ممنوع.
+Zone با سطح اعتماد، Default Deny و Least Privilege. از ماتریس شروع کنید؛ هر خانه‌ی پر یک Policy؛ هر خانه‌ی خالی یک آزمون منفی. intrazone را deny کنید و با Lookup و Log اثبات کنید.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- Zone=منطقه‌ی هم‌اعتماد.
-- ماتریس منبع Policy.
-- Least Privilege.
-- آزمون هر خانه.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Default Deny یعنی چه؟ *(پاسخ: 11-2-ت1)*
 
@@ -2688,7 +2513,7 @@ end
 
 **Q1.** Quick quiz (English): What does default deny mean? *(پاسخ: 11-2-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2697,114 +2522,16 @@ end
 
 - *Apply least privilege to every rule.* ← به هر Rule حداقل دسترسی را بدهید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** ماتریس Zone (اجرا نشده). **Evidence:** `03-ops/zone-matrix.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Firewall policies
 - NIST SP 800-41 Rev.1
 
 <a id="l-11-3"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: ساخت ماتریس Zone از Flow واقعی تا Policy و آزمون
-
-**سناریو.** شرکت ۱۵۰ نفره با وب‌سایت عمومی، سرور فایل، Active Directory و کاربران. ماتریس را از Log واقعی می‌سازیم.
-
-**گام ۱ — Discovery (۱۴ روز).** Policy موقت `Users→Servers ALL` با Log All. خروجی نمونه:
-
-``` text
-USERS -> SRV-FILE   tcp/445     1.2M sessions
-USERS -> SRV-AD     tcp/389,88,53 600k
-USERS -> SRV-WEB    tcp/443     90k
-USERS -> SRV-DB     tcp/1433    14      <- suspicious (users should not talk to DB)
-```
-
-**گام ۲ — طبقه‌بندی.** لازم: 445، 389/88/53، 443. مشکوک: 1433 (۱۴ Session). بررسی: دو کاربر IT با SSMS مستقیم به DB وصل می‌شوند ⇒ باید از Jump Host یا VPN مدیریتی.
-
-**گام ۳ — ماتریس نهایی.**
-
-``` text
-from\to  SRV-FILE  SRV-AD       SRV-WEB  SRV-DB
-USERS    445       389,88,53    443      -
-IT-ADM   445       389,88,53    443      1433 (jump host only)
-WEB      -         -            -        1433 (app tier)
-```
-
-**گام ۴ — Policy.** یک Policy برای هر ردیف (Object گروهی برای پورت‌های AD)، `Deny` صریح با Log در انتها؛ ALL غیرفعال و ۲ هفته مشاهده.
-
-**گام ۵ — آزمون.** ۴ آزمون مثبت و ۴ آزمون منفی (Users→DB باید رد و Log شود).
-
-**اشتباهات رایج**
-- تعریف Zone بدون تعریف «چه چیزی از چه سطح اعتمادی»: ماتریس بی‌معنی می‌شود.
-- حذف فوری Policy ALL بدون Log کافی.
-- نداشتن Owner برای Policy.
-
-**پرسش‌های مصاحبه**
-1. *Least Privilege را چگونه اندازه می‌گیرید؟* تعداد Policy ALL = ۰ و Hit Count هر Policy.
-2. *Default Deny با Log چرا؟* برای ممیزی و Alert.
-3. *Trust Boundary چیست؟* مرزی که ترافیک از سطح اعتماد کمتر به بیشتر یا برعکس عبور می‌کند.
-
-### تکمیل عمیق: Zone، Default Deny و Least Privilege از ماتریس تا Policy
-
-#### چرا؟
-
-قبل از نوشتن Policy یک ماتریس نیاز بکشید؛ بعد هر خانه یا «Allow با سرویس مشخص» یا «Deny» است.
-
-#### ماتریس نمونه
-
-| از ↓ / به → | Internet | DMZ | Servers | Mgmt |
-|---|---|---|---|---|
-| Users | HTTP/S,DNS | HTTPS | HTTPS,SMB | — |
-| Guest | HTTP/S,DNS | — | — | — |
-| Mgmt | — | SSH | SSH | همه |
-| Internet | — | HTTPS (VIP) | — | — |
-
-خانه‌ی خالی = Deny.
-
-#### مثال ساده — تبدیل به Policy
-
-هر خانه‌ی پر یک Policy؛ در پایان Deny All با Log.
-
-#### مثال متوسط — Least Privilege
-
-به‌جای `Users -> Servers ALL` بنویسید `Users -> SRV-ERP HTTPS`. مقصد دقیق، سرویس دقیق.
-
-#### مثال سخت — دور زدن Zone
-
-در Zone با `intrazone allow` دو Interface همان Zone آزادانه صحبت می‌کنند؛ حتماً `deny` و Policy صریح.
-
-#### آزمون
-
-برای هر Policy یک آزمون مثبت و برای هر خانه‌ی خالی یک آزمون منفی (چند نمونه).
-
-#### Lab
-
-ماتریس را برای سازمان فرضی خودتان بکشید و ۱۰ Policy بنویسید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Policy ALL | تنبلی | تنگ |
-| Zone باز | intrazone | deny |
-| بی‌آزمون | غفلت | آزمون منفی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. خانه‌ی خالی؟** Deny.
-**۲. Least privilege؟** حداقل لازم.
-**۳. آزمون منفی؟** اثبات بستن.
-
-#### English Corner
-
-- *Every empty cell in the access matrix is an implicit deny that should be tested.*
-- Q: What does least privilege mean for a firewall rule?
 
 ## درس 11-3 — مسیر بسته در فایروال: Transit، Local-in، Local-out و ترتیب DNAT/Route/Policy/SNAT
 
@@ -2812,162 +2539,148 @@ WEB      -         -            -        1433 (app tier)
 
 > **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. مراحل پردازش بسته (Ingress، RPF، Session، DNAT، Route، Policy، SNAT، Egress) را به ترتیب بگوید.
-2. سه نوع ترافیک را تفکیک و کنترل هرکدام را بگوید.
-3. Policy را با آدرس درست (بعد DNAT) بنویسد.
-4. سناریو را روی کاغذ شبیه‌سازی کند.
-5. با Debug/Session مسیر را اثبات کند.
-6. علائم هر مرحله‌ی شکست را بشناسد.
+1. سه نوع ترافیک Transit، Local-in و Local-out را تمایز دهید.
+2. مراحل پردازش یک بسته‌ی عبوری را به ترتیب بگویید.
+3. بدانید هر کنترل (Policy، allowaccess، DoS، NAT) در کدام مرحله است.
+4. با Debug Flow مراحل را مشاهده کنید.
+5. خطای رایج «Policy عادی برای مدیریت» را تشخیص دهید.
+6. ترتیب DNAT، Routing، Policy و SNAT را بدانید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا مسیر بسته را بدانیم؟** هر Policy یا قابلیتی در مرحله‌ی مشخصی اجرا می‌شود. اگر ترتیب را ندانید، Policy را جای اشتباه می‌نویسید. مثلاً می‌خواهید SSH به خود فایروال را ببندید؛ Policy عادی بی‌اثر است چون این ترافیک **Local-in** است.
+هر قابلیت فایروال در مرحله‌ی مشخصی از مسیر بسته اجرا می‌شود. اگر ترتیب را ندانید، Policy را جای اشتباه می‌نویسید. مثلاً می‌خواهید SSH به خود فایروال را ببندید و Policy عادی `Users -> any SSH deny` می‌گذارید؛ بی‌اثر است چون ترافیک مقصد خود فایروال **Local-in** است و Policy عبوری آن را نمی‌بیند. این نقشه‌ی ذهنی پایه‌ی عیب‌یابی در همه‌ی فصل‌های بعد است.
 
-**سه نوع ترافیک**
+### سه نوع ترافیک
 
-1. **Transit:** از میان فایروال می‌گذرد (کاربر به سرور) ⇒ Firewall Policy.
-2. **Local-in:** مقصدش خود فایروال است (SSH، ping به FW) ⇒ allowaccess/Local-in Policy.
-3. **Local-out:** از خود فایروال می‌آید (NTP، FortiGuard، Syslog) ⇒ تنظیمات سرویس و Routing.
-
-**ترتیب مراحل Transit (مفهومی):** ورود ← Session موجود؟ ← DoS ← RPF ← DNAT ← Routing ← Policy ← UTM ← SNAT ← خروج.
-
-**جمع‌بندی اصلی درس:** کاربر می‌گوید «سایت باز نمی‌شود». بدون نقشه‌ی مسیر بسته، حدس می‌زنید: Policy؟ Route؟ NAT؟ DNS؟ با نقشه، مرحله‌به‌مرحله می‌پرسید: بسته رسید؟ Session ساخته شد؟ Route دارد؟ Policy؟ NAT؟ خارج شد؟ هر پاسخ «نه» محل خرابی را نشان می‌دهد.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) مراحل ترافیک عبوری (Transit)
-
-``` text
-1 Ingress interface
-2 Anti-spoof / RPF check
-3 Session lookup (existing session? -> fast path)
-4 DNAT (VIP)
-5 Route lookup (egress interface)
-6 Policy lookup (srcintf, dstintf, src, dst, service, schedule)
-7 UTM inspection (if enabled)
-8 SNAT (IP pool / interface address)
-9 Egress
-```
-
-نکته‌ی ظریف: DNAT قبل از Route و Policy است؛ پس Policy با آدرس **داخلی** (بعد DNAT) و VIP object تطابق می‌کند.
-
-#### ۲) سه نوع ترافیک
-
-| نوع | مقصد | کنترل |
+| نوع | منشأ ← مقصد | کنترل |
 |---|---|---|
-| Transit | شبکه‌ی پشت فایروال | Firewall Policy |
-| Local-in | خود فایروال (Admin، BGP، IPsec، DNS) | Allowaccess + Local-in policy |
-| Local-out | تولیدشده توسط فایروال (NTP، FortiGuard، Syslog) | Routing خود فایروال + Source-IP |
+| Transit | از میان فایروال (A → B) | Firewall Policy |
+| Local-in | به خود فایروال (SSH، ping، SNMP، VPN) | `allowaccess`، Local-in Policy |
+| Local-out | از خود فایروال (NTP، DNS، Syslog، FortiGuard) | تنظیم سرویس، Route، Source IP |
 
-#### ۳) شبیه‌سازی
+### مراحل ترافیک Transit
 
 ``` text
-User 10.10.0.5:40000 -> 203.0.113.10:443
-1 ingress port2, RPF: route to 10.10.0.5 via port2 OK
-2 no session -> new
-3 no DNAT
-4 route: default -> port1
-5 policy: ZN-USERS->port1 src NET-USERS svc HTTPS -> ACCEPT (id 10)
-6 SNAT -> 198.51.100.2:40000
-7 egress port1
+1  Ingress interface (link, VLAN)
+2  Session lookup: existing session? -> fast path
+3  DoS policy / anomaly checks
+4  RPF (reverse path forwarding) check
+5  DNAT (VIP) / pre-routing
+6  Routing decision (policy route first, then route table)
+7  Firewall policy lookup
+8  UTM / inspection (AV, IPS, web, app)
+9  SNAT (policy NAT / IP pool)
+10 Egress interface
 ```
 
-#### ۴) اثبات
+نکات:
+
+- اگر Session موجود است، بسته مستقیم از مسیر سریع می‌گذرد و Policy دوباره بررسی نمی‌شود.
+- **DNAT قبل از Policy و Routing** است؛ پس Policy ورودی VIP باید به **IP عمومی (VIP)** اشاره کند.
+- **SNAT بعد از Policy** است؛ Policy آدرس **قبل از SNAT** را می‌بیند.
+- **RPF** قبل از Policy است؛ اگر Route مبدأ از Interface دیگر باشد، بسته Drop می‌شود.
+
+### Local-in و Local-out
+
+**Local-in:** ترافیک با مقصد یکی از IPهای فایروال. اول `allowaccess` Interface (ping، https، ssh، snmp، fgfm، ...) و سپس Local-in Policy (در FortiGate) آن را کنترل می‌کند.
 
 ``` text
-diagnose debug flow filter addr 203.0.113.10
+config firewall local-in-policy
+ edit 1
+  set intf "port1"
+  set srcaddr "all"
+  set dstaddr "all"
+  set service "HTTPS" "SSH"
+  set action deny
+  set schedule "always"
+ next
+end
+```
+
+**Local-out:** ترافیکی که فایروال می‌سازد؛ تنظیم Source Interface/IP و Routing آن مستقل از Policy عبوری است. مشکلات رایج: Update FortiGuard نمی‌رسد، Syslog نمی‌رسد، NTP کار نمی‌کند ⇒ Route/DNS/Source IP.
+
+### مشاهده با Debug Flow
+
+``` text
+diagnose debug reset
+diagnose debug flow filter addr 10.20.0.10
 diagnose debug flow show function-name enable
-diagnose debug flow trace start 20
+diagnose debug flow trace start 10
 diagnose debug enable
-diagnose sys session list
 ```
 
-#### ۵) علائم هر مرحله
+نمونه خروجی (ساده):
 
-| پیام | مرحله |
-|---|---|
-| reverse path check fail | RPF |
-| no matching policy / Denied by forward policy check | Policy |
-| iprope_in_check() check failed | Local-in |
-| find a route: ... | Route |
-| no session matched | بسته میانه‌ی اتصال |
+``` text
+msg="vd-root received a packet(proto=6, 10.10.0.5:40000->10.20.0.10:443)"
+msg="allocate a new session-0003f1"
+msg="find a route: gw-10.20.0.1 via port3"
+msg="Allowed by Policy-10"
+```
 
-### ۴) طراحی و تصمیم‌گیری
+پایان: `diagnose debug disable` و `diagnose debug reset`.
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Local-in | Policy برای BGP/IPsec/Admin |
-| Source IP Local-out | Loopback/Interface ثابت |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### مثال‌های حل‌شده
 
 #### مثال ساده — کدام نوع؟
 
 | ترافیک | نوع | کنترل |
 |---|---|---|
 | PC → سرور ERP | Transit | Firewall Policy |
-| PC → SSH به فایروال | Local-in | allowaccess |
-| فایروال → NTP | Local-out | تنظیم NTP/Route |
+| PC → SSH به فایروال | Local-in | allowaccess/Local-in |
+| فایروال → NTP | Local-out | NTP/Route |
+| فایروال → Syslog | Local-out | source-ip/Route |
 
-#### مثال متوسط — بررسی با Debug
+#### مثال متوسط — ترتیب DNAT/Policy
 
-``` text
-diagnose debug flow filter addr 10.10.0.5
-diagnose debug flow trace start 10
-```
+VIP 203.0.113.10:443 → 10.30.0.10:443. بسته‌ی ورودی Dst=203.0.113.10. مراحل: DNAT (Dst→10.30.0.10) ⇒ Routing (Egress به DMZ) ⇒ Policy lookup با dstaddr=VIP-WEB (آدرس قبل از DNAT برای تطبیق VIP) ⇒ UTM ⇒ خروج. اگر Policy با IP داخلی نوشته شود Lookup مطابق نمی‌شود.
 
-خروجی «allocate a new session» ⇒ Transit؛ «local in» (طبق نسخه) ⇒ Local-in.
+#### مثال متوسط — اشتباه رایج
 
-#### مثال سخت — اشتباه رایج
+مهندس برای بستن SSH به فایروال، `Users -> any SSH deny` گذاشت. آزمون: `ssh admin@FW` از Users هنوز کار می‌کند. علت: Local-in است. رفع: حذف `ssh` از `allowaccess` Interface یا Local-in Policy. تأیید: Timeout.
 
-مهندس Policy `Users -> any SSH deny` را برای بستن SSH به فایروال نوشت؛ بی‌اثر ماند چون Local-in است. راه صحیح: حذف `ssh` از `allowaccess` Interface یا `config firewall local-in-policy`. آزمون: `ssh admin@FW` از Users باید Timeout بدهد.
+#### مثال سخت — Update نمی‌رسد
 
-#### مثال‌های اصلی درس (مرور)
+FortiGuard Update شکست می‌خورد. Local-out:
 
-**ساده (حل‌شده):** کاربر به اینترنت: Walk بالا؛ نتیجه: Policy 10، SNAT.
+1. `execute ping update.fortiguard.net`؟
+2. DNS فایروال درست؟ (`config system dns`)
+3. Route به اینترنت؟ (Default)
+4. NAT خروجی برای ترافیک خود فایروال؟ (از IP Interface خروجی)
+5. Policy Local-out/ISP که پورت 443/8890 را می‌بندد؟
+6. `diagnose debug application update -1` (کوتاه).
 
-**متوسط (VIP):** کاربر اینترنت به 203.0.113.10:443 (VIP به 10.30.0.10). مراحل: DNAT اول؛ Route به DMZ؛ Policy با dstaddr=VIP-WEB (نه IP داخلی)؛ Accept. اگر Policy با 10.30.0.10 نوشته شود تطابق نمی‌کند ⇒ `Denied by forward policy check`.
+#### مثال سخت — RPF در مسیر Transit
 
-**سخت (Local-in):** Admin از Mgmt به https فایروال وصل نمی‌شود. مراحل: ۱) ترافیک Local-in؛ ۲) Debug flow: `iprope_in_check() check failed`. ۳) allowaccess https روی Interface Mgmt نیست یا Local-in policy بسته. رفع: allowaccess و Trusted host؛ آزمون ورود.
+کاربر پشت Interface جدید (port6) به سرور می‌رود. Debug: `reverse path check fail`. Route به شبکه‌ی کاربر از port2 است نه port6. رفع: Route درست (Static) یا `set src-check disable` (با ریسک Spoofing؛ ثبت استثنا).
 
-### ۷) پیاده‌سازی از مسیر CLI
+### Lab هدایت‌شده (اجرا نشده)
 
-``` text
-diagnose debug flow filter addr 203.0.113.10
-diagnose debug flow show function-name enable
-diagnose debug flow trace start 20
-diagnose debug enable
-diagnose debug disable
-```
+1. سه ترافیک (Transit، Local-in، Local-out) را تولید کنید.
+2. Debug Flow را اجرا و مراحل را علامت بزنید.
+3. اشتباه «Policy برای SSH به فایروال» را بسازید و رفع کنید.
+4. VIP و ترتیب DNAT/Policy را مشاهده کنید.
 
-### ۸) Verification (اثبات صحت)
+### عیب‌یابی سریع
 
-- Debug flow مراحل را نشان می‌دهد.
-- policy-id مطابق.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| no policy | Lookup | آدرس بعد DNAT |
-| RPF fail | Route برگشت | Route |
-| Admin وارد نمی‌شود | allowaccess | Interface Mgmt |
+| SSH به FW باز است | Local-in | allowaccess |
+| Update نمی‌رسد | Local-out | Route/DNS |
+| Policy VIP مطابق نمی‌شود | آدرس قبل از DNAT | dst=VIP |
+| RPF fail | Route | تصحیح |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- Debug را خاموش کنید.
+Transit با Policy؛ Local-in با allowaccess/Local-in؛ Local-out با تنظیم سرویس و Route. ترتیب Transit: Session، DoS، RPF، DNAT، Routing، Policy، UTM، SNAT. با Debug Flow ببینید.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- DNAT قبل Route/Policy.
-- سه نوع ترافیک.
-- Debug flow اثبات.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) DNAT قبل یا بعد Policy؟ *(پاسخ: 11-3-ت1)*
 
@@ -2983,7 +2696,7 @@ diagnose debug disable
 
 **Q1.** Quick quiz (English): Does destination NAT occur before or after the policy lookup? *(پاسخ: 11-3-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -2992,120 +2705,16 @@ diagnose debug disable
 
 - *Trace the packet stage by stage.* ← بسته را مرحله‌به‌مرحله ردیابی کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** Flow (اجرا نشده). **Evidence:** `03-ops/packet-walk.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Packet flow
 - FortiOS 7.0 Troubleshooting guide
 
 <a id="l-11-4"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Packet Walk سه‌حالته با Debug واقعی
-
-**حالت A — کاربر به اینترنت (SNAT).**
-
-``` text
-diagnose debug flow filter addr 203.0.113.10
-diagnose debug flow show function-name enable
-diagnose debug flow trace start 10
-diagnose debug enable
- id=20085 ... received a packet(proto=6, 10.10.0.5:50000->203.0.113.10:443) from port2. flag [S]
- id=20085 ... allocate a new session-0001a2b3
- id=20085 ... find a route: flag=00000000 gw-198.51.100.1 via port1
- id=20085 ... Allowed by Policy-10: SNAT
- id=20085 ... SNAT 10.10.0.5->198.51.100.2:50000
-```
-
-**حالت B — اینترنت به وب (VIP/DNAT).** DNAT قبل از Policy:
-
-``` text
- ... received a packet(proto=6, 8.8.4.4:41000->203.0.113.10:443) from port1
- ... Find an existing session / VIP 203.0.113.10:443 -> 10.30.0.10:443
- ... Allowed by Policy-40: 
-```
-
-**حالت C — Admin به فایروال (Local-in).**
-
-``` text
- ... iprope_in_check() check failed on policy 0, drop     ! allowaccess missing
-```
-
-**جدول قضاوت**
-
-| پیام | معنی | اقدام |
-|---|---|---|
-| Denied by forward policy check (policy 0) | Implicit Deny | Policy/Interface/Zone |
-| reverse path check fail | RPF | Route برگشت |
-| iprope_in_check() check failed | Local-in | allowaccess/Local-in policy |
-| no session matched | میانه‌ی اتصال بدون SYN | Asymmetric/Timeout |
-
-**اشتباهات رایج**
-- Policy برای IP داخلی به‌جای VIP.
-- فراموشی `debug disable` و `debug reset`.
-- آزمون روی NP-offload شده (بسته دیده نمی‌شود؛ ICMP را آزمون کنید یا Offload را غیرفعال).
-
-**پرسش‌های مصاحبه**
-1. *ترتیب DNAT و Route؟* DNAT اول.
-2. *Local-out چیست؟* ترافیک تولیدشده توسط خود فایروال (NTP، FortiGuard).
-3. *Route چند بار جستجو می‌شود؟* معمولاً دو بار در عمر Session (بسته‌ی اول و اولین پاسخ).
-
-### تکمیل عمیق: مسیر بسته — Transit، Local-in و Local-out
-
-#### چرا؟
-
-مسیر بسته تعیین می‌کند کدام کنترل اعمال شود. بدون این نقشه، Policy اشتباه می‌نویسید.
-
-#### سه مسیر
-
-``` text
-Transit   : A -> Firewall -> B       (firewall policy)
-Local-in  : A -> Firewall itself    (allowaccess / local-in policy)
-Local-out : Firewall itself -> B    (service config, routing)
-```
-
-#### مثال ساده
-
-- SSH به فایروال ⇒ Local-in.
-- Users→Server ⇒ Transit.
-- فایروال به NTP ⇒ Local-out.
-
-#### مثال متوسط — ترتیب
-
-در Transit: Session، DoS، RPF، DNAT، Route، Policy، UTM، SNAT.
-
-#### مثال سخت — اشتباه رایج
-
-مهندس Policy `Users -> any SSH` برای باز کردن SSH به فایروال نوشت؛ بی‌اثر است چون Local-in است.
-
-#### Lab
-
-برای شش ترافیک مختلف نوع و کنترل را بنویسید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| SSH به FW نه | allowaccess | افزودن |
-| Update نه | Local-out Route | تنظیم |
-| Policy بی‌اثر | نوع اشتباه | شناسایی |
-
-#### پرسش‌ها با پاسخ
-
-**۱. SSH به FW؟** Local-in.
-**۲. Policy عادی کافی است؟** خیر.
-**۳. Local-out مثال؟** NTP.
-
-#### English Corner
-
-- *Identify whether traffic is transit, local-in or local-out before writing a rule.*
-- Q: Which control applies to SSH connections to the firewall?
 
 ## درس 11-4 — ACL، Policy و NAT: تفاوت‌ها، ارتباط‌ها و ترکیب درست
 
@@ -3113,143 +2722,151 @@ Local-out : Firewall itself -> B    (service config, routing)
 
 > **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. وظیفه‌ی ACL، Firewall Policy و NAT را تفکیک کند.
-2. Source NAT، Destination NAT و PAT را بشناسد.
-3. NAT و Policy را برای انتشار سرویس هماهنگ کند.
-4. Hairpin NAT و Split DNS را مقایسه کند.
-5. خطاهای رایج (NAT بدون Policy، Policy بدون Route) را رفع کند.
-6. مثال کامل Publish و آزمون منفی بنویسد.
+1. سه سؤال متفاوت ACL/Policy، NAT و Routing را از هم جدا کنید.
+2. ترتیب DNAT، Policy و SNAT را در یک جریان توضیح دهید.
+3. آدرس قبل و بعد از NAT را در Policy درست به‌کار ببرید.
+4. NAT ۱:۱ روی Tunnel با آدرس هم‌پوشان را طراحی کنید.
+5. خطای «Policy مطابق نمی‌شود» را از روی ترتیب NAT تشخیص دهید.
+6. ACL را با Policy مقایسه کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا ACL، Policy و NAT را یکی نمی‌گیریم؟** سه ابزار سه سؤال متفاوت را جواب می‌دهند: **ACL/Policy:** «اجازه هست؟»؛ **NAT:** «آدرس چه شود؟»؛ **Routing:** «از کجا برود؟». ترکیب غلط آنها یکی از رایج‌ترین علل خطاست.
+ACL، Policy، NAT و Routing اغلب با هم قاطی می‌شوند ولی سه سؤال متفاوتی را جواب می‌دهند: **«اجازه هست؟»** (ACL/Policy)، **«آدرس چه شود؟»** (NAT)، **«از کجا برود؟»** (Routing). ترکیب غلط آنها یکی از رایج‌ترین علل خطاست. مثلاً Policy را با آدرس داخلی می‌نویسید ولی Policy «قبل از DNAT» ارزیابی می‌شود؛ یا Route را بعد از NAT فرض می‌کنید ولی قبل از آن است.
 
-**ترتیب مهم:** DNAT (ترجمه‌ی مقصد) **قبل از** Policy و Routing؛ SNAT (ترجمه‌ی مبدأ) **بعد از** Policy. نتیجه: Policy ورودی برای سرور منتشرشده باید به **آدرس عمومی (VIP)** اشاره کند نه آدرس داخلی.
+### سه سؤال
 
-**فرق ACL و Policy:** ACL Stateless و روی Interface؛ Policy Stateful با Interface/Address/Service/Action/Profile.
+| ابزار | سؤال | مثال |
+|---|---|---|
+| Policy/ACL | مجاز است؟ | Users→ERP HTTPS accept |
+| NAT | آدرس چه شود؟ | 10.10.0.5 → 203.0.113.2 |
+| Routing | از کدام Interface/Next-hop؟ | 0.0.0.0/0 via port1 |
 
-**جمع‌بندی اصلی درس:** سه اشتباه رایج: «NAT گذاشتم ولی کار نمی‌کند»، «Policy گذاشتم ولی ترجمه نمی‌شود»، «ACL گذاشتم ولی دور زده می‌شود». هر سه از یکی‌گرفتن سه ابزار با وظایف متفاوت می‌آید.
+### ACL و Policy
 
-مثال روزمره: ACL فهرست مهمان‌های مجاز، Policy مجوز ورود هر مهمان (با شرایط)، NAT تغییر نام روی تابلو (مثلاً «اتاق ۲۱۴» برای بیرون «طبقه‌ی بالا»).
+| ویژگی | ACL | Firewall Policy |
+|---|---|---|
+| وضعیت | بدون حافظه | Stateful |
+| معیار | آدرس، پورت، پروتکل | + Interface، کاربر، برنامه، زمان |
+| عمل | permit/deny | accept/deny + UTM + NAT + Log |
+| محل | Interface (in/out) | Interface/Zone جفتی |
 
-### ۳) توضیح عمیق فنی
+### ترتیب پردازش در یک جریان با NAT
 
-#### ۱) جدول تفاوت
-
-| | ACL | Policy | NAT |
-|---|---|---|---|
-| وظیفه | فیلتر ساده | اجازه/ردّ + بازرسی | بازنویسی آدرس/پورت |
-| وضعیت | معمولاً Stateless | Stateful | Stateful |
-| معیار | IP/پورت | Interface/Zone، User، Service، App | آدرس مبدأ/مقصد |
-
-#### ۲) انواع NAT
-
-- Source NAT (SNAT/PAT): کاربران داخلی با IP عمومی.
-- Destination NAT (DNAT/VIP): انتشار سرور داخلی.
-- Static NAT: یک‌به‌یک.
-
-#### ۳) انتشار وب
+برای ترافیک ورودی به VIP:
 
 ``` text
-VIP: 203.0.113.10:443 -> 10.30.0.10:443
-Policy: Internet -> DMZ, dst=VIP-WEB, service=HTTPS, ACCEPT, log all
+Client 198.51.100.50 -> 203.0.113.10:443
+1 DNAT : dst 203.0.113.10 -> 10.30.0.10
+2 Route : to 10.30.0.10 via DMZ interface
+3 Policy: INET -> DMZ, dstaddr = VIP-WEB (the VIP object), service HTTPS
+4 SNAT : (optional) src can be translated
 ```
 
-بدون Policy: VIP ترجمه می‌کند ولی بسته رد می‌شود. بدون VIP: Policy مقصد عمومی را نمی‌شناسد.
+برای ترافیک خروجی با SNAT:
 
-#### ۴) Hairpin
+``` text
+User 10.10.0.5 -> 198.51.100.8:443
+1 Route : egress port1
+2 Policy: USERS -> INET (src = 10.10.0.5, pre-SNAT)
+3 SNAT  : src -> 203.0.113.2
+```
 
-کاربر داخلی به IP عمومی وب داخلی: بسته به فایروال می‌رود، DNAT می‌شود و به سرور می‌رسد؛ سرور پاسخ را مستقیم به کاربر می‌دهد (هم‌شبکه) و فایروال را دور می‌زند ⇒ Session ناقص. راه‌ها: Split DNS (ترجیح) یا SNAT برای Hairpin.
+**نتیجه‌ی مهم:** Policy آدرس **مبدأ قبل از SNAT** و آدرس **مقصد قبل از DNAT (یعنی خود VIP)** را می‌بیند.
 
-#### ۵) خطاها
+### NAT یک‌به‌یک روی Tunnel (آدرس هم‌پوشان)
 
-| علامت | علت |
-|---|---|
-| VIP کار نمی‌کند | Policy dst=VIP نیست |
-| برگشت نیست | سرور Default Gateway ندارد/Route |
-| فقط بعضی کاربران | NAT Overlap |
+دو سایت هر دو 192.168.1.0/24. در سایت A، سایت B را به 10.222.1.0/24 ترجمه می‌کنیم:
 
-#### ۶) آزمون
+``` text
+Real B host      : 192.168.1.10
+As seen at site A: 10.222.1.10  (VIP mapping 10.222.1.0/24 -> 192.168.1.0/24)
+```
 
-مثبت: HTTPS از اینترنت. منفی: SSH به VIP باید رد شود.
+Policy و Route در A باید با **10.222.1.0/24** نوشته شوند و DNS هم نام را به آدرس ترجمه‌شده حل کند.
 
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| Hairpin | Split DNS |
-| VIP | Port-forward حداقل |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+### مثال‌های حل‌شده
 
 #### مثال ساده — Users به اینترنت
 
-Routing می‌گوید خروجی port1؛ Policy آن را مجاز می‌کند؛ NAT آدرس عمومی را می‌گذارد.
+Routing: خروج port1. Policy: Users→Internet accept. NAT: با IP Interface. `diagnose sys session list` فیلد snat را نشان می‌دهد.
 
-#### مثال متوسط — VIP
-
-``` text
-Outside client -> 203.0.113.10:443
-DNAT -> 10.30.0.10:443
-Policy lookup uses dst = VIP-WEB
-```
-
-اگر Policy با IP داخلی نوشته شود، Lookup مطابق نخواهد شد.
-
-#### مثال سخت — NAT یک‌به‌یک روی Tunnel
-
-شبکه‌ی سایت B با 192.168.1.0/24 هم‌پوشان است؛ در A به 10.222.1.0/24 ترجمه می‌شود. Policy در A باید به **آدرس ترجمه‌شده** اشاره کند. راه‌های تأیید: `diagnose sys session list` و Debug Flow.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** PAT: ۲۰۰ کاربر با یک IP؛ Session با SNAT.
-
-**متوسط (VIP بدون Policy):** VIP ساخته ولی سایت باز نمی‌شود؛ Debug flow: `Denied by forward policy check`. Policy dst=VIP-WEB؛ آزمون موفق.
-
-**سخت (Hairpin):** کاربران داخلی به وب با نام عمومی نمی‌رسند ولی از اینترنت باز است. مراحل: ۱) DNS عمومی IP عمومی. ۲) مسیر Hairpin ناقص. رفع: Split DNS با پاسخ 10.30.0.10؛ آزمون nslookup و باز شدن سایت. جایگزین: Hairpin NAT با ریسک پیچیدگی.
-
-### ۷) پیاده‌سازی از مسیر CLI
+#### مثال متوسط — VIP و Policy
 
 ``` text
 config firewall vip
- edit "VIP-WEB-443"
-  set extintf "port1"
+ edit "VIP-WEB"
   set extip 203.0.113.10
   set mappedip "10.30.0.10"
-  set portforward enable
-  set extport 443
-  set mappedport 443
+ next
+end
+config firewall policy
+ edit 40
+  set srcintf "port1"
+  set dstintf "port2"
+  set dstaddr "VIP-WEB"
+  set service "HTTPS"
+  set action accept
  next
 end
 ```
 
-### ۸) Verification (اثبات صحت)
+اگر به‌جای VIP-WEB آدرس 10.30.0.10 را بنویسید، Lookup بسته‌ی ورودی مطابق نمی‌شود (policy 0).
 
-- آزمون مثبت/منفی.
-- Session DNAT.
+#### مثال متوسط — ACL به Policy
 
-### ۹) Troubleshooting
+ACL: `permit tcp 10.10.0.0/24 host 10.20.0.10 eq 443`. معادل Policy: srcaddr NET-USERS، dstaddr SRV-ERP، service HTTPS. تفاوت: برگشت خودکار؛ Log و UTM اختیاری.
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+#### مثال سخت — NAT ۱:۱ روی Tunnel
+
+A (10.1.0.0/24) و B (192.168.1.0/24) و A هم 192.168.1.0/24 (محلی) دارد؟ نه؛ فرض: B هم‌پوشان با شبکه‌ی داخلی A (192.168.1.0/24). راه: در A یک VIP بنویسید:
+
+``` text
+config firewall vip
+ edit "B-HOSTS"
+  set extip 10.222.1.0-10.222.1.255
+  set mappedip "192.168.1.0-192.168.1.255"
+  set extintf "TO-B"
+ next
+end
+```
+
+Policy: `LAN -> TO-B` با dstaddr=B-HOSTS. DNS: نام سرور B ⇒ 10.222.1.x. آزمون: `ping 10.222.1.10` از LAN؛ Debug Flow نشان می‌دهد DNAT به 192.168.1.10.
+
+#### مثال سخت — «Policy مطابق نمی‌شود»
+
+1. `diagnose firewall iprope lookup` با آدرس‌ها؛ نتیجه policy 0.
+2. اگر Policy ورودی VIP است: dstaddr را بررسی (VIP، نه IP داخلی).
+3. اگر خروجی با SNAT است: srcaddr قبل از NAT (IP داخلی).
+4. Interface/Zone درست؟
+5. Policy بالاتر ترافیک را می‌گیرد؟ (Shadow)
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. VIP ساخته و Policy با IP داخلی بنویسید؛ مشاهده‌ی Drop.
+2. اصلاح به VIP و آزمون.
+3. SNAT و Lookup با آدرس قبل از NAT.
+4. NAT ۱:۱ آزمایشی برای آدرس هم‌پوشان.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| VIP کار نمی‌کند | Policy | dst=VIP |
-| برگشت نیست | Route سرور | Gateway |
+| Policy مطابق نمی‌شود | آدرس قبل/بعد NAT | dstaddr=VIP |
+| NAT بی‌اثر | Policy بدون nat | `set nat enable` |
+| Route اشتباه | Interface | بررسی |
+| آدرس هم‌پوشان | VIP ۱:۱ | تنظیم |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- فقط پورت لازم.
+Policy مجاز بودن، NAT آدرس و Routing مسیر را تعیین می‌کند. DNAT قبل از Policy، SNAT بعد از آن؛ پس Policy VIP را می‌بیند. NAT ۱:۱ آدرس‌های هم‌پوشان را حل می‌کند ولی Policy/DNS باید با آدرس ترجمه‌شده هماهنگ باشد.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- ACL≠Policy≠NAT.
-- VIP+Policy.
-- Split DNS.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) NAT چه می‌کند؟ *(پاسخ: 11-4-ت1)*
 
@@ -3265,7 +2882,7 @@ end
 
 **Q1.** Quick quiz (English): Why does a VIP alone not allow traffic through? *(پاسخ: 11-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3274,113 +2891,15 @@ end
 
 - *NAT alone does not permit traffic.* ← NAT به‌تنهایی ترافیک را مجاز نمی‌کند.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** NAT و VIP (اجرا نشده). **Evidence:** `02-design/fgt-nat.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: NAT; Virtual IPs
 
 <a id="l-11-5"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: انتشار سه سرویس با VIP و حل Hairpin با Split DNS
-
-**سناریو.** سه سرویس داخلی: وب (10.30.0.10:443)، پورتال (10.30.0.11:8443)، SFTP (10.30.0.12:22). فقط یک IP عمومی 203.0.113.10 داریم.
-
-**گام ۱ — سه VIP با Port-forward.**
-
-``` text
-VIP-WEB     203.0.113.10:443  -> 10.30.0.10:443
-VIP-PORTAL  203.0.113.10:8443 -> 10.30.0.11:8443
-VIP-SFTP    203.0.113.10:2222 -> 10.30.0.12:22
-```
-
-اشتراک IP با پورت‌های متفاوت ممکن است؛ پورت داخلی 22 با پورت خارجی 2222 (کاهش اسکن خودکار).
-
-**گام ۲ — Policy هر سرویس** (dst=VIP، Service مشخص، Log).
-
-**گام ۳ — Hairpin.** کاربر داخلی `https://web.example.com` را می‌زند و DNS عمومی 203.0.113.10 می‌دهد. مسیر: LAN → فایروال → DNAT به 10.30.0.10 در همان یا شبکه‌ی دیگر. اگر سرور هم‌Subnet کاربر باشد، پاسخ مستقیم به کاربر می‌رود و Session ناقص می‌شود.
-
-**راه‌حل مرجح: Split DNS.**
-
-``` text
-Internal DNS: web.example.com -> 10.30.0.10   (for internal users)
-Public DNS  : web.example.com -> 203.0.113.10 (for internet)
-```
-
-راه جایگزین (طبق مستند Fortinet): Policy با Incoming Interface داخلی و Destination=VIP (بسته به نسخه‌ی اجرا) یا Hairpin NAT؛ `nat-source-vip` برای Hairpin نیست.
-
-**گام ۴ — آزمون.** از اینترنت: 3 سرویس؛ منفی: پورت‌های دیگر (21، 3389) رد؛ از LAN: nslookup باید IP داخلی بدهد.
-
-**اشتباهات رایج**
-- باز کردن همه‌ی پورت‌ها با Static NAT.
-- نبود Policy برای VIP.
-- DNS داخلی/خارجی یکسان.
-
-**پرسش‌های مصاحبه**
-1. *DNAT کجا Policy را عوض می‌کند؟* Policy روی VIP نوشته می‌شود.
-2. *PAT ظرفیت؟* حدود ۶۴ هزار پورت به‌ازای IP و مقصد.
-3. *Hairpin چیست؟* دسترسی داخلی به IP عمومی سرور داخلی.
-
-### تکمیل عمیق: ACL، Policy و NAT — تفاوت‌ها و ترکیب
-
-#### چرا؟
-
-این سه مفهوم اغلب با هم قاطی می‌شوند؛ هرکدام سؤال متفاوتی را جواب می‌دهند.
-
-#### سه سؤال
-
-| ابزار | سؤال |
-|---|---|
-| ACL/Policy | اجازه هست؟ |
-| NAT | آدرس چه شود؟ |
-| Routing | از کجا برود؟ |
-
-#### مثال ساده — ترکیب
-
-Users→Internet: Route می‌گوید «از port1»، Policy می‌گوید «مجاز»، NAT می‌گوید «با IP عمومی».
-
-#### مثال متوسط — ترتیب
-
-DNAT قبل از Policy؛ SNAT بعد از Policy. پس Policy ورودی VIP باید به IP عمومی نگاه کند.
-
-#### مثال سخت — خطای Overlap
-
-NAT یک‌به‌یک روی Tunnel برای شبکه‌های هم‌پوشان: Policy باید به آدرس «ترجمه‌شده» اشاره کند.
-
-``` text
-Original : 192.168.1.10 (remote site B)
-Translated at A: 10.222.1.10
-Policy at A uses 10.222.1.10
-```
-
-#### Lab
-
-سه ترافیک را از نظر Route/Policy/NAT تحلیل کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Policy مچ نمی‌شود | آدرس قبل/بعد NAT | تصحیح |
-| Route اشتباه | Interface | بررسی |
-| NAT بی‌اثر | Policy | فعال |
-
-#### پرسش‌ها با پاسخ
-
-**۱. سه سؤال؟** مجاز؟ آدرس؟ مسیر؟
-**۲. DNAT/Policy؟** DNAT اول.
-**۳. Policy و آدرس ترجمه‌شده؟** باید هماهنگ.
-
-#### English Corner
-
-- *Routing, policy and NAT answer three different questions about a packet.*
-- Q: Does a firewall policy match the pre-NAT or post-NAT destination address?
 
 ## درس 11-5 — Session، Timeout، MTU/MSS و ریشه‌ی خرابی‌های «نیمه‌کارکرده» TCP/UDP
 
@@ -3388,148 +2907,138 @@ Policy at A uses 10.222.1.10
 
 > **وضعیت:** مفهومی و مستقل از نسخه؛ مثال‌های FortiOS 7.0.3 نامی (بوت‌نشده)؛ Lab «اجرا نشده»؛ دستورهای FortiGate `Unverified`.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. چرخه‌ی Session TCP/UDP/ICMP و Timeoutها را توضیح دهد.
-2. MTU، MSS، PMTUD و Fragmentation را با محاسبه تحلیل کند.
-3. علائم MTU Black-hole را بشناسد و PMTU را اندازه بگیرد.
-4. MSS-clamp را محاسبه و اعمال کند.
-5. خرابی‌های Timeout (SSH، DB) را رفع کند.
-6. آزمون پایدار برای تأیید طراحی کند.
+1. چرخه‌ی Session و Timeoutهای TCP/UDP/ICMP را بشناسید.
+2. MTU، MSS و Fragmentation را با محاسبه توضیح دهید.
+3. PMTUD و Blackhole را تشخیص دهید.
+4. MSS Clamp را در Policy و Tunnel تنظیم کنید.
+5. خرابی‌های «نیمه‌کارکرده» را دسته‌بندی کنید.
+6. با Capture ریشه‌ی مشکل را اثبات کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا خرابی‌های «نیمه‌کارکرده»؟** بدترین مشکلات آنهایی‌اند که «گاهی کار می‌کند». سه علت اصلی: **Timeout** Session، **MTU/MSS** و **نامتقارن**. این درس دو تای اول را باز می‌کند.
+بدترین خرابی‌ها «گاهی کار می‌کند» هستند: سایت باز می‌شود ولی تصاویر نه؛ ping جواب می‌دهد ولی وب نه؛ SSH بعد از یک ساعت بی‌کاری قطع می‌شود. این‌ها معمولاً از سه علت می‌آیند: **Timeout**، **MTU/MSS** و **مسیر نامتقارن**. این درس دو علت اول را با محاسبه و آزمون باز می‌کند.
 
-**Timeout:** Session بعد از مدتی بدون ترافیک حذف می‌شود. TCP برقرار پیش‌فرض ۳۶۰۰ ثانیه، UDP کوتاه‌تر. اتصال طولانی بی‌کار (مثل SSH) ممکن است قطع شود.
+### Session و Timeout
 
-**MTU/MSS:** بسته‌ی کوچک رد می‌شود ولی بزرگ نه؛ علامت «ping کار می‌کند ولی وب نه». MSS = MTU منهای ۴۰.
+Session پس از مدتی بدون ترافیک حذف می‌شود. مقادیر نمونه (پیش‌فرض‌ها را از مستند نسخه بخوانید):
 
-**جمع‌بندی اصلی درس:** شکایت رایج: «سایت باز می‌شود ولی بعد از لاگین گیر می‌کند»، «ping جواب می‌دهد ولی دانلود می‌ایستد»، «SSH بعد از چند دقیقه می‌پرد». اینها Policy نیستند؛ MTU یا Timeout‌اند. تشخیصشان نیاز به دانستن این دارد که در لایه‌ی انتقال چه می‌گذرد.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) Timeoutها
-
-| پروتکل | Timeout تقریبی |
+| پروتکل/حالت | Timeout نمونه |
 |---|---|
-| TCP Established | ۳۶۰۰ ثانیه |
-| TCP Half-open (SYN) | کوتاه (در حد ثانیه‌ها تا چند ده ثانیه؛ عدد دقیق را از مستند نسخه بخوانید) |
-| UDP | چند ده ثانیه تا حدود ۱۸۰ ثانیه (بسته به نسخه و Service) |
-| ICMP | کوتاه |
+| TCP ESTABLISHED | 3600 s (1 ساعت) |
+| TCP SYN_SENT / SYN_RECV | چند ثانیه تا دقیقه |
+| TCP TIME_WAIT | کوتاه |
+| UDP | حدود 60 s |
+| ICMP | چند ثانیه |
 
-فقط عدد TCP Established و مفهوم «Timeout سراسری و Timeout هر Service» مرجع است: طبق مستند Fortinet مقدار سراسری پیش‌فرض ۳۶۰۰ ثانیه است، Timeout هر پورت/Service آن را بازنویسی می‌کند و برای UDP مقدار `udp-idle-timer` در تعریف Service مقدار سراسری را override می‌کند. مقادیر دقیق بسته به نسخه فرق دارند؛ با `get system session-ttl` و `show full-configuration` ببینید. Session بیکار حذف می‌شود؛ سرویس‌های طولانی (SSH، DB) Keepalive یا Timeout بیشتر می‌خواهند.
-
-#### ۲) MTU و MSS
-
-``` text
-Ethernet MTU = 1500
-IP header = 20
-TCP header = 20
-MSS = 1500 - 20 - 20 = 1460
-```
-
-تونل (IPsec) سربار دارد: مثلاً MTU مؤثر 1400 ⇒ MSS ≈ 1360.
-
-#### ۳) PMTUD و Black-hole
-
-TCP بسته‌ها را با DF می‌فرستد؛ اگر مسیر MTU کوچک‌تر دارد، روتر ICMP «Fragmentation needed» برمی‌گرداند. اگر فایروالی ICMP را ببندد، فرستنده نمی‌فهمد و بسته‌های بزرگ بی‌خبر می‌میرند: Black-hole. علامت: Handshake و بسته‌های کوچک ok؛ بزرگ نه.
-
-#### ۴) اندازه‌گیری
+نتیجه: اتصال بی‌کار TCP پس از ۳۶۰۰ ثانیه حذف می‌شود؛ بسته‌ی بعدی کلاینت Session ندارد و RST می‌گیرد یا Drop می‌شود. راه‌ها: Keepalive در برنامه/کلاینت (کمتر از Timeout)، یا افزایش Timeout برای Service/Policy خاص.
 
 ``` text
-ping -f -l 1472 203.0.113.10     (Windows; 1472+28=1500)
-execute ping-options df-bit yes
-execute ping-options data-size 1372
-execute ping 203.0.113.10
+ssh -o ServerAliveInterval=60 user@server
 ```
 
-کاهش تا اولین موفقیت ⇒ PMTU = اندازه + 28.
+### MTU، MSS و Fragmentation
 
-#### ۵) MSS-clamp
+- **MTU (Maximum Transmission Unit):** بزرگ‌ترین بسته‌ی IP روی لینک (اترنت 1500).
+- **MSS (Maximum Segment Size):** بزرگ‌ترین داده‌ی TCP در یک Segment.
+
+``` text
+MSS = MTU - IP header (20) - TCP header (20) = 1500 - 40 = 1460
+```
+
+اگر در مسیر لینکی با MTU کمتر باشد (مثلاً Tunnel با 1400)، بسته‌ی بزرگ‌تر باید:
+
+1. **Fragment** شود (اگر DF=0)، یا
+2. **Drop** شود و ICMP «Fragmentation Needed» (Type 3 Code 4) برگردد (اگر DF=1).
+
+**PMTUD (Path MTU Discovery):** فرستنده با DF=1 می‌فرستد و از ICMP Type 3 Code 4 اندازه‌ی مجاز را می‌فهمد و MSS را کم می‌کند. **اگر ICMP در مسیر فیلتر شود (Blackhole)،** فرستنده نمی‌فهمد و بسته‌های بزرگ بی‌صدا گم می‌شود؛ بسته‌های کوچک (ping معمولی، Handshake) رد می‌شوند. علامت: «ping جواب می‌دهد ولی HTTPS نه» یا «صفحه شروع می‌شود و بعد گیر می‌کند».
+
+### MSS Clamp
+
+مستقل از ICMP، فایروال MSS را در SYN کاهش می‌دهد تا از ابتدا بسته‌ها کوچک باشد:
 
 ``` text
 config firewall policy
- edit 2
+ edit 30
   set tcp-mss-sender 1360
   set tcp-mss-receiver 1360
  next
 end
 ```
 
-(`Unverified` روی 7.0.3؛ با CLI help ببینید.)
+و روی Tunnel (Cisco): `ip tcp adjust-mss 1360`.
 
-#### ۶) آزمون پایدار
-
-دانلود ۱۰۰ MB، صفحه‌ی HTTPS بزرگ، SSH ۳۰ دقیقه‌ی بیکار.
-
-### ۴) طراحی و تصمیم‌گیری
-
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| MSS | PMTU−40 با حاشیه |
-| Timeout | سرویس‌محور |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — Timeout
-
-SSH پس از ۱ ساعت بی‌کاری قطع می‌شود. رفع: Keepalive در کلاینت (`ServerAliveInterval`) یا Timeout سفارشی برای سرویس.
-
-#### مثال متوسط — MSS
+### آزمون Path MTU
 
 ``` text
-Path MTU 1400 -> MSS = 1400 - 40 = 1360
+ping -f -l 1472 198.51.100.8      (Windows; payload 1472 + 28 = 1500)
+ping -M do -s 1472 198.51.100.8   (Linux)
 ```
 
-با Clamp روی Policy (`tcp-mss-sender/receiver`) رفع می‌شود.
+کاهش اندازه تا اولین موفقیت:
+
+``` text
+Max successful payload = 1372  ->  Path MTU = 1372 + 28 = 1400  ->  MSS = 1400 - 40 = 1360
+```
+
+### مثال‌های حل‌شده
+
+#### مثال ساده — Timeout SSH
+
+SSH پس از ۱ ساعت بی‌کاری می‌افتد. علت: Timeout ۳۶۰۰ s. رفع: `ServerAliveInterval 60`. تأیید: `diagnose sys session list` expire بازنشانی می‌شود.
+
+#### مثال متوسط — محاسبه‌ی MSS
+
+لینک با MTU 1400:
+
+``` text
+MSS = 1400 - 20 - 20 = 1360
+```
+
+Clamp روی 1360؛ پس از آن HTTPS و دانلود بزرگ بدون Retransmission.
+
+#### مثال متوسط — ping بزرگ
+
+``` text
+ping -f -l 1472 X -> "Packet needs to be fragmented but DF set"
+ping -f -l 1372 X -> reply
+```
+
+Path MTU = 1400.
 
 #### مثال سخت — دو علت هم‌زمان
 
-DNS با پاسخ بزرگ + TCP/53 بسته + MTU کوچک. Capture نشان می‌دهد Query UDP بی‌پاسخ و بعد TCP تلاش می‌شود؛ رفع: باز کردن TCP/53 و MSS Clamp.
+DNS با پاسخ بزرگ (DNSSEC) + TCP/53 بسته + MTU کوچک. Capture: Query UDP، پاسخ با بیت TC (Truncated)؛ کلاینت با TCP تلاش می‌کند و SYN رد می‌شود. رفع: باز کردن TCP/53 و MSS Clamp. آزمون: `dig +tcp` و `dig +bufsize=1232`.
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال سخت — Blackhole IPsec
 
-**ساده (حل‌شده):** MSS=1500−40=1460.
+Tunnel IPsec با MTU مؤثر 1427. ICMP Type 3 Code 4 توسط ISP/فایروال مسدود است. نشانه: دانلود فایل بزرگ گیر می‌کند؛ Capture: Retransmission بسته‌ی 1460 و نبود ICMP. رفع: MSS Clamp 1360 روی Policy Tunnel. تأیید: iperf و curl بدون Retransmission.
 
-**متوسط (PMTU):** IPsec: ping 1472 شکست، 1372 موفق، 1422 شکست، 1400 موفق ⇒ PMTU=1428؛ MSS ≈ 1388؛ clamp 1380 (حاشیه).
+### Lab هدایت‌شده (اجرا نشده)
 
-**سخت (SSH می‌پرد):** SSH Admin پس از ۵ دقیقه بیکاری قطع می‌شود. مراحل: ۱) Session expire ۳۰۰. ۲) `session-ttl` پورت 22 = 7200 یا Keepalive 60s در کلاینت. ۳) آزمون ۳۰ دقیقه بیکار. ریسک: Session بیکار منابع می‌گیرد؛ فقط برای پورت لازم.
+1. Path MTU را با ping اندازه بگیرید.
+2. MSS Clamp را فعال و قبل/بعد را با Wireshark مقایسه کنید (`tcp.options.mss_val`).
+3. Timeout را با اتصال بی‌کار آزمایش و Keepalive اضافه کنید.
 
-### ۷) پیاده‌سازی از مسیر CLI
+### عیب‌یابی سریع
 
-``` text
-execute ping-options df-bit yes
-execute ping-options data-size 1372
-execute ping 203.0.113.10
-get system session-ttl
-```
-
-### ۸) Verification (اثبات صحت)
-
-- دانلود بزرگ.
-- SSH ماندگار.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| فقط بزرگ می‌میرد | DF ping | MSS/MTU |
-| SSH می‌پرد | Timeout | Keepalive/session-ttl |
+| قطع بعد ۱ ساعت | Timeout | Keepalive |
+| ping ok، HTTPS نه | MTU | MSS Clamp |
+| صفحه نیمه | Blackhole | Clamp/باز کردن ICMP |
+| DNS گاهی | TC/TCP53 | باز کردن |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- ICMP frag-needed را کامل نبندید.
+Timeout اتصال بی‌کار را حذف می‌کند؛ Keepalive لازم است. MSS = MTU − ۴۰. PMTUD به ICMP وابسته است؛ Blackhole با MSS Clamp حل می‌شود. Path MTU را با ping و DF بسنجید.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- MSS=MTU−40.
-- Black-hole.
-- Timeout.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) MSS برای MTU 1500؟ *(پاسخ: 11-5-ت1)*
 
@@ -3545,7 +3054,7 @@ get system session-ttl
 
 **Q1.** Quick quiz (English): What causes an MTU black hole? *(پاسخ: 11-5-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3554,11 +3063,11 @@ get system session-ttl
 
 - *Lower the MSS on tunnels.* ← MSS را روی تونل‌ها کاهش دهید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** MTU (اجرا نشده). **Evidence:** `03-ops/mtu-mss.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Fortinet FortiOS 7.0 Administration Guide: Session TTL
 - RFC 1191
@@ -3566,229 +3075,138 @@ get system session-ttl
 
 <a id="l-11-6"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: اندازه‌گیری PMTU قدم‌به‌قدم و آزمون پایدار
-
-**سناریو.** تونل IPsec شعبه به مرکز؛ دانلود فایل ۵۰ MB بعد از چند ثانیه می‌ایستد؛ ping عادی موفق.
-
-**گام ۱ — جست‌وجوی دودویی PMTU** (Windows):
-
-``` text
-ping -f -l 1472 10.20.0.5   -> Packet needs to be fragmented but DF set (fail)
-ping -f -l 1372 10.20.0.5   -> ok
-ping -f -l 1422 10.20.0.5   -> fail
-ping -f -l 1397 10.20.0.5   -> ok
-ping -f -l 1410 10.20.0.5   -> ok
-ping -f -l 1416 10.20.0.5   -> fail
-  => largest ok = 1410 -> PMTU = 1410 + 28 = 1438
-```
-
-**گام ۲ — MSS.**
-
-``` text
-MSS = PMTU - 40 = 1438 - 40 = 1398 ; use 1380 for margin
-```
-
-**گام ۳ — اعمال.** روی Policy تونل (FortiGate) `tcp-mss-sender 1380` و `tcp-mss-receiver 1380` (مستند: ۰ تا ۶۵۵۳۵). و ICMP نوع 3 کد 4 را در مسیر مجاز کنید (PMTUD).
-
-**گام ۴ — Capture پیش و پس.** پیش: بسته‌های 1460 بایتی Retransmit می‌شوند؛ پس: SYN با `MSS=1380` و بدون Retransmit.
-
-**گام ۵ — آزمون پایدار.** دانلود ۱۰۰ MB سه بار، ۲۰ Query DNS، SSH بیکار ۳۰ دقیقه.
-
-**Timeout.** TCP Established پیش‌فرض سراسری ۳۶۰۰ ثانیه است؛ Timeout هر پورت/Service آن را بازنویسی می‌کند؛ برای SSH طولانی `session-ttl` پورت 22 را بیشتر کنید یا Keepalive کلاینت بگذارید.
-
-**اشتباهات رایج**
-- MSS برابر MTU.
-- بستن کامل ICMP.
-- اندازه‌گیری با ping بدون DF.
-
-**پرسش‌های مصاحبه**
-1. *علامت Black-hole؟* Handshake و بسته‌ی کوچک موفق، بسته‌ی بزرگ نه.
-2. *MSS-clamp کجاست؟* روی فایروال/تونل در SYN.
-3. *MTU و Fragmentation؟* IPv4 می‌تواند Fragment کند، DF=1 نمی‌تواند.
-
-### تکمیل عمیق: Session، Timeout، MTU/MSS و خرابی «نیمه‌کارکرده»
-
-#### چرا؟
-
-اتصال‌هایی که «باز می‌شوند ولی قطع می‌شوند» معمولاً از Timeout یا MTU می‌آیند.
-
-#### Timeout
-
-``` text
-TCP established default = 3600 s
-UDP default = 60 s ; DNS shorter
-```
-
-(پیش‌فرض‌ها را از مستند نسخه بخوانید.)
-
-#### مثال ساده — SSH بی‌کار
-
-SSH پس از ۱ ساعت بی‌کاری قطع می‌شود: Session Timeout. رفع: Keepalive در کلاینت یا Timeout سفارشی برای Service.
-
-#### مثال متوسط — MTU/MSS
-
-``` text
-MSS = MTU - 40 ; Path MTU 1400 -> MSS 1360
-```
-
-نشانه: ping کار می‌کند ولی HTTPS نه.
-
-#### مثال سخت — دو علت
-
-UDP DNS با پاسخ بزرگ + TCP/53 بسته + MTU: ترکیب. تشخیص با Capture.
-
-#### Lab
-
-Timeout را با اتصال بی‌کار آزمایش کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| قطع بعد ۱ ساعت | Timeout | Keepalive |
-| ping ok، HTTPS نه | MTU | Clamp |
-| DNS گاهی | TCP/53 | باز |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Timeout TCP؟** ۳۶۰۰ ثانیه (پیش‌فرض).
-**۲. MSS؟** MTU منهای ۴۰.
-**۳. Keepalive؟** جلوگیری از قطع.
-
-#### English Corner
-
-- *Idle sessions are removed when their timeout expires.*
-- Q: How do you calculate TCP MSS from the MTU?
-
 ## درس 11-6 — کارگاه طراحی Policy، ۱۰ پرسش مسیر بسته و آزمون G4: پروژه‌ی حل‌شده‌ی کامل
 
 **فصل 11 · بازنویسی عمیق · پیش‌نیاز: ۱۱-۰ تا ۱۱-۷ · ≈ 12 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 نامی (بوت‌نشده)؛ دستورها طبق مستندات 7.0 ولی `Unverified` تا اجرای Lab؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. ماتریس Zone و ۱۰ Policy کامل بنویسد.
-2. ۱۰ پرسش مسیر بسته را با دستور و شاهد پاسخ دهد.
-3. ۹ آزمون مثبت و ۱۶ آزمون منفی را طراحی کند.
-4. Gate G4 را با Evidence و Rubric تحویل دهد.
-5. طراحی را بازبینی و ضعف‌ها را بیابد.
+1. یک طراحی Policy کامل را از نیاز تا آزمون انجام دهید.
+2. ده پرسش مسیر بسته را برای هر Policy پاسخ دهید.
+3. آزمون مثبت و منفی بنویسید و Evidence ثبت کنید.
+4. خطاهای تزریقی (srcintf، Shadow، NAT) را با Lookup تشخیص دهید.
+5. Rubric آزمون G4 را بشناسید.
+6. گزارش طراحی را مستند کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا کارگاه و G4؟** تا وقتی خودتان یک مجموعه Policy را از ماتریس تا آزمون نسازید، مفهوم جا نمی‌افتد. G4 این مهارت را می‌سنجد: طراحی، ده پرسش مسیر بسته، آزمون مثبت و منفی.
+تا وقتی خودتان یک مجموعه Policy را از ماتریس تا آزمون نسازید، مفهوم جا نمی‌افتد. G4 (Gate چهارم) همین مهارت را می‌سنجد: از «نیازهای کسب‌وکار» به «Policy قابل‌اثبات». مثل طراحی یک ساختمان و بعد بازدید با فهرست: برای هر در، قفل و کلید و آزمایش.
 
-**ده پرسش مسیر بسته:** ورودی؟ Session؟ RPF؟ DNAT؟ Route؟ Policy؟ UTM؟ SNAT؟ خروجی؟ برگشت؟
+### ده پرسش مسیر بسته
 
-**جمع‌بندی اصلی درس:** این کارگاه آخرین مرحله‌ی فصل ۱۱ است: به‌جای جمله‌های کلی، یک شرکت کوچک را از صفر تا آزمون طراحی می‌کنید. هدف این است که وقتی ممیز پرسید «چرا DB از اینترنت دیده نمی‌شود؟» با Policy، Log و آزمون جواب بدهید.
+برای هر جریان این ده پرسش را بنویسید:
 
-### ۳) توضیح عمیق فنی
+1. Interface ورودی؟
+2. Session موجود است؟
+3. RPF مجاز است؟
+4. DNAT دارد؟
+5. Route/Interface خروجی؟
+6. کدام Policy؟
+7. UTM لازم است؟
+8. SNAT دارد؟
+9. Interface خروجی نهایی؟
+10. مسیر برگشت چیست؟
 
-#### ۱) سناریو
+### پروژه‌ی نمونه
+
+شعبه با Zoneهای Users، Servers، DMZ، Guest، Mgmt و Internet.
+
+**نیازها:**
+
+- R1: Users به اینترنت (وب، DNS).
+- R2: Users به ERP (HTTPS) و Fileserver (SMB).
+- R3: Internet به وب DMZ (HTTPS).
+- R4: Mgmt مدیریت دستگاه‌ها (SSH/HTTPS).
+- R5: Guest فقط اینترنت.
+
+**Policy:**
 
 ``` text
-Internet - [FW] - DMZ  10.30.0.0/24 (web 10.30.0.10)
-                - SRV  10.20.0.0/24 (app 10.20.0.10, db 10.20.0.20)
-                - USR  10.10.0.0/24
-                - MGT  10.99.0.0/24
+10 USERS -> INET   HTTP,HTTPS,DNS  accept nat log
+20 USERS -> SRV    HTTPS,SMB       accept log
+30 INET  -> DMZ    HTTPS (VIP-WEB) accept log
+40 MGMT  -> any    SSH,HTTPS       accept log
+50 GUEST -> INET   HTTP,HTTPS,DNS  accept nat log
+90 any   -> any    ALL             deny log
 ```
 
-#### ۲) ماتریس
+**آزمون‌ها:**
+
+| # | آزمون | انتظار |
+|---|---|---|
+| T1 | Users→اینترنت HTTPS | accept policy 10 |
+| T2 | Users→ERP 443 | accept policy 20 |
+| T3 | Guest→Servers 443 | deny policy 90 |
+| T4 | Internet→DMZ 443 | accept policy 30 |
+| T5 | Internet→Servers 445 | deny |
+| T6 | Users→Mgmt 22 | deny |
+| T7 | Mgmt→Servers 22 | accept policy 40 |
+
+### روش آزمون
 
 ``` text
-from\to  INET        DMZ       SRV         USR   MGT
-INET      -           443 (VIP) -           -     -
-DMZ       Updates     -         app 8443    -     -
-SRV       Updates     -         -           -     -
-USR       HTTP/S,DNS  HTTPS     app 443     -     -
-MGT       -           SSH       SSH         SSH   -
+diagnose firewall iprope lookup 10.10.0.5 40000 10.20.0.10 443 tcp port2     # policy 20
+diagnose firewall iprope lookup 10.99.0.5 40000 10.20.0.10 443 tcp port4     # policy 90
 ```
 
-#### ۳) ده Policy
-
-| ID | از | به | Src | Dst | Service | NAT |
-|---|---|---|---|---|---|---|
-| 10 | USR | INET | NET-USERS | all | HTTP/HTTPS/DNS | SNAT |
-| 20 | USR | DMZ | NET-USERS | SRV-WEB | HTTPS | - |
-| 30 | USR | SRV | NET-USERS | SRV-APP | TCP-443 | - |
-| 40 | INET | DMZ | all | VIP-WEB | HTTPS | DNAT |
-| 50 | DMZ | SRV | SRV-WEB | SRV-APP | TCP-8443 | - |
-| 60 | SRV | SRV | SRV-APP | SRV-DB | MS-SQL | - |
-| 70 | MGT | DMZ,SRV,USR | HOST-ADMIN | GRP-ALL | SSH | - |
-| 80 | DMZ,SRV | INET | GRP-DMZ-SRV | UPDATE-SITES | HTTPS | SNAT |
-| 90 | DMZ | SRV | all | SRV-DB | ALL | Deny+log |
-| 99 | any | any | all | all | ALL | Deny+log |
-
-#### ۴) پاسخ ۱۰ پرسش
-
-1. Users→Internet: Policy 10، SNAT. 2. VIP-WEB-443→10.30.0.10، Policy 40 dst=VIP. 3. DB: بدون مسیر از INET؛ فقط 60. 4. Admin: Policy 70 فقط MGT. 5. Default Deny: Policy 99 با Log. 6. Log: FortiAnalyzer/Syslog. 7. NAT: فقط Policy 10، 40، 80. 8. MTU 1400 ⇒ MSS 1360. 9. Asymmetric: Session «no session matched» و Capture دو سمت. 10. آزمون منفی DMZ→DB: Policy 90.
-
-#### ۵) آزمون‌ها
-
-۹ مثبت: 10، 20، 30، 40، 50، 60، 70، 80 و VIP. ۱۶ منفی: هر خانه‌ی «-» (مثلاً INET→SRV، DMZ→USR، SRV→DMZ، USR→MGT...).
-
-#### ۶) Rubric
-
-ماتریس ۲۰، Policy ۲۵، پاسخ ۲۵، آزمون ۲۰، صداقت ۱۰.
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — مسیر Users→ERP
-
-ingress port2، Session جدید، RPF ok، بدون DNAT، Route port3، Policy 10، SNAT نه، egress port3، برگشت از همان.
-
-#### مثال متوسط — خطای تزریقی
-
-Policy با srcintf اشتباه: سؤال ۶ پاسخ «policy 0» می‌دهد. رفع و آزمون.
-
-#### مثال سخت — طراحی کامل
-
-ماتریس چهار Zone، هشت Policy، ده آزمون (پنج مثبت و پنج منفی)، گزارش. Rubric: ماتریس ۲۰، Policy ۳۰، مسیر بسته ۲۰، آزمون ۲۰، گزارش ۱۰.
-
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** پرسش ۱: کاربر 10.10.0.5 به 203.0.113.10:443 ⇒ Policy 10، SNAT 198.51.100.2؛ `session list` act=snat.
-
-**متوسط (تحلیل):** پرسش ۳: اگر Policy 90 حذف شود، Implicit Deny هنوز DMZ→DB را رد می‌کند ولی بدون Log؛ پس Deny صریح برای Alert لازم است.
-
-**سخت (آزمون منفی):** DMZ→DB: `telnet 10.20.0.20 1433` از وب؛ انتظار Timeout؛ Log: policyid=90 action=deny؛ Alert؛ Evidence ثبت.
-
-### ۷) پیاده‌سازی از مسیر CLI
+و آزمون واقعی با `curl`/`nc`، سپس Log:
 
 ``` text
-diagnose firewall iprope lookup 10.30.0.10 40000 10.20.0.20 1433 tcp port3
 execute log filter field policyid 90
 execute log display
 ```
 
-### ۸) Verification (اثبات صحت)
+### مثال‌های حل‌شده
 
-- G4: ۹ مثبت و ۱۶ منفی با Evidence.
+#### مثال ساده — مسیر Users→ERP
 
-### ۹) Troubleshooting
+ingress port2؛ Session جدید؛ RPF ok؛ بدون DNAT؛ Route port3؛ Policy 20؛ UTM (اختیاری)؛ بدون SNAT (داخلی به داخلی)؛ egress port3؛ برگشت از همان.
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+#### مثال متوسط — خطای تزریقی srcintf
+
+Policy 20 با srcintf=port5 (اشتباه). سؤال ۶: Lookup ⇒ policy 90. رفع: srcintf=port2؛ آزمون T2 دوباره.
+
+#### مثال متوسط — Shadow
+
+Policy 15 `USERS -> any ALL accept` قبل از 20. T3 (Guest→Servers) هنوز رد می‌شود ولی T6 (Users→Mgmt) باز است: Policy 15 همه‌چیز را می‌گیرد. رفع: حذف/تنگ‌کردن 15 و ترتیب.
+
+#### مثال سخت — طراحی کامل با گزارش
+
+1. ماتریس ۶×۶.
+2. ده Policy و ده آزمون مثبت/منفی.
+3. اجرای آزمون‌ها و ثبت Evidence (Lookup+Log+زمان).
+4. سه خطای تزریقی و رفع.
+5. گزارش: نیاز ⇒ طراحی ⇒ آزمون ⇒ نتیجه ⇒ محدودیت‌ها.
+
+**Rubric G4:** ماتریس ۲۰، Policy ۳۰، مسیر بسته ۲۰، آزمون ۲۰، گزارش ۱۰.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. FortiGate (یا شبیه‌ساز) با Zoneها.
+2. Policyها را بسازید و T1–T7 را اجرا کنید.
+3. سه خطا را تزریق و با Lookup پیدا کنید.
+4. گزارش بنویسید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Policy گشاد | Log | تنگ‌سازی |
-| VIP کار نمی‌کند | Policy dst | VIP object |
+| policy 90 به‌جای مجاز | srcintf/Address | تصحیح |
+| ترافیک ممنوع باز است | Shadow | ترتیب |
+| NAT نمی‌شود | nat disable | enable |
+| آزمون منفی نبود | غفلت | افزودن |
 
-### ۱۰) نکات امنیتی
+### جمع‌بندی
 
-- Default Deny با Log.
+از نیاز به ماتریس، از ماتریس به Policy، برای هر Policy ده پرسش مسیر بسته و آزمون مثبت/منفی با Lookup و Log. Shadow و srcintf نادرست خطاهای رایج‌اند.
 
-### ۱۱) جمع‌بندی مفهومی
-
-- طراحی از ماتریس.
-- آزمون مثبت/منفی.
-- Evidence.
-
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) Default Deny کجاست؟ *(پاسخ: 11-6-ت1)*
 
@@ -3804,7 +3222,7 @@ execute log display
 
 **Q1.** Quick quiz (English): Name one negative test for a DMZ policy. *(پاسخ: 11-6-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -3812,126 +3230,14 @@ execute log display
 
 - *Test both allowed and denied flows.* ← هم جریان مجاز و هم ممنوع را آزمون کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** کارگاه Policy G4 (اجرا نشده). **Evidence:** `03-ops/g4.md`.
 
-### ۱۵) منابع
+### منابع
 
 - درس‌های فصل ۱۱
 - Fortinet FortiOS 7.0 Administration Guide: Firewall policies
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: کلید کامل کارگاه با ۹ آزمون مثبت و ۱۶ آزمون منفی
-
-**جدول آزمون مثبت (۹)**
-
-| # | آزمون | انتظار |
-|---|---|---|
-| P1 | Users→Internet HTTPS | Accept، SNAT |
-| P2 | Users→WEB (DMZ) 443 | Accept |
-| P3 | Users→APP 443 | Accept |
-| P4 | Internet→VIP 443 | Accept، DNAT |
-| P5 | WEB→APP 8443 | Accept |
-| P6 | APP→DB 1433 | Accept |
-| P7 | MGT→همه SSH | Accept |
-| P8 | DMZ/SRV→Update HTTPS | Accept |
-| P9 | DNS از Users | Accept |
-
-**آزمون منفی (۱۶) — هر خانه‌ی «-»**
-
-``` text
-N1  INET -> SRV any        N9  SRV -> DMZ any
-N2  INET -> USR any        N10 SRV -> USR any
-N3  INET -> MGT any        N11 SRV -> MGT any
-N4  DMZ  -> USR any        N12 USR -> MGT any
-N5  DMZ  -> MGT any        N13 USR -> DB 1433
-N6  DMZ  -> DB  1433       N14 WEB -> DB 1433
-N7  MGT  -> INET any       N15 INET -> VIP 22
-N8  DB   -> INET any       N16 SRV -> INET 22
-```
-
-برای هر مورد: دستور آزمون، نتیجه (Timeout/Refused)، Log (`policyid`، `action=deny`) و زمان. نمونه Evidence:
-
-``` text
-N14: telnet 10.20.0.20 1433 from 10.30.0.10 -> timeout
-log: srcip=10.30.0.10 dstip=10.20.0.20 dstport=1433 policyid=90 action=deny
-```
-
-**ده پرسش مسیر بسته — پاسخ نمونه‌ی کامل**
-1. Users→Internet: Policy 10، SNAT 198.51.100.2.
-2. VIP: 203.0.113.10:443→10.30.0.10؛ Policy 40 با dst=VIP.
-3. DB از اینترنت: بدون VIP، بدون Policy.
-4. Admin: Policy 70 از MGT با Trusted host.
-5. Default Deny: Policy 99 با Log.
-6. Log: FortiAnalyzer/Syslog.
-7. NAT: Policy 10، 40، 80.
-8. MSS = 1400 − 40 = 1360.
-9. Asymmetric: `no session matched`.
-10. آزمون منفی DMZ→DB: Policy 90.
-
-**Rubric خودارزیابی:** ماتریس ۲۰، Policy ۲۵، پاسخ‌ها ۲۵، آزمون‌ها ۲۰، صداقت ۱۰؛ قبولی ۷۵ با حداقل ۲۰ در آزمون.
-
-**پرسش‌های مصاحبه**
-1. *چرا ۱۶ آزمون منفی؟* هر خانه‌ی ممنوع باید اثبات شود.
-2. *Log Deny چه می‌دهد؟* Evidence و Alert.
-3. *بهبود طرح؟* MFA/SSO، Segment بیشتر، WAF.
-
-### تکمیل عمیق: کارگاه طراحی Policy و آزمون G4
-
-#### چرا؟
-
-G4 طراحی Policy کامل را از ماتریس تا آزمون می‌سنجد.
-
-#### کار
-
-۱. ماتریس. ۲. Policy. ۳. ۱۰ پرسش مسیر بسته. ۴. آزمون مثبت/منفی.
-
-#### ده پرسش مسیر بسته
-
-``` text
-1 ingress interface? 2 session exists? 3 RPF ok? 4 DNAT? 5 route? 6 policy? 7 UTM? 8 SNAT? 9 egress? 10 reply path?
-```
-
-#### مثال ساده
-
-Users→ERP HTTPS: ingress port2، session جدید، RPF ok، بدون DNAT، route port3، policy 10، SNAT نه، egress port3، reply از همان.
-
-#### مثال متوسط — خطای تزریقی
-
-Policy با srcintf اشتباه: پاسخ سؤال ۶ «policy 0».
-
-#### Rubric
-
-``` text
-Matrix 20 | Policies 30 | Packet path 20 | Tests 20 | Report 10
-```
-
-#### Lab
-
-یک کارگاه کامل انجام دهید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Policy بی‌دلیل | ماتریس ناقص | بازنگری |
-| آزمون منفی نیست | غفلت | افزودن |
-| Path ناقص | فراموشی SNAT | چک‌لیست |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا ده پرسش؟** پوشش.
-**۲. Reply path؟** برگشت.
-**۳. آزمون منفی؟** مرز.
-
-#### English Corner
-
-- *Walk the ten packet-path questions for every new policy.*
-- Q: Which stage of the packet path decides the egress interface?
 
 ## درس 11-7 — Stateful Inspection از درون: State Table، TCP State و Timeout
 
@@ -3939,167 +3245,128 @@ Matrix 20 | Policies 30 | Packet path 20 | Tests 20 | Report 10
 
 > **وضعیت:** مفهومی با مثال Linux conntrack؛ رفتار FortiGate در فصل ۱۲ و ۱۳ ادامه می‌یابد؛ Labها «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
 
-دانشجو در پایان می‌تواند:
+### هدف آموزشی
 
-1. تفاوت **Stateless (Packet Filter)** و **Stateful** را با مثال بسته‌به‌بسته بگوید.
-2. توضیح دهد جدول State (Session/Connection Table) چه چیزی نگه می‌دارد و هنگام ساخت، استفاده و حذف ورودی چه می‌شود.
-3. حالت‌های TCP (SYN_SENT، ESTABLISHED، FIN_WAIT، TIME_WAIT، ...) را در جدول State تفسیر کند.
-4. رفتار UDP و ICMP (بدون اتصال) را در یک فایروال Stateful توضیح دهد.
-5. بداند چرا Timeout، Asymmetric Routing و تغییر Policy بر Session اثر می‌گذارند.
-6. محدودیت‌های Stateful (ALG، Fragmentation، Session Exhaustion) را بشناسد.
+در پایان این درس باید بتوانید:
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+1. State Table و ورودی‌های آن را بخوانید.
+2. حالت‌های TCP و گذار بین آنها را بشناسید.
+3. اعتبارسنجی بسته در برابر Session (Sequence Window) را توضیح دهید.
+4. Timeout هر حالت و اثر آن را بدانید.
+5. حمله‌ی SYN Flood و دفاع آن را شرح دهید.
+6. رفتار UDP و ICMP را در فایروال Stateful بفهمید.
 
-**چرا Stateful از درون؟** تا بدانید «پرونده‌ی اتصال» چگونه ساخته و حذف می‌شود، رفتارهای عجیب (چرا Policy حذف شد ولی اتصال ادامه دارد؟) را توضیح می‌دهید.
+### چرا باید یاد بگیریم؟
 
-**چرخه‌ی TCP:** SYN_SENT ← SYN_RECV ← ESTABLISHED ← FIN_WAIT ← TIME_WAIT ← CLOSED. فایروال Session را با SYN می‌سازد؛ بسته‌های بعدی باید با آن و با پنجره‌ی Sequence هم‌خوان باشند. هر حالت Timeout خود را دارد.
+دانستن اینکه Session چگونه ساخته و حذف می‌شود، رفتارهای عجیب را توضیح می‌دهد: چرا Policy را حذف کردم ولی اتصال ادامه دارد؟ چرا بسته‌ی ACK جعلی رد می‌شود؟ چرا سیل SYN دستگاه را از پا می‌اندازد؟ این درس «زیر کاپوت» فایروال Stateful است.
 
-**جمع‌بندی اصلی درس:** TCP Three-way Handshake و Flagها (SYN، ACK، FIN، RST)، تفاوت UDP/ICMP، Packet Flow پایه (۵-۰).
+### State Table
 
-### ۳) مفهوم پایه
+هر ورودی معمولاً این اطلاعات را دارد:
 
-**Packet Filter (Stateless):** هر بسته را مستقل و بدون حافظه با قوانین مقایسه می‌کند. برای اجازه‌ی «کلاینت به وب»، باید دو قانون بنویسیم: رفت (مقصد پورت 443) و برگشت (مبدأ پورت 443 به هر پورت بالا). قانون برگشت یک سوراخ بزرگ است (هر بسته با مبدأ 443 رد می‌شود، حتی بدون درخواست قبلی).
+- پروتکل، IP/پورت مبدأ و مقصد (و پس از NAT).
+- حالت اتصال.
+- Timeout باقی‌مانده.
+- Policy که اجازه داده، Interface ورودی/خروجی.
+- شمارنده‌های بایت/بسته.
+- شماره‌های Sequence مورد انتظار (برای TCP).
 
-**Stateful Inspection:** فایروال **ارتباط** را می‌شناسد. وقتی کلاینت اتصال را شروع می‌کند، فایروال یک **Session** ثبت می‌کند. بسته‌ی برگشت فقط اگر **با یک Session موجود مطابقت کند** مجاز است. پس به قانون برگشت نیاز نیست و سوراخ‌ها بسته می‌شوند.
-
-> **تشبیه:** Stateless مثل نگهبانی است که برای هر نامه فقط نشانی را می‌خواند. Stateful مثل منشی‌ای است که دفترچه دارد: «نامه‌ی پاسخ را فقط وقتی تحویل می‌دهم که قبلاً خودمان درخواستش را فرستاده باشیم.»
-
-### ۴) توضیح عمیق فنی
-
-#### ۴-۱) Session چیست؟
-
-یک Session معمولاً با **۵-تایی (5-tuple)** شناسایی می‌شود:
+### حالت‌های TCP
 
 ``` text
-(src_ip, src_port, dst_ip, dst_port, protocol)
+CLOSED -> SYN_SENT -> SYN_RECV -> ESTABLISHED -> FIN_WAIT -> TIME_WAIT -> CLOSED
 ```
 
-به‌علاوه: Interface ورودی/خروجی، Policy مطابق، اطلاعات NAT، Timeout باقی‌مانده، شمارنده‌ی بایت/بسته، و وضعیت TCP. جدول State در RAM است و ظرفیت محدود دارد (**Session Exhaustion** حمله‌ی رایج: سیل SYN).
+| حالت | معنی | Timeout معمول |
+|---|---|---|
+| SYN_SENT | SYN فرستاده شد | کوتاه (ثانیه‌ها) |
+| SYN_RECV | SYN-ACK دیده شد | کوتاه |
+| ESTABLISHED | اتصال برقرار | طولانی (ساعت) |
+| FIN_WAIT/CLOSE_WAIT | در حال بستن | کوتاه |
+| TIME_WAIT | پایان اتصال | چند ثانیه |
 
-#### ۴-۲) چرخه‌ی عمر یک Session TCP
+### اعتبارسنجی بسته
+
+فایروال علاوه بر آدرس/پورت، **Sequence/ACK Number** را با پنجره‌ی مورد انتظار می‌سنجد. بسته‌ای با Sequence خارج از پنجره (حمله‌ی تزریق/RST جعلی) رد می‌شود. این سطح دفاع را ACL ندارد.
+
+### UDP و ICMP
+
+UDP اتصال ندارد؛ فایروال برای اولین بسته یک Session «شبه‌حالتی» می‌سازد و پاسخ‌ها را در همان پنجره‌ی Timeout می‌پذیرد. ICMP Echo Reply فقط اگر Echo Request قبلی ثبت شده باشد پذیرفته می‌شود. ICMP خطا (Type 3، 11) با اتصال مرتبط مجاز است (Related).
+
+### SYN Flood
+
+مهاجم هزاران SYN با IP مبدأ جعلی می‌فرستد. فایروال برای هرکدام Session (SYN_RECV) می‌سازد و منتظر ACK می‌ماند؛ ACK هرگز نمی‌رسد. Table پر می‌شود و اتصال‌های واقعی رد می‌شود.
 
 ``` text
-Client           Firewall                 Server
-SYN  ---------->  (lookup: no session)
-                  policy check: allowed
-                  create session [SYN_SENT / half-open, short timeout]
-                  SYN  ------------------> 
-                  <---------------- SYN/ACK
-                  [session -> SYN_RECV / ESTABLISHED]
-ACK  ---------->  ACK --------------------> 
-data <----> data  (fast path: session lookup only; no policy re-eval)
-FIN  ---------->  FIN -------------------->
-                  [FIN_WAIT / TIME_WAIT] -> removed after timeout
+Table fill time = capacity / SYN rate
+200000 / 20000 per s = 10 s
 ```
 
-نکات:
+**دفاع‌ها:** DoS Policy (`tcp_syn_flood` با آستانه)، SYN Proxy/Cookie (فایروال به‌جای سرور Handshake را انجام می‌دهد و فقط پس از ACK درست Session می‌سازد)، Timeout کوتاه‌تر برای حالت نیمه‌باز، Rate Limit.
 
-- **Policy فقط برای بسته‌ی اول** ارزیابی می‌شود. بسته‌های بعدی با Session مطابقت می‌کنند و Policy دوباره بررسی نمی‌شود. بنابراین تغییر Policy روی Sessionهای موجود فوراً اثر نمی‌گذارد (درس ۱۳-۷).
-- بسته‌ای که ACK/ دیتا دارد ولی Session برایش نیست (مثلاً بعد از Timeout یا در مسیر Asymmetric) **Drop** می‌شود، چون «ارتباط ناشناخته» است.
-- **Half-open** (فقط SYN دیده شده) Timeout کوتاه دارد تا SYN Flood جدول را پر نکند.
-- **Established** Timeout طولانی دارد (مثلاً چند ساعت)؛ برای ارتباط‌های بی‌فعالیت مثل SSH ممکن است Session قبل از قطع ارتباط حذف شود (راه‌حل: Keepalive یا افزایش Timeout).
-
-#### ۴-۳) UDP و ICMP
-
-UDP بدون اتصال است؛ فایروال «شبه‌Session» می‌سازد: بسته‌ی اول ← Session با Timeout کوتاه (مثلاً دقایق)، پاسخ مطابق 5-tuple معکوس مجاز. ICMP Echo/Reply با شناسه‌ی Echo (ID) تطبیق می‌شود. برای Error ICMP (مثل Destination Unreachable) فایروال می‌تواند آن را به Session مرتبط (RELATED) نسبت دهد.
-
-#### ۴-۵) Application Layer Gateway و پروتکل‌های چندکاناله
-
-FTP فعال، SIP و ... پورت‌های دوم را در **محتوای** بسته مذاکره می‌کنند. فایروال باید داخل Payload را بخواند (ALG/Helper/Session Helper) و Session فرعی (**Expected/Related Session**) بسازد. اگر Helper غیرفعال یا اشتباه باشد، اتصال داده‌ی FTP قطع می‌شود. (در FortiGate: Session Helper/ALG؛ فصل ۱۳.)
-
-#### ۴-۶) Timeout و حافظه
+### مشاهده
 
 ``` text
-Total sessions ~= connections per second x average session lifetime (seconds)
+diagnose sys session list
+diagnose sys session stat
+diagnose sys session filter dst 10.20.0.10
 ```
 
-مثال: ۲۰۰۰ اتصال در ثانیه و عمر متوسط ۶۰ ثانیه = ۱۲۰٬۰۰۰ Session هم‌زمان. اگر Timeout را از ۶۰ به ۳۶۰۰ ثانیه ببریم، جدول ۶۰ برابر بزرگ می‌شود.
+### مثال‌های حل‌شده
 
-#### ۴-۷) رفتار در Asymmetric و Failover
+#### مثال ساده — بسته‌ی بدون Session
 
-- Asymmetric: برگشت از فایروال دیگر ← Session نیست ← Drop (درس ۱۰-۶).
-- Failover در HA: بدون **Session Sync/Pickup**، Sessionهای TCP قطع می‌شوند و کاربر باید دوباره وصل شود (فصل ۲۲).
+SYN-ACK بدون SYN: Session ندارد ⇒ Drop (Log: no session matched).
 
-### ۵) مثال حل‌شده (Linux conntrack)
+#### مثال متوسط — خواندن یک Session
 
-#### مثال ساده
+``` text
+proto=6 proto_state=01 duration=35 expire=3565 timeout=3600
+org=5320/42  reply=48200/55
+policy_id=20
+```
 
-بسته‌ی SYN-ACK بدون SYN ⇒ Session ندارد ⇒ Drop.
+`proto_state=01` یعنی ESTABLISHED (کد حالت)؛ expire/timeout نشان می‌دهد ۳۵ ثانیه از آخرین تازه‌سازی گذشته؛ بایت/بسته‌ی رفت (org) و برگشت (reply).
 
-#### مثال متوسط — Timeoutها
+#### مثال متوسط — RST جعلی
 
-SYN_SENT کوتاه (چند ثانیه)، ESTABLISHED طولانی (ساعت)، TIME_WAIT کوتاه.
+مهاجم RST با Sequence تصادفی می‌فرستد تا اتصال را قطع کند. فایروال Sequence را با پنجره می‌سنجد؛ خارج از پنجره ⇒ رد. احتمال حدس درست پنجره‌ی 64K از 2^32: 
+
+``` text
+P(correct) ~ window / 2^32 = 65535 / 4294967296 ~ 0.0015 %
+```
 
 #### مثال سخت — SYN Flood
 
-هزاران SYN ساختگی Session Table را پر می‌کنند؛ دفاع: DoS Policy `tcp_syn_flood` با آستانه از Baseline و SYN Cookies.
+علامت: Session Table ۹۸٪ پر، کاربران قطع. `diagnose sys session stat`: بیشتر SYN_RECV از IPهای متنوع. اقدام: ۱) DoS Policy با `tcp_syn_flood` (مثلاً آستانه‌ی 5×Peak) روی Interface ورودی ۲) فعال‌سازی SYN Proxy (در صورت پشتیبانی) ۳) Block IPهای پرتکرار ۴) هماهنگی ISP. پس از رفع: Table به حد عادی؛ آزمون با ابزار تولید ترافیک در Lab ایزوله.
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال سخت — Timeout ناسازگار
 
-``` text
-# Linux router/firewall lab (example)
-iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-iptables -A FORWARD -i lan -o wan -m conntrack --ctstate NEW -j ACCEPT
-iptables -P FORWARD DROP
+TIME_WAIT طولانی در Table باعث پر شدن پورت‌های NAT می‌شود (۶۴ هزار پورت برای یک IP). علامت: اتصال‌های جدید به یک مقصد شکست می‌خورند. رفع: IP Pool بزرگ‌تر، Timeout کوتاه‌تر برای TIME_WAIT، Keepalive/Connection pooling در برنامه.
 
-conntrack -L | head
-conntrack -L -p tcp --dport 443
-```
+### Lab هدایت‌شده (اجرا نشده)
 
-تحلیل: بسته‌ی NEW از LAN به WAN مجاز است؛ پاسخ‌ها با ESTABLISHED رد می‌شوند. یک بسته‌ی ACK ناخواسته از اینترنت (بدون Session) ردیف NEW/INVALID می‌شود و `DROP` پیش‌فرض آن را می‌ریزد.
+1. یک اتصال بسازید و Session را بخوانید.
+2. SYN-ACK جعلی (hping3) بفرستید و Drop را ببینید.
+3. SYN Flood آزمایشی در Lab ایزوله و DoS Policy.
+4. شمارنده‌ها را قبل/بعد مقایسه کنید.
 
-**مثال متوسط:** SSH بی‌فعالیت پس از ۱۰ دقیقه قطع می‌شود. علت: Timeout Established کوتاه‌تر از انتظار. راه‌حل‌ها: `ServerAliveInterval` در SSH، یا Timeout بلندتر فقط برای سرویس SSH.
+### عیب‌یابی سریع
 
-**مثال سخت:** فایروال در برابر SYN Flood: ۵۰٬۰۰۰ SYN/s با IP جعلی. بدون محافظت جدول Half-open پر می‌شود و کاربران واقعی Session نمی‌گیرند. راه‌حل‌ها: SYN Cookies/SYN Proxy، DoS Policy (Threshold)، کاهش Timeout Half-open، و محدودیت نرخ Session به‌ازای Source (فصل ۱۶: DoS).
-
-### ۶) طراحی و تصمیم‌گیری
-
-| سؤال | گزینه | معیار |
+| علامت | علت | رفع |
 |---|---|---|
-| Timeout پیش‌فرض یا سفارشی؟ | پیش‌فرض / Per-service | سرویس‌های طولانی (SSH، DB) |
-| محافظت SYN Flood | DoS Policy / SYN cookie | حساس بودن سرویس به در دسترس بودن |
-| ALG روشن یا خاموش؟ | روشن برای FTP/SIP در صورت نیاز | امنیت در برابر سازگاری |
-| ظرفیت Session | محاسبه‌ی CPS × عمر | انتخاب مدل/لایسنس |
+| Drop ACK | بدون Session | مسیر نامتقارن؟ |
+| Table پر | SYN Flood | DoS Policy |
+| پورت NAT تمام | TIME_WAIT | IP Pool |
+| قطع RST | Sequence | بررسی |
 
-### ۷) Verification (Linux و مفهومی)
+### جمع‌بندی
 
-``` text
-conntrack -L
-conntrack -C
-sysctl net.netfilter.nf_conntrack_max
-sysctl net.netfilter.nf_conntrack_tcp_timeout_established
-```
+Session حالت، Timeout، Sequence و شمارنده دارد. فایروال Stateful بسته را با Session و پنجره‌ی Sequence می‌سنجد. SYN Flood Table را پر می‌کند؛ دفاع: DoS Policy و SYN Proxy.
 
-- شمارش Session (`conntrack -C`) را با حد (`nf_conntrack_max`) مقایسه کنید.
-- در FortiGate معادل: `diagnose sys session list` و `get system performance status` (فصل ۱۳ و ۱۴).
-
-### ۸) Troubleshooting
-
-| علامت | شاهد | علت |
-|---|---|---|
-| ارتباط طولانی قطع می‌شود | Session حذف بعد از X دقیقه | Timeout |
-| SYN می‌رود، SYN/ACK برنمی‌گردد | Capture | Policy/Route/Asymmetric |
-| پاسخ‌ها Drop می‌شوند | Log: no session | Asymmetric یا Timeout |
-| FTP لیست دایرکتوری نمی‌دهد | Capture | ALG/Helper |
-| کاربران جدید Session نمی‌گیرند | جدول پر | Session Exhaustion/حمله |
-
-### ۹) نکات امنیتی
-
-- Stateful بخشی از دفاع است؛ فایروال محتوا را نمی‌فهمد مگر UTM/IPS فعال باشد.
-- Timeoutهای بسیار بلند برای همه‌ی سرویس‌ها ریسک Exhaustion دارند.
-- Logging باید بسته‌های Drop به‌دلیل «بدون Session» را ثبت کند؛ نشانه‌ی Asymmetric یا اسکن است.
-
-### ۱۰) جمع‌بندی مفهومی
-
-- Stateless بسته را مستقل می‌سنجد؛ Stateful ارتباط را می‌شناسد.
-- Policy فقط برای بسته‌ی اول؛ بعد از آن Session Lookup.
-- جدول State محدود و هدف DoS است؛ Timeout تعادل کارایی/امنیت است.
-- بدون Session، بسته‌ی برگشت Drop می‌شود (Asymmetric، Timeout).
-- ALG برای پروتکل‌های چندکاناله لازم است.
-
-### ۱۱) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) تفاوت Stateless و Stateful را بگویید. *(پاسخ: 11-7-ت1)*
 
@@ -4117,7 +3384,7 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 
 **Q1.** Quick quiz (English): Why are return packets accepted by a stateful firewall without an explicit rule? *(پاسخ: 11-7-Q1)*
 
-### ۱۲) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -4131,68 +3398,11 @@ sysctl net.netfilter.nf_conntrack_tcp_timeout_established
 - *A stateful firewall matches return traffic against existing sessions.* ← فایروال Stateful ترافیک برگشتی را با Sessionهای موجود تطبیق می‌دهد.
 - *Session exhaustion is a common denial-of-service target.* ← پر شدن جدول Session هدف رایج DoS است.
 
-### ۱۳) منابع
+### منابع
 
 - NIST SP 800-41 Rev.1 — Guidelines on Firewalls and Firewall Policy (Stateful Inspection).
 - RFC 9293 — Transmission Control Protocol (TCP).
 - Linux kernel documentation: nf_conntrack sysctl.
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تکمیل عمیق: Stateful Inspection از درون — State Table و TCP State
-
-#### چرا؟
-
-دانستن اینکه Session چطور ساخته و حذف می‌شود، رفتارهای عجیب را توضیح می‌دهد.
-
-#### TCP State
-
-``` text
-SYN_SENT -> SYN_RECV -> ESTABLISHED -> FIN_WAIT -> TIME_WAIT -> CLOSED
-```
-
-فایروال Session را با SYN می‌سازد؛ بسته‌ی بعدی باید با آن همخوان باشد (Sequence در Window).
-
-#### مثال ساده
-
-بسته‌ی SYN-ACK بدون SYN ⇒ Session ندارد ⇒ Drop.
-
-#### مثال متوسط — Timeoutها
-
-هر State Timeout دارد؛ SYN_SENT کوتاه، ESTABLISHED طولانی، TIME_WAIT کوتاه.
-
-#### مثال سخت — SYN Flood
-
-هزاران SYN ساختگی Session Table را پر می‌کنند. دفاع: DoS Policy با آستانه (`tcp_syn_flood`) و SYN Cookies.
-
-#### Lab
-
-Session را در هر State ببینید.
-
-``` text
-diagnose sys session list | grep proto_state
-```
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| Drop بسته‌ی ACK | بی‌Session | نامتقارن |
-| Table پر | SYN flood | DoS |
-| قطع زود | Timeout | تنظیم |
-
-#### پرسش‌ها با پاسخ
-
-**۱. Session با چه ساخته می‌شود؟** SYN.
-**۲. SYN flood؟** پر شدن جدول.
-**۳. Timeout هر State؟** متفاوت.
-
-#### English Corner
-
-- *A stateful firewall creates a session on the first SYN and validates later packets against it.*
-- Q: How does a DoS policy protect the session table?
 
 ## پاسخ‌های فصل 11
 
