@@ -5116,168 +5116,145 @@ Debug IKE با فیلتر؛ لایه‌ها (شبکه، P1، P2، Data)؛ پیا
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده) و CSR1000v؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده».
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. سربار ESP/UDP-encap را برای Cipherهای مختلف تخمین بزند و MTU/MSS را محاسبه کند.
-2. با ping DF و Capture MTU مؤثر را اندازه بگیرد.
-3. PMTUD و Black hole را توضیح و تشخیص دهد.
-4. MSS Clamp و `mtu-override` را تنظیم و اثرشان را اثبات کند.
-5. رفتار UDP/ICMP/Fragmentation و DF را در Tunnel تحلیل کند.
+1. Overhead IPsec و MTU موثر تونل را محاسبه کنید.
+2. MSS مناسب را برای Clamp حساب کنید.
+3. Fragmentation و PMTUD را در تونل تحلیل کنید.
+4. با `ping -f -l` MTU مسیر را آزمون و Clamp را تنظیم کنید.
+5. علائم MTU (فایل بزرگ، HTTPS، RDP) را تشخیص دهید.
+6. بین MSS Clamp و Interface MTU تفاوت را بدانید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا MTU/MSS در IPsec؟** IPsec به هر بسته هدر و مقداری Padding اضافه می‌کند. بسته‌ی ۱۵۰۰ بایتی بعد از کپسوله‌شدن از MTU لینک بزرگ‌تر می‌شود. نتیجه کلاسیک: «سایت باز می‌شود ولی تصاویر نه» یا «ping کار می‌کند ولی HTTPS نه».
+تونل IPsec مثل قراردادن نامه در پاکت دوم است: پاکت بزرگ‌تر می‌شود و دیگر در «صندوق» (MTU ۱۵۰۰) جا نمی‌شود. اگر بسته‌ی ۱۵۰۰ بایتی را رمز کنید، چند ده بایت اضافه می‌شود و از حد می‌گذرد ⇒ Fragment یا Drop. شکایت رایج بعد از راه‌اندازی تونل: «ping می‌رود، وب سبک باز می‌شود، ولی فایل بزرگ، RDP یا اپلیکیشن قطع می‌شود». این دقیقاً MTU است.
 
-**راه‌حل:** MSS Clamping (روی SYN) یا کاهش MTU Interface Tunnel؛ و باز گذاشتن ICMP «Fragmentation needed» برای PMTUD.
+### Overhead
 
-**جمع‌بندی اصلی درس:** کلاسیک‌ترین مشکل VPN: «ping کوچک OK، دانلود بزرگ قفل». علت MTU است. باید بتوانید **محاسبه، آزمون، رفع و اثبات** کنید.
+ESP Tunnel Mode (با AES-CBC، SHA-256 و NAT-T): تقریبی ۷۰–۸۰ بایت.
 
-### ۳) توضیح عمیق فنی
+| جزء | بایت (تقریبی) |
+|---|---|
+| IP جدید | 20 |
+| UDP (NAT-T) | 8 |
+| ESP Header (SPI+Seq) | 8 |
+| IV (AES-CBC) | 16 |
+| Padding + Pad len + Next hdr | 2 تا 17 |
+| ICV (SHA-256-128) | 16 |
 
-#### ۱) سربار
+(AES-GCM Overhead متفاوت و کمتر است؛ مقادیر دقیق به الگوریتم/NAT-T بستگی دارد.)
 
 ``` text
-Outer IP header                20 B
-[UDP encap (NAT-T)]             8 B   (+ non-ESP marker 4 B in some cases)
-ESP header (SPI+Seq)            8 B
-IV (cipher dependent)       8-16 B    (AES-GCM: 8 B IV)
-ESP trailer (pad+len+next)  2+pad B
-ICV (auth tag)             16 B (GCM) / 12-32 B (HMAC-SHA)
+Overhead ~ 20 + 8 + 8 + 16 + ~10 + 16 = 78
+Effective MTU = 1500 - 78 = 1422
+MSS (TCP)     = Effective MTU - 40 = 1382
 ```
 
-مجموع تقریبی: AES-GCM بدون NAT-T حدود 50–56 B؛ با NAT-T حدود 58–66 B؛ CBC+SHA-256 تا 70+ B.
+عملاً MSS Clamp ≈ ۱۳۶۰ (حاشیه‌ی ایمن).
+
+### Fragmentation و PMTUD
+
+- اگر DF=1 و بسته از MTU بزرگ‌تر باشد ⇒ Drop + ICMP «Fragmentation needed» (Type 3 Code 4).
+- اگر ICMP بلاک باشد ⇒ Black hole (اتصال گیر می‌کند).
+- اگر DF=0 ⇒ Fragmentation (کندی، گاهی Drop در میانی).
+- FortiOS گاهی پیش از رمز Fragment می‌کند (`set ip-fragmentation pre-encapsulation`) یا پس از آن (post).
+
+### MSS Clamp
 
 ``` text
-Effective MTU ~= link MTU - overhead      (1500 - 60 = 1440 typical)
-MSS = effective MTU - 40  (IP 20 + TCP 20) -> ~1400
-```
-
-(اعداد تقریبی؛ با آزمون واقعی تأیید کنید.)
-
-#### ۲) آزمون
-
-``` text
-Linux : ping -M do -s 1372 10.2.0.5       (1372+28 = 1400)
-Windows: ping -f -l 1372 10.2.0.5
-```
-
-اندازه را تا اولین موفقیت کم کنید؛ MTU مؤثر = اندازه + 28.
-
-#### ۳) PMTUD
-
-فرستنده بسته‌ی بزرگ با DF=1 می‌فرستد؛ روتر میانی که MTU کوچک‌تر دارد، ICMP «Fragmentation Needed (Type 3 Code 4)» برمی‌گرداند. اگر ICMP بلاک شود، فرستنده نمی‌فهمد ⇒ **Black hole** (قفل). رفع: اجازه‌ی ICMP 3/4، یا MSS Clamp که TCP را از ابتدا کوچک می‌کند.
-
-#### ۴) FortiGate
-
-``` text
-config system interface
-    edit "TO-B"
-        set mtu-override enable
-        set mtu 1400
-    next
-end
 config firewall policy
-    edit 100
+    edit 80
         set tcp-mss-sender 1360
         set tcp-mss-receiver 1360
     next
 end
 ```
 
-(`Unverified`.) فرگمنت‌شدن: `ip-fragmentation` در Phase1 (`Unverified`)؛ Fragmentation افت کارایی دارد.
+یا روی Interface تونل:
 
-#### ۵) UDP و غیر TCP
+``` text
+config system interface
+    edit "TO-B"
+        set tcp-mss 1360
+        set mtu-override enable
+        set mtu 1400
+    next
+end
+```
 
-MSS Clamp فقط TCP را حل می‌کند. UDP بزرگ (DNS، VoIP، QUIC) به MTU/Fragmentation حساس است؛ راه: MTU Tunnel پایین‌تر، برنامه با اندازه‌ی کوچک، یا اجازه‌ی Fragmentation.
+Clamp فقط TCP را درست می‌کند؛ UDP (مثل VoIP/DNS بزرگ) باید با MTU Interface/برنامه.
 
-### ۴) طراحی و تصمیم‌گیری
+### یافتن MTU مسیر
 
-| سؤال طراحی | گزینه‌ها و معیار انتخاب |
-|---|---|
-| MSS Clamp | 1360 (یا محاسبه) |
-| MTU Tunnel | 1400 |
-| ICMP | Type 3/4 باز |
-| Fragmentation | اجتناب |
+``` text
+Windows: ping -f -l 1372 10.2.0.5
+Linux  : ping -M do -s 1372 10.2.0.5
+```
 
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
+1372 + 28 = 1400. اگر شکست، کم کنید تا موفق شود؛ حداکثر موفق + 28 = MTU مسیر.
+
+### مثال‌های حل‌شده
 
 #### مثال ساده — محاسبه
 
 ``` text
-ESP tunnel overhead ~ 50-73 bytes
-Inner MTU ~ 1427  -> MSS ~ 1387 (use 1360 for margin)
+Effective MTU = 1500 - 78 = 1422
+MSS           = 1422 - 40 = 1382
 ```
 
-#### مثال متوسط — آزمون DF
+انتخاب Clamp = 1360 (کمی کمتر برای احتیاط).
+
+#### مثال متوسط — آزمون ping
+
+ping -f -l 1400 ⇒ شکست؛ 1372 ⇒ موفق؛ 1392 ⇒ شکست؛ 1380 ⇒ موفق؛ 1385 ⇒ شکست ⇒ حداکثر 1380 ⇒ MTU = 1380 + 28 = 1408.
 
 ``` text
-ping -f -l 1372 10.2.0.1   (works)
-ping -f -l 1373 10.2.0.1   (fragmentation needed)
+Path MTU = 1380 + 28 = 1408
+MSS      = 1408 - 40 = 1368
 ```
 
-بزرگ‌ترین اندازه‌ی موفق + 28 = MTU مسیر.
+Clamp = 1360 ⇒ ایمن.
 
-#### مثال سخت — Blackhole
+#### مثال متوسط — علامت
 
-ICMP Type 3 Code 4 مسدود است؛ فرستنده نمی‌فهمد. MSS Clamp چون روی SYN است مستقل از ICMP کار می‌کند. پس از رفع: iperf و curl بدون Retransmission.
+وب سبک OK؛ دانلود ۵MB قطع. Sniffer: SYN با `mss 1460`؛ بسته‌ی داده‌ی ۱۵۰۰ ⇒ Drop. با Clamp: `mss 1360` در SYN؛ دانلود کامل.
 
-#### مثال‌های اصلی درس (مرور)
+#### مثال سخت — ICMP بلاک
 
-**ساده (حل‌شده):** ping DF 1472 شکست، 1372 موفق ⇒ MTU مؤثر 1400؛ MSS 1360.
+Clamp نیست و Policy ICMP Type 3 را نمی‌دهد ⇒ PMTUD شکست ⇒ Black hole. راه: Clamp (مستقل از ICMP) و اجازه‌ی ICMP Type 3. اثبات: Sniffer نبود ICMP برگشتی.
 
-**متوسط (تحلیل):** دانلود 1 MB می‌ایستد؛ Capture: Retransmission بسته‌های 1500 B؛ هیچ ICMP 3/4. تحلیل: Black hole؛ رفع: MSS Clamp + اجازه‌ی ICMP؛ تأیید: دانلود کامل.
+#### مثال سخت — دو تونل تودرتو
 
-**سخت (چند پروتکل):** پس از Clamp، وب OK ولی DNS روی TCP/UDP بزرگ و VoIP مشکل دارند. تحلیل: UDP MSS ندارد؛ باید MTU Tunnel کمتر (1360) یا Fragmentation؛ اندازه‌گیری Loss با ping DF؛ تصمیم: MTU 1400 و آزمون VoIP؛ ثبت.
+IPsec داخل GRE یا دو لایه ⇒ Overhead دو برابر؛ MTU ≈ ۱۳۵۰ و MSS ≈ ۱۳۱۰. محاسبه‌ی دقیق برای هر لایه؛ تست ping DF.
 
-### ۶) پیاده‌سازی از مسیر GUI
+### Lab هدایت‌شده (اجرا نشده)
 
-1. Network → Interfaces → Tunnel → MTU.
-2. Policy → CLI برای MSS.
+1. Path MTU را پیدا کنید.
+2. Clamp و SYN را در Sniffer ببینید.
+3. بلاک ICMP و اثر آن.
 
-### ۷) پیاده‌سازی از مسیر CLI
+### عیب‌یابی سریع
 
-``` text
-config system interface
-    edit "TO-B"
-        set mtu-override enable
-        set mtu 1400
-    next
-end
-config firewall policy
-    edit 100
-        set tcp-mss-sender 1360
-        set tcp-mss-receiver 1360
-    next
-end
-```
-
-### ۸) Verification (اثبات صحت)
-
-- ping DF اندازه‌ها.
-- Capture: عدم Retransmission.
-- دانلود بزرگ و UDP بزرگ.
-
-### ۹) Troubleshooting
-
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+| علامت | علت | رفع |
 |---|---|---|
-| بزرگ قفل | ping DF | MTU/ICMP |
-| کند | Capture | Fragmentation |
-| فقط UDP | Capture | MTU Tunnel |
+| فایل بزرگ قطع | MTU | Clamp |
+| فقط RDP/اپ | UDP/MTU | MTU Interface |
+| ping کوچک OK | MTU | ping DF |
+| PMTUD | ICMP بلاک | Type 3 |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- ICMP را کورکورانه نبندید.
+ICMP را کامل بلاک نکنید؛ Type 3 Code 4 مجاز؛ از کاهش بی‌رویه‌ی MTU که کارایی را پایین می‌آورد پرهیز.
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- سربار تقریبی؛ آزمون واقعی.
-- MSS برای TCP؛ UDP نیاز MTU.
-- PMTUD نیاز ICMP.
+Overhead ≈ ۷۰–۸۰ بایت ⇒ MTU موثر ≈ ۱۴۲۰ و MSS ≈ ۱۳۶۰؛ Clamp برای TCP، MTU Interface برای UDP؛ ping DF برای اندازه‌گیری؛ PMTUD و ICMP.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) MSS از MTU چگونه محاسبه می‌شود؟ *(پاسخ: 18-4-ت1)*
 
@@ -5293,7 +5270,7 @@ end
 
 **Q1.** Quick quiz (English): Why do small pings succeed while large transfers hang when the path MTU is too small? *(پاسخ: 18-4-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -5303,11 +5280,11 @@ end
 
 - *Measure the effective MTU with DF-bit pings.* ← MTU مؤثر را با ping و DF-bit اندازه بگیرید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** MTU. **Evidence:** `03-ops/mtu.md`.
 
-### ۱۵) منابع
+### منابع
 
 - RFC 1191
 - RFC 4821
@@ -5315,250 +5292,177 @@ end
 
 <a id="l-18-5"></a>
 
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: محاسبه‌ی MTU Tunnel
-
-``` text
-Link MTU           = 1500
-ESP overhead (AES+SHA, tunnel mode) ~ 58-73 bytes
-Inner MTU          ~ 1427
-TCP MSS            = 1427 - 40 = 1387  (use 1360 for margin)
-```
-
-تست: `ping -f -l 1400 10.2.0.1`. رفع: `set tcp-mss` روی Policy یا کاهش MTU Tunnel Interface.
-
-**پرسش‌های مصاحبه**
-1. *Fragmentation چرا بد؟* کارایی و Drop.
-2. *DF bit؟* ممنوعیت Fragment.
-3. *PMTUD Blackhole؟* ICMP مسدود.
-
-### تکمیل عمیق: MTU/MSS در Tunnel — محاسبه و آزمون DF
-
-#### چرا؟
-
-IPsec سربار اضافه می‌کند؛ بسته‌ی ۱۵۰۰ بایتی بعد از کپسوله‌شدن بزرگ‌تر از MTU لینک می‌شود. نتیجه: «سایت باز می‌شود ولی تصاویر نه» یا «ping کار می‌کند ولی HTTPS نه».
-
-#### محاسبه‌ی سربار
-
-``` text
-ESP tunnel mode overhead ~ 50-73 bytes (IP 20 + ESP 8 + IV 16 + pad + ICV 12-32)
-Link MTU 1500 -> inner MTU ~ 1427 (conservative)
-TCP MSS = inner MTU - 40 = ~1387 ; use 1360 for margin
-```
-
-عدد دقیق به الگوریتم بستگی دارد؛ همیشه با آزمون اندازه بگیرید.
-
-#### آزمون DF
-
-``` text
-ping -f -l 1472 10.2.0.1   (Windows: -f = Don't Fragment)
-ping -f -l 1400 10.2.0.1
-ping -M do -s 1400 10.2.0.1   (Linux)
-```
-
-بزرگ‌ترین اندازه‌ای که جواب می‌دهد + 28 = MTU مسیر.
-
-#### مثال متوسط — رفع با MSS Clamp
-
-``` text
-config firewall policy
- edit 100
-  set tcp-mss-sender 1360
-  set tcp-mss-receiver 1360
- next
-end
-```
-
-یا کاهش MTU Interface Tunnel: `set mtu 1400` با `mtu-ignore` طبق نیاز.
-
-#### مثال سخت — ICMP مسدود
-
-PMTUD به ICMP «Fragmentation Needed» وابسته است؛ اگر ICMP در مسیر مسدود باشد، فرستنده نمی‌فهمد و Blackhole رخ می‌دهد. رفع: MSS Clamp (چون روی SYN) و باز کردن ICMP Type 3 Code 4.
-
-#### Lab
-
-Path MTU را با ping اندازه بگیرید و MSS را محاسبه کنید.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| HTTPS قطع‌قطع | MTU | Clamp |
-| ping بزرگ رد | Fragmentation | MTU Tunnel |
-| ICMP مسدود | PMTUD | باز کردن |
-
-#### پرسش‌ها با پاسخ
-
-**۱. MSS از کجا؟** MTU منهای هدرها.
-**۲. چرا ping کار می‌کند ولی HTTPS نه؟** اندازه‌ی بسته.
-**۳. Clamp روی؟** SYN.
-
-#### English Corner
-
-- *MSS clamping works on the TCP SYN and avoids dependence on PMTUD.*
-- Q: How do you find the path MTU with ping?
-
 ## درس 18-5 — Interop FGT–CSR: IPsec IKEv2 route-based، نگاشت، Debug دوطرفه و آزمون Rekey
 
 **فصل 18 · بازنویسی عمیق · پیش‌نیاز: ۱۸-۰، ۲۵-۰، ۲۵-۳ · ≈ 8 ساعت**
 
 > **وضعیت:** FortiOS 7.0.3 (بوت‌نشده) و CSR1000v؛ دستورها `Unverified` مگر با لینک؛ Lab «اجرا نشده». CSR دستورها `Unverified`.
 
-### ۱) هدف آموزشی
+<!--deep-->
+
+### هدف آموزشی
 
 در پایان این درس باید بتوانید:
 
-1. Tunnel IKEv2 FGT–CSR را با Proposal یکسان بسازد.
-2. معادل‌های دستور و پیام‌های خطا را نگاشت کند.
-3. ناهمسانی Lifetime/PFS/Selector را کشف و رفع کند.
-4. Rekey/DPD را آزمایش و گزارش Interop بنویسد.
+1. تونل IPsec IKEv2 Route-based بین FortiGate و Cisco IOS-XE (CSR 1000v) بسازید.
+2. معادل‌های پارامتر (Proposal، Profile، VTI) را در دو سازنده بشناسید.
+3. Traffic Selector را برای هماهنگی دو سازنده درست تنظیم کنید.
+4. وضعیت را در هر دو طرف تأیید کنید.
+5. خطاهای Interop (Proposal، ID، Selector، MTU) را رفع کنید.
+6. محدودیت‌های Lab (اجرا نشده، نسخه) را صادقانه ثبت کنید.
 
-### ۲) مفهوم پایه: چیست و چرا؟ (از صفر، با زبان ساده)
+### چرا باید یاد بگیریم؟
 
-**چرا Interop؟** در دنیای واقعی بین دو سازنده IPsec می‌بندید. مفهوم یکی است و فقط Syntax فرق می‌کند. باید پارامترها را «معادل‌سازی» و Debug را هم‌زمان در دو سر بخوانید. نقاط رایج ناهمخوانی: Lifetime، Identity، Selector (ACL در Cisco، Selector در FortiGate).
+در دنیای واقعی همیشه همه‌ی دستگاه‌ها FortiGate نیستند: شعبه‌ای با Cisco، شریکی با Palo Alto. IPsec استاندارد است، ولی هر سازنده اصطلاح و پیش‌فرض خودش را دارد؛ مثل دو مترجم با لهجه‌ی متفاوت. اگر معادل‌ها را بشناسید، Interop را حل می‌کنید.
 
-**جمع‌بندی اصلی درس:** Interop واقعی نیاز به «برگه‌ی پارامتر مشترک» و «Debug هم‌زمان» دارد (۲۵-۳). این درس ساخت پایه‌ی Tunnel است.
-
-### ۳) توضیح عمیق فنی
-
-#### ۱) برگه
+### توپولوژی
 
 ``` text
-IKEv2, AES-256-GCM, PRF SHA-256, DH 20, PFS group 20, lifetime P1 86400 / P2 3600, DPD on-idle
-Selectors any/any (route-based), PSK <PSK-LAB>, FGT 203.0.113.1  CSR 203.0.113.2, tunnel 10.255.0.0/30
+LAN-FGT 10.1.0.0/24 -- [FGT 198.51.100.10] === IKEv2 === [CSR 203.0.113.20] -- LAN-CSR 10.2.0.0/24
 ```
 
-#### ۲) CSR
-
-``` text
-crypto ikev2 proposal PROP
- encryption aes-gcm-256
- prf sha256
- group 20
-crypto ikev2 policy POL
- proposal PROP
-crypto ikev2 keyring KR
- peer FGT
-  address 203.0.113.1
-  pre-shared-key <PSK-LAB>
-crypto ikev2 profile PROF
- match identity remote address 203.0.113.1 255.255.255.255
- authentication local pre-share
- authentication remote pre-share
- keyring local KR
-crypto ipsec transform-set TS esp-gcm 256
-crypto ipsec profile IPS
- set transform-set TS
- set ikev2-profile PROF
- set pfs group20
- set security-association lifetime seconds 3600
-interface Tunnel0
- ip address 10.255.0.2 255.255.255.252
- ip mtu 1400
- tunnel source GigabitEthernet1
- tunnel destination 203.0.113.1
- tunnel mode ipsec ipv4
- tunnel protection ipsec profile IPS
-```
-
-#### ۳) FortiGate
+### پیکربندی FortiGate
 
 ``` text
 config vpn ipsec phase1-interface
     edit "TO-CSR"
-        set interface "wan1"
+        set interface "port1"
         set ike-version 2
-        set remote-gw 203.0.113.2
-        set proposal aes256gcm-prfsha256
-        set dhgrp 20
-        set psksecret <PSK-LAB>
+        set peertype any
+        set proposal aes256-sha256
+        set dhgrp 14
+        set remote-gw 203.0.113.20
+        set psksecret <SECRET>
     next
 end
 config vpn ipsec phase2-interface
     edit "TO-CSR-P2"
         set phase1name "TO-CSR"
-        set proposal aes256gcm
+        set proposal aes256-sha256
         set pfs enable
-        set dhgrp 20
-        set keylifeseconds 3600
+        set dhgrp 14
         set src-subnet 0.0.0.0 0.0.0.0
         set dst-subnet 0.0.0.0 0.0.0.0
     next
 end
 ```
 
-#### ۴) نگاشت
-
-| | CSR | FGT |
-|---|---|---|
-| وضعیت | `show crypto ikev2 sa` | `diagnose vpn ike gateway list` |
-| Child | `show crypto ipsec sa` | `diagnose vpn tunnel list` |
-| Debug | `debug crypto ikev2` | `diagnose debug application ike -1` |
-
-### ۵) مثال‌های حل‌شده (ساده، متوسط، سخت)
-
-#### مثال ساده — معادل‌ها
-
-| مفهوم | FortiGate | Cisco CSR |
-|---|---|---|
-| IKE | `ike-version 2` | `crypto ikev2` |
-| رمز | `proposal aes256-sha256` | `encryption aes-cbc-256` + `integrity sha256` |
-| DH | `dhgrp 14` | `group 14` |
-
-#### مثال متوسط — اثبات دوطرفه
+### پیکربندی Cisco CSR (IOS-XE)
 
 ``` text
-Cisco: show crypto ikev2 sa ; show crypto ipsec sa | include pkts
-FGT  : diagnose vpn ike gateway list ; diagnose vpn tunnel list
+crypto ikev2 proposal IKEV2-PROP
+ encryption aes-cbc-256
+ integrity sha256
+ group 14
+!
+crypto ikev2 policy IKEV2-POL
+ proposal IKEV2-PROP
+!
+crypto ikev2 keyring KR
+ peer FGT
+  address 198.51.100.10
+  pre-shared-key <SECRET>
+!
+crypto ikev2 profile IKEV2-PROF
+ match identity remote address 198.51.100.10 255.255.255.255
+ authentication remote pre-share
+ authentication local pre-share
+ keyring local KR
+!
+crypto ipsec transform-set TS esp-aes 256 esp-sha256-hmac
+ mode tunnel
+!
+crypto ipsec profile IPSEC-PROF
+ set transform-set TS
+ set pfs group14
+ set ikev2-profile IKEV2-PROF
+!
+interface Tunnel0
+ ip address 169.254.100.2 255.255.255.252
+ tunnel source GigabitEthernet1
+ tunnel destination 198.51.100.10
+ tunnel mode ipsec ipv4
+ tunnel protection ipsec profile IPSEC-PROF
+ ip tcp adjust-mss 1360
+!
+ip route 10.1.0.0 255.255.255.0 Tunnel0
 ```
 
-شمارنده‌ها هم‌خوان و افزایشی.
+### جدول معادل‌ها
 
-#### مثال سخت — Selector
+| مفهوم | FortiGate | Cisco IOS-XE |
+|---|---|---|
+| Phase 1 | phase1-interface | IKEv2 Proposal/Policy/Profile |
+| Phase 2 | phase2-interface | IPsec Transform-set/Profile |
+| Interface تونل | خودکار (TO-CSR) | `interface Tunnel0` (VTI) |
+| PSK | psksecret | keyring |
+| PFS | `pfs enable` | `set pfs group14` |
+| MSS | tcp-mss | `ip tcp adjust-mss` |
+| وضعیت | `diagnose vpn tunnel list` | `show crypto ikev2 sa`، `show crypto ipsec sa` |
 
-Cisco VTI با Selector any/any و FortiGate با Selector محدود ⇒ TS_UNACCEPTABLE. رفع: هر دو 0.0.0.0/0 یا هر دو محدود.
+### تأیید
 
-#### مثال‌های اصلی درس (مرور)
-
-**ساده (حل‌شده):** Up؛ ping 10.255.0.1↔.2؛ counters.
-
-**متوسط (تحلیل):** Phase 2 شکست: PFS 19 روی CSR و 20 روی FGT؛ هم‌گروه‌کردن.
-
-**سخت (Rekey):** پس از ۶۰ دقیقه قطع؛ Lifetime CSR 3600 و FGT 43200 و PFS ناهمسان در Rekey؛ یکسان‌سازی؛ آزمون ۴ ساعت.
-
-### ۷) پیاده‌سازی از مسیر CLI
+FortiGate:
 
 ``` text
-show crypto ikev2 sa
-show crypto ipsec sa
 diagnose vpn ike gateway list
 diagnose vpn tunnel list
 ```
 
-### ۸) Verification (اثبات صحت)
+Cisco:
 
-- دو سر Up؛ Rekey پایدار.
+``` text
+show crypto ikev2 sa
+show crypto ipsec sa
+show interface Tunnel0
+```
 
-### ۹) Troubleshooting
+### مثال‌های حل‌شده
 
-| علامت | شاهد برای بررسی | علت محتمل و رفع |
+#### مثال ساده — موفق
+
+`show crypto ikev2 sa` ⇒ READY؛ FortiGate `established`؛ ping 10.1.0.5 ⇒ 10.2.0.5 OK؛ شمارنده‌ی encaps/decaps در Cisco بالا می‌رود.
+
+#### مثال متوسط — Proposal
+
+Cisco پیش‌فرض‌ها را دارد (مثلاً DH 5 در بعضی نسخه‌ها)؛ FortiGate 14. Debug: `no proposal chosen`. رفع: صریح در هر دو.
+
+#### مثال متوسط — Selector
+
+Cisco VTI از 0.0.0.0/0 استفاده می‌کند ⇒ FortiGate هم 0.0.0.0/0. اگر FortiGate Selector محدود باشد ⇒ `TS_UNACCEPTABLE`.
+
+#### مثال سخت — IKE ID
+
+FortiGate Local ID خالی و Cisco `match identity remote fqdn`... عدم‌تطابق ID ⇒ `AUTHENTICATION_FAILED`. رفع: `match identity remote address` یا تنظیم `localid` در FGT و `identity local fqdn` در Cisco.
+
+#### مثال سخت — MTU Interop
+
+Cisco `ip mtu 1400`؛ FortiGate بدون Clamp. فایل بزرگ قطع. رفع: `ip tcp adjust-mss 1360` در Cisco و Clamp در FGT. ثبت: هر دو سمت Clamp.
+
+### Lab هدایت‌شده (اجرا نشده)
+
+1. CSR و FGT را راه بیندازید.
+2. تأیید دو طرف.
+3. خطای ID/Proposal را بسازید.
+
+### عیب‌یابی سریع
+
+| علامت | علت | رفع |
 |---|---|---|
-| Phase1 | Debug | Proposal/PSK |
-| Phase2 | Debug | PFS/Selector |
-| قطع دوره‌ای | Log | Lifetime |
+| no proposal | DH/الگوریتم | هماهنگ |
+| AUTH failed | PSK/ID | بررسی |
+| TS_UNACCEPTABLE | Selector | 0.0.0.0/0 |
+| فایل بزرگ | MTU | MSS |
 
-### ۱۰) نکات امنیتی
+### نکات امنیتی
 
-- PSK قوی.
+PSK یا Certificate؛ Proposal قوی؛ Interface تونل با ACL/Policy؛ لایسنس CSR (Smart Licensing) را رعایت کنید؛ Lab «اجرا نشده».
 
-### ۱۱) جمع‌بندی مفهومی
+### جمع‌بندی
 
-- برگه‌ی مشترک؛ Lifetime/PFS؛ Debug دو سر.
+Interop با جدول معادل‌ها؛ IKEv2 Route-based با VTI؛ Selector 0.0.0.0/0؛ ID و Proposal صریح؛ MSS دو سمت.
 
-### ۱۲) تمرین و ارزیابی
+### تمرین و ارزیابی
 
 **ت1.** (ساده) معادل diagnose vpn tunnel list در CSR؟ *(پاسخ: 18-5-ت1)*
 
@@ -5574,7 +5478,7 @@ diagnose vpn tunnel list
 
 **Q1.** Quick quiz (English): What is the CSR equivalent of FortiGate "diagnose vpn ike gateway list"? *(پاسخ: 18-5-Q1)*
 
-### ۱۳) اصطلاحات و English Corner
+### اصطلاحات و English Corner
 
 | مخفف | شکل کامل | معنی |
 |---|---|---|
@@ -5582,118 +5486,16 @@ diagnose vpn tunnel list
 
 - *Align lifetimes across vendors.* ← Lifetime را بین سازندگان هم‌سان کنید.
 
-### ۱۴) کارت Lab
+### کارت Lab
 
 **کارت Lab:** FGT–CSR. **Evidence:** `03-ops/fgt-csr.md`.
 
-### ۱۵) منابع
+### منابع
 
 - Cisco IKEv2 configuration guide
 - RFC 7296
 
 <a id="l-18-6"></a>
-
-### بخش تکمیلی درس: سناریوی واقعی، مثال‌های بیشتر و عیب‌یابی
-
-> بخش‌های زیر درس بالا را کامل می‌کنند: سناریوی گام‌به‌گام، مثال‌های بیشتر از ساده تا سخت، جدول عیب‌یابی و پرسش‌های مصاحبه. ابتدا بخش‌های اصلی بالا را مطالعه کنید.
-
-### تعمیق: Interop FortiGate–Cisco IKEv2
-
-``` text
-crypto ikev2 proposal P1
- encryption aes-cbc-256
- integrity sha256
- group 14
-crypto ikev2 keyring KR
- peer FGT
-  address 203.0.113.2
-  pre-shared-key local ***
-```
-
-نقاط ناهمخوانی رایج: Lifetime، شناسه‌ی Local/Remote، Selector (Cisco با ACL، FortiGate با Selector). برای Route-based در Cisco از Tunnel/VTI با `tunnel mode ipsec ipv4`.
-
-**اثبات:** `show crypto ikev2 sa` و `diagnose vpn ike gateway list`.
-
-**پرسش‌های مصاحبه**
-1. *چرا Route-based؟* Routing پویا.
-2. *Selector 0.0.0.0/0؟* با VTI رایج.
-3. *Debug دوطرفه؟* دو سر هم‌زمان.
-
-### تکمیل عمیق: Interop FortiGate–Cisco CSR با IKEv2 Route-based
-
-#### چرا؟
-
-در دنیای واقعی IPsec اغلب بین دو سازنده است. اگر مفهوم را بدانید فقط Syntax عوض می‌شود.
-
-#### پیکربندی Cisco (VTI)
-
-``` text
-crypto ikev2 proposal P1
- encryption aes-cbc-256
- integrity sha256
- group 14
-crypto ikev2 policy POL1
- proposal P1
-crypto ikev2 keyring KR
- peer FGT
-  address 203.0.113.2
-  pre-shared-key local ***
-  pre-shared-key remote ***
-crypto ikev2 profile PROF
- match identity remote address 203.0.113.2 255.255.255.255
- authentication remote pre-share
- authentication local pre-share
- keyring local KR
-crypto ipsec transform-set TS esp-aes 256 esp-sha256-hmac
- mode tunnel
-crypto ipsec profile IPS
- set transform-set TS
- set ikev2-profile PROF
-interface Tunnel0
- ip address 10.99.0.2 255.255.255.252
- tunnel source GigabitEthernet1
- tunnel destination 203.0.113.2
- tunnel mode ipsec ipv4
- tunnel protection ipsec profile IPS
-```
-
-سمت FortiGate: Phase1/Phase2 Route-based با Selector 0.0.0.0/0 (VTI معمولاً با Selector کامل کار می‌کند).
-
-#### مثال متوسط — اثبات
-
-``` text
-Cisco: show crypto ikev2 sa ; show crypto ipsec sa | include pkts
-FGT  : diagnose vpn ike gateway list ; diagnose vpn tunnel list
-```
-
-شمارنده‌ها در هر دو سر باید هم‌خوان و افزایشی باشند.
-
-#### مثال سخت — اختلاف Selector
-
-Cisco VTI با Selector any/any و FGT با Selector محدود ⇒ TS_UNACCEPTABLE. رفع: FGT را 0.0.0.0/0 یا Cisco را محدود.
-
-#### Lab
-
-یک CSR و یک FGT VM در PNETLab؛ تغییر ندادن تجهیز واقعی؛ اجرا نشده.
-
-#### عیب‌یابی
-
-| علامت | علت | رفع |
-|---|---|---|
-| SA بالا ولی ping نه | Route روی Tunnel0 | افزودن |
-| TS_UNACCEPTABLE | Selector | همسان |
-| Identity | match identity | تصحیح |
-
-#### پرسش‌ها با پاسخ
-
-**۱. چرا Route-based؟** Routing پویا.
-**۲. VTI Selector؟** any/any.
-**۳. چرا Debug دوسر؟** مقایسه.
-
-#### English Corner
-
-- *Route-based VPN uses a virtual tunnel interface and supports dynamic routing.*
-- Q: What does match identity remote address do on the Cisco profile?
 
 ## درس 18-6 — Gate G7: آزمون عملی IPsec — صورت مسئله، کلید پاسخ کامل و Rubric
 
