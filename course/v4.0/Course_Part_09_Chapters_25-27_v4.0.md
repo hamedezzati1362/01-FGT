@@ -359,7 +359,7 @@ Cost = Reference BW / Interface BW
 
 #### عیب‌یابی
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | ترافیک برگشت رد | فرض Stateless | Stateful |
 | NAT متفاوت | ترتیب ارزیابی | Debug |
@@ -507,7 +507,7 @@ VRF جداسازی L3؛ VDOM جداسازی کامل Policy/Admin/VPN. معاد�
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | Wildcard اشتباه | Mask | تبدیل |
 | VIP بی‌اثر | Policy نیست | افزودن |
@@ -707,7 +707,7 @@ Peer روی Loopback (غیر مستقیم) ⇒ eBGP به‌طور پیش‌فر�
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | ExStart | MTU | هماهنگ |
 | Neighbor نیست | Hello/Auth/Area | بررسی |
@@ -894,7 +894,7 @@ FGT 86400؛ CSR 28800. Rekey هر ۸ ساعت، ولی اگر CSR زودتر Rek
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | no_proposal_chosen | PFS/الگوریتم | هماهنگ |
 | TS_UNACCEPTABLE | Selector | آینه |
@@ -1064,7 +1064,7 @@ Lab اجرا نشده؛ پیام‌های Debug نمونه‌ی آموزشی؛ �
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | P2 down | PFS | هماهنگ |
 | TS_UNACCEPTABLE | ACL | آینه |
@@ -1134,13 +1134,20 @@ Cisco Config را دستی ذخیره می‌کند؛ FortiOS تغییرات ر�
 
 FortiGate Stateful است و برگشت ترافیک را خودکار می‌پذیرد؛ ACL ساده Stateless.
 
-**25-1-ت5** — Object، Policy، Log.
+**25-1-ت5** — ACL به Policy
 
-ACL را به Policy ببرید: Object، Policy، Log و آزمون Lookup.
+**نمونه:** `permit tcp 10.10.0.0 0.0.0.255 host 10.20.0.30 eq 443`.
+1. Wildcard را به Mask تبدیل کنید (`0.0.0.255` ⇒ `255.255.255.0`).
+2. Interface ورودی ACL ⇒ `srcintf`؛ مقصد را از Route ⇒ `dstintf`.
+3. Address/Service شیء بسازید؛ Action accept؛ Log.
+4. Stateful است؛ `established` یا Policy برگشت لازم نیست.
+5. Implicit Deny و Log آن را فعال کنید.
+6. آزمون با `iprope lookup` مثبت و منفی.
+**دام:** ترجمه‌ی خط‌به‌خط ACL قدیمی Policyهای اضافی و ناامن می‌سازد؛ ترجمه‌ی مفهومی لازم است.
 
-**25-1-ت6** — جدول.
+**25-1-ت6** — برگه‌ی تطبیق
 
-برگه‌ی تطبیق: ستون مفهوم، Cisco، FortiGate و نکته‌ی تفاوت.
+برگه‌ی تطبیق سه ستون دارد: **مفهوم / Cisco / Fortinet** به‌علاوه‌ی ستون «تفاوت رفتاری» (مثلاً ACL ترتیبی در برابر Policy مبتنی بر Zone/Interface، NAT در دستور جدا در برابر داخل Policy، VRF در برابر VDOM). **استدلال:** ستون تفاوت رفتاری مهم‌ترین است چون ترجمه‌ی اسم بدون رفتار گمراه‌کننده است. هر ردیف با مثال کوتاه و دستور مشاهده تکمیل شود.
 
 **25-1-Q1** — A firewall policy.
 
@@ -1156,9 +1163,17 @@ eBGP با AD 20 بر OSPF با 110 برنده می‌شود.
 
 **25-2-ت4** — تا Prefix دوباره به منبعش بازگردانده نشود؛ از Loop و Flap جلوگیری می‌کند.
 
-**25-2-ت5** — Loop Redistribution؛ افزودن Tag/Route-map، حذف Redistribute یک‌جهته در صورت نیاز؛ آزمون قطع/بازگشت.
+**25-2-ت5** — Flap مسیر بین OSPF و BGP
 
-**25-2-ت6** — جدول: IP/MTU/Area/Network Type/Auth/Timer/BGP AS/Filter برای هر Link.
+**علامت:** Prefix مدام ظاهر و ناپدید می‌شود.
+**فرضیه‌ها:** Redistribution دوطرفه (Route Feedback) بدون Tag/فیلتر؛ AD متفاوت باعث جابه‌جایی مسیر برنده؛ ناپایداری لینک؛ Summary/Null.
+**تفکیک:** `get router info routing-table database` و Log تغییر؛ منبع Prefix (O/B)؛ `show router ospf/bgp` Redistribute؛ آزمون با قطع یک جهت Redistribution.
+**رفع:** یک نقطه‌ی Redistribution، Route-map با Tag و Deny حلقه، Prefix-list، تنظیم AD.
+**استدلال:** Flap ناشی از «حلقه‌ی بازخورد» است نه لزوماً خطای یک پروتکل.
+
+**25-2-ت6** — برگه‌ی پارامتر ۳ Link FGT↔CSR
+
+برای هر Link ردیف جدا: IP /30، Area/Network Type/Hello/Dead/Auth OSPF، AS و Neighbor BGP، Prefix اعلام/دریافت، Cost/Local-Pref، MTU، BFD. **قواعد:** Subnet یکتا؛ Cost برای تعیین اصلی/پشتیبان؛ مقدار هر ردیف دو سمت یکسان؛ آزمون Failover هر Link. بدون یکتایی IP و Router-ID، همسایگی ناپایدار می‌شود.
 
 **25-2-Q1** — Because routes can be redistributed back into their source protocol repeatedly.
 
@@ -1184,13 +1199,16 @@ Rekey قطع: Lifetime نامتقارن؛ یکسان کنید.
 
 DPD همتای مرده را تشخیص می‌دهد و SA را پاک می‌کند.
 
-**25-3-ت5** — interval/retry دو سر.
+**25-3-ت5** — DPD کند
 
-DPD کند: interval/retry را در دو سر هماهنگ کنید.
+**علامت:** تشخیص قطع تونل کند است. این علامت علت یکتا ندارد.
+**فرضیه‌ها:** DPD روی on-idle (بدون ترافیک بررسی نمی‌شود)؛ interval/retry بزرگ؛ تنظیم متفاوت دو سمت؛ مسیر بازگشت یا Route تونل باقی می‌ماند.
+**تفکیک:** `diagnose vpn ike gateway list` و Debug IKE زمان DPD؛ قطع کنترل‌شده‌ی لینک و اندازه‌گیری؛ مقایسه‌ی پارامترها (FGT `dpd`/retry، CSR `dpd`).
+**رفع:** `dpd on-demand/on-idle` طبق نیاز، interval و retry کوتاه‌تر، BFD برای Overlay. زمان‌ها محاسبه‌ی تقریبی‌اند؛ اندازه‌گیری در محیط هدف.
 
-**25-3-ت6** — جدول.
+**25-3-ت6** — Test Plan چندسازنده
 
-Test Plan شش آزمون: Establish، ping، Rekey، DPD، MTU/MSS، Failover.
+Test Plan: ۱) Phase1/Phase2 بالا (دو سمت) ۲) ترافیک دوطرفه ۳) Rekey ۴) DPD/Failover ۵) MTU/MSS ۶) NAT-T ۷) آزمون منفی (PSK غلط، Selector غلط) ۸) Debug هم‌زمان و جدول مغایرت. برای هر آزمون: انتظار، دستور هر دو سمت، Evidence. **استدلال:** آزمون منفی نشان می‌دهد پیام خطا در هر سازنده چگونه ظاهر می‌شود (مهارت عیب‌یابی).
 
 **25-3-Q1** — To match corresponding events across both logs.
 
@@ -1215,13 +1233,16 @@ P1 up و P2 down: Selector، PFS یا Transform Set.
 
 Debug را در هر دو سمت هم‌زمان بگیرید.
 
-**25-4-ت5** — Lifetime.
+**25-4-ت5** — Flap هنگام Rekey
 
-Rekey Flap: Lifetime را یکسان کنید.
+**علامت:** در فاصله‌های منظم تونل قطع می‌شود.
+**فرضیه‌ها:** Lifetime ناهمخوان و Rekey همزمان؛ PFS/Proposal ناسازگار در CHILD_SA؛ DPD/Make-before-break؛ MTU/Fragmentation هنگام Rekey؛ Lifetime Soft/Hard.
+**تفکیک:** تطبیق Lifetimeها؛ Debug هر دو سمت دقیقاً هنگام Flap؛ مقایسه‌ی زمان Flap با Lifetime (ضرایب مثل ۳۶۰۰ ثانیه)؛ تغییر یک پارامتر در هر آزمون.
+**رفع:** Lifetime هم‌اندازه، Rekey مرحله‌ای، پیشنهاد Proposal یکسان. علت وقتی اثبات می‌شود که Flap در زمان‌های مورد انتظار حذف شود.
 
-**25-4-ت6** — طبق جدول.
+**25-4-ت6** — جدول معادل
 
-جدول معادل Proposal، Auth، Selector، P2، PFS و Lifetime برای FGT و CSR.
+جدول معادل چندسازنده باید شامل: Proposal، DH/PFS، Lifetime، Selector، ID، NAT-T، DPD، دستور مشاهده و پیام خطای رایج هر سمت باشد. **ارزش جدول:** دانشجو بتواند پیام خطا در یک سمت را به پارامتر سمت دیگر نگاشت کند (مثلاً `no_proposal_chosen` ⇒ مقایسه PFS/DH).
 
 **25-4-Q1** — Because mismatched selectors prevent phase 2 from negotiating.
 
@@ -1235,7 +1256,21 @@ Rekey Flap: Lifetime را یکسان کنید.
 
 اغلب MTU Mismatch بین دو سر (مثلاً در OSPF) علت گیرکردن است.
 
-**25-0-ت3** — IKEv2، AES-256-GCM، SHA-256، DH 20 (یا ≥ 14)، PFS روشن با همان Group، Lifetime یکسان، DPD، MTU/MSS مشترک، Authentication PSK/Cert.
+**25-0-ت3** — برگه‌ی پارامتر IPsec بین FGT و CSR
+
+**روش:** جدول دوطرفه که هر ردیف «مقدار FGT / مقدار CSR / معادل دستور / وضعیت هماهنگی» دارد.
+
+| پارامتر | FGT | CSR |
+|---|---|---|
+| IKE | v2 | IKEv2 |
+| رمز و Integrity | aes256, sha256 | aes-cbc-256, sha256 |
+| DH/PFS | 14 / فعال | group 14 / `set pfs group14` |
+| Lifetime P1/P2 | 86400 / 3600 | هم‌اندازه یا سازگار |
+| Selector | آینه‌ی ACL یا 0.0.0.0/0 (Route-based) | ACL آینه یا VTI |
+| ID/PSK | `localid`/Vault | `match identity`/keyring |
+| NAT-T/DPD | فعال/تنظیم | تنظیم هماهنگ |
+
+**استدلال:** هر ردیفی که فقط یک سمت دارد یک ناسازگاری بالقوه است؛ برگه قبل از ساخت امضا شود.
 
 **25-0-Q1** — Because defaults differ between vendors and cause subtle mismatches.
 
@@ -1476,7 +1511,7 @@ ADOM = Administrative Domain، یعنی «دامنه‌ی مدیریتی». شر
 
 #### عیب‌یابی
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | Install ناموفق | Object ناهمخوان | Policy Check |
 | Device Out-of-sync | تغییر محلی | Retrieve/Re-install |
@@ -1619,7 +1654,7 @@ FMG تک ⇒ SPOF مدیریتی (ترافیک اثر ندارد ولی مدیر
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | Install ناموفق | Conflict/Revision | Preview |
 | Log نمی‌رسد | Reliable/FW | بررسی |
@@ -1828,7 +1863,7 @@ FAZ تحلیل آماده (FortiView، IOC، Compliance) می‌دهد؛ rsyslog
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | Log نمی‌رسد | Firewall/پورت | 6514 |
 | TLS خطا | CA/زمان | همگام |
@@ -2015,7 +2050,7 @@ Restore Config روی نسخه‌ی متفاوت FortiOS شکست یا بخشی 
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | Secret در Git | Sanitize ناقص | hook |
 | Diff پر از نویز | timestamp | فیلتر |
@@ -2218,7 +2253,7 @@ Log: `user=bob action=Edit cfgpath=firewall.policy cfgobj=305`. Ticket نیست 
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | همه Super | RBAC نیست | Profile |
 | تغییر بی‌Ticket | فرایند | Alert/Policy |
@@ -2297,9 +2332,20 @@ Audit alert: 'Configuration changed' by user net01 at 22:03 -> ticket CHG-0123
 
 **26-1-ت4** — هر ADOM یک FAZ؛ و هنگام فعال بودن ویژگی‌های FAZ روی FMG، Log Forwarding/Fetching/Aggregation پشتیبانی نمی‌شود.
 
-**26-1-ت5** — ۲۴۰ تغییر × ۳٪ ≈ ۷ خطا/سال؛ هر خطا مثلاً ۲ ساعت ⇒ ۱۴ ساعت قطع/رفع + اثر کسب‌وکار؛ با لایسنس/میزبانی FMG مقایسه کنید؛ اگر اثر کسب‌وکار بالا است FMG یا Ansible+Review توجیه دارد.
+**26-1-ت5** — هزینه‌ی خطا در ۲۰ تغییر ماهانه
 
-**26-1-ت6** — ADOM برای هر مشتری؛ FAZ برای هر ADOM؛ RBAC؛ Policy Package پایه+Override؛ HA/Backup/OOB/MFA؛ Break-glass؛ آزمون Revert.
+**محاسبه (مدل ساده؛ فرض: خطاها مستقل و ۳٪ ثابت):**
+``` text
+Expected failed changes / month = 20 x 0.03 = 0.6
+Per year = 0.6 x 12 = 7.2
+Annual cost of errors = 7.2 x (avg outage hours x cost per hour + fix effort)
+```
+**استدلال:** عدد قطعی نیست؛ به شدت و مدت هر خطا بستگی دارد. اگر هر خطا یک ساعت قطع و ۱۰ میلیون در ساعت هزینه داشته باشد ≈ ۷۲ میلیون در سال. تصمیم: Staging/Preview/Review و Rollback خودکار (مثلاً Policy Package با Install Preview در FMG یا Pipeline Git+Ansible) را با هزینه‌ی آن مقایسه کنید؛ اگر کاهش خطا هزینه‌ی ابزار را توجیه کند انجام دهید. نرخ ۳٪ را با داده‌ی واقعی بسنجید.
+
+**26-1-ت6** — معماری ۴ مشتری ۳۰ فایروال
+
+**فرض:** MSP؛ جداسازی مشتری الزامی.
+**طراحی:** FMG با ADOM هر مشتری و Admin Profile جدا؛ FAZ با ADOM/Retention هر مشتری؛ Policy Package و Template مشترک پایه + اختصاصی؛ دسترسی مدیریتی از Mgmt؛ HA برای FMG/FAZ؛ Backup آفلاین. **استدلال:** ADOM مرز Config/Log است؛ بدون آن ریسک نشت بین مشتری‌ها. لایسنس تعداد Device/ADOM/GB روزانه را از مستند محاسبه کنید.
 
 **26-1-Q1** — It simplifies consistent management but becomes a high-value target and single point of failure.
 
@@ -2322,9 +2368,23 @@ Syslog روی TCP تضمین تحویل بهتر دارد و برای Extended L
 
 **26-2-ت4** — `execute ping` با source-ip، Sniffer روی Interface خروجی FGT، tcpdump روی سرور و بررسی Firewall سرور.
 
-**26-2-ت5** — reliable، دو مقصد/سرور HA، Alert بدون Log، ذخیره‌ی محلی Retention برای رویدادهای حیاتی، آزمون قطع.
+**26-2-ت5** — از دست‌رفتن Log هنگام قطع سرور
 
-**26-2-ت6** — TCP reliable به دو سرور، rsyslog+Parser، ایندکس، حجم و فضا محاسبه، چرخش، Alert Loss، دسترسی RBAC.
+**علت:** ارسال بدون بافر کافی (UDP) یا بافر محدود FortiGate.
+**راه‌ها:** TCP/TLS Reliable، دو Collector، ذخیره‌ی محلی کافی، Forward از FortiAnalyzer/Relay، آلارم قطع Collector، آزمون قطع/وصل.
+**استدلال:** هیچ بافر نامحدود نیست؛ باید ظرفیت بافر را بر اساس نرخ Log × مدت قطع حساب کرد:
+``` text
+Buffer needed = log rate (MB/min) x outage minutes
+Example: 10 MB/min x 10 = 100 MB
+```
+
+**26-2-ت6** — معماری Log ۱۰ فایروال، ۱۸۰ روز
+
+FortiGate ⇒ TLS ⇒ دو rsyslog (Active/Standby) ⇒ ذخیره‌ی گرم ۹۰ روز + آرشیو سرد ۱۸۰ روز؛ NTP؛ Parse به Graylog/ELK؛ Integrity (Hash)؛ دسترسی RBAC. حجم:
+``` text
+Daily = events/s x avg bytes x 86400 ; 180 days = Daily x 180 (before compression)
+```
+**فرض:** نرخ و اندازه‌ی Log را از اندازه‌گیری بگیرید؛ اعداد تضمینی نیستند.
 
 **26-2-Q1** — Because UDP does not guarantee delivery, so events can be lost during network or server problems.
 
@@ -2345,9 +2405,22 @@ Drift یعنی تفاوت Config واقعی دستگاه با نسخه‌ی مر
 
 Revision/Tag نقطه‌ی بازگشت مشخص برای Rollback و مقایسه است.
 
-**26-3-ت5** — حذف از تاریخچه، چرخش همه‌ی اعتبارنامه‌ها، بازبینی دسترسی، Pre-commit scan، PIR؛ فرض افشا.
+**26-3-ت5** — Secret در Git Commit شد
 
-**26-3-ت6** — Backup روزانه، Lab هم‌نسخه، Runbook Restore، آزمون فصلی، اندازه‌گیری RTO و اصلاح.
+1. **فرض نشت:** Secret را فوراً چرخش (Rotate) دهید؛ حذف از Git کافی نیست چون در تاریخچه و Cloneها مانده.
+2. تعیین دامنه: چه Secretی، کدام Branch/Remote، چه کسی Clone کرد؟
+3. پاک‌سازی تاریخچه (filter-repo) فقط پس از Rotate.
+4. بررسی Log استفاده‌ی Secret.
+5. پیشگیری: pre-commit hook، Sanitize، Scan (gitleaks).
+**استدلال:** ترتیب مهم است؛ پاک‌سازی تاریخچه بدون Rotate امنیت نمی‌دهد.
+
+**26-3-ت6** — برنامه‌ی Backup/Restore با RTO ۳۰ دقیقه
+
+**اجزا:** Backup روزانه خودکار رمزگذاری‌شده + Hash، نگهداری سه نسخه (محلی، Vault، خارج از سایت)، Runbook Restore، دستگاه یا VM آماده، آزمون فصلی با زمان‌سنجی.
+``` text
+RTO budget = provisioning + restore + verification  (e.g. 10 + 8 + 10 = 28 min)
+```
+**استدلال:** RTO واقعی فقط با آزمون Restore معلوم می‌شود؛ بودجه‌ی زمانی نظری ضمانت نیست. Secretها (PSK، گواهی) را در Vault جدا نگه دارید.
 
 **26-3-Q1** — Because it may already have been copied or exposed, so credentials must be rotated.
 
@@ -2373,13 +2446,23 @@ Install Preview تغییرات را پیش از اعمال نشان می‌ده�
 
 مرکز مدیریت هدف جذاب است چون دسترسی به همه‌ی دستگاه‌ها دارد.
 
-**26-4-ت5** — Revision قبلی.
+**26-4-ت5** — Install قطع کرد؛ رفع
 
-Install قطع کرد: به Revision قبلی برگردید و Install مجدد.
+**اقدام فوری:** Rollback (Revision قبلی یا Restore) برای بازگرداندن سرویس؛ سپس Evidence.
+**تحلیل علت:** Install Preview/Diff را بررسی؛ Policy/Object متفاوت؟ ترتیب؟ تفاوت Device با Package؟
+**پیشگیری:** Preview اجباری، Canary (یک دستگاه)، Workflow/Approval، Test Matrix.
+**درس:** رفع فوری و ریشه‌یابی جدا هستند.
 
-**26-4-ت6** — جدول.
+**26-4-ت6** — RBAC چهارسطحی
 
-RBAC چهارسطحی: Super، Network، ReadOnly، Auditor با مثال دسترسی.
+| سطح | نقش | دسترسی |
+|---|---|---|
+| 1 | NOC Read | خواندن Dashboard/Log |
+| 2 | Net-Ops | Policy/Route غیرحساس در VDOM/ADOM خودش |
+| 3 | Sec-Admin | UTM/VPN/Auth |
+| 4 | Super-Admin | Global (کم، MFA، Break-glass) |
+
+**اصول:** Least Privilege، تفکیک وظایف، حساب شخصی، MFA، Audit. **آزمون منفی:** هر نقش یک عمل غیرمجاز را انجام دهد ⇒ رد.
 
 **26-4-Q1** — To review the changes that will be applied and avoid unintended impact.
 
@@ -2395,7 +2478,11 @@ FMG پیکربندی/Policy مرکزی؛ FAZ جمع‌آوری و تحلیل Log
 
 Install Preview تا اثر نصب پیش از اعمال دیده شود.
 
-**26-0-ت4** — Syslog مرکزی (rsyslog)، Backup روزانه به Git/SFTP بدون Secret، SNMPv3 + Zabbix، Ansible/API خواندنی، ثبت Change با Diff.
+**26-0-ت4** — معماری جایگزین بدون لایسنس برای ۱۰ فایروال
+
+**اجزا:** Syslog TLS مرکزی (rsyslog + Graylog/ELK)، SNMPv3 + Zabbix، Backup خودکار با API/SSH + Sanitize + Git، Ansible/Python برای تغییر، Vault برای Secret، Runbook و CHG.
+**فرض:** تیم مهارت DevOps دارد.
+**استدلال:** برای ۱۰ دستگاه هزینه‌ی لایسنس ممکن است بیش از هزینه‌ی مهندسی باشد؛ ولی قابلیت‌هایی مثل گزارش Compliance آماده و FortiView را باید خودتان بسازید. ریسک: وابستگی به فرد؛ کاهش: مستندسازی و آزمون.
 
 **26-0-Q1** — To separate devices, administrators and policy sets into administrative domains (for example per tenant or version).
 
@@ -2637,7 +2724,7 @@ CPU warn     = P95 x 1.5      = 41 x 1.5 ~ 61 %
 
 #### عیب‌یابی
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | هشدار زیاد | آستانه‌ی نزدیک به نرمال | P95 × ضریب |
 | هشدار دیر | آستانه بالا | کاهش |
@@ -2804,7 +2891,7 @@ dstport=443 policyid=30 action="close" sentbyte=1200 rcvdbyte=9800 duration=35
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | Log نیست | logtraffic disable | all |
 | Deny دیده نمی‌شود | implicit log | enable |
@@ -3014,7 +3101,7 @@ Community `public` در اینترنت باز بود؛ مهاجم اطلاعات
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | Timeout | allowaccess/Local-in | بررسی |
 | Auth خطا | پروتکل/رمز | هماهنگ |
@@ -3208,7 +3295,7 @@ Pipeline با Write Profile Policy را تغییر داد و اشتباه Deny A
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | 401 | Token | بررسی |
 | 403 | Trusted/Profile | بررسی |
@@ -3425,7 +3512,7 @@ Backup بدون رمز، Secret (PSK) ENC به کلید دستگاه وابست�
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | قفل شدید | trusthost | Console |
 | اسکن پورت باز | allowaccess | حذف |
@@ -3604,7 +3691,7 @@ Lab اجرا نشده؛ زمان RTO و خروجی nmap نمونه‌ی آموز
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | مدیریت باز در WAN | allowaccess | حذف |
 | Deny بدون Log | implicit | enable |
@@ -3859,7 +3946,7 @@ end
 
 #### عیب‌یابی
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | ورود مدیریتی از اینترنت | allowaccess | بستن |
 | ادمین ناشناس | کنترل ضعیف | ممیزی |
@@ -4041,9 +4128,15 @@ Logging به Syslog را فعال، یک Deny ایجاد و Log را در سرو
 
 Log Deny برای کشف Scan/حمله و عیب‌یابی Policy.
 
-**27-1-ت5** — Allow عمومی utm، Allow حیاتی all، Deny همیشه، Alert روی Deny مدیریتی و Bytes غیرعادی، Syslog مرکزی.
+**27-1-ت5** — نویز Log مانع کشف نفوذ
 
-**27-1-ت6** — انواع، سطح، مقصد، قالب، Retention، NTP، دسترسی، Alert/بازبینی.
+**مسئله:** Log زیاد بی‌ارزش، Log مهم گم.
+**طرح:** ۱) تعیین Use-caseهای تشخیص ۲) فیلتر/کاهش Log کم‌ارزش در مبدأ (نه حذف Log امنیتی) ۳) سطح‌بندی ۴) Correlation (Brute→Success) ۵) Baseline ۶) بازبینی ماهانه‌ی درصد Alert عملی ۷) آزمون Purple Team.
+**استدلال:** حذف بدون هدف کوری ایجاد می‌کند؛ کاهش نویز باید از تحلیل نیاز آغاز شود.
+
+**27-1-ت6** — استاندارد Logging در ۸ بند
+
+۱) چه چیز Log شود ۲) سطح ۳) مقصد/TLS ۴) زمان NTP ۵) Retention ۶) دسترسی و Integrity ۷) Alert ۸) بازبینی دوره‌ای. **هر بند قابل‌آزمون:** مثلاً «Retention ۱۸۰ روز» با آزمون وجود Log قدیمی‌ترین روز.
 
 **27-1-Q1** — Because local storage is limited and may be overwritten or lost during an incident.
 
@@ -4064,9 +4157,14 @@ Hysteresis: تفاوت آستانه‌ی ورود و خروج Alert برای ج�
 
 Dependency suppression Alert وابسته را وقتی وابستگی اصلی Down است سرکوب می‌کند.
 
-**27-2-ت5** — Dependency، Alert مرکزی سایت، Flap با بررسی متوالی، Escalation؛ هدف ≤ ۳ Alert.
+**27-2-ت5** — Alert Storm هنگام قطع ISP
 
-**27-2-ت6** — CPU، Memory، Session، Interface error، Tunnel down، HA؛ هر کدام با Baseline/Hysteresis.
+**علامت:** ده‌ها Alert.
+**تحلیل:** یک علت ریشه (ISP) ⇒ چند معلول. **طرح:** Dependency (Trigger اصلی «ISP Down» بقیه را سرکوب)، Duration، گروه‌بندی، Maintenance Window، Severity، Runbook برای Alert اصلی. KPI: درصد Alert عملی.
+
+**27-2-ت6** — ۶ Trigger کلیدی
+
+CPU (>90٪/۵ دقیقه)، Memory/Conserve، Session (>80٪)، Interface/ISP Down، VPN Down، HA Failover/Split. **دلیل هر کدام:** اثر مستقیم بر سرویس یا هشدار زودهنگام؛ آستانه‌ها از Baseline.
 
 **27-2-Q1** — Excessive low-value alerts cause operators to ignore them; baselines, dependencies and hysteresis reduce them.
 
@@ -4083,9 +4181,15 @@ API Token: Trusthost، لغو/انقضا و غیرفعال‌کردن API user.
 
 **27-3-ت4** — Diff تغییرات را بدون اعمال نشان می‌دهد و خطای گسترده را قبل از وقوع کشف می‌کند.
 
-**27-3-ت5** — نبود بررسی وجود؛ GET نام، مقایسه، PUT/POST شرطی؛ تست دو بار اجرا؛ پاک‌سازی تکراری‌ها با Backup.
+**27-3-ت5** — Script ۵۰ Object تکراری
 
-**27-3-ت6** — حساب Read-only برای مانیتورینگ؛ حساب Write جدا با Canary؛ Trusthost، Vault، TLS، Review، Backup/Rollback، Audit.
+**علت محتمل:** POST بدون بررسی وجود (Idempotency نبود)، یا Retry پس از Timeout.
+**تحلیل:** Log API و پاسخ‌ها؛ آیا Script دو بار اجرا شد؟
+**اصلاح:** الگوی GET⇒POST/PUT؛ نام یکتا؛ Dry-run؛ Rate-limit؛ حذف تکراری‌ها با Backup؛ آزمون اجرای دوباره (باید بدون تغییر).
+
+**27-3-ت6** — طرح امن Automation
+
+Token Read-only برای مانیتورینگ و Token جدا برای تغییر؛ Trusted Host؛ Vault؛ Pipeline با Review/Approval؛ Dry-run؛ Canary؛ Rollback خودکار؛ Log و Alert روی API. **استدلال:** جداسازی دسترسی خواندن/نوشتن خطر را کم می‌کند.
 
 **27-3-Q1** — To show the planned changes without applying them and catch mistakes before they spread.
 
@@ -4102,11 +4206,18 @@ Idle timeout خطر Session رهاشده را کم می‌کند.
 
 **27-4-ت4** — زمان از شروع Restore تا سرویس‌های حیاتی تأییدشده؛ در Lab با زمان‌سنج.
 
-**27-4-ت5** — جدول بالا؛ هر کنترل یک آزمون منفی.
+**27-4-ت5** — ۱۰ کنترل Hardening با آزمون منفی
 
-چک‌لیست Hardening با آزمون منفی برای هر کنترل.
+۱) مدیریت روی WAN بسته ⇒ nmap ۲) TLS≥1.2 ⇒ s_client tls1 رد ۳) Lockout ⇒ سه رمز غلط ۴) Trusthost ⇒ ورود از IP دیگر رد ۵) MFA ⇒ بدون OTP رد ۶) SNMPv3 ⇒ v2c رد ۷) NTP امن ⇒ زمان ۸) Banner ۹) Local-in ⇒ پورت‌های ناخواسته ۱۰) Backup رمزگذاری‌شده ⇒ فایل متن ساده نیست. هر کنترل یک آزمون منفی و Evidence دارد.
 
-**27-4-ت6** — اتوماسیون Restore، Runbook مرحله‌ای، Secrets از Vault، آزمون فصلی.
+**27-4-ت6** — کاهش RTO از ۴۵ به ۳۰ دقیقه
+
+**تحلیل:** زمان را به اجزا تقسیم کنید (آماده‌سازی دستگاه، Restore، تنظیمات Secret/گواهی، تأیید). گلوگاه را بیابید و بهینه کنید: VM آماده، Restore خودکار، Secret در Vault، چک‌لیست تأیید.
+``` text
+45 = 15 (prepare) + 10 (restore) + 12 (manual secrets/certs) + 8 (verify)
+Target 30: prepare 8 + restore 10 + secrets 4 + verify 8
+```
+**فرض:** اعداد نمونه؛ هدف باید با آزمون دوباره تأیید شود.
 
 **27-4-Q1** — Because only a failed unauthorized attempt proves the control actually works.
 
@@ -4132,13 +4243,13 @@ Log نمی‌رسد: Sniffer، Route، Policy و سرور.
 
 allowaccess snmp برای پاسخ SNMP لازم است.
 
-**27-5-ت5** — Backup، خراب، Restore، مقایسه.
+**27-5-ت5** — Restore آزمایشی
 
-Restore آزمایشی در Lab: ۱) Backup بگیرید و Hash ثبت کنید. ۲) Config را عمداً خراب کنید (مثلاً Policy حذف). ۳) Restore. ۴) پس از Boot: تعداد Policy/Route/Interface و Hash/Diff با نسخه‌ی اصلی. ۵) زمان Restore را ثبت کنید (RTO). ریسک: Backup حاوی رمز؛ رمزگذاری و محدودیت دسترسی.
+Backup رمزگذاری‌شده ⇒ Restore روی Lab هم‌نسخه ⇒ زمان‌سنجی ⇒ تأیید Route/Policy/VPN/Log/SNMP ⇒ ثبت مشکلات (Secret، گواهی) ⇒ به‌روزرسانی Runbook. «Backup که Restore نشده، Backup نیست.»
 
-**27-5-ت6** — ۷ مورد.
+**27-5-ت6** — چک‌لیست G10
 
-چک‌لیست G10: Log، SNMP، Alert، Hardening، Backup، Restore، Evidence.
+Logging TLS و Retention، Monitoring و Alert با Baseline، Hardening با آزمون منفی، Backup رمزگذاری‌شده و Restore زمان‌سنجی‌شده، API ایمن، Evidence Index، RCA عیوب، صداقت. هر مورد «ادعا + آزمون + شاهد» دارد.
 
 **27-5-Q1** — Because they contain passwords and keys.
 
@@ -4150,9 +4261,26 @@ Restore آزمایشی در Lab: ۱) Backup بگیرید و Hash ثبت کنید
 
 **27-0-ت2** — تا انحراف را با مرجع عادی تشخیص دهیم و آستانه‌ی معنادار بگذاریم.
 
-**27-0-ت3** — CPU>70٪ هشدار/90٪ بحرانی؛ Memory>80٪/90٪؛ Session>70٪/90٪ حد؛ Interface Error رشد؛ Tunnel/HA Down؛ Disk Log>80٪؛ همه بر پایه‌ی Baseline.
+**27-0-ت3** — آستانه‌های هشدار برای ۶ معیار
 
-**27-0-ت4** — ۱۸۰ روز × ۲ GB = ۳۶۰ GB؛ + ۲۰٪ حاشیه؛ مرکزی با فشرده‌سازی و چرخش؛ هشدار فضا.
+| معیار | آستانه نمونه | دلیل |
+|---|---|---|
+| CPU | >90٪ ۵ دقیقه | Spike کوتاه نادیده |
+| Memory | >85٪ | نزدیکی Conserve |
+| Session | >80٪ ظرفیت | حاشیه‌ی حمله |
+| Interface Down | بلافاصله | اثر مستقیم |
+| VPN Down | ۱ دقیقه | جلوگیری از Flap |
+| دیسک Log | >85٪ | قبل از پر شدن |
+
+**نکته:** این اعداد نمونه‌اند؛ مقدار واقعی از Baseline دو تا چهار هفته‌ای.
+
+**27-0-ت4** — Retention ۱۸۰ روز با ۲ GB/روز
+
+``` text
+Raw = 2 GB/day x 180 = 360 GB
+With compression ratio ~ 8:1 (assumption) = 45 GB
+```
+**استدلال:** ۳۶۰ گیگابایت خام؛ نسبت فشرده‌سازی به نوع Log وابسته است و ۸:۱ تخمین است. برنامه: ۹۰ روز آنلاین، ۹۰ روز آرشیو؛ حاشیه‌ی رشد ۳۰–۵۰٪؛ پایش مصرف.
 
 **27-0-Q1** — So events from different devices can be correlated reliably in time.
 
@@ -4165,9 +4293,13 @@ Telnet/HTTP/SNMPv1-2c رمز و داده را بدون رمزنگاری می‌�
 
 **27-7-ت2** — در Lab هم‌نسخه Restore، مقایسه Interface/Policy/Route، اندازه‌گیری RTO و ثبت.
 
-**27-7-ت3** — تغییر admin پیش‌فرض، حساب شخصی، Trusted Host، allowaccess حداقل، غیرفعال Telnet/HTTP، MFA، Timeout/Lockout، Profile حداقلی، NTP، Patch.
+**27-7-ت3** — چک‌لیست ۱۰ مورد Hardening با دلیل
 
-**27-7-ت4** — حساب API با Profile Read-only، Trusted Host فقط مانیتورینگ، Token در Vault، چرخش دوره‌ای، Log تماس‌ها.
+۱) حساب شخصی (Accountability) ۲) MFA (رمز لو رفته) ۳) Trusthost (کاهش سطح) ۴) allowaccess حداقل ۵) TLS/SSH قوی ۶) Lockout (Brute-force) ۷) Timeout ۸) NTP ۹) Log مرکزی ۱۰) Backup رمزگذاری‌شده. هر مورد دلیل تهدید‌محور دارد نه فقط «بهترین روش».
+
+**27-7-ت4** — Token API ایمن برای مانیتورینگ
+
+Profile Read-only حداقلی، Trusted Host فقط سرور مانیتورینگ، Token در Vault با چرخش، HTTPS با CA معتبر، Log و Alert، Rate-limit. **آزمون منفی:** Token از IP دیگر ⇒ 403؛ عمل نوشتن ⇒ رد.
 
 **27-7-Q1** — Because a backup that was never restored may be corrupt or incomplete, so recovery is not proven.
 
@@ -4179,7 +4311,14 @@ Telnet/HTTP/SNMPv1-2c رمز و داده را بدون رمزنگاری می‌�
 
 **27-8-ت3** — ۱) `logtraffic` روی Policy ۲) فعال بودن مقصد ۳) Route/Source IP/پورت ۴) `tcpdump` و فایروال سرور ۵) سطح Severity.
 
-**27-8-ت4** — فیلتر زمانی روی Traffic، بررسی `action/rcvdbyte`، سپس Event Log همان ساعت (Link/HA/Config) و تطبیق زمان با NTP.
+**27-8-ت4** — یافتن علت قطع شبانه از Log
+
+1. زمان دقیق قطع از شکایت/مانیتورینگ.
+2. Log رویداد (Event) در همان بازه: Config change، HA، VPN، Interface.
+3. Log Traffic: Deny/Session جدید.
+4. الگوی زمانی (تکرار هر شب؟) ⇒ Script/Backup/Cron.
+5. همبستگی با CHG و Job.
+علت وقتی اثبات می‌شود که غیرفعال/اصلاح آن عامل قطع را حذف کند.
 
 **27-8-Q1** — Event log (system/admin events).
 

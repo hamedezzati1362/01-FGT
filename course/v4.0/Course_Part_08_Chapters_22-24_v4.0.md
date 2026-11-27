@@ -321,7 +321,7 @@ Config از Primary به Secondary کپی می‌شود؛ `Configuration Status:
 
 #### عیب‌یابی
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | out-of-sync | تغییر محلی | `execute ha synchronize start` |
 | Failover بی‌دلیل | Heartbeat ناپایدار | لینک‌ها |
@@ -461,7 +461,7 @@ Cluster سالم ولی Policy ناقص ⇒ HA هم همان ناقص را Sync 
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | HA بی‌فایده | SPOF دیگر | حذف |
 | Failover کند | Timer | تنظیم |
@@ -661,7 +661,7 @@ hbdev روی port1 (که ترافیک کاربر هم دارد). در ازدحا
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | Cluster تشکیل نمی‌شود | Group/Password/Mode | هماهنگ |
 | Out-of-sync | تغییر روی Secondary | Sync |
@@ -733,6 +733,8 @@ HA با پیش‌نیاز و برگه‌ی طراحی؛ A-P، hbdev دو لین�
 ### چرا باید یاد بگیریم؟
 
 HA آزمون‌نشده «امیدوارانه» است. ماشینی که هرگز چرخ یدکش را عوض نکرده‌اید، در جاده نمی‌دانید جک کجاست. آزمون Failover باید در Change Window با برنامه انجام شود و عدد (زمان قطع) داشته باشد، نه «به نظر خوب بود». همچنین Session Pickup همه‌چیز را نجات نمی‌دهد؛ باید دقیقاً بدانید چه چیزی حفظ می‌شود.
+
+> **حدود اعتبار (v4.0) — Failover/Failback در HA:** زمان‌ها و رفتار Failover (چند ثانیه، حفظ Session، Failback خودکار یا نه) در این دوره **توصیف مدل‌اند نه تضمین**. به مدل سخت‌افزار، نسخه‌ی FortiOS، تعداد/نوع Session، UTM/Proxy، Offload، لینک Heartbeat، `override`، Monitor و رفتار برنامه بستگی دارند. ترتیب Election در این درس باید با مستند FGCP همان نسخه تطبیق داده شود (در این بازنگری منبع رسمی مستقل برای آن بازخوانی نشد → نیازمند بررسی). «Failover = ۴ ثانیه» را فقط به‌عنوان نمونه‌ی اندازه‌گیری فرضی بخوانید.
 
 ### الگوریتم Election
 
@@ -831,7 +833,7 @@ Monitor port2 (داخلی) در Primary Down (سوئیچ داخلی خراب). F
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | Failover کند | Heartbeat Timer | تنظیم |
 | Session قطع | pickup غیرفعال | enable |
@@ -1007,7 +1009,7 @@ Secondary پس از ارتقا Boot Loop. Rollback: Boot به Partition قبلی
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | دو Primary | Heartbeat | کابل/طراحی |
 | checksum | تغییر Secondary | sync |
@@ -1206,7 +1208,7 @@ Lab اجرا نشده؛ زمان‌ها مدل‌اند؛ گزارش باید «
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | Flapping | Heartbeat | اختصاصی |
 | Failback ناخواسته | override | disable |
@@ -1403,13 +1405,31 @@ A = 1 - (0.005 x 0.005) = 99.9975 %
 
 در اجزای سری دسترس‌پذیری ضرب می‌شود؛ ISP با ۹۹٫۹٪ سقف کل سیستم را محدود می‌کند، هرقدر فایروال HA باشد.
 
-**22-1-ت5** — ISP، Config خراب، CVE مشترک، Split-brain.
+**22-1-ت5** — چهار خرابی خارج از دامنه‌ی HA
 
-HA همه‌ی خرابی‌ها را حل نمی‌کند: خرابی ISP، Config خراب (همگام می‌شود!)، CVE مشترک بین دو دستگاه و Split-brain.
+**استدلال کلی:** HA فقط خرابی «یک دستگاه از دو دستگاه یکسان» را پوشش می‌دهد؛ خطاهایی که هر دو دستگاه یکسان تجربه می‌کنند یا خارج از دستگاه‌اند پوشش داده نمی‌شوند.
 
-**22-1-ت6** — جدول با ستون راه مکمل و RTO.
+1. **خرابی ISP/لینک بیرونی:** هر دو فایروال همان لینک را دارند ⇒ مکمل: Dual-ISP/SD-WAN.
+2. **Config خراب:** FGCP پیکربندی را همگام می‌کند، پس خطای Policy روی هر دو عضو اعمال می‌شود ⇒ مکمل: Change Management، Backup، Rollback.
+3. **CVE یا باگ نرم‌افزاری مشترک:** هر دو عضو همان نسخه را اجرا می‌کنند ⇒ مکمل: Patch Management، Segmentation، تنوع/Staging.
+4. **Split-brain:** خود HA می‌تواند در قطع Heartbeat خطا بسازد ⇒ مکمل: Heartbeat مستقل و Monitor مناسب.
 
-جدول SPOF: هر جزء، ریسک، راه مکمل (HA، Dual-ISP، UPS) و RTO هدف.
+(موارد دیگر: SPOF سوئیچ/برق مشترک، خطای انسانی.)
+
+**22-1-ت6** — ماتریس خرابی سایت مرکزی
+
+**روش ساخت:** برای هر جزء بپرسید «اگر این خراب شود چه می‌شود؟» و مکمل و RTO هدف را بنویسید.
+
+| جزء | ریسک | راه مکمل | RTO هدف |
+|---|---|---|---|
+| فایروال | قطع کامل | HA A-P | ثانیه تا ده‌ها ثانیه |
+| ISP | قطع اینترنت | Dual-ISP + SD-WAN | چند ثانیه |
+| سوئیچ هسته | قطع داخلی | Stack/دو سوئیچ + LAG | ثانیه |
+| برق | قطع کل | دو منبع + دو UPS/مسیر | بدون وقفه |
+| Config | تغییر خراب | Backup، Change، Rollback | دقیقه |
+| سایت | فاجعه | DR سایت دوم | ساعت (طبق RTO/RPO) |
+
+**تحلیل:** عدد RTO از نیاز کسب‌وکار می‌آید نه از قابلیت دستگاه؛ اگر RTO هدف از توان راه‌حل کمتر است، یا راه‌حل را ارتقا دهید یا هدف را با مدیریت بازنگری کنید.
 
 **22-1-Q1** — Because serial availabilities multiply, so the lowest one dominates.
 
@@ -1436,9 +1456,22 @@ Out-of-sync یعنی Config اعضا یکی نیست و checksum متفاوت ا
 
 عضو دوم Join نمی‌شود — روش بررسی: ۱) `get system status` روی هر دو: نسخه/Build و Serial. ۲) `get system ha status` روی Primary: آیا عضو دوم دیده می‌شود؟ ۳) Group name و Password یکسان؟ ۴) Heartbeat: کابل، `hbdev` و VLAN. ۵) لایسنس هر دو. رفع معمول: هم‌نسخه‌سازی یا Group/Password یکسان؛ پس از Join checksum را مقایسه کنید.
 
-**22-2-ت6** — جدول بالا.
+**22-2-ت6** — برگه‌ی HA
 
-برگه‌ی HA: Mode، Group، Password (Vault)، hbdev، Priority، monitor، override و session-pickup با دلیل.
+**برگه‌ی HA (قابل اجرا و با دلیل):**
+| پارامتر | مقدار | دلیل |
+|---|---|---|
+| mode | a-p | سادگی و عدم Asymmetric |
+| group-name/group-id | یکتا | VMAC و جداسازی Cluster |
+| password | Vault | اعتبار Cluster |
+| hbdev | دو لینک مستقیم | حذف SPOF Heartbeat |
+| priority | A=200، B=100 | تعیین نقش ترجیحی |
+| override | disable | جلوگیری از Failback ناخواسته |
+| monitor | Interfaceهای حیاتی | Failover منطقی |
+| session-pickup | enable | حفظ TCP |
+| ha-mgmt | Interface Mgmt | دسترسی به Secondary |
+
+**نکته‌ی علمی:** مقدار هر پارامتر با مستند FGCP همان نسخه تطبیق داده شود؛ برگه بدون ستون «دلیل» فقط کپی دستور است نه طراحی.
 
 **22-2-Q1** — Because configuration is synchronized from the primary to the secondary.
 
@@ -1463,13 +1496,29 @@ Sessionهای مبتنی بر UTM/Proxy یا SSL Inspection ممکن است پس
 
 Failback کنترل‌شده از Flap و قطع‌های پیاپی جلوگیری می‌کند.
 
-**22-3-ت5** — Monitor/HB timers.
+**22-3-ت5** — Failover ۱۲ ثانیه؛ تحلیل
 
-Failover کند (مثلاً ۱۲ ثانیه): ۱) `diagnose sys ha history read` علت و زمان را نشان می‌دهد. ۲) Monitor Interface: آیا خرابی لینک سریع دیده شد؟ ۳) Heartbeat interval و lost-threshold (پیش‌فرض‌ها را از مستند بخوانید؛ `Unverified`). ۴) کاهش محتاطانه و آزمون ۱۰ بار قطع/وصل. ریسک: Timer خیلی کم Flap می‌دهد؛ معیار: Failover < ۵ ثانیه بدون Flap.
+**علامت:** Failover ۱۲ ثانیه، بیش از هدف (مثلاً ۱۰ ثانیه). این علامت است نه علت.
 
-**22-3-ت6** — ۵ آزمون.
+**فرضیه‌ها و آزمون تفکیک:**
+1. **تشخیص دیر:** `diagnose sys ha history read` زمان رویداد و دلیل را نشان می‌دهد؛ اگر فاصله‌ی «خرابی» تا «تغییر وضعیت» زیاد است، فرضیه‌ی Heartbeat/Monitor Timer تقویت می‌شود.
+2. **Monitor نداشتن:** خرابی لینک بدون Monitor فقط با Heartbeat دیده می‌شود (کندتر).
+3. **پس از Failover:** ARP/Gratuitous، MAC مجازی و سوئیچ بالادست (جدول MAC) ممکن است ثانیه‌ها طول بکشد؛ Sniffer روی سوئیچ/اولین بسته‌ی خروجی Primary جدید.
+4. **Session/Route:** همگرایی BGP/OSPF یا SD-WAN بعد از Failover که نه به HA بلکه به مسیریابی برمی‌گردد.
 
-ماتریس ۵ آزمون: Reboot، قطع Monitor، قطع یک HB، قطع هر دو HB، Failback.
+**استدلال:** برای هر فرضیه پیش‌بینی بنویسید و آزمون ارزان را اول بزنید. پیش‌فرض Timerها را از مستند نسخه بخوانید (در این دوره تأیید نشده). علت وقتی اثبات می‌شود که با تغییر Timer/Monitor یا رفع مسئله‌ی ARP، زمان واقعاً کم شود.
+
+**22-3-ت6** — ماتریس تست HA
+
+| # | آزمون | انتظار | شاهد |
+|---|---|---|---|
+| 1 | Reboot Primary | Failover + حفظ TCP | Ping/iperf + `history` |
+| 2 | قطع Interface Monitor | Failover | `get system ha status` |
+| 3 | قطع یک Heartbeat | بدون Failover | وضعیت HA بدون تغییر |
+| 4 | قطع هر دو Heartbeat (Lab، پنجره) | Split-brain کنترل‌شده | وضعیت دو عضو |
+| 5 | Failback کنترل‌شده | بدون قطع غیرمنتظره | Ping/Session |
+
+**چرا همین پنج؟** هر آزمون یک مکانیزم متفاوت را می‌سنجد (خرابی دستگاه، Monitor، افزونگی Heartbeat، شکست Heartbeat، بازگشت). آزمون ۳ ثابت می‌کند افزونگی HB کار می‌کند؛ آزمون ۴ بدترین حالت را می‌شناساند.
 
 **22-3-Q1** — Lost packets multiplied by the ping interval.
 
@@ -1494,13 +1543,30 @@ Out-of-sync معمولاً از تغییر مستقیم روی Secondary یا ض
 
 ترتیب Upgrade: Secondary، Failover، سپس Primary قبلی؛ با checksum پس از هر مرحله.
 
-**22-4-ت5** — HB، Reboot، Re-sync.
+**22-4-ت5** — رفع Split-brain
 
-Split-brain رفع: ۱) تأیید: روی هر دو `get system ha status` Primary. ۲) Heartbeat را وصل کنید (دو لینک). ۳) عضوی را که نباید Primary باشد Reboot کنید. ۴) پس از Join `diagnose sys ha checksum cluster` را بررسی و در صورت نیاز Sync. ۵) Alert روی تغییر Primary. ۶) در RCA: چرا هر دو HB قطع شدند (سوییچ مشترک؟).
+**فرض:** هر دو عضو Primary و Heartbeat قطع است.
 
-**22-4-ت6** — Partition قبلی.
+**استدلال گام‌ها:**
+1. تأیید با `get system ha status` از Console/ha-mgmt هر دو؛ هر اقدام از راه دور ممکن است خودش دچار تکرار IP/MAC باشد.
+2. قبل از بازگرداندن Heartbeat، تصمیم بگیرید **کدام Config درست است** (اگر در فاصله‌ی Split تغییری روی هر دو انجام شده). Backup هر دو را بگیرید.
+3. Heartbeat را بازگردانید (دو لینک مستقل).
+4. Cluster طبق Election یک Primary انتخاب می‌کند؛ عضوی که نباید Primary بماند را در صورت نیاز Reboot/Rejoin کنید.
+5. `diagnose sys ha checksum cluster` و Sync؛ سپس آزمون ترافیک.
+6. RCA: چرا Heartbeat‌ها هر دو قطع شدند؟ (SPOF مشترک؟) و اصلاح طراحی.
 
-Rollback Cluster: Boot از Partition قبلی هر دو یا Restore Config+Firmware.
+**چرا همه‌ی گزینه‌ها یکسان نیستند؟** Reboot کورکورانه ممکن است Config جدیدتر را از بین ببرد؛ رفع بدون کشف علت دوباره تکرار می‌شود.
+
+**22-4-ت6** — برنامه‌ی Rollback Cluster
+
+**هدف:** بازگشت سریع و قابل‌پیش‌بینی پس از ارتقای ناموفق.
+1. **پیش از ارتقا:** Backup Config هر دو عضو، Hash، ثبت نسخه‌ی قبلی و Partition قبلی؛ آزمون Rollback در Lab.
+2. **اگر فقط Secondary مشکل دارد:** Boot از Partition قبلی همان عضو (`execute set-next-reboot` طبق مستند)، اتصال به Cluster و Sync.
+3. **اگر بعد از Failover مشکل نمایان شد:** Failover به عضو قدیمی (در صورتی که هنوز ارتقا نشده)، سپس Rollback عضو جدید.
+4. **اگر Config به قالب جدید تبدیل شده:** Restore Config پیش از ارتقا روی Firmware قدیمی.
+5. **تأیید:** `get system ha status`، `checksum cluster`، VPN، BGP، UTM، Log.
+
+**نکته‌ی استدلالی:** ارتقای Firmware و تبدیل Config دو تغییرند؛ Rollback ناقص (فقط یکی) باعث ناسازگاری می‌شود.
 
 **22-4-Q1** — diagnose sys ha history read.
 
@@ -1519,9 +1585,26 @@ Rollback Cluster: Boot از Partition قبلی هر دو یا Restore Config+Fir
 
 **22-5-ت4** — Sessionهای TCP را بین اعضا همگام می‌کند تا پس از Failover ادامه یابند.
 
-**22-5-ت5** — دو Primary؛ بازگرداندن HB؛ انتخاب Primary و Re-sync؛ پیشگیری با HB مضاعف و Monitor.
+**22-5-ت5** — Split-brain در Gate HA
 
-**22-5-ت6** — Path، Backup، Secondary اول، Failover، Primary قبلی، checksum، Rollback.
+**شرح:** با قطع تمام لینک‌های Heartbeat، هر عضو نمی‌تواند وضعیت دیگری را ببیند و فرض می‌کند دیگری خراب است؛ طبق منطق Election خودش Primary می‌شود. نتیجه: دو Primary با VMAC/IP یکسان ⇒ آشفتگی ARP، قطع/نوسان.
+
+**رفع (مرحله‌ای):** Console به هر دو ⇒ جلوگیری از آسیب ادامه‌دار (پورت‌های داده‌ی یکی را موقت Down) ⇒ بازگرداندن HB ⇒ Rejoin کنترل‌شده ⇒ بررسی Config/Sessionها ⇒ RCA.
+
+**پیشگیری:** حداقل دو HB مستقل و مستقیم، Monitor مناسب، ha-mgmt برای دسترسی جدا، آزمون دوره‌ای.
+
+**سوءبرداشت:** «Split-brain یعنی Config دو عضو متفاوت است» ← نه؛ مشکل در دید حالت (State) است؛ Config ممکن است حتی یکسان باشد.
+
+**22-5-ت6** — برنامه‌ی Upgrade Cluster
+
+1. Backup Config و ثبت Partition/نسخه‌ی فعلی؛ بررسی Upgrade Path و Release Notes.
+2. Staging با Config واقعی.
+3. Image روی Primary؛ Cluster ابتدا Secondary را ارتقا می‌دهد (روش Uninterruptible).
+4. پس از Rejoin و `checksum` برابر، Failover کنترل‌شده.
+5. ارتقای عضو قبلی؛ آزمون کامل (HA، VPN، BGP، SD-WAN، UTM، Log).
+6. Rollback آماده: Partition قبلی/Restore Config؛ معیار Trigger از قبل.
+
+**چرا ترتیب مهم است؟** اگر هر دو را هم‌زمان ارتقا دهید، افزونگی هنگام تغییر وجود ندارد؛ ترتیب «Secondary اول» همیشه یک عضو سالم را برای بازگشت نگه می‌دارد.
 
 **22-5-Q1** — Loss of all heartbeat links so both units think they are primary.
 
@@ -1541,9 +1624,33 @@ Split-brain: HB قطع ولی هر دو دستگاه زنده‌اند و هر �
 
 دو لینک HB تا خرابی یک لینک Split-brain نسازد.
 
-**22-0-ت5** — Session Pickup خاموش است؛ فعال‌کردن آن (TCP) و بررسی محدودیت UDP/ICMP.
+**22-0-ت5** — علت Session Pickup و راه‌حل
 
-**22-0-ت6** — HA از خرابی دستگاه، SD-WAN از خرابی/افت کیفیت ISP؛ هر دو لازم‌اند؛ Heartbeat جدا و Health-check مستقل.
+**فرض‌ها:** Cluster FGCP، ترافیک TCP عادی (بدون Proxy-based UTM)، لینک Heartbeat سالم.
+
+**استدلال:**
+1. FGCP پیکربندی را همیشه همگام می‌کند، اما جدول Session را فقط وقتی `session-pickup` فعال باشد به Secondary می‌فرستد. بدون آن، Secondary پس از Failover Sessionهای قبلی را نمی‌شناسد.
+2. بسته‌ی بعدی TCP روی Primary جدید «بسته‌ی بدون Session» است؛ SYN نیست و به‌عنوان اتصال معتبر تلقی نمی‌شود، پس رد یا Reset می‌شود و برنامه اتصال را دوباره می‌سازد.
+3. راه‌حل: `set session-pickup enable` (و برای UDP/ICMP `session-pickup-connectionless`)؛ اثبات: Failover آزمایشی با `ssh` یا `iperf` طولانی.
+4. محدودیت‌ها: Sessionهای مبتنی بر Proxy/بعضی UTM، SSL Inspection یا Sessionهای وابسته به Helper ممکن است همگام نشوند؛ Session Pickup هم‌گام‌سازی نیمه‌همزمان است و بسته‌های لحظه‌ی Failover ممکن است گم شوند.
+
+**چرا گزینه‌های دیگر کافی نیستند؟** کاهش Timeout یا Failover سریع‌تر Session را برنمی‌گرداند؛ فقط همگام‌سازی Session مشکل را هدف می‌گیرد.
+
+**سؤال انتقالی:** در Cluster دارای Session Pickup، چرا ممکن است یک تماس SIP/UDP هنوز قطع شود؟ (راهنما: connectionless، NAT/Helper.)
+
+**22-0-ت6** — HA و SD-WAN کنار هم
+
+**فرض‌ها:** سایت مرکزی، دو FGT در Cluster A-P، دو ISP.
+
+**استدلال نقش‌ها:**
+| لایه | خطایی که حل می‌کند | خطایی که حل نمی‌کند |
+|---|---|---|
+| HA (FGCP) | خرابی دستگاه، Reboot، خرابی Interface Monitor | خرابی ISP، Config خراب (همگام می‌شود)، CVE مشترک |
+| SD-WAN/Dual-ISP | خرابی یا افت کیفیت لینک ISP | خرابی خود فایروال |
+
+**طراحی:** هر ISP به هر دو عضو Cluster (با سوئیچ‌های جدا یا Redundant Interface) تا خرابی یک فایروال ISP را قطع نکند؛ Heartbeat دو لینک مستقل؛ SD-WAN روی Cluster یک‌پارچه با Health-checkهایی که به مقصد خارجی (نه Gateway) می‌روند؛ Monitor Interface روی لینک‌های مهم.
+
+**اشتباه رایج:** تصور اینکه HA «افزونگی ISP» هم می‌دهد؛ برعکس، اگر هر دو فایروال به یک ISP/سوئیچ وصل باشند همان SPOF می‌ماند.
 
 **22-0-م1** — بررسی هم‌خوانی Config بین اعضا.
 
@@ -1559,7 +1666,16 @@ Checksum Cluster هم‌خوانی Config بین اعضا را بررسی می�
 
 **22-6-ت3** — چون پس از افتادن یک عضو فقط یک دستگاه می‌ماند و باید کل بار را بردارد؛ ظرفیت طراحی باید بر پایه‌ی یک دستگاه باشد.
 
-**22-6-ت4** — با `ha-mgmt-status enable` و تعریف Interface مدیریتی اختصاصی روی هر عضو.
+**22-6-ت4** — اتصال مستقیم به عضو Subordinate
+
+**مسئله:** در Cluster، مدیریت معمولاً به Primary می‌رسد؛ برای عیب‌یابی عضو دیگر دسترسی مستقیم لازم است.
+
+**راه‌ها:**
+1. **ha-mgmt interface:** Interface مدیریتی اختصاصی با IP یکتا برای هر عضو (`config system ha → ha-mgmt-status`).
+2. **`execute ha manage <ID> <admin>`** از CLI Primary.
+3. Console/OOB.
+
+**استدلال:** اتصال به Interface داده‌ی مشترک به Primary می‌رود؛ بنابراین بدون ha-mgmt یا Console مشاهده‌ی مستقل عضو دوم ممکن نیست. ha-mgmt را در شبکه‌ی Mgmt بگذارید نه روی لینک کاربران.
 
 **22-6-Q1** — With it enabled, the primary distributes all sessions (not only those requiring content inspection) to the cluster members.
 
@@ -1809,7 +1925,7 @@ Reverse Path Forwarding: فایروال بررسی می‌کند بسته‌ی �
 
 #### عیب‌یابی
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | SYN-ACK Drop | مسیر نامتقارن | متقارن‌سازی |
 | RPF fail | Route | تصحیح |
@@ -1940,7 +2056,7 @@ UDP Session برای پاسخ می‌خواهد؛ DNS با Asymmetric گاهی �
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | SYN_SENT دائم | پاسخ از مسیر دیگر | تقارن |
 | RPF fail | Route | تصحیح |
@@ -2152,7 +2268,7 @@ Policy ISP1 با Pool مخصوص IP ISP1؛ پاسخ به همان لینک. آز
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | پاسخ از ISP دیگر | NAT/Policy | Pool |
 | ECMP گاهی کار | Hash | تنظیم |
@@ -2315,7 +2431,7 @@ Edge اجازه‌ی 443 به DMZ را دارد و Internal 8443؛ برنامه�
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | Double NAT | NAT دو جا | فقط Edge |
 | Asymmetric | موازی | Hash/Sync |
@@ -2486,7 +2602,7 @@ Lab اجرا نشده؛ درصدها نمونه‌ی آموزشی؛ گزارش �
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | ۳۰٪ Timeout | Hash/SNAT | متقارن |
 | asymroute روشن | راه‌حل موقت | خاموش |
@@ -2543,9 +2659,25 @@ Gate معماری ۵: تشخیص Asymmetric با Sniffer دو Edge و Debug، ر
 
 **23-1-ت4** — ترجمه‌ی مبدأ فقط در Session فایروال اول ثبت شده؛ فایروال دوم نمی‌تواند پاسخ را به آدرس واقعی ترجمه کند.
 
-**23-1-ت5** — Route سرور مقابل (پاسخ از اینترنت) و Selector/Route فایروال؛ Capture Hop‌به‌Hop و Debug Flow RPF؛ رفع Route سرور سپس بررسی Selector.
+**23-1-ت5** — VPN+Internet نامتقارن؛ دو علت و تفکیک
 
-**23-1-ت6** — وقتی Session Sync/بررسی سبک مدیریت‌شده است (مثلاً Anycast)، ریسک امنیتی پذیرفته‌شده و مستند، و Inspection جای دیگر جبران می‌شود.
+**علامت:** گاهی ترافیک VPN و اینترنت هم‌زمان مشکل دارد.
+
+**فرضیه ۱:** Policy Route/ECMP متفاوت برای دو جهت ⇒ آزمون: Sniffer دو فایروال هم‌زمان؛ SYN و SYN-ACK کجا؟
+**فرضیه ۲:** SNAT با IP اشتباه روی لینک دیگر ⇒ آزمون: `session list` برای `act=snat` و IP.
+**فرضیه ۳:** Route برگشت Tunnel ناقص ⇒ `get router info routing-table details` به مقصد/مبدأ.
+
+**روش تفکیک:** آزمونی را اول بزنید که چند فرضیه را رد کند؛ فقط یک متغیر را هر بار تغییر دهید؛ علت وقتی اثبات می‌شود که تغییر آن علامت را برطرف و بازگرداندنش علامت را برگرداند.
+
+**23-1-ت6** — چه موقع Asymmetric پذیرفته می‌شود؟
+
+**استدلال:** Asymmetric ذاتاً «خطا» نیست؛ مشکل برای Stateful Inspection است. می‌توان آن را پذیرفت وقتی:
+1. Session Sync یا ساختار Stateless/نیمه‌حالت (Anycast، Scrubbing) آن را مدیریت می‌کند؛
+2. کنترل جایگزین (Inspection جای دیگر، ACL Stateless) ریسک را جبران می‌کند؛
+3. ریسک امنیتی (Spoofing/بی‌حالتی) صراحتاً ارزیابی، مستند و امضا شده؛
+4. آزمون و پایش وجود دارد.
+
+**چه موقع نمی‌پذیریم؟** برای ترافیک نیازمند UTM/NAT حالت‌دار یا ممیزی سخت.
 
 **23-1-Q1** — Reverse path check failure and the absence of a matching session or policy for the return packet.
 
@@ -2560,9 +2692,24 @@ Gate معماری ۵: تشخیص Asymmetric با Sniffer دو Edge و Debug، ر
 
 **23-2-ت4** — آدرس واقعی مبدأ در سرور پنهان می‌شود و تحلیل حادثه سخت‌تر می‌شود.
 
-**23-2-ت5** — Hash متقارن یا Active-Passive؛ Session Sync پرهزینه؛ معیار: Throughput، سادگی، SPOF.
+**23-2-ت5** — دو فایروال Active-Active با ECMP؛ انتخاب طرح
 
-**23-2-ت6** — ۲۰ اتصال موفق، Sniffer یک‌مسیره، session list در یک فایروال، Log کامل، آزمون منفی RPF.
+**گزینه‌ها:** (الف) Hash متقارن + SNAT هر لینک، (ب) FGSP، (ج) HA Active-Passive.
+
+**استدلال:** اگر ظرفیت یک دستگاه کافی است (ج) ساده‌ترین و ایمن‌ترین است. اگر ظرفیت دو دستگاه لازم است، (الف) هزینه‌ی کمتر ولی وابسته به رفتار تجهیز بالادست؛ (ب) State را همگام می‌کند و تحمل بیشتر دارد ولی پیچیده‌تر است.
+
+**توصیه با فرض ظرفیت بیش از یک دستگاه و ISP دوگانه:** (الف) با SNAT/Pool هر لینک + آزمون پذیرش؛ (ب) برای آینده. دلیل: بدون وابستگی به Sync UTM و با ردیابی قابل‌قبول.
+
+**23-2-ت6** — آزمون پذیرش پس از رفع Asymmetric
+
+1. ۲۰ (یا ۵۰) اتصال متوالی از چند Source، همه باید موفق باشند.
+2. Sniffer روی هر دو فایروال: SYN/SYN-ACK روی همان دستگاه.
+3. `session list`: Session فقط در یک فایروال برای هر Flow.
+4. Log کامل بدون `reverse path check fail`.
+5. آزمون منفی: RPF فعال و Spoofing شبیه‌سازی‌شده ⇒ Drop.
+6. آزمون خرابی: قطع یک مسیر ⇒ Flowهای جدید سالم.
+
+**چرا همه‌ی این‌ها؟** فقط موفقیت اتصال ممکن است اتفاقی باشد؛ Sniffer و Session علت و تقارن را اثبات می‌کنند.
 
 **23-2-Q1** — Because disabling checks weakens security, while symmetric routing solves the root cause.
 
@@ -2581,9 +2728,22 @@ Blast radius دامنه‌ی اثر یک خطا یا خرابی است؛ جدا�
 
 **23-3-ت4** — Diff پیکربندی دو فایروال پس از هر تغییر و به‌صورت دوره‌ای؛ Alert.
 
-**23-3-ت5** — Hash/Routing متقارن یا Sync، Policy یکسان، Log مرکزی/زمان، Failover آزمایش‌شده.
+**23-3-ت5** — چهار الزام Active-Active
 
-**23-3-ت6** — سری (Edge+Internal)، هر لایه A-P؛ Edge برای ظرفیت N+1 با ECMP متقارن اگر لازم؛ معیارها: ریسک، هزینه، عملیات.
+1. **Session Sync یا Hash متقارن** تا رفت و برگشت یک دستگاه.
+2. **همسانی Config و نسخه** (Sync یا مدیریت مرکزی).
+3. **ظرفیت N+1:** هر دستگاه باید بار کل را در خرابی تحمل کند؛ وگرنه Active-Active افزونگی واقعی نیست.
+4. **پایش و آزمون:** Health-check، Failover، Drift.
+
+**استدلال:** بدون ۱ Asymmetric؛ بدون ۲ رفتار متفاوت؛ بدون ۳ خرابی یک دستگاه اوج بار را قطع می‌کند؛ بدون ۴ مشکلات پنهان می‌مانند.
+
+**23-3-ت6** — الگو برای ۳۰ Gbps با Defense in Depth
+
+**فرض:** هیچ دستگاه تنها ۳۰ Gbps با UTM/Inspection نمی‌دهد (از Datasheet بررسی شود).
+
+**الگو:** Edge موازی N+1 با ECMP/Hash متقارن برای ظرفیت (مثلاً ۳ دستگاه که هرکدام ≥ ۱۵ Gbps در شرایط واقعی) + لایه‌ی Internal سری با HA برای عمق دفاعی؛ NAT فقط Edge.
+
+**معیارها:** ظرفیت واقعی با Inspection (نه ظرفیت Firewall خام)، ریسک Asymmetric، هزینه، پیچیدگی عملیاتی. عدد ۳۰ Gbps را با اندازه‌گیری/ Datasheet مدل تأیید کنید.
 
 **23-3-Q1** — It limits the blast radius by testing the change on one device before applying it everywhere.
 
@@ -2609,13 +2769,17 @@ BFD خرابی مسیر را در حد ثانیه (یا کمتر) تشخیص م�
 
 SNAT دوم با IP متفاوت ریسک دارد: لیست مجاز مقصد باید هر دو IP را بپذیرد.
 
-**23-4-ت5** — فیلتر Host روی هر دو.
+**23-4-ت5** — Capture دو سمتی
 
-Capture دو سمتی: Host فیلتر روی هر دو فایروال و مقایسه‌ی جهت‌ها.
+1. Capture هم‌زمان روی هر دو فایروال با فیلتر Host/Port یکسان و ساعت NTP همگام.
+2. مقایسه‌ی جهت‌ها: SYN روی دستگاه A و SYN-ACK روی B یعنی Asymmetric.
+3. Session list هر دو.
+4. نتیجه‌گیری فقط وقتی که زمان‌ها همخوان باشند (اختلاف ساعت تفسیر را خراب می‌کند).
 
-**23-4-ت6** — جدول.
+**23-4-ت6** — طرح سه‌فایروالی
 
-طرح سه‌فایروالی: جدول نقش، مسیر، Failover و آزمون Asymmetric.
+طرح نمونه (قابل نقد): دو Edge موازی (ECMP متقارن + SNAT هر لینک) و یک Internal HA. جدول: نقش، مسیر رفت/برگشت، Failover (قطع یک Edge ⇒ نصف ظرفیت)، آزمون Asymmetric (Sniffer دو Edge).
+**استدلال:** افزودن دستگاه بدون طراحی تقارن ریسک را بالا می‌برد؛ سه دستگاه فقط وقتی ارزش دارد که ظرفیت یا دسترس‌پذیری واقعاً لازم باشد.
 
 **23-4-Q1** — By capturing on both firewalls and showing each sees only one direction.
 
@@ -2631,9 +2795,28 @@ Asymmetric: رفت و برگشت یک ارتباط از دو مسیر/دستگا
 
 پیام Debug flow: `reverse path check fail, drop` در ترافیک نامتقارن.
 
-**23-0-ت4** — طراحی متقارن (کم‌ریسک)، Policy Route/SNAT (سریع ولی Log مبهم)، Session Sync/HA (حفظ Session ولی پیچیده)، asymroute (امنیت کم).
+**23-0-ت4** — مقایسه‌ی سه راه‌حل Asymmetric
 
-**23-0-ت5** — Hash متقارن یا Active-Passive، یا Policy Route برای برگشت از همان فایروال، یا Session Sync.
+| راه‌حل | چه چیزی را درست می‌کند | ریسک/هزینه |
+|---|---|---|
+| طراحی متقارن | علت ریشه | نیاز به تغییر طراحی؛ کم‌ریسک امنیتی |
+| Policy Route/SNAT | اجبار برگشت از همان مسیر | Log/ردیابی کاربر مبهم (SNAT)، وابسته به مقصد |
+| Session Sync (FGSP/HA) | Session روی هر دو دستگاه | پیچیدگی، همگام‌سازی ناقص UTM |
+| غیرفعال‌کردن کنترل‌ها | علامت را پنهان می‌کند | بالاترین ریسک امنیتی |
+
+**انتخاب:** ابتدا علت ریشه؛ سپس راه‌حل‌هایی که State را حفظ می‌کنند؛ پذیرش بدون کنترل فقط موقت و مستند.
+
+**23-0-ت5** — متقارن‌سازی دو فایروال موازی با ECMP
+
+**فرض:** دو فایروال Active-Active پشت ECMP.
+
+1. **Hash دوطرفه:** تنظیم ECMP/LB طوری که Flow در دو جهت یک دستگاه را انتخاب کند (مثلاً Hash بر اساس src+dst قرینه). فرض: تجهیز بالادست و پایین‌دست هر دو همین الگو را اجرا کنند.
+2. **یا Active-Passive:** بدون Asymmetric ولی ظرفیت کمتر.
+3. **یا Session Sync** (FGSP) تا هر دستگاه Session دارد.
+
+**آزمون:** ۵۰ اتصال و Sniffer روی هر دو؛ SYN و SYN-ACK باید روی همان فایروال باشند.
+
+**محدودیت:** Hash متقارن با NAT (تغییر IP) یا Failover ممکن است بر هم بخورد؛ آن را آزمون کنید.
 
 **23-0-Q1** — Sniffer shows SYN on one firewall and SYN/ACK on another, and the session exists only on the first.
 
@@ -2955,7 +3138,7 @@ Per-tenant cap = capacity / tenants = 200000 / 4 = 50000
 
 #### عیب‌یابی
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | ارتباط بین VDOM نیست | Policy/Route | Policy دو سر |
 | ادمین Tenant همه را می‌بیند | Profile | `vdom` محدود |
@@ -3104,7 +3287,7 @@ Reduction           = 1 / (50 x many) -> orders of magnitude
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | Policy باز | Allow قدیمی | Discovery/حذف |
 | برنامه نمی‌رسد | جریان جا افتاد | Log Deny |
@@ -3293,7 +3476,7 @@ DB روی VLAN دوم با ESXi. Isolation فقط در FortiGate کافی نیس
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | منفی مجاز | Policy قدیمی | ترتیب |
 | مثبت رد | Service/Interface | Lookup |
@@ -3529,7 +3712,7 @@ Admin Tenant A دسترسی Global داشت ⇒ می‌تواند Config B را 
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | Interface تخصیص نمی‌شود | Policy/Route دارد | حذف قبلی |
 | ارتباط A↔B | Inter-VDOM ناخواسته | حذف |
@@ -3737,7 +3920,7 @@ Lab اجرا نشده؛ Logهای بالا نمونه‌ی آموزشی؛ در �
 
 ### عیب‌یابی سریع
 
-| علامت | علت | رفع |
+| علامت (مشاهده) | علت محتمل (باید اثبات شود) | اقدام پس از اثبات |
 |---|---|---|
 | Log Deny نیست | implicit log | enable |
 | Log نمی‌رسد | syslog/TLS | بررسی |
@@ -3951,9 +4134,17 @@ WEB→DB در Log مسیر ممنوع طراحی بود و باید بررسی/�
 
 Backup شبانه قطع شد — تحلیل: Log deny: BACKUP→DB 445 ساعت 02:00. در Discovery ۱۴ روزه دیده نشده چون Backup هفتگی بود. رفع: Policy مجزا برای BACKUP→DB با Service 445 و Schedule شبانه؛ آموزه: Log ≥ ۳۰ روز و مشورت مالک برای کارهای کم‌تکرار؛ پیش از Deny نهایی دوره‌ی Monitor.
 
-**24-1-ت6** — جدول.
+**24-1-ت6** — ماتریس DC
 
-ماتریس DC: Internet→WEB 443، WEB→APP 8443، APP→DB 1433، MGMT→SSH و بقیه Deny.
+| از ↓ به → | WEB | APP | DB | MGMT |
+|---|---|---|---|---|
+| Internet | 443 | - | - | - |
+| WEB | - | 8443 | - | - |
+| APP | - | - | 1433 | - |
+| DB | - | - | - | - |
+| MGMT | SSH | SSH | SSH | - |
+
+**استدلال:** هر خانه‌ی خالی Deny صریح؛ مسیر فقط به لایه‌ی مجاور؛ DB بدون Outbound. بدون Flow Discovery، خانه‌ها را حدس نزنید.
 
 **24-1-Q1** — Because attackers move laterally between servers once inside.
 
@@ -3978,13 +4169,17 @@ Deny صریح برای Log و Alert لازم است؛ Implicit Deny Log ندار
 
 `iprope lookup` Policy مطابق جریان را نشان می‌دهد.
 
-**24-2-ت5** — تلاش‌های ممنوع؛ بررسی.
+**24-2-ت5** — Hit Count ۱۲ برای Deny
 
-Hit Count ۱۲ برای Deny یعنی ۱۲ تلاش ممنوع؛ Source را بررسی و مستند کنید.
+**علامت:** Hit=12 روی Policy Deny. **علت اثبات‌نشده** است.
 
-**24-2-ت6** — طبق متن.
+**فرضیه‌ها:** تلاش واقعی نفوذ/اسکن؛ برنامه‌ی قانونی با وابستگی جا افتاده؛ خطای پیکربندی.
+**تفکیک:** Log Deny (Src، Dst، Port، زمان، الگو)؛ آیا Src شناخته‌شده؟ آیا زمان با Job مشخص مطابقت دارد؟ ۱۲ بار در یک ثانیه یا ۱۲ بار در ماه؟
+**اقدام:** اگر قانونی، Policy حداقلی؛ اگر مشکوک، Alert/تحقیق.
 
-Policyهای ۵۰ (WEB→APP)، ۶۰ (APP→DB) و ۶۱ (Deny WEB→DB) با Log All.
+**24-2-ت6** — Policy سه‌لایه
+
+Policyهای ۵۰ (WEB→APP:8443)، ۶۰ (APP→DB:1433) و ۶۱ (Deny WEB→DB با Log) نمونه‌اند. **استدلال:** Policy Deny صریح WEB→DB اگرچه Implicit Deny هم هست، مشاهده‌پذیری و Hit Count می‌دهد؛ ترتیب باید درست باشد (Deny بالاتر از Allowهای عام). آزمون مثبت/منفی با `iprope lookup`.
 
 **24-2-Q1** — To grant only the minimum necessary access.
 
@@ -4013,9 +4208,15 @@ Management VDOM VDOM سرویس‌های سیستمی (DNS، FortiGuard) است�
 
 ping بین VDOM ندارد — بررسی به ترتیب: ۱) IP روی دو سر vlk (vlk0 در DMZ و vlk1 در INT) و Subnet یکسان. ۲) Route در هر VDOM به Subnet VDOM دیگر از طریق vlk. ۳) Policy دو جهت. ۴) `diagnose debug flow` داخل هر VDOM (`config vdom / edit X`). ۵) آزمون ping. علت رایج: Policy فقط یک‌طرفه.
 
-**24-3-ت6** — DMZ/INT.
+**24-3-ت6** — دو VDOM با Inter-VDOM Link
 
-دو VDOM (DMZ و INT) با vlk و Policy دو جهت و Resource Limit.
+1. دو VDOM (DMZ و INT) و Interface هر کدام.
+2. `vdom-link` و IP /30 دو سر.
+3. Route در هر VDOM به Subnet دیگر از طریق vlnk.
+4. Policy دو جهت حداقلی.
+5. Resource Limit هر VDOM.
+6. آزمون: مثبت ping/سرویس مجاز؛ منفی سرویس غیرمجاز.
+**نکته:** ایجاد Inter-VDOM یعنی ایجاد مسیر؛ فقط اگر ارتباط لازم است.
 
 **24-3-Q1** — To route traffic between two virtual domains.
 
@@ -4040,13 +4241,21 @@ Isolation با آزمون منفی و Log Deny اثبات می‌شود.
 
 Log متمرکز در Syslog یا FortiAnalyzer ذخیره می‌شود.
 
-**24-4-ت5** — Deny صریح با Log.
+**24-4-ت5** — Log ناقص
 
-Log ناقص: Deny صریح با Log اضافه کنید.
+**علامت:** آزمون منفی انجام شد ولی Log Deny نیست. **علت محتمل:** `fwpolicy-implicit-log` خاموش، یا Policy Deny صریح بدون `logtraffic`، یا Log به مرکز نرسیده، یا فیلتر Log. **تفکیک:** ابتدا Log محلی `execute log display`؛ سپس Syslog/مرکز. **رفع:** فعال‌سازی Log Deny ضمنی/صریح و آزمون دوباره.
 
-**24-4-ت6** — ۷ آزمون.
+**24-4-ت6** — ماتریس آزمون DC
 
-ماتریس آزمون DC: ۷ آزمون مثبت/منفی با Log.
+| # | ادعا | آزمون | انتظار |
+|---|---|---|---|
+| 1 | Web→App مجاز | `nc 8443` | Connected |
+| 2 | App→DB مجاز | `nc 1433` | Connected |
+| 3 | Web→DB ممنوع | `nc 1433` | Timeout + Log |
+| 4 | DB→Internet ممنوع | curl | Timeout + Log |
+| 5 | A≠B (مستأجر) | ping | Timeout |
+| 6 | Mgmt محدود | SSH از Users | رد |
+| 7 | Alert | اسکن | Alert |
 
 **24-4-Q1** — Because isolation is proven by showing that forbidden traffic is denied and logged.
 
@@ -4068,9 +4277,23 @@ Resource Limit تا یک VDOM همه‌ی منابع را مصرف نکند.
 
 Zone در یک Routing/Policy مشترک است؛ VDOM جدا و با Link ارتباط می‌گیرد.
 
-**24-0-ت5** — دو VDOM با Routing جدا (Overlap مجاز)، NAT و اینترنت در root، بدون ارتباط مشتری‌ها، DNS مشترک با Policy.
+**24-0-ت5** — دو مشتری با Subnet هم‌پوشان و اینترنت مشترک
 
-**24-0-ت6** — Super Admin فقط Global؛ Admin مشتری محدود به VDOM خودش؛ Auditor فقط خواندنی.
+**فرض:** هر دو مشتری 10.0.0.0/24 دارند؛ اینترنت مشترک.
+
+**طراحی:** هر مشتری یک VDOM؛ چون Routing جدول جدا دارد، Overlap مشکلی ایجاد نمی‌کند؛ اتصال به اینترنت از VDOM مشترک (Transit) با Inter-VDOM Link و **NAT در VDOM مشتری** (آدرس مبدأ به IP یکتا/Pool هر مشتری)؛ بین مشتری‌ها هیچ Inter-VDOM ایجاد نشود.
+
+**استدلال:** Overlap در VDOM جدا قابل‌تحمل است؛ ولی ورود به VDOM مشترک باید NAT شود وگرنه آدرس‌های یکسان در Transit برخورد می‌کنند. آزمون: ping بین مشتری‌ها شکست؛ هر کدام اینترنت دارد.
+
+**24-0-ت6** — جداسازی مدیریتی سه نقش
+
+| نقش | دسترسی | دلیل |
+|---|---|---|
+| Super Admin | Global و همه VDOMها | کم‌تعداد، MFA، Break-glass |
+| Admin مشتری | فقط VDOM خودش | حداقل دسترسی |
+| Auditor | Log/Config فقط‌خواندنی | جداسازی وظایف |
+
+**آزمون منفی:** Admin مشتری A تلاش به VDOM B ⇒ Permission denied. **استدلال:** بدون محدودیت VDOM، مستأجر Config مستأجر دیگر را می‌بیند.
 
 **24-0-Q1** — Because one tenant could consume all sessions and resources and disrupt every other VDOM.
 
@@ -4082,7 +4305,12 @@ Zone در یک Routing/Policy مشترک است؛ VDOM جدا و با Link ار�
 
 **24-5-ت3** — 120000 × 0.9 = 108000؛ 108000 / 3 = 36000 Session برای هر مستأجر.
 
-**24-5-ت4** — `accprofile`/Scope سراسری یا ادمین بدون `vdom` اختصاصی؛ رفع: ادمین VDOM-محدود با Profile مناسب و حذف دسترسی Super.
+**24-5-ت4** — ادمین مستأجر به VDOM دیگر دسترسی دارد
+
+**علامت:** Admin مستأجر A به VDOM B دسترسی دارد.
+**علت محتمل (باید اثبات شود):** Admin Profile/`vdom` اشتباه (دسترسی Global یا چند VDOM)، حساب مشترک، یا Inter-VDOM Link با Policy باز.
+**تفکیک:** `show system admin <name>` برای `vdom` و `accprofile`؛ ورود به‌عنوان آن Admin و تلاش به VDOM B؛ بررسی vdom-link.
+**رفع:** Profile حداقلی، VDOM مشخص، حذف Link/Policy غیرلازم، آزمون منفی تکراری.
 
 **24-5-Q1** — An inter-VDOM link (with policies on both sides).
 
